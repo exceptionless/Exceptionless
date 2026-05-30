@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>AWSSDK.Extensions.CborProtocol</id>
+    <version>4.0.0.39</version>
+    <title>AWSSDK - Extensions for Cbor protocol support</title>
+    <authors>Amazon Web Services</authors>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">Apache-2.0</license>
+    <licenseUrl>https://licenses.nuget.org/Apache-2.0</licenseUrl>
+    <icon>images\AWSLogo.png</icon>
+    <projectUrl>https://github.com/aws/aws-sdk-net/</projectUrl>
+    <description>This package contains shared serialization and deserialization logic for services that use Cbor protocol in the AWS SDK for .NET.</description>
+    <language>en-US</language>
+    <tags>AWS Amazon aws-sdk-v4</tags>
+    <dependencies>
+      <group targetFramework=".NETFramework4.7.2">
+        <dependency id="AWSSDK.Core" version="4.0.6.1" />
+        <dependency id="System.Formats.Cbor" version="9.0.5" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="AWSSDK.Core" version="4.0.6.1" />
+        <dependency id="System.Formats.Cbor" version="9.0.5" />
+      </group>
+      <group targetFramework=".NETCoreApp3.1">
+        <dependency id="AWSSDK.Core" version="4.0.6.1" />
+        <dependency id="System.Formats.Cbor" version="9.0.5" />
+      </group>
+      <group targetFramework="net8.0">
+        <dependency id="AWSSDK.Core" version="4.0.6.1" />
+        <dependency id="System.Formats.Cbor" version="9.0.5" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

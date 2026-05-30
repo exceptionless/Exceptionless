@@ -1,0 +1,366 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>App.Metrics.AspNetCore.Tracking</name>
+    </assembly>
+    <members>
+        <member name="M:Microsoft.AspNetCore.Hosting.MetricsAspNetTrackingHostBuilderExtensions.UseMetricsWebTracking(Microsoft.Extensions.Hosting.IHostBuilder)">
+            <summary>
+                Adds App Metrics services, configuration and middleware to the
+                <see cref="T:Microsoft.AspNetCore.Hosting.IHostBuilder" />.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.AspNetCore.Hosting.IHostBuilder" />.</param>
+            <returns>A reference to this instance after the operation has completed.</returns>
+            <exception cref="T:System.ArgumentNullException">
+                <see cref="T:Microsoft.AspNetCore.Hosting.IHostBuilder" /> cannot be null
+            </exception>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Hosting.MetricsAspNetTrackingHostBuilderExtensions.UseMetricsWebTracking(Microsoft.Extensions.Hosting.IHostBuilder,System.Action{App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions})">
+            <summary>
+                Adds App Metrics services, configuration and middleware to the
+                <see cref="T:Microsoft.AspNetCore.Hosting.IHostBuilder" />.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.AspNetCore.Hosting.IHostBuilder" />.</param>
+            <param name="optionsDelegate">A callback to configure <see cref="T:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions" />.</param>
+            <returns>A reference to this instance after the operation has completed.</returns>
+            <exception cref="T:System.ArgumentNullException">
+                <see cref="T:Microsoft.AspNetCore.Hosting.IHostBuilder" /> cannot be null
+            </exception>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Hosting.MetricsAspNetTrackingHostBuilderExtensions.UseMetricsWebTracking(Microsoft.Extensions.Hosting.IHostBuilder,System.Action{Microsoft.Extensions.Hosting.HostBuilderContext,App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions})">
+            <summary>
+                Adds App Metrics services, configuration and middleware to the
+                <see cref="T:Microsoft.AspNetCore.Hosting.IHostBuilder" />.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.AspNetCore.Hosting.IHostBuilder" />.</param>
+            <param name="setupDelegate">A callback to configure <see cref="T:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions" />.</param>
+            <returns>A reference to this instance after the operation has completed.</returns>
+            <exception cref="T:System.ArgumentNullException">
+                <see cref="T:Microsoft.AspNetCore.Hosting.IHostBuilder" /> cannot be null
+            </exception>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Hosting.MetricsAspNetTrackingHostBuilderExtensions.UseMetricsWebTracking(Microsoft.Extensions.Hosting.IHostBuilder,Microsoft.Extensions.Configuration.IConfiguration,System.Action{App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions})">
+            <summary>
+                Adds App Metrics services, configuration and middleware to the
+                <see cref="T:Microsoft.AspNetCore.Hosting.IHostBuilder" />.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.AspNetCore.Hosting.IHostBuilder" />.</param>
+            <param name="configuration">The <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> containing <see cref="T:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions"/></param>
+            <param name="optionsDelegate">A callback to configure <see cref="T:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions" />.</param>
+            <returns>A reference to this instance after the operation has completed.</returns>
+            <exception cref="T:System.ArgumentNullException">
+                <see cref="T:Microsoft.AspNetCore.Hosting.IHostBuilder" /> cannot be null
+            </exception>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Hosting.MetricsAspNetTrackingWebHostBuilderExtensions.UseMetricsWebTracking(Microsoft.AspNetCore.Hosting.IWebHostBuilder)">
+            <summary>
+                Adds App Metrics services, configuration and middleware to the
+                <see cref="T:Microsoft.AspNetCore.Hosting.IWebHostBuilder" />.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.AspNetCore.Hosting.IWebHostBuilder" />.</param>
+            <returns>A reference to this instance after the operation has completed.</returns>
+            <exception cref="T:System.ArgumentNullException">
+                <see cref="T:Microsoft.AspNetCore.Hosting.IWebHostBuilder" /> cannot be null
+            </exception>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Hosting.MetricsAspNetTrackingWebHostBuilderExtensions.UseMetricsWebTracking(Microsoft.AspNetCore.Hosting.IWebHostBuilder,System.Action{App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions})">
+            <summary>
+                Adds App Metrics services, configuration and middleware to the
+                <see cref="T:Microsoft.AspNetCore.Hosting.IWebHostBuilder" />.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.AspNetCore.Hosting.IWebHostBuilder" />.</param>
+            <param name="optionsDelegate">A callback to configure <see cref="T:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions" />.</param>
+            <returns>A reference to this instance after the operation has completed.</returns>
+            <exception cref="T:System.ArgumentNullException">
+                <see cref="T:Microsoft.AspNetCore.Hosting.IWebHostBuilder" /> cannot be null
+            </exception>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Hosting.MetricsAspNetTrackingWebHostBuilderExtensions.UseMetricsWebTracking(Microsoft.AspNetCore.Hosting.IWebHostBuilder,System.Action{Microsoft.AspNetCore.Hosting.WebHostBuilderContext,App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions})">
+            <summary>
+                Adds App Metrics services, configuration and middleware to the
+                <see cref="T:Microsoft.AspNetCore.Hosting.IWebHostBuilder" />.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.AspNetCore.Hosting.IWebHostBuilder" />.</param>
+            <param name="setupDelegate">A callback to configure <see cref="T:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions" />.</param>
+            <returns>A reference to this instance after the operation has completed.</returns>
+            <exception cref="T:System.ArgumentNullException">
+                <see cref="T:Microsoft.AspNetCore.Hosting.IWebHostBuilder" /> cannot be null
+            </exception>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Hosting.MetricsAspNetTrackingWebHostBuilderExtensions.UseMetricsWebTracking(Microsoft.AspNetCore.Hosting.IWebHostBuilder,Microsoft.Extensions.Configuration.IConfiguration,System.Action{App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions})">
+            <summary>
+                Adds App Metrics services, configuration and middleware to the
+                <see cref="T:Microsoft.AspNetCore.Hosting.IWebHostBuilder" />.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.AspNetCore.Hosting.IWebHostBuilder" />.</param>
+            <param name="configuration">The <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> containing <see cref="T:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions"/></param>
+            <param name="optionsDelegate">A callback to configure <see cref="T:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions" />.</param>
+            <returns>A reference to this instance after the operation has completed.</returns>
+            <exception cref="T:System.ArgumentNullException">
+                <see cref="T:Microsoft.AspNetCore.Hosting.IWebHostBuilder" /> cannot be null
+            </exception>
+        </member>
+        <member name="T:Microsoft.AspNetCore.Builder.MetricsMiddlewareApplicationBuilderExtensions">
+            <summary>
+                Extension methods for <see cref="T:Microsoft.AspNetCore.Builder.IApplicationBuilder" /> to add App Metrics Middleware to the request execution
+                pipeline which measure typical web metrics.
+            </summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Builder.MetricsMiddlewareApplicationBuilderExtensions.UseMetricsActiveRequestMiddleware(Microsoft.AspNetCore.Builder.IApplicationBuilder)">
+            <summary>
+                Adds App Metrics active request tracking to the <see cref="T:Microsoft.AspNetCore.Builder.IApplicationBuilder" /> request execution pipeline.
+            </summary>
+            <param name="app">The <see cref="T:Microsoft.AspNetCore.Builder.IApplicationBuilder" />.</param>
+            <returns>A reference to this instance after the operation has completed.</returns>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Builder.MetricsMiddlewareApplicationBuilderExtensions.UseMetricsAllMiddleware(Microsoft.AspNetCore.Builder.IApplicationBuilder)">
+            <summary>
+                Adds App Metrics web tracking metrics to the <see cref="T:Microsoft.AspNetCore.Builder.IApplicationBuilder" /> request execution pipeline.
+            </summary>
+            <param name="app">The <see cref="T:Microsoft.AspNetCore.Builder.IApplicationBuilder" />.</param>
+            <returns>A reference to this instance after the operation has completed.</returns>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Builder.MetricsMiddlewareApplicationBuilderExtensions.UseMetricsApdexTrackingMiddleware(Microsoft.AspNetCore.Builder.IApplicationBuilder)">
+            <summary>
+                Adds App Metrics Apdex tracking to the <see cref="T:Microsoft.AspNetCore.Builder.IApplicationBuilder" /> request execution pipeline.
+            </summary>
+            <param name="app">The <see cref="T:Microsoft.AspNetCore.Builder.IApplicationBuilder" />.</param>
+            <returns>A reference to this instance after the operation has completed.</returns>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Builder.MetricsMiddlewareApplicationBuilderExtensions.UseMetricsErrorTrackingMiddleware(Microsoft.AspNetCore.Builder.IApplicationBuilder)">
+            <summary>
+                Adds App Metrics error tracking to the <see cref="T:Microsoft.AspNetCore.Builder.IApplicationBuilder" /> request execution pipeline.
+            </summary>
+            <param name="app">The <see cref="T:Microsoft.AspNetCore.Builder.IApplicationBuilder" />.</param>
+            <returns>A reference to this instance after the operation has completed.</returns>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Builder.MetricsMiddlewareApplicationBuilderExtensions.UseMetricsOAuth2TrackingMiddleware(Microsoft.AspNetCore.Builder.IApplicationBuilder)">
+            <summary>
+                Adds App Metrics Apdex tracking to the <see cref="T:Microsoft.AspNetCore.Builder.IApplicationBuilder" /> request execution pipeline.
+            </summary>
+            <param name="app">The <see cref="T:Microsoft.AspNetCore.Builder.IApplicationBuilder" />.</param>
+            <returns>A reference to this instance after the operation has completed.</returns>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Builder.MetricsMiddlewareApplicationBuilderExtensions.UseMetricsPostAndPutSizeTrackingMiddleware(Microsoft.AspNetCore.Builder.IApplicationBuilder)">
+            <summary>
+                Adds App Metrics POST and PUT request size tracking to the <see cref="T:Microsoft.AspNetCore.Builder.IApplicationBuilder" /> request execution
+                pipeline.
+            </summary>
+            <param name="app">The <see cref="T:Microsoft.AspNetCore.Builder.IApplicationBuilder" />.</param>
+            <returns>A reference to this instance after the operation has completed.</returns>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Builder.MetricsMiddlewareApplicationBuilderExtensions.UseMetricsRequestTrackingMiddleware(Microsoft.AspNetCore.Builder.IApplicationBuilder)">
+            <summary>
+                Adds App Metrics request tracking to the <see cref="T:Microsoft.AspNetCore.Builder.IApplicationBuilder" /> request execution pipeline.
+            </summary>
+            <param name="app">The <see cref="T:Microsoft.AspNetCore.Builder.IApplicationBuilder" />.</param>
+            <returns>A reference to this instance after the operation has completed.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.MetricsAspNetCoreMetricsTrackingMiddlewareServiceCollectionExtensions.AddMetricsTrackingMiddleware(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+                Adds App Metrics AspNet Core metrics tracking middleware services to the specified <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" />.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" /> to add services to.</param>
+            <returns>
+                An <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" /> that can be used to further configure services.
+            </returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.MetricsAspNetCoreMetricsTrackingMiddlewareServiceCollectionExtensions.AddMetricsTrackingMiddleware(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+                Adds App Metrics AspNet Core metrics tracking middleware services to the specified <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" />.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" /> to add services to.</param>
+            <param name="configuration">The <see cref="T:Microsoft.Extensions.Configuration.IConfiguration" /> from where to load <see cref="T:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions" />.</param>
+            <returns>
+                An <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" /> that can be used to further configure services.
+            </returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.MetricsAspNetCoreMetricsTrackingMiddlewareServiceCollectionExtensions.AddMetricsTrackingMiddleware(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfigurationSection)">
+            <summary>
+                Adds App Metrics AspNet Core metrics tracking middleware services to the specified <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" />.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" /> to add services to.</param>
+            <param name="configuration">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationSection" /> from where to load <see cref="T:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions" />.</param>
+            <returns>
+                An <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" /> that can be used to further configure services.
+            </returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.MetricsAspNetCoreMetricsTrackingMiddlewareServiceCollectionExtensions.AddMetricsTrackingMiddleware(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfiguration,System.Action{App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions})">
+            <summary>
+                Adds App Metrics AspNet Core metrics tracking middleware services to the specified <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" />.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" /> to add services to.</param>
+            <param name="configuration">The <see cref="T:Microsoft.Extensions.Configuration.IConfiguration" /> from where to load <see cref="T:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions" />.</param>
+            <param name="setupAction">
+                An <see cref="T:System.Action`1" /> to configure the provided <see cref="T:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions" />.
+            </param>
+            <returns>
+                An <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" /> that can be used to further configure services.
+            </returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.MetricsAspNetCoreMetricsTrackingMiddlewareServiceCollectionExtensions.AddMetricsTrackingMiddleware(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfigurationSection,System.Action{App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions})">
+            <summary>
+                Adds App Metrics AspNet Core metrics tracking middleware services to the specified <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" />.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" /> to add services to.</param>
+            <param name="configuration">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationSection" /> from where to load <see cref="T:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions" />.</param>
+            <param name="setupAction">
+                An <see cref="T:System.Action`1" /> to configure the provided <see cref="T:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions" />.
+            </param>
+            <returns>
+                An <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" /> that can be used to further configure services.
+            </returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.MetricsAspNetCoreMetricsTrackingMiddlewareServiceCollectionExtensions.AddMetricsTrackingMiddleware(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions},Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+                Adds App Metrics AspNet Core metrics tracking middleware services to the specified <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" />.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" /> to add services to.</param>
+            <param name="setupAction">
+                An <see cref="T:System.Action`1" /> to configure the provided <see cref="T:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions" />.
+            </param>
+            <param name="configuration">The <see cref="T:Microsoft.Extensions.Configuration.IConfiguration" /> from where to load <see cref="T:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions" />.</param>
+            <returns>
+                An <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" /> that can be used to further configure services.
+            </returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.MetricsAspNetCoreMetricsTrackingMiddlewareServiceCollectionExtensions.AddMetricsTrackingMiddleware(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions},Microsoft.Extensions.Configuration.IConfigurationSection)">
+            <summary>
+                Adds App Metrics AspNet Core metrics tracking middleware services to the specified <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" />.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" /> to add services to.</param>
+            <param name="setupAction">
+                An <see cref="T:System.Action`1" /> to configure the provided <see cref="T:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions" />.
+            </param>
+            <param name="configuration">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationSection" /> from where to load <see cref="T:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions" />.</param>
+            <returns>
+                An <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" /> that can be used to further configure services.
+            </returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.MetricsAspNetCoreMetricsTrackingMiddlewareServiceCollectionExtensions.AddMetricsTrackingMiddleware(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions})">
+            <summary>
+                Adds App Metrics AspNet Core metrics tracking middleware services to the specified <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" />.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" /> to add services to.</param>
+            <param name="setupAction">
+                An <see cref="T:System.Action`1" /> to configure the provided <see cref="T:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions" />.
+            </param>
+            <returns>
+                An <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" /> that can be used to further configure services.
+            </returns>
+        </member>
+        <member name="T:App.Metrics.AspNetCore.Tracking.DefaultMetricsTrackingStartupFilter">
+            <summary>
+            Inserts the App Metrics Tracking at the beginning of the pipeline.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.AspNetCore.Tracking.DefaultMetricsTrackingStartupFilter.Configure(System.Action{Microsoft.AspNetCore.Builder.IApplicationBuilder})">
+            <inheritdoc />
+        </member>
+        <member name="T:App.Metrics.AspNetCore.Tracking.Internal.MetricsTrackingMiddlewareOptionsSetup">
+            <summary>
+                Sets up default metric tracking middleware options for <see cref="T:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions"/>.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.AspNetCore.Tracking.Internal.MetricsTrackingMiddlewareOptionsSetup.Configure(App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions)">
+            <inheritdoc />
+        </member>
+        <member name="T:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions">
+            <summary>
+                Provides programmatic configuration for metrics tracking middleware in the App Metrics framework.
+            </summary>
+        </member>
+        <member name="P:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions.ApdexTrackingEnabled">
+            <summary>
+                Gets or sets a value indicating whether the [overall web application's apdex should be measured].
+            </summary>
+            <remarks>Only valid if UseMetricsApdexTrackingMiddleware configured on the <see cref="T:Microsoft.AspNetCore.Builder.IApplicationBuilder" />.</remarks>
+            <value>
+                <c>true</c> if [apdex should be measured]; otherwise, <c>false</c>.
+            </value>
+        </member>
+        <member name="P:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions.ApdexTSeconds">
+            <summary>
+                Gets or sets the
+                <see href="https://alhardy.github.io/app-metrics-docs/getting-started/metric-types/apdex.html">apdex t seconds</see>
+            </summary>
+            <remarks>Only valid if UseMetricsApdexTrackingMiddleware configured on the <see cref="T:Microsoft.AspNetCore.Builder.IApplicationBuilder" />.</remarks>
+            <value>
+                The apdex t seconds.
+            </value>
+        </member>
+        <member name="P:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions.IgnoredHttpStatusCodes">
+            <summary>
+                Gets or sets the ignored HTTP status codes as a result of a request where metrics should not be measured.
+            </summary>
+            <value>
+                The ignored HTTP status codes.
+            </value>
+        </member>
+        <member name="P:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions.IgnoredRoutesRegex">
+            <summary>
+                Gets the ignored request routes where metrics should not be measured.
+            </summary>
+            <value>
+                The ignored routes regex patterns.
+            </value>
+        </member>
+        <member name="P:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions.IgnoredPorts">
+            <summary>
+                Gets the ignored request ports where metrics should not be measured.
+            </summary>
+            <value>
+                The ignored ports.
+            </value>
+        </member>
+        <member name="P:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions.IgnoredRoutesRegexPatterns">
+            <summary>
+                Gets or sets the ignored request routes where metrics should not be measured.
+            </summary>
+            <value>
+                The ignored routes regex patterns.
+            </value>
+        </member>
+        <member name="P:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions.OAuth2TrackingEnabled">
+            <summary>
+                Gets or sets a value indicating whether [oauth2 client tracking should be enabled], if disabled endpoint responds
+                with 404.
+            </summary>
+            <value>
+                <c>true</c> if [o auth2 tracking enabled]; otherwise, <c>false</c>.
+            </value>
+        </member>
+        <member name="P:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions.UseBucketHistograms">
+            <summary>
+                Gets or sets a value indicating whether [bucket histograms should be used], if disabled histograms will be used.
+            </summary>
+            <value>
+                <c>true</c> if [bucket histograms should be used]; otherwise, <c>false</c>.
+            </value>
+        </member>
+        <member name="P:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions.RequestSizeHistogramBuckets">
+            <summary>
+                Gets or sets the buckets to use for request size bucket histograms
+            </summary>
+            <remarks>Only valid if UseBucketHistograms is true.</remarks>
+            <value>
+                Array of buckets
+            </value>
+        </member>
+        <member name="P:App.Metrics.AspNetCore.Tracking.MetricsWebTrackingOptions.RequestTimeHistogramBuckets">
+            <summary>
+                Gets or sets the buckets to use for request time bucket timer
+            </summary>
+            <remarks>Only valid if UseBucketHistograms is true.</remarks>
+            <value>
+                Array of buckets
+            </value>
+        </member>
+        <member name="T:App.Metrics.AspNetCore.Tracking.Middleware.ErrorRequestMeterMiddleware">
+            <summary>
+                Measures the overall error request rate as well as the rate per endpoint.
+                Also measures these error rates per OAuth2 Client as a separate metric
+            </summary>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,1131 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>App.Metrics.Concurrency</name>
+    </assembly>
+    <members>
+        <member name="M:App.Metrics.Concurrency.AtomicDouble.#ctor(System.Double)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Concurrency.AtomicDouble" /> struct.
+            </summary>
+            <param name="value">The value.</param>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicDouble.Add(System.Double)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicDouble.CompareAndSwap(System.Double,System.Double)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicDouble.Decrement">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicDouble.Decrement(System.Double)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicDouble.GetAndAdd(System.Double)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicDouble.GetAndDecrement">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicDouble.GetAndDecrement(System.Double)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicDouble.GetAndIncrement">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicDouble.GetAndIncrement(System.Double)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicDouble.GetAndReset">
+            <summary>
+                Returns the current value of the instance and sets it to zero as an atomic operation.
+            </summary>
+            <returns>
+                The current value of the instance.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicDouble.GetAndSet(System.Double)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicDouble.GetValue">
+            <summary>
+                Returns the latest value of this instance written by any processor.
+            </summary>
+            <returns>The latest written value of this instance.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicDouble.Increment(System.Double)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicDouble.Increment">
+            <summary>
+                Increment this instance and return the value after the increment.
+            </summary>
+            <returns>
+                The value of the instance *after* the increment.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicDouble.Increment(System.Int64)">
+            <summary>
+                Increment this instance with <paramref name="value" /> and return the value after the increment.
+            </summary>
+            <param name="value">The value.</param>
+            <returns>
+                The value of the instance *after* the increment.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicDouble.NonVolatileGetValue">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicDouble.NonVolatileSetValue(System.Double)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicDouble.SetValue(System.Double)">
+            <inheritdoc />
+        </member>
+        <member name="T:App.Metrics.Concurrency.AtomicIntArray">
+            <summary>
+                Array of ints which provides atomic operations on the array elements.
+            </summary>
+        </member>
+        <member name="P:App.Metrics.Concurrency.AtomicIntArray.Length">
+            <summary>
+                Gets the length of the underlying array
+            </summary>
+            <value>
+                The length.
+            </value>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicIntArray.GetEstimatedFootprintInBytes(App.Metrics.Concurrency.AtomicIntArray)">
+            <summary>
+                Returns the size in bytes occupied by an AtomicIntArray instance.
+            </summary>
+            <param name="instance">instance for whch to calculate the size.</param>
+            <returns>The size of the instance in bytes.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicIntArray.Add(System.Int32,System.Int32)">
+            <summary>
+                Add <paramref name="value" /> to this instance and return the resulting value.
+            </summary>
+            <param name="index">index in the array</param>
+            <param name="value">The amount to add.</param>
+            <returns>The value of this instance + the amount added.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicIntArray.CompareAndSwap(System.Int32,System.Int32,System.Int32)">
+            <summary>
+                Replace the value of this instance, if the current value is equal to the <paramref name="expected" /> value.
+            </summary>
+            <param name="index">index in the array</param>
+            <param name="expected">Value this instance is expected to be equal with.</param>
+            <param name="updated">Value to set this instance to, if the current value is equal to the expected value</param>
+            <returns>True if the update was made, false otherwise.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicIntArray.Decrement(System.Int32)">
+            <summary>
+                Decrement this instance and return the value after the decrement.
+            </summary>
+            <param name="index">index in the array</param>
+            <returns>The value of the instance *after* the decrement.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicIntArray.Decrement(System.Int32,System.Int32)">
+            <summary>
+                Decrement this instance with <paramref name="value" /> and return the value after the decrement.
+            </summary>
+            <param name="index">index in the array</param>
+            <param name="value">value to decrement with</param>
+            <returns>The value of the instance *after* the decrement.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicIntArray.GetAndAdd(System.Int32,System.Int32)">
+            <summary>
+                Add <paramref name="value" /> to this instance and return the value this instance had before the add operation.
+            </summary>
+            <param name="index">index in the array</param>
+            <param name="value">The amount to add.</param>
+            <returns>The value of this instance before the amount was added.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicIntArray.GetAndDecrement(System.Int32)">
+            <summary>
+                Decrement this instance and return the value the instance had before the decrement.
+            </summary>
+            <param name="index">index in the array</param>
+            <returns>The value of the instance *before* the decrement.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicIntArray.GetAndDecrement(System.Int32,System.Int32)">
+            <summary>
+                Decrement this instance with <paramref name="value" /> and return the value the instance had before the decrement.
+            </summary>
+            <param name="index">index in the array</param>
+            <param name="value">value to decrement with</param>
+            <returns>The value of the instance *before* the decrement.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicIntArray.GetAndIncrement(System.Int32)">
+            <summary>
+                Increment this instance and return the value the instance had before the increment.
+            </summary>
+            <param name="index">index in the array</param>
+            <returns>The value of the instance *before* the increment.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicIntArray.GetAndIncrement(System.Int32,System.Int32)">
+            <summary>
+                Increment this instance with <paramref name="value" /> and return the value the instance had before the increment.
+            </summary>
+            <param name="index">index in the array</param>
+            <param name="value">value to increment with</param>
+            <returns>The value of the instance *before* the increment.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicIntArray.GetAndReset(System.Int32)">
+            <summary>
+                Returns the current value of the instance and sets it to zero as an atomic operation.
+            </summary>
+            <param name="index">index in the array</param>
+            <returns>The current value of the instance.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicIntArray.GetAndSet(System.Int32,System.Int32)">
+            <summary>
+                Returns the current value of the instance and sets it to <paramref name="newValue" /> as an atomic operation.
+            </summary>
+            <param name="index">index in the array</param>
+            <param name="newValue">value that will be set in the array at <paramref name="index" /></param>
+            <returns>The current value of the instance.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicIntArray.GetValue(System.Int32)">
+            <summary>
+                Returns the latest value of this instance written by any processor.
+            </summary>
+            <param name="index">index in the array</param>
+            <returns>The latest written value of this instance.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicIntArray.Increment(System.Int32)">
+            <summary>
+                Increment this instance and return the value after the increment.
+            </summary>
+            <param name="index">index in the array</param>
+            <returns>The value of the instance *after* the increment.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicIntArray.Increment(System.Int32,System.Int32)">
+            <summary>
+                Increment this instance with <paramref name="value" /> and return the value after the increment.
+            </summary>
+            <param name="index">index in the array</param>
+            <param name="value">value to increment with</param>
+            <returns>The value of the instance *after* the increment.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicIntArray.NonVolatileGetValue(System.Int32)">
+            <summary>
+                Returns the current value of the instance without using Volatile.Read fence and ordering.
+            </summary>
+            <param name="index">index in the array</param>
+            <returns>The current value of the instance in a non-volatile way (might not observe changes on other threads).</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicIntArray.NonVolatileSetValue(System.Int32,System.Int32)">
+            <summary>
+                Set the value without using Volatile.Write fence and ordering.
+            </summary>
+            <param name="index">index in the array</param>
+            <param name="value">The new value for this instance.</param>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicIntArray.SetValue(System.Int32,System.Int32)">
+            <summary>
+                Write a new value to this instance. The value is immediately seen by all processors.
+            </summary>
+            <param name="index">index in the array</param>
+            <param name="value">The new value for this instance.</param>
+        </member>
+        <member name="T:App.Metrics.Concurrency.AtomicInteger">
+            <summary>
+                Atomic int value. Operations exposed on this class are performed using System.Threading.Interlocked class and are
+                thread safe.
+                For AtomicInt values that are stored in arrays PaddedAtomicInt is recommended.
+            </summary>
+            <remarks>
+                The AtomicInteger is a struct not a class and members of this type should *not* be declared readonly or changes
+                will not be reflected in the member instance.
+            </remarks>
+        </member>
+        <member name="F:App.Metrics.Concurrency.AtomicInteger.SizeInBytes">
+            <summary>
+                The size in bytes occupied by an instance of this type
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicInteger.#ctor(System.Int32)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Concurrency.AtomicInteger" /> struct.
+            </summary>
+            <param name="value">Initial value of the instance.</param>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicInteger.Add(System.Int32)">
+            <summary>
+                Add <paramref name="value" /> to this instance and return the resulting value.
+            </summary>
+            <param name="value">The amount to add.</param>
+            <returns>The value of this instance + the amount added.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicInteger.CompareAndSwap(System.Int32,System.Int32)">
+            <summary>
+                Replace the value of this instance, if the current value is equal to the <paramref name="expected" /> value.
+            </summary>
+            <param name="expected">Value this instance is expected to be equal with.</param>
+            <param name="updated">Value to set this instance to, if the current value is equal to the expected value</param>
+            <returns>True if the update was made, false otherwise.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicInteger.Decrement">
+            <summary>
+                Decrement this instance and return the value after the decrement.
+            </summary>
+            <returns>The value of the instance *after* the decrement.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicInteger.Decrement(System.Int32)">
+            <summary>
+                Decrement this instance with <paramref name="value" /> and return the value after the decrement.
+            </summary>
+            <param name="value">The value.</param>
+            <returns>
+                The value of the instance *after* the decrement.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicInteger.GetAndAdd(System.Int32)">
+            <summary>
+                Add <paramref name="value" /> to this instance and return the value this instance had before the add operation.
+            </summary>
+            <param name="value">The amount to add.</param>
+            <returns>The value of this instance before the amount was added.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicInteger.GetAndDecrement">
+            <summary>
+                Decrement this instance and return the value the instance had before the decrement.
+            </summary>
+            <returns>
+                The value of the instance *before* the decrement.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicInteger.GetAndDecrement(System.Int32)">
+            <summary>
+                Decrement this instance with <paramref name="value" /> and return the value the instance had before the decrement.
+            </summary>
+            <param name="value">The value.</param>
+            <returns>
+                The value of the instance *before* the decrement.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicInteger.GetAndIncrement">
+            <summary>
+                Increment this instance and return the value the instance had before the increment.
+            </summary>
+            <returns>
+                The value of the instance *before* the increment.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicInteger.GetAndIncrement(System.Int32)">
+            <summary>
+                Increment this instance with <paramref name="value" /> and return the value the instance had before the increment.
+            </summary>
+            <param name="value">The value.</param>
+            <returns>
+                The value of the instance *before* the increment.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicInteger.GetAndReset">
+            <summary>
+                Returns the current value of the instance and sets it to zero as an atomic operation.
+            </summary>
+            <returns>
+                The current value of the instance.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicInteger.GetAndSet(System.Int32)">
+            <summary>
+                Returns the current value of the instance and sets it to <paramref name="newValue" /> as an atomic operation.
+            </summary>
+            <param name="newValue">The new value.</param>
+            <returns>
+                The current value of the instance.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicInteger.GetValue">
+            <summary>
+                Returns the latest value of this instance written by any processor.
+            </summary>
+            <returns>
+                The latest written value of this instance.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicInteger.Increment">
+            <summary>
+                Increment this instance and return the value after the increment.
+            </summary>
+            <returns>The value of the instance *after* the increment.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicInteger.Increment(System.Int32)">
+            <summary>
+                Increment this instance with <paramref name="value" /> and return the value after the increment.
+            </summary>
+            <param name="value">The value.</param>
+            <returns>
+                The value of the instance *after* the increment.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicInteger.NonVolatileGetValue">
+            <summary>
+                Returns the current value of the instance without using Volatile.Read fence and ordering.
+            </summary>
+            <returns>The current value of the instance in a non-volatile way (might not observe changes on other threads).</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicInteger.NonVolatileSetValue(System.Int32)">
+            <summary>
+                Set the value without using Volatile.Write fence and ordering.
+            </summary>
+            <param name="value">The new value for this instance.</param>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicInteger.SetValue(System.Int32)">
+            <summary>
+                Write a new value to this instance. The value is immediately seen by all processors.
+            </summary>
+            <param name="value">The new value for this instance.</param>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicInteger.App#Metrics#Concurrency#Internal#IValueAdder{System#Int32}#Decrement(System.Int32)">
+            <summary>
+                Decrements the specified value.
+            </summary>
+            <param name="value">The value.</param>
+        </member>
+        <member name="T:App.Metrics.Concurrency.AtomicLong">
+            <summary>
+                Atomic long value. Operations exposed on this class are performed using System.Threading.Interlocked class and are
+                thread safe.
+                For AtomicLong values that are stored in arrays PaddedAtomicLong is recommended.
+            </summary>
+            <remarks>
+                The AtomicLong is a struct not a class and members of this type should *not* be declared readonly or changes will
+                not be reflected in the member instance.
+            </remarks>
+        </member>
+        <member name="F:App.Metrics.Concurrency.AtomicLong.SizeInBytes">
+            <summary>
+                The size in bytes occupied by an instance of this type
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLong.#ctor(System.Int64)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Concurrency.AtomicLong" /> struct.
+            </summary>
+            <param name="value">Initial value of the instance.</param>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLong.Add(System.Int64)">
+            <summary>
+                Add <paramref name="value" /> to this instance and return the resulting value.
+            </summary>
+            <param name="value">The amount to add.</param>
+            <returns>The value of this instance + the amount added.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLong.CompareAndSwap(System.Int64,System.Int64)">
+            <summary>
+                Replace the value of this instance, if the current value is equal to the <paramref name="expected" /> value.
+            </summary>
+            <param name="expected">Value this instance is expected to be equal with.</param>
+            <param name="updated">Value to set this instance to, if the current value is equal to the expected value</param>
+            <returns>True if the update was made, false otherwise.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLong.Decrement">
+            <summary>
+                Decrement this instance and return the value after the decrement.
+            </summary>
+            <returns>The value of the instance *after* the decrement.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLong.Decrement(System.Int64)">
+            <summary>
+                Decrement this instance with <paramref name="value" /> and return the value after the decrement.
+            </summary>
+            <param name="value">The value.</param>
+            <returns>
+                The value of the instance *after* the decrement.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLong.GetAndAdd(System.Int64)">
+            <summary>
+                Add <paramref name="value" /> to this instance and return the value this instance had before the add operation.
+            </summary>
+            <param name="value">The amount to add.</param>
+            <returns>The value of this instance before the amount was added.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLong.GetAndDecrement">
+            <summary>
+                Decrement this instance and return the value the instance had before the decrement.
+            </summary>
+            <returns>
+                The value of the instance *before* the decrement.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLong.GetAndDecrement(System.Int64)">
+            <summary>
+                Decrement this instance with <paramref name="value" /> and return the value the instance had before the decrement.
+            </summary>
+            <param name="value">The value.</param>
+            <returns>
+                The value of the instance *before* the decrement.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLong.GetAndIncrement">
+            <summary>
+                Increment this instance and return the value the instance had before the increment.
+            </summary>
+            <returns>The value of the instance *before* the increment.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLong.GetAndIncrement(System.Int64)">
+            <summary>
+                Increment this instance with <paramref name="value" /> and return the value the instance had before the increment.
+            </summary>
+            <param name="value">The value.</param>
+            <returns>
+                The value of the instance *before* the increment.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLong.GetAndReset">
+            <summary>
+                Returns the current value of the instance and sets it to zero as an atomic operation.
+            </summary>
+            <returns>
+                The current value of the instance.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLong.GetAndSet(System.Int64)">
+            <summary>
+                Returns the current value of the instance and sets it to <paramref name="newValue" /> as an atomic operation.
+            </summary>
+            <param name="newValue">The new value.</param>
+            <returns>
+                The current value of the instance.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLong.GetValue">
+            <summary>
+                Returns the latest value of this instance written by any processor.
+            </summary>
+            <returns>The latest written value of this instance.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLong.Increment">
+            <summary>
+                Increment this instance and return the value after the increment.
+            </summary>
+            <returns>
+                The value of the instance *after* the increment.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLong.Increment(System.Int64)">
+            <summary>
+                Increment this instance with <paramref name="value" /> and return the value after the increment.
+            </summary>
+            <param name="value">The value.</param>
+            <returns>
+                The value of the instance *after* the increment.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLong.NonVolatileGetValue">
+            <summary>
+                Returns the current value of the instance without using Volatile.Read fence and ordering.
+            </summary>
+            <returns>
+                The current value of the instance in a non-volatile way (might not observe changes on other threads).
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLong.NonVolatileSetValue(System.Int64)">
+            <summary>
+                Set the value without using Volatile.Write fence and ordering.
+            </summary>
+            <param name="value">The new value for this instance.</param>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLong.SetValue(System.Int64)">
+            <summary>
+                Write a new value to this instance. The value is immediately seen by all processors.
+            </summary>
+            <param name="value">The new value for this instance.</param>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLong.App#Metrics#Concurrency#Internal#IValueAdder{System#Int64}#Add(System.Int64)">
+            <summary>
+                Adds the specified value.
+            </summary>
+            <param name="value">The value.</param>
+        </member>
+        <member name="T:App.Metrics.Concurrency.AtomicLongArray">
+            <summary>
+                Array of longs which provides atomic operations on the array elements.
+            </summary>
+        </member>
+        <member name="P:App.Metrics.Concurrency.AtomicLongArray.Length">
+            <summary>
+                Gets the length of the underlying array
+            </summary>
+            <value>
+                The length.
+            </value>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLongArray.GetEstimatedFootprintInBytes(App.Metrics.Concurrency.AtomicLongArray)">
+            <summary>
+                Returns the size in bytes occupied by an AtomicLongArray instance.
+            </summary>
+            <param name="instance">instance for whch to calculate the size.</param>
+            <returns>The size of the instance in bytes.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLongArray.Add(System.Int32,System.Int64)">
+            <summary>
+                Add <paramref name="value" /> to this instance and return the resulting value.
+            </summary>
+            <param name="index">index in the array</param>
+            <param name="value">The amount to add.</param>
+            <returns>The value of this instance + the amount added.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLongArray.CompareAndSwap(System.Int32,System.Int64,System.Int64)">
+            <summary>
+                Replace the value of this instance, if the current value is equal to the <paramref name="expected" /> value.
+            </summary>
+            <param name="index">index in the array</param>
+            <param name="expected">Value this instance is expected to be equal with.</param>
+            <param name="updated">Value to set this instance to, if the current value is equal to the expected value</param>
+            <returns>True if the update was made, false otherwise.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLongArray.Decrement(System.Int32)">
+            <summary>
+                Decrement this instance and return the value after the decrement.
+            </summary>
+            <param name="index">index in the array</param>
+            <returns>The value of the instance *after* the decrement.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLongArray.Decrement(System.Int32,System.Int64)">
+            <summary>
+                Decrement this instance with <paramref name="value" /> and return the value after the decrement.
+            </summary>
+            <param name="index">index in the array</param>
+            <param name="value">value to decrement with</param>
+            <returns>The value of the instance *after* the decrement.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLongArray.GetAndAdd(System.Int32,System.Int64)">
+            <summary>
+                Add <paramref name="value" /> to this instance and return the value this instance had before the add operation.
+            </summary>
+            <param name="index">index in the array</param>
+            <param name="value">The amount to add.</param>
+            <returns>The value of this instance before the amount was added.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLongArray.GetAndDecrement(System.Int32)">
+            <summary>
+                Decrement this instance and return the value the instance had before the decrement.
+            </summary>
+            <param name="index">index in the array</param>
+            <returns>The value of the instance *before* the decrement.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLongArray.GetAndDecrement(System.Int32,System.Int64)">
+            <summary>
+                Decrement this instance with <paramref name="value" /> and return the value the instance had before the decrement.
+            </summary>
+            <param name="index">index in the array</param>
+            <param name="value">value to decrement with</param>
+            <returns>The value of the instance *before* the decrement.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLongArray.GetAndIncrement(System.Int32)">
+            <summary>
+                Increment this instance and return the value the instance had before the increment.
+            </summary>
+            <param name="index">index in the array</param>
+            <returns>The value of the instance *before* the increment.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLongArray.GetAndIncrement(System.Int32,System.Int64)">
+            <summary>
+                Increment this instance with <paramref name="value" /> and return the value the instance had before the increment.
+            </summary>
+            <param name="index">index in the array</param>
+            <param name="value">value to increment with</param>
+            <returns>The value of the instance *before* the increment.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLongArray.GetAndReset(System.Int32)">
+            <summary>
+                Returns the current value of the instance and sets it to zero as an atomic operation.
+            </summary>
+            <param name="index">index in the array</param>
+            <returns>The current value of the instance.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLongArray.GetAndSet(System.Int32,System.Int64)">
+            <summary>
+                Returns the current value of the instance and sets it to <paramref name="newValue" /> as an atomic operation.
+            </summary>
+            <param name="index">index in the array</param>
+            <param name="newValue">value that will be set in the array at <paramref name="index" /></param>
+            <returns>The current value of the instance.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLongArray.GetValue(System.Int32)">
+            <summary>
+                Returns the latest value of this instance written by any processor.
+            </summary>
+            <param name="index">index in the array</param>
+            <returns>The latest written value of this instance.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLongArray.Increment(System.Int32)">
+            <summary>
+                Increment this instance and return the value after the increment.
+            </summary>
+            <param name="index">index in the array</param>
+            <returns>The value of the instance *after* the increment.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLongArray.Increment(System.Int32,System.Int64)">
+            <summary>
+                Increment this instance with <paramref name="value" /> and return the value after the increment.
+            </summary>
+            <param name="index">index in the array</param>
+            <param name="value">value to increment with</param>
+            <returns>The value of the instance *after* the increment.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLongArray.NonVolatileGetValue(System.Int32)">
+            <summary>
+                Returns the current value of the instance without using Volatile.Read fence and ordering.
+            </summary>
+            <param name="index">index in the array</param>
+            <returns>The current value of the instance in a non-volatile way (might not observe changes on other threads).</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLongArray.NonVolatileSetValue(System.Int32,System.Int64)">
+            <summary>
+                Set the value without using Volatile.Write fence and ordering.
+            </summary>
+            <param name="index">index in the array</param>
+            <param name="value">The new value for this instance.</param>
+        </member>
+        <member name="M:App.Metrics.Concurrency.AtomicLongArray.SetValue(System.Int32,System.Int64)">
+            <summary>
+                Write a new value to this instance. The value is immediately seen by all processors.
+            </summary>
+            <param name="index">index in the array</param>
+            <param name="value">The new value for this instance.</param>
+        </member>
+        <member name="T:App.Metrics.Concurrency.PaddedAtomicLong">
+            <summary>
+                Padded version of the AtomicLong to avoid false CPU cache sharing. Recommended for cases where instances of
+                AtomicLong end up close to each other in memory - when stored in an array for eg.
+                An AtomicLong with heuristic padding to lessen cache effects of this heavily CAS'ed location. While the padding
+                adds noticeable space, the improved throughput outweighs using extra space
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.#ctor(System.Int64)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Concurrency.PaddedAtomicLong" /> struct.
+            </summary>
+            <param name="value">The value.</param>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.Add(System.Int64)">
+            <summary>
+                Add <paramref name="value" /> to this instance and return the resulting value.
+            </summary>
+            <param name="value">The amount to add.</param>
+            <returns>The value of this instance + the amount added.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.CompareAndSwap(System.Int64,System.Int64)">
+            <summary>
+                Replace the value of this instance, if the current value is equal to the <paramref name="expected" /> value.
+            </summary>
+            <param name="expected">Value this instance is expected to be equal with.</param>
+            <param name="updated">Value to set this instance to, if the current value is equal to the expected value</param>
+            <returns>True if the update was made, false otherwise.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.Decrement">
+            <summary>
+                Decrement this instance and return the value after the decrement.
+            </summary>
+            <returns>The value of the instance *after* the decrement.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.Decrement(System.Int64)">
+            <summary>
+                Decrement this instance with <paramref name="value" /> and return the value after the decrement.
+            </summary>
+            <param name="value">The value.</param>
+            <returns>
+                The value of the instance *after* the decrement.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.GetAndAdd(System.Int64)">
+            <summary>
+                Add <paramref name="value" /> to this instance and return the value this instance had before the add operation.
+            </summary>
+            <param name="value">The amount to add.</param>
+            <returns>The value of this instance before the amount was added.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.GetAndDecrement">
+            <summary>
+                Decrement this instance and return the value the instance had before the decrement.
+            </summary>
+            <returns>
+                The value of the instance *before* the decrement.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.GetAndDecrement(System.Int64)">
+            <summary>
+                Decrement this instance with <paramref name="value" /> and return the value the instance had before the decrement.
+            </summary>
+            <param name="value">The value.</param>
+            <returns>
+                The value of the instance *before* the decrement.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.GetAndIncrement">
+            <summary>
+                Increment this instance and return the value the instance had before the increment.
+            </summary>
+            <returns>The value of the instance *before* the increment.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.GetAndIncrement(System.Int64)">
+            <summary>
+                Increment this instance with <paramref name="value" /> and return the value the instance had before the increment.
+            </summary>
+            <param name="value">The value.</param>
+            <returns>
+                The value of the instance *before* the increment.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.GetAndReset">
+            <summary>
+                Returns the current value of the instance and sets it to zero as an atomic operation.
+            </summary>
+            <returns>
+                The current value of the instance.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.GetAndSet(System.Int64)">
+            <summary>
+                Returns the current value of the instance and sets it to <paramref name="newValue" /> as an atomic operation.
+            </summary>
+            <param name="newValue">The new value.</param>
+            <returns>
+                The current value of the instance.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.GetValue">
+            <summary>
+                Returns the latest value of this instance written by any processor.
+            </summary>
+            <returns>The latest written value of this instance.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.Increment">
+            <summary>
+                Increment this instance and return the value after the increment.
+            </summary>
+            <returns>
+                The value of the instance *after* the increment.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.Increment(System.Int64)">
+            <summary>
+                Increment this instance with <paramref name="value" /> and return the value after the increment.
+            </summary>
+            <param name="value">The value.</param>
+            <returns>
+                The value of the instance *after* the increment.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.NonVolatileGetValue">
+            <summary>
+                Returns the current value of the instance without using Volatile.Read fence and ordering.
+            </summary>
+            <returns>The current value of the instance in a non-volatile way (might not observe changes on other threads).</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.NonVolatileSetValue(System.Int64)">
+            <summary>
+                Set the value without using Volatile.Write fence and ordering.
+            </summary>
+            <param name="value">The new value for this instance.</param>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.SetValue(System.Int64)">
+            <summary>
+                Write a new value to this instance. The value is immediately seen by all processors.
+            </summary>
+            <param name="value">The new value for this instance.</param>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.App#Metrics#Concurrency#Internal#IValueAdder{System#Int64}#Decrement">
+            <summary>
+                Decrements this instance.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.App#Metrics#Concurrency#Internal#IValueAdder{System#Int64}#Decrement(System.Int64)">
+            <summary>
+                Decrements the specified value.
+            </summary>
+            <param name="value">The value.</param>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.App#Metrics#Concurrency#Internal#IValueAdder{System#Int64}#GetAndReset">
+            <summary>
+                Gets the and reset.
+            </summary>
+            <returns>The value.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.App#Metrics#Concurrency#Internal#IValueReader{System#Int64}#GetValue">
+            <summary>
+                Gets the value.
+            </summary>
+            <returns>The value</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.App#Metrics#Concurrency#Internal#IValueAdder{System#Int64}#Increment">
+            <summary>
+                Increments this instance.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.App#Metrics#Concurrency#Internal#IValueAdder{System#Int64}#Increment(System.Int64)">
+            <summary>
+                Increments the specified value.
+            </summary>
+            <param name="value">The value.</param>
+        </member>
+        <member name="M:App.Metrics.Concurrency.PaddedAtomicLong.App#Metrics#Concurrency#Internal#IValueAdder{System#Int64}#Reset">
+            <summary>
+                Resets this instance.
+            </summary>
+        </member>
+        <member name="T:App.Metrics.Concurrency.Striped64">
+            <summary>
+                A class holding common representation and mechanics for classes supporting dynamic striping on 64bit values.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Concurrency.Striped64.GetEstimatedFootprintInBytes(App.Metrics.Concurrency.Striped64)">
+            <summary>
+                Returns the size in bytes occupied by an Striped64 instance.
+            </summary>
+            <param name="instance">instance for whch to calculate the size.</param>
+            <returns>The size of the instance in bytes.</returns>
+        </member>
+        <member name="T:App.Metrics.Concurrency.StripedLongAdder">
+            <summary>
+                One or more variables that together maintain an initially zero sum.
+                When updates are contended cross threads, the set of variables may grow dynamically to reduce contention.
+                Method GetValue() returns the current total combined across the variables maintaining the sum.
+                This class is usually preferable to AtomicLong when multiple threads update a common sum that is used for purposes
+                such  as collecting statistics, not for fine-grained synchronization control.
+                Under low update contention, the two classes have similar characteristics.
+                But under high contention, expected throughput of this class is significantly higher, at the expense of higher
+                space consumption.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Concurrency.StripedLongAdder.#ctor">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Concurrency.StripedLongAdder" /> class.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Concurrency.StripedLongAdder.#ctor(System.Int64)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Concurrency.StripedLongAdder" /> class.
+            </summary>
+            <param name="value">The initial value of the instance.</param>
+            <remarks>
+                Creates a new instance of the adder with initial <paramref name="value" />.
+            </remarks>
+        </member>
+        <member name="M:App.Metrics.Concurrency.StripedLongAdder.GetEstimatedFootprintInBytes(App.Metrics.Concurrency.StripedLongAdder)">
+            <summary>
+                Returns the size in bytes occupied by an Striped64 instance.
+            </summary>
+            <param name="instance">instance for whch to calculate the size.</param>
+            <returns>The size of the instance in bytes.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.StripedLongAdder.Add(System.Int64)">
+            <summary>
+                Add <paramref name="value" /> to this instance.
+            </summary>
+            <param name="value">Value to add.</param>
+        </member>
+        <member name="M:App.Metrics.Concurrency.StripedLongAdder.Decrement">
+            <summary>
+                Decrement the value of this instance.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Concurrency.StripedLongAdder.Decrement(System.Int64)">
+            <summary>
+                Decrement the value of this instance with <paramref name="value" />.
+            </summary>
+            <param name="value">The value.</param>
+        </member>
+        <member name="M:App.Metrics.Concurrency.StripedLongAdder.GetAndReset">
+            <summary>
+                Returns the current value of this adder and resets the value to zero.
+                This method sums all the buckets, resets their value and returns the result.
+            </summary>
+            <remarks>
+                This method is thread-safe. If updates happen during this method, they are either included in the final sum, or
+                reflected in the value after the reset.
+            </remarks>
+            <returns>The current value recored by this adder.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.StripedLongAdder.GetValue">
+            <summary>
+                Returns the current value of this adder. This method sums all the buckets and returns the result.
+            </summary>
+            <returns>The current value recored by this adder.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.StripedLongAdder.Increment">
+            <summary>
+                Increment the value of this instance.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Concurrency.StripedLongAdder.Increment(System.Int64)">
+            <summary>
+                Increment the value of this instance with <paramref name="value" />.
+            </summary>
+            <param name="value">The value.</param>
+        </member>
+        <member name="M:App.Metrics.Concurrency.StripedLongAdder.NonVolatileGetValue">
+            <summary>
+                Returns the current value of the instance without using Volatile.Read fence and ordering.
+            </summary>
+            <returns>The current value of the instance in a non-volatile way (might not observe changes on other threads).</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.StripedLongAdder.Reset">
+            <summary>
+                Resets the current value to zero.
+            </summary>
+        </member>
+        <member name="T:App.Metrics.Concurrency.ThreadLocalLongAdder">
+            <summary>
+                This class is similar in functionality with the StripedLongAdder, but uses the ThreadLocal class to
+                keep a value for each thread. The GetValue method sums all the values and returns the result.
+                This class is a bit faster (in micro-benchmarks) than the StripedLongAdder for incrementing a value on multiple
+                threads, but it creates a ValueHolder instance for each thread that increments the value, not just for when
+                contention is
+                present. Considering this, the StripedLongAdder might be a better solution in some cases (multiple threads,
+                relatively low
+                contention).
+            </summary>
+        </member>
+        <member name="F:App.Metrics.Concurrency.ThreadLocalLongAdder._local">
+            <summary>
+                We store a ValueHolder instance for each thread that requires one.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Concurrency.ThreadLocalLongAdder.#ctor">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Concurrency.ThreadLocalLongAdder" /> class.
+            </summary>
+            <remarks>
+                Creates a new instance of the adder with initial value of zero.
+            </remarks>
+        </member>
+        <member name="M:App.Metrics.Concurrency.ThreadLocalLongAdder.#ctor(System.Int64)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Concurrency.ThreadLocalLongAdder" /> class.
+            </summary>
+            <param name="value">The initial value of the instance.</param>
+            <remarks>
+                Creates a new instance of the adder with initial <paramref name="value" />.
+            </remarks>
+        </member>
+        <member name="M:App.Metrics.Concurrency.ThreadLocalLongAdder.GetEstimatedFootprintInBytes(App.Metrics.Concurrency.ThreadLocalLongAdder)">
+            <summary>
+                Returns the size in bytes occupied by an ThreadLocalAddre instance.
+            </summary>
+            <param name="instance">instance for whch to calculate the size.</param>
+            <returns>The size of the instance in bytes.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.ThreadLocalLongAdder.Add(System.Int64)">
+            <summary>
+                Add <paramref name="value" /> to this instance.
+            </summary>
+            <param name="value">Value to add.</param>
+        </member>
+        <member name="M:App.Metrics.Concurrency.ThreadLocalLongAdder.Decrement">
+            <summary>
+                Decrement the value of this instance.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Concurrency.ThreadLocalLongAdder.Decrement(System.Int64)">
+            <summary>
+                Decrement the value of this instance with <paramref name="value" />.
+            </summary>
+            <param name="value">The value.</param>
+        </member>
+        <member name="M:App.Metrics.Concurrency.ThreadLocalLongAdder.GetAndReset">
+            <summary>
+                Returns the current value of this adder and resets the value to zero.
+                This method sums all the thread local variables, resets their value and returns the result.
+            </summary>
+            <remarks>
+                This method is thread-safe. If updates happen during this method, they are either included in the final sum, or
+                reflected in the value after the reset.
+            </remarks>
+            <returns>The current value recored by this adder.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.ThreadLocalLongAdder.GetValue">
+            <summary>
+                Returns the current value of this adder. This method sums all the thread local variables and returns the result.
+            </summary>
+            <returns>The current value recored by this adder.</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.ThreadLocalLongAdder.Increment">
+            <summary>
+                Increment the value of this instance.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Concurrency.ThreadLocalLongAdder.Increment(System.Int64)">
+            <summary>
+                Increment the value of this instance with <paramref name="value" />.
+            </summary>
+            <param name="value">The value.</param>
+        </member>
+        <member name="M:App.Metrics.Concurrency.ThreadLocalLongAdder.NonVolatileGetValue">
+            <summary>
+                Returns the current value of the instance without using Volatile.Read fence and ordering.
+            </summary>
+            <returns>The current value of the instance in a non-volatile way (might not observe changes on other threads).</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.ThreadLocalLongAdder.Reset">
+            <summary>
+                Resets the current value to zero.
+            </summary>
+        </member>
+        <member name="T:App.Metrics.Concurrency.ThreadLocalRandom">
+            <summary>
+                Helper class to generate Random values is a thread safe way. Not suitable for cryptographic operations.
+            </summary>
+        </member>
+        <member name="T:App.Metrics.Concurrency.VolatileDouble">
+            <summary>
+                Double value on which the GetValue/SetValue operations are performed using Volatile.Read/Volatile.Write.
+            </summary>
+            <remarks>
+                This datastructure is a struct. If a member is declared readonly VolatileDouble calling set will *NOT* modify the
+                value.
+                GetValue/SetValue are expressed as methods to make it obvious that a non-trivial operation is performed.
+            </remarks>
+        </member>
+        <member name="F:App.Metrics.Concurrency.VolatileDouble.SizeInBytes">
+            <summary>
+                The size in bytes occupied by an instance of this type
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Concurrency.VolatileDouble.#ctor(System.Double)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Concurrency.VolatileDouble" /> struct.
+            </summary>
+            <param name="value">Initial value of the instance.</param>
+            <remarks>
+                Initialize the value of this instance
+            </remarks>
+        </member>
+        <member name="M:App.Metrics.Concurrency.VolatileDouble.GetValue">
+            <summary>
+                Get the current value of this instance
+            </summary>
+            <returns>The current value of the instance</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.VolatileDouble.NonVolatileGetValue">
+            <summary>
+                Returns the current value of the instance without using Volatile.Read fence and ordering.
+            </summary>
+            <returns>The current value of the instance in a non-volatile way (might not observe changes on other threads).</returns>
+        </member>
+        <member name="M:App.Metrics.Concurrency.VolatileDouble.NonVolatileSetValue(System.Double)">
+            <summary>
+                Set the value without using Volatile.Write fence and ordering.
+            </summary>
+            <param name="value">The new value for this instance.</param>
+        </member>
+        <member name="M:App.Metrics.Concurrency.VolatileDouble.SetValue(System.Double)">
+            <summary>
+                Set the the value of this instance to <paramref name="newValue" />
+            </summary>
+            <remarks>
+                Don't call Set on readonly fields.
+            </remarks>
+            <param name="newValue">New value for this instance</param>
+        </member>
+    </members>
+</doc>

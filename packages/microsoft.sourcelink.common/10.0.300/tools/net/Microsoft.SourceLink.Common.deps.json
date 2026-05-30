@@ -1,0 +1,64 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "Microsoft.SourceLink.Common/10.0.300": {
+        "runtime": {
+          "Microsoft.SourceLink.Common.dll": {}
+        },
+        "resources": {
+          "cs/Microsoft.SourceLink.Common.resources.dll": {
+            "locale": "cs"
+          },
+          "de/Microsoft.SourceLink.Common.resources.dll": {
+            "locale": "de"
+          },
+          "es/Microsoft.SourceLink.Common.resources.dll": {
+            "locale": "es"
+          },
+          "fr/Microsoft.SourceLink.Common.resources.dll": {
+            "locale": "fr"
+          },
+          "it/Microsoft.SourceLink.Common.resources.dll": {
+            "locale": "it"
+          },
+          "ja/Microsoft.SourceLink.Common.resources.dll": {
+            "locale": "ja"
+          },
+          "ko/Microsoft.SourceLink.Common.resources.dll": {
+            "locale": "ko"
+          },
+          "pl/Microsoft.SourceLink.Common.resources.dll": {
+            "locale": "pl"
+          },
+          "pt-BR/Microsoft.SourceLink.Common.resources.dll": {
+            "locale": "pt-BR"
+          },
+          "ru/Microsoft.SourceLink.Common.resources.dll": {
+            "locale": "ru"
+          },
+          "tr/Microsoft.SourceLink.Common.resources.dll": {
+            "locale": "tr"
+          },
+          "zh-Hans/Microsoft.SourceLink.Common.resources.dll": {
+            "locale": "zh-Hans"
+          },
+          "zh-Hant/Microsoft.SourceLink.Common.resources.dll": {
+            "locale": "zh-Hant"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Microsoft.SourceLink.Common/10.0.300": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

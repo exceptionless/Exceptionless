@@ -1,0 +1,1401 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>OpenTelemetry.Exporter.OpenTelemetryProtocol</name>
+    </assembly>
+    <members>
+        <member name="T:OpenTelemetry.OpenTelemetryBuilderOtlpExporterExtensions">
+            <summary>
+            Contains extension methods to facilitate registration of the OpenTelemetry
+            Protocol (OTLP) exporter into an <see cref="T:OpenTelemetry.IOpenTelemetryBuilder"/>
+            instance.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.OpenTelemetryBuilderOtlpExporterExtensions.UseOtlpExporter(OpenTelemetry.IOpenTelemetryBuilder)">
+            <summary>
+            Uses OpenTelemetry Protocol (OTLP) exporter for all signals.
+            </summary>
+            <remarks>
+            Notes:
+            <list type="bullet">
+            <item>Calling this method automatically enables logging, metrics, and
+            tracing.</item>
+            <item>The exporter registered by this method will be added as the last
+            processor in the pipeline established for logging and tracing.</item>
+            <item>This method can only be called once. Subsequent calls will result
+            in a <see cref="T:System.NotSupportedException"/> being thrown.</item>
+            <item>This method cannot be called in addition to signal-specific
+            <c>AddOtlpExporter</c> methods. If this method is called signal-specific
+            <c>AddOtlpExporter</c> calls will result in a <see
+            cref="T:System.NotSupportedException"/> being thrown.</item>
+            </list>
+            </remarks>
+            <param name="builder"><see cref="T:OpenTelemetry.IOpenTelemetryBuilder"/>.</param>
+            <returns>Supplied <see cref="T:OpenTelemetry.IOpenTelemetryBuilder"/> for chaining calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.OpenTelemetryBuilderOtlpExporterExtensions.UseOtlpExporter(OpenTelemetry.IOpenTelemetryBuilder,OpenTelemetry.Exporter.OtlpExportProtocol,System.Uri)">
+            <summary><inheritdoc cref="M:OpenTelemetry.OpenTelemetryBuilderOtlpExporterExtensions.UseOtlpExporter(OpenTelemetry.IOpenTelemetryBuilder)"/></summary>
+            <remarks><inheritdoc cref="M:OpenTelemetry.OpenTelemetryBuilderOtlpExporterExtensions.UseOtlpExporter(OpenTelemetry.IOpenTelemetryBuilder)" path="/remarks"/></remarks>
+            <returns><inheritdoc cref="M:OpenTelemetry.OpenTelemetryBuilderOtlpExporterExtensions.UseOtlpExporter(OpenTelemetry.IOpenTelemetryBuilder)" path="/returns"/></returns>
+            <param name="builder"><see cref="T:OpenTelemetry.IOpenTelemetryBuilder"/>.</param>
+            <param name="protocol"><see cref="T:OpenTelemetry.Exporter.OtlpExportProtocol"/>.</param>
+            <param name="baseUrl">
+            <para>Base URL to use.</para>
+            Note: A signal-specific path will be appended to the base URL for each
+            signal automatically if the protocol is set to <see
+            cref="F:OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf"/>.
+            </param>
+        </member>
+        <member name="M:OpenTelemetry.OpenTelemetryBuilderOtlpExporterExtensions.UseOtlpExporter(OpenTelemetry.IOpenTelemetryBuilder,System.Action{OpenTelemetry.Exporter.OtlpExporterBuilder})">
+            <summary><inheritdoc cref="M:OpenTelemetry.OpenTelemetryBuilderOtlpExporterExtensions.UseOtlpExporter(OpenTelemetry.IOpenTelemetryBuilder)"/></summary>
+            <remarks><inheritdoc cref="M:OpenTelemetry.OpenTelemetryBuilderOtlpExporterExtensions.UseOtlpExporter(OpenTelemetry.IOpenTelemetryBuilder)" path="/remarks"/></remarks>
+            <returns><inheritdoc cref="M:OpenTelemetry.OpenTelemetryBuilderOtlpExporterExtensions.UseOtlpExporter(OpenTelemetry.IOpenTelemetryBuilder)" path="/returns"/></returns>
+            <param name="builder"><see cref="T:OpenTelemetry.IOpenTelemetryBuilder"/>.</param>
+            <param name="configure">Callback action for configuring <see cref="T:OpenTelemetry.Exporter.OtlpExporterBuilder"/>.</param>
+        </member>
+        <member name="M:OpenTelemetry.OpenTelemetryBuilderOtlpExporterExtensions.UseOtlpExporter(OpenTelemetry.IOpenTelemetryBuilder,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary><inheritdoc cref="M:OpenTelemetry.OpenTelemetryBuilderOtlpExporterExtensions.UseOtlpExporter(OpenTelemetry.IOpenTelemetryBuilder)"/></summary>
+            <remarks><inheritdoc cref="M:OpenTelemetry.OpenTelemetryBuilderOtlpExporterExtensions.UseOtlpExporter(OpenTelemetry.IOpenTelemetryBuilder)" path="/remarks"/></remarks>
+            <returns><inheritdoc cref="M:OpenTelemetry.OpenTelemetryBuilderOtlpExporterExtensions.UseOtlpExporter(OpenTelemetry.IOpenTelemetryBuilder)" path="/returns"/></returns>
+            <param name="builder"><see cref="T:OpenTelemetry.IOpenTelemetryBuilder"/>.</param>
+            <param name="configuration">
+            <para><see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> to bind onto <see cref="T:OpenTelemetry.Exporter.OtlpExporterBuilderOptions"/>.</para>
+            <para>Notes:
+            <list type="bullet">
+            <item docLink="true"><see href="https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/exporter.md"/>
+            for details on the configuration schema.</item>
+            <item>The <see cref="T:OpenTelemetry.Exporter.OtlpExporterBuilderOptions"/> instance will be
+            named "otlp" by default when calling this method.</item>
+            </list>
+            </para>
+            </param>
+        </member>
+        <member name="M:OpenTelemetry.OpenTelemetryBuilderOtlpExporterExtensions.UseOtlpExporter(OpenTelemetry.IOpenTelemetryBuilder,System.String,Microsoft.Extensions.Configuration.IConfiguration,System.Action{OpenTelemetry.Exporter.OtlpExporterBuilder})">
+            <summary><inheritdoc cref="M:OpenTelemetry.OpenTelemetryBuilderOtlpExporterExtensions.UseOtlpExporter(OpenTelemetry.IOpenTelemetryBuilder)"/></summary>
+            <remarks><inheritdoc cref="M:OpenTelemetry.OpenTelemetryBuilderOtlpExporterExtensions.UseOtlpExporter(OpenTelemetry.IOpenTelemetryBuilder)" path="/remarks"/></remarks>
+            <returns><inheritdoc cref="M:OpenTelemetry.OpenTelemetryBuilderOtlpExporterExtensions.UseOtlpExporter(OpenTelemetry.IOpenTelemetryBuilder)" path="/returns"/></returns>
+            <param name="builder"><see cref="T:OpenTelemetry.IOpenTelemetryBuilder"/>.</param>
+            <param name="name">Optional name which is used when retrieving options.</param>
+            <param name="configuration">
+            <para>Optional <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> to bind onto <see
+            cref="T:OpenTelemetry.Exporter.OtlpExporterBuilderOptions"/>.</para>
+            <para>Notes:
+            <list type="bullet">
+            <item><inheritdoc cref="M:OpenTelemetry.OpenTelemetryBuilderOtlpExporterExtensions.UseOtlpExporter(OpenTelemetry.IOpenTelemetryBuilder,Microsoft.Extensions.Configuration.IConfiguration)"
+            path="/param[@name='configuration']/para/list/item[@docLink='true']"/></item>
+            <item>If <paramref name="name"/> is not set the <see
+            cref="T:OpenTelemetry.Exporter.OtlpExporterBuilderOptions"/> instance will be named "otlp" by
+            default when <paramref name="configuration"/> is used.</item>
+            </list>
+            </para>
+            </param>
+            <param name="configure">Optional callback action for configuring <see cref="T:OpenTelemetry.Exporter.OtlpExporterBuilder"/>.</param>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExperimentalOptions.EmitLogEventAttributes">
+            <summary>
+            Gets a value indicating whether log event attributes should be exported.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExperimentalOptions.EnableInMemoryRetry">
+            <summary>
+            Gets a value indicating whether or not in-memory retry should be enabled for transient errors.
+            </summary>
+            <remarks>
+            Specification: <see
+            href="https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/exporter.md#retry"/>.
+            </remarks>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExperimentalOptions.EnableDiskRetry">
+            <summary>
+            Gets a value indicating whether or not retry via disk should be enabled for transient errors.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExperimentalOptions.DiskRetryDirectoryPath">
+            <summary>
+            Gets the path on disk where the telemetry will be stored for retries at a later point.
+            </summary>
+        </member>
+        <member name="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.Status">
+            <summary>
+            Represents RPC result, which consists of <see cref="P:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.Status.StatusCode"/> and an optional detail string.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.Status.DefaultSuccess">
+            <summary>
+            Default result of a successful RPC. StatusCode=OK, empty details message.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.Status.DefaultCancelled">
+            <summary>
+            Default result of a cancelled RPC. StatusCode=Cancelled, empty details message.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.Status.NoReply">
+            <summary>
+            Default result of a cancelled RPC with no grpc-status found on response.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.Status.#ctor(OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.StatusCode,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.Status"/> struct.
+            </summary>
+            <param name="statusCode">Status code.</param>
+            <param name="detail">Detail.</param>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.Status.#ctor(OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.StatusCode,System.String,System.Exception)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.Status"/> struct.
+            Users should not use this constructor, except for creating instances for testing.
+            The debug error string should only be populated by gRPC internals.
+            Note: experimental API that can change or be removed without any prior notice.
+            </summary>
+            <param name="statusCode">Status code.</param>
+            <param name="detail">Detail.</param>
+            <param name="debugException">Optional internal error details.</param>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.Status.StatusCode">
+            <summary>
+            Gets the gRPC status code. OK indicates success, all other values indicate an error.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.Status.Detail">
+            <summary>
+            Gets the detail.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.Status.DebugException">
+            <summary>
+            Gets in case of an error, this field may contain additional error details to help with debugging.
+            This field will be only populated on a client and its value is generated locally,
+            based on the internal state of the gRPC client stack (i.e. the value is never sent over the wire).
+            Note that this field is available only for debugging purposes, the application logic should
+            never rely on values of this field (it should use <c>StatusCode</c> and <c>Detail</c> instead).
+            Example: when a client fails to connect to a server, this field may provide additional details
+            why the connection to the server has failed.
+            Note: experimental API that can change or be removed without any prior notice.
+            </summary>
+        </member>
+        <member name="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.StatusCode">
+            <summary>
+            Result of a remote procedure call.
+            Based on grpc_status_code from grpc/status.h.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.StatusCode.OK">
+            <summary>Not an error; returned on success.</summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.StatusCode.Cancelled">
+            <summary>The operation was cancelled (typically by the caller).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.StatusCode.Unknown">
+            <summary>
+            Unknown error.  An example of where this error may be returned is
+            if a Status value received from another address space belongs to
+            an error-space that is not known in this address space.  Also
+            errors raised by APIs that do not return enough error information
+            may be converted to this error.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.StatusCode.InvalidArgument">
+            <summary>
+            Client specified an invalid argument.  Note that this differs
+            from FAILED_PRECONDITION.  INVALID_ARGUMENT indicates arguments
+            that are problematic regardless of the state of the system
+            (e.g., a malformed file name).
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.StatusCode.DeadlineExceeded">
+            <summary>
+            Deadline expired before operation could complete.  For operations
+            that change the state of the system, this error may be returned
+            even if the operation has completed successfully.  For example, a
+            successful response from a server could have been delayed long
+            enough for the deadline to expire.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.StatusCode.NotFound">
+            <summary>Some requested entity (e.g., file or directory) was not found.</summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.StatusCode.AlreadyExists">
+            <summary>Some entity that we attempted to create (e.g., file or directory) already exists.</summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.StatusCode.PermissionDenied">
+            <summary>
+            The caller does not have permission to execute the specified
+            operation.  PERMISSION_DENIED must not be used for rejections
+            caused by exhausting some resource (use RESOURCE_EXHAUSTED
+            instead for those errors).  PERMISSION_DENIED must not be
+            used if the caller can not be identified (use UNAUTHENTICATED
+            instead for those errors).
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.StatusCode.Unauthenticated">
+            <summary>The request does not have valid authentication credentials for the operation.</summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.StatusCode.ResourceExhausted">
+            <summary>
+            Some resource has been exhausted, perhaps a per-user quota, or
+            perhaps the entire file system is out of space.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.StatusCode.FailedPrecondition">
+            <summary>
+            Operation was rejected because the system is not in a state
+            required for the operation's execution.  For example, directory
+            to be deleted may be non-empty, an rmdir operation is applied to
+            a non-directory, etc.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.StatusCode.Aborted">
+            <summary>
+            The operation was aborted, typically due to a concurrency issue
+            like sequencer check failures, transaction aborts, etc.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.StatusCode.OutOfRange">
+            <summary>
+            Operation was attempted past the valid range.  E.g., seeking or
+            reading past end of file.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.StatusCode.Unimplemented">
+            <summary>Operation is not implemented or not supported/enabled in this service.</summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.StatusCode.Internal">
+            <summary>
+            Internal errors.  Means some invariants expected by underlying
+            system has been broken.  If you see one of these errors,
+            something is very broken.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.StatusCode.Unavailable">
+            <summary>
+            The service is currently unavailable.  This is a most likely a
+            transient condition and may be corrected by retrying with
+            a backoff. Note that it is not always safe to retry
+            non-idempotent operations.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.Grpc.StatusCode.DataLoss">
+            <summary>Unrecoverable data loss or corruption.</summary>
+        </member>
+        <member name="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.IExportClient">
+            <summary>Export client interface.</summary>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.IExportClient.SendExportRequest(System.Byte[],System.Int32,System.DateTime,System.Threading.CancellationToken)">
+            <summary>
+            Method for sending export request to the server.
+            </summary>
+            <param name="buffer">The request body to send to the server.</param>
+            <param name="contentLength">length of the content.</param>
+            <param name="deadlineUtc">The deadline time in utc for export request to finish.</param>
+            <param name="cancellationToken">An optional token for canceling the call.</param>
+            <returns><see cref="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.ExportClientResponse"/>.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.IExportClient.Shutdown(System.Int32)">
+            <summary>
+            Method for shutting down the export client.
+            </summary>
+            <param name="timeoutMilliseconds">
+            The number of milliseconds to wait, or <c>Timeout.Infinite</c> to
+            wait indefinitely.
+            </param>
+            <returns>
+            Returns <c>true</c> if shutdown succeeded; otherwise, <c>false</c>.
+            </returns>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.OtlpExportClient.Shutdown(System.Int32)">
+            <inheritdoc/>
+        </member>
+        <member name="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.OtlpGrpcExportClient">
+            <summary>Base class for sending OTLP export request over gRPC.</summary>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.OtlpGrpcExportClient.SendExportRequest(System.Byte[],System.Int32,System.DateTime,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.OtlpHttpExportClient">
+            <summary>Class for sending OTLP trace export request over HTTP.</summary>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.OtlpHttpExportClient.SendExportRequest(System.Byte[],System.Int32,System.DateTime,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.OtlpRetry">
+             <summary>
+             Implementation of the OTLP retry policy used by both OTLP/gRPC and OTLP/HTTP.
+            
+             OTLP/gRPC
+             https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md#failures
+            
+             OTLP/HTTP
+             https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md#failures-1
+            
+             The specification requires retries use an exponential backoff strategy,
+             but does not provide specifics for the implementation. As such, this
+             implementation is inspired by the retry strategy provided by
+             Grpc.Net.Client which implements the gRPC retry specification.
+            
+             Grpc.Net.Client retry implementation
+             https://github.com/grpc/grpc-dotnet/blob/83d12ea1cb628156c990243bc98699829b88738b/src/Grpc.Net.Client/Internal/Retry/RetryCall.cs#L94
+            
+             gRPC retry specification
+             https://github.com/grpc/proposal/blob/master/A6-client-retries.md
+            
+             The gRPC retry specification outlines configurable parameters used in its
+             exponential backoff strategy: initial backoff, max backoff, backoff
+             multiplier, and max retry attempts. The OTLP specification does not declare
+             a similar set of parameters, so this implementation uses fixed settings.
+             Furthermore, since the OTLP spec does not specify a max number of attempts,
+             this implementation will retry until the deadline is reached.
+            
+             The throttling mechanism for OTLP differs from the throttling mechanism
+             described in the gRPC retry specification. See:
+             https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md#otlpgrpc-throttling.
+             </summary>
+        </member>
+        <member name="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.OtlpCertificateManager">
+            <summary>
+            Manages certificate loading, validation, and security checks for TLS connections.
+            </summary>
+            <remarks>
+            This class provides functionality for both simple server certificate trust
+            (for self-signed certificates) and mTLS client authentication scenarios.
+            </remarks>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.OtlpCertificateManager.LoadCaCertificate(System.String)">
+            <summary>
+            Loads a CA certificate from a PEM file.
+            </summary>
+            <param name="caCertificatePath">Path to the CA certificate file.</param>
+            <returns>The loaded CA certificate.</returns>
+            <exception cref="T:System.IO.FileNotFoundException">Thrown when the certificate file is not found.</exception>
+            <exception cref="T:System.InvalidOperationException">Thrown when the certificate cannot be loaded.</exception>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.OtlpCertificateManager.LoadClientCertificate(System.String,System.String)">
+            <summary>
+            Loads a client certificate from a single file (e.g., PKCS#12 format) or from separate certificate and key files.
+            </summary>
+            <param name="clientCertificatePath">Path to the client certificate file.</param>
+            <param name="clientKeyPath">Path to the client private key file. Can be null for single-file certificates.</param>
+            <returns>The loaded client certificate with private key.</returns>
+            <exception cref="T:System.IO.FileNotFoundException">Thrown when the certificate file is not found.</exception>
+            <exception cref="T:System.InvalidOperationException">Thrown when the certificate cannot be loaded.</exception>
+            <exception cref="T:System.ArgumentException">Thrown when clientKeyPath is not null for single-file certificate loading.</exception>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.OtlpCertificateManager.ValidateCertificateChain(System.Security.Cryptography.X509Certificates.X509Certificate2,System.String)">
+            <summary>
+            Validates the certificate chain for a given certificate.
+            </summary>
+            <param name="certificate">The certificate to validate.</param>
+            <param name="certificateType">Type description for logging (e.g., "Client certificate").</param>
+            <returns>True if the certificate chain is valid; otherwise, false.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.OtlpCertificateManager.ValidateServerCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2,System.Security.Cryptography.X509Certificates.X509Chain,System.Net.Security.SslPolicyErrors,System.Security.Cryptography.X509Certificates.X509Certificate2)">
+            <summary>
+            Validates a server certificate against the provided CA certificate.
+            </summary>
+            <param name="serverCert">The server certificate to validate.</param>
+            <param name="chain">The certificate chain.</param>
+            <param name="sslPolicyErrors">The SSL policy errors.</param>
+            <param name="caCertificate">The CA certificate to validate against.</param>
+            <returns>True if the certificate is valid; otherwise, false.</returns>
+            <remarks>
+            This method is used to validate server certificates against a CA.
+            Common use case: connecting to a server with a self-signed certificate.
+            </remarks>
+        </member>
+        <member name="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.OtlpSecureHttpClientFactory">
+            <summary>
+            Factory for creating HttpClient instances configured with TLS settings.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.OtlpSecureHttpClientFactory.CreateSecureHttpClient(OpenTelemetry.Exporter.OtlpTlsOptions,System.Action{System.Net.Http.HttpClient})">
+            <summary>
+            Creates an HttpClient configured with TLS settings based on the provided options.
+            </summary>
+            <param name="tlsOptions">The TLS configuration options.</param>
+            <param name="configureClient">Optional action to configure the client.</param>
+            <returns>An HttpClient configured for secure communication.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="tlsOptions"/> is null.</exception>
+            <exception cref="T:System.InvalidOperationException">Thrown when TLS is not enabled.</exception>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.OtlpSecureHttpClientFactory.CreateMtlsHttpClient(OpenTelemetry.Exporter.OtlpMtlsOptions,System.Action{System.Net.Http.HttpClient})">
+            <summary>
+            Creates an HttpClient configured with mTLS settings.
+            </summary>
+            <param name="mtlsOptions">The mTLS configuration options.</param>
+            <param name="configureClient">Optional action to configure the client.</param>
+            <returns>An HttpClient configured for mTLS.</returns>
+            <remarks>
+            This method exists for backward compatibility. New code should use
+            <see cref="M:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.OtlpSecureHttpClientFactory.CreateSecureHttpClient(OpenTelemetry.Exporter.OtlpTlsOptions,System.Action{System.Net.Http.HttpClient})"/>.
+            </remarks>
+        </member>
+        <member name="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.OtlpSecureHttpClientFactory.TlsHttpClientHandler">
+            <summary>
+            HttpClientHandler that applies TLS configuration based on loaded certificates.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.SdkLimitOptions.AttributeValueLengthLimit">
+            <summary>
+            Gets or sets the maximum allowed attribute value size.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.SdkLimitOptions.AttributeCountLimit">
+            <summary>
+            Gets or sets the maximum allowed attribute count.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.SdkLimitOptions.SpanAttributeValueLengthLimit">
+            <summary>
+            Gets or sets the maximum allowed span attribute value size.
+            </summary>
+            <remarks>
+            Note: Overrides the <see cref="P:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.SdkLimitOptions.AttributeValueLengthLimit"/> setting for spans if specified.
+            </remarks>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.SdkLimitOptions.SpanAttributeCountLimit">
+            <summary>
+            Gets or sets the maximum allowed span attribute count.
+            </summary>
+            <remarks>
+            Note: Overrides the <see cref="P:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.SdkLimitOptions.AttributeCountLimit"/> setting for spans if specified.
+            </remarks>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.SdkLimitOptions.SpanEventCountLimit">
+            <summary>
+            Gets or sets the maximum allowed span event count.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.SdkLimitOptions.SpanLinkCountLimit">
+            <summary>
+            Gets or sets the maximum allowed span link count.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.SdkLimitOptions.SpanEventAttributeCountLimit">
+            <summary>
+            Gets or sets the maximum allowed span event attribute count.
+            </summary>
+            <remarks>
+            Note: Overrides the <see cref="P:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.SdkLimitOptions.SpanAttributeCountLimit"/> setting for span events if specified.
+            </remarks>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.SdkLimitOptions.SpanLinkAttributeCountLimit">
+            <summary>
+            Gets or sets the maximum allowed span link attribute count.
+            </summary>
+            <remarks>
+            Note: Overrides the <see cref="P:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.SdkLimitOptions.SpanAttributeCountLimit"/> setting for span links if specified.
+            </remarks>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.SdkLimitOptions.LogRecordAttributeValueLengthLimit">
+            <summary>
+            Gets or sets the maximum allowed log record attribute value size.
+            </summary>
+            <remarks>
+            Note: Overrides the <see cref="P:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.SdkLimitOptions.AttributeValueLengthLimit"/> setting for log records if specified.
+            </remarks>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.SdkLimitOptions.LogRecordAttributeCountLimit">
+            <summary>
+            Gets or sets the maximum allowed log record attribute count.
+            </summary>
+            <remarks>
+            Note: Overrides the <see cref="P:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.SdkLimitOptions.AttributeCountLimit"/> setting for log records if specified.
+            </remarks>
+        </member>
+        <member name="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Serializer.ProtobufOtlpCommonFieldNumberConstants">
+            <summary>
+            Defines field number constants for fields defined in
+            <see href="https://github.com/open-telemetry/opentelemetry-proto/blob/v1.2.0/opentelemetry/proto/common/v1/common.proto"/>.
+            </summary>
+        </member>
+        <member name="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Serializer.ProtobufOtlpLogFieldNumberConstants">
+            <summary>
+            Defines field number constants for fields defined in
+            <see href="https://github.com/open-telemetry/opentelemetry-proto/blob/v1.2.0/opentelemetry/proto/logs/v1/logs.proto"/>.
+            </summary>
+        </member>
+        <member name="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Serializer.ProtobufOtlpMetricFieldNumberConstants">
+            <summary>
+            Defines field number constants for fields defined in
+            <see href="https://github.com/open-telemetry/opentelemetry-proto/blob/v1.2.0/opentelemetry/proto/metrics/v1/metrics.proto"/>.
+            </summary>
+        </member>
+        <member name="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Serializer.ProtobufOtlpTraceFieldNumberConstants">
+            <summary>
+            Defines field number constants for fields defined in
+            <see href="https://github.com/open-telemetry/opentelemetry-proto/blob/v1.2.0/opentelemetry/proto/trace/v1/trace.proto"/>.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Serializer.ProtobufSerializer.ComputeVarInt64Size(System.UInt64)">
+             <summary>
+             Computes the number of bytes required to encode a 64-bit unsigned integer in Protocol Buffers' varint format.
+             </summary>
+             <remarks>
+             Protocol Buffers uses variable-length encoding (varint) to serialize integers efficiently:
+             - Each byte uses 7 bits to encode the number and 1 bit (MSB) to indicate if more bytes follow
+             - The algorithm checks how many significant bits the number contains by shifting and masking
+             - Numbers are encoded in groups of 7 bits, from least to most significant
+             - Each group requires one byte, so the method returns the number of 7-bit groups needed
+            
+             Examples:
+             - Values 0-127 (7 bits) require 1 byte
+             - Values 128-16383 (14 bits) require 2 bytes
+             - Values 16384-2097151 (21 bits) require 3 bytes
+             And so on...
+            
+             For more details, see:
+             - Protocol Buffers encoding reference: https://developers.google.com/protocol-buffers/docs/encoding#varints.
+             </remarks>
+             <param name="value">The unsigned 64-bit integer to be encoded.</param>
+             <returns>Number of bytes needed to encode the value.</returns>
+        </member>
+        <member name="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Serializer.ProtobufWireType">
+            <summary>
+            Wire types within protobuf encoding.
+            https://protobuf.dev/programming-guides/encoding/#structure.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Serializer.ProtobufWireType.VARINT">
+            <summary>
+            Variable-length integer.
+            Used for int32, int64, uint32, uint64, sint32, sint64, bool, enum.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Serializer.ProtobufWireType.I64">
+            <summary>
+            A fixed-length 64-bit value.
+            Used for fixed64, sfixed64, double.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Serializer.ProtobufWireType.LEN">
+            <summary>
+            A length-delimited value.
+            Used for string, bytes, embedded messages, packed repeated fields.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Serializer.ProtobufWireType.SGROUP">
+            <summary>
+            Group Start value.
+            (Deprecated).
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Serializer.ProtobufWireType.EGROUP">
+            <summary>
+            Group End value.
+            (Deprecated).
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Serializer.ProtobufWireType.I32">
+            <summary>
+            A fixed-length 32-bit value.
+            Used for fixed32, sfixed32, float.
+            </summary>
+        </member>
+        <member name="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.TimestampHelpers">
+            <summary>
+            Helpers to convert .NET time related types to the timestamp used in OTLP.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Transmission.OtlpExporterTransmissionHandler.TrySubmitRequest(System.Byte[],System.Int32)">
+            <summary>
+            Attempts to send an export request to the server.
+            </summary>
+            <param name="request">The request to send to the server.</param>
+            <param name="contentLength">length of content.</param>
+            <returns> <see langword="true" /> if the request is sent successfully; otherwise, <see
+            langword="false" />.
+            </returns>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Transmission.OtlpExporterTransmissionHandler.Shutdown(System.Int32)">
+            <summary>
+            Attempts to shutdown the transmission handler, blocks the current thread
+            until shutdown completed or timed out.
+            </summary>
+            <param name="timeoutMilliseconds">
+            The number (non-negative) of milliseconds to wait, or
+            <c>Timeout.Infinite</c> to wait indefinitely.
+            </param>
+            <returns>
+            Returns <see langword="true" /> if shutdown succeeded; otherwise, <see
+            langword="false" />.
+            </returns>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Transmission.OtlpExporterTransmissionHandler.Dispose">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Transmission.OtlpExporterTransmissionHandler.OnShutdown(System.Int32)">
+            <summary>
+            Fired when the transmission handler is shutdown.
+            </summary>
+            <param name="timeoutMilliseconds">
+            The number (non-negative) of milliseconds to wait, or
+            <c>Timeout.Infinite</c> to wait indefinitely.
+            </param>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Transmission.OtlpExporterTransmissionHandler.OnSubmitRequestFailure(System.Byte[],System.Int32,OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.ExportClientResponse)">
+            <summary>
+            Fired when a request could not be submitted.
+            </summary>
+            <param name="request">The request that was attempted to send to the server.</param>
+            <param name="contentLength">Length of content.</param>
+            <param name="response"><see cref="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.ExportClientResponse" />.</param>
+            <returns><see langword="true" /> If the request is resubmitted and succeeds; otherwise, <see
+            langword="false" />.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Transmission.OtlpExporterTransmissionHandler.TryRetryRequest(System.Byte[],System.Int32,System.DateTime,OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.ExportClientResponse@)">
+            <summary>
+            Fired when resending a request to the server.
+            </summary>
+            <param name="request">The request to be resent to the server.</param>
+            <param name="contentLength">Length of content.</param>
+            <param name="deadlineUtc">The deadline time in utc for export request to finish.</param>
+            <param name="response"><see cref="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient.ExportClientResponse" />.</param>
+            <returns><see langword="true" /> If the retry succeeds; otherwise, <see
+            langword="false" />.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Transmission.OtlpExporterTransmissionHandler.Dispose(System.Boolean)">
+            <summary>
+            Releases the unmanaged resources used by this class and optionally
+            releases the managed resources.
+            </summary>
+            <param name="disposing">
+            <see langword="true"/> to release both managed and unmanaged resources;
+            <see langword="false"/> to release only unmanaged resources.
+            </param>
+        </member>
+        <member name="T:OpenTelemetry.Exporter.OtlpSpecConfigDefinitions">
+            <summary>
+            Contains spec environment variable key definitions for OpenTelemetry Protocol (OTLP) exporter.
+            </summary>
+            <remarks>
+            Specification: <see href="https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/exporter.md"/>.
+            </remarks>
+        </member>
+        <member name="T:OpenTelemetry.Exporter.IOtlpExporterOptions">
+            <summary>
+            Describes the OpenTelemetry Protocol (OTLP) exporter options shared by all
+            signals.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.IOtlpExporterOptions.Protocol">
+            <summary>
+            Gets or sets the OTLP transport protocol.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.IOtlpExporterOptions.Endpoint">
+            <summary>
+            Gets or sets the target to which the exporter is going to send
+            telemetry.
+            </summary>
+            <remarks>
+            Notes:
+            <list type="bullet">
+            <item>When setting <see cref="P:OpenTelemetry.Exporter.IOtlpExporterOptions.Endpoint"/> the value must be a valid <see
+            cref="T:System.Uri"/> with scheme (http or https) and host, and may contain a
+            port and path.</item>
+            <item>The default value when not set is based on the <see
+            cref="P:OpenTelemetry.Exporter.IOtlpExporterOptions.Protocol"/> property:
+            <list type="bullet">
+            <item><c>http://localhost:4317</c> for <see
+            cref="F:OpenTelemetry.Exporter.OtlpExportProtocol.Grpc"/>.</item>
+            <item><c>http://localhost:4318</c> for <see
+            cref="F:OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf"/></item>.
+            </list>
+            <item>When <see cref="P:OpenTelemetry.Exporter.IOtlpExporterOptions.Protocol"/> is set to <see
+            cref="F:OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf"/> and <see cref="P:OpenTelemetry.Exporter.IOtlpExporterOptions.Endpoint"/> has
+            not been set the default value (<c>http://localhost:4318</c>) will have
+            a signal-specific path appended. The final default endpoint values will
+            be constructed as:
+            <list type="bullet">
+            <item>Logging: <c>http://localhost:4318/v1/logs</c></item>
+            <item>Metrics: <c>http://localhost:4318/v1/metrics</c></item>
+            <item>Tracing: <c>http://localhost:4318/v1/traces</c></item>
+            </list>
+            </item>
+            </item>
+            </list>
+            </remarks>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.IOtlpExporterOptions.Headers">
+            <summary>
+            Gets or sets optional headers for the connection.
+            </summary>
+            <remarks>
+            Note: Refer to the  <see
+            href="https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/exporter.md#specifying-headers-via-environment-variables">
+            OpenTelemetry Specification</see> for details on the format of <see
+            cref="P:OpenTelemetry.Exporter.IOtlpExporterOptions.Headers"/>.
+            </remarks>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.IOtlpExporterOptions.TimeoutMilliseconds">
+            <summary>
+            Gets or sets the max waiting time (in milliseconds) for the backend to
+            process each batch. Default value: <c>10000</c>.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.IOtlpExporterOptions.HttpClientFactory">
+            <summary>
+            Gets or sets the factory function called to create the <see
+            cref="T:System.Net.Http.HttpClient"/> instance that will be used at runtime to
+            transmit telemetry over HTTP. The returned instance will be reused
+            for all export invocations.
+            </summary>
+            <remarks>
+            Notes:
+            <list type="bullet">
+            <item>This is only invoked for the <see
+            cref="F:OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf"/> protocol.</item>
+            <item>The default behavior when using tracing registration extensions is
+            if an <a
+            href="https://docs.microsoft.com/dotnet/api/system.net.http.ihttpclientfactory">IHttpClientFactory</a>
+            instance can be resolved through the application <see
+            cref="T:System.IServiceProvider"/> then an <see cref="T:System.Net.Http.HttpClient"/> will be
+            created through the factory with the name "OtlpTraceExporter" otherwise
+            an <see cref="T:System.Net.Http.HttpClient"/> will be instantiated directly.</item>
+            <item>The default behavior when using metrics registration extensions is
+            if an <a
+            href="https://docs.microsoft.com/dotnet/api/system.net.http.ihttpclientfactory">IHttpClientFactory</a>
+            instance can be resolved through the application <see
+            cref="T:System.IServiceProvider"/> then an <see cref="T:System.Net.Http.HttpClient"/> will be
+            created through the factory with the name "OtlpMetricExporter" otherwise
+            an <see cref="T:System.Net.Http.HttpClient"/> will be instantiated directly.</item>
+            <item>
+            The default behavior when using logging registration extensions is an
+            <see cref="T:System.Net.Http.HttpClient"/> will be instantiated directly. <a
+            href="https://docs.microsoft.com/dotnet/api/system.net.http.ihttpclientfactory">IHttpClientFactory</a>
+            is not currently supported for logging.
+            </item>
+            </list>
+            </remarks>
+        </member>
+        <member name="T:OpenTelemetry.Exporter.OtlpExporterOptions">
+            <summary>
+            OpenTelemetry Protocol (OTLP) exporter options.
+            </summary>
+            <remarks>
+            Note: OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_HEADERS,
+            OTEL_EXPORTER_OTLP_TIMEOUT, and OTEL_EXPORTER_OTLP_PROTOCOL environment
+            variables are parsed during object construction.
+            </remarks>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OtlpExporterOptions.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Exporter.OtlpExporterOptions"/> class.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OtlpExporterOptions.Endpoint">
+            <inheritdoc/>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OtlpExporterOptions.Headers">
+            <inheritdoc/>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OtlpExporterOptions.TimeoutMilliseconds">
+            <inheritdoc/>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OtlpExporterOptions.Protocol">
+            <inheritdoc/>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OtlpExporterOptions.UserAgentProductIdentifier">
+            <summary>
+            Gets or sets a custom user agent identifier.
+            This will be prepended to the default user agent string.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OtlpExporterOptions.ExportProcessorType">
+            <summary>
+            Gets or sets the export processor type to be used with the OpenTelemetry Protocol Exporter. The default value is <see cref="F:OpenTelemetry.ExportProcessorType.Batch"/>.
+            </summary>
+            <remarks>Note: This only applies when exporting traces.</remarks>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OtlpExporterOptions.BatchExportProcessorOptions">
+            <summary>
+            Gets or sets the BatchExportProcessor options. Ignored unless ExportProcessorType is Batch.
+            </summary>
+            <remarks>Note: This only applies when exporting traces.</remarks>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OtlpExporterOptions.HttpClientFactory">
+            <inheritdoc/>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OtlpExporterOptions.AppendSignalPathToEndpoint">
+            <summary>
+            Gets a value indicating whether or not the signal-specific path should
+            be appended to <see cref="P:OpenTelemetry.Exporter.OtlpExporterOptions.Endpoint"/>.
+            </summary>
+            <remarks>
+            Note: Only applicable when <see cref="F:OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf"/>
+            is used.
+            </remarks>
+        </member>
+        <member name="T:OpenTelemetry.Exporter.OtlpExportProtocol">
+            <summary>
+            Supported by OTLP exporter protocol types according to the specification https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/exporter.md.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OtlpExportProtocol.Grpc">
+            <summary>
+            OTLP over gRPC (corresponds to 'grpc' Protocol configuration option). Used as default.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf">
+            <summary>
+            OTLP over HTTP with protobuf payloads (corresponds to 'http/protobuf' Protocol configuration option).
+            </summary>
+        </member>
+        <member name="T:OpenTelemetry.Exporter.OtlpLogExporter">
+            <summary>
+            Exporter consuming <see cref="T:OpenTelemetry.Logs.LogRecord"/> and exporting the data using
+            the OpenTelemetry protocol (OTLP).
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OtlpLogExporter.#ctor(OpenTelemetry.Exporter.OtlpExporterOptions)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Exporter.OtlpLogExporter"/> class.
+            </summary>
+            <param name="options">Configuration options for the exporter.</param>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OtlpLogExporter.#ctor(OpenTelemetry.Exporter.OtlpExporterOptions,OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.SdkLimitOptions,OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExperimentalOptions,OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Transmission.OtlpExporterTransmissionHandler)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Exporter.OtlpLogExporter"/> class.
+            </summary>
+            <param name="exporterOptions"><see cref="T:OpenTelemetry.Exporter.OtlpExporterOptions"/>.</param>
+            <param name="sdkLimitOptions"><see cref="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.SdkLimitOptions"/>.</param>
+            <param name="experimentalOptions"><see cref="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExperimentalOptions"/>.</param>
+            <param name="transmissionHandler"><see cref="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Transmission.OtlpExporterTransmissionHandler"/>.</param>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OtlpLogExporter.Export(OpenTelemetry.Batch{OpenTelemetry.Logs.LogRecord}@)">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OtlpLogExporter.OnShutdown(System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="T:OpenTelemetry.Exporter.OtlpMetricExporter">
+            <summary>
+            Exporter consuming <see cref="T:OpenTelemetry.Metrics.Metric"/> and exporting the data using
+            the OpenTelemetry protocol (OTLP).
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OtlpMetricExporter.#ctor(OpenTelemetry.Exporter.OtlpExporterOptions)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Exporter.OtlpMetricExporter"/> class.
+            </summary>
+            <param name="options">Configuration options for the exporter.</param>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OtlpMetricExporter.#ctor(OpenTelemetry.Exporter.OtlpExporterOptions,OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExperimentalOptions,OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Transmission.OtlpExporterTransmissionHandler)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Exporter.OtlpMetricExporter"/> class.
+            </summary>
+            <param name="exporterOptions"><see cref="T:OpenTelemetry.Exporter.OtlpExporterOptions"/>.</param>
+            <param name="experimentalOptions"><see cref="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExperimentalOptions"/>.</param>
+            <param name="transmissionHandler"><see cref="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Transmission.OtlpExporterTransmissionHandler"/>.</param>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OtlpMetricExporter.Export(OpenTelemetry.Batch{OpenTelemetry.Metrics.Metric}@)">
+            <inheritdoc />
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OtlpMetricExporter.OnShutdown(System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="T:OpenTelemetry.Exporter.OtlpMtlsOptions">
+            <summary>
+            Represents mTLS (mutual TLS) configuration options for OTLP exporter.
+            Extends <see cref="T:OpenTelemetry.Exporter.OtlpTlsOptions"/> with client certificate authentication.
+            </summary>
+            <remarks>
+            mTLS is an authentication system in which both the client and server authenticate each other.
+            This class provides client certificate configuration for scenarios requiring mutual authentication.
+            For simple server certificate trust (e.g., self-signed certificates), use <see cref="T:OpenTelemetry.Exporter.OtlpTlsOptions"/> directly.
+            </remarks>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OtlpMtlsOptions.ClientCertificatePath">
+            <summary>
+            Gets or sets the path to the client certificate file in PEM format.
+            </summary>
+            <remarks>
+            Corresponds to the OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE environment variable.
+            This is used for client authentication in mTLS scenarios.
+            </remarks>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OtlpMtlsOptions.ClientKeyPath">
+            <summary>
+            Gets or sets the path to the client private key file in PEM format.
+            </summary>
+            <remarks>
+            Corresponds to the OTEL_EXPORTER_OTLP_CLIENT_KEY environment variable.
+            Required when the client certificate file does not include the private key.
+            </remarks>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OtlpMtlsOptions.IsMtlsEnabled">
+            <summary>
+            Gets a value indicating whether mTLS (mutual TLS) is enabled.
+            </summary>
+            <remarks>
+            Returns true when client certificate is configured for mutual authentication.
+            Note: Having only <see cref="P:OpenTelemetry.Exporter.OtlpTlsOptions.CaCertificatePath"/> does not constitute mTLS.
+            </remarks>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OtlpMtlsOptions.IsEnabled">
+            <summary>
+            Gets a value indicating whether any TLS configuration is enabled.
+            TLS is considered enabled if at least the client certificate path or CA path is provided.
+            </summary>
+        </member>
+        <member name="T:OpenTelemetry.Exporter.OtlpSignalType">
+            <summary>
+            Represents the different types of signals that can be exported.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OtlpSignalType.Traces">
+            <summary>
+            Represents trace signals.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OtlpSignalType.Metrics">
+            <summary>
+            Represents metric signals.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Exporter.OtlpSignalType.Logs">
+            <summary>
+            Represents log signals.
+            </summary>
+        </member>
+        <member name="T:OpenTelemetry.Exporter.OtlpTlsOptions">
+            <summary>
+            Represents TLS configuration options for OTLP exporter.
+            This class handles server certificate trust for scenarios such as self-signed certificates.
+            </summary>
+            <remarks>
+            The <see cref="P:OpenTelemetry.Exporter.OtlpTlsOptions.CaCertificatePath"/> option enables trust of server certificates
+            that are not verified by a third-party certificate authority. This is commonly used
+            when connecting to servers with self-signed certificates.
+            </remarks>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OtlpTlsOptions.CaCertificatePath">
+            <summary>
+            Gets or sets the path to the CA file in PEM format.
+            </summary>
+            <remarks>
+            This corresponds to the OTEL_EXPORTER_OTLP_CERTIFICATE environment variable.
+            Use this when the server has a self-signed certificate or uses a private CA.
+            </remarks>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OtlpTlsOptions.EnableCertificateChainValidation">
+            <summary>
+            Gets or sets a value indicating whether to enable certificate chain validation.
+            When enabled, the exporter will validate the certificate chain and reject invalid certificates.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OtlpTlsOptions.IsTlsEnabled">
+            <summary>
+            Gets a value indicating whether TLS certificate trust is configured.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Exporter.OtlpTlsOptions.IsMtlsEnabled">
+            <summary>
+            Gets a value indicating whether mTLS (mutual TLS) is configured.
+            </summary>
+            <remarks>
+            Returns true only when client certificates are configured for mutual authentication.
+            Server certificate trust alone (CaCertificatePath) does not constitute mTLS.
+            </remarks>
+        </member>
+        <member name="T:OpenTelemetry.Exporter.OtlpTraceExporter">
+            <summary>
+            Exporter consuming <see cref="T:System.Diagnostics.Activity"/> and exporting the data using
+            the OpenTelemetry protocol (OTLP).
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OtlpTraceExporter.#ctor(OpenTelemetry.Exporter.OtlpExporterOptions)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Exporter.OtlpTraceExporter"/> class.
+            </summary>
+            <param name="options">Configuration options for the export.</param>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OtlpTraceExporter.#ctor(OpenTelemetry.Exporter.OtlpExporterOptions,OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.SdkLimitOptions,OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExperimentalOptions,OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Transmission.OtlpExporterTransmissionHandler)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Exporter.OtlpTraceExporter"/> class.
+            </summary>
+            <param name="exporterOptions"><see cref="T:OpenTelemetry.Exporter.OtlpExporterOptions"/>.</param>
+            <param name="sdkLimitOptions"><see cref="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.SdkLimitOptions"/>.</param>
+            <param name="experimentalOptions"><see cref="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExperimentalOptions"/>.</param>
+            <param name="transmissionHandler"><see cref="T:OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Transmission.OtlpExporterTransmissionHandler"/>.</param>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OtlpTraceExporter.Export(OpenTelemetry.Batch{System.Diagnostics.Activity}@)">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Exporter.OtlpTraceExporter.OnShutdown(System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="T:OpenTelemetry.Logs.OtlpLogExporterHelperExtensions">
+            <summary>
+            Extension methods to simplify registering of the OpenTelemetry Protocol (OTLP) exporter.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Logs.OtlpLogExporterHelperExtensions.AddOtlpExporter(OpenTelemetry.Logs.OpenTelemetryLoggerOptions)">
+            <summary>
+            Adds an OTLP Exporter to the OpenTelemetry <see cref="T:Microsoft.Extensions.Logging.ILoggerProvider"/>.
+            </summary>
+            <remarks><inheritdoc cref="M:OpenTelemetry.Logs.OtlpLogExporterHelperExtensions.AddOtlpExporter(OpenTelemetry.Logs.OpenTelemetryLoggerOptions,System.Action{OpenTelemetry.Exporter.OtlpExporterOptions})" path="/remarks"/></remarks>
+            <param name="loggerOptions"><see cref="T:OpenTelemetry.Logs.OpenTelemetryLoggerOptions"/> options to use.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Logs.OpenTelemetryLoggerOptions"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Logs.OtlpLogExporterHelperExtensions.AddOtlpExporter(OpenTelemetry.Logs.OpenTelemetryLoggerOptions,System.Action{OpenTelemetry.Exporter.OtlpExporterOptions})">
+            <summary>
+            Adds an OTLP Exporter to the OpenTelemetry <see cref="T:Microsoft.Extensions.Logging.ILoggerProvider"/>.
+            </summary>
+            <param name="loggerOptions"><see cref="T:OpenTelemetry.Logs.OpenTelemetryLoggerOptions"/> options to use.</param>
+            <param name="configure">Callback action for configuring <see cref="T:OpenTelemetry.Exporter.OtlpExporterOptions"/>.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Logs.OpenTelemetryLoggerOptions"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Logs.OtlpLogExporterHelperExtensions.AddOtlpExporter(OpenTelemetry.Logs.OpenTelemetryLoggerOptions,System.String,System.Action{OpenTelemetry.Exporter.OtlpExporterOptions})">
+            <summary>
+            Adds an OTLP Exporter to the OpenTelemetry <see cref="T:Microsoft.Extensions.Logging.ILoggerProvider"/>.
+            </summary>
+            <param name="loggerOptions"><see cref="T:OpenTelemetry.Logs.OpenTelemetryLoggerOptions"/> options to use.</param>
+            <param name="name">Optional name which is used when retrieving options.</param>
+            <param name="configure">Optional callback action for configuring <see cref="T:OpenTelemetry.Exporter.OtlpExporterOptions"/>.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Logs.OpenTelemetryLoggerOptions"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Logs.OtlpLogExporterHelperExtensions.AddOtlpExporter(OpenTelemetry.Logs.OpenTelemetryLoggerOptions,System.Action{OpenTelemetry.Exporter.OtlpExporterOptions,OpenTelemetry.Logs.LogRecordExportProcessorOptions})">
+            <summary>
+            Adds an OTLP Exporter to the OpenTelemetry <see cref="T:Microsoft.Extensions.Logging.ILoggerProvider"/>.
+            </summary>
+            <param name="loggerOptions"><see cref="T:OpenTelemetry.Logs.OpenTelemetryLoggerOptions"/> options to use.</param>
+            <param name="configureExporterAndProcessor">Callback action for configuring <see cref="T:OpenTelemetry.Exporter.OtlpExporterOptions"/> and <see cref="T:OpenTelemetry.Logs.LogRecordExportProcessorOptions"/>.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Logs.OpenTelemetryLoggerOptions"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Logs.OtlpLogExporterHelperExtensions.AddOtlpExporter(OpenTelemetry.Logs.OpenTelemetryLoggerOptions,System.String,System.Action{OpenTelemetry.Exporter.OtlpExporterOptions,OpenTelemetry.Logs.LogRecordExportProcessorOptions})">
+            <summary>
+            Adds an OTLP Exporter to the OpenTelemetry <see cref="T:Microsoft.Extensions.Logging.ILoggerProvider"/>.
+            </summary>
+            <param name="loggerOptions"><see cref="T:OpenTelemetry.Logs.OpenTelemetryLoggerOptions"/> options to use.</param>
+            <param name="name">Optional name which is used when retrieving options.</param>
+            <param name="configureExporterAndProcessor">Optional callback action for configuring <see cref="T:OpenTelemetry.Exporter.OtlpExporterOptions"/> and <see cref="T:OpenTelemetry.Logs.LogRecordExportProcessorOptions"/>.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Logs.OpenTelemetryLoggerOptions"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Logs.OtlpLogExporterHelperExtensions.AddOtlpExporter(OpenTelemetry.Logs.LoggerProviderBuilder)">
+            <summary>
+            Adds an OTLP exporter to the LoggerProvider.
+            </summary>
+            <param name="builder"><see cref="T:OpenTelemetry.Logs.LoggerProviderBuilder"/> builder to use.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Logs.LoggerProviderBuilder"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Logs.OtlpLogExporterHelperExtensions.AddOtlpExporter(OpenTelemetry.Logs.LoggerProviderBuilder,System.Action{OpenTelemetry.Exporter.OtlpExporterOptions})">
+            <summary>
+            Adds an OTLP exporter to the LoggerProvider.
+            </summary>
+            <param name="builder"><see cref="T:OpenTelemetry.Logs.LoggerProviderBuilder"/> builder to use.</param>
+            <param name="configureExporter">Callback action for configuring <see cref="T:OpenTelemetry.Exporter.OtlpExporterOptions"/>.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Logs.LoggerProviderBuilder"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Logs.OtlpLogExporterHelperExtensions.AddOtlpExporter(OpenTelemetry.Logs.LoggerProviderBuilder,System.Action{OpenTelemetry.Exporter.OtlpExporterOptions,OpenTelemetry.Logs.LogRecordExportProcessorOptions})">
+            <summary>
+            Adds an OTLP exporter to the LoggerProvider.
+            </summary>
+            <param name="builder"><see cref="T:OpenTelemetry.Logs.LoggerProviderBuilder"/> builder to use.</param>
+            <param name="configureExporterAndProcessor">Callback action for
+            configuring <see cref="T:OpenTelemetry.Exporter.OtlpExporterOptions"/> and <see
+            cref="T:OpenTelemetry.Logs.LogRecordExportProcessorOptions"/>.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Logs.LoggerProviderBuilder"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Logs.OtlpLogExporterHelperExtensions.AddOtlpExporter(OpenTelemetry.Logs.LoggerProviderBuilder,System.String,System.Action{OpenTelemetry.Exporter.OtlpExporterOptions})">
+            <summary>
+            Adds OpenTelemetry Protocol (OTLP) exporter to the LoggerProvider.
+            </summary>
+            <param name="builder"><see cref="T:OpenTelemetry.Logs.LoggerProviderBuilder"/> builder to use.</param>
+            <param name="name">Optional name which is used when retrieving options.</param>
+            <param name="configureExporter">Optional callback action for configuring <see cref="T:OpenTelemetry.Exporter.OtlpExporterOptions"/>.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Logs.LoggerProviderBuilder"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Logs.OtlpLogExporterHelperExtensions.AddOtlpExporter(OpenTelemetry.Logs.LoggerProviderBuilder,System.String,System.Action{OpenTelemetry.Exporter.OtlpExporterOptions,OpenTelemetry.Logs.LogRecordExportProcessorOptions})">
+            <summary>
+            Adds an OTLP exporter to the LoggerProvider.
+            </summary>
+            <param name="builder"><see cref="T:OpenTelemetry.Logs.LoggerProviderBuilder"/> builder to use.</param>
+            <param name="name">Optional name which is used when retrieving options.</param>
+            <param name="configureExporterAndProcessor">Optional callback action for
+            configuring <see cref="T:OpenTelemetry.Exporter.OtlpExporterOptions"/> and <see
+            cref="T:OpenTelemetry.Logs.LogRecordExportProcessorOptions"/>.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Logs.LoggerProviderBuilder"/> to chain the calls.</returns>
+        </member>
+        <member name="T:OpenTelemetry.Metrics.OtlpMetricExporterExtensions">
+            <summary>
+            Extension methods to simplify registering of the OpenTelemetry Protocol (OTLP) exporter.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Metrics.OtlpMetricExporterExtensions.AddOtlpExporter(OpenTelemetry.Metrics.MeterProviderBuilder)">
+            <summary>
+            Adds <see cref="T:OpenTelemetry.Exporter.OtlpMetricExporter"/> to the <see cref="T:OpenTelemetry.Metrics.MeterProviderBuilder"/> using default options.
+            </summary>
+            <param name="builder"><see cref="T:OpenTelemetry.Metrics.MeterProviderBuilder"/> builder to use.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Metrics.MeterProviderBuilder"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Metrics.OtlpMetricExporterExtensions.AddOtlpExporter(OpenTelemetry.Metrics.MeterProviderBuilder,System.Action{OpenTelemetry.Exporter.OtlpExporterOptions})">
+            <summary>
+            Adds <see cref="T:OpenTelemetry.Exporter.OtlpMetricExporter"/> to the <see cref="T:OpenTelemetry.Metrics.MeterProviderBuilder"/>.
+            </summary>
+            <param name="builder"><see cref="T:OpenTelemetry.Metrics.MeterProviderBuilder"/> builder to use.</param>
+            <param name="configure">Callback action for configuring <see cref="T:OpenTelemetry.Exporter.OtlpExporterOptions"/>.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Metrics.MeterProviderBuilder"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Metrics.OtlpMetricExporterExtensions.AddOtlpExporter(OpenTelemetry.Metrics.MeterProviderBuilder,System.String,System.Action{OpenTelemetry.Exporter.OtlpExporterOptions})">
+            <summary>
+            Adds <see cref="T:OpenTelemetry.Exporter.OtlpMetricExporter"/> to the <see cref="T:OpenTelemetry.Metrics.MeterProviderBuilder"/>.
+            </summary>
+            <param name="builder"><see cref="T:OpenTelemetry.Metrics.MeterProviderBuilder"/> builder to use.</param>
+            <param name="name">Optional name which is used when retrieving options.</param>
+            <param name="configure">Optional callback action for configuring <see cref="T:OpenTelemetry.Exporter.OtlpExporterOptions"/>.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Metrics.MeterProviderBuilder"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Metrics.OtlpMetricExporterExtensions.AddOtlpExporter(OpenTelemetry.Metrics.MeterProviderBuilder,System.Action{OpenTelemetry.Exporter.OtlpExporterOptions,OpenTelemetry.Metrics.MetricReaderOptions})">
+            <summary>
+            Adds <see cref="T:OpenTelemetry.Exporter.OtlpMetricExporter"/> to the <see cref="T:OpenTelemetry.Metrics.MeterProviderBuilder"/>.
+            </summary>
+            <param name="builder"><see cref="T:OpenTelemetry.Metrics.MeterProviderBuilder"/> builder to use.</param>
+            <param name="configureExporterAndMetricReader">Callback action for
+            configuring <see cref="T:OpenTelemetry.Exporter.OtlpExporterOptions"/> and <see
+            cref="T:OpenTelemetry.Metrics.MetricReaderOptions"/>.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Metrics.MeterProviderBuilder"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Metrics.OtlpMetricExporterExtensions.AddOtlpExporter(OpenTelemetry.Metrics.MeterProviderBuilder,System.String,System.Action{OpenTelemetry.Exporter.OtlpExporterOptions,OpenTelemetry.Metrics.MetricReaderOptions})">
+            <summary>
+            Adds <see cref="T:OpenTelemetry.Exporter.OtlpMetricExporter"/> to the <see cref="T:OpenTelemetry.Metrics.MeterProviderBuilder"/>.
+            </summary>
+            <param name="builder"><see cref="T:OpenTelemetry.Metrics.MeterProviderBuilder"/> builder to use.</param>
+            <param name="name">Optional name which is used when retrieving options.</param>
+            <param name="configureExporterAndMetricReader">Optional callback action
+            for configuring <see cref="T:OpenTelemetry.Exporter.OtlpExporterOptions"/> and <see
+            cref="T:OpenTelemetry.Metrics.MetricReaderOptions"/>.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Metrics.MeterProviderBuilder"/> to chain the calls.</returns>
+        </member>
+        <member name="T:OpenTelemetry.Trace.OtlpTraceExporterHelperExtensions">
+            <summary>
+            Extension methods to simplify registering of the OpenTelemetry Protocol (OTLP) exporter.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Trace.OtlpTraceExporterHelperExtensions.AddOtlpExporter(OpenTelemetry.Trace.TracerProviderBuilder)">
+            <summary>
+            Adds OpenTelemetry Protocol (OTLP) exporter to the TracerProvider.
+            </summary>
+            <param name="builder"><see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> builder to use.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.OtlpTraceExporterHelperExtensions.AddOtlpExporter(OpenTelemetry.Trace.TracerProviderBuilder,System.Action{OpenTelemetry.Exporter.OtlpExporterOptions})">
+            <summary>
+            Adds OpenTelemetry Protocol (OTLP) exporter to the TracerProvider.
+            </summary>
+            <param name="builder"><see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> builder to use.</param>
+            <param name="configure">Callback action for configuring <see cref="T:OpenTelemetry.Exporter.OtlpExporterOptions"/>.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.OtlpTraceExporterHelperExtensions.AddOtlpExporter(OpenTelemetry.Trace.TracerProviderBuilder,System.String,System.Action{OpenTelemetry.Exporter.OtlpExporterOptions})">
+            <summary>
+            Adds OpenTelemetry Protocol (OTLP) exporter to the TracerProvider.
+            </summary>
+            <param name="builder"><see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> builder to use.</param>
+            <param name="name">Optional name which is used when retrieving options.</param>
+            <param name="configure">Optional callback action for configuring <see cref="T:OpenTelemetry.Exporter.OtlpExporterOptions"/>.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> to chain the calls.</returns>
+        </member>
+        <member name="T:OpenTelemetry.PersistentStorage.FileSystem.DirectorySizeTracker">
+            <summary>
+            Tracks the available storage in a specified directory.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.PersistentStorage.FileSystem.DirectorySizeTracker.IsSpaceAvailable(System.Int64@)">
+            <summary>
+            Checks if the space is available for new blob.
+            </summary>
+            <remarks>
+            This method is not thread safe and may give false positives/negatives.
+            False positive is ok because the file write will eventually fail.
+            False negative is ok as the file write can be retried if needed.
+            This is done in order to avoid acquiring lock while writing/deleting the blobs.
+            </remarks>
+            <param name="currentSizeInBytes">Size of blob to be written.</param>
+            <returns>True if space is available else false.</returns>
+        </member>
+        <member name="T:OpenTelemetry.PersistentStorage.FileSystem.FileBlob">
+            <summary>
+            The <see cref="T:OpenTelemetry.PersistentStorage.FileSystem.FileBlob"/> allows to save a blob
+            in file storage.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.PersistentStorage.FileSystem.FileBlob.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.PersistentStorage.FileSystem.FileBlob"/>
+            class.
+            </summary>
+            <param name="fullPath">Absolute file path of the blob.</param>
+        </member>
+        <member name="T:OpenTelemetry.PersistentStorage.FileSystem.FileBlobProvider">
+            <summary>
+            Persistent file storage <see cref="T:OpenTelemetry.PersistentStorage.FileSystem.FileBlobProvider"/> allows to save data
+            as blobs in file storage.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.PersistentStorage.FileSystem.FileBlobProvider.#ctor(System.String,System.Int64,System.Int32,System.Int64,System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.PersistentStorage.FileSystem.FileBlobProvider"/>
+            class.
+            </summary>
+            <param name="path">
+            Sets file storage folder location where blobs are stored.
+            </param>
+            <param name="maxSizeInBytes">
+            Maximum allowed storage folder size.
+            Default is 50 MB.
+            </param>
+            <param name="maintenancePeriodInMilliseconds">
+            Maintenance event runs at specified interval.
+            Removes expired leases and blobs that exceed retention period.
+            Default is 2 minutes.
+            </param>
+            <param name="retentionPeriodInMilliseconds">
+            Retention period in milliseconds for the blob.
+            Default is 2 days.
+            </param>
+            <param name="writeTimeoutInMilliseconds">
+            Controls the timeout when writing a buffer to blob.
+            Default is 1 minute.
+            </param>
+            <exception cref="T:System.ArgumentNullException">
+            path is null.
+            </exception>
+            <exception cref="T:System.IO.DirectoryNotFoundException">
+            invalid path.
+            </exception>
+            <exception cref="T:System.IO.PathTooLongException">
+            path exceeds system defined maximum length.
+            </exception>
+            <exception cref="T:System.UnauthorizedAccessException">
+            insufficient privileges for provided path.
+            </exception>
+            <exception cref="T:System.NotSupportedException">
+            path contains a colon character (:) that is not part of a drive label ("C:\").
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            path contains invalid characters.
+            </exception>
+            <exception cref="T:System.IO.IOException">
+            path is either file or network name is not known.
+            </exception>
+        </member>
+        <member name="T:OpenTelemetry.PersistentStorage.Abstractions.PersistentBlob">
+            <summary>
+            Represents a persistent blob.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.PersistentStorage.Abstractions.PersistentBlob.TryRead(System.Byte[]@)">
+            <summary>
+            Attempts to read the content from the blob.
+            </summary>
+            <param name="buffer">
+            The content to be read.
+            </param>
+            <returns>
+            True if read was successful or else false.
+            </returns>
+        </member>
+        <member name="M:OpenTelemetry.PersistentStorage.Abstractions.PersistentBlob.TryWrite(System.Byte[],System.Int32)">
+            <summary>
+            Attempts to write the given content to the blob.
+            </summary>
+            <param name="buffer">
+            The content to be written.
+            </param>
+            <param name="leasePeriodMilliseconds">
+            The number of milliseconds to lease after the write operation finished.
+            </param>
+            <returns>
+            True if the write operation succeeded or else false.
+            </returns>
+        </member>
+        <member name="M:OpenTelemetry.PersistentStorage.Abstractions.PersistentBlob.TryLease(System.Int32)">
+            <summary>
+            Attempts to acquire lease on the blob.
+            </summary>
+            <param name="leasePeriodMilliseconds">
+            The number of milliseconds to lease.
+            </param>
+            <returns>
+            true if lease is acquired or else false.
+            </returns>
+        </member>
+        <member name="M:OpenTelemetry.PersistentStorage.Abstractions.PersistentBlob.TryDelete">
+            <summary>
+            Attempts to delete the blob.
+            </summary>
+            <returns>
+            True if delete was successful else false.
+            </returns>
+        </member>
+        <member name="T:OpenTelemetry.PersistentStorage.Abstractions.PersistentBlobProvider">
+            <summary>
+            Represents persistent blob provider.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.PersistentStorage.Abstractions.PersistentBlobProvider.TryCreateBlob(System.Byte[],System.Int32,OpenTelemetry.PersistentStorage.Abstractions.PersistentBlob@)">
+            <summary>
+            Attempts to create a new blob with the provided data and lease it.
+            </summary>
+            <param name="buffer">
+            The content to be written.
+            </param>
+            <param name="leasePeriodMilliseconds">
+            The number of milliseconds to lease after the blob is created.
+            </param>
+            <param name="blob">
+            Blob if it is created.
+            </param>
+            <returns>
+            True if the blob was created or else false.
+            </returns>
+        </member>
+        <member name="M:OpenTelemetry.PersistentStorage.Abstractions.PersistentBlobProvider.TryCreateBlob(System.Byte[],OpenTelemetry.PersistentStorage.Abstractions.PersistentBlob@)">
+            <summary>
+            Attempts to create a new blob with the provided data.
+            </summary>
+            <param name="buffer">
+            The content to be written.
+            </param>
+            <param name="blob">
+            Blob if it is created.
+            </param>
+            <returns>
+            True if the blob was created or else false.
+            </returns>
+        </member>
+        <member name="M:OpenTelemetry.PersistentStorage.Abstractions.PersistentBlobProvider.TryGetBlob(OpenTelemetry.PersistentStorage.Abstractions.PersistentBlob@)">
+            <summary>
+            Attempts to get a single blob from storage.
+            </summary>
+            <param name="blob">
+            Blob object if found.
+            </param>
+            <returns>
+            True if blob is present or else false.
+            </returns>
+        </member>
+        <member name="M:OpenTelemetry.PersistentStorage.Abstractions.PersistentBlobProvider.GetBlobs">
+            <summary>
+            Reads a sequence of blobs from storage.
+            </summary>
+            <returns>
+            List of blobs if present in storage or else empty collection.
+            </returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.Configure``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>Registers a configuration instance which TOptions will bind against.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.Configure``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String,Microsoft.Extensions.Configuration.IConfiguration,System.Action{Microsoft.Extensions.Configuration.BinderOptions})">
+            <summary>Registers a configuration instance which TOptions will bind against.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.TryGetConfigurationValue(Microsoft.Extensions.Configuration.IConfiguration,System.String,System.String@)">
+            <summary>Tries to get the configuration value for the specified key.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.ValidateConfigurationKeys(System.Type,System.Lazy{System.Collections.Generic.HashSet{System.String}},Microsoft.Extensions.Configuration.IConfiguration,Microsoft.Extensions.Configuration.BinderOptions)">
+            <summary>If required by the binder options, validates that there are no unknown keys in the input configuration object.</summary>
+        </member>
+    </members>
+</doc>

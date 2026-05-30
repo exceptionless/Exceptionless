@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>GitHubActionsTestLogger</id>
+    <version>3.0.4</version>
+    <authors>Tyrrrz</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>favicon.png</icon>
+    <projectUrl>https://github.com/Tyrrrz/GitHubActionsTestLogger</projectUrl>
+    <description>Extension for VSTest and Microsoft.Testing.Platform that reports test results to GitHub Actions</description>
+    <releaseNotes>https://github.com/Tyrrrz/GitHubActionsTestLogger/releases</releaseNotes>
+    <copyright>Copyright (C) Oleksii Holub</copyright>
+    <tags>github actions test result logger reporter</tags>
+    <repository type="git" url="https://github.com/Tyrrrz/GitHubActionsTestLogger" commit="e735c491b6cd6bfaf0ebe7b900a0ea364ef5bf1a" />
+    <dependencies>
+      <group targetFramework="net6.0" />
+      <group targetFramework="net7.0" />
+      <group targetFramework="net10.0" />
+      <group targetFramework=".NETStandard2.0" />
+    </dependencies>
+  </metadata>
+</package>

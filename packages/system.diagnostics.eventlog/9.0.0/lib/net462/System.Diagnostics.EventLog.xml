@@ -1,0 +1,2249 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<doc>
+  <assembly>
+    <name>System.Diagnostics.EventLog</name>
+  </assembly>
+  <members>
+    <member name="T:System.Diagnostics.EntryWrittenEventArgs">
+      <summary>Provides data for the <see cref="E:System.Diagnostics.EventLog.EntryWritten" /> event.</summary>
+    </member>
+    <member name="M:System.Diagnostics.EntryWrittenEventArgs.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.EntryWrittenEventArgs" /> class.</summary>
+    </member>
+    <member name="M:System.Diagnostics.EntryWrittenEventArgs.#ctor(System.Diagnostics.EventLogEntry)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.EntryWrittenEventArgs" /> class with the specified event log entry.</summary>
+      <param name="entry">An <see cref="T:System.Diagnostics.EventLogEntry" /> that represents the entry that was written.</param>
+    </member>
+    <member name="P:System.Diagnostics.EntryWrittenEventArgs.Entry">
+      <summary>Gets the event log entry that was written to the log.</summary>
+      <returns>An <see cref="T:System.Diagnostics.EventLogEntry" /> that represents the entry that was written to the event log.</returns>
+    </member>
+    <member name="T:System.Diagnostics.EntryWrittenEventHandler">
+      <summary>Represents the method that will handle the <see cref="E:System.Diagnostics.EventLog.EntryWritten" /> event of an <see cref="T:System.Diagnostics.EventLog" />.</summary>
+      <param name="sender">The source of the event.</param>
+      <param name="e">An <see cref="T:System.Diagnostics.EntryWrittenEventArgs" /> that contains the event data.</param>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventBookmark">
+      <summary>Represents a placeholder (bookmark) within an event stream. You can use the placeholder to mark a position and return to this position in a stream of events. An instance of this object can be obtained from an <see cref="T:System.Diagnostics.Eventing.Reader.EventRecord" /> object, in which case it corresponds to the position of that event record.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventBookmark.#ctor(System.String)">
+      <summary>Creates a bookmark that identifies an event in a channel.</summary>
+      <param name="bookmarkXml">An XML string that represents the bookmark.</param>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventBookmark.BookmarkXml">
+      <summary>Gets the XML string that represents the bookmark.</summary>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventKeyword">
+      <summary>Represents a keyword for an event. Keywords are defined in an event provider and are used to group the event with other similar events (based on the usage of the events).</summary>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventKeyword.DisplayName">
+      <summary>Gets the localized name of the keyword.</summary>
+      <returns>A string that contains a localized name for this keyword.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventKeyword.Name">
+      <summary>Gets the non-localized name of the keyword.</summary>
+      <returns>A string that contains the non-localized name of this keyword.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventKeyword.Value">
+      <summary>Gets the numeric value associated with the keyword.</summary>
+      <returns>The numeric value associated with the keyword.</returns>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventLevel">
+      <summary>Contains an event level that is defined in an event provider. The level signifies the severity of the event.</summary>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLevel.DisplayName">
+      <summary>Gets the localized name for the event level. The name describes what severity level of events this level is used for.</summary>
+      <returns>A string that contains the localized name for the event level.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLevel.Name">
+      <summary>Gets the non-localized name of the event level.</summary>
+      <returns>A string that contains the non-localized name of the event level.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLevel.Value">
+      <summary>Gets the numeric value of the event level.</summary>
+      <returns>The numeric value of the event level.</returns>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventLogConfiguration">
+      <summary>Contains static information and configuration settings for an event log. Many of the configurations settings were defined by the event provider that created the log.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogConfiguration.#ctor(System.String,System.Diagnostics.Eventing.Reader.EventLogSession)">
+      <summary>Initializes a new <see cref="T:System.Diagnostics.Eventing.Reader.EventLogConfiguration" /> object by specifying the name of the log for which to get information and configuration settings. The log can be on the local computer or a remote computer, based on the event log session specified.</summary>
+      <param name="logName">The name of the event log for which to get information and configuration settings.</param>
+      <param name="session">The event log session used to determine the event log service that the specified log belongs to. The session is either connected to the event log service on the local computer or a remote computer.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogConfiguration.#ctor(System.String)">
+      <summary>Initializes a new <see cref="T:System.Diagnostics.Eventing.Reader.EventLogConfiguration" /> object by specifying the local event log for which to get information and configuration settings.</summary>
+      <param name="logName">The name of the local event log for which to get information and configuration settings.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogConfiguration.Dispose">
+      <summary>Releases all the resources used by this object.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogConfiguration.Dispose(System.Boolean)">
+      <summary>Releases the unmanaged resources used by this object, and optionally releases the managed resources.</summary>
+      <param name="disposing">
+        <see langword="true" /> to release both managed and unmanaged resources; <see langword="false" /> to release only unmanaged resources.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogConfiguration.SaveChanges">
+      <summary>Saves the configuration settings that.</summary>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogConfiguration.IsClassicLog">
+      <summary>Gets a value that indicates whether the event log is a classic event log. A classic event log is one that has its events defined in an .mc file instead of a manifest (.xml file) used by the event provider.</summary>
+      <returns>
+        <see langword="true" /> if the event log is a classic log; otherwise, <see langword="false" />.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogConfiguration.IsEnabled">
+      <summary>Gets or sets a value that indicates whether the event log is enabled or disabled. An enabled log is one in which events can be logged, and a disabled log is one in which events cannot be logged.</summary>
+      <returns>
+        <see langword="true" /> if the log is enabled; otherwise, <see langword="false" />.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogConfiguration.LogFilePath">
+      <summary>Gets or sets the file directory path to the location of the file where the events are stored for the log.</summary>
+      <returns>A string that contains the path to the event log file.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogConfiguration.LogIsolation">
+      <summary>Gets an <see cref="T:System.Diagnostics.Eventing.Reader.EventLogIsolation" /> value that specifies whether the event log is an application, system, or custom event log.</summary>
+      <returns>One of the enumeration values.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogConfiguration.LogMode">
+      <summary>Gets or sets an <see cref="T:System.Diagnostics.Eventing.Reader.EventLogMode" /> value that determines how events are handled when the event log becomes full.</summary>
+      <returns>One of the enumeration values.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogConfiguration.LogName">
+      <summary>Gets the name of the event log.</summary>
+      <returns>The name of the event log.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogConfiguration.LogType">
+      <summary>Gets an <see cref="T:System.Diagnostics.Eventing.Reader.EventLogType" /> value that determines the type of the event log.</summary>
+      <returns>One of the enumeration values.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogConfiguration.MaximumSizeInBytes">
+      <summary>Gets or sets the maximum size, in bytes, that the event log file is allowed to be. When the file reaches this maximum size, it is considered full.</summary>
+      <returns>The maximum size, in bytes, that the event log file is allowed to be.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogConfiguration.OwningProviderName">
+      <summary>Gets the name of the event provider that created this event log.</summary>
+      <returns>The name of the event provider that created this event log.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogConfiguration.ProviderBufferSize">
+      <summary>Gets the size of the buffer that the event provider uses for publishing events to the log.</summary>
+      <returns>The size of the buffer that the event provider uses for publishing events to the log. It can be <see langword="null" />.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogConfiguration.ProviderControlGuid">
+      <summary>Gets the control globally unique identifier (GUID) for the event log if the log is a debug log. If this log is not a debug log, this value is <see langword="null" />.</summary>
+      <returns>A GUID value, or <see langword="null" /> if the log is not a debug log.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogConfiguration.ProviderKeywords">
+      <summary>Gets or sets the keyword mask used by the event provider.</summary>
+      <returns>The keyword mask used by the event provider, or <see langword="null" /> if the event provider did not define any keywords.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogConfiguration.ProviderLatency">
+      <summary>Gets the maximum latency time used by the event provider when publishing events to the log.</summary>
+      <returns>The maximum latency time used by the event provider when publishing events to the log, or <see langword="null" /> if no latency time was specified by the event provider.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogConfiguration.ProviderLevel">
+      <summary>Gets or sets the maximum event level (which defines the severity of the event) that is allowed to be logged in the event log. This value is defined by the event provider.</summary>
+      <returns>The maximum event level that is allowed to be logged in the event log, or <see langword="null" /> if the maximum event level was not defined in the event provider.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogConfiguration.ProviderMaximumNumberOfBuffers">
+      <summary>Gets the maximum number of buffers used by the event provider to publish events to the event log.</summary>
+      <returns>The maximum number of buffers used by the event provider to publish events to the event log. This value can be <see langword="null" />.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogConfiguration.ProviderMinimumNumberOfBuffers">
+      <summary>Gets the minimum number of buffers used by the event provider to publish events to the event log.</summary>
+      <returns>The minimum number of buffers used by the event provider to publish events to the event log. This value can be <see langword="null" />.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogConfiguration.ProviderNames">
+      <summary>Gets an enumerable collection of the names of all the event providers that can publish events to this event log.</summary>
+      <returns>An enumerable collection of strings that contain the event provider names.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogConfiguration.SecurityDescriptor">
+      <summary>Gets or sets the security descriptor of the event log. The security descriptor defines the users and groups of users that can read and write to the event log.</summary>
+      <returns>A string that contains the security descriptor for the event log.</returns>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventLogException">
+      <summary>Represents the base class for all the exceptions that are thrown when an error occurs while reading event log related information.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogException.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogException" /> class.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogException.#ctor(System.Int32)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogException" /> class with the error code for the exception.</summary>
+      <param name="errorCode">The error code for the error that occurred while reading or configuring event log related information.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogException" /> class with serialized data.</summary>
+      <param name="serializationInfo">The <see cref="T:System.Runtime.Serialization.SerializationInfo" /> object that holds the serialized object data about the exception being thrown.</param>
+      <param name="streamingContext">The <see cref="T:System.Runtime.Serialization.StreamingContext" /> object that contains contextual information about the source or destination.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogException.#ctor(System.String,System.Exception)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogException" /> class with an error message and inner exception.</summary>
+      <param name="message">The error message that describes the current exception.</param>
+      <param name="innerException">The Exception instance that caused the current exception.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogException.#ctor(System.String)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogException" /> class by specifying the error message that describes the current exception.</summary>
+      <param name="message">The error message that describes the current exception.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogException.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+      <summary>Sets the SerializationInfo object with information about the exception.</summary>
+      <param name="info">The <see cref="T:System.Runtime.Serialization.SerializationInfo" /> object that holds the serialized object data about the exception thrown.</param>
+      <param name="context">The <see cref="T:System.Runtime.Serialization.StreamingContext" /> object that contains contextual information about the source or destination.</param>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogException.Message">
+      <summary>Gets the error message that describes the current exception.</summary>
+      <returns>Returns a string that contains the error message that describes the current exception.</returns>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventLogInformation">
+      <summary>Allows you to access the run-time properties of active event logs and event log files. These properties include the number of events in the log, the size of the log, a value that determines whether the log is full, and the last time the log was written to or accessed.</summary>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogInformation.Attributes">
+      <summary>Gets the file attributes of the log file associated with the log.</summary>
+      <returns>Returns an integer value. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogInformation.CreationTime">
+      <summary>Gets the time that the log file associated with the event log was created.</summary>
+      <returns>Returns a <see cref="T:System.DateTime" /> object. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogInformation.FileSize">
+      <summary>Gets the size of the file, in bytes, associated with the event log.</summary>
+      <returns>Returns a long value.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogInformation.IsLogFull">
+      <summary>Gets a Boolean value that determines whether the log file has reached its maximum size (the log is full).</summary>
+      <returns>Returns <see langword="true" /> if the log is full, and returns <see langword="false" /> if the log is not full.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogInformation.LastAccessTime">
+      <summary>Gets the last time the log file associated with the event log was accessed.</summary>
+      <returns>Returns a <see cref="T:System.DateTime" /> object. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogInformation.LastWriteTime">
+      <summary>Gets the last time data was written to the log file associated with the event log.</summary>
+      <returns>Returns a <see cref="T:System.DateTime" /> object. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogInformation.OldestRecordNumber">
+      <summary>Gets the number of the oldest event record in the event log.</summary>
+      <returns>Returns a long value that represents the number of the oldest event record in the event log. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogInformation.RecordCount">
+      <summary>Gets the number of event records in the event log.</summary>
+      <returns>Returns a long value that represents the number of event records in the event log. This value can be null.</returns>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventLogInvalidDataException">
+      <summary>Represents the exception thrown when an event provider publishes invalid data in an event.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogInvalidDataException.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogInvalidDataException" /> class.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogInvalidDataException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogInvalidDataException" /> class with serialized data.</summary>
+      <param name="serializationInfo">The <see cref="T:System.Runtime.Serialization.SerializationInfo" /> object that holds the serialized object data about the exception thrown.</param>
+      <param name="streamingContext">The <see cref="T:System.Runtime.Serialization.StreamingContext" /> object that contains contextual information about the source or destination.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogInvalidDataException.#ctor(System.String,System.Exception)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogInvalidDataException" /> class with an error message and inner exception.</summary>
+      <param name="message">The error message that describes the current exception.</param>
+      <param name="innerException">The Exception instance that caused the current exception.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogInvalidDataException.#ctor(System.String)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogInvalidDataException" /> class by specifying the error message that describes the current exception.</summary>
+      <param name="message">The error message that describes the current exception.</param>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventLogIsolation">
+      <summary>Defines the default access permissions for the event log. The Application and System values indicate that the log shares the access control list (ACL) with the appropriate Windows log (the Application or System event logs) and share the Event Tracing for Windows (ETW) session with other logs of the same isolation. All channels with Custom isolation use a private ETW session.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.EventLogIsolation.Application">
+      <summary>The log shares the access control list with the Application event log and shares the ETW session with other logs that have Application isolation.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.EventLogIsolation.Custom">
+      <summary>The event log is a custom event log that uses its own private ETW session.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.EventLogIsolation.System">
+      <summary>The log shares the access control list with the System event log and shares the ETW session with other logs that have System isolation.</summary>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventLogLink">
+      <summary>Represents a link between an event provider and an event log that the provider publishes events into. This object cannot be instantiated.</summary>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogLink.DisplayName">
+      <summary>Gets the localized name of the event log.</summary>
+      <returns>Returns a string that contains the localized name of the event log.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogLink.IsImported">
+      <summary>Gets a Boolean value that determines whether the event log is imported, rather than defined in the event provider. An imported event log is defined in a different provider.</summary>
+      <returns>Returns <see langword="true" /> if the event log is imported by the event provider, and returns <see langword="false" /> if the event log is not imported by the event provider.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogLink.LogName">
+      <summary>Gets the non-localized name of the event log associated with this object.</summary>
+      <returns>Returns a string that contains the non-localized name of the event log associated with this object.</returns>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventLogMode">
+      <summary>Determines the behavior for the event log service handles an event log when the log reaches its maximum allowed size (when the event log is full).</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.EventLogMode.AutoBackup">
+      <summary>Archive the log when full, do not overwrite events. The log is automatically archived when necessary. No events are overwritten.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.EventLogMode.Circular">
+      <summary>New events continue to be stored when the log file is full. Each new incoming event replaces the oldest event in the log.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.EventLogMode.Retain">
+      <summary>Do not overwrite events. Clear the log manually rather than automatically.</summary>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventLogNotFoundException">
+      <summary>Represents the exception that is thrown when a requested event log (usually specified by the name of the event log or the path to the event log file) does not exist.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogNotFoundException.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogNotFoundException" /> class.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogNotFoundException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogNotFoundException" /> class with serialized data.</summary>
+      <param name="serializationInfo">The <see cref="T:System.Runtime.Serialization.SerializationInfo" /> object that holds the serialized object data about the exception thrown.</param>
+      <param name="streamingContext">The <see cref="T:System.Runtime.Serialization.StreamingContext" /> object that contains contextual information about the source or destination.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogNotFoundException.#ctor(System.String,System.Exception)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogNotFoundException" /> class with an error message and inner exception.</summary>
+      <param name="message">The error message that describes the current exception.</param>
+      <param name="innerException">The Exception instance that caused the current exception.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogNotFoundException.#ctor(System.String)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogNotFoundException" /> class by specifying the error message that describes the current exception.</summary>
+      <param name="message">The error message that describes the current exception.</param>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventLogPropertySelector">
+      <summary>Contains an array of strings that represent XPath queries for elements in the XML representation of an event, which is based on the Event Schema. The queries in this object are used to extract values from the event.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogPropertySelector.#ctor(System.Collections.Generic.IEnumerable{System.String})">
+      <summary>Initializes a new <see cref="T:System.Diagnostics.Eventing.Reader.EventLogPropertySelector" /> class instance.</summary>
+      <param name="propertyQueries">XPath queries used to extract values from the XML representation of the event.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogPropertySelector.Dispose">
+      <summary>Releases all the resources used by this object.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogPropertySelector.Dispose(System.Boolean)">
+      <summary>Releases the unmanaged resources used by this object, and optionally releases the managed resources.</summary>
+      <param name="disposing">
+        <see langword="true" /> to release both managed and unmanaged resources; <see langword="false" /> to release only unmanaged resources.</param>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventLogProviderDisabledException">
+      <summary>Represents the exception that is thrown when a specified event provider name references a disabled event provider. A disabled event provider cannot publish events.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogProviderDisabledException.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogProviderDisabledException" /> class.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogProviderDisabledException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogProviderDisabledException" /> class with serialized data.</summary>
+      <param name="serializationInfo">The <see cref="T:System.Runtime.Serialization.SerializationInfo" /> object that holds the serialized object data about the exception thrown.</param>
+      <param name="streamingContext">The <see cref="T:System.Runtime.Serialization.StreamingContext" /> object that contains contextual information about the source or destination.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogProviderDisabledException.#ctor(System.String,System.Exception)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogProviderDisabledException" /> class with an error message and inner exception.</summary>
+      <param name="message">The error message that describes the current exception.</param>
+      <param name="innerException">The Exception instance that caused the current exception.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogProviderDisabledException.#ctor(System.String)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogProviderDisabledException" /> class by specifying the error message that describes the current exception.</summary>
+      <param name="message">The error message that describes the current exception.</param>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventLogQuery">
+      <summary>Represents a query for events in an event log and the settings that define how the query is executed and on what computer the query is executed on.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogQuery.#ctor(System.String,System.Diagnostics.Eventing.Reader.PathType,System.String)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogQuery" /> class by specifying the target of the query and the event query. The target can be an active event log or a log file.</summary>
+      <param name="path">The name of the event log to query, or the path to the event log file to query.</param>
+      <param name="pathType">Specifies whether the string used in the path parameter specifies the name of an event log, or the path to an event log file.</param>
+      <param name="query">The event query used to retrieve events that match the query conditions.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogQuery.#ctor(System.String,System.Diagnostics.Eventing.Reader.PathType)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogQuery" /> class by specifying the target of the query. The target can be an active event log or a log file.</summary>
+      <param name="path">The name of the event log to query, or the path to the event log file to query.</param>
+      <param name="pathType">Specifies whether the string used in the path parameter specifies the name of an event log, or the path to an event log file.</param>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogQuery.ReverseDirection">
+      <summary>Gets or sets the Boolean value that determines whether to read events from the newest event in an event log to the oldest event in the log.</summary>
+      <returns>Returns <see langword="true" /> if events are read from the newest event in the log to the oldest event, and returns <see langword="false" /> if events are read from the oldest event in the log to the newest event.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogQuery.Session">
+      <summary>Gets or sets the session that access the Event Log service on the local computer or a remote computer. This object can be set to access a remote event log by creating a <see cref="T:System.Diagnostics.Eventing.Reader.EventLogReader" /> object or an <see cref="T:System.Diagnostics.Eventing.Reader.EventLogWatcher" /> object with this <see cref="T:System.Diagnostics.Eventing.Reader.EventLogQuery" /> object.</summary>
+      <returns>Returns an <see cref="T:System.Diagnostics.Eventing.Reader.EventLogSession" /> object.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogQuery.TolerateQueryErrors">
+      <summary>Gets or sets a Boolean value that determines whether this query will continue to retrieve events when the query has an error.</summary>
+      <returns>
+        <see langword="true" /> indicates that the query will continue to retrieve events even if the query fails for some logs, and <see langword="false" /> indicates that this query will not continue to retrieve events when the query fails.</returns>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventLogReader">
+      <summary>Enables you to read events from an event log based on an event query. The events that are read by this object are returned as <see cref="T:System.Diagnostics.Eventing.Reader.EventRecord" /> objects.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogReader.#ctor(System.Diagnostics.Eventing.Reader.EventLogQuery,System.Diagnostics.Eventing.Reader.EventBookmark)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogReader" /> class by specifying an event query and a bookmark that is used as starting position for the query.</summary>
+      <param name="eventQuery">The event query used to retrieve events.</param>
+      <param name="bookmark">The bookmark (placeholder) used as a starting position in the event log or stream of events. Only events logged after the bookmark event will be returned by the query.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogReader.#ctor(System.Diagnostics.Eventing.Reader.EventLogQuery)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogReader" /> class by specifying an event query.</summary>
+      <param name="eventQuery">The event query used to retrieve events.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogReader.#ctor(System.String,System.Diagnostics.Eventing.Reader.PathType)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogReader" /> class by specifying the name of an event log to retrieve events from or the path to a log file to retrieve events from.</summary>
+      <param name="path">The name of the event log to retrieve events from, or the path to the event log file to retrieve events from.</param>
+      <param name="pathType">Specifies whether the string used in the path parameter specifies the name of an event log, or the path to an event log file.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogReader.#ctor(System.String)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogReader" /> class by specifying an active event log to retrieve events from.</summary>
+      <param name="path">The name of the event log to retrieve events from.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogReader.CancelReading">
+      <summary>Cancels the current query operation.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogReader.Dispose">
+      <summary>Releases all the resources used by this object.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogReader.Dispose(System.Boolean)">
+      <summary>Releases the unmanaged resources used by this object, and optionally releases the managed resources.</summary>
+      <param name="disposing">
+        <see langword="true" /> to release both managed and unmanaged resources; <see langword="false" /> to release only unmanaged resources.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogReader.ReadEvent">
+      <summary>Reads the next event that is returned from the event query in this object.</summary>
+      <returns>Returns an <see cref="T:System.Diagnostics.Eventing.Reader.EventRecord" /> object.</returns>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogReader.ReadEvent(System.TimeSpan)">
+      <summary>Reads the next event that is returned from the event query in this object.</summary>
+      <param name="timeout">The maximum time to allow the read operation to run before canceling the operation.</param>
+      <returns>Returns an <see cref="T:System.Diagnostics.Eventing.Reader.EventRecord" /> object.</returns>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogReader.Seek(System.Diagnostics.Eventing.Reader.EventBookmark,System.Int64)">
+      <summary>Changes the position in the event stream where the next event that is read will come from by specifying a bookmark event and an offset number of events from the bookmark. No events logged before the bookmark plus the offset will be retrieved.</summary>
+      <param name="bookmark">The bookmark (placeholder) used as a starting position in the event log or stream of events. Only events that have been logged after the bookmark event will be returned by the query.</param>
+      <param name="offset">The offset number of events to change the position of the bookmark.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogReader.Seek(System.Diagnostics.Eventing.Reader.EventBookmark)">
+      <summary>Changes the position in the event stream where the next event that is read will come from by specifying a bookmark event. No events logged before the bookmark event will be retrieved.</summary>
+      <param name="bookmark">The bookmark (placeholder) used as a starting position in the event log or stream of events. Only events that have been logged after the bookmark event will be returned by the query.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogReader.Seek(System.IO.SeekOrigin,System.Int64)">
+      <summary>Changes the position in the event stream where the next event that is read will come from by specifying a starting position and an offset from the starting position. No events logged before the starting position plus the offset will be retrieved.</summary>
+      <param name="origin">A value from the <see cref="T:System.IO.SeekOrigin" /> enumeration defines where in the stream of events to start querying for events.</param>
+      <param name="offset">The offset number of events to add to the origin.</param>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogReader.BatchSize">
+      <summary>Gets or sets the number of events retrieved from the stream of events on every read operation.</summary>
+      <returns>Returns an integer value.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogReader.LogStatus">
+      <summary>Gets the status of each event log or log file associated with the event query in this object.</summary>
+      <returns>Returns a list of <see cref="T:System.Diagnostics.Eventing.Reader.EventLogStatus" /> objects that each contain status information about an event log associated with the event query in this object.</returns>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventLogReadingException">
+      <summary>Represents an exception that is thrown when an error occurred while reading, querying, or subscribing to the events in an event log.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogReadingException.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogReadingException" /> class.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogReadingException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogReadingException" /> class with serialized data.</summary>
+      <param name="serializationInfo">The <see cref="T:System.Runtime.Serialization.SerializationInfo" /> object that holds the serialized object data about the exception thrown.</param>
+      <param name="streamingContext">The <see cref="T:System.Runtime.Serialization.StreamingContext" /> object that contains contextual information about the source or destination.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogReadingException.#ctor(System.String,System.Exception)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogReadingException" /> class with an error message and inner exception.</summary>
+      <param name="message">The error message that describes the current exception.</param>
+      <param name="innerException">The Exception instance that caused the current exception.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogReadingException.#ctor(System.String)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogReadingException" /> class by specifying the error message that describes the current exception.</summary>
+      <param name="message">The error message that describes the current exception.</param>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventLogRecord">
+      <summary>Contains the properties of an event instance for an event that is received from an <see cref="T:System.Diagnostics.Eventing.Reader.EventLogReader" /> object. The event properties provide information about the event such as the name of the computer where the event was logged and the time that the event was created.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogRecord.Dispose(System.Boolean)">
+      <summary>Releases the unmanaged resources used by this object, and optionally releases the managed resources.</summary>
+      <param name="disposing">
+        <see langword="true" /> to release both managed and unmanaged resources; <see langword="false" /> to release only unmanaged resources.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogRecord.FormatDescription">
+      <summary>Gets the event message in the current locale.</summary>
+      <returns>Returns a string that contains the event message in the current locale.</returns>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogRecord.FormatDescription(System.Collections.Generic.IEnumerable{System.Object})">
+      <summary>Gets the event message, replacing variables in the message with the specified values.</summary>
+      <param name="values">The values used to replace variables in the event message. Variables are represented by %n, where n is a number.</param>
+      <returns>Returns a string that contains the event message in the current locale.</returns>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogRecord.GetPropertyValues(System.Diagnostics.Eventing.Reader.EventLogPropertySelector)">
+      <summary>Gets the enumeration of the values of the user-supplied event properties, or the results of XPath-based data if the event has XML representation.</summary>
+      <param name="propertySelector">Selects the property values to return.</param>
+      <returns>Returns a list of objects.</returns>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogRecord.ToXml">
+      <summary>Gets the XML representation of the event. All of the event properties are represented in the event's XML. The XML conforms to the event schema.</summary>
+      <returns>Returns a string that contains the XML representation of the event.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.ActivityId">
+      <summary>Gets the globally unique identifier (GUID) for the activity in process for which the event is involved. This allows consumers to group related activities.</summary>
+      <returns>Returns a GUID value.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.Bookmark">
+      <summary>Gets a placeholder (bookmark) that corresponds to this event. This can be used as a placeholder in a stream of events.</summary>
+      <returns>Returns a <see cref="T:System.Diagnostics.Eventing.Reader.EventBookmark" /> object.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.ContainerLog">
+      <summary>Gets the name of the event log or the event log file in which the event is stored.</summary>
+      <returns>Returns a string that contains the name of the event log or the event log file in which the event is stored.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.Id">
+      <summary>Gets the identifier for this event. All events with this identifier value represent the same type of event.</summary>
+      <returns>Returns an integer value. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.Keywords">
+      <summary>Gets the keyword mask of the event. Get the value of the <see cref="P:System.Diagnostics.Eventing.Reader.EventLogRecord.KeywordsDisplayNames" /> property to get the name of the keywords used in this mask.</summary>
+      <returns>Returns a long value. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.KeywordsDisplayNames">
+      <summary>Gets the display names of the keywords used in the keyword mask for this event.</summary>
+      <returns>Returns an enumerable collection of strings that contain the display names of the keywords used in the keyword mask for this event.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.Level">
+      <summary>Gets the level of the event. The level signifies the severity of the event. For the name of the level, get the value of the <see cref="P:System.Diagnostics.Eventing.Reader.EventLogRecord.LevelDisplayName" /> property.</summary>
+      <returns>Returns a byte value. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.LevelDisplayName">
+      <summary>Gets the display name of the level for this event.</summary>
+      <returns>Returns a string that contains the display name of the level for this event.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.LogName">
+      <summary>Gets the name of the event log where this event is logged.</summary>
+      <returns>Returns a string that contains a name of the event log that contains this event.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.MachineName">
+      <summary>Gets the name of the computer on which this event was logged.</summary>
+      <returns>Returns a string that contains the name of the computer on which this event was logged.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.MatchedQueryIds">
+      <summary>Gets a list of query identifiers that this event matches. This event matches a query if the query would return this event.</summary>
+      <returns>Returns an enumerable collection of integer values.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.Opcode">
+      <summary>Gets the opcode of the event. The opcode defines a numeric value that identifies the activity or a point within an activity that the application was performing when it raised the event. For the name of the opcode, get the value of the <see cref="P:System.Diagnostics.Eventing.Reader.EventLogRecord.OpcodeDisplayName" /> property.</summary>
+      <returns>Returns a short value. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.OpcodeDisplayName">
+      <summary>Gets the display name of the opcode for this event.</summary>
+      <returns>Returns a string that contains the display name of the opcode for this event.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.ProcessId">
+      <summary>Gets the process identifier for the event provider that logged this event.</summary>
+      <returns>Returns an integer value. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.Properties">
+      <summary>Gets the user-supplied properties of the event.</summary>
+      <returns>Returns a list of <see cref="T:System.Diagnostics.Eventing.Reader.EventProperty" /> objects.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.ProviderId">
+      <summary>Gets the globally unique identifier (GUID) of the event provider that published this event.</summary>
+      <returns>Returns a GUID value. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.ProviderName">
+      <summary>Gets the name of the event provider that published this event.</summary>
+      <returns>Returns a string that contains the name of the event provider that published this event.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.Qualifiers">
+      <summary>Gets qualifier numbers that are used for event identification.</summary>
+      <returns>Returns an integer value. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.RecordId">
+      <summary>Gets the event record identifier of the event in the log.</summary>
+      <returns>Returns a long value. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.RelatedActivityId">
+      <summary>Gets a globally unique identifier (GUID) for a related activity in a process for which an event is involved.</summary>
+      <returns>Returns a GUID value. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.Task">
+      <summary>Gets a task identifier for a portion of an application or a component that publishes an event. A task is a 16-bit value with 16 top values reserved. This type allows any value between 0x0000 and 0xffef to be used. For the name of the task, get the value of the <see cref="P:System.Diagnostics.Eventing.Reader.EventLogRecord.TaskDisplayName" /> property.</summary>
+      <returns>Returns an integer value. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.TaskDisplayName">
+      <summary>Gets the display name of the task for the event.</summary>
+      <returns>Returns a string that contains the display name of the task for the event.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.ThreadId">
+      <summary>Gets the thread identifier for the thread that the event provider is running in.</summary>
+      <returns>Returns an integer value. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.TimeCreated">
+      <summary>Gets the time, in <see cref="T:System.DateTime" /> format, that the event was created.</summary>
+      <returns>Returns a <see cref="T:System.DateTime" /> value. The value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.UserId">
+      <summary>Gets the security descriptor of the user whose context is used to publish the event.</summary>
+      <returns>Returns a <see cref="T:System.Security.Principal.SecurityIdentifier" /> value.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogRecord.Version">
+      <summary>Gets the version number for the event.</summary>
+      <returns>Returns a byte value. This value can be null.</returns>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventLogSession">
+      <summary>Used to access the Event Log service on the local computer or a remote computer so you can manage and gather information about the event logs and event providers on the computer.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogSession.#ctor">
+      <summary>Initializes a new <see cref="T:System.Diagnostics.Eventing.Reader.EventLogSession" /> object, establishes a connection with the local Event Log service.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogSession.#ctor(System.String,System.String,System.String,System.Security.SecureString,System.Diagnostics.Eventing.Reader.SessionAuthentication)">
+      <summary>Initializes a new <see cref="T:System.Diagnostics.Eventing.Reader.EventLogSession" /> object, and establishes a connection with the Event Log service on the specified computer. The specified credentials (user name and password) are used for the credentials to access the remote computer.</summary>
+      <param name="server">The name of the computer on which to connect to the Event Log service.</param>
+      <param name="domain">The domain of the specified user.</param>
+      <param name="user">The user name used to connect to the remote computer.</param>
+      <param name="password">The password used to connect to the remote computer.</param>
+      <param name="logOnType">The type of connection to use for the connection to the remote computer.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogSession.#ctor(System.String)">
+      <summary>Initializes a new <see cref="T:System.Diagnostics.Eventing.Reader.EventLogSession" /> object, and establishes a connection with the Event Log service on the specified computer. The credentials (user name and password) of the user who calls the method is used for the credentials to access the remote computer.</summary>
+      <param name="server">The name of the computer on which to connect to the Event Log service.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogSession.CancelCurrentOperations">
+      <summary>Cancels any operations (such as reading an event log or subscribing to an event log) that are currently active for the Event Log service that this session object is connected to.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogSession.ClearLog(System.String,System.String)">
+      <summary>Clears events from the specified event log, and saves the cleared events to the specified file.</summary>
+      <param name="logName">The name of the event log to clear all the events from.</param>
+      <param name="backupPath">The path to the file in which the cleared events will be saved. The file should end in .evtx.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogSession.ClearLog(System.String)">
+      <summary>Clears events from the specified event log.</summary>
+      <param name="logName">The name of the event log to clear all the events from.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogSession.Dispose">
+      <summary>Releases all the resources used by this object.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogSession.Dispose(System.Boolean)">
+      <summary>Releases the unmanaged resources used by this object, and optionally releases the managed resources.</summary>
+      <param name="disposing">
+        <see langword="true" /> to release both managed and unmanaged resources; <see langword="false" /> to release only unmanaged resources.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogSession.ExportLog(System.String,System.Diagnostics.Eventing.Reader.PathType,System.String,System.String,System.Boolean)">
+      <summary>Exports events into an external log file. A flag can be set to indicate that the method will continue exporting events even if the specified query fails for some logs. The events are stored without the event messages.</summary>
+      <param name="path">The name of the event log to export events from, or the path to the event log file to export events from.</param>
+      <param name="pathType">Specifies whether the string used in the path parameter specifies the name of an event log, or the path to an event log file.</param>
+      <param name="query">The query used to select the events to export. Only the events returned from the query will be exported.</param>
+      <param name="targetFilePath">The path to the log file (ends in .evtx) in which the exported events will be stored after this method is executed.</param>
+      <param name="tolerateQueryErrors">
+        <see langword="true" /> indicates that the method will continue exporting events even if the specified query fails for some logs, and <see langword="false" /> indicates that this method will not continue to export events when the specified query fails.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogSession.ExportLog(System.String,System.Diagnostics.Eventing.Reader.PathType,System.String,System.String)">
+      <summary>Exports events into an external log file. The events are stored without the event messages.</summary>
+      <param name="path">The name of the event log to export events from, or the path to the event log file to export events from.</param>
+      <param name="pathType">Specifies whether the string used in the path parameter specifies the name of an event log, or the path to an event log file.</param>
+      <param name="query">The query used to select the events to export.  Only the events returned from the query will be exported.</param>
+      <param name="targetFilePath">The path to the log file (ends in .evtx) in which the exported events will be stored after this method is executed.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogSession.ExportLogAndMessages(System.String,System.Diagnostics.Eventing.Reader.PathType,System.String,System.String,System.Boolean,System.Globalization.CultureInfo)">
+      <summary>Exports events and their messages into an external log file. A flag can be set to indicate that the method will continue exporting events even if the specified query fails for some logs. The event messages are exported in the specified language.</summary>
+      <param name="path">The name of the event log to export events from, or the path to the event log file to export events from.</param>
+      <param name="pathType">Specifies whether the string used in the path parameter specifies the name of an event log, or the path to an event log file.</param>
+      <param name="query">The query used to select the events to export.  Only the events returned from the query will be exported.</param>
+      <param name="targetFilePath">The path to the log file (ends in .evtx) in which the exported events will be stored after this method is executed.</param>
+      <param name="tolerateQueryErrors">
+        <see langword="true" /> indicates that the method will continue exporting events even if the specified query fails for some logs, and <see langword="false" /> indicates that this method will not continue to export events when the specified query fails.</param>
+      <param name="targetCultureInfo">The culture that specifies which language that the exported event messages will be in.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogSession.ExportLogAndMessages(System.String,System.Diagnostics.Eventing.Reader.PathType,System.String,System.String)">
+      <summary>Exports events and their messages into an external log file.</summary>
+      <param name="path">The name of the event log to export events from, or the path to the event log file to export events from.</param>
+      <param name="pathType">Specifies whether the string used in the path parameter specifies the name of an event log, or the path to an event log file.</param>
+      <param name="query">The query used to select the events to export.  Only the events returned from the query will be exported.</param>
+      <param name="targetFilePath">The path to the log file (ends in .evtx) in which the exported events will be stored after this method is executed.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogSession.GetLogInformation(System.String,System.Diagnostics.Eventing.Reader.PathType)">
+      <summary>Gets an object that contains runtime information for the specified event log.</summary>
+      <param name="logName">The name of the event log to get information about, or the path to the event log file to get information about.</param>
+      <param name="pathType">Specifies whether the string used in the path parameter specifies the name of an event log, or the path to an event log file.</param>
+      <returns>An object that contains information about the specified log.</returns>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogSession.GetLogNames">
+      <summary>Gets an enumerable collection of all the event log names that are registered with the Event Log service.</summary>
+      <returns>An enumerable collection of strings that contain the event log names.</returns>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogSession.GetProviderNames">
+      <summary>Gets an enumerable collection of all the event provider names that are registered with the Event Log service. An event provider is an application that publishes events to an event log.</summary>
+      <returns>An enumerable collection of strings that contain the event provider names.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogSession.GlobalSession">
+      <summary>Gets a static predefined session object that is connected to the Event Log service on the local computer.</summary>
+      <returns>A predefined session object that is connected to the Event Log service on the local computer.</returns>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventLogStatus">
+      <summary>Contains the status code or error code for a specific event log. This status can be used to determine if the event log is available for an operation.</summary>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogStatus.LogName">
+      <summary>Gets the name of the event log for which the status code is obtained.</summary>
+      <returns>The name of the event log for which the status code is obtained.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogStatus.StatusCode">
+      <summary>Gets the status code or error code for the event log. This status or error is the result of a read or subscription operation on the event log.</summary>
+      <returns>The status code or error code for the event log.</returns>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventLogType">
+      <summary>Defines the type of events that are logged in an event log. Each log can only contain one type of event.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.EventLogType.Administrative">
+      <summary>These events are primarily for end users, administrators, and support. The events that are found in the Administrative type logs indicate a problem and a well-defined solution that an administrator can act on. An example of an administrative event is an event that occurs when an application fails to connect to a printer.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.EventLogType.Analytical">
+      <summary>Events in an analytic event log are published in high volume. They describe program operation and indicate problems that cannot be handled by user intervention.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.EventLogType.Debug">
+      <summary>Events in a debug type event log are used solely by developers to diagnose a problem for debugging.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.EventLogType.Operational">
+      <summary>Events in an operational type event log are used for analyzing and diagnosing a problem or occurrence. They can be used to trigger tools or tasks based on the problem or occurrence. An example of an operational event is an event that occurs when a printer is added or removed from a system.</summary>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventLogWatcher">
+      <summary>Allows you to subscribe to incoming events. Each time a desired event is published to an event log, the <see cref="E:System.Diagnostics.Eventing.Reader.EventLogWatcher.EventRecordWritten" /> event is raised, and the method that handles this event will be executed.</summary>
+    </member>
+    <member name="E:System.Diagnostics.Eventing.Reader.EventLogWatcher.EventRecordWritten">
+      <summary>Allows setting a delegate (event handler method) that gets called every time an event is published that matches the criteria specified in the event query for this object.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogWatcher.#ctor(System.Diagnostics.Eventing.Reader.EventLogQuery,System.Diagnostics.Eventing.Reader.EventBookmark,System.Boolean)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogWatcher" /> class by specifying an event query, a bookmark that is used as starting position for the query, and a Boolean value that determines whether to read the events that already exist in the event log.</summary>
+      <param name="eventQuery">Specifies a query for the event subscription. When an event is logged that matches the criteria expressed in the query, then the <see cref="E:System.Diagnostics.Eventing.Reader.EventLogWatcher.EventRecordWritten" /> event is raised.</param>
+      <param name="bookmark">The bookmark (placeholder) used as a starting position in the event log or stream of events. Only events that have been logged after the bookmark event will be returned by the query.</param>
+      <param name="readExistingEvents">A Boolean value that determines whether to read the events that already exist in the event log. If this value is <see langword="true" />, then the existing events are read and if this value is <see langword="false" />, then the existing events are not read.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogWatcher.#ctor(System.Diagnostics.Eventing.Reader.EventLogQuery,System.Diagnostics.Eventing.Reader.EventBookmark)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogWatcher" /> class by specifying an event query and a bookmark that is used as starting position for the query.</summary>
+      <param name="eventQuery">Specifies a query for the event subscription. When an event is logged that matches the criteria expressed in the query, then the <see cref="E:System.Diagnostics.Eventing.Reader.EventLogWatcher.EventRecordWritten" /> event is raised.</param>
+      <param name="bookmark">The bookmark (placeholder) used as a starting position in the event log or stream of events. Only events that have been logged after the bookmark event will be returned by the query.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogWatcher.#ctor(System.Diagnostics.Eventing.Reader.EventLogQuery)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogWatcher" /> class by specifying an event query.</summary>
+      <param name="eventQuery">Specifies a query for the event subscription. When an event is logged that matches the criteria expressed in the query, then the <see cref="E:System.Diagnostics.Eventing.Reader.EventLogWatcher.EventRecordWritten" /> event is raised.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogWatcher.#ctor(System.String)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventLogWatcher" /> class by specifying the name or path to an event log.</summary>
+      <param name="path">The path or name of the event log monitor for events. If any event is logged in this event log, then the <see cref="E:System.Diagnostics.Eventing.Reader.EventLogWatcher.EventRecordWritten" /> event is raised.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogWatcher.Dispose">
+      <summary>Releases all the resources used by this object.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventLogWatcher.Dispose(System.Boolean)">
+      <summary>Releases the unmanaged resources used by this object, and optionally releases the managed resources.</summary>
+      <param name="disposing">
+        <see langword="true" /> to release both managed and unmanaged resources; <see langword="false" /> to release only unmanaged resources.</param>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventLogWatcher.Enabled">
+      <summary>Gets or sets a value that indicates whether this object starts delivering events to the event delegate.</summary>
+      <returns>
+        <see langword="true" /> when this object can deliver events to the event delegate; <see langword="false" /> when this object has stopped delivery.</returns>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventMetadata">
+      <summary>Contains the metadata (properties and settings) for an event that is defined in an event provider.</summary>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventMetadata.Description">
+      <summary>Gets the description template associated with the event using the current thread locale for the description language.</summary>
+      <returns>A string that contains the description template associated with the event.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventMetadata.Id">
+      <summary>Gets the identifier of the event that is defined in the event provider.</summary>
+      <returns>The event identifier.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventMetadata.Keywords">
+      <summary>Gets the keywords associated with the event that is defined in the event provider.</summary>
+      <returns>An enumerable collection of the keywords associated with the event.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventMetadata.Level">
+      <summary>Gets the level associated with the event that is defined in the event provider. The level defines the severity of the event.</summary>
+      <returns>The level associated with the event.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventMetadata.LogLink">
+      <summary>Gets a link to the event log that receives this event when the provider publishes this event.</summary>
+      <returns>A link to the event log.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventMetadata.Opcode">
+      <summary>Gets the opcode associated with this event that is defined by an event provider. The opcode defines a numeric value that identifies the activity or a point within an activity that the application was performing when it raised the event.</summary>
+      <returns>The opcode associated with this event.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventMetadata.Task">
+      <summary>Gets the task associated with the event. A task identifies a portion of an application or a component that publishes an event.</summary>
+      <returns>The task associated with the event.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventMetadata.Template">
+      <summary>Gets the template string for the event. Templates are used to describe data that is used by a provider when an event is published. Templates optionally specify XML that provides the structure of an event. The XML allows values that the event publisher provides to be inserted during the rendering of an event.</summary>
+      <returns>A string that contains the template for the event.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventMetadata.Version">
+      <summary>Gets the version of the event that qualifies the event identifier.</summary>
+      <returns>A byte value that contains the version of the event.</returns>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventOpcode">
+      <summary>Contains an event opcode that is defined in an event provider. An opcode defines a numeric value that identifies the activity or a point within an activity that the application was performing when it raised the event.</summary>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventOpcode.DisplayName">
+      <summary>Gets the localized name for an event opcode.</summary>
+      <returns>The localized name for an event opcode.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventOpcode.Name">
+      <summary>Gets the non-localized name for an event opcode.</summary>
+      <returns>The non-localized name for an event opcode.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventOpcode.Value">
+      <summary>Gets the numeric value associated with the event opcode.</summary>
+      <returns>The numeric value associated with the event opcode.</returns>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventProperty">
+      <summary>Contains the value of an event property that is specified by the event provider when the event is published.</summary>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventProperty.Value">
+      <summary>Gets the value of the event property that is specified by the event provider when the event is published.</summary>
+      <returns>The value of the event property.</returns>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventRecord">
+      <summary>Defines the properties of an event instance for an event that is received from an <see cref="T:System.Diagnostics.Eventing.Reader.EventLogReader" /> object. The event properties provide information about the event such as the name of the computer where the event was logged and the time the event was created. This class is an abstract class. The <see cref="T:System.Diagnostics.Eventing.Reader.EventLogRecord" /> class implements this class.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventRecord.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.EventRecord" /> class.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventRecord.Dispose">
+      <summary>Releases all the resources used by this object.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventRecord.Dispose(System.Boolean)">
+      <summary>Releases the unmanaged resources used by this object, and optionally releases the managed resources.</summary>
+      <param name="disposing">
+        <see langword="true" /> to release both managed and unmanaged resources; <see langword="false" /> to release only unmanaged resources.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventRecord.FormatDescription">
+      <summary>Gets the event message in the current locale.</summary>
+      <returns>Returns a string that contains the event message in the current locale.</returns>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventRecord.FormatDescription(System.Collections.Generic.IEnumerable{System.Object})">
+      <summary>Gets the event message, replacing variables in the message with the specified values.</summary>
+      <param name="values">The values used to replace variables in the event message. Variables are represented by %n, where n is a number.</param>
+      <returns>Returns a string that contains the event message in the current locale.</returns>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.EventRecord.ToXml">
+      <summary>Gets the XML representation of the event. All of the event properties are represented in the event XML. The XML conforms to the event schema.</summary>
+      <returns>Returns a string that contains the XML representation of the event.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecord.ActivityId">
+      <summary>Gets the globally unique identifier (GUID) for the activity in process for which the event is involved. This allows consumers to group related activities.</summary>
+      <returns>Returns a GUID value.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecord.Bookmark">
+      <summary>Gets a placeholder (bookmark) that corresponds to this event. This can be used as a placeholder in a stream of events.</summary>
+      <returns>Returns a <see cref="T:System.Diagnostics.Eventing.Reader.EventBookmark" /> object.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecord.Id">
+      <summary>Gets the identifier for this event. All events with this identifier value represent the same type of event.</summary>
+      <returns>Returns an integer value. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecord.Keywords">
+      <summary>Gets the keyword mask of the event. Get the value of the <see cref="P:System.Diagnostics.Eventing.Reader.EventRecord.KeywordsDisplayNames" /> property to get the name of the keywords used in this mask.</summary>
+      <returns>Returns a long value. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecord.KeywordsDisplayNames">
+      <summary>Gets the display names of the keywords used in the keyword mask for this event.</summary>
+      <returns>Returns an enumerable collection of strings that contain the display names of the keywords used in the keyword mask for this event.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecord.Level">
+      <summary>Gets the level of the event. The level signifies the severity of the event. For the name of the level, get the value of the <see cref="P:System.Diagnostics.Eventing.Reader.EventRecord.LevelDisplayName" /> property.</summary>
+      <returns>Returns a byte value. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecord.LevelDisplayName">
+      <summary>Gets the display name of the level for this event.</summary>
+      <returns>Returns a string that contains the display name of the level for this event.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecord.LogName">
+      <summary>Gets the name of the event log where this event is logged.</summary>
+      <returns>Returns a string that contains a name of the event log that contains this event.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecord.MachineName">
+      <summary>Gets the name of the computer on which this event was logged.</summary>
+      <returns>Returns a string that contains the name of the computer on which this event was logged.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecord.Opcode">
+      <summary>Gets the opcode of the event. The opcode defines a numeric value that identifies the activity or a point within an activity that the application was performing when it raised the event. For the name of the opcode, get the value of the <see cref="P:System.Diagnostics.Eventing.Reader.EventRecord.OpcodeDisplayName" /> property.</summary>
+      <returns>Returns a short value. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecord.OpcodeDisplayName">
+      <summary>Gets the display name of the opcode for this event.</summary>
+      <returns>Returns a string that contains the display name of the opcode for this event.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecord.ProcessId">
+      <summary>Gets the process identifier for the event provider that logged this event.</summary>
+      <returns>Returns an integer value. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecord.Properties">
+      <summary>Gets the user-supplied properties of the event.</summary>
+      <returns>Returns a list of <see cref="T:System.Diagnostics.Eventing.Reader.EventProperty" /> objects.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecord.ProviderId">
+      <summary>Gets the globally unique identifier (GUID) of the event provider that published this event.</summary>
+      <returns>Returns a GUID value. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecord.ProviderName">
+      <summary>Gets the name of the event provider that published this event.</summary>
+      <returns>Returns a string that contains the name of the event provider that published this event.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecord.Qualifiers">
+      <summary>Gets qualifier numbers that are used for event identification.</summary>
+      <returns>Returns an integer value. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecord.RecordId">
+      <summary>Gets the event record identifier of the event in the log.</summary>
+      <returns>Returns a long value. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecord.RelatedActivityId">
+      <summary>Gets a globally unique identifier (GUID) for a related activity in a process for which an event is involved.</summary>
+      <returns>Returns a GUID value. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecord.Task">
+      <summary>Gets a task identifier for a portion of an application or a component that publishes an event. A task is a 16-bit value with 16 top values reserved. This type allows any value between 0x0000 and 0xffef to be used. To obtain the task name, get the value of the <see cref="P:System.Diagnostics.Eventing.Reader.EventRecord.TaskDisplayName" /> property.</summary>
+      <returns>Returns an integer value. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecord.TaskDisplayName">
+      <summary>Gets the display name of the task for the event.</summary>
+      <returns>Returns a string that contains the display name of the task for the event.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecord.ThreadId">
+      <summary>Gets the thread identifier for the thread that the event provider is running in.</summary>
+      <returns>Returns an integer value. This value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecord.TimeCreated">
+      <summary>Gets the time, in <see cref="T:System.DateTime" /> format, that the event was created.</summary>
+      <returns>Returns a <see cref="T:System.DateTime" /> value. The value can be null.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecord.UserId">
+      <summary>Gets the security descriptor of the user whose context is used to publish the event.</summary>
+      <returns>Returns a <see cref="T:System.Security.Principal.SecurityIdentifier" /> value.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecord.Version">
+      <summary>Gets the version number for the event.</summary>
+      <returns>Returns a byte value. This value can be null.</returns>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventRecordWrittenEventArgs">
+      <summary>When the <see cref="E:System.Diagnostics.Eventing.Reader.EventLogWatcher.EventRecordWritten" /> event is raised, an instance of this object is passed to the delegate method that handles the event. This object contains the event that was published to the event log or the exception that occurred when the event subscription failed.</summary>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecordWrittenEventArgs.EventException">
+      <summary>Gets the exception that occurred when the event subscription failed. The exception has a description of why the subscription failed.</summary>
+      <returns>The exception that occurred when the event subscription failed.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventRecordWrittenEventArgs.EventRecord">
+      <summary>Gets the event record that is published to the event log. This event matches the criteria from the query specified in the event subscription.</summary>
+      <returns>The event record.</returns>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.EventTask">
+      <summary>Contains an event task that is defined in an event provider. The task identifies a portion of an application or a component that publishes an event. A task is a 16-bit value with 16 top values reserved.</summary>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventTask.DisplayName">
+      <summary>Gets the localized name for the event task.</summary>
+      <returns>The localized name for the event task.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventTask.EventGuid">
+      <summary>Gets the event globally unique identifier (GUID) associated with the task.</summary>
+      <returns>The event GUID associated with the task.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventTask.Name">
+      <summary>Gets the non-localized name of the event task.</summary>
+      <returns>The non-localized name of the event task.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.EventTask.Value">
+      <summary>Gets the numeric value associated with the task.</summary>
+      <returns>The numeric value associated with the task.</returns>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.PathType">
+      <summary>Specifies that a string contains a name of an event log or the file system path to an event log file.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.PathType.FilePath">
+      <summary>A path parameter contains the file system path to an event log file.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.PathType.LogName">
+      <summary>A path parameter contains the name of the event log.</summary>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.ProviderMetadata">
+      <summary>Contains static information about an event provider, such as the name and id of the provider, and the collection of events defined in the provider.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.ProviderMetadata.#ctor(System.String,System.Diagnostics.Eventing.Reader.EventLogSession,System.Globalization.CultureInfo)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.ProviderMetadata" /> class by specifying the name of the provider that you want to retrieve information about, the event log service that the provider is registered with, and the language that you want to return the information in.</summary>
+      <param name="providerName">The name of the event provider that you want to retrieve information about.</param>
+      <param name="session">The <see cref="T:System.Diagnostics.Eventing.Reader.EventLogSession" /> object that specifies whether to get the provider information from a provider on the local computer or a provider on a remote computer.</param>
+      <param name="targetCultureInfo">The culture that specifies the language that the information should be returned in.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.ProviderMetadata.#ctor(System.String)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.Eventing.Reader.ProviderMetadata" /> class by specifying the name of the provider that you want to retrieve information about.</summary>
+      <param name="providerName">The name of the event provider that you want to retrieve information about.</param>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.ProviderMetadata.Dispose">
+      <summary>Releases all the resources used by this object.</summary>
+    </member>
+    <member name="M:System.Diagnostics.Eventing.Reader.ProviderMetadata.Dispose(System.Boolean)">
+      <summary>Releases the unmanaged resources used by this object, and optionally releases the managed resources.</summary>
+      <param name="disposing">
+        <see langword="true" /> to release both managed and unmanaged resources; <see langword="false" /> to release only unmanaged resources.</param>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.ProviderMetadata.DisplayName">
+      <summary>Gets the localized name of the event provider.</summary>
+      <returns>Returns a string that contains the localized name of the event provider.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.ProviderMetadata.Events">
+      <summary>Gets an enumerable collection of <see cref="T:System.Diagnostics.Eventing.Reader.EventMetadata" /> objects, each of which represents an event that is defined in the provider.</summary>
+      <returns>Returns an enumerable collection of <see cref="T:System.Diagnostics.Eventing.Reader.EventMetadata" /> objects.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.ProviderMetadata.HelpLink">
+      <summary>Gets the base of the URL used to form help requests for the events in this event provider.</summary>
+      <returns>Returns a <see cref="T:System.Uri" /> value.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.ProviderMetadata.Id">
+      <summary>Gets the globally unique identifier (GUID) for the event provider.</summary>
+      <returns>Returns the GUID value for the event provider.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.ProviderMetadata.Keywords">
+      <summary>Gets an enumerable collection of <see cref="T:System.Diagnostics.Eventing.Reader.EventKeyword" /> objects, each of which represent an event keyword that is defined in the event provider.</summary>
+      <returns>Returns an enumerable collection of <see cref="T:System.Diagnostics.Eventing.Reader.EventKeyword" /> objects.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.ProviderMetadata.Levels">
+      <summary>Gets an enumerable collection of <see cref="T:System.Diagnostics.Eventing.Reader.EventLevel" /> objects, each of which represent a level that is defined in the event provider.</summary>
+      <returns>Returns an enumerable collection of <see cref="T:System.Diagnostics.Eventing.Reader.EventLevel" /> objects.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.ProviderMetadata.LogLinks">
+      <summary>Gets an enumerable collection of <see cref="T:System.Diagnostics.Eventing.Reader.EventLogLink" /> objects, each of which represent a link to an event log that is used by the event provider.</summary>
+      <returns>Returns an enumerable collection of <see cref="T:System.Diagnostics.Eventing.Reader.EventLogLink" /> objects.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.ProviderMetadata.MessageFilePath">
+      <summary>Gets the path of the file that contains the message table resource that has the strings associated with the provider metadata.</summary>
+      <returns>Returns a string that contains the path of the provider message file.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.ProviderMetadata.Name">
+      <summary>Gets the unique name of the event provider.</summary>
+      <returns>Returns a string that contains the unique name of the event provider.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.ProviderMetadata.Opcodes">
+      <summary>Gets an enumerable collection of <see cref="T:System.Diagnostics.Eventing.Reader.EventOpcode" /> objects, each of which represent an opcode that is defined in the event provider.</summary>
+      <returns>Returns an enumerable collection of <see cref="T:System.Diagnostics.Eventing.Reader.EventOpcode" /> objects.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.ProviderMetadata.ParameterFilePath">
+      <summary>Gets the path of the file that contains the message table resource that has the strings used for parameter substitutions in event descriptions.</summary>
+      <returns>Returns a string that contains the path of the file that contains the message table resource that has the strings used for parameter substitutions in event descriptions.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.ProviderMetadata.ResourceFilePath">
+      <summary>Gets the path to the file that contains the metadata associated with the provider.</summary>
+      <returns>Returns a string that contains the path to the file that contains the metadata associated with the provider.</returns>
+    </member>
+    <member name="P:System.Diagnostics.Eventing.Reader.ProviderMetadata.Tasks">
+      <summary>Gets an enumerable collection of <see cref="T:System.Diagnostics.Eventing.Reader.EventTask" /> objects, each of which represent a task that is defined in the event provider.</summary>
+      <returns>Returns an enumerable collection of <see cref="T:System.Diagnostics.Eventing.Reader.EventTask" /> objects.</returns>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.SessionAuthentication">
+      <summary>Defines values for the type of authentication used during a Remote Procedure Call (RPC) login to a server. This login occurs when you create a <see cref="T:System.Diagnostics.Eventing.Reader.EventLogSession" /> object that specifies a connection to a remote computer.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.SessionAuthentication.Default">
+      <summary>Use the default authentication method during RPC login. The default authentication is equivalent to Negotiate.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.SessionAuthentication.Kerberos">
+      <summary>Use Kerberos authentication during RPC login.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.SessionAuthentication.Negotiate">
+      <summary>Use the Negotiate authentication method during RPC login. This allows the client application to select the most appropriate authentication method (NTLM or Kerberos) for the situation.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.SessionAuthentication.Ntlm">
+      <summary>Use Windows NT LAN Manager (NTLM) authentication during RPC login.</summary>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.StandardEventKeywords">
+      <summary>Defines the standard keywords that are attached to events by the event provider. For more information about keywords, see <see cref="T:System.Diagnostics.Eventing.Reader.EventKeyword" />.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventKeywords.AuditFailure">
+      <summary>Attached to all failed security audit events. This keyword should only be used for events in the Security log.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventKeywords.AuditSuccess">
+      <summary>Attached to all successful security audit events. This keyword should only be used for events in the Security log.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventKeywords.CorrelationHint">
+      <summary>Attached to transfer events where the related Activity ID (Correlation ID) is a computed value and is not guaranteed to be unique (not a real GUID).</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventKeywords.CorrelationHint2">
+      <summary>Attached to transfer events where the related Activity ID (Correlation ID) is a computed value and is not guaranteed to be unique (not a real GUID).</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventKeywords.EventLogClassic">
+      <summary>Attached to events which are raised using the RaiseEvent function.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventKeywords.None">
+      <summary>This value indicates that no filtering on keyword is performed when the event is published.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventKeywords.ResponseTime">
+      <summary>Attached to all response time events.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventKeywords.Sqm">
+      <summary>Attached to all Service Quality Mechanism (SQM) events.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventKeywords.WdiContext">
+      <summary>Attached to all Windows Diagnostic Infrastructure (WDI) context events.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventKeywords.WdiDiagnostic">
+      <summary>Attached to all Windows Diagnostic Infrastructure (WDI) diagnostic events.</summary>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.StandardEventLevel">
+      <summary>Defines the standard event levels that are used in the Event Log service. The level defines the severity of the event. Custom event levels can be defined beyond these standard levels. For more information about levels, see <see cref="T:System.Diagnostics.Eventing.Reader.EventLevel" />.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventLevel.Critical">
+      <summary>This level corresponds to critical errors, which is a serious error that has caused a major failure.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventLevel.Error">
+      <summary>This level corresponds to normal errors that signify a problem.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventLevel.Informational">
+      <summary>This level corresponds to informational events or messages that are not errors. These events can help trace the progress or state of an application.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventLevel.LogAlways">
+      <summary>This value indicates that not filtering on the level is done during the event publishing.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventLevel.Verbose">
+      <summary>This level corresponds to lengthy events or messages.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventLevel.Warning">
+      <summary>This level corresponds to warning events. For example, an event that gets published because a disk is nearing full capacity is a warning event.</summary>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.StandardEventOpcode">
+      <summary>Defines the standard opcodes that are attached to events by the event provider. For more information about opcodes, see <see cref="T:System.Diagnostics.Eventing.Reader.EventOpcode" />.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventOpcode.DataCollectionStart">
+      <summary>An event with this opcode is a trace collection start event.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventOpcode.DataCollectionStop">
+      <summary>An event with this opcode is a trace collection stop event.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventOpcode.Extension">
+      <summary>An event with this opcode is an extension event.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventOpcode.Info">
+      <summary>An event with this opcode is an informational event.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventOpcode.Receive">
+      <summary>An event with this opcode is published when one activity in an application receives data.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventOpcode.Reply">
+      <summary>An event with this opcode is published after an activity in an application replies to an event.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventOpcode.Resume">
+      <summary>An event with this opcode is published after an activity in an application resumes from a suspended state. The event should follow an event with the Suspend opcode.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventOpcode.Send">
+      <summary>An event with this opcode is published when one activity in an application transfers data or system resources to another activity.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventOpcode.Start">
+      <summary>An event with this opcode is published when an application starts a new transaction or activity. This can be embedded into another transaction or activity when multiple events with the Start opcode follow each other without an event with a Stop opcode.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventOpcode.Stop">
+      <summary>An event with this opcode is published when an activity or a transaction in an application ends. The event corresponds to the last unpaired event with a Start opcode.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventOpcode.Suspend">
+      <summary>An event with this opcode is published when an activity in an application is suspended.</summary>
+    </member>
+    <member name="T:System.Diagnostics.Eventing.Reader.StandardEventTask">
+      <summary>Defines the standard tasks that are attached to events by the event provider. For more information about tasks, see <see cref="T:System.Diagnostics.Eventing.Reader.EventTask" />.</summary>
+    </member>
+    <member name="F:System.Diagnostics.Eventing.Reader.StandardEventTask.None">
+      <summary>No task is used to identify a portion of an application that publishes an event.</summary>
+    </member>
+    <member name="T:System.Diagnostics.EventInstance">
+      <summary>Represents language-neutral information for an event log entry.</summary>
+    </member>
+    <member name="M:System.Diagnostics.EventInstance.#ctor(System.Int64,System.Int32,System.Diagnostics.EventLogEntryType)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.EventInstance" /> class using the specified resource identifiers for the localized message and category text of the event entry and the specified event log entry type.</summary>
+      <param name="instanceId">A resource identifier that corresponds to a string defined in the message resource file of the event source.</param>
+      <param name="categoryId">A resource identifier that corresponds to a string defined in the category resource file of the event source, or zero to specify no category for the event.</param>
+      <param name="entryType">An <see cref="T:System.Diagnostics.EventLogEntryType" /> value that indicates the event type.</param>
+      <exception cref="T:System.ComponentModel.InvalidEnumArgumentException">
+        <paramref name="entryType" /> is not a valid <see cref="T:System.Diagnostics.EventLogEntryType" /> value.</exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="instanceId" /> is a negative value or a value larger than <see cref="F:System.UInt32.MaxValue">UInt32.MaxValue</see>.  
+  
+ -or-  
+  
+ <paramref name="categoryId" /> is a negative value or a value larger than <see cref="F:System.UInt16.MaxValue">UInt16.MaxValue</see>.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventInstance.#ctor(System.Int64,System.Int32)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.EventInstance" /> class using the specified resource identifiers for the localized message and category text of the event entry.</summary>
+      <param name="instanceId">A resource identifier that corresponds to a string defined in the message resource file of the event source.</param>
+      <param name="categoryId">A resource identifier that corresponds to a string defined in the category resource file of the event source, or zero to specify no category for the event.</param>
+      <exception cref="T:System.ArgumentOutOfRangeException">The <paramref name="instanceId" /> parameter is a negative value or a value larger than <see cref="F:System.UInt32.MaxValue">UInt32.MaxValue</see>.  
+  
+ -or-  
+  
+ The <paramref name="categoryId" /> parameter is a negative value or a value larger than <see cref="F:System.UInt16.MaxValue">UInt16.MaxValue</see>.</exception>
+    </member>
+    <member name="P:System.Diagnostics.EventInstance.CategoryId">
+      <summary>Gets or sets the resource identifier that specifies the application-defined category of the event entry.</summary>
+      <exception cref="T:System.ArgumentOutOfRangeException">The property is set to a negative value or to a value larger than <see cref="F:System.UInt16.MaxValue">UInt16.MaxValue</see>.</exception>
+      <returns>A numeric category value or resource identifier that corresponds to a string defined in the category resource file of the event source. The default is zero, which signifies that no category will be displayed for the event entry.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventInstance.EntryType">
+      <summary>Gets or sets the event type of the event log entry.</summary>
+      <exception cref="T:System.ComponentModel.InvalidEnumArgumentException">The property is not set to a valid <see cref="T:System.Diagnostics.EventLogEntryType" /> value.</exception>
+      <returns>An <see cref="T:System.Diagnostics.EventLogEntryType" /> value that indicates the event entry type. The default value is <see cref="F:System.Diagnostics.EventLogEntryType.Information" />.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventInstance.InstanceId">
+      <summary>Gets or sets the resource identifier that designates the message text of the event entry.</summary>
+      <exception cref="T:System.ArgumentOutOfRangeException">The property is set to a negative value or to a value larger than <see cref="F:System.UInt32.MaxValue">UInt32.MaxValue</see>.</exception>
+      <returns>A resource identifier that corresponds to a string defined in the message resource file of the event source.</returns>
+    </member>
+    <member name="T:System.Diagnostics.EventLog">
+      <summary>Provides interaction with Windows event logs.</summary>
+    </member>
+    <member name="E:System.Diagnostics.EventLog.EntryWritten">
+      <summary>Occurs when an entry is written to an event log on the local computer.</summary>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.EventLog" /> class. Does not associate the instance with any log.</summary>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.#ctor(System.String,System.String,System.String)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.EventLog" /> class. Associates the instance with a log on the specified computer and creates or assigns the specified source to the <see cref="T:System.Diagnostics.EventLog" />.</summary>
+      <param name="logName">The name of the log on the specified computer.</param>
+      <param name="machineName">The computer on which the log exists.</param>
+      <param name="source">The source of event log entries.</param>
+      <exception cref="T:System.ArgumentNullException">The log name is <see langword="null" />.</exception>
+      <exception cref="T:System.ArgumentException">The log name is invalid.
+
+ -or-
+
+ The computer name is invalid.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.#ctor(System.String,System.String)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.EventLog" /> class. Associates the instance with a log on the specified computer.</summary>
+      <param name="logName">The name of the log on the specified computer.</param>
+      <param name="machineName">The computer on which the log exists.</param>
+      <exception cref="T:System.ArgumentNullException">The log name is <see langword="null" />.</exception>
+      <exception cref="T:System.ArgumentException">The log name is invalid.
+
+ -or-
+
+ The computer name is invalid.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.#ctor(System.String)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.EventLog" /> class. Associates the instance with a log on the local computer.</summary>
+      <param name="logName">The name of the log on the local computer.</param>
+      <exception cref="T:System.ArgumentNullException">The log name is <see langword="null" />.</exception>
+      <exception cref="T:System.ArgumentException">The log name is invalid.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.BeginInit">
+      <summary>Begins the initialization of an <see cref="T:System.Diagnostics.EventLog" /> used on a form or used by another component. The initialization occurs at runtime.</summary>
+      <exception cref="T:System.InvalidOperationException">
+        <see cref="T:System.Diagnostics.EventLog" /> is already initialized.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.Clear">
+      <summary>Removes all entries from the event log.</summary>
+      <exception cref="T:System.ComponentModel.Win32Exception">The event log was not cleared successfully.
+
+ -or-
+
+ The log cannot be opened. A Windows error code is not available.</exception>
+      <exception cref="T:System.ArgumentException">A value is not specified for the <see cref="P:System.Diagnostics.EventLog.Log" /> property. Make sure the log name is not an empty string.</exception>
+      <exception cref="T:System.InvalidOperationException">The log does not exist.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.Close">
+      <summary>Closes the event log and releases read and write handles.</summary>
+      <exception cref="T:System.ComponentModel.Win32Exception">The event log's read handle or write handle was not released successfully.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.CreateEventSource(System.Diagnostics.EventSourceCreationData)">
+      <summary>Establishes a valid event source for writing localized event messages, using the specified configuration properties for the event source and the corresponding event log.</summary>
+      <param name="sourceData">The configuration properties for the event source and its target event log.</param>
+      <exception cref="T:System.ArgumentException">The computer name specified in <paramref name="sourceData" /> is not valid.
+
+-or-
+
+ The source name specified in <paramref name="sourceData" /> is <see langword="null" />.
+
+-or-
+
+ The log name specified in <paramref name="sourceData" /> is not valid. Event log names must consist of printable characters and cannot include the characters '*', '?', or '\'.
+
+-or-
+
+ The log name specified in <paramref name="sourceData" /> is not valid for user log creation. The Event log names AppEvent, SysEvent, and SecEvent are reserved for system use.
+
+-or-
+
+ The log name matches an existing event source name.
+
+-or-
+
+ The source name specified in <paramref name="sourceData" /> results in a registry key path longer than 254 characters.
+
+-or-
+
+ The first 8 characters of the log name specified in <paramref name="sourceData" /> are not unique.
+
+-or-
+
+ The source name specified in <paramref name="sourceData" /> is already registered.
+
+-or-
+
+ The source name specified in <paramref name="sourceData" /> matches an existing event log name.</exception>
+      <exception cref="T:System.InvalidOperationException">The registry key for the event log could not be opened.</exception>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="sourceData" /> is <see langword="null" />.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.CreateEventSource(System.String,System.String,System.String)">
+      <summary>Establishes the specified source name as a valid event source for writing entries to a log on the specified computer. This method can also be used to create a new custom log on the specified computer.</summary>
+      <param name="source">The source by which the application is registered on the specified computer.</param>
+      <param name="logName">The name of the log the source's entries are written to. Possible values include Application, System, or a custom event log. If you do not specify a value, <paramref name="logName" /> defaults to Application.</param>
+      <param name="machineName">The name of the computer to register this event source with, or "." for the local computer.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="machineName" /> is not a valid computer name.
+
+-or-
+
+ <paramref name="source" /> is an empty string ("") or <see langword="null" />.
+
+-or-
+
+ <paramref name="logName" /> is not a valid event log name. Event log names must consist of printable characters, and cannot include the characters '*', '?', or '\'.
+
+-or-
+
+ <paramref name="logName" /> is not valid for user log creation. The event log names AppEvent, SysEvent, and SecEvent are reserved for system use.
+
+-or-
+
+ The log name matches an existing event source name.
+
+-or-
+
+ The source name results in a registry key path longer than 254 characters.
+
+-or-
+
+ The first 8 characters of <paramref name="logName" /> match the first 8 characters of an existing event log name on the specified computer.
+
+-or-
+
+ The source cannot be registered because it already exists on the specified computer.
+
+-or-
+
+ The source name matches an existing event source name.</exception>
+      <exception cref="T:System.InvalidOperationException">The registry key for the event log could not be opened on the specified computer.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.CreateEventSource(System.String,System.String)">
+      <summary>Establishes the specified source name as a valid event source for writing entries to a log on the local computer. This method can also create a new custom log on the local computer.</summary>
+      <param name="source">The source name by which the application is registered on the local computer.</param>
+      <param name="logName">The name of the log the source's entries are written to. Possible values include Application, System, or a custom event log.</param>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="source" /> is an empty string ("") or <see langword="null" />.
+
+-or-
+
+ <paramref name="logName" /> is not a valid event log name. Event log names must consist of printable characters, and cannot include the characters '*', '?', or '\'.
+
+-or-
+
+ <paramref name="logName" /> is not valid for user log creation. The event log names AppEvent, SysEvent, and SecEvent are reserved for system use.
+
+-or-
+
+ The log name matches an existing event source name.
+
+-or-
+
+ The source name results in a registry key path longer than 254 characters.
+
+-or-
+
+ The first 8 characters of <paramref name="logName" /> match the first 8 characters of an existing event log name.
+
+-or-
+
+ The source cannot be registered because it already exists on the local computer.
+
+-or-
+
+ The source name matches an existing event log name.</exception>
+      <exception cref="T:System.InvalidOperationException">The registry key for the event log could not be opened on the local computer.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.Delete(System.String,System.String)">
+      <summary>Removes an event log from the specified computer.</summary>
+      <param name="logName">The name of the log to delete. Possible values include: Application, Security, System, and any custom event logs on the specified computer.</param>
+      <param name="machineName">The name of the computer to delete the log from, or "." for the local computer.</param>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="logName" /> is an empty string ("") or <see langword="null" />.
+
+-or-
+
+ <paramref name="machineName" /> is not a valid computer name.</exception>
+      <exception cref="T:System.InvalidOperationException">The registry key for the event log could not be opened on the specified computer.
+
+-or-
+
+ The log does not exist on the specified computer.</exception>
+      <exception cref="T:System.ComponentModel.Win32Exception">The event log was not cleared successfully.
+
+ -or-
+
+ The log cannot be opened. A Windows error code is not available.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.Delete(System.String)">
+      <summary>Removes an event log from the local computer.</summary>
+      <param name="logName">The name of the log to delete. Possible values include: Application, Security, System, and any custom event logs on the computer.</param>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="logName" /> is an empty string ("") or <see langword="null" />.</exception>
+      <exception cref="T:System.InvalidOperationException">The registry key for the event log could not be opened on the local computer.
+
+-or-
+
+ The log does not exist on the local computer.</exception>
+      <exception cref="T:System.ComponentModel.Win32Exception">The event log was not cleared successfully.
+
+ -or-
+
+ The log cannot be opened. A Windows error code is not available.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.DeleteEventSource(System.String,System.String)">
+      <summary>Removes the application's event source registration from the specified computer.</summary>
+      <param name="source">The name by which the application is registered in the event log system.</param>
+      <param name="machineName">The name of the computer to remove the registration from, or "." for the local computer.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="machineName" /> parameter is invalid.
+
+-or-
+
+ The <paramref name="source" /> parameter does not exist in the registry of the specified computer.
+
+-or-
+
+ You do not have write access on the registry key for the event log.</exception>
+      <exception cref="T:System.InvalidOperationException">
+        <paramref name="source" /> cannot be deleted because in the registry, the parent registry key for <paramref name="source" /> does not contain a subkey with the same name.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.DeleteEventSource(System.String)">
+      <summary>Removes the event source registration from the event log of the local computer.</summary>
+      <param name="source">The name by which the application is registered in the event log system.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="source" /> parameter does not exist in the registry of the local computer.
+
+-or-
+
+ You do not have write access on the registry key for the event log.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.Dispose(System.Boolean)">
+      <summary>Releases the unmanaged resources used by the <see cref="T:System.Diagnostics.EventLog" />, and optionally releases the managed resources.</summary>
+      <param name="disposing">
+        <see langword="true" /> to release both managed and unmanaged resources; <see langword="false" /> to release only unmanaged resources.</param>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.EndInit">
+      <summary>Ends the initialization of an <see cref="T:System.Diagnostics.EventLog" /> used on a form or by another component. The initialization occurs at runtime.</summary>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.Exists(System.String,System.String)">
+      <summary>Determines whether the log exists on the specified computer.</summary>
+      <param name="logName">The log for which to search. Possible values include: Application, Security, System, other application-specific logs (such as those associated with Active Directory), or any custom log on the computer.</param>
+      <param name="machineName">The name of the computer on which to search for the log, or "." for the local computer.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="machineName" /> parameter is an invalid format. Make sure you have used proper syntax for the computer on which you are searching.
+
+ -or-
+
+ The <paramref name="logName" /> is <see langword="null" /> or the value is empty.</exception>
+      <returns>
+        <see langword="true" /> if the log exists on the specified computer; otherwise, <see langword="false" />.</returns>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.Exists(System.String)">
+      <summary>Determines whether the log exists on the local computer.</summary>
+      <param name="logName">The name of the log to search for. Possible values include: Application, Security, System, other application-specific logs (such as those associated with Active Directory), or any custom log on the computer.</param>
+      <exception cref="T:System.ArgumentException">The logName is <see langword="null" /> or the value is empty.</exception>
+      <returns>
+        <see langword="true" /> if the log exists on the local computer; otherwise, <see langword="false" />.</returns>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.GetEventLogs">
+      <summary>Searches for all event logs on the local computer and creates an array of <see cref="T:System.Diagnostics.EventLog" /> objects that contain the list.</summary>
+      <exception cref="T:System.SystemException">You do not have read access to the registry.
+
+ -or-
+
+ There is no event log service on the computer.</exception>
+      <returns>An array of type <see cref="T:System.Diagnostics.EventLog" /> that represents the logs on the local computer.</returns>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.GetEventLogs(System.String)">
+      <summary>Searches for all event logs on the given computer and creates an array of <see cref="T:System.Diagnostics.EventLog" /> objects that contain the list.</summary>
+      <param name="machineName">The computer on which to search for event logs.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="machineName" /> parameter is an invalid computer name.</exception>
+      <exception cref="T:System.InvalidOperationException">You do not have read access to the registry.
+
+ -or-
+
+ There is no event log service on the computer.</exception>
+      <returns>An array of type <see cref="T:System.Diagnostics.EventLog" /> that represents the logs on the given computer.</returns>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.LogNameFromSourceName(System.String,System.String)">
+      <summary>Gets the name of the log to which the specified source is registered.</summary>
+      <param name="source">The name of the event source.</param>
+      <param name="machineName">The name of the computer on which to look, or "." for the local computer.</param>
+      <returns>The name of the log associated with the specified source in the registry.</returns>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.ModifyOverflowPolicy(System.Diagnostics.OverflowAction,System.Int32)">
+      <summary>Changes the configured behavior for writing new entries when the event log reaches its maximum file size.</summary>
+      <param name="action">The overflow behavior for writing new entries to the event log.</param>
+      <param name="retentionDays">The minimum number of days each event log entry is retained. This parameter is used only if <paramref name="action" /> is set to <see cref="F:System.Diagnostics.OverflowAction.OverwriteOlder" />.</param>
+      <exception cref="T:System.ComponentModel.InvalidEnumArgumentException">
+        <paramref name="action" /> is not a valid <see cref="P:System.Diagnostics.EventLog.OverflowAction" /> value.</exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="retentionDays" /> is less than one, or larger than 365.</exception>
+      <exception cref="T:System.InvalidOperationException">The <see cref="P:System.Diagnostics.EventLog.Log" /> value is not a valid log name.
+
+-or-
+
+ The registry key for the event log could not be opened on the target computer.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.RegisterDisplayName(System.String,System.Int64)">
+      <summary>Specifies the localized name of the event log, which is displayed in the server Event Viewer.</summary>
+      <param name="resourceFile">The fully specified path to a localized resource file.</param>
+      <param name="resourceId">The resource identifier that indexes a localized string within the resource file.</param>
+      <exception cref="T:System.InvalidOperationException">The <see cref="P:System.Diagnostics.EventLog.Log" /> value is not a valid log name.
+
+-or-
+
+ The registry key for the event log could not be opened on the target computer.</exception>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="resourceFile" /> is <see langword="null" />.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.SourceExists(System.String,System.String)">
+      <summary>Determines whether an event source is registered on a specified computer.</summary>
+      <param name="source">The name of the event source.</param>
+      <param name="machineName">The name the computer on which to look, or "." for the local computer.</param>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="machineName" /> is an invalid computer name.</exception>
+      <exception cref="T:System.Security.SecurityException">
+        <paramref name="source" /> was not found, but some or all of the event logs could not be searched.</exception>
+      <returns>
+        <see langword="true" /> if the event source is registered on the given computer; otherwise, <see langword="false" />.</returns>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.SourceExists(System.String)">
+      <summary>Determines whether an event source is registered on the local computer.</summary>
+      <param name="source">The name of the event source.</param>
+      <exception cref="T:System.Security.SecurityException">
+        <paramref name="source" /> was not found, but some or all of the event logs could not be searched.</exception>
+      <returns>
+        <see langword="true" /> if the event source is registered on the local computer; otherwise, <see langword="false" />.</returns>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.WriteEntry(System.String,System.Diagnostics.EventLogEntryType,System.Int32,System.Int16,System.Byte[])">
+      <summary>Writes an entry with the given message text, application-defined event identifier, and application-defined category to the event log, and appends binary data to the message.</summary>
+      <param name="message">The string to write to the event log.</param>
+      <param name="type">One of the <see cref="T:System.Diagnostics.EventLogEntryType" /> values.</param>
+      <param name="eventID">The application-specific identifier for the event.</param>
+      <param name="category">The application-specific subcategory associated with the message.</param>
+      <param name="rawData">An array of bytes that holds the binary data associated with the entry.</param>
+      <exception cref="T:System.ArgumentException">The <see cref="P:System.Diagnostics.EventLog.Source" /> property of the <see cref="T:System.Diagnostics.EventLog" /> has not been set.
+
+ -or-
+
+ The method attempted to register a new event source, but the computer name in <see cref="P:System.Diagnostics.EventLog.MachineName" /> is not valid.
+
+-or-
+
+ The source is already registered for a different event log.
+
+-or-
+
+ <paramref name="eventID" /> is less than zero or greater than <see cref="F:System.UInt16.MaxValue">UInt16.MaxValue</see>.
+
+-or-
+
+ The message string is longer than 31,839 bytes (32,766 bytes on Windows operating systems before Windows Vista).
+
+-or-
+
+ The source name results in a registry key path longer than 254 characters.</exception>
+      <exception cref="T:System.InvalidOperationException">The registry key for the event log could not be opened.</exception>
+      <exception cref="T:System.ComponentModel.InvalidEnumArgumentException">
+        <paramref name="type" /> is not a valid <see cref="T:System.Diagnostics.EventLogEntryType" />.</exception>
+      <exception cref="T:System.ComponentModel.Win32Exception">The operating system reported an error when writing the event entry to the event log. A Windows error code is not available.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.WriteEntry(System.String,System.Diagnostics.EventLogEntryType,System.Int32,System.Int16)">
+      <summary>Writes an entry with the given message text, application-defined event identifier, and application-defined category to the event log.</summary>
+      <param name="message">The string to write to the event log.</param>
+      <param name="type">One of the <see cref="T:System.Diagnostics.EventLogEntryType" /> values.</param>
+      <param name="eventID">The application-specific identifier for the event.</param>
+      <param name="category">The application-specific subcategory associated with the message.</param>
+      <exception cref="T:System.ArgumentException">The <see cref="P:System.Diagnostics.EventLog.Source" /> property of the <see cref="T:System.Diagnostics.EventLog" /> has not been set.
+
+ -or-
+
+ The method attempted to register a new event source, but the computer name in <see cref="P:System.Diagnostics.EventLog.MachineName" /> is not valid.
+
+-or-
+
+ The source is already registered for a different event log.
+
+-or-
+
+ <paramref name="eventID" /> is less than zero or greater than <see cref="F:System.UInt16.MaxValue">UInt16.MaxValue</see>.
+
+-or-
+
+ The message string is longer than 31,839 bytes (32,766 bytes on Windows operating systems before Windows Vista).
+
+-or-
+
+ The source name results in a registry key path longer than 254 characters.</exception>
+      <exception cref="T:System.InvalidOperationException">The registry key for the event log could not be opened.</exception>
+      <exception cref="T:System.ComponentModel.InvalidEnumArgumentException">
+        <paramref name="type" /> is not a valid <see cref="T:System.Diagnostics.EventLogEntryType" />.</exception>
+      <exception cref="T:System.ComponentModel.Win32Exception">The operating system reported an error when writing the event entry to the event log. A Windows error code is not available.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.WriteEntry(System.String,System.Diagnostics.EventLogEntryType,System.Int32)">
+      <summary>Writes an entry with the given message text and application-defined event identifier to the event log.</summary>
+      <param name="message">The string to write to the event log.</param>
+      <param name="type">One of the <see cref="T:System.Diagnostics.EventLogEntryType" /> values.</param>
+      <param name="eventID">The application-specific identifier for the event.</param>
+      <exception cref="T:System.ArgumentException">The <see cref="P:System.Diagnostics.EventLog.Source" /> property of the <see cref="T:System.Diagnostics.EventLog" /> has not been set.
+
+ -or-
+
+ The method attempted to register a new event source, but the computer name in <see cref="P:System.Diagnostics.EventLog.MachineName" /> is not valid.
+
+-or-
+
+ The source is already registered for a different event log.
+
+-or-
+
+ <paramref name="eventID" /> is less than zero or greater than <see cref="F:System.UInt16.MaxValue">UInt16.MaxValue</see>.
+
+-or-
+
+ The message string is longer than 31,839 bytes (32,766 bytes on Windows operating systems before Windows Vista).
+
+-or-
+
+ The source name results in a registry key path longer than 254 characters.</exception>
+      <exception cref="T:System.InvalidOperationException">The registry key for the event log could not be opened.</exception>
+      <exception cref="T:System.ComponentModel.InvalidEnumArgumentException">
+        <paramref name="type" /> is not a valid <see cref="T:System.Diagnostics.EventLogEntryType" />.</exception>
+      <exception cref="T:System.ComponentModel.Win32Exception">The operating system reported an error when writing the event entry to the event log. A Windows error code is not available.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.WriteEntry(System.String,System.Diagnostics.EventLogEntryType)">
+      <summary>Writes an error, warning, information, success audit, or failure audit entry with the given message text to the event log.</summary>
+      <param name="message">The string to write to the event log.</param>
+      <param name="type">One of the <see cref="T:System.Diagnostics.EventLogEntryType" /> values.</param>
+      <exception cref="T:System.ArgumentException">The <see cref="P:System.Diagnostics.EventLog.Source" /> property of the <see cref="T:System.Diagnostics.EventLog" /> has not been set.
+
+ -or-
+
+ The method attempted to register a new event source, but the computer name in <see cref="P:System.Diagnostics.EventLog.MachineName" /> is not valid.
+
+-or-
+
+ The source is already registered for a different event log.
+
+-or-
+
+ The message string is longer than 31,839 bytes (32,766 bytes on Windows operating systems before Windows Vista).
+
+-or-
+
+ The source name results in a registry key path longer than 254 characters.</exception>
+      <exception cref="T:System.ComponentModel.InvalidEnumArgumentException">
+        <paramref name="type" /> is not a valid <see cref="T:System.Diagnostics.EventLogEntryType" />.</exception>
+      <exception cref="T:System.InvalidOperationException">The registry key for the event log could not be opened.</exception>
+      <exception cref="T:System.ComponentModel.Win32Exception">The operating system reported an error when writing the event entry to the event log. A Windows error code is not available.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.WriteEntry(System.String,System.String,System.Diagnostics.EventLogEntryType,System.Int32,System.Int16,System.Byte[])">
+      <summary>Writes an entry with the given message text, application-defined event identifier, and application-defined category to the event log (using the specified registered event source) and appends binary data to the message.</summary>
+      <param name="source">The source by which the application is registered on the specified computer.</param>
+      <param name="message">The string to write to the event log.</param>
+      <param name="type">One of the <see cref="T:System.Diagnostics.EventLogEntryType" /> values.</param>
+      <param name="eventID">The application-specific identifier for the event.</param>
+      <param name="category">The application-specific subcategory associated with the message.</param>
+      <param name="rawData">An array of bytes that holds the binary data associated with the entry.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="source" /> value is an empty string ("").
+
+-or-
+
+ The <paramref name="source" /> value is <see langword="null" />.
+
+-or-
+
+ <paramref name="eventID" /> is less than zero or greater than <see cref="F:System.UInt16.MaxValue">UInt16.MaxValue</see>.
+
+-or-
+
+ The message string is longer than 31,839 bytes (32,766 bytes on Windows operating systems before Windows Vista).
+
+-or-
+
+ The source name results in a registry key path longer than 254 characters.</exception>
+      <exception cref="T:System.ComponentModel.InvalidEnumArgumentException">
+        <paramref name="type" /> is not a valid <see cref="T:System.Diagnostics.EventLogEntryType" />.</exception>
+      <exception cref="T:System.InvalidOperationException">The registry key for the event log could not be opened.</exception>
+      <exception cref="T:System.ComponentModel.Win32Exception">The operating system reported an error when writing the event entry to the event log. A Windows error code is not available.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.WriteEntry(System.String,System.String,System.Diagnostics.EventLogEntryType,System.Int32,System.Int16)">
+      <summary>Writes an entry with the given message text, application-defined event identifier, and application-defined category to the event log, using the specified registered event source. The <paramref name="category" /> can be used by the Event Viewer to filter events in the log.</summary>
+      <param name="source">The source by which the application is registered on the specified computer.</param>
+      <param name="message">The string to write to the event log.</param>
+      <param name="type">One of the <see cref="T:System.Diagnostics.EventLogEntryType" /> values.</param>
+      <param name="eventID">The application-specific identifier for the event.</param>
+      <param name="category">The application-specific subcategory associated with the message.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="source" /> value is an empty string ("").
+
+-or-
+
+ The <paramref name="source" /> value is <see langword="null" />.
+
+-or-
+
+ <paramref name="eventID" /> is less than zero or greater than <see cref="F:System.UInt16.MaxValue">UInt16.MaxValue</see>.
+
+-or-
+
+ The message string is longer than 31,839 bytes (32,766 bytes on Windows operating systems before Windows Vista).
+
+-or-
+
+ The source name results in a registry key path longer than 254 characters.</exception>
+      <exception cref="T:System.InvalidOperationException">The registry key for the event log could not be opened.</exception>
+      <exception cref="T:System.ComponentModel.InvalidEnumArgumentException">
+        <paramref name="type" /> is not a valid <see cref="T:System.Diagnostics.EventLogEntryType" />.</exception>
+      <exception cref="T:System.ComponentModel.Win32Exception">The operating system reported an error when writing the event entry to the event log. A Windows error code is not available.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.WriteEntry(System.String,System.String,System.Diagnostics.EventLogEntryType,System.Int32)">
+      <summary>Writes an entry with the given message text and application-defined event identifier to the event log, using the specified registered event source.</summary>
+      <param name="source">The source by which the application is registered on the specified computer.</param>
+      <param name="message">The string to write to the event log.</param>
+      <param name="type">One of the <see cref="T:System.Diagnostics.EventLogEntryType" /> values.</param>
+      <param name="eventID">The application-specific identifier for the event.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="source" /> value is an empty string ("").
+
+-or-
+
+ The <paramref name="source" /> value is <see langword="null" />.
+
+-or-
+
+ <paramref name="eventID" /> is less than zero or greater than <see cref="F:System.UInt16.MaxValue">UInt16.MaxValue</see>.
+
+-or-
+
+ The message string is longer than 31,839 bytes (32,766 bytes on Windows operating systems before Windows Vista).
+
+-or-
+
+ The source name results in a registry key path longer than 254 characters.</exception>
+      <exception cref="T:System.InvalidOperationException">The registry key for the event log could not be opened.</exception>
+      <exception cref="T:System.ComponentModel.InvalidEnumArgumentException">
+        <paramref name="type" /> is not a valid <see cref="T:System.Diagnostics.EventLogEntryType" />.</exception>
+      <exception cref="T:System.ComponentModel.Win32Exception">The operating system reported an error when writing the event entry to the event log. A Windows error code is not available.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.WriteEntry(System.String,System.String,System.Diagnostics.EventLogEntryType)">
+      <summary>Writes an error, warning, information, success audit, or failure audit entry with the given message text to the event log, using the specified registered event source.</summary>
+      <param name="source">The source by which the application is registered on the specified computer.</param>
+      <param name="message">The string to write to the event log.</param>
+      <param name="type">One of the <see cref="T:System.Diagnostics.EventLogEntryType" /> values.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="source" /> value is an empty string ("").
+
+-or-
+
+ The <paramref name="source" /> value is <see langword="null" />.
+
+-or-
+
+ The message string is longer than 31,839 bytes (32,766 bytes on Windows operating systems before Windows Vista).
+
+-or-
+
+ The source name results in a registry key path longer than 254 characters.</exception>
+      <exception cref="T:System.InvalidOperationException">The registry key for the event log could not be opened.</exception>
+      <exception cref="T:System.ComponentModel.InvalidEnumArgumentException">
+        <paramref name="type" /> is not a valid <see cref="T:System.Diagnostics.EventLogEntryType" />.</exception>
+      <exception cref="T:System.ComponentModel.Win32Exception">The operating system reported an error when writing the event entry to the event log. A Windows error code is not available.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.WriteEntry(System.String,System.String)">
+      <summary>Writes an information type entry with the given message text to the event log, using the specified registered event source.</summary>
+      <param name="source">The source by which the application is registered on the specified computer.</param>
+      <param name="message">The string to write to the event log.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="source" /> value is an empty string ("").
+
+-or-
+
+ The <paramref name="source" /> value is <see langword="null" />.
+
+-or-
+
+ The message string is longer than 31,839 bytes (32,766 bytes on Windows operating systems before Windows Vista).
+
+-or-
+
+ The source name results in a registry key path longer than 254 characters.</exception>
+      <exception cref="T:System.InvalidOperationException">The registry key for the event log could not be opened.</exception>
+      <exception cref="T:System.ComponentModel.Win32Exception">The operating system reported an error when writing the event entry to the event log. A Windows error code is not available.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.WriteEntry(System.String)">
+      <summary>Writes an information type entry, with the given message text, to the event log.</summary>
+      <param name="message">The string to write to the event log.</param>
+      <exception cref="T:System.ArgumentException">The <see cref="P:System.Diagnostics.EventLog.Source" /> property of the <see cref="T:System.Diagnostics.EventLog" /> has not been set.
+
+ -or-
+
+ The method attempted to register a new event source, but the computer name in <see cref="P:System.Diagnostics.EventLog.MachineName" /> is not valid.
+
+-or-
+
+ The source is already registered for a different event log.
+
+-or-
+
+ The message string is longer than 31,839 bytes (32,766 bytes on Windows operating systems before Windows Vista).
+
+-or-
+
+ The source name results in a registry key path longer than 254 characters.</exception>
+      <exception cref="T:System.InvalidOperationException">The registry key for the event log could not be opened.</exception>
+      <exception cref="T:System.ComponentModel.Win32Exception">The operating system reported an error when writing the event entry to the event log. A Windows error code is not available.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.WriteEvent(System.Diagnostics.EventInstance,System.Byte[],System.Object[])">
+      <summary>Writes an event log entry with the given event data, message replacement strings, and associated binary data.</summary>
+      <param name="instance">An <see cref="T:System.Diagnostics.EventInstance" /> instance that represents a localized event log entry.</param>
+      <param name="data">An array of bytes that holds the binary data associated with the entry.</param>
+      <param name="values">An array of strings to merge into the message text of the event log entry.</param>
+      <exception cref="T:System.ArgumentException">The <see cref="P:System.Diagnostics.EventLog.Source" /> property of the <see cref="T:System.Diagnostics.EventLog" /> has not been set.
+
+ -or-
+
+ The method attempted to register a new event source, but the computer name in <see cref="P:System.Diagnostics.EventLog.MachineName" /> is not valid.
+
+-or-
+
+ The source is already registered for a different event log.
+
+-or-
+
+ <paramref name="instance.InstanceId" /> is less than zero or greater than <see cref="F:System.UInt16.MaxValue">UInt16.MaxValue</see>.
+
+-or-
+
+ <paramref name="values" /> has more than 256 elements.
+
+-or-
+
+ One of the <paramref name="values" /> elements is longer than 32766 bytes.
+
+-or-
+
+ The source name results in a registry key path longer than 254 characters.</exception>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="instance" /> is <see langword="null" />.</exception>
+      <exception cref="T:System.InvalidOperationException">The registry key for the event log could not be opened.</exception>
+      <exception cref="T:System.ComponentModel.Win32Exception">The operating system reported an error when writing the event entry to the event log. A Windows error code is not available.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.WriteEvent(System.Diagnostics.EventInstance,System.Object[])">
+      <summary>Writes a localized entry to the event log.</summary>
+      <param name="instance">An <see cref="T:System.Diagnostics.EventInstance" /> instance that represents a localized event log entry.</param>
+      <param name="values">An array of strings to merge into the message text of the event log entry.</param>
+      <exception cref="T:System.ArgumentException">The <see cref="P:System.Diagnostics.EventLog.Source" /> property of the <see cref="T:System.Diagnostics.EventLog" /> has not been set.
+
+ -or-
+
+ The method attempted to register a new event source, but the computer name in <see cref="P:System.Diagnostics.EventLog.MachineName" /> is not valid.
+
+-or-
+
+ The source is already registered for a different event log.
+
+-or-
+
+ <paramref name="instance.InstanceId" /> is less than zero or greater than <see cref="F:System.UInt16.MaxValue">UInt16.MaxValue</see>.
+
+-or-
+
+ <paramref name="values" /> has more than 256 elements.
+
+-or-
+
+ One of the <paramref name="values" /> elements is longer than 32766 bytes.
+
+-or-
+
+ The source name results in a registry key path longer than 254 characters.</exception>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="instance" /> is <see langword="null" />.</exception>
+      <exception cref="T:System.InvalidOperationException">The registry key for the event log could not be opened.</exception>
+      <exception cref="T:System.ComponentModel.Win32Exception">The operating system reported an error when writing the event entry to the event log. A Windows error code is not available.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.WriteEvent(System.String,System.Diagnostics.EventInstance,System.Byte[],System.Object[])">
+      <summary>Writes an event log entry with the given event data, message replacement strings, and associated binary data, and using the specified registered event source.</summary>
+      <param name="source">The name of the event source registered for the application on the specified computer.</param>
+      <param name="instance">An <see cref="T:System.Diagnostics.EventInstance" /> instance that represents a localized event log entry.</param>
+      <param name="data">An array of bytes that holds the binary data associated with the entry.</param>
+      <param name="values">An array of strings to merge into the message text of the event log entry.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="source" /> value is an empty string ("").
+
+-or-
+
+ The <paramref name="source" /> value is <see langword="null" />.
+
+-or-
+
+ <paramref name="instance.InstanceId" /> is less than zero or greater than <see cref="F:System.UInt16.MaxValue">UInt16.MaxValue</see>.
+
+-or-
+
+ <paramref name="values" /> has more than 256 elements.
+
+-or-
+
+ One of the <paramref name="values" /> elements is longer than 32766 bytes.
+
+-or-
+
+ The source name results in a registry key path longer than 254 characters.</exception>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="instance" /> is <see langword="null" />.</exception>
+      <exception cref="T:System.InvalidOperationException">The registry key for the event log could not be opened.</exception>
+      <exception cref="T:System.ComponentModel.Win32Exception">The operating system reported an error when writing the event entry to the event log. A Windows error code is not available.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLog.WriteEvent(System.String,System.Diagnostics.EventInstance,System.Object[])">
+      <summary>Writes an event log entry with the given event data and message replacement strings, using the specified registered event source.</summary>
+      <param name="source">The name of the event source registered for the application on the specified computer.</param>
+      <param name="instance">An <see cref="T:System.Diagnostics.EventInstance" /> instance that represents a localized event log entry.</param>
+      <param name="values">An array of strings to merge into the message text of the event log entry.</param>
+      <exception cref="T:System.ArgumentException">The <paramref name="source" /> value is an empty string ("").
+
+-or-
+
+ The <paramref name="source" /> value is <see langword="null" />.
+
+-or-
+
+ <paramref name="instance.InstanceId" /> is less than zero or greater than <see cref="F:System.UInt16.MaxValue">UInt16.MaxValue</see>.
+
+-or-
+
+ <paramref name="values" /> has more than 256 elements.
+
+-or-
+
+ One of the <paramref name="values" /> elements is longer than 32766 bytes.
+
+-or-
+
+ The source name results in a registry key path longer than 254 characters.</exception>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="instance" /> is <see langword="null" />.</exception>
+      <exception cref="T:System.InvalidOperationException">The registry key for the event log could not be opened.</exception>
+      <exception cref="T:System.ComponentModel.Win32Exception">The operating system reported an error when writing the event entry to the event log. A Windows error code is not available.</exception>
+    </member>
+    <member name="P:System.Diagnostics.EventLog.EnableRaisingEvents">
+      <summary>Gets or sets a value indicating whether the <see cref="T:System.Diagnostics.EventLog" /> receives <see cref="E:System.Diagnostics.EventLog.EntryWritten" /> event notifications.</summary>
+      <exception cref="T:System.InvalidOperationException">The event log is on a remote computer.</exception>
+      <returns>
+        <see langword="true" /> if the <see cref="T:System.Diagnostics.EventLog" /> receives notification when an entry is written to the log; otherwise, <see langword="false" />.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLog.Entries">
+      <summary>Gets the contents of the event log.</summary>
+      <returns>An <see cref="T:System.Diagnostics.EventLogEntryCollection" /> holding the entries in the event log. Each entry is associated with an instance of the <see cref="T:System.Diagnostics.EventLogEntry" /> class.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLog.Log">
+      <summary>Gets or sets the name of the log to read from or write to.</summary>
+      <returns>The name of the log. This can be Application, System, Security, or a custom log name. The default is an empty string ("").</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLog.LogDisplayName">
+      <summary>Gets the event log's friendly name.</summary>
+      <exception cref="T:System.InvalidOperationException">The specified <see cref="P:System.Diagnostics.EventLog.Log" /> does not exist in the registry for this computer.</exception>
+      <returns>A name that represents the event log in the system's event viewer.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLog.MachineName">
+      <summary>Gets or sets the name of the computer on which to read or write events.</summary>
+      <exception cref="T:System.ArgumentException">The computer name is invalid.</exception>
+      <returns>The name of the server on which the event log resides. The default is the local computer (".").</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLog.MaximumKilobytes">
+      <summary>Gets or sets the maximum event log size in kilobytes.</summary>
+      <exception cref="T:System.ArgumentOutOfRangeException">The specified value is less than 64, or greater than 4194240, or not an even multiple of 64.</exception>
+      <exception cref="T:System.InvalidOperationException">The <see cref="P:System.Diagnostics.EventLog.Log" /> value is not a valid log name.
+
+-or-
+
+ The registry key for the event log could not be opened on the target computer.</exception>
+      <returns>The maximum event log size in kilobytes. The default is 512, indicating a maximum file size of 512 kilobytes.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLog.MinimumRetentionDays">
+      <summary>Gets the number of days to retain entries in the event log.</summary>
+      <returns>The number of days that entries in the event log are retained. The default value is 7.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLog.OverflowAction">
+      <summary>Gets the configured behavior for storing new entries when the event log reaches its maximum log file size.</summary>
+      <returns>The <see cref="T:System.Diagnostics.OverflowAction" /> value that specifies the configured behavior for storing new entries when the event log reaches its maximum log size. The default is <see cref="F:System.Diagnostics.OverflowAction.OverwriteOlder" />.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLog.Source">
+      <summary>Gets or sets the source name to register and use when writing to the event log.</summary>
+      <exception cref="T:System.ArgumentException">The source name results in a registry key path longer than 254 characters.</exception>
+      <returns>The name registered with the event log as a source of entries. The default is an empty string ("").</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLog.SynchronizingObject">
+      <summary>Gets or sets the object used to marshal the event handler calls issued as a result of an <see cref="T:System.Diagnostics.EventLog" /> entry written event.</summary>
+      <returns>The <see cref="T:System.ComponentModel.ISynchronizeInvoke" /> used to marshal event-handler calls issued as a result of an <see cref="E:System.Diagnostics.EventLog.EntryWritten" /> event on the event log.</returns>
+    </member>
+    <member name="T:System.Diagnostics.EventLogEntry">
+      <summary>Encapsulates a single record in the event log. This class cannot be inherited.</summary>
+    </member>
+    <member name="M:System.Diagnostics.EventLogEntry.Equals(System.Diagnostics.EventLogEntry)">
+      <summary>Performs a comparison between two event log entries.</summary>
+      <param name="otherEntry">The <see cref="T:System.Diagnostics.EventLogEntry" /> to compare.</param>
+      <returns>
+        <see langword="true" /> if the <see cref="T:System.Diagnostics.EventLogEntry" /> objects are identical; otherwise, <see langword="false" />.</returns>
+    </member>
+    <member name="M:System.Diagnostics.EventLogEntry.System#Runtime#Serialization#ISerializable#GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+      <summary>Populates a <see cref="T:System.Runtime.Serialization.SerializationInfo" /> with the data needed to serialize the target object.</summary>
+      <param name="info">The <see cref="T:System.Runtime.Serialization.SerializationInfo" /> to populate with data.</param>
+      <param name="context">The destination (see <see cref="T:System.Runtime.Serialization.StreamingContext" />) for this serialization.</param>
+    </member>
+    <member name="P:System.Diagnostics.EventLogEntry.Category">
+      <summary>Gets the text associated with the <see cref="P:System.Diagnostics.EventLogEntry.CategoryNumber" /> property for this entry.</summary>
+      <exception cref="T:System.Exception">The space could not be allocated for one of the insertion strings associated with the category.</exception>
+      <returns>The application-specific category text.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLogEntry.CategoryNumber">
+      <summary>Gets the category number of the event log entry.</summary>
+      <returns>The application-specific category number for this entry.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLogEntry.Data">
+      <summary>Gets the binary data associated with the entry.</summary>
+      <returns>An array of bytes that holds the binary data associated with the entry.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLogEntry.EntryType">
+      <summary>Gets the event type of this entry.</summary>
+      <returns>The event type that is associated with the entry in the event log.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLogEntry.EventID">
+      <summary>Gets the application-specific event identifier for the current event entry.</summary>
+      <returns>The application-specific identifier for the event message.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLogEntry.Index">
+      <summary>Gets the index of this entry in the event log.</summary>
+      <returns>The index of this entry in the event log.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLogEntry.InstanceId">
+      <summary>Gets the resource identifier that designates the message text of the event entry.</summary>
+      <returns>A resource identifier that corresponds to a string definition in the message resource file of the event source.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLogEntry.MachineName">
+      <summary>Gets the name of the computer on which this entry was generated.</summary>
+      <returns>The name of the computer that contains the event log.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLogEntry.Message">
+      <summary>Gets the localized message associated with this event entry.</summary>
+      <exception cref="T:System.Exception">The space could not be allocated for one of the insertion strings associated with the message.</exception>
+      <returns>The formatted, localized text for the message. This includes associated replacement strings.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLogEntry.ReplacementStrings">
+      <summary>Gets the replacement strings associated with the event log entry.</summary>
+      <returns>An array that holds the replacement strings stored in the event entry.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLogEntry.Source">
+      <summary>Gets the name of the application that generated this event.</summary>
+      <returns>The name registered with the event log as the source of this event.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLogEntry.TimeGenerated">
+      <summary>Gets the local time at which this event was generated.</summary>
+      <returns>The local time at which this event was generated.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLogEntry.TimeWritten">
+      <summary>Gets the local time at which this event was written to the log.</summary>
+      <returns>The local time at which this event was written to the log.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLogEntry.UserName">
+      <summary>Gets the name of the user who is responsible for this event.</summary>
+      <exception cref="T:System.SystemException">Account information could not be obtained for the user's SID.</exception>
+      <returns>The security identifier (SID) that uniquely identifies a user or group.</returns>
+    </member>
+    <member name="T:System.Diagnostics.EventLogEntryCollection">
+      <summary>Defines size and enumerators for a collection of <see cref="T:System.Diagnostics.EventLogEntry" /> instances.</summary>
+    </member>
+    <member name="M:System.Diagnostics.EventLogEntryCollection.CopyTo(System.Diagnostics.EventLogEntry[],System.Int32)">
+      <summary>Copies the elements of the <see cref="T:System.Diagnostics.EventLogEntryCollection" /> to an array of <see cref="T:System.Diagnostics.EventLogEntry" /> instances, starting at a particular array index.</summary>
+      <param name="entries">The one-dimensional array of <see cref="T:System.Diagnostics.EventLogEntry" /> instances that is the destination of the elements copied from the collection. The array must have zero-based indexing.</param>
+      <param name="index">The zero-based index in the array at which copying begins.</param>
+    </member>
+    <member name="M:System.Diagnostics.EventLogEntryCollection.GetEnumerator">
+      <summary>Supports a simple iteration over the <see cref="T:System.Diagnostics.EventLogEntryCollection" /> object.</summary>
+      <returns>An object that can be used to iterate over the collection.</returns>
+    </member>
+    <member name="M:System.Diagnostics.EventLogEntryCollection.System#Collections#ICollection#CopyTo(System.Array,System.Int32)">
+      <summary>Copies the elements of the collection to an <see cref="T:System.Array" />, starting at a particular <see cref="T:System.Array" /> index.</summary>
+      <param name="array">The one-dimensional <see cref="T:System.Array" /> that is the destination of the elements that are copied from the collection. The <see cref="T:System.Array" /> must have zero-based indexing.</param>
+      <param name="index">The zero-based index in <paramref name="array" /> at which copying begins.</param>
+    </member>
+    <member name="P:System.Diagnostics.EventLogEntryCollection.Count">
+      <summary>Gets the number of entries in the event log (that is, the number of elements in the <see cref="T:System.Diagnostics.EventLogEntry" /> collection).</summary>
+      <returns>The number of entries currently in the event log.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLogEntryCollection.Item(System.Int32)">
+      <summary>Gets an entry in the event log, based on an index that starts at 0 (zero).</summary>
+      <param name="index">The zero-based index that is associated with the event log entry.</param>
+      <returns>The event log entry at the location that is specified by the <paramref name="index" /> parameter.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLogEntryCollection.System#Collections#ICollection#IsSynchronized">
+      <summary>Gets a value that indicates whether access to the <see cref="T:System.Diagnostics.EventLogEntryCollection" /> is synchronized (thread-safe).</summary>
+      <returns>
+        <see langword="false" /> if access to the collection is not synchronized (thread-safe).</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLogEntryCollection.System#Collections#ICollection#SyncRoot">
+      <summary>Gets an object that can be used to synchronize access to the <see cref="T:System.Diagnostics.EventLogEntryCollection" /> object.</summary>
+      <returns>An object that can be used to synchronize access to the collection.</returns>
+    </member>
+    <member name="T:System.Diagnostics.EventLogEntryType">
+      <summary>Specifies the event type of an event log entry.</summary>
+    </member>
+    <member name="F:System.Diagnostics.EventLogEntryType.Error">
+      <summary>An error event. This indicates a significant problem the user should know about; usually a loss of functionality or data.</summary>
+    </member>
+    <member name="F:System.Diagnostics.EventLogEntryType.FailureAudit">
+      <summary>A failure audit event. This indicates a security event that occurs when an audited access attempt fails; for example, a failed attempt to open a file.</summary>
+    </member>
+    <member name="F:System.Diagnostics.EventLogEntryType.Information">
+      <summary>An information event. This indicates a significant, successful operation.</summary>
+    </member>
+    <member name="F:System.Diagnostics.EventLogEntryType.SuccessAudit">
+      <summary>A success audit event. This indicates a security event that occurs when an audited access attempt is successful; for example, logging on successfully.</summary>
+    </member>
+    <member name="F:System.Diagnostics.EventLogEntryType.Warning">
+      <summary>A warning event. This indicates a problem that is not immediately significant, but that may signify conditions that could cause future problems.</summary>
+    </member>
+    <member name="T:System.Diagnostics.EventLogTraceListener">
+      <summary>Provides a simple listener that directs tracing or debugging output to an <see cref="T:System.Diagnostics.EventLog" />.</summary>
+    </member>
+    <member name="M:System.Diagnostics.EventLogTraceListener.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.EventLogTraceListener" /> class without a trace listener.</summary>
+    </member>
+    <member name="M:System.Diagnostics.EventLogTraceListener.#ctor(System.Diagnostics.EventLog)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.EventLogTraceListener" /> class using the specified event log.</summary>
+      <param name="eventLog">The event log to write to.</param>
+    </member>
+    <member name="M:System.Diagnostics.EventLogTraceListener.#ctor(System.String)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.EventLogTraceListener" /> class using the specified source.</summary>
+      <param name="source">The name of an existing event log source.</param>
+    </member>
+    <member name="M:System.Diagnostics.EventLogTraceListener.Close">
+      <summary>Closes the event log so that it no longer receives tracing or debugging output.</summary>
+    </member>
+    <member name="M:System.Diagnostics.EventLogTraceListener.TraceData(System.Diagnostics.TraceEventCache,System.String,System.Diagnostics.TraceEventType,System.Int32,System.Object)">
+      <summary>Writes trace information, a data object, and event information to the event log.</summary>
+      <param name="eventCache">An object that contains the current process ID, thread ID, and stack trace information.</param>
+      <param name="source">A name used to identify the output; typically the name of the application that generated the trace event.</param>
+      <param name="severity">One of the enumeration values that specifies the type of event that has caused the trace.</param>
+      <param name="id">A numeric identifier for the event. The combination of <paramref name="source" /> and <paramref name="id" /> uniquely identifies an event.</param>
+      <param name="data">A data object to write to the output file or stream.</param>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="source" /> is not specified.  
+  
+ -or-  
+  
+ The log entry string exceeds 32,766 characters.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLogTraceListener.TraceData(System.Diagnostics.TraceEventCache,System.String,System.Diagnostics.TraceEventType,System.Int32,System.Object[])">
+      <summary>Writes trace information, an array of data objects, and event information to the event log.</summary>
+      <param name="eventCache">An object that contains the current process ID, thread ID, and stack trace information.</param>
+      <param name="source">A name used to identify the output; typically the name of the application that generated the trace event.</param>
+      <param name="severity">One of the enumeration values that specifies the type of event that has caused the trace.</param>
+      <param name="id">A numeric identifier for the event. The combination of <paramref name="source" /> and <paramref name="id" /> uniquely identifies an event.</param>
+      <param name="data">An array of data objects.</param>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="source" /> is not specified.  
+  
+ -or-  
+  
+ The log entry string exceeds 32,766 characters.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLogTraceListener.TraceEvent(System.Diagnostics.TraceEventCache,System.String,System.Diagnostics.TraceEventType,System.Int32,System.String,System.Object[])">
+      <summary>Writes trace information, a formatted array of objects, and event information to the event log.</summary>
+      <param name="eventCache">An object that contains the current process ID, thread ID, and stack trace information.</param>
+      <param name="source">A name used to identify the output; typically the name of the application that generated the trace event.</param>
+      <param name="severity">One of the enumeration values that specifies the type of event that has caused the trace.</param>
+      <param name="id">A numeric identifier for the event. The combination of <paramref name="source" /> and <paramref name="id" /> uniquely identifies an event.</param>
+      <param name="format">A format string that contains zero or more format items that correspond to objects in the <paramref name="args" /> array.</param>
+      <param name="args">An <see langword="object" /> array containing zero or more objects to format.</param>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="source" /> is not specified.  
+  
+ -or-  
+  
+ The log entry string exceeds 32,766 characters.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLogTraceListener.TraceEvent(System.Diagnostics.TraceEventCache,System.String,System.Diagnostics.TraceEventType,System.Int32,System.String)">
+      <summary>Writes trace information, a message, and event information to the event log.</summary>
+      <param name="eventCache">An object that contains the current process ID, thread ID, and stack trace information.</param>
+      <param name="source">A name used to identify the output; typically the name of the application that generated the trace event.</param>
+      <param name="severity">One of the enumeration values that specifies the type of event that has caused the trace.</param>
+      <param name="id">A numeric identifier for the event. The combination of <paramref name="source" /> and <paramref name="id" /> uniquely identifies an event.</param>
+      <param name="message">The trace message.</param>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="source" /> is not specified.  
+  
+ -or-  
+  
+ The log entry string exceeds 32,766 characters.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLogTraceListener.Write(System.String)">
+      <summary>Writes a message to the event log for this instance.</summary>
+      <param name="message">The message to write.</param>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="message" /> exceeds 32,766 characters.</exception>
+    </member>
+    <member name="M:System.Diagnostics.EventLogTraceListener.WriteLine(System.String)">
+      <summary>Writes a message to the event log for this instance.</summary>
+      <param name="message">The message to write.</param>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="message" /> exceeds 32,766 characters.</exception>
+    </member>
+    <member name="P:System.Diagnostics.EventLogTraceListener.EventLog">
+      <summary>Gets or sets the event log to write to.</summary>
+      <returns>The event log to write to.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventLogTraceListener.Name">
+      <summary>Gets or sets the name of this <see cref="T:System.Diagnostics.EventLogTraceListener" />.</summary>
+      <returns>The name of this trace listener.</returns>
+    </member>
+    <member name="T:System.Diagnostics.EventSourceCreationData">
+      <summary>Represents the configuration settings used to create an event log source on the local computer or a remote computer.</summary>
+    </member>
+    <member name="M:System.Diagnostics.EventSourceCreationData.#ctor(System.String,System.String)">
+      <summary>Initializes a new instance of the <see cref="T:System.Diagnostics.EventSourceCreationData" /> class with a specified event source and event log name.</summary>
+      <param name="source">The name to register with the event log as a source of entries.</param>
+      <param name="logName">The name of the log to which entries from the source are written.</param>
+    </member>
+    <member name="P:System.Diagnostics.EventSourceCreationData.CategoryCount">
+      <summary>Gets or sets the number of categories in the category resource file.</summary>
+      <exception cref="T:System.ArgumentOutOfRangeException">The property is set to a negative value or to a value larger than <see cref="F:System.UInt16.MaxValue">UInt16.MaxValue</see>.</exception>
+      <returns>The number of categories in the category resource file. The default value is zero.</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventSourceCreationData.CategoryResourceFile">
+      <summary>Gets or sets the path of the resource file that contains category strings for the source.</summary>
+      <returns>The path of the category resource file. The default is an empty string ("").</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventSourceCreationData.LogName">
+      <summary>Gets or sets the name of the event log to which the source writes entries.</summary>
+      <returns>The name of the event log. This can be Application, System, or a custom log name. The default value is "Application."</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventSourceCreationData.MachineName">
+      <summary>Gets or sets the name of the computer on which to register the event source.</summary>
+      <exception cref="T:System.ArgumentException">The computer name is invalid.</exception>
+      <returns>The name of the system on which to register the event source. The default is the local computer (".").</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventSourceCreationData.MessageResourceFile">
+      <summary>Gets or sets the path of the message resource file that contains message formatting strings for the source.</summary>
+      <returns>The path of the message resource file. The default is an empty string ("").</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventSourceCreationData.ParameterResourceFile">
+      <summary>Gets or sets the path of the resource file that contains message parameter strings for the source.</summary>
+      <returns>The path of the parameter resource file. The default is an empty string ("").</returns>
+    </member>
+    <member name="P:System.Diagnostics.EventSourceCreationData.Source">
+      <summary>Gets or sets the name to register with the event log as an event source.</summary>
+      <returns>The name to register with the event log as a source of entries. The default is an empty string ("").</returns>
+    </member>
+    <member name="T:System.Diagnostics.OverflowAction">
+      <summary>Specifies how to handle entries in an event log that has reached its maximum file size.</summary>
+    </member>
+    <member name="F:System.Diagnostics.OverflowAction.DoNotOverwrite">
+      <summary>Indicates that existing entries are retained when the event log is full and new entries are discarded.</summary>
+    </member>
+    <member name="F:System.Diagnostics.OverflowAction.OverwriteAsNeeded">
+      <summary>Indicates that each new entry overwrites the oldest entry when the event log is full.</summary>
+    </member>
+    <member name="F:System.Diagnostics.OverflowAction.OverwriteOlder">
+      <summary>Indicates that new events overwrite events older than specified by the <see cref="P:System.Diagnostics.EventLog.MinimumRetentionDays" /> property value when the event log is full. New events are discarded if the event log is full and there are no events older than specified by the <see cref="P:System.Diagnostics.EventLog.MinimumRetentionDays" /> property value.</summary>
+    </member>
+  </members>
+</doc>

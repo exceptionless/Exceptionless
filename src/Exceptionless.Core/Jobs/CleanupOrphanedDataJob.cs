@@ -280,6 +280,8 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                 }
                 catch (Exception ex)
                 {
+                    // Intentionally broad: log and continue processing other groups rather than
+                    // aborting the entire job for a single corrupt or transiently-failing signature.
                     error++;
                     _logger.LogError(ex, "Error fixing duplicate stack {ProjectId} {SignatureHash}: {Message}", projectId, signature, ex.Message);
                 }

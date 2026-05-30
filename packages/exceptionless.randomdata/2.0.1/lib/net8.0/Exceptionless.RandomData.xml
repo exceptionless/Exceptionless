@@ -1,0 +1,141 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Exceptionless.RandomData</name>
+    </assembly>
+    <members>
+        <member name="T:Exceptionless.RandomData">
+            <summary>Generates random data for use in unit tests and data seeding.</summary>
+        </member>
+        <member name="P:Exceptionless.RandomData.Instance">
+            <summary>Gets the shared <see cref="T:System.Random"/> instance. Thread-safe.</summary>
+        </member>
+        <member name="M:Exceptionless.RandomData.GetInt(System.Int32,System.Int32)">
+            <summary>Returns a random integer in the inclusive range [<paramref name="min"/>, <paramref name="max"/>].</summary>
+            <remarks>Returns <paramref name="min"/> immediately when both values are equal.</remarks>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="min"/> is greater than <paramref name="max"/>.</exception>
+        </member>
+        <member name="M:Exceptionless.RandomData.GetInt">
+            <summary>Returns a random integer across the full <see cref="T:System.Int32"/> range.</summary>
+        </member>
+        <member name="M:Exceptionless.RandomData.GetVersion(System.String,System.String)">
+            <summary>
+            Returns a random version string between <paramref name="min"/> and <paramref name="max"/>.
+            Defaults to a range of "0.0.0.0" – "25.100.9999.9999" when either bound is null or empty.
+            </summary>
+        </member>
+        <member name="M:Exceptionless.RandomData.GetLong(System.Int64,System.Int64)">
+            <summary>Returns a random <see cref="T:System.Int64"/> in the inclusive range [<paramref name="min"/>, <paramref name="max"/>].</summary>
+            <remarks>Returns <paramref name="min"/> immediately when both values are equal.</remarks>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="min"/> is greater than <paramref name="max"/>.</exception>
+        </member>
+        <member name="M:Exceptionless.RandomData.GetLong">
+            <summary>Returns a random <see cref="T:System.Int64"/> across the full <see cref="T:System.Int64"/> range.</summary>
+        </member>
+        <member name="M:Exceptionless.RandomData.GetCoordinate">
+            <summary>Returns a random latitude/longitude coordinate string in the form <c>"lat,lng"</c>.</summary>
+        </member>
+        <member name="M:Exceptionless.RandomData.GetDateTime(System.Nullable{System.DateTime},System.Nullable{System.DateTime})">
+            <summary>
+            Returns a random <see cref="T:System.DateTime"/> between <paramref name="start"/> and <paramref name="end"/>.
+            Defaults to <see cref="F:System.DateTime.MinValue"/> and <see cref="F:System.DateTime.MaxValue"/> when not specified.
+            </summary>
+            <remarks>Returns <paramref name="start"/> immediately when both values are equal.</remarks>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="start"/> is greater than <paramref name="end"/>.</exception>
+        </member>
+        <member name="M:Exceptionless.RandomData.GetDateTimeOffset(System.Nullable{System.DateTimeOffset},System.Nullable{System.DateTimeOffset})">
+            <summary>
+            Returns a random <see cref="T:System.DateTimeOffset"/> between <paramref name="start"/> and <paramref name="end"/>.
+            Defaults to <see cref="F:System.DateTimeOffset.MinValue"/> and <see cref="F:System.DateTimeOffset.MaxValue"/> when not specified.
+            </summary>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="start"/> is greater than or equal to <paramref name="end"/>.</exception>
+        </member>
+        <member name="M:Exceptionless.RandomData.GetTimeSpan(System.Nullable{System.TimeSpan},System.Nullable{System.TimeSpan})">
+            <summary>
+            Returns a random <see cref="T:System.TimeSpan"/> between <paramref name="min"/> and <paramref name="max"/>.
+            Defaults to <see cref="F:System.TimeSpan.Zero"/> and <see cref="F:System.TimeSpan.MaxValue"/> when not specified.
+            </summary>
+            <remarks>Returns <paramref name="min"/> immediately when both values are equal.</remarks>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="min"/> is greater than <paramref name="max"/>.</exception>
+        </member>
+        <member name="M:Exceptionless.RandomData.GetBool(System.Int32)">
+            <summary>Returns <c>true</c> with the given probability percentage.</summary>
+            <param name="chance">Probability of returning <c>true</c>, from 0 (never) to 100 (always). Clamped to [0, 100].</param>
+        </member>
+        <member name="M:Exceptionless.RandomData.GetDouble(System.Nullable{System.Double},System.Nullable{System.Double})">
+            <summary>
+            Returns a random <see cref="T:System.Double"/> in the inclusive range [<paramref name="min"/>, <paramref name="max"/>].
+            Defaults to <see cref="F:System.Double.MinValue"/> and <see cref="F:System.Double.MaxValue"/> when not specified.
+            </summary>
+            <remarks>Returns <paramref name="min"/> immediately when both values are equal.</remarks>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="min"/> is greater than <paramref name="max"/>.</exception>
+        </member>
+        <member name="M:Exceptionless.RandomData.GetDecimal">
+            <summary>Returns a random <see cref="T:System.Decimal"/> using two random integers as bounds.</summary>
+        </member>
+        <member name="M:Exceptionless.RandomData.GetDecimal(System.Int32,System.Int32)">
+            <summary>Returns a random <see cref="T:System.Decimal"/> in the range [<paramref name="min"/>, <paramref name="max"/>].</summary>
+        </member>
+        <member name="M:Exceptionless.RandomData.GetEnum``1">
+            <summary>Returns a random value from the enum type <typeparamref name="T"/>.</summary>
+        </member>
+        <member name="M:Exceptionless.RandomData.GetIp4Address">
+            <summary>Returns a random IPv4 address string in the form <c>"a.b.c.d"</c>.</summary>
+        </member>
+        <member name="M:Exceptionless.RandomData.GetString(System.Int32,System.Int32,System.String)">
+            <summary>
+            Returns a random string of the specified length using <paramref name="allowedChars"/> as the character pool.
+            Uses a cryptographically secure source to eliminate modulo bias.
+            </summary>
+            <param name="minLength">Minimum length of the generated string.</param>
+            <param name="maxLength">Maximum length of the generated string.</param>
+            <param name="allowedChars">Pool of characters to pick from. Must contain 256 or fewer distinct characters.</param>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="allowedChars"/> contains more than 256 distinct characters.</exception>
+        </member>
+        <member name="M:Exceptionless.RandomData.GetAlphaString(System.Int32,System.Int32)">
+            <summary>Returns a random alpha string (no ambiguous characters such as l/1 or O/0).</summary>
+        </member>
+        <member name="M:Exceptionless.RandomData.GetAlphaNumericString(System.Int32,System.Int32)">
+            <summary>Returns a random alphanumeric string (no ambiguous characters such as l/1 or O/0).</summary>
+        </member>
+        <member name="M:Exceptionless.RandomData.GetTitleWords(System.Int32,System.Int32)">
+            <summary>Returns a title-cased phrase of random lorem ipsum words.</summary>
+        </member>
+        <member name="M:Exceptionless.RandomData.GetWord(System.Boolean)">
+            <summary>Returns a single random lorem ipsum word, optionally title-cased.</summary>
+        </member>
+        <member name="M:Exceptionless.RandomData.GetWords(System.Int32,System.Int32,System.Boolean,System.Boolean)">
+            <summary>Returns a space-separated phrase of random lorem ipsum words.</summary>
+            <param name="minWords">Minimum number of words. Must be 2 or more.</param>
+            <param name="maxWords">Maximum number of words. Must be 2 or more.</param>
+            <param name="titleCaseFirstWord">Whether to title-case the first word.</param>
+            <param name="titleCaseAllWords">Whether to title-case every word.</param>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="minWords"/> or <paramref name="maxWords"/> is less than 2.</exception>
+        </member>
+        <member name="M:Exceptionless.RandomData.GetSentence(System.Int32,System.Int32)">
+            <summary>Returns a random lorem ipsum sentence ending with a period.</summary>
+            <param name="minWords">Minimum number of words. Must be 3 or more.</param>
+            <param name="maxWords">Maximum number of words. Must be 3 or more.</param>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="minWords"/> or <paramref name="maxWords"/> is less than 3.</exception>
+        </member>
+        <member name="M:Exceptionless.RandomData.GetParagraphs(System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Boolean)">
+            <summary>Returns one or more paragraphs of random lorem ipsum text.</summary>
+            <param name="count">Number of paragraphs. Must be 1 or more.</param>
+            <param name="minSentences">Minimum sentences per paragraph. Must be 1 or more.</param>
+            <param name="maxSentences">Maximum sentences per paragraph.</param>
+            <param name="minSentenceWords">Minimum words per sentence.</param>
+            <param name="maxSentenceWords">Maximum words per sentence.</param>
+            <param name="html">When <c>true</c>, wraps each paragraph in <c>&lt;p&gt;</c> tags.</param>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="count"/> or <paramref name="minSentences"/> is less than 1.</exception>
+        </member>
+        <member name="T:Exceptionless.EnumerableExtensions">
+            <summary>Extension methods for <see cref="T:System.Collections.Generic.IEnumerable`1"/> providing random element selection.</summary>
+        </member>
+        <member name="M:Exceptionless.EnumerableExtensions.Random``1(System.Collections.Generic.IEnumerable{``0},``0)">
+            <summary>
+            Returns a random element from <paramref name="items"/>, or <paramref name="defaultValue"/> if the sequence is null or empty.
+            The return value is non-null when <paramref name="defaultValue"/> is non-null.
+            </summary>
+        </member>
+    </members>
+</doc>

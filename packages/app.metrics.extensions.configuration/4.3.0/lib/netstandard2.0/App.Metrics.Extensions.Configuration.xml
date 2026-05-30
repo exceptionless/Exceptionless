@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>App.Metrics.Extensions.Configuration</name>
+    </assembly>
+    <members>
+        <member name="T:App.Metrics.Extensions.Configuration.ConfigurationMetricsConfigurationExtensions">
+            <summary>
+            Extends <see cref="T:App.Metrics.Extensions.Configuration.ConfigurationMetricsConfigurationExtensions"/> with support for System.Configuration appSettings elements.
+            </summary>
+        </member>
+    </members>
+</doc>

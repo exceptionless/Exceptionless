@@ -1,0 +1,443 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Polly.Extensions</name>
+    </assembly>
+    <members>
+        <member name="T:Polly.DependencyInjection.AddResiliencePipelineContext`1">
+            <summary>
+            Represents the context for adding a resilience pipeline with the specified key.
+            </summary>
+            <typeparam name="TKey">The type of the key used to identify the resilience pipeline.</typeparam>
+        </member>
+        <member name="P:Polly.DependencyInjection.AddResiliencePipelineContext`1.PipelineKey">
+            <summary>
+            Gets the pipeline key for the pipeline being created.
+            </summary>
+        </member>
+        <member name="P:Polly.DependencyInjection.AddResiliencePipelineContext`1.ServiceProvider">
+            <summary>
+            Gets the <see cref="T:System.IServiceProvider"/> that provides access to the dependency injection container.
+            </summary>
+        </member>
+        <member name="P:Polly.DependencyInjection.AddResiliencePipelineContext`1.RegistryContext">
+            <summary>
+            Gets the context that is used by the registry.
+            </summary>
+        </member>
+        <member name="M:Polly.DependencyInjection.AddResiliencePipelineContext`1.EnableReloads``1(System.String)">
+            <summary>
+            Enables dynamic reloading of the resilience pipeline whenever the <typeparamref name="TOptions"/> options are changed.
+            </summary>
+            <typeparam name="TOptions">The options type to listen to.</typeparam>
+            <param name="name">The named options, if any.</param>
+            <remarks>
+            You can decide based on the <paramref name="name"/> to listen for changes in global options or named options.
+            If <paramref name="name"/> is <see langword="null"/> then the global options are listened to.
+            <para>
+            You can listen for changes from multiple options by calling this method with different <typeparamref name="TOptions"/> types.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Polly.DependencyInjection.AddResiliencePipelineContext`1.GetOptions``1(System.String)">
+            <summary>
+            Gets the options identified by <paramref name="name"/>.
+            </summary>
+            <typeparam name="TOptions">The options type.</typeparam>
+            <param name="name">The options name, if any.</param>
+            <returns>The options instance.</returns>
+            <remarks>
+            If <paramref name="name"/> is <see langword="null"/> then the global options are returned.
+            </remarks>
+        </member>
+        <member name="M:Polly.DependencyInjection.AddResiliencePipelineContext`1.OnPipelineDisposed(System.Action)">
+            <summary>
+            Registers a callback that is called when the pipeline instance being configured is disposed.
+            </summary>
+            <param name="callback">The callback delegate.</param>
+        </member>
+        <member name="T:Polly.DependencyInjection.AddResiliencePipelinesContext`1">
+            <summary>
+            Represents the context for configuring resilience pipelines with the specified key.
+            </summary>
+            <typeparam name="TKey">The type of the key used to identify the resilience pipeline.</typeparam>
+        </member>
+        <member name="P:Polly.DependencyInjection.AddResiliencePipelinesContext`1.ServiceProvider">
+            <summary>
+            Gets the <see cref="T:System.IServiceProvider"/> that provides access to the dependency injection container.
+            </summary>
+        </member>
+        <member name="M:Polly.DependencyInjection.AddResiliencePipelinesContext`1.AddResiliencePipeline(`0,System.Action{Polly.ResiliencePipelineBuilder,Polly.DependencyInjection.AddResiliencePipelineContext{`0}})">
+            <summary>
+            Adds a resilience pipeline to the registry.
+            </summary>
+            <param name="key">The key used to identify the resilience pipeline.</param>
+            <param name="configure">An action that configures the resilience pipeline.</param>
+            <remarks>
+            You can retrieve the registered pipeline by resolving the <see cref="T:Polly.Registry.ResiliencePipelineProvider`1"/> class from the dependency injection container.
+            <para>
+            This call enables telemetry for the registered resilience pipeline.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Polly.DependencyInjection.AddResiliencePipelinesContext`1.AddResiliencePipeline``1(`0,System.Action{Polly.ResiliencePipelineBuilder{``0},Polly.DependencyInjection.AddResiliencePipelineContext{`0}})">
+            <summary>
+            Adds a resilience pipeline to the registry.
+            </summary>
+            <typeparam name="TResult">The type of result that the resilience pipeline handles.</typeparam>
+            <param name="key">The key used to identify the resilience pipeline.</param>
+            <param name="configure">An action that configures the resilience pipeline.</param>
+            <remarks>
+            You can retrieve the registered pipeline by resolving the <see cref="T:Polly.Registry.ResiliencePipelineProvider`1"/> class from the dependency injection container.
+            <para>
+            This call enables telemetry for the registered resilience pipeline.
+            </para>
+            </remarks>
+        </member>
+        <member name="T:Polly.PollyServiceCollectionExtensions">
+            <summary>
+            Provides extension methods for registering resilience pipelines using the <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.
+            </summary>
+        </member>
+        <member name="M:Polly.PollyServiceCollectionExtensions.AddResiliencePipeline``2(Microsoft.Extensions.DependencyInjection.IServiceCollection,``0,System.Action{Polly.ResiliencePipelineBuilder{``1}})">
+            <summary>
+            Adds a resilience pipeline that handles <typeparamref name="TResult"/> to service collection.
+            </summary>
+            <typeparam name="TKey">The type of the key used to identify the resilience pipeline.</typeparam>
+            <typeparam name="TResult">The type of result that the resilience pipeline handles.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the resilience pipeline to.</param>
+            <param name="key">The key used to identify the resilience pipeline.</param>
+            <param name="configure">An action that configures the resilience pipeline.</param>
+            <returns>The updated <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> with the registered resilience pipeline.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.</exception>
+            <remarks>
+            You can retrieve the registered pipeline by resolving the <see cref="T:Polly.Registry.ResiliencePipelineProvider`1"/> class from the dependency injection container.
+            <para>
+            This call enables telemetry for the registered resilience pipeline.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Polly.PollyServiceCollectionExtensions.AddResiliencePipeline``2(Microsoft.Extensions.DependencyInjection.IServiceCollection,``0,System.Action{Polly.ResiliencePipelineBuilder{``1},Polly.DependencyInjection.AddResiliencePipelineContext{``0}})">
+            <summary>
+            Adds a resilience pipeline that handles <typeparamref name="TResult"/> to service collection.
+            </summary>
+            <typeparam name="TKey">The type of the key used to identify the resilience pipeline.</typeparam>
+            <typeparam name="TResult">The type of result that the resilience pipeline handles.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the resilience pipeline to.</param>
+            <param name="key">The key used to identify the resilience pipeline.</param>
+            <param name="configure">An action that configures the resilience pipeline.</param>
+            <returns>The updated <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> with the registered resilience pipeline.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.</exception>
+            <remarks>
+            You can retrieve the registered pipeline by resolving the <see cref="T:Polly.Registry.ResiliencePipelineProvider`1"/> class from the dependency injection container.
+            <para>
+            This call enables telemetry for the registered resilience pipeline.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Polly.PollyServiceCollectionExtensions.AddResiliencePipeline``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,``0,System.Action{Polly.ResiliencePipelineBuilder})">
+            <summary>
+            Adds a resilience pipeline to service collection.
+            </summary>
+            <typeparam name="TKey">The type of the key used to identify the resilience pipeline.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the resilience pipeline to.</param>
+            <param name="key">The key used to identify the resilience pipeline.</param>
+            <param name="configure">An action that configures the resilience pipeline.</param>
+            <returns>The updated <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> with the registered resilience pipeline.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.</exception>
+            <remarks>
+            You can retrieve the registered pipeline by resolving the <see cref="T:Polly.Registry.ResiliencePipelineProvider`1"/> class from the dependency injection container.
+            <para>
+            This call enables telemetry for the registered resilience pipeline.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Polly.PollyServiceCollectionExtensions.AddResiliencePipeline``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,``0,System.Action{Polly.ResiliencePipelineBuilder,Polly.DependencyInjection.AddResiliencePipelineContext{``0}})">
+            <summary>
+            Adds a resilience pipeline to service collection.
+            </summary>
+            <typeparam name="TKey">The type of the key used to identify the resilience pipeline.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the resilience pipeline to.</param>
+            <param name="key">The key used to identify the resilience pipeline.</param>
+            <param name="configure">An action that configures the resilience pipeline.</param>
+            <returns>The updated <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> with the registered resilience pipeline.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.</exception>
+            <remarks>
+            You can retrieve the registered pipeline by resolving the <see cref="T:Polly.Registry.ResiliencePipelineProvider`1"/> class from the dependency injection container.
+            <para>
+            This call enables telemetry for the registered resilience pipeline.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Polly.PollyServiceCollectionExtensions.AddResiliencePipelines``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Polly.DependencyInjection.AddResiliencePipelinesContext{``0}})">
+            <summary>
+            Allows deferred addition of one or more resilience pipelines to the service collection.
+            </summary>
+            <typeparam name="TKey">The type of the key used to identify the resilience pipelines.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add resilience pipelines to.</param>
+            <param name="configure">An action that allows configuration of resilience pipelines.</param>
+            <returns>The updated <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> with the addition configuration added.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.</exception>
+            <remarks>
+            This method can be useful if you want to add resilience pipelines as late as possible, e.g.
+            to allow other services / configuration to be available before providing the key.
+            <para>
+            You can retrieve the registered pipeline by resolving the <see cref="T:Polly.Registry.ResiliencePipelineProvider`1"/> class from the dependency injection container.
+            </para>
+            <para>
+            This call enables telemetry for the registered resilience pipeline.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Polly.PollyServiceCollectionExtensions.AddResiliencePipelineRegistry``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Polly.Registry.ResiliencePipelineRegistryOptions{``0}})">
+            <summary>
+            Adds <see cref="T:Polly.Registry.ResiliencePipelineRegistry`1"/> and <see cref="T:Polly.Registry.ResiliencePipelineProvider`1"/> to the service collection that allows configuring
+            and retrieving resilience pipelines using the <typeparamref name="TKey"/> key.
+            </summary>
+            <typeparam name="TKey">The type of the key used to identify the resilience pipeline.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the resilience pipeline to.</param>
+            <param name="configure">The action that configures the <see cref="T:Polly.Registry.ResiliencePipelineRegistryOptions`1"/> that are used by the registry.</param>
+            <returns>The updated <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> with additional services added.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="services"/> is <see langword="null"/>.</exception>
+            <remarks>
+            This call enables telemetry for all resilience pipelines created using <see cref="T:Polly.Registry.ResiliencePipelineRegistry`1"/>.
+            </remarks>
+        </member>
+        <member name="M:Polly.PollyServiceCollectionExtensions.AddResiliencePipelineRegistry``1(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds <see cref="T:Polly.Registry.ResiliencePipelineRegistry`1"/> and <see cref="T:Polly.Registry.ResiliencePipelineProvider`1"/> to the service collection that allows configuring
+            and retrieving resilience pipelines using the <typeparamref name="TKey"/> key.
+            </summary>
+            <typeparam name="TKey">The type of the key used to identify the resilience pipeline.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the resilience pipeline to.</param>
+            <returns>The updated <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> with additional services added.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="services"/> is <see langword="null"/>.</exception>
+            <remarks>
+            This call enables telemetry for all resilience pipelines created using <see cref="T:Polly.Registry.ResiliencePipelineRegistry`1"/>.
+            </remarks>
+        </member>
+        <member name="T:Polly.Registry.ConfigureBuilderContextExtensions">
+            <summary>
+            Extensions for <see cref="T:Polly.Registry.ConfigureBuilderContext`1"/>.
+            </summary>
+        </member>
+        <member name="M:Polly.Registry.ConfigureBuilderContextExtensions.EnableReloads``2(Polly.Registry.ConfigureBuilderContext{``0},Microsoft.Extensions.Options.IOptionsMonitor{``1},System.String)">
+            <summary>
+            Enables dynamic reloading of the resilience pipeline whenever the <typeparamref name="TOptions"/> options are changed.
+            </summary>
+            <typeparam name="TKey">The type of the key used to identify the resilience pipeline.</typeparam>
+            <typeparam name="TOptions">The options type to listen to.</typeparam>
+            <param name="context">The builder context.</param>
+            <param name="optionsMonitor">The options monitor.</param>
+            <param name="name">The named options, if any.</param>
+            <remarks>
+            You can decide based on the <paramref name="name"/> to listen for changes in global options or named options.
+            If <paramref name="name"/> is <see langword="null"/> then the global options are listened to.
+            <para>
+            You can listen for changes from multiple options by calling this method with different <typeparamref name="TOptions"/> types.
+            </para>
+            </remarks>
+        </member>
+        <member name="T:Polly.Telemetry.EnrichmentContext`2">
+            <summary>
+            Enrichment context used when reporting resilience events.
+            </summary>
+            <typeparam name="TResult">The type of the result.</typeparam>
+            <typeparam name="TArgs">The type of the arguments attached to the resilience event.</typeparam>
+            <remarks>
+            This context is passed to enrichers in <see cref="P:Polly.Telemetry.TelemetryOptions.MeteringEnrichers"/>.
+            Always use the constructor when creating this struct, otherwise we do not guarantee binary compatibility.
+            </remarks>
+        </member>
+        <member name="M:Polly.Telemetry.EnrichmentContext`2.#ctor(Polly.Telemetry.TelemetryEventArguments{`0,`1}@,System.Collections.Generic.IList{System.Collections.Generic.KeyValuePair{System.String,System.Object}})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Polly.Telemetry.EnrichmentContext`2"/> struct.
+            </summary>
+            <param name="telemetryEvent">The telemetry event info.</param>
+            <param name="tags">Tags associated with the resilience event.</param>
+        </member>
+        <member name="P:Polly.Telemetry.EnrichmentContext`2.TelemetryEvent">
+            <summary>
+            Gets the info about the telemetry event.
+            </summary>
+        </member>
+        <member name="P:Polly.Telemetry.EnrichmentContext`2.Tags">
+            <summary>
+            Gets the tags associated with the resilience event.
+            </summary>
+            <remarks>
+            Custom enricher can add tags to this collection.
+            </remarks>
+        </member>
+        <member name="T:Polly.Telemetry.Log.__ResilienceEventStruct">
+            <summary> This API supports the logging infrastructure and is not intended to be used directly from your code. It is subject to change in the future. </summary>
+        </member>
+        <member name="T:Polly.Telemetry.Log.__PipelineExecutedStruct">
+            <summary> This API supports the logging infrastructure and is not intended to be used directly from your code. It is subject to change in the future. </summary>
+        </member>
+        <member name="T:Polly.Telemetry.Log.__ExecutionAttemptStruct">
+            <summary> This API supports the logging infrastructure and is not intended to be used directly from your code. It is subject to change in the future. </summary>
+        </member>
+        <member name="T:Polly.Telemetry.MeteringEnricher">
+            <summary>
+            Enricher used to enrich the metrics with additional information.
+            </summary>
+        </member>
+        <member name="M:Polly.Telemetry.MeteringEnricher.Enrich``2(Polly.Telemetry.EnrichmentContext{``0,``1}@)">
+            <summary>
+            Enriches the metrics with additional information.
+            </summary>
+            <typeparam name="TResult">The type of result.</typeparam>
+            <typeparam name="TArgs">The type of arguments.</typeparam>
+            <param name="context">The enrichment context.</param>
+        </member>
+        <member name="T:Polly.Telemetry.SeverityProviderArguments">
+            <summary>
+            Arguments used by <see cref="P:Polly.Telemetry.TelemetryOptions.SeverityProvider"/>.
+            </summary>
+        </member>
+        <member name="M:Polly.Telemetry.SeverityProviderArguments.#ctor(Polly.Telemetry.ResilienceTelemetrySource,Polly.Telemetry.ResilienceEvent,Polly.ResilienceContext)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Polly.Telemetry.SeverityProviderArguments"/> struct.
+            </summary>
+            <param name="source">The source that produced the resilience event.</param>
+            <param name="resilienceEvent">The resilience event.</param>
+            <param name="context">The resilience context.</param>
+        </member>
+        <member name="P:Polly.Telemetry.SeverityProviderArguments.Source">
+            <summary>
+            Gets the source that produced the resilience event.
+            </summary>
+        </member>
+        <member name="P:Polly.Telemetry.SeverityProviderArguments.Event">
+            <summary>
+            Gets the resilience event.
+            </summary>
+        </member>
+        <member name="P:Polly.Telemetry.SeverityProviderArguments.Context">
+            <summary>
+            Gets the resilience context.
+            </summary>
+        </member>
+        <member name="P:Polly.Telemetry.TagsList.Tags">
+            <summary>
+            Gets the tags associated with the resilience event.
+            </summary>
+        </member>
+        <member name="T:Polly.Telemetry.TelemetryOptions">
+            <summary>
+            The options that are used to configure the telemetry that is produced by the resilience strategies.
+            </summary>
+        </member>
+        <member name="M:Polly.Telemetry.TelemetryOptions.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Polly.Telemetry.TelemetryOptions"/> class.
+            </summary>
+        </member>
+        <member name="M:Polly.Telemetry.TelemetryOptions.#ctor(Polly.Telemetry.TelemetryOptions)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Polly.Telemetry.TelemetryOptions"/> class.
+            </summary>
+            <param name="other">The telemetry options instance to copy the data from.</param>
+        </member>
+        <member name="P:Polly.Telemetry.TelemetryOptions.TelemetryListeners">
+            <summary>
+            Gets the collection of telemetry listeners.
+            </summary>
+            <value>
+            The default value is an empty collection.
+            </value>
+        </member>
+        <member name="P:Polly.Telemetry.TelemetryOptions.LoggerFactory">
+            <summary>
+            Gets or sets the logger factory.
+            </summary>
+            <value>
+            The default value is <see cref="F:Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance"/>.
+            </value>
+        </member>
+        <member name="P:Polly.Telemetry.TelemetryOptions.MeteringEnrichers">
+            <summary>
+            Gets the collection of telemetry enrichers.
+            </summary>
+            <value>
+            The default value is an empty collection.
+            </value>
+        </member>
+        <member name="P:Polly.Telemetry.TelemetryOptions.ResultFormatter">
+            <summary>
+            Gets or sets the result formatter.
+            </summary>
+            <value>
+            The default value is a formatter that returns a status code for HTTP based responses and the result as-is for all other result types.
+            This property is required.
+            </value>
+        </member>
+        <member name="P:Polly.Telemetry.TelemetryOptions.SeverityProvider">
+            <summary>
+            Gets or sets the resilience event severity provider that allows customizing the severity of resilience events.
+            </summary>
+            <value>
+            The default value is <see langword="null"/>.
+            </value>
+        </member>
+        <member name="T:Polly.TelemetryResiliencePipelineBuilderExtensions">
+            <summary>
+            The telemetry extensions for the <see cref="T:Polly.ResiliencePipelineBuilder"/>.
+            </summary>
+        </member>
+        <member name="M:Polly.TelemetryResiliencePipelineBuilderExtensions.ConfigureTelemetry``1(``0,Microsoft.Extensions.Logging.ILoggerFactory)">
+            <summary>
+            Enables telemetry for this builder.
+            </summary>
+            <typeparam name="TBuilder">The builder type.</typeparam>
+            <param name="builder">The builder instance.</param>
+            <param name="loggerFactory">The logger factory to be used for logging.</param>
+            <returns>The builder instance with the telemetry enabled.</returns>
+            <remarks>
+            By enabling telemetry, the resilience pipeline will log and meter all resilience events.
+            Additionally, the telemetry strategy that logs and meters the executions is added to the beginning of the composite strategy.
+            </remarks>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="builder"/> or <paramref name="loggerFactory"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Polly.TelemetryResiliencePipelineBuilderExtensions.ConfigureTelemetry``1(``0,Polly.Telemetry.TelemetryOptions)">
+            <summary>
+            Enables telemetry for this builder.
+            </summary>
+            <typeparam name="TBuilder">The builder type.</typeparam>
+            <param name="builder">The builder instance.</param>
+            <param name="options">The resilience telemetry options.</param>
+            <returns>The builder instance with the telemetry enabled.</returns>
+            <remarks>
+            By enabling telemetry, the resilience pipeline will log and meter all resilience events.
+            Additionally, the telemetry strategy that logs and meters the executions is added to the beginning of the composite strategy.
+            </remarks>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="builder"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="T:Polly.ResilienceValidationContext">
+            <summary>
+            The validation context that encapsulates parameters for the validation.
+            </summary>
+        </member>
+        <member name="M:Polly.ResilienceValidationContext.#ctor(System.Object,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Polly.ResilienceValidationContext"/> class.
+            </summary>
+            <param name="instance">The instance being validated.</param>
+            <param name="primaryMessage">The primary validation message.</param>
+        </member>
+        <member name="P:Polly.ResilienceValidationContext.Instance">
+            <summary>
+            Gets the instance being validated.
+            </summary>
+        </member>
+        <member name="P:Polly.ResilienceValidationContext.PrimaryMessage">
+            <summary>
+            Gets the primary validation message.
+            </summary>
+            <remarks>
+            The primary message is displayed first followed by the details about the validation errors.
+            </remarks>
+        </member>
+    </members>
+</doc>

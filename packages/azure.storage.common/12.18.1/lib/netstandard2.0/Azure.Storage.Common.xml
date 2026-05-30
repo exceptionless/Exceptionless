@@ -1,0 +1,3053 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doc>
+    <assembly>
+        <name>Azure.Storage.Common</name>
+    </assembly>
+    <members>
+        <member name="T:Azure.Storage.ClientSideEncryptionOptions">
+            <summary>
+            Provides the client configuration options for connecting to Azure Blob using clientside encryption.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.ClientSideEncryptionOptions.EncryptionVersion">
+            <summary>
+            The version of clientside encryption to use.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.ClientSideEncryptionOptions.KeyEncryptionKey">
+            <summary>
+            Required for upload operations.
+            The key used to wrap the generated content encryption key.
+            For more information, see https://docs.microsoft.com/en-us/azure/storage/common/storage-client-side-encryption.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.ClientSideEncryptionOptions.KeyResolver">
+            <summary>
+            Required for download operations.
+            Fetches the correct key encryption key to unwrap the downloaded content encryption key.
+            For more information, see https://docs.microsoft.com/en-us/azure/storage/common/storage-client-side-encryption.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.ClientSideEncryptionOptions.KeyWrapAlgorithm">
+            <summary>
+            Required for upload operations.
+            The algorithm identifier to use when wrapping the content encryption key. This is passed into
+            <see cref="M:Azure.Core.Cryptography.IKeyEncryptionKey.WrapKey(System.String,System.ReadOnlyMemory{System.Byte},System.Threading.CancellationToken)" />
+            and its async counterpart.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.ClientSideEncryptionOptions.#ctor(Azure.Storage.ClientSideEncryptionVersion)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Azure.Storage.ClientSideEncryptionOptions" /> class.
+            </summary>
+            <param name="version">The version of clientside encryption to use.</param>
+        </member>
+        <member name="T:Azure.Storage.ClientSideEncryptionVersion">
+            <summary>
+            The version of clientside encryption to use.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.ClientSideEncryptionVersion.V1_0">
+            <summary>
+            1.0.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.ClientSideEncryptionVersion.V2_0">
+            <summary>
+            2.0.
+            </summary>
+        </member>
+        <member name="T:Azure.Storage.DownloadTransferValidationOptions">
+            <summary>
+            Options for additional content integrity checks on download.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.DownloadTransferValidationOptions.ChecksumAlgorithm">
+            <summary>
+            Checksum algorithm to use.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.DownloadTransferValidationOptions.AutoValidateChecksum">
+            <summary>
+            Defaults to true. False can only be specified on specific operations and not at the client level.
+            Indicates whether the SDK should validate the content
+            body against the content hash before returning contents to the caller.
+            If set to false, caller is responsible for extracting the hash out
+            of the <see cref="T:Azure.Response`1" /> and validating the hash themselves.
+            </summary>
+        </member>
+        <member name="T:Azure.Storage.Sas.AccountSasBuilder">
+            <summary>
+            <see cref="T:Azure.Storage.Sas.AccountSasBuilder" /> is used to generate an account level
+            Shared Access Signature (SAS) for Azure Storage services.
+            For more information, see
+            <see href="https://docs.microsoft.com/rest/api/storageservices/constructing-an-account-sas">
+            Create an account SAS</see>.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.AccountSasBuilder.Version">
+            <summary>
+            The storage service version to use to authenticate requests made
+            with this shared access signature, and the service version to use
+            when handling requests made with this shared access signature.
+            </summary>
+            <remarks>
+            This property has been deprecated and we will always use the latest
+            storage SAS version of the Storage service supported. This change
+            does not have any impact on how your application generates or makes
+            use of SAS tokens.
+            </remarks>
+        </member>
+        <member name="P:Azure.Storage.Sas.AccountSasBuilder.Protocol">
+            <summary>
+            The optional signed protocol field specifies the protocol
+            permitted for a request made with the SAS.  Possible values are
+            <see cref="F:Azure.Storage.Sas.SasProtocol.HttpsAndHttp" />,
+            <see cref="F:Azure.Storage.Sas.SasProtocol.Https" />, and
+            <see cref="F:Azure.Storage.Sas.SasProtocol.None" />.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.AccountSasBuilder.StartsOn">
+            <summary>
+            Optionally specify the time at which the shared access signature
+            becomes valid.  If omitted when DateTimeOffset.MinValue is used,
+            start time for this call is assumed to be the time when the
+            storage service receives the request.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.AccountSasBuilder.ExpiresOn">
+            <summary>
+            The time at which the shared access signature becomes invalid.
+            This field must be omitted if it has been specified in an
+            associated stored access policy.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.AccountSasBuilder.Permissions">
+            <summary>
+            The permissions associated with the shared access signature. The
+            user is restricted to operations allowed by the permissions. The
+            <see cref="T:Azure.Storage.Sas.AccountSasPermissions" /> type can be used to create the
+            permissions string.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.AccountSasBuilder.IPRange">
+            <summary>
+            Specifies an IP address or a range of IP addresses from which to
+            accept requests. If the IP address from which the request
+            originates does not match the IP address or address range
+            specified on the SAS token, the request is not authenticated.
+            When specifying a range of IP addresses, note that the range is
+            inclusive.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.AccountSasBuilder.Services">
+            <summary>
+            The services associated with the shared access signature. The
+            user is restricted to operations with the specified services.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.AccountSasBuilder.ResourceTypes">
+            <summary>
+            The resource types associated with the shared access signature. The
+            user is restricted to operations on the specified resources.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.AccountSasBuilder.EncryptionScope">
+            <summary>
+            Optional.  Encryption scope to use when sending requests authorized with this SAS URI.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.Sas.AccountSasBuilder.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Azure.Storage.Sas.AccountSasBuilder" />
+            class.
+            </summary>
+            <remarks>
+            This constructor has been deprecated. Please consider using
+            <see cref="M:Azure.Storage.Sas.AccountSasBuilder.#ctor(Azure.Storage.Sas.AccountSasPermissions,System.DateTimeOffset,Azure.Storage.Sas.AccountSasServices,Azure.Storage.Sas.AccountSasResourceTypes)" />
+            to create a Service SAS. This change does not have any impact on how
+            your application generates or makes use of SAS tokens.
+            </remarks>
+        </member>
+        <member name="M:Azure.Storage.Sas.AccountSasBuilder.#ctor(Azure.Storage.Sas.AccountSasPermissions,System.DateTimeOffset,Azure.Storage.Sas.AccountSasServices,Azure.Storage.Sas.AccountSasResourceTypes)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Azure.Storage.Sas.AccountSasBuilder" />
+            class to create a Blob Container Service Sas.
+            </summary>
+            <param name="permissions">
+            The time at which the shared access signature becomes invalid.
+            This field must be omitted if it has been specified in an
+            associated stored access policy.
+            </param>
+            <param name="expiresOn">
+            The time at which the shared access signature becomes invalid.
+            This field must be omitted if it has been specified in an
+            associated stored access policy.
+            </param>
+            <param name="services">
+            Specifies the services accessible from an account level shared access
+            signature.
+            </param>
+            <param name="resourceTypes">
+            Specifies the resource types accessible from an account level shared
+            access signature.
+            </param>
+        </member>
+        <member name="M:Azure.Storage.Sas.AccountSasBuilder.SetPermissions(Azure.Storage.Sas.AccountSasPermissions)">
+            <summary>
+            Sets the permissions for an account SAS.
+            </summary>
+            <param name="permissions">
+            <see cref="T:Azure.Storage.Sas.AccountSasPermissions" /> containing the allowed permissions.
+            </param>
+        </member>
+        <member name="M:Azure.Storage.Sas.AccountSasBuilder.SetPermissions(System.String)">
+            <summary>
+            Sets the permissions for the SAS using a raw permissions string.
+            </summary>
+            <param name="rawPermissions">Raw permissions string for the SAS.</param>
+        </member>
+        <member name="M:Azure.Storage.Sas.AccountSasBuilder.ToSasQueryParameters(Azure.Storage.StorageSharedKeyCredential)">
+            <summary>
+            Use an account's <see cref="T:Azure.Storage.StorageSharedKeyCredential" /> to sign this
+            shared access signature values to produce the proper SAS query
+            parameters for authenticating requests.
+            </summary>
+            <param name="sharedKeyCredential">
+            The storage account's <see cref="T:Azure.Storage.StorageSharedKeyCredential" />.
+            </param>
+            <returns>
+            The <see cref="T:Azure.Storage.Sas.SasQueryParameters" /> used for authenticating
+            requests.
+            </returns>
+        </member>
+        <member name="M:Azure.Storage.Sas.AccountSasBuilder.ToString">
+            <summary>
+            Returns a string that represents the current object.
+            </summary>
+            <returns>A string that represents the current object.</returns>
+        </member>
+        <member name="M:Azure.Storage.Sas.AccountSasBuilder.Equals(System.Object)">
+            <summary>
+            Check if two <see cref="T:Azure.Storage.Sas.AccountSasBuilder" /> instances are equal.
+            </summary>
+            <param name="obj">The instance to compare to.</param>
+            <returns>True if they're equal, false otherwise.</returns>
+        </member>
+        <member name="M:Azure.Storage.Sas.AccountSasBuilder.GetHashCode">
+            <summary>
+            Get a hash code for the <see cref="T:Azure.Storage.Sas.AccountSasBuilder" />.
+            </summary>
+            <returns>Hash code for the <see cref="T:Azure.Storage.Sas.AccountSasBuilder" />.</returns>
+        </member>
+        <member name="T:Azure.Storage.Sas.AccountSasPermissions">
+            <summary>
+            <see cref="T:Azure.Storage.Sas.AccountSasPermissions" /> contains the list of
+            permissions that can be set for a blob's access policy.  Use
+            <see cref="M:Azure.Storage.Sas.AccountSasBuilder.SetPermissions(Azure.Storage.Sas.AccountSasPermissions)" />
+            to set the permissions on the <see cref="T:Azure.Storage.Sas.AccountSasBuilder" />.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.AccountSasPermissions.Read">
+            <summary>
+            Indicates that Read is permitted.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.AccountSasPermissions.Write">
+            <summary>
+            Indicates that Write is permitted.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.AccountSasPermissions.Delete">
+            <summary>
+            Indicates that Delete is permitted.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.AccountSasPermissions.List">
+            <summary>
+            Indicates that List is permitted.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.AccountSasPermissions.Add">
+            <summary>
+            Indicates that Add is permitted.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.AccountSasPermissions.Create">
+            <summary>
+            Indicates that Create is permitted.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.AccountSasPermissions.Update">
+            <summary>
+            Indicates that Update is permitted.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.AccountSasPermissions.Process">
+            <summary>
+            Indicates that Delete is permitted.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.AccountSasPermissions.Tag">
+            <summary>
+            Indicates that reading and writing Tags is permitted.
+            Blob service only.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.AccountSasPermissions.Filter">
+            <summary>
+            Indicates that filtering by tag is permitted.
+            Blob service only.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.AccountSasPermissions.DeleteVersion">
+            <summary>
+            Indicates that deleting a BlobVersion is permitted.
+            Blob Service only.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.AccountSasPermissions.SetImmutabilityPolicy">
+            <summary>
+            Indicates that setting immutability policy is permitted.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.AccountSasPermissions.PermanentDelete">
+            <summary>
+            Indicates that Blob Permanent Delete is permitted.
+            Blob service only.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.AccountSasPermissions.All">
+            <summary>
+            Indicates that all permissions are set.
+            </summary>
+        </member>
+        <member name="T:Azure.Storage.Sas.AccountSasResourceTypes">
+            <summary>
+            Specifies the resource types accessible from an account level shared
+            access signature.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.AccountSasResourceTypes.Service">
+            <summary>
+            Indicates whether service-level APIs are accessible
+            from this shared access signature (e.g., Get/Set Service
+            Properties, Get Service Stats, List Containers/Queues/Tables/
+            Shares).
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.AccountSasResourceTypes.Container">
+            <summary>
+            Indicates whether blob container-level APIs are accessible
+            from this shared access signature (e.g., Create/Delete Container,
+            Create/Delete Queue, Create/Delete Table, Create/Delete Share, List
+            Blobs/Files and Directories).
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.AccountSasResourceTypes.Object">
+            <summary>
+            Indicates whether object-level APIs for blobs, queue
+            messages, and files are accessible from this shared access
+            signature (e.g. Put Blob, Query Entity, Get Messages, Create File,
+            etc.).
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.AccountSasResourceTypes.All">
+            <summary>
+            Indicates all service-level APIs are accessible from this shared
+            access signature.
+            </summary>
+        </member>
+        <member name="T:Azure.Storage.Sas.AccountSasServices">
+            <summary>
+            Specifies the services accessible from an account level shared access
+            signature.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.AccountSasServices.Blobs">
+            <summary>
+            Indicates whether Azure Blob Storage resources are
+            accessible from the shared access signature.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.AccountSasServices.Queues">
+            <summary>
+            Indicates whether Azure Queue Storage resources are
+            accessible from the shared access signature.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.AccountSasServices.Files">
+            <summary>
+            Indicates whether Azure File Storage resources are
+            accessible from the shared access signature.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.AccountSasServices.Tables">
+            <summary>
+            Indicates whether Azure Table Storage resources are
+            accessible from the shared access signature.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.AccountSasServices.All">
+            <summary>
+            Indicates all services are accessible from the shared
+            access signature.
+            </summary>
+        </member>
+        <member name="T:Azure.Storage.Sas.SasIPRange">
+            <summary>
+            Represents a range of allowed IP addresses for constructing a Shared
+            Access Signature.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasIPRange.Start">
+            <summary>
+            Gets the start of the IP range.  Not specified if equal to null or
+            <see cref="F:System.Net.IPAddress.None" />.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasIPRange.End">
+            <summary>
+            Gets the optional end of the IP range.  Not specified if equal to
+            null or <see cref="F:System.Net.IPAddress.None" />.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasIPRange.#ctor(System.Net.IPAddress,System.Net.IPAddress)">
+            <summary>
+            Creates a new <see cref="T:Azure.Storage.Sas.SasIPRange" />.
+            </summary>
+            <param name="start">
+            The range's start <see cref="T:System.Net.IPAddress" />.
+            </param>
+            <param name="end">
+            The range's optional end <see cref="T:System.Net.IPAddress" />.
+            </param>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasIPRange.ToString">
+            <summary>
+            Creates a string representation of an <see cref="T:Azure.Storage.Sas.SasIPRange" />.
+            </summary>
+            <returns>
+            A string representation of an <see cref="T:Azure.Storage.Sas.SasIPRange" />.
+            </returns>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasIPRange.Parse(System.String)">
+            <summary>
+            Parse an IP range string into a new <see cref="T:Azure.Storage.Sas.SasIPRange" />.
+            </summary>
+            <param name="s">IP range string to parse.</param>
+            <returns>The parsed <see cref="T:Azure.Storage.Sas.SasIPRange" />.</returns>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasIPRange.Equals(System.Object)">
+            <summary>
+            Check if two <see cref="T:Azure.Storage.Sas.SasIPRange" /> instances are equal.
+            </summary>
+            <param name="obj">The instance to compare to.</param>
+            <returns>True if they're equal, false otherwise.</returns>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasIPRange.GetHashCode">
+            <summary>
+            Get a hash code for the <see cref="T:Azure.Storage.Sas.SasIPRange" />.
+            </summary>
+            <returns>Hash code for the <see cref="T:Azure.Storage.Sas.SasIPRange" />.</returns>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasIPRange.op_Equality(Azure.Storage.Sas.SasIPRange,Azure.Storage.Sas.SasIPRange)">
+            <summary>
+            Check if two <see cref="T:Azure.Storage.Sas.SasIPRange" /> instances are equal.
+            </summary>
+            <param name="left">The first instance to compare.</param>
+            <param name="right">The second instance to compare.</param>
+            <returns>True if they're equal, false otherwise.</returns>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasIPRange.op_Inequality(Azure.Storage.Sas.SasIPRange,Azure.Storage.Sas.SasIPRange)">
+            <summary>
+            Check if two <see cref="T:Azure.Storage.Sas.SasIPRange" /> instances are not equal.
+            </summary>
+            <param name="left">The first instance to compare.</param>
+            <param name="right">The second instance to compare.</param>
+            <returns>True if they're not equal, false otherwise.</returns>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasIPRange.Equals(Azure.Storage.Sas.SasIPRange)">
+            <summary>
+            Check if two <see cref="T:Azure.Storage.Sas.SasIPRange" /> instances are equal.
+            </summary>
+            <param name="other">The instance to compare to.</param>
+            <returns>True if they're equal, false otherwise.</returns>
+        </member>
+        <member name="T:Azure.Storage.Sas.SasProtocol">
+            <summary>
+            Defines the protocols permitted for Storage requests made with a shared
+            access signature.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.SasProtocol.None">
+            <summary>
+            No protocol has been specified. If no value is specified,
+            the service will default to HttpsAndHttp.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.SasProtocol.HttpsAndHttp">
+            <summary>
+            Only requests issued over HTTPS or HTTP will be permitted.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.SasProtocol.Https">
+            <summary>
+            Only requests issued over HTTPS will be permitted.
+            </summary>
+        </member>
+        <member name="T:Azure.Storage.Sas.SasQueryParameters">
+            <summary>
+            A <see cref="T:Azure.Storage.Sas.SasQueryParameters" /> object represents the components
+            that make up an Azure Storage Shared Access Signature's query
+            parameters.  It includes components used by all Azure Storage resources
+            (Blob Containers, Blobs, Files, and Queues).  You can construct a new instance
+            using the service specific SAS builder types.
+            For more information,
+            <see href="https://docs.microsoft.com/rest/api/storageservices/create-service-sas">
+            Create a service SAS</see>.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Sas.SasQueryParameters.DefaultSasVersion">
+            <summary>
+            The default service version to use for Shared Access Signatures.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasQueryParameters.Version">
+            <summary>
+            Gets the storage service version to use to authenticate requests
+            made with this shared access signature, and the service version to
+            use when handling requests made with this shared access signature.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasQueryParameters.Services">
+            <summary>
+            Gets the signed services accessible with an account level shared
+            access signature.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasQueryParameters.ResourceTypes">
+            <summary>
+            Gets which resources are accessible via the shared access signature.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasQueryParameters.Protocol">
+            <summary>
+            Optional. Specifies the protocol permitted for a request made with
+            the shared access signature.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasQueryParameters.StartsOn">
+            <summary>
+            Gets the optional time at which the shared access signature becomes
+            valid.  If omitted, start time for this call is assumed to be the
+            time when the storage service receives the request.
+            <see cref="F:System.DateTimeOffset.MinValue" /> means not set.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasQueryParameters.ExpiresOn">
+            <summary>
+            Gets the time at which the shared access signature becomes invalid.
+            <see cref="F:System.DateTimeOffset.MinValue" /> means not set.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasQueryParameters.IPRange">
+            <summary>
+            Gets the optional IP address or a range of IP addresses from which
+            to accept requests.  When specifying a range, note that the range
+            is inclusive.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasQueryParameters.Identifier">
+            <summary>
+            Gets the optional unique value up to 64 characters in length that
+            correlates to an access policy specified for the blob container, queue,
+            or share.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasQueryParameters.Resource">
+            <summary>
+            Gets the resources are accessible via the shared access signature.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasQueryParameters.Permissions">
+            <summary>
+            Gets the permissions associated with the shared access signature.
+            The user is restricted to operations allowed by the permissions.
+            This field must be omitted if it has been specified in an
+            associated stored access policy.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasQueryParameters.CacheControl">
+            <summary>
+            Gets the Cache-Control response header, which allows for
+            specifying the client-side caching to be used for blob and file downloads.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasQueryParameters.ContentDisposition">
+            <summary>
+            Gets the Content-Disposition response header, which allows for
+            specifying the way that the blob or file content can be displayed in the browser.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasQueryParameters.ContentEncoding">
+            <summary>
+            Gets the Content-Encoding response header, which allows for specifying
+            the type of encoding used for blob and file downloads.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasQueryParameters.ContentLanguage">
+            <summary>
+            Gets the Content-Language response header, which allows for specifying the
+            language of the downloaded blob or file content.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasQueryParameters.ContentType">
+            <summary>
+            Gets the Content-Type response header, which allows for specifying the
+            type of the downloaded blob or file content.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasQueryParameters.PreauthorizedAgentObjectId">
+            <summary>
+            Gets the Authorized AAD Object Id associated with the shared access signature.
+            The AAD Object ID of a user authorized by the owner of the User Delegation Key
+            to perform the action granted by the SAS. The Azure Storage service will
+            ensure that the owner of the user delegation key has the required permissions
+            before granting access but no additional permission check for the user specified
+            in this value will be performed. This cannot be used in conjuction with
+            <see cref="P:Azure.Storage.Sas.SasQueryParameters.AgentObjectId" />.
+            Only valid in an HNS enabled account. If this value is set in an non-HNS enabled
+            account, an authorization failure will be thrown.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasQueryParameters.AgentObjectId">
+            <summary>
+            Gets the Unauthorized AAD Object Id associated with the shared access signature.
+            The AAD Object Id of a user that is assumed to be unauthorized by the owner of the
+            User Delegation Key. The Azure Storage Service will perform an additional POSIX ACL
+            check to determine if the user is authorized to perform the requested operation.
+            This cannot be used in conjuction with <see cref="P:Azure.Storage.Sas.SasQueryParameters.PreauthorizedAgentObjectId" />.
+            Only valid in an HNS enabled account. If this value is set in an non-HNS enabled
+            account, an authorization failure will be thrown.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasQueryParameters.CorrelationId">
+            <summary>
+            Gets the Correlation Id associated with the shared access signature. This is used to
+            correlate the storage audit logs with the audit logs used by the principal generating
+            and distributing SAS.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasQueryParameters.DirectoryDepth">
+            <summary>
+            Gets the Directory Depth specificed in the canonicalizedresource field of the
+            string-to-sign. The depth of the directory is the number of directories beneath the
+            root folder. Required when resource (sr) = d to indicate the depth of the directory.
+            The value must be a non-negative integer.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasQueryParameters.EncryptionScope">
+            <summary>
+            Gets the Encryption Scope associated with the shared access signature.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasQueryParameters.Signature">
+            <summary>
+            Gets the string-to-sign, a unique string constructed from the
+            fields that must be verified in order to authenticate the request.
+            The signature is an HMAC computed over the string-to-sign and key
+            using the SHA256 algorithm, and then encoded using Base64 encoding.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasQueryParameters.Empty">
+            <summary>
+            Gets empty shared access signature query parameters.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasQueryParameters.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Azure.Storage.Sas.SasQueryParameters" /> class.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasQueryParameters.#ctor(System.Collections.Generic.IDictionary{System.String,System.String})">
+            <summary>
+            Creates a new instance of the <see cref="T:Azure.Storage.Sas.SasQueryParameters" /> type
+            based on the supplied query parameters <paramref name="values" />.
+            All SAS-related query parameters will be removed from
+            <paramref name="values" />.
+            </summary>
+            <param name="values">URI query parameters</param>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasQueryParameters.#ctor(System.String,System.Nullable{Azure.Storage.Sas.AccountSasServices},System.Nullable{Azure.Storage.Sas.AccountSasResourceTypes},Azure.Storage.Sas.SasProtocol,System.DateTimeOffset,System.DateTimeOffset,Azure.Storage.Sas.SasIPRange,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.Nullable{System.Int32},System.String)">
+            <summary>
+            Creates a new SasQueryParameters instance.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasQueryParameters.#ctor(System.String,System.Nullable{Azure.Storage.Sas.AccountSasServices},System.Nullable{Azure.Storage.Sas.AccountSasResourceTypes},Azure.Storage.Sas.SasProtocol,System.DateTimeOffset,System.DateTimeOffset,Azure.Storage.Sas.SasIPRange,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String)">
+            <summary>
+            Creates a new SasQueryParameters instance.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasQueryParameters.#ctor(System.String,System.Nullable{Azure.Storage.Sas.AccountSasServices},System.Nullable{Azure.Storage.Sas.AccountSasResourceTypes},Azure.Storage.Sas.SasProtocol,System.DateTimeOffset,System.DateTimeOffset,Azure.Storage.Sas.SasIPRange,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.Nullable{System.Int32})">
+            <summary>
+            Creates a new SasQueryParameters instance.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasQueryParameters.Create(System.Collections.Generic.IDictionary{System.String,System.String})">
+            <summary>
+            Creates a new instance of the <see cref="T:Azure.Storage.Sas.SasQueryParameters" /> type
+            based on the supplied query parameters <paramref name="values" />.
+            All SAS-related query parameters will be removed from
+            <paramref name="values" />.
+            </summary>
+            <param name="values">URI query parameters</param>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasQueryParameters.Create(System.String,System.Nullable{Azure.Storage.Sas.AccountSasServices},System.Nullable{Azure.Storage.Sas.AccountSasResourceTypes},Azure.Storage.Sas.SasProtocol,System.DateTimeOffset,System.DateTimeOffset,Azure.Storage.Sas.SasIPRange,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.Nullable{System.Int32},System.String)">
+            <summary>
+            Creates a new SasQueryParameters instance.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasQueryParameters.Create(System.String,System.Nullable{Azure.Storage.Sas.AccountSasServices},System.Nullable{Azure.Storage.Sas.AccountSasResourceTypes},Azure.Storage.Sas.SasProtocol,System.DateTimeOffset,System.DateTimeOffset,Azure.Storage.Sas.SasIPRange,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String)">
+            <summary>
+            Creates a new SasQueryParameters instance.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasQueryParameters.Create(System.String,System.Nullable{Azure.Storage.Sas.AccountSasServices},System.Nullable{Azure.Storage.Sas.AccountSasResourceTypes},Azure.Storage.Sas.SasProtocol,System.DateTimeOffset,System.DateTimeOffset,Azure.Storage.Sas.SasIPRange,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.Nullable{System.Int32})">
+            <summary>
+            Creates a new SasQueryParameters instance.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasQueryParameters.ToString">
+            <summary>
+            Convert the SAS query parameters into a URL encoded query string.
+            </summary>
+            <returns>
+            A URL encoded query string representing the SAS.
+            </returns>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasQueryParameters.AppendProperties(System.Text.StringBuilder)">
+            <summary>
+            Builds the query parameter string for the SasQueryParameters instance.
+            </summary>
+            <param name="stringBuilder">
+            StringBuilder instance to add the query params to
+            </param>
+        </member>
+        <member name="T:Azure.Storage.Sas.SasExtensions">
+            <summary>
+            Extension methods for Sas.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasExtensions.ToPermissionsString(Azure.Storage.Sas.AccountSasResourceTypes)">
+            <summary>
+            Creates a string representing which resource types are allowed
+            for <see cref="P:Azure.Storage.Sas.AccountSasBuilder.ResourceTypes" />.
+            </summary>
+            <returns>
+            A string representing which resource types are allowed.
+            </returns>
+            <remarks>
+            The order here matches the order used by the portal when generating SAS signatures.
+            </remarks>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasExtensions.ParseResourceTypes(System.String)">
+            <summary>
+            Parse a string representing which resource types are accessible
+            from a shared access signature.
+            </summary>
+            <param name="s">
+            A string representing which resource types are accessible.
+            </param>
+            <returns>
+            An <see cref="T:Azure.Storage.Sas.AccountSasResourceTypes" /> instance.
+            </returns>
+            <remarks>
+            The order here matches the order used by the portal when generating SAS signatures.
+            </remarks>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasExtensions.ToProtocolString(Azure.Storage.Sas.SasProtocol)">
+            <summary>
+            Gets a string representation of the protocol.
+            </summary>
+            <returns>A string representation of the protocol.</returns>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasExtensions.ParseProtocol(System.String)">
+            <summary>
+            Parse a string representation of a protocol.
+            </summary>
+            <param name="s">A string representation of a protocol.</param>
+            <returns>A <see cref="T:Azure.Storage.Sas.SasProtocol" />.</returns>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasExtensions.ToPermissionsString(Azure.Storage.Sas.AccountSasServices)">
+            <summary>
+            Creates a string representing which services can be used for
+            <see cref="P:Azure.Storage.Sas.AccountSasBuilder.Services" />.
+            </summary>
+            <returns>
+            A string representing which services are allowed.
+            </returns>
+            <remarks>
+            The order here matches the order used by the portal when generating SAS signatures.
+            </remarks>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasExtensions.ParseAccountServices(System.String)">
+            <summary>
+            Parse a string representing which services are accessible from a
+            shared access signature.
+            </summary>
+            <param name="s">
+            A string representing which services are accessible.
+            </param>
+            <returns>
+            An <see cref="T:Azure.Storage.Sas.AccountSasServices" /> instance.
+            </returns>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasExtensions.FormatTimesForSasSigning(System.DateTimeOffset)">
+            <summary>
+            FormatTimesForSASSigning converts a time.Time to a snapshotTimeFormat string suitable for a
+            SASField's StartTime or ExpiryTime fields. Returns "" if value.IsZero().
+            </summary>
+            <param name="time"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Azure.Storage.Sas.SasExtensions.AddToBuilder(System.Text.StringBuilder,System.String,System.String)">
+            <summary>
+            Helper method to add query param key value pairs to StringBuilder
+            </summary>
+            <param name="sb">StringBuilder instance</param>
+            <param name="key">query key</param>
+            <param name="value">query value</param>
+        </member>
+        <member name="T:Azure.Storage.Sas.SasQueryParametersInternals">
+            <summary>
+            Helper to access protected static members of SasQueryParameters.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Sas.SasQueryParametersInternals.DefaultSasVersionInternal">
+            <summary>
+            Settable internal property to allow different versions in test.
+            </summary>
+        </member>
+        <member name="T:Azure.Storage.AccountExtensions">
+            <summary>
+            Blob enum extensions.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.AccountExtensions.ToPermissionsString(Azure.Storage.Sas.AccountSasPermissions)">
+            <summary>
+            Create a permissions string to provide
+            <see cref="P:Azure.Storage.Sas.AccountSasBuilder.Permissions" />.
+            </summary>
+            <returns>A permissions string.</returns>
+        </member>
+        <member name="T:Azure.Storage.StorageChecksumAlgorithm">
+            <summary>
+            Algorithm for generating a checksum to be used for verifying REST contents on a transfer.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.StorageChecksumAlgorithm.Auto">
+            <summary>
+            Recommended. Allow the library to choose an algorithm. Different library versions may
+            make different choices.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.StorageChecksumAlgorithm.None">
+            <summary>
+            No selected algorithm. Do not calculate or request checksums.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.StorageChecksumAlgorithm.MD5">
+            <summary>
+            Standard MD5 hash algorithm.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.StorageChecksumAlgorithm.StorageCrc64">
+            <summary>
+            Azure Storage custom 64 bit CRC.
+            </summary>
+        </member>
+        <member name="T:Azure.Storage.StorageCrc64HashAlgorithm">
+            <summary>
+            Azure Storage CRC-64 implementation.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.StorageCrc64HashAlgorithm.Create">
+            <summary>
+            Creates a new instance of <see cref="T:Azure.Storage.StorageCrc64HashAlgorithm" />.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Azure.Storage.StorageCrc64HashAlgorithm.Reset">
+            <summary>
+              When overridden in a derived class,
+              resets the hash computation to the initial state.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.StorageCrc64HashAlgorithm.Append(System.ReadOnlySpan{System.Byte})">
+            <summary>
+              When overridden in a derived class,
+              appends the contents of <paramref name="source" /> to the data already
+              processed for the current hash computation.
+            </summary><param name="source">The data to process.</param>
+        </member>
+        <member name="M:Azure.Storage.StorageCrc64HashAlgorithm.GetCurrentHashCore(System.Span{System.Byte})">
+            <summary>
+              When overridden in a derived class,
+              writes the computed hash value to <paramref name="destination" />
+              without modifying accumulated state.
+            </summary><param name="destination">The buffer that receives the computed hash value.</param><remarks><para>
+                Implementations of this method must write exactly
+                <see cref="P:System.IO.Hashing.NonCryptographicHashAlgorithm.HashLengthInBytes" /> bytes to <paramref name="destination" />.
+                Do not assume that the buffer was zero-initialized.
+              </para><para>
+                The <see cref="T:System.IO.Hashing.NonCryptographicHashAlgorithm" /> class validates the
+                size of the buffer before calling this method, and slices the span
+                down to be exactly <see cref="P:System.IO.Hashing.NonCryptographicHashAlgorithm.HashLengthInBytes" /> in length.
+              </para></remarks>
+        </member>
+        <member name="T:Azure.Storage.StorageExtensions">
+            <summary>
+            Extensions and utilities for Azure Storage clients.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.StorageExtensions.CreateServiceTimeoutScope(System.Nullable{System.TimeSpan})">
+             <summary>
+             Allows you to specify a server timeout for any Storage operations executing on this thread for the duration of the scope.
+            
+             For more information, see
+             <see href="https://docs.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations">
+             Setting timeouts for Blob service operations</see>,
+             <see href="https://docs.microsoft.com/rest/api/storageservices/setting-timeouts-for-file-service-operations">
+             Setting timeouts for File service operations</see>,
+             <see href="https://docs.microsoft.com/rest/api/storageservices/setting-timeouts-for-queue-service-operations">
+             Setting timeouts for Queue service operations</see>.
+             </summary>
+             <param name="timeout">The server timeout for each HTTP request.</param>
+             <returns>The <see cref="T:System.IDisposable" /> instance that needs to be disposed when server timeout shouldn't be used anymore.</returns>
+             <example>
+             Sample usage:
+             <code snippet="Snippet:Sample_StorageServerTimeout" language="csharp">
+             BlobServiceClient client = new BlobServiceClient(connectionString, options);
+             using (StorageExtensions.CreateServiceTimeoutScope(TimeSpan.FromSeconds(10)))
+             {
+                 client.GetProperties();
+             }
+             </code>
+             </example>
+             <remarks>
+             The server timeout is sent to the Azure Storage service for each REST request made within the scope.
+             This value is not tracked or validated on the client, it is only passed to the Storage service.
+            
+             Consider passing a <see cref="T:System.Threading.CancellationToken" /> to client methods
+             and properly sizing <see cref="P:Azure.Core.RetryOptions.NetworkTimeout" /> when configuring storage clients
+             as prefered way of enforcing upper boundary of execution time.
+             </remarks>
+        </member>
+        <member name="T:Azure.Storage.StorageSharedKeyCredential">
+            <summary>
+            A <see cref="T:Azure.Storage.StorageSharedKeyCredential" /> is a credential backed by
+            a Storage Account's name and one of its access keys.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.StorageSharedKeyCredential.AccountName">
+            <summary>
+            Gets the name of the Storage Account.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.StorageSharedKeyCredential.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the
+            <see cref="T:Azure.Storage.StorageSharedKeyCredential" /> class.
+            </summary>
+            <param name="accountName">The name of the Storage Account.</param>
+            <param name="accountKey">A Storage Account access key.</param>
+        </member>
+        <member name="M:Azure.Storage.StorageSharedKeyCredential.SetAccountKey(System.String)">
+            <summary>
+            Update the Storage Account's access key.  This intended to be used
+            when you've regenerated your Storage Account's access keys and want
+            to update long lived clients.
+            </summary>
+            <param name="accountKey">A Storage Account access key.</param>
+        </member>
+        <member name="M:Azure.Storage.StorageSharedKeyCredential.ComputeHMACSHA256(System.String)">
+            <summary>
+            Generates a base-64 hash signature string for an HTTP request or
+            for a SAS.
+            </summary>
+            <param name="message">The message to sign.</param>
+            <returns>The signed message.</returns>
+        </member>
+        <member name="M:Azure.Storage.StorageSharedKeyCredential.ComputeSasSignature(Azure.Storage.StorageSharedKeyCredential,System.String)">
+            <summary>
+            Generates a base-64 hash signature string for an HTTP request or
+            for a SAS.
+            </summary>
+            <param name="credential">The credential.</param>
+            <param name="message">The message to sign.</param>
+            <returns>The signed message.</returns>
+        </member>
+        <member name="T:Azure.Storage.StorageTransferOptions">
+            <summary>
+            <see cref="T:Azure.Storage.StorageTransferOptions" /> is used to provide options for parallel transfers.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.StorageTransferOptions.MaximumTransferLength">
+            <summary>
+            The maximum length of an transfer in bytes. This property is a backwards-compatible
+            facade for <see cref="P:Azure.Storage.StorageTransferOptions.MaximumTransferSize" />, which supports long values. Use
+            <see cref="P:Azure.Storage.StorageTransferOptions.MaximumTransferSize" /> for full access of supported values.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.StorageTransferOptions.MaximumTransferSize">
+            <summary>
+            The maximum length of an transfer in bytes.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.StorageTransferOptions.MaximumConcurrency">
+            <summary>
+            The maximum number of workers that may be used in a parallel transfer.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.StorageTransferOptions.InitialTransferLength">
+            <summary>
+            The size of the first range request in bytes. Blobs smaller than this limit will
+            be downloaded in a single request. Blobs larger than this limit will continue being
+            downloaded in chunks of size <see cref="P:Azure.Storage.StorageTransferOptions.MaximumTransferSize" />. This property is a
+            backwards-compatible facade for <see cref="P:Azure.Storage.StorageTransferOptions.MaximumTransferSize" />, which supports
+            long values. Use <see cref="P:Azure.Storage.StorageTransferOptions.InitialTransferSize" /> for full access of supported values.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.StorageTransferOptions.InitialTransferSize">
+            <summary>
+            The size of the first range request in bytes. Blobs smaller than this limit will
+            be downloaded in a single request. Blobs larger than this limit will continue being
+            downloaded in chunks of size <see cref="P:Azure.Storage.StorageTransferOptions.MaximumTransferSize" />.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.StorageTransferOptions.Equals(System.Object)">
+            <summary>
+            Check if two ParallelTransferOptions instances are equal.
+            </summary>
+            <param name="obj">The instance to compare to.</param>
+            <returns>True if they're equal, false otherwise.</returns>
+        </member>
+        <member name="M:Azure.Storage.StorageTransferOptions.GetHashCode">
+            <summary>
+            Get a hash code for the ParallelTransferOptions.
+            </summary>
+            <returns>Hash code for the ParallelTransferOptions.</returns>
+        </member>
+        <member name="M:Azure.Storage.StorageTransferOptions.op_Equality(Azure.Storage.StorageTransferOptions,Azure.Storage.StorageTransferOptions)">
+            <summary>
+            Check if two ParallelTransferOptions instances are equal.
+            </summary>
+            <param name="left">The first instance to compare.</param>
+            <param name="right">The second instance to compare.</param>
+            <returns>True if they're equal, false otherwise.</returns>
+        </member>
+        <member name="M:Azure.Storage.StorageTransferOptions.op_Inequality(Azure.Storage.StorageTransferOptions,Azure.Storage.StorageTransferOptions)">
+            <summary>
+            Check if two ParallelTransferOptions instances are equal.
+            </summary>
+            <param name="left">The first instance to compare.</param>
+            <param name="right">The second instance to compare.</param>
+            <returns>True if they're not equal, false otherwise.</returns>
+        </member>
+        <member name="M:Azure.Storage.StorageTransferOptions.Equals(Azure.Storage.StorageTransferOptions)">
+            <summary>
+            Check if two ParallelTransferOptions instances are equal.
+            </summary>
+            <param name="obj">The instance to compare to.</param>
+            <returns>True if they're equal, false otherwise.</returns>
+        </member>
+        <member name="T:Azure.Storage.TransferValidationOptions">
+            <summary>
+            Options for additional content integrity checks on transfer.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.TransferValidationOptions.Upload">
+            <summary>
+            Options on upload.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.TransferValidationOptions.Download">
+            <summary>
+            Options on download.
+            </summary>
+        </member>
+        <member name="T:Azure.Storage.UploadTransferValidationOptions">
+            <summary>
+            Options for additional content integrity checks on upload.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.UploadTransferValidationOptions.ChecksumAlgorithm">
+            <summary>
+            Checksum algorithm to use.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.UploadTransferValidationOptions.PrecalculatedChecksum">
+            <summary>
+            Optional. Can only be specified on specific operations and not at the client level.
+            An existing checksum of the data to be uploaded. Not all upload APIs can use this
+            value, and will throw if one is provided. Please check documentation on specific
+            APIs for whether this can be used.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.MaxIdleTimeMs">
+            <summary>
+            The maximum allowed time between read or write calls to the stream for IdleCancellingStream.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.DefaultSasVersion">
+            <summary>
+            Gets the default service version to use when building shared access
+            signatures.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.MaxHashRequestDownloadRange">
+            <summary>
+            Max download range size while requesting a transactional hash.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.DefaultBufferSize">
+            <summary>
+            The default size of staged blocks when uploading small blobs.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.LargeBufferSize">
+            <summary>
+            The size of staged blocks when uploading large blobs.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.LargeUploadThreshold">
+            <summary>
+            The threshold where we switch from staging <see cref="F:Azure.Storage.Constants.DefaultBufferSize" />
+            buffers to staging <see cref="F:Azure.Storage.Constants.LargeBufferSize" /> buffers.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.DefaultStreamingDownloadSize">
+            <summary>
+            The minimum number of bytes to download in Open Read.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.DefaultStreamCopyBufferSize">
+            <summary>
+            Different .NET implementations have different default sizes for <see cref="M:System.IO.Stream.CopyTo(System.IO.Stream)" />
+            and it's overloads. This is the default for .NET Core to be applied everywhere for test consistency.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.DefaultDownloadCopyBufferSize">
+            <summary>
+            The size of the buffer to use when copying streams during a
+            download operation.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.DefaultTrimBlobNameSlashes">
+            <summary>
+            Backwards compatible default value for trimming slashes on object name.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.BlockNameFormat">
+            <summary>
+            The default format we use for block names.  There are 50,000
+            maximum blocks so we pad the size with up to 4 leading zeros.
+            </summary>
+        </member>
+        <member name="T:Azure.Storage.Constants.ConnectionStrings">
+            <summary>
+            Storage Connection String constant values.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.ConnectionStrings.BlobEndpointPortNumber">
+            <summary>
+            The default port numbers for development storage credentials
+            </summary>
+        </member>
+        <member name="T:Azure.Storage.Constants.HeaderNames">
+            <summary>
+            Header Name constant values.
+            </summary>
+        </member>
+        <member name="T:Azure.Storage.Constants.Blob">
+            <summary>
+            Blob constant values.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.Blob.Container.RootName">
+            <summary>
+            The Azure Storage name used to identify a storage account's root container.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.Blob.Container.LogsName">
+            <summary>
+            The Azure Storage name used to identify a storage account's logs container.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.Blob.Container.WebName">
+            <summary>
+            The Azure Storage name used to identify a storage account's web content container.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.Blob.Lease.InfiniteLeaseDuration">
+            <summary>
+            Lease Duration is set as infinite when passed -1.
+            </summary>
+        </member>
+        <member name="T:Azure.Storage.Constants.File">
+            <summary>
+            File constant values.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.File.Lease.InfiniteLeaseDuration">
+            <summary>
+            Lease Duration is set as infinite when passed -1.
+            </summary>
+        </member>
+        <member name="T:Azure.Storage.Constants.DataLake">
+            <summary>
+            Data Lake constant values.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.DataLake.BlobUriSuffix">
+            <summary>
+            The blob URI suffix.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.DataLake.BlobUriPeriodSuffix">
+            <summary>
+            The blob URI suffix.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.DataLake.DfsUriSuffix">
+            <summary>
+            The DFS URI suffix.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.DataLake.DfsUriPeriodSuffix">
+            <summary>
+            The DFS URI suffix.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.DataLake.ErrorKey">
+            <summary>
+            The key of the object json object returned for errors.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.DataLake.ErrorCodeKey">
+            <summary>
+            The key of the error code returned for errors.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.DataLake.ErrorMessageKey">
+            <summary>
+            The key of the error message returned for errors.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.DataLake.AlreadyExists">
+            <summary>
+            The Azure Storage error codes for Datalake Client.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.DataLake.DefaultConcurrentTransfersCount">
+            <summary>
+            Default concurrent transfers count.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.DataLake.Pre_2019_12_12_MaxAppendBytes">
+            <summary>
+            Max upload bytes for less than Service Version 2019-12-12.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.DataLake.MaxAppendBytes">
+            <summary>
+            Max upload bytes.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.DataLake.IsDirectoryKey">
+            <summary>
+            Metadata key for isFolder property.
+            </summary>
+        </member>
+        <member name="T:Azure.Storage.Constants.Queue">
+            <summary>
+            Queue constant values.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.Queue.MaxMessagesDequeue">
+            <summary>
+            QueueMaxMessagesDequeue indicates the maximum number of messages
+            you can retrieve with each call to Dequeue.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.Queue.QueueMessageMaxBytes">
+            <summary>
+            QueueMessageMaxBytes indicates the maximum number of bytes allowed for a message's UTF-8 text.
+            </summary>
+        </member>
+        <member name="T:Azure.Storage.Constants.ChangeFeed">
+            <summary>
+            ChangeFeed constant values.
+            </summary>
+        </member>
+        <member name="T:Azure.Storage.Constants.QuickQuery">
+            <summary>
+            Quick Query constant values.
+            </summary>
+        </member>
+        <member name="T:Azure.Storage.Constants.Sas">
+            <summary>
+            Sas constant values.
+            </summary>
+        </member>
+        <member name="F:Azure.Storage.Constants.Sas.PathStylePorts">
+            <summary>
+            List of ports used for path style addressing.
+            Copied from Microsoft.Azure.Storage.Core.Util
+            </summary>
+        </member>
+        <member name="T:Azure.Storage.Constants.Xml">
+            <summary>
+            XML Element Name constant values.
+            </summary>
+        </member>
+        <member name="T:Azure.Storage.Errors">
+            <summary>
+            Create exceptions for common error cases.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.Errors.CryptographyAuthTagMismatch">
+            <summary>
+            From
+            https://github.com/dotnet/runtime/blob/032a7dcbe1056493e8bab51e6b5b9503de727273/src/libraries/System.Security.Cryptography/src/Resources/Strings.resx#L202
+            </summary>
+            <returns></returns>
+            <exception cref="T:System.Security.Cryptography.CryptographicException"></exception>
+        </member>
+        <member name="M:Azure.Storage.Errors.CryptographyPlaintextCiphertextLengthMismatch">
+            <summary>
+            From
+            https://github.com/dotnet/runtime/blob/032a7dcbe1056493e8bab51e6b5b9503de727273/src/libraries/System.Security.Cryptography/src/Resources/Strings.resx#L514
+            </summary>
+            <returns></returns>
+            <exception cref="T:System.ArgumentException"></exception>
+        </member>
+        <member name="M:Azure.Storage.Errors.CryptographyInvalidNonceLength">
+            <summary>
+            From
+            https://github.com/dotnet/runtime/blob/032a7dcbe1056493e8bab51e6b5b9503de727273/src/libraries/System.Security.Cryptography/src/Resources/Strings.resx#L400
+            </summary>
+            <returns></returns>
+            <exception cref="T:System.ArgumentException"></exception>
+        </member>
+        <member name="M:Azure.Storage.Errors.CryptographyInvalidTagLength">
+            <summary>
+            From
+            https://github.com/dotnet/runtime/blob/032a7dcbe1056493e8bab51e6b5b9503de727273/src/libraries/System.Security.Cryptography/src/Resources/Strings.resx#L418
+            </summary>
+            <returns></returns>
+            <exception cref="T:System.ArgumentException"></exception>
+        </member>
+        <member name="T:Azure.Storage.GeoRedundantReadPolicy">
+            <summary>
+            This policy is used if the SecondaryUri property is passed in on the clientOptions. It allows for storage
+            accounts configured with RA-GRS to retry GET or HEAD requests against the secondary storage Uri.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.SharedAccessSignatureCredentials.SasToken">
+            <summary>
+            Gets the SAS token used to authenticate requests to the Storage
+            service.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.SharedAccessSignatureCredentials.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the
+            <see cref="T:Azure.Storage.SharedAccessSignatureCredentials" /> class.
+            </summary>
+            <param name="sasToken">
+            The SAS token used to authenticate requests to the Storage service.
+            </param>
+        </member>
+        <member name="T:Azure.Storage.StorageExceptionExtensions">
+            <summary>
+            Provide helpful information about errors calling Azure Storage endpoints.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.StorageExceptionExtensions.GetErrorCode(Azure.Response,System.String)">
+            <summary>
+            Attempt to get the error code from a response if it's not provided.
+            </summary>
+            <param name="response">The response.</param>
+            <param name="errorCode">An optional error code.</param>
+            <returns>The response's error code.</returns>
+        </member>
+        <member name="M:Azure.Storage.StorageExceptionExtensions.IsUnavailable``1(Azure.Response{``0})">
+            <summary>
+            Check if a Response will throw an exception if you try to access
+            its Value property.
+            </summary>
+            <typeparam name="T">Type of the Response Value.</typeparam>
+            <param name="response">The response to check.</param>
+            <returns>True if the response will throw.</returns>
+        </member>
+        <member name="M:Azure.Storage.StorageExceptionExtensions.AsNoBodyResponse``1(Azure.Response)">
+            <summary>
+            Create a response that will throw an exception if you try to access
+            its Value property.
+            </summary>
+            <typeparam name="T">Type of the Response Value.</typeparam>
+            <param name="rawResponse">The raw response.</param>
+            <returns>A response that will throw if accessed.</returns>
+        </member>
+        <member name="P:Azure.Storage.StorageConnectionString.UseV1MD5">
+            <summary>
+            Gets or sets a value indicating whether the FISMA MD5 setting will be used.
+            </summary>
+            <value><c>false</c> to use the FISMA MD5 setting; <c>true</c> to use the .NET default implementation.</value>
+        </member>
+        <member name="M:Azure.Storage.StorageConnectionString.#ctor(System.Object,System.ValueTuple{System.Uri,System.Uri},System.ValueTuple{System.Uri,System.Uri},System.ValueTuple{System.Uri,System.Uri},System.ValueTuple{System.Uri,System.Uri})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Azure.Storage.StorageConnectionString" /> class using the specified
+            account credentials and service endpoints.
+            </summary>
+            <param name="storageCredentials">A StorageCredentials object.</param>
+            <param name="blobStorageUri">A <see cref="T:System.Uri" /> specifying the Blob service endpoint or endpoints.</param>
+            <param name="queueStorageUri">A <see cref="T:System.Uri" /> specifying the Queue service endpoint or endpoints.</param>
+            <param name="tableStorageUri">A <see cref="T:System.Uri" /> specifying the Table service endpoint or endpoints.</param>
+            <param name="fileStorageUri">A <see cref="T:System.Uri" /> specifying the File service endpoint or endpoints.</param>
+        </member>
+        <member name="P:Azure.Storage.StorageConnectionString.DevelopmentStorageAccount">
+            <summary>
+            Gets a <see cref="T:Azure.Storage.StorageConnectionString" /> object that references the well-known development storage account.
+            </summary>
+            <value>A <see cref="T:Azure.Storage.StorageConnectionString" /> object representing the development storage account.</value>
+        </member>
+        <member name="P:Azure.Storage.StorageConnectionString.IsDevStoreAccount">
+            <summary>
+            Indicates whether this account is a development storage account.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.StorageConnectionString.EndpointSuffix">
+            <summary>
+            The storage service hostname suffix set by the user, if any.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.StorageConnectionString.Settings">
+            <summary>
+            The connection string parsed into settings.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.StorageConnectionString.DefaultEndpoints">
+            <summary>
+            True if the user used a constructor that auto-generates endpoints.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.StorageConnectionString.BlobEndpoint">
+            <summary>
+            Gets the primary endpoint for the Blob service, as configured for the storage account.
+            </summary>
+            <value>A <see cref="T:System.Uri" /> containing the primary Blob service endpoint.</value>
+        </member>
+        <member name="P:Azure.Storage.StorageConnectionString.QueueEndpoint">
+            <summary>
+            Gets the primary endpoint for the Queue service, as configured for the storage account.
+            </summary>
+            <value>A <see cref="T:System.Uri" /> containing the primary Queue service endpoint.</value>
+        </member>
+        <member name="P:Azure.Storage.StorageConnectionString.TableEndpoint">
+            <summary>
+            Gets the primary endpoint for the Table service, as configured for the storage account.
+            </summary>
+            <value>A <see cref="T:System.Uri" /> containing the primary Table service endpoint.</value>
+        </member>
+        <member name="P:Azure.Storage.StorageConnectionString.FileEndpoint">
+            <summary>
+            Gets the primary endpoint for the File service, as configured for the storage account.
+            </summary>
+            <value>A <see cref="T:System.Uri" /> containing the primary File service endpoint.</value>
+        </member>
+        <member name="P:Azure.Storage.StorageConnectionString.BlobStorageUri">
+            <summary>
+            Gets the endpoints for the Blob service at the primary and secondary location, as configured for the storage account.
+            </summary>
+            <value>A <see cref="T:System.Uri" /> containing the Blob service endpoints.</value>
+        </member>
+        <member name="P:Azure.Storage.StorageConnectionString.QueueStorageUri">
+            <summary>
+            Gets the endpoints for the Queue service at the primary and secondary location, as configured for the storage account.
+            </summary>
+            <value>A <see cref="T:System.Uri" /> containing the Queue service endpoints.</value>
+        </member>
+        <member name="P:Azure.Storage.StorageConnectionString.TableStorageUri">
+            <summary>
+            Gets the endpoints for the Table service at the primary and secondary location, as configured for the storage account.
+            </summary>
+            <value>A <see cref="T:System.Uri" /> containing the Table service endpoints.</value>
+        </member>
+        <member name="P:Azure.Storage.StorageConnectionString.FileStorageUri">
+            <summary>
+            Gets the endpoints for the File service at the primary and secondary location, as configured for the storage account.
+            </summary>
+            <value>A <see cref="T:System.Uri" /> containing the File service endpoints.</value>
+        </member>
+        <member name="P:Azure.Storage.StorageConnectionString.Credentials">
+            <summary>
+            Gets the credentials used to create this <see cref="T:Azure.Storage.StorageConnectionString" /> object.
+            </summary>
+            <value>A StorageCredentials object.</value>
+        </member>
+        <member name="F:Azure.Storage.StorageConnectionString._accountName">
+            <summary>
+            Private record of the account name for use in ToString(bool).
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.StorageConnectionString.Parse(System.String)">
+            <summary>
+            Parses a connection string and returns a <see cref="T:Azure.Storage.StorageConnectionString" /> created
+            from the connection string.
+            </summary>
+            <param name="connectionString">A valid connection string.</param>
+            <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="connectionString" /> is null or empty.</exception>
+            <exception cref="T:System.FormatException">Thrown if <paramref name="connectionString" /> is not a valid connection string.</exception>
+            <exception cref="T:System.ArgumentException">Thrown if <paramref name="connectionString" /> cannot be parsed.</exception>
+            <returns>A <see cref="T:Azure.Storage.StorageConnectionString" /> object constructed from the values provided in the connection string.</returns>
+        </member>
+        <member name="M:Azure.Storage.StorageConnectionString.TryParse(System.String,Azure.Storage.StorageConnectionString@)">
+            <summary>
+            Indicates whether a connection string can be parsed to return a <see cref="T:Azure.Storage.StorageConnectionString" /> object.
+            </summary>
+            <param name="connectionString">The connection string to parse.</param>
+            <param name="account">A <see cref="T:Azure.Storage.StorageConnectionString" /> object to hold the instance returned if
+            the connection string can be parsed.</param>
+            <returns><b>true</b> if the connection string was successfully parsed; otherwise, <b>false</b>.</returns>
+        </member>
+        <member name="M:Azure.Storage.StorageConnectionString.ParseCore(System.String,Azure.Storage.StorageConnectionString@,System.Action{System.String})">
+            <summary>
+            Internal implementation of Parse/TryParse.
+            </summary>
+            <param name="connectionString">The string to parse.</param>
+            <param name="accountInformation">The <see cref="T:Azure.Storage.StorageConnectionString" /> to return.</param>
+            <param name="error">A callback for reporting errors.</param>
+            <returns>If true, the parse was successful. Otherwise, false.</returns>
+        </member>
+        <member name="M:Azure.Storage.StorageConnectionString.ConstructBlobEndpoint(System.String,System.String,System.String,System.String)">
+            <summary>
+            Gets the default blob endpoint using the specified protocol and account name.
+            </summary>
+            <param name="scheme">The protocol to use.</param>
+            <param name="accountName">The name of the storage account.</param>
+            <param name="endpointSuffix">The Endpoint DNS suffix; use <c>null</c> for default.</param>
+            <param name="sasToken">The sas token; use <c>null</c> for default.</param>
+            <returns>The default blob endpoint.</returns>
+        </member>
+        <member name="M:Azure.Storage.StorageConnectionString.ConstructFileEndpoint(System.String,System.String,System.String,System.String)">
+            <summary>
+            Gets the default file endpoint using the specified protocol and account name.
+            </summary>
+            <param name="scheme">The protocol to use.</param>
+            <param name="accountName">The name of the storage account.</param>
+            <param name="endpointSuffix">The Endpoint DNS suffix; use <c>null</c> for default.</param>
+            <param name="sasToken">The sas token; use <c>null</c> for default.</param>
+            <returns>The default file endpoint.</returns>
+        </member>
+        <member name="M:Azure.Storage.StorageConnectionString.ConstructQueueEndpoint(System.String,System.String,System.String,System.String)">
+            <summary>
+            Gets the default queue endpoint using the specified protocol and account name.
+            </summary>
+            <param name="scheme">The protocol to use.</param>
+            <param name="accountName">The name of the storage account.</param>
+            <param name="endpointSuffix">The Endpoint DNS suffix; use <c>null</c> for default.</param>
+            <param name="sasToken">The sas token; use <c>null</c> for default.</param>
+            <returns>The default queue endpoint.</returns>
+        </member>
+        <member name="M:Azure.Storage.StorageConnectionString.ConstructTableEndpoint(System.String,System.String,System.String,System.String)">
+            <summary>
+            Gets the default queue endpoint using the specified protocol and account name.
+            </summary>
+            <param name="scheme">The protocol to use.</param>
+            <param name="accountName">The name of the storage account.</param>
+            <param name="endpointSuffix">The Endpoint DNS suffix; use <c>null</c> for default.</param>
+            <param name="sasToken">The sas token; use <c>null</c> for default.</param>
+            <returns>The default table endpoint.</returns>
+        </member>
+        <member name="P:Azure.Storage.StorageResponseClassifier.SecondaryStorageUri">
+            <summary>
+            The secondary URI to be used for retries on failed read requests
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.StorageResponseClassifier.IsRetriableResponse(Azure.Core.HttpMessage)">
+            <summary>
+            Overridden version of IsRetriableResponse that allows for Storage specific retry logic.
+            </summary>
+            <param name="message">The message containing both Response and Request</param>
+            <returns></returns>
+        </member>
+        <member name="M:Azure.Storage.StorageResponseClassifier.IsErrorResponse(Azure.Core.HttpMessage)">
+            <summary>
+            Specifies if the response contained in the <paramref name="message" /> is not successful.
+            </summary>
+        </member>
+        <member name="T:Azure.Storage.StorageSharedKeyCredentialInternals">
+            <summary>
+            This class is added to access protected static methods off of the base class
+            that should not be exposed directly to customers.
+            </summary>
+        </member>
+        <member name="T:Azure.Storage.StorageSharedKeyPipelinePolicy">
+            <summary>
+            HttpPipelinePolicy to sign requests using an Azure Storage shared key.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.StorageSharedKeyPipelinePolicy.#ctor(Azure.Storage.StorageSharedKeyCredential)">
+            <summary>
+            Create a new SharedKeyPipelinePolicy
+            </summary>
+            <param name="credentials">SharedKeyCredentials to authenticate requests.</param>
+        </member>
+        <member name="M:Azure.Storage.StorageSharedKeyPipelinePolicy.OnSendingRequest(Azure.Core.HttpMessage)">
+            <summary>
+            Sign the request using the shared key credentials.
+            </summary>
+            <param name="message">The message with the request to sign.</param>
+        </member>
+        <member name="T:Azure.Storage.StorageCrc64Calculator">
+            <summary>
+            Port of https://github.com/Azure/azure-storage-net/blob/master/Lib/Common/Core/Util/Crc64.cs
+            and the code used by Azure Storage to compute a CRC-64 with custom polynomial.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.StorageCrc64Calculator.ComputeSlicedSafe(System.ReadOnlySpan{System.Byte},System.UInt64)">
+            <summary>
+            Compute the CRC64 of the input data using the Azure Storage CRC64 polynomial.
+            </summary>
+            <param name="src">The source data on which to compute the CRC64.</param>
+            <param name="uCrc"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Azure.Storage.StorageCrc64Composer">
+            <summary>
+            Helper code for composing crc64 values together.
+            </summary>
+        </member>
+        <member name="T:Azure.Storage.UriExtensions">
+            <summary>
+            Extension methods used to manipulate URIs.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.UriExtensions.AppendToPath(System.Uri,System.String)">
+            <summary>
+            Append a segment to a URIs path.
+            </summary>
+            <param name="uri">The URI.</param>
+            <param name="segment">The relative segment to append.</param>
+            <returns>The combined URI.</returns>
+        </member>
+        <member name="M:Azure.Storage.UriExtensions.GetQueryParameters(System.Uri)">
+            <summary>
+            Get the (already encoded) query parameters on a URI.
+            </summary>
+            <param name="uri">The URI.</param>
+            <returns>Dictionary mapping query parameters to values.</returns>
+        </member>
+        <member name="M:Azure.Storage.UriExtensions.GetAccountNameFromDomain(System.Uri,System.String)">
+            <summary>
+            Get the account name from the domain portion of a Uri.
+            </summary>
+            <param name="uri">The Uri.</param>
+            <param name="serviceSubDomain">The service subdomain used to validate that the
+            domain is in the expected format. This should be "blob" for blobs, "file" for files,
+            "queue" for queues, "blob" and "dfs" for datalake.</param>
+            <returns>Account name or null if not able to be parsed.</returns>
+        </member>
+        <member name="M:Azure.Storage.UriExtensions.GetAccountNameFromDomain(System.String,System.String)">
+            <summary>
+            Get the account name from the host.
+            </summary>
+            <param name="host">Host.</param>
+            <param name="serviceSubDomain">The service subdomain used to validate that the
+            domain is in the expected format. This should be "blob" for blobs, "file" for files,
+            "queue" for queues, "blob" and "dfs" for datalake.</param>
+            <returns>Account name or null if not able to be parsed.</returns>
+        </member>
+        <member name="M:Azure.Storage.UriExtensions.GetPath(System.Uri)">
+            <summary>
+            If path starts with a slash, remove it
+            </summary>
+            <param name="uri">The Uri.</param>
+            <returns>Sanitized Uri.</returns>
+        </member>
+        <member name="M:Azure.Storage.UriExtensions.IsHostIPEndPointStyle(System.Uri)">
+            <summary>
+            Check to see if Uri is using IP Endpoint style.
+            </summary>
+            <param name="uri">The Uri.</param>
+            <returns>True if using IP Endpoint style.</returns>
+        </member>
+        <member name="M:Azure.Storage.UriExtensions.AppendQueryParameter(System.Text.StringBuilder,System.String,System.String)">
+            <summary>
+            Appends a query parameter to the string builder.
+            </summary>
+            <param name="sb">string builder instance.</param>
+            <param name="key">query parameter key.</param>
+            <param name="value">query parameter value.</param>
+        </member>
+        <member name="M:Azure.Storage.UriQueryParamsCollection.#ctor(System.String)">
+            <summary>
+            Takes encoded query params string, output decoded params map
+            </summary>
+            <param name="encodedQueryParamString"></param>
+        </member>
+        <member name="T:Azure.Storage.StorageBearerTokenChallengeAuthorizationPolicy">
+            <summary>
+            The storage authorization policy which supports challenges including tenantId discovery.
+            </summary>
+        </member>
+        <member name="M:Azure.Storage.StorageBearerTokenChallengeAuthorizationPolicy.#ctor(Azure.Core.TokenCredential,System.String,System.Boolean)">
+             <summary>
+            
+             </summary>
+             <param name="credential"></param>
+             <param name="scope"></param>
+             <param name="enableTenantDiscovery"> </param>
+        </member>
+        <member name="M:Azure.Storage.StorageBearerTokenChallengeAuthorizationPolicy.#ctor(Azure.Core.TokenCredential,System.Collections.Generic.IEnumerable{System.String},System.Boolean)">
+             <summary>
+            
+             </summary>
+             <param name="credential"></param>
+             <param name="scopes"></param>
+             <param name="enableTenantDiscovery"> </param>
+        </member>
+        <member name="M:Azure.Storage.StorageBearerTokenChallengeAuthorizationPolicy.AuthorizeRequest(Azure.Core.HttpMessage)">
+            <summary>
+            Executes before <see cref="M:Azure.Core.Pipeline.BearerTokenAuthenticationPolicy.ProcessAsync(Azure.Core.HttpMessage,System.ReadOnlyMemory{Azure.Core.Pipeline.HttpPipelinePolicy})" /> or
+            <see cref="M:Azure.Core.Pipeline.BearerTokenAuthenticationPolicy.Process(Azure.Core.HttpMessage,System.ReadOnlyMemory{Azure.Core.Pipeline.HttpPipelinePolicy})" /> is called.
+            Implementers of this method are expected to call <see cref="M:Azure.Core.Pipeline.BearerTokenAuthenticationPolicy.AuthenticateAndAuthorizeRequest(Azure.Core.HttpMessage,Azure.Core.TokenRequestContext)" /> or <see cref="M:Azure.Core.Pipeline.BearerTokenAuthenticationPolicy.AuthenticateAndAuthorizeRequestAsync(Azure.Core.HttpMessage,Azure.Core.TokenRequestContext)" />
+            if authorization is required for requests not related to handling a challenge response.
+            </summary><param name="message">The <see cref="T:Azure.Core.HttpMessage" /> this policy would be applied to.</param>
+        </member>
+        <member name="M:Azure.Storage.StorageBearerTokenChallengeAuthorizationPolicy.AuthorizeRequestAsync(Azure.Core.HttpMessage)">
+            <summary>
+            Executes before <see cref="M:Azure.Core.Pipeline.BearerTokenAuthenticationPolicy.ProcessAsync(Azure.Core.HttpMessage,System.ReadOnlyMemory{Azure.Core.Pipeline.HttpPipelinePolicy})" /> or
+            <see cref="M:Azure.Core.Pipeline.BearerTokenAuthenticationPolicy.Process(Azure.Core.HttpMessage,System.ReadOnlyMemory{Azure.Core.Pipeline.HttpPipelinePolicy})" /> is called.
+            Implementers of this method are expected to call <see cref="M:Azure.Core.Pipeline.BearerTokenAuthenticationPolicy.AuthenticateAndAuthorizeRequest(Azure.Core.HttpMessage,Azure.Core.TokenRequestContext)" /> or <see cref="M:Azure.Core.Pipeline.BearerTokenAuthenticationPolicy.AuthenticateAndAuthorizeRequestAsync(Azure.Core.HttpMessage,Azure.Core.TokenRequestContext)" />
+            if authorization is required for requests not related to handling a challenge response.
+            </summary><param name="message">The <see cref="T:Azure.Core.HttpMessage" /> this policy would be applied to.</param><returns>The <see cref="T:System.Threading.Tasks.ValueTask" /> representing the asynchronous operation.</returns>
+        </member>
+        <member name="M:Azure.Storage.StorageBearerTokenChallengeAuthorizationPolicy.AuthorizeRequestOnChallenge(Azure.Core.HttpMessage)">
+            <summary>
+            Executed in the event a 401 response with a WWW-Authenticate authentication challenge header is received after the initial request.
+            </summary><remarks>Service client libraries may override this to handle service specific authentication challenges.</remarks><param name="message">The <see cref="T:Azure.Core.HttpMessage" /> to be authenticated.</param><returns>A boolean indicating whether the request was successfully authenticated and should be sent to the transport.</returns>
+        </member>
+        <member name="M:Azure.Storage.StorageBearerTokenChallengeAuthorizationPolicy.AuthorizeRequestOnChallengeAsync(Azure.Core.HttpMessage)">
+            <summary>
+            Executed in the event a 401 response with a WWW-Authenticate authentication challenge header is received after the initial request.
+            </summary><remarks>Service client libraries may override this to handle service specific authentication challenges.</remarks><param name="message">The <see cref="T:Azure.Core.HttpMessage" /> to be authenticated.</param><returns>A boolean indicating whether the request was successfully authenticated and should be sent to the transport.</returns>
+        </member>
+        <member name="T:Azure.Storage.Shared.ISupportsTenantIdChallenges">
+            <summary>
+            Options to be exposed in client options classes related to bearer token authorization challenge scenarios.
+            </summary>
+        </member>
+        <member name="P:Azure.Storage.Shared.ISupportsTenantIdChallenges.EnableTenantDiscovery">
+            <summary>
+             Enables tenant discovery through the authorization challenge when the client is configured to use a TokenCredential.
+            When enabled, the client will attempt an initial un-authorized request to prompt a challenge in order to discover the correct tenant for the resource.
+            </summary>
+        </member>
+        <member name="T:Azure.Core.AuthorizationChallengeParser">
+            <summary>
+            A helper class for parsing Authorization challenge headers.
+            </summary>
+        </member>
+        <member name="M:Azure.Core.AuthorizationChallengeParser.GetChallengeParameterFromResponse(Azure.Response,System.String,System.String)">
+            <summary>
+            Parses the specified parameter from a challenge hearder found in the specified <see cref="T:Azure.Response" />.
+            </summary>
+            <param name="response">The <see cref="T:Azure.Response" /> to parse.</param>
+            <param name="challengeScheme">The challenge scheme containing the <paramref name="challengeParameter" />. For example: "Bearer"</param>
+            <param name="challengeParameter">The parameter key name containing the value to return.</param>
+            <returns>The value of the parameter name specified in <paramref name="challengeParameter" /> if it is found in the specified <paramref name="challengeScheme" />.</returns>
+        </member>
+        <member name="M:Azure.Core.AuthorizationChallengeParser.TryGetNextChallenge(System.ReadOnlySpan{System.Char}@,System.ReadOnlySpan{System.Char}@)">
+            <summary>
+            Iterates through the challenge schemes present in a challenge header.
+            </summary>
+            <param name="headerValue">
+            The header value which will be sliced to remove the first parsed <paramref name="challengeKey" />.
+            </param>
+            <param name="challengeKey">The parsed challenge scheme.</param>
+            <returns>
+            <c>true</c> if a challenge scheme was successfully parsed.
+            The value of <paramref name="headerValue" /> should be passed to <see cref="M:Azure.Core.AuthorizationChallengeParser.TryGetNextParameter(System.ReadOnlySpan{System.Char}@,System.ReadOnlySpan{System.Char}@,System.ReadOnlySpan{System.Char}@,System.Char)" /> to parse the challenge parameters if <c>true</c>.
+            </returns>
+        </member>
+        <member name="M:Azure.Core.AuthorizationChallengeParser.TryGetNextParameter(System.ReadOnlySpan{System.Char}@,System.ReadOnlySpan{System.Char}@,System.ReadOnlySpan{System.Char}@,System.Char)">
+            <summary>
+            Iterates through a challenge header value after being parsed by <see cref="M:Azure.Core.AuthorizationChallengeParser.TryGetNextChallenge(System.ReadOnlySpan{System.Char}@,System.ReadOnlySpan{System.Char}@)" />.
+            </summary>
+            <param name="headerValue">The header value after being parsed by <see cref="M:Azure.Core.AuthorizationChallengeParser.TryGetNextChallenge(System.ReadOnlySpan{System.Char}@,System.ReadOnlySpan{System.Char}@)" />.</param>
+            <param name="paramKey">The parsed challenge parameter key.</param>
+            <param name="paramValue">The parsed challenge parameter value.</param>
+            <param name="separator">The challenge parameter key / value pair separator. The default is '='.</param>
+            <returns>
+            <c>true</c> if the next available challenge parameter was successfully parsed.
+            <c>false</c> if there are no more parameters for the current challenge scheme or an additional challenge scheme was encountered in the <paramref name="headerValue" />.
+            The value of <paramref name="headerValue" /> should be passed again to <see cref="M:Azure.Core.AuthorizationChallengeParser.TryGetNextChallenge(System.ReadOnlySpan{System.Char}@,System.ReadOnlySpan{System.Char}@)" /> to attempt to parse any additional challenge schemes if <c>false</c>.
+            </returns>
+        </member>
+        <member name="T:Azure.Core.CallerShouldAuditAttribute">
+            <summary>
+            Decorates an operation whose invocation should potentially be audited
+            by Azure service implementations.  Auditing could be recommended
+            because the operation changes critical service state, creates delegated
+            access to a resource, affects data retention, etc.  It's a best guess
+            from the service team that the operation should be audited to mitigate
+            any potential future issues.
+            </summary>
+        </member>
+        <member name="P:Azure.Core.CallerShouldAuditAttribute.Reason">
+            <summary>
+            Gets or sets a description or link to the rationale for potentially
+            auditing this operation.
+            </summary>
+        </member>
+        <member name="T:Azure.Core.AppContextSwitchHelper">
+            <summary>
+            Helper for interacting with AppConfig settings and their related Environment variable settings.
+            </summary>
+        </member>
+        <member name="M:Azure.Core.AppContextSwitchHelper.GetConfigValue(System.String,System.String)">
+            <summary>
+            Determines if either an AppContext switch or its corresponding Environment Variable is set
+            </summary>
+            <param name="appContexSwitchName">Name of the AppContext switch.</param>
+            <param name="environmentVariableName">Name of the Environment variable.</param>
+            <returns>If the AppContext switch has been set, returns the value of the switch.
+            If the AppContext switch has not been set, returns the value of the environment variable.
+            False if neither is set.
+            </returns>
+        </member>
+        <member name="T:Azure.Core.Argument">
+            <summary>
+            Argument validation.
+            </summary>
+            <remarks>
+              <para>This class should be shared via source using Azure.Core.props and contain only common argument validation.
+                It is declared partial so that you can use the same familiar class name but extend it with project-specific validation.
+                To extend the functionality of this class, just declare your own partial <see cref="T:Azure.Core.Argument" /> class with project-specific methods.
+              </para>
+              <para>
+                Be sure to document exceptions thrown by these methods on your public methods.
+              </para>
+            </remarks>
+        </member>
+        <member name="M:Azure.Core.Argument.AssertNotNull``1(``0,System.String)">
+            <summary>
+            Throws if <paramref name="value" /> is null.
+            </summary>
+            <param name="value">The value to validate.</param>
+            <param name="name">The name of the parameter.</param>
+            <exception cref="T:System.ArgumentNullException"><paramref name="value" /> is null.</exception>
+        </member>
+        <member name="M:Azure.Core.Argument.AssertNotNull``1(System.Nullable{``0},System.String)">
+            <summary>
+            Throws if <paramref name="value" /> has not been initialized.
+            </summary>
+            <param name="value">The value to validate.</param>
+            <param name="name">The name of the parameter.</param>
+            <exception cref="T:System.ArgumentNullException"><paramref name="value" /> has not been initialized.</exception>
+        </member>
+        <member name="M:Azure.Core.Argument.AssertNotNullOrEmpty``1(System.Collections.Generic.IEnumerable{``0},System.String)">
+            <summary>
+            Throws if <paramref name="value" /> is null or an empty collection.
+            </summary>
+            <param name="value">The value to validate.</param>
+            <param name="name">The name of the parameter.</param>
+            <exception cref="T:System.ArgumentException"><paramref name="value" /> is an empty collection.</exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="value" /> is null.</exception>
+        </member>
+        <member name="M:Azure.Core.Argument.AssertNotNullOrEmpty(System.String,System.String)">
+            <summary>
+            Throws if <paramref name="value" /> is null or an empty string.
+            </summary>
+            <param name="value">The value to validate.</param>
+            <param name="name">The name of the parameter.</param>
+            <exception cref="T:System.ArgumentException"><paramref name="value" /> is an empty string.</exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="value" /> is null.</exception>
+        </member>
+        <member name="M:Azure.Core.Argument.AssertNotNullOrWhiteSpace(System.String,System.String)">
+            <summary>
+            Throws if <paramref name="value" /> is null, an empty string, or consists only of white-space characters.
+            </summary>
+            <param name="value">The value to validate.</param>
+            <param name="name">The name of the parameter.</param>
+            <exception cref="T:System.ArgumentException"><paramref name="value" /> is an empty string or consists only of white-space characters.</exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="value" /> is null.</exception>
+        </member>
+        <member name="M:Azure.Core.Argument.AssertNotDefault``1(``0@,System.String)">
+            <summary>
+            Throws if <paramref name="value" /> is the default value for type <typeparamref name="T" />.
+            </summary>
+            <typeparam name="T">The type of structure to validate which implements <see cref="T:System.IEquatable`1" />.</typeparam>
+            <param name="value">The value to validate.</param>
+            <param name="name">The name of the parameter.</param>
+            <exception cref="T:System.ArgumentException"><paramref name="value" /> is the default value for type <typeparamref name="T" />.</exception>
+        </member>
+        <member name="M:Azure.Core.Argument.AssertInRange``1(``0,``0,``0,System.String)">
+            <summary>
+            Throws if <paramref name="value" /> is less than the <paramref name="minimum" /> or greater than the <paramref name="maximum" />.
+            </summary>
+            <typeparam name="T">The type of to validate which implements <see cref="T:System.IComparable`1" />.</typeparam>
+            <param name="value">The value to validate.</param>
+            <param name="minimum">The minimum value to compare.</param>
+            <param name="maximum">The maximum value to compare.</param>
+            <param name="name">The name of the parameter.</param>
+        </member>
+        <member name="M:Azure.Core.Argument.AssertEnumDefined(System.Type,System.Object,System.String)">
+            <summary>
+            Throws if <paramref name="value" /> is not defined for <paramref name="enumType" />.
+            </summary>
+            <param name="enumType">The type to validate against.</param>
+            <param name="value">The value to validate.</param>
+            <param name="name">The name of the parameter.</param>
+            <exception cref="T:System.ArgumentException"><paramref name="value" /> is not defined for <paramref name="enumType" />.</exception>
+        </member>
+        <member name="M:Azure.Core.Argument.CheckNotNull``1(``0,System.String)">
+            <summary>
+            Throws if <paramref name="value" /> has not been initialized; otherwise, returns <paramref name="value" />.
+            </summary>
+            <param name="value">The value to validate.</param>
+            <param name="name">The name of the parameter.</param>
+            <exception cref="T:System.ArgumentNullException"><paramref name="value" /> has not been initialized.</exception>
+        </member>
+        <member name="M:Azure.Core.Argument.CheckNotNullOrEmpty(System.String,System.String)">
+            <summary>
+            Throws if <paramref name="value" /> is null or an empty string; otherwise, returns <paramref name="value" />.
+            </summary>
+            <param name="value">The value to validate.</param>
+            <param name="name">The name of the parameter.</param>
+            <exception cref="T:System.ArgumentException"><paramref name="value" /> is an empty string.</exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="value" /> is null.</exception>
+        </member>
+        <member name="M:Azure.Core.Argument.AssertNull``1(``0,System.String,System.String)">
+            <summary>
+            Throws if <paramref name="value" /> is not null.
+            </summary>
+            <param name="value">The value to validate.</param>
+            <param name="name">The name of the parameter.</param>
+            <param name="message">The error message.</param>
+            <exception cref="T:System.ArgumentException"><paramref name="value" /> is not null.</exception>
+        </member>
+        <member name="T:Azure.Core.AsyncLockWithValue`1">
+            <summary>
+            Primitive that combines async lock and value cache
+            </summary>
+            <typeparam name="T"></typeparam>
+        </member>
+        <member name="M:Azure.Core.AsyncLockWithValue`1.GetLockOrValueAsync(System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Method that either returns cached value or acquire a lock.
+            If one caller has acquired a lock, other callers will be waiting for the lock to be released.
+            If value is set, lock is released and all waiters get that value.
+            If value isn't set, the next waiter in the queue will get the lock.
+            </summary>
+            <param name="async"></param>
+            <param name="cancellationToken"></param>
+            <returns></returns>
+        </member>
+        <member name="P:Azure.Core.AsyncLockWithValue`1.LockOrValue.HasValue">
+            <summary>
+            Returns true if lock contains the cached value. Otherwise false.
+            </summary>
+        </member>
+        <member name="P:Azure.Core.AsyncLockWithValue`1.LockOrValue.Value">
+            <summary>
+            Returns cached value if it was set when lock has been created. Throws exception otherwise.
+            </summary>
+            <exception cref="T:System.InvalidOperationException">Value isn't set.</exception>
+        </member>
+        <member name="M:Azure.Core.AsyncLockWithValue`1.LockOrValue.SetValue(`0)">
+            <summary>
+            Set value to the cache and to all the waiters.
+            </summary>
+            <param name="value"></param>
+            <exception cref="T:System.InvalidOperationException">Value is set already.</exception>
+        </member>
+        <member name="M:Azure.Core.Pipeline.ClientDiagnostics.#ctor(Azure.Core.ClientOptions,System.Nullable{System.Boolean})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Azure.Core.Pipeline.ClientDiagnostics" /> class.
+            </summary>
+            <param name="options">The customer provided client options object.</param>
+            <param name="suppressNestedClientActivities">Flag controlling if <see cref="T:System.Diagnostics.Activity" />
+             created by this <see cref="T:Azure.Core.Pipeline.ClientDiagnostics" /> for client method calls should be suppressed when called
+             by other Azure SDK client methods.  It's recommended to set it to true for new clients; use default (null)
+             for backward compatibility reasons, or set it to false to explicitly disable suppression for specific cases.
+             The default value could change in the future, the flag should be only set to false if suppression for the client
+             should never be enabled.</param>
+        </member>
+        <member name="M:Azure.Core.Pipeline.ClientDiagnostics.#ctor(System.String,System.String,Azure.Core.DiagnosticsOptions,System.Nullable{System.Boolean})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Azure.Core.Pipeline.ClientDiagnostics" /> class.
+            </summary>
+            <param name="optionsNamespace">Namespace of the client class, such as Azure.Storage or Azure.AppConfiguration.</param>
+            <param name="providerNamespace">Azure Resource Provider namespace of the Azure service SDK is primarily used for.</param>
+            <param name="diagnosticsOptions">The customer provided client diagnostics options.</param>
+            <param name="suppressNestedClientActivities">Flag controlling if <see cref="T:System.Diagnostics.Activity" />
+             created by this <see cref="T:Azure.Core.Pipeline.ClientDiagnostics" /> for client method calls should be suppressed when called
+             by other Azure SDK client methods.  It's recommended to set it to true for new clients, use default (null) for old clients
+             for backward compatibility reasons, or set it to false to explicitly disable suppression for specific cases.
+             The default value could change in the future, the flag should be only set to false if suppression for the client
+             should never be enabled.</param>
+        </member>
+        <member name="M:Azure.Core.Pipeline.DiagnosticScope.AddLink(System.String,System.String,System.Collections.Generic.IDictionary{System.String,System.String})">
+            <summary>
+            Adds a link to the scope. This must be called before <see cref="M:Azure.Core.Pipeline.DiagnosticScope.Start" /> has been called for the DiagnosticScope.
+            </summary>
+            <param name="traceparent">The traceparent for the link.</param>
+            <param name="tracestate">The tracestate for the link.</param>
+            <param name="attributes">Optional attributes to associate with the link.</param>
+        </member>
+        <member name="M:Azure.Core.Pipeline.DiagnosticScope.SetTraceContext(System.String,System.String)">
+            <summary>
+            Sets the trace context for the current scope.
+            </summary>
+            <param name="traceparent">The trace parent to set for the current scope.</param>
+            <param name="tracestate">The trace state to set for the current scope.</param>
+        </member>
+        <member name="M:Azure.Core.Pipeline.DiagnosticScope.Failed(System.Exception)">
+            <summary>
+            Marks the scope as failed.
+            </summary>
+            <param name="exception">The exception to associate with the failed scope.</param>
+        </member>
+        <member name="M:Azure.Core.Pipeline.DiagnosticScope.Failed(System.String)">
+            <summary>
+            Marks the scope as failed with low-cardinality error.type attribute.
+            </summary>
+            <param name="errorCode">Error code to associate with the failed scope.</param>
+        </member>
+        <member name="T:Azure.Core.Pipeline.ActivityExtensions">
+            <summary>
+            Until Activity Source is no longer considered experimental.
+            </summary>
+        </member>
+        <member name="M:Azure.Core.Pipeline.DiagnosticScopeFactory.#ctor(System.String,System.String,System.Boolean,System.Boolean,System.Boolean)">
+            <summary>
+            Creates diagnostic scope factory.
+            </summary>
+            <param name="clientNamespace">The namespace which is used as a prefix for all ActivitySources created by the factory and the name of DiagnosticSource (when used).</param>
+            <param name="resourceProviderNamespace">Azure resource provider namespace.</param>
+            <param name="isActivityEnabled">Flag indicating if distributed tracing is enabled.</param>
+            <param name="suppressNestedClientActivities">Flag indicating if nested Azure SDK activities describing public API calls should be suppressed.</param>
+            <param name="isStable">Whether instrumentation is considered stable. When false, experimental feature flag controls if tracing is enabled.</param>
+        </member>
+        <member name="T:Azure.Core.Pipeline.TaskExtensions.Enumerable`1">
+            <summary>
+            Both <see cref="T:Azure.Core.Pipeline.TaskExtensions.Enumerable`1" /> and <see cref="T:Azure.Core.Pipeline.TaskExtensions.Enumerator`1" /> are defined as public structs so that foreach can use duck typing
+            to call <see cref="M:Azure.Core.Pipeline.TaskExtensions.Enumerable`1.GetEnumerator" /> and avoid heap memory allocation.
+            Please don't delete this method and don't make these types private.
+            </summary>
+            <typeparam name="T"></typeparam>
+        </member>
+        <member name="T:Azure.Core.FixedDelayWithNoJitterStrategy">
+            <summary>
+            A delay strategy that uses a fixed delay with no jitter applied. This is used by data plane LROs.
+            </summary>
+        </member>
+        <member name="T:Azure.Core.OperationInternal">
+            <summary>
+            A helper class used to build long-running operation instances. In order to use this helper:
+            <list type="number">
+              <item>Make sure your LRO implements the <see cref="T:Azure.Core.IOperation" /> interface.</item>
+              <item>Add a private <see cref="T:Azure.Core.OperationInternal" /> field to your LRO, and instantiate it during construction.</item>
+              <item>Delegate method calls to the <see cref="T:Azure.Core.OperationInternal" /> implementations.</item>
+            </list>
+            Supported members:
+            <list type="bullet">
+              <item>
+                <description><see cref="P:Azure.Core.OperationInternalBase.HasCompleted" /></description>
+              </item>
+              <item>
+                <description><see cref="P:Azure.Core.OperationInternalBase.RawResponse" />, used for <see cref="M:Azure.Operation.GetRawResponse" /></description>
+              </item>
+              <item>
+                <description><see cref="M:Azure.Core.OperationInternalBase.UpdateStatus(System.Threading.CancellationToken)" /></description>
+              </item>
+              <item>
+                <description><see cref="M:Azure.Core.OperationInternalBase.UpdateStatusAsync(System.Threading.CancellationToken)" /></description>
+              </item>
+              <item>
+                <description><see cref="M:Azure.Core.OperationInternalBase.WaitForCompletionResponseAsync(System.Threading.CancellationToken)" /></description>
+              </item>
+              <item>
+                <description><see cref="M:Azure.Core.OperationInternalBase.WaitForCompletionResponseAsync(System.TimeSpan,System.Threading.CancellationToken)" /></description>
+              </item>
+            </list>
+            </summary>
+        </member>
+        <member name="M:Azure.Core.OperationInternal.Succeeded(Azure.Response)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Azure.Core.OperationInternal" /> class in a final successful state.
+            </summary>
+            <param name="rawResponse">The final value of <see cref="P:Azure.Core.OperationInternalBase.RawResponse" />.</param>
+        </member>
+        <member name="M:Azure.Core.OperationInternal.Failed(Azure.Response,Azure.RequestFailedException)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Azure.Core.OperationInternal" /> class in a final failed state.
+            </summary>
+            <param name="rawResponse">The final value of <see cref="P:Azure.Core.OperationInternalBase.RawResponse" />.</param>
+            <param name="operationFailedException">The exception that will be thrown by <c>UpdateStatusAsync</c>.</param>
+        </member>
+        <member name="M:Azure.Core.OperationInternal.#ctor(Azure.Core.IOperation,Azure.Core.Pipeline.ClientDiagnostics,Azure.Response,System.String,System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,System.String}},Azure.Core.DelayStrategy)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Azure.Core.OperationInternal" /> class.
+            </summary>
+            <param name="operation">The long-running operation making use of this class. Passing "<c>this</c>" is expected.</param>
+            <param name="clientDiagnostics">Used for diagnostic scope and exception creation. This is expected to be the instance created during the construction of your main client.</param>
+            <param name="rawResponse">
+                The initial value of <see cref="P:Azure.Core.OperationInternalBase.RawResponse" />. Usually, long-running operation objects can be instantiated in two ways:
+                <list type="bullet">
+                    <item>
+                        When calling a client's "<c>Start&lt;OperationName&gt;</c>" method, a service call is made to start the operation, and an <see cref="T:Azure.Operation" /> instance is returned.
+                        In this case, the response received from this service call can be passed here.
+                    </item>
+                    <item>
+                        When a user instantiates an <see cref="T:Azure.Operation" /> directly using a public constructor, there's no previous service call. In this case, passing <c>null</c> is expected.
+                    </item>
+                </list>
+            </param>
+            <param name="operationTypeName">
+                The type name of the long-running operation making use of this class. Used when creating diagnostic scopes. If left <c>null</c>, the type name will be inferred based on the
+                parameter <paramref name="operation" />.
+            </param>
+            <param name="scopeAttributes">The attributes to use during diagnostic scope creation.</param>
+            <param name="fallbackStrategy"> The delay strategy to use. Default is <see cref="T:Azure.Core.FixedDelayWithNoJitterStrategy" />.</param>
+        </member>
+        <member name="T:Azure.Core.IOperation">
+            <summary>
+            An interface used by <see cref="T:Azure.Core.OperationInternal" /> for making service calls and updating state. It's expected that
+            your long-running operation classes implement this interface.
+            </summary>
+        </member>
+        <member name="M:Azure.Core.IOperation.UpdateStateAsync(System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Calls the service and updates the state of the long-running operation. Properties directly handled by the
+            <see cref="T:Azure.Core.OperationInternal" /> class, such as <see cref="P:Azure.Core.OperationInternalBase.RawResponse" />
+            don't need to be updated. Operation-specific properties, such as "<c>CreateOn</c>" or "<c>LastModified</c>",
+            must be manually updated by the operation implementing this method.
+            <example>Usage example:
+            <code>
+              async ValueTask&lt;OperationState&gt; IOperation.UpdateStateAsync(bool async, CancellationToken cancellationToken)<br />
+              {<br />
+                Response&lt;R&gt; response = async ? &lt;async service call&gt; : &lt;sync service call&gt;;<br />
+                if (&lt;operation succeeded&gt;) return OperationState.Success(response.GetRawResponse(), &lt;parse response&gt;);<br />
+                if (&lt;operation failed&gt;) return OperationState.Failure(response.GetRawResponse());<br />
+                return OperationState.Pending(response.GetRawResponse());<br />
+              }
+            </code>
+            </example>
+            </summary>
+            <param name="async"><c>true</c> if the call should be executed asynchronously. Otherwise, <c>false</c>.</param>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> controlling the request lifetime.</param>
+            <returns>
+            A structure indicating the current operation state. The <see cref="T:Azure.Core.OperationState" /> structure must be instantiated by one of
+            its static methods:
+            <list type="bullet">
+              <item>Use <see cref="M:Azure.Core.OperationState.Success(Azure.Response)" /> when the operation has completed successfully.</item>
+              <item>Use <see cref="M:Azure.Core.OperationState.Failure(Azure.Response,Azure.RequestFailedException)" /> when the operation has completed with failures.</item>
+              <item>Use <see cref="M:Azure.Core.OperationState.Pending(Azure.Response)" /> when the operation has not completed yet.</item>
+            </list>
+            </returns>
+        </member>
+        <member name="T:Azure.Core.OperationState">
+            <summary>
+            A helper structure passed to <see cref="T:Azure.Core.OperationInternal" /> to indicate the current operation state. This structure must be
+            instantiated by one of its static methods, depending on the operation state:
+            <list type="bullet">
+              <item>Use <see cref="M:Azure.Core.OperationState.Success(Azure.Response)" /> when the operation has completed successfully.</item>
+              <item>Use <see cref="M:Azure.Core.OperationState.Failure(Azure.Response,Azure.RequestFailedException)" /> when the operation has completed with failures.</item>
+              <item>Use <see cref="M:Azure.Core.OperationState.Pending(Azure.Response)" /> when the operation has not completed yet.</item>
+            </list>
+            </summary>
+        </member>
+        <member name="M:Azure.Core.OperationState.Success(Azure.Response)">
+            <summary>
+            Instantiates an <see cref="T:Azure.Core.OperationState" /> indicating the operation has completed successfully.
+            </summary>
+            <param name="rawResponse">The HTTP response obtained during the status update.</param>
+            <returns>A new <see cref="T:Azure.Core.OperationState" /> instance.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="rawResponse" /> is <c>null</c>.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationState.Failure(Azure.Response,Azure.RequestFailedException)">
+            <summary>
+            Instantiates an <see cref="T:Azure.Core.OperationState" /> indicating the operation has completed with failures.
+            </summary>
+            <param name="rawResponse">The HTTP response obtained during the status update.</param>
+            <param name="operationFailedException">
+            The exception to throw from <c>UpdateStatus</c> because of the operation failure. If left <c>null</c>,
+            a default exception is created based on the <paramref name="rawResponse" /> parameter.
+            </param>
+            <returns>A new <see cref="T:Azure.Core.OperationState" /> instance.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="rawResponse" /> is <c>null</c>.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationState.Pending(Azure.Response)">
+            <summary>
+            Instantiates an <see cref="T:Azure.Core.OperationState" /> indicating the operation has not completed yet.
+            </summary>
+            <param name="rawResponse">The HTTP response obtained during the status update.</param>
+            <returns>A new <see cref="T:Azure.Core.OperationState" /> instance.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="rawResponse" /> is <c>null</c>.</exception>
+        </member>
+        <member name="P:Azure.Core.OperationInternalBase.RawResponse">
+            <summary>
+            The last HTTP response received from the server. Its update already handled in calls to "<c>UpdateStatus</c>" and
+            "<c>WaitForCompletionAsync</c>", but custom methods not supported by this class, such as "<c>CancelOperation</c>",
+            must update it as well.
+            <example>Usage example:
+            <code>
+              public Response GetRawResponse() =&gt; _operationInternal.RawResponse;
+            </code>
+            </example>
+            </summary>
+        </member>
+        <member name="P:Azure.Core.OperationInternalBase.HasCompleted">
+            <summary>
+            Returns <c>true</c> if the long-running operation has completed.
+            <example>Usage example:
+            <code>
+              public bool HasCompleted =&gt; _operationInternal.HasCompleted;
+            </code>
+            </example>
+            </summary>
+        </member>
+        <member name="M:Azure.Core.OperationInternalBase.UpdateStatusAsync(System.Threading.CancellationToken)">
+            <summary>
+            Calls the server to get the latest status of the long-running operation, handling diagnostic scope creation for distributed
+            tracing. The default scope name can be changed with the "<c>operationTypeName</c>" parameter passed to the constructor.
+            <example>Usage example:
+            <code>
+              public async ValueTask&lt;Response&gt; UpdateStatusAsync(CancellationToken cancellationToken) =&gt;
+                await _operationInternal.UpdateStatusAsync(cancellationToken).ConfigureAwait(false);
+            </code>
+            </example>
+            </summary>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> controlling the request lifetime.</param>
+            <returns>The HTTP response received from the server.</returns>
+            <remarks>
+            After a successful run, this method will update <see cref="P:Azure.Core.OperationInternalBase.RawResponse" /> and might update <see cref="P:Azure.Core.OperationInternalBase.HasCompleted" />.
+            </remarks>
+            <exception cref="T:Azure.RequestFailedException">Thrown if there's been any issues during the connection, or if the operation has completed with failures.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationInternalBase.UpdateStatus(System.Threading.CancellationToken)">
+            <summary>
+            Calls the server to get the latest status of the long-running operation, handling diagnostic scope creation for distributed
+            tracing. The default scope name can be changed with the "<c>operationTypeName</c>" parameter passed to the constructor.
+            <example>Usage example:
+            <code>
+              public Response UpdateStatus(CancellationToken cancellationToken) =&gt; _operationInternal.UpdateStatus(cancellationToken);
+            </code>
+            </example>
+            </summary>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> controlling the request lifetime.</param>
+            <returns>The HTTP response received from the server.</returns>
+            <remarks>
+            After a successful run, this method will update <see cref="P:Azure.Core.OperationInternalBase.RawResponse" /> and might update <see cref="P:Azure.Core.OperationInternalBase.HasCompleted" />.
+            </remarks>
+            <exception cref="T:Azure.RequestFailedException">Thrown if there's been any issues during the connection, or if the operation has completed with failures.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationInternalBase.WaitForCompletionResponseAsync(System.Threading.CancellationToken)">
+            <summary>
+            Periodically calls <see cref="M:Azure.Core.OperationInternalBase.UpdateStatusAsync(System.Threading.CancellationToken)" /> until the long-running operation completes.
+            After each service call, a retry-after header may be returned to communicate that there is no reason to poll
+            for status change until the specified time has passed.  The maximum of the retry after value and the fallback strategy
+            is then used as the wait interval.
+            Headers supported are: "Retry-After", "retry-after-ms", and "x-ms-retry-after-ms",
+            <example>Usage example:
+            <code>
+              public async ValueTask&lt;Response&lt;T&gt;&gt; WaitForCompletionAsync(CancellationToken cancellationToken) =&gt;
+                await _operationInternal.WaitForCompletionAsync(cancellationToken).ConfigureAwait(false);
+            </code>
+            </example>
+            </summary>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> controlling the request lifetime.</param>
+            <returns>The last HTTP response received from the server, including the final result of the long-running operation.</returns>
+            <exception cref="T:Azure.RequestFailedException">Thrown if there's been any issues during the connection, or if the operation has completed with failures.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationInternalBase.WaitForCompletionResponseAsync(System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>
+            Periodically calls <see cref="M:Azure.Core.OperationInternalBase.UpdateStatusAsync(System.Threading.CancellationToken)" /> until the long-running operation completes. The interval
+            between calls is defined by the parameter <paramref name="pollingInterval" />, but it can change based on information returned
+            from the server. After each service call, a retry-after header may be returned to communicate that there is no reason to poll
+            for status change until the specified time has passed. In this case, the maximum value between the <paramref name="pollingInterval" />
+            parameter and the retry-after header is chosen as the wait interval. Headers supported are: "Retry-After", "retry-after-ms",
+            and "x-ms-retry-after-ms".
+            <example>Usage example:
+            <code>
+              public async ValueTask&lt;Response&lt;T&gt;&gt; WaitForCompletionAsync(TimeSpan pollingInterval, CancellationToken cancellationToken) =&gt;
+                await _operationInternal.WaitForCompletionAsync(pollingInterval, cancellationToken).ConfigureAwait(false);
+            </code>
+            </example>
+            </summary>
+            <param name="pollingInterval">The interval between status requests to the server. <strong></strong></param>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> controlling the request lifetime.</param>
+            <returns>The last HTTP response received from the server, including the final result of the long-running operation.</returns>
+            <exception cref="T:Azure.RequestFailedException">Thrown if there's been any issues during the connection, or if the operation has completed with failures.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationInternalBase.WaitForCompletionResponse(System.Threading.CancellationToken)">
+            <summary>
+            Periodically calls <see cref="M:Azure.Core.OperationInternalBase.UpdateStatus(System.Threading.CancellationToken)" /> until the long-running operation completes.
+            After each service call, a retry-after header may be returned to communicate that there is no reason to poll
+            for status change until the specified time has passed.  The maximum of the retry after value and the fallback strategy
+            is then used as the wait interval.
+            Headers supported are: "Retry-After", "retry-after-ms", and "x-ms-retry-after-ms",
+            and "x-ms-retry-after-ms".
+            <example>Usage example:
+            <code>
+              public async ValueTask&lt;Response&lt;T&gt;&gt; WaitForCompletionAsync(TimeSpan pollingInterval, CancellationToken cancellationToken) =&gt;
+                await _operationInternal.WaitForCompletionAsync(pollingInterval, cancellationToken).ConfigureAwait(false);
+            </code>
+            </example>
+            </summary>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> controlling the request lifetime.</param>
+            <returns>The last HTTP response received from the server, including the final result of the long-running operation.</returns>
+            <exception cref="T:Azure.RequestFailedException">Thrown if there's been any issues during the connection, or if the operation has completed with failures.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationInternalBase.WaitForCompletionResponse(System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>
+            Periodically calls <see cref="M:Azure.Core.OperationInternalBase.UpdateStatus(System.Threading.CancellationToken)" /> until the long-running operation completes. The interval
+            between calls is defined by the parameter <paramref name="pollingInterval" />, but it can change based on information returned
+            from the server. After each service call, a retry-after header may be returned to communicate that there is no reason to poll
+            for status change until the specified time has passed. In this case, the maximum value between the <paramref name="pollingInterval" />
+            parameter and the retry-after header is chosen as the wait interval. Headers supported are: "Retry-After", "retry-after-ms",
+            and "x-ms-retry-after-ms".
+            <example>Usage example:
+            <code>
+              public async ValueTask&lt;Response&lt;T&gt;&gt; WaitForCompletionAsync(TimeSpan pollingInterval, CancellationToken cancellationToken) =&gt;
+                await _operationInternal.WaitForCompletionAsync(pollingInterval, cancellationToken).ConfigureAwait(false);
+            </code>
+            </example>
+            </summary>
+            <param name="pollingInterval">The interval between status requests to the server.</param>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> controlling the request lifetime.</param>
+            <returns>The last HTTP response received from the server, including the final result of the long-running operation.</returns>
+            <exception cref="T:Azure.RequestFailedException">Thrown if there's been any issues during the connection, or if the operation has completed with failures.</exception>
+        </member>
+        <member name="T:Azure.Core.OperationInternal`1">
+            <summary>
+            A helper class used to build long-running operation instances. In order to use this helper:
+            <list type="number">
+              <item>Make sure your LRO implements the <see cref="T:Azure.Core.IOperation`1" /> interface.</item>
+              <item>Add a private <see cref="T:Azure.Core.OperationInternal`1" /> field to your LRO, and instantiate it during construction.</item>
+              <item>Delegate method calls to the <see cref="T:Azure.Core.OperationInternal`1" /> implementations.</item>
+            </list>
+            Supported members:
+            <list type="bullet">
+              <item>
+                <description><see cref="P:Azure.Core.OperationInternal`1.HasValue" /></description>
+              </item>
+              <item>
+                <description><see cref="P:Azure.Core.OperationInternalBase.HasCompleted" /></description>
+              </item>
+              <item>
+                <description><see cref="P:Azure.Core.OperationInternal`1.Value" /></description>
+              </item>
+              <item>
+                <description><see cref="P:Azure.Core.OperationInternalBase.RawResponse" />, used for <see cref="M:Azure.Operation.GetRawResponse" /></description>
+              </item>
+              <item>
+                <description><see cref="M:Azure.Core.OperationInternalBase.UpdateStatus(System.Threading.CancellationToken)" /></description>
+              </item>
+              <item>
+                <description><see cref="M:Azure.Core.OperationInternalBase.UpdateStatusAsync(System.Threading.CancellationToken)" /></description>
+              </item>
+              <item>
+                <description><see cref="M:Azure.Core.OperationInternal`1.WaitForCompletionAsync(System.Threading.CancellationToken)" /></description>
+              </item>
+              <item>
+                <description><see cref="M:Azure.Core.OperationInternal`1.WaitForCompletionAsync(System.TimeSpan,System.Threading.CancellationToken)" /></description>
+              </item>
+            </list>
+            </summary>
+            <typeparam name="T">The final result of the long-running operation. Must match the type used in <see cref="T:Azure.Operation`1" />.</typeparam>
+        </member>
+        <member name="M:Azure.Core.OperationInternal`1.Succeeded(Azure.Response,`0)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Azure.Core.OperationInternal" /> class in a final successful state.
+            </summary>
+            <param name="rawResponse">The final value of <see cref="P:Azure.Core.OperationInternalBase.RawResponse" />.</param>
+            <param name="value">The final result of the long-running operation.</param>
+        </member>
+        <member name="M:Azure.Core.OperationInternal`1.Failed(Azure.Response,Azure.RequestFailedException)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Azure.Core.OperationInternal" /> class in a final failed state.
+            </summary>
+            <param name="rawResponse">The final value of <see cref="P:Azure.Core.OperationInternalBase.RawResponse" />.</param>
+            <param name="operationFailedException">The exception that will be thrown by <c>UpdateStatusAsync</c>.</param>
+        </member>
+        <member name="M:Azure.Core.OperationInternal`1.#ctor(Azure.Core.IOperation{`0},Azure.Core.Pipeline.ClientDiagnostics,Azure.Response,System.String,System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,System.String}},Azure.Core.DelayStrategy)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Azure.Core.OperationInternal`1" /> class.
+            </summary>
+            <param name="operation">The long-running operation making use of this class. Passing "<c>this</c>" is expected.</param>
+            <param name="clientDiagnostics">Used for diagnostic scope and exception creation. This is expected to be the instance created during the construction of your main client.</param>
+            <param name="rawResponse">
+                The initial value of <see cref="P:Azure.Core.OperationInternalBase.RawResponse" />. Usually, long-running operation objects can be instantiated in two ways:
+                <list type="bullet">
+                    <item>
+                        When calling a client's "<c>Start&lt;OperationName&gt;</c>" method, a service call is made to start the operation, and an <see cref="T:Azure.Operation`1" /> instance is returned.
+                        In this case, the response received from this service call can be passed here.
+                    </item>
+                    <item>
+                        When a user instantiates an <see cref="T:Azure.Operation`1" /> directly using a public constructor, there's no previous service call. In this case, passing <c>null</c> is expected.
+                    </item>
+                </list>
+            </param>
+            <param name="operationTypeName">
+                The type name of the long-running operation making use of this class. Used when creating diagnostic scopes. If left <c>null</c>, the type name will be inferred based on the
+                parameter <paramref name="operation" />.
+            </param>
+            <param name="scopeAttributes">The attributes to use during diagnostic scope creation.</param>
+            <param name="fallbackStrategy">The delay strategy when Retry-After header is not present.  When it is present, the longer of the two delays will be used.
+                Default is <see cref="T:Azure.Core.FixedDelayWithNoJitterStrategy" />.</param>
+        </member>
+        <member name="P:Azure.Core.OperationInternal`1.HasValue">
+            <summary>
+            Returns <c>true</c> if the long-running operation completed successfully and has produced a final result.
+            <example>Usage example:
+            <code>
+              public bool HasValue =&gt; _operationInternal.HasValue;
+            </code>
+            </example>
+            </summary>
+        </member>
+        <member name="P:Azure.Core.OperationInternal`1.Value">
+            <summary>
+            The final result of the long-running operation.
+            <example>Usage example:
+            <code>
+              public T Value =&gt; _operationInternal.Value;
+            </code>
+            </example>
+            </summary>
+            <exception cref="T:System.InvalidOperationException">Thrown when the operation has not completed yet.</exception>
+            <exception cref="T:Azure.RequestFailedException">Thrown when the operation has completed with failures.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationInternal`1.WaitForCompletionAsync(System.Threading.CancellationToken)">
+            <summary>
+            Periodically calls <see cref="M:Azure.Core.OperationInternalBase.UpdateStatusAsync(System.Threading.CancellationToken)" /> until the long-running operation completes.
+            After each service call, a retry-after header may be returned to communicate that there is no reason to poll
+            for status change until the specified time has passed.
+            Headers supported are: "Retry-After", "retry-after-ms", and "x-ms-retry-after-ms",
+            <example>Usage example:
+            <code>
+              public async ValueTask&lt;Response&lt;T&gt;&gt; WaitForCompletionAsync(CancellationToken cancellationToken) =&gt;
+                await _operationInternal.WaitForCompletionAsync(cancellationToken).ConfigureAwait(false);
+            </code>
+            </example>
+            </summary>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> controlling the request lifetime.</param>
+            <returns>The last HTTP response received from the server, including the final result of the long-running operation.</returns>
+            <exception cref="T:Azure.RequestFailedException">Thrown if there's been any issues during the connection, or if the operation has completed with failures.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationInternal`1.WaitForCompletionAsync(System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>
+            Periodically calls <see cref="M:Azure.Core.OperationInternalBase.UpdateStatusAsync(System.Threading.CancellationToken)" /> until the long-running operation completes. The interval
+            between calls is defined by the parameter <paramref name="pollingInterval" />, but it can change based on information returned
+            from the server. After each service call, a retry-after header may be returned to communicate that there is no reason to poll
+            for status change until the specified time has passed. In this case, the maximum value between the <paramref name="pollingInterval" />
+            parameter and the retry-after header is chosen as the wait interval. Headers supported are: "Retry-After", "retry-after-ms",
+            and "x-ms-retry-after-ms".
+            <example>Usage example:
+            <code>
+              public async ValueTask&lt;Response&lt;T&gt;&gt; WaitForCompletionAsync(TimeSpan pollingInterval, CancellationToken cancellationToken) =&gt;
+                await _operationInternal.WaitForCompletionAsync(pollingInterval, cancellationToken).ConfigureAwait(false);
+            </code>
+            </example>
+            </summary>
+            <param name="pollingInterval">The interval between status requests to the server.</param>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> controlling the request lifetime.</param>
+            <returns>The last HTTP response received from the server, including the final result of the long-running operation.</returns>
+            <exception cref="T:Azure.RequestFailedException">Thrown if there's been any issues during the connection, or if the operation has completed with failures.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationInternal`1.WaitForCompletion(System.Threading.CancellationToken)">
+            <summary>
+            Periodically calls <see cref="M:Azure.Core.OperationInternalBase.UpdateStatus(System.Threading.CancellationToken)" /> until the long-running operation completes.
+            After each service call, a retry-after header may be returned to communicate that there is no reason to poll
+            for status change until the specified time has passed.
+            Headers supported are: "Retry-After", "retry-after-ms", and "x-ms-retry-after-ms",
+            <example>Usage example:
+            <code>
+              public async ValueTask&lt;Response&lt;T&gt;&gt; WaitForCompletionAsync(CancellationToken cancellationToken) =&gt;
+                await _operationInternal.WaitForCompletionAsync(cancellationToken).ConfigureAwait(false);
+            </code>
+            </example>
+            </summary>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> controlling the request lifetime.</param>
+            <returns>The last HTTP response received from the server, including the final result of the long-running operation.</returns>
+            <exception cref="T:Azure.RequestFailedException">Thrown if there's been any issues during the connection, or if the operation has completed with failures.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationInternal`1.WaitForCompletion(System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>
+            Periodically calls <see cref="M:Azure.Core.OperationInternalBase.UpdateStatus(System.Threading.CancellationToken)" /> until the long-running operation completes. The interval
+            between calls is defined by the <see cref="T:Azure.Core.FixedDelayWithNoJitterStrategy" />, which takes into account any retry-after header that is returned
+            from the server.
+            <example>Usage example:
+            <code>
+              public async ValueTask&lt;Response&lt;T&gt;&gt; WaitForCompletionAsync(CancellationToken cancellationToken) =&gt;
+                await _operationInternal.WaitForCompletionAsync(cancellationToken).ConfigureAwait(false);
+            </code>
+            </example>
+            </summary>
+            <param name="pollingInterval">The interval between status requests to the server.</param>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> controlling the request lifetime.</param>
+            <returns>The last HTTP response received from the server, including the final result of the long-running operation.</returns>
+            <exception cref="T:Azure.RequestFailedException">Thrown if there's been any issues during the connection, or if the operation has completed with failures.</exception>
+        </member>
+        <member name="T:Azure.Core.IOperation`1">
+            <summary>
+            An interface used by <see cref="T:Azure.Core.OperationInternal`1" /> for making service calls and updating state. It's expected that
+            your long-running operation classes implement this interface.
+            </summary>
+            <typeparam name="T">The final result of the long-running operation. Must match the type used in <see cref="T:Azure.Operation`1" />.</typeparam>
+        </member>
+        <member name="M:Azure.Core.IOperation`1.UpdateStateAsync(System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Calls the service and updates the state of the long-running operation. Properties directly handled by the
+            <see cref="T:Azure.Core.OperationInternal`1" /> class, such as <see cref="P:Azure.Core.OperationInternalBase.RawResponse" /> or
+            <see cref="P:Azure.Core.OperationInternal`1.Value" />, don't need to be updated. Operation-specific properties, such
+            as "<c>CreateOn</c>" or "<c>LastModified</c>", must be manually updated by the operation implementing this
+            method.
+            <example>Usage example:
+            <code>
+              async ValueTask&lt;OperationState&lt;T&gt;&gt; IOperation&lt;T&gt;.UpdateStateAsync(bool async, CancellationToken cancellationToken)<br />
+              {<br />
+                Response&lt;R&gt; response = async ? &lt;async service call&gt; : &lt;sync service call&gt;;<br />
+                if (&lt;operation succeeded&gt;) return OperationState&lt;T&gt;.Success(response.GetRawResponse(), &lt;parse response&gt;);<br />
+                if (&lt;operation failed&gt;) return OperationState&lt;T&gt;.Failure(response.GetRawResponse());<br />
+                return OperationState&lt;T&gt;.Pending(response.GetRawResponse());<br />
+              }
+            </code>
+            </example>
+            </summary>
+            <param name="async"><c>true</c> if the call should be executed asynchronously. Otherwise, <c>false</c>.</param>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> controlling the request lifetime.</param>
+            <returns>
+            A structure indicating the current operation state. The <see cref="T:Azure.Core.OperationState`1" /> structure must be instantiated by one of
+            its static methods:
+            <list type="bullet">
+              <item>Use <see cref="M:Azure.Core.OperationState`1.Success(Azure.Response,`0)" /> when the operation has completed successfully.</item>
+              <item>Use <see cref="M:Azure.Core.OperationState`1.Failure(Azure.Response,Azure.RequestFailedException)" /> when the operation has completed with failures.</item>
+              <item>Use <see cref="M:Azure.Core.OperationState`1.Pending(Azure.Response)" /> when the operation has not completed yet.</item>
+            </list>
+            </returns>
+        </member>
+        <member name="T:Azure.Core.OperationState`1">
+            <summary>
+            A helper structure passed to <see cref="T:Azure.Core.OperationInternal`1" /> to indicate the current operation state. This structure must be
+            instantiated by one of its static methods, depending on the operation state:
+            <list type="bullet">
+              <item>Use <see cref="M:Azure.Core.OperationState`1.Success(Azure.Response,`0)" /> when the operation has completed successfully.</item>
+              <item>Use <see cref="M:Azure.Core.OperationState`1.Failure(Azure.Response,Azure.RequestFailedException)" /> when the operation has completed with failures.</item>
+              <item>Use <see cref="M:Azure.Core.OperationState`1.Pending(Azure.Response)" /> when the operation has not completed yet.</item>
+            </list>
+            </summary>
+            <typeparam name="T">The final result of the long-running operation. Must match the type used in <see cref="T:Azure.Operation`1" />.</typeparam>
+        </member>
+        <member name="M:Azure.Core.OperationState`1.Success(Azure.Response,`0)">
+            <summary>
+            Instantiates an <see cref="T:Azure.Core.OperationState`1" /> indicating the operation has completed successfully.
+            </summary>
+            <param name="rawResponse">The HTTP response obtained during the status update.</param>
+            <param name="value">The final result of the long-running operation.</param>
+            <returns>A new <see cref="T:Azure.Core.OperationState`1" /> instance.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="rawResponse" /> or <paramref name="value" /> is <c>null</c>.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationState`1.Failure(Azure.Response,Azure.RequestFailedException)">
+            <summary>
+            Instantiates an <see cref="T:Azure.Core.OperationState`1" /> indicating the operation has completed with failures.
+            </summary>
+            <param name="rawResponse">The HTTP response obtained during the status update.</param>
+            <param name="operationFailedException">
+            The exception to throw from <c>UpdateStatus</c> because of the operation failure. The same exception will be thrown when
+            <see cref="P:Azure.Core.OperationInternal`1.Value" /> is called. If left <c>null</c>, a default exception is created based on the
+            <paramref name="rawResponse" /> parameter.
+            </param>
+            <returns>A new <see cref="T:Azure.Core.OperationState`1" /> instance.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="rawResponse" /> is <c>null</c>.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationState`1.Pending(Azure.Response)">
+            <summary>
+            Instantiates an <see cref="T:Azure.Core.OperationState`1" /> indicating the operation has not completed yet.
+            </summary>
+            <param name="rawResponse">The HTTP response obtained during the status update.</param>
+            <returns>A new <see cref="T:Azure.Core.OperationState`1" /> instance.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="rawResponse" /> is <c>null</c>.</exception>
+        </member>
+        <member name="T:Azure.Core.OperationPoller">
+            <summary>
+            Implementation of LRO polling logic.
+            </summary>
+        </member>
+        <member name="P:Azure.Core.ProtocolOperation`1.Id">
+            <summary>
+            Gets an ID representing the operation that can be used to poll for
+            the status of the long-running operation.
+            </summary>
+        </member>
+        <member name="P:Azure.Core.ProtocolOperation`1.Value">
+            <summary>
+            Final result of the long-running operation.
+            </summary><remarks>
+            This property can be accessed only after the operation completes successfully (HasValue is true).
+            </remarks>
+        </member>
+        <member name="P:Azure.Core.ProtocolOperation`1.HasCompleted">
+            <summary>
+            Returns true if the long-running operation completed.
+            </summary>
+        </member>
+        <member name="P:Azure.Core.ProtocolOperation`1.HasValue">
+            <summary>
+            Returns true if the long-running operation completed successfully and has produced final result (accessible by Value property).
+            </summary>
+        </member>
+        <member name="M:Azure.Core.ProtocolOperation`1.GetRawResponse">
+            <summary>
+            The last HTTP response received from the server.
+            </summary><remarks>
+            The last response returned from the server during the lifecycle of this instance.
+            An instance of <see cref="T:Azure.Operation`1" /> sends requests to a server in UpdateStatusAsync, UpdateStatus, and other methods.
+            Responses from these requests can be accessed using GetRawResponse.
+            </remarks>
+        </member>
+        <member name="M:Azure.Core.ProtocolOperation`1.UpdateStatus(System.Threading.CancellationToken)">
+            <summary>
+            Calls the server to get updated status of the long-running operation.
+            </summary><param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> used for the service call.</param><returns>The HTTP response received from the server.</returns><remarks>
+            This operation will update the value returned from GetRawResponse and might update HasCompleted.
+            </remarks>
+        </member>
+        <member name="M:Azure.Core.ProtocolOperation`1.UpdateStatusAsync(System.Threading.CancellationToken)">
+            <summary>
+            Calls the server to get updated status of the long-running operation.
+            </summary><param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> used for the service call.</param><returns>The HTTP response received from the server.</returns><remarks>
+            This operation will update the value returned from GetRawResponse and might update HasCompleted.
+            </remarks>
+        </member>
+        <member name="M:Azure.Core.ProtocolOperation`1.WaitForCompletionAsync(System.Threading.CancellationToken)">
+            <summary>
+            Periodically calls the server till the long-running operation completes.
+            </summary><param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> used for the periodical service calls.</param><returns>The last HTTP response received from the server.</returns><remarks>
+            This method will periodically call UpdateStatusAsync till HasCompleted is true, then return the final result of the operation.
+            </remarks>
+        </member>
+        <member name="M:Azure.Core.ProtocolOperation`1.WaitForCompletionAsync(System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>
+            Periodically calls the server till the long-running operation completes.
+            </summary><param name="pollingInterval">
+            The interval between status requests to the server.
+            The interval can change based on information returned from the server.
+            For example, the server might communicate to the client that there is not reason to poll for status change sooner than some time.
+            </param><param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> used for the periodical service calls.</param><returns>The last HTTP response received from the server.</returns><remarks>
+            This method will periodically call UpdateStatusAsync till HasCompleted is true, then return the final result of the operation.
+            </remarks>
+        </member>
+        <member name="T:Azure.Core.SequentialDelayStrategy">
+            <summary>
+            A delay strategy that uses a fixed sequence of delays with no jitter applied. This is used by management LROs.
+            </summary>
+        </member>
+        <member name="T:Azure.NoBodyResponse`1">
+            <summary>
+            NOTE: This type should not be used going forward. Use NoValueResponse{T} instead.
+            </summary>
+        </member>
+        <member name="P:Azure.NoBodyResponse`1.HasValue">
+            <summary>
+            Gets a value indicating whether the current instance has a valid value of its underlying type.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute">
+            <summary>
+            Indicates that the specified method requires the ability to generate new code at runtime,
+            for example through <see cref="N:System.Reflection" />.
+            </summary>
+            <remarks>
+            This allows tools to understand which methods are unsafe to call when compiling ahead of time.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute" /> class
+            with the specified message.
+            </summary>
+            <param name="message">
+            A message that contains information about the usage of dynamic code.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute.Message">
+            <summary>
+            Gets a message that contains information about the usage of dynamic code.
+            </summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute.Url">
+            <summary>
+            Gets or sets an optional URL that contains more information about the method,
+            why it requires dynamic code, and what options a consumer has to deal with it.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute">
+            <summary>
+            Indicates that the specified method requires dynamic access to code that is not referenced
+            statically, for example through <see cref="N:System.Reflection" />.
+            </summary>
+            <remarks>
+            This allows tools to understand which methods are unsafe to call when removing unreferenced
+            code from an application.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute" /> class
+            with the specified message.
+            </summary>
+            <param name="message">
+            A message that contains information about the usage of unreferenced code.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.Message">
+            <summary>
+            Gets a message that contains information about the usage of unreferenced code.
+            </summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.Url">
+            <summary>
+            Gets or sets an optional URL that contains more information about the method,
+            why it requires unreferenced code, and what options a consumer has to deal with it.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+            <summary>
+            Suppresses reporting of a specific rule violation, allowing multiple suppressions on a
+            single code artifact.
+            </summary>
+            <remarks>
+            <see cref="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute" /> is different than
+            <see cref="T:System.Diagnostics.CodeAnalysis.SuppressMessageAttribute" /> in that it doesn't have a
+            <see cref="T:System.Diagnostics.ConditionalAttribute" />. So it is always preserved in the compiled assembly.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute" />
+            class, specifying the category of the tool and the identifier for an analysis rule.
+            </summary>
+            <param name="category">The category for the attribute.</param>
+            <param name="checkId">The identifier of the analysis rule the attribute applies to.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Category">
+            <summary>
+            Gets the category identifying the classification of the attribute.
+            </summary>
+            <remarks>
+            The <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Category" /> property describes the tool or tool analysis category
+            for which a message suppression attribute applies.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.CheckId">
+            <summary>
+            Gets the identifier of the analysis tool rule to be suppressed.
+            </summary>
+            <remarks>
+            Concatenated together, the <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Category" /> and <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.CheckId" />
+            properties form a unique check identifier.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Scope">
+            <summary>
+            Gets or sets the scope of the code that is relevant for the attribute.
+            </summary>
+            <remarks>
+            The Scope property is an optional argument that specifies the metadata scope for which
+            the attribute is relevant.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Target">
+            <summary>
+            Gets or sets a fully qualified path that represents the target of the attribute.
+            </summary>
+            <remarks>
+            The <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Target" /> property is an optional argument identifying the analysis target
+            of the attribute. An example value is "System.IO.Stream.ctor():System.Void".
+            Because it is fully qualified, it can be long, particularly for targets such as parameters.
+            The analysis tool user interface should be capable of automatically formatting the parameter.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.MessageId">
+            <summary>
+            Gets or sets an optional argument expanding on exclusion criteria.
+            </summary>
+            <remarks>
+            The <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.MessageId" /> property is an optional argument that specifies additional
+            exclusion where the literal metadata target is not sufficiently precise. For example,
+            the <see cref="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute" /> cannot be applied within a method,
+            and it may be desirable to suppress a violation against a statement in the method that will
+            give a rule violation, but not against all statements in the method.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Justification">
+            <summary>
+            Gets or sets the justification for suppressing the code analysis message.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute">
+            <summary>
+            States a dependency that one member has on another.
+            </summary>
+            <remarks>
+            This can be used to inform tooling of a dependency that is otherwise not evident purely from
+            metadata and IL, for example a member relied on via reflection.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute" /> class
+            with the specified signature of a member on the same type as the consumer.
+            </summary>
+            <param name="memberSignature">The signature of the member depended on.</param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.String,System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute" /> class
+            with the specified signature of a member on a <see cref="T:System.Type" />.
+            </summary>
+            <param name="memberSignature">The signature of the member depended on.</param>
+            <param name="type">The <see cref="T:System.Type" /> containing <paramref name="memberSignature" />.</param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute" /> class
+            with the specified signature of a member on a type in an assembly.
+            </summary>
+            <param name="memberSignature">The signature of the member depended on.</param>
+            <param name="typeName">The full name of the type containing the specified member.</param>
+            <param name="assemblyName">The assembly name of the type containing the specified member.</param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes,System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute" /> class
+            with the specified types of members on a <see cref="T:System.Type" />.
+            </summary>
+            <param name="memberTypes">The types of members depended on.</param>
+            <param name="type">The <see cref="T:System.Type" /> containing the specified members.</param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute" /> class
+            with the specified types of members on a type in an assembly.
+            </summary>
+            <param name="memberTypes">The types of members depended on.</param>
+            <param name="typeName">The full name of the type containing the specified members.</param>
+            <param name="assemblyName">The assembly name of the type containing the specified members.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberSignature">
+            <summary>
+            Gets the signature of the member depended on.
+            </summary>
+            <remarks>
+            Either <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberSignature" /> must be a valid string or <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberTypes" />
+            must not equal <see cref="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.None" />, but not both.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberTypes">
+            <summary>
+            Gets the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" /> which specifies the type
+            of members depended on.
+            </summary>
+            <remarks>
+            Either <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberSignature" /> must be a valid string or <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberTypes" />
+            must not equal <see cref="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.None" />, but not both.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.Type">
+            <summary>
+            Gets the <see cref="T:System.Type" /> containing the specified member.
+            </summary>
+            <remarks>
+            If neither <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.Type" /> nor <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.TypeName" /> are specified,
+            the type of the consumer is assumed.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.TypeName">
+            <summary>
+            Gets the full name of the type containing the specified member.
+            </summary>
+            <remarks>
+            If neither <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.Type" /> nor <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.TypeName" /> are specified,
+            the type of the consumer is assumed.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.AssemblyName">
+            <summary>
+            Gets the assembly name of the specified type.
+            </summary>
+            <remarks>
+            <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.AssemblyName" /> is only valid when <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.TypeName" /> is specified.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.Condition">
+            <summary>
+            Gets or sets the condition in which the dependency is applicable, e.g. "DEBUG".
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
+             <summary>
+             Indicates that certain members on a specified <see cref="T:System.Type" /> are accessed dynamically,
+             for example through <see cref="N:System.Reflection" />.
+             </summary>
+             <remarks>
+             This allows tools to understand which members are being accessed during the execution
+             of a program.
+            
+             This attribute is valid on members whose type is <see cref="T:System.Type" /> or <see cref="T:System.String" />.
+            
+             When this attribute is applied to a location of type <see cref="T:System.String" />, the assumption is
+             that the string represents a fully qualified type name.
+            
+             When this attribute is applied to a class, interface, or struct, the members specified
+             can be accessed dynamically on <see cref="T:System.Type" /> instances returned from calling
+             <see cref="M:System.Object.GetType" /> on instances of that class, interface, or struct.
+            
+             If the attribute is applied to a method it's treated as a special case and it implies
+             the attribute should be applied to the "this" parameter of the method. As such the attribute
+             should only be used on instance methods of types assignable to System.Type (or string, but no methods
+             will use it there).
+             </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute.#ctor(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" /> class
+            with the specified member types.
+            </summary>
+            <param name="memberTypes">The types of members dynamically accessed.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute.MemberTypes">
+            <summary>
+            Gets the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" /> which specifies the type
+            of members dynamically accessed.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">
+             <summary>
+             Specifies the types of members that are dynamically accessed.
+            
+             This enumeration has a <see cref="T:System.FlagsAttribute" /> attribute that allows a
+             bitwise combination of its member values.
+             </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.None">
+            <summary>
+            Specifies no members.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor">
+            <summary>
+            Specifies the default, parameterless public constructor.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors">
+            <summary>
+            Specifies all public constructors.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors">
+            <summary>
+            Specifies all non-public constructors.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods">
+            <summary>
+            Specifies all public methods.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods">
+            <summary>
+            Specifies all non-public methods.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields">
+            <summary>
+            Specifies all public fields.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields">
+            <summary>
+            Specifies all non-public fields.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes">
+            <summary>
+            Specifies all public nested types.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypes">
+            <summary>
+            Specifies all non-public nested types.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties">
+            <summary>
+            Specifies all public properties.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties">
+            <summary>
+            Specifies all non-public properties.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents">
+            <summary>
+            Specifies all public events.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicEvents">
+            <summary>
+            Specifies all non-public events.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces">
+            <summary>
+            Specifies all interfaces implemented by the type.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All">
+            <summary>
+            Specifies all members.
+            </summary>
+        </member>
+        <member name="M:Azure.Core.ChangeTrackingDictionary`2.System#Collections#IEnumerable#GetEnumerator">
+            <summary>Returns an enumerator that iterates through a collection.</summary><returns>An <see cref="T:System.Collections.IEnumerator" /> object that can be used to iterate through the collection.</returns>
+        </member>
+        <member name="P:Azure.Core.ChangeTrackingDictionary`2.System#Collections#Generic#IReadOnlyDictionary{TKey@TValue}#Keys">
+            <summary>Gets an enumerable collection that contains the keys in the read-only dictionary.</summary><returns>An enumerable collection that contains the keys in the read-only dictionary.</returns>
+        </member>
+        <member name="P:Azure.Core.ChangeTrackingDictionary`2.System#Collections#Generic#IReadOnlyDictionary{TKey@TValue}#Values">
+            <summary>Gets an enumerable collection that contains the values in the read-only dictionary.</summary><returns>An enumerable collection that contains the values in the read-only dictionary.</returns>
+        </member>
+        <member name="M:Azure.Core.ChangeTrackingList`1.System#Collections#IEnumerable#GetEnumerator">
+            <summary>Returns an enumerator that iterates through a collection.</summary><returns>An <see cref="T:System.Collections.IEnumerator" /> object that can be used to iterate through the collection.</returns>
+        </member>
+        <member name="M:Azure.Core.Pipeline.TaskExtensions.Enumerable`1.System#Collections#Generic#IEnumerable{T}#GetEnumerator">
+            <summary>Returns an enumerator that iterates through the collection.</summary><returns>An enumerator that can be used to iterate through the collection.</returns>
+        </member>
+        <member name="M:Azure.Core.Pipeline.TaskExtensions.Enumerable`1.System#Collections#IEnumerable#GetEnumerator">
+            <summary>Returns an enumerator that iterates through a collection.</summary><returns>An <see cref="T:System.Collections.IEnumerator" /> object that can be used to iterate through the collection.</returns>
+        </member>
+        <member name="P:Azure.Core.Pipeline.TaskExtensions.Enumerator`1.System#Collections#IEnumerator#Current">
+            <summary>Gets the element in the collection at the current position of the enumerator.</summary><returns>The element in the collection at the current position of the enumerator.</returns>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,70 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Grpc.AspNetCore.Server.ClientFactory</name>
+    </assembly>
+    <members>
+        <member name="T:Grpc.AspNetCore.ClientFactory.ContextPropagationInterceptor">
+            <summary>
+            Interceptor that will set the current request's cancellation token and deadline onto CallOptions.
+            The interceptor gets the request from IHttpContextAccessor, which is a singleton.
+            IHttpContextAccessor uses an async local value.
+            </summary>
+        </member>
+        <member name="T:Grpc.AspNetCore.ClientFactory.GrpcContextPropagationOptions">
+            <summary>
+            Options used to configure gRPC call context propagation.
+            </summary>
+        </member>
+        <member name="P:Grpc.AspNetCore.ClientFactory.GrpcContextPropagationOptions.SuppressContextNotFoundErrors">
+            <summary>
+            Gets or sets a value that determines if context not found errors are suppressed.
+            <para>
+            When <see langword="false"/>, the client will thrown an error if it is unable to
+            find a call context when propagating values to a gRPC call.
+            Otherwise, the error is suppressed and the gRPC call will be made without context
+            propagation.
+            </para>
+            </summary>
+            <remarks>
+            <para>
+            Call context propagation will error by default if propagation can't happen because
+            the call context wasn't found. This typically happens when a client is used
+            outside the context of an executing gRPC service.
+            </para>
+            <para>
+            Suppressing context not found errors allows a client with propagation enabled to be
+            used outside the context of an executing gRPC service.
+            </para>
+            </remarks>
+            <value>The default value is <see langword="false"/>.</value>
+        </member>
+        <member name="M:Grpc.Shared.ArgumentNullThrowHelper.ThrowIfNull(System.Object,System.String)">
+            <summary>Throws an <see cref="T:System.ArgumentNullException"/> if <paramref name="argument"/> is null.</summary>
+            <param name="argument">The reference type argument to validate as non-null.</param>
+            <param name="paramName">The name of the parameter with which <paramref name="argument"/> corresponds.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.GrpcServerHttpClientBuilderExtensions">
+            <summary>
+            Extension methods for configuring an <see cref="T:Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.GrpcServerHttpClientBuilderExtensions.EnableCallContextPropagation(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder)">
+            <summary>
+            Configures the server to propagate a call's <see cref="P:Grpc.Core.ServerCallContext.CancellationToken"/> and
+            <see cref="P:Grpc.Core.ServerCallContext.Deadline"/> onto the gRPC client.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"/>.</param>
+            <returns>An <see cref="T:Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"/> that can be used to configure the client.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.GrpcServerHttpClientBuilderExtensions.EnableCallContextPropagation(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder,System.Action{Grpc.AspNetCore.ClientFactory.GrpcContextPropagationOptions})">
+            <summary>
+            Configures the server to propagate a call's <see cref="P:Grpc.Core.ServerCallContext.CancellationToken"/> and
+            <see cref="P:Grpc.Core.ServerCallContext.Deadline"/> onto the gRPC client.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"/>.</param>
+            <param name="configureOptions">An <see cref="T:System.Action`1"/> to configure the provided <see cref="T:Grpc.AspNetCore.ClientFactory.GrpcContextPropagationOptions"/>.</param>
+            <returns>An <see cref="T:Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"/> that can be used to configure the client.</returns>
+        </member>
+    </members>
+</doc>

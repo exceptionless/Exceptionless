@@ -1,0 +1,6 @@
+<Project InitialTargets="NonCompatibleTargetFrameworkError_Microsoft_NET_Test_Sdk_net8_0">
+  <Target Name="NonCompatibleTargetFrameworkError_Microsoft_NET_Test_Sdk_net8_0"
+          Condition="'$(SuppressTfmSupportBuildErrors)' == ''">
+    <Error Text="Microsoft.NET.Test.Sdk doesn't support $(TargetFramework) and has not been tested with it. Consider upgrading your TargetFramework to net8.0 or later. You may also set &lt;SuppressTfmSupportBuildErrors&gt;true&lt;/SuppressTfmSupportBuildErrors&gt; in the project file to ignore this warning and attempt to run in this unsupported configuration at your own risk." />
+  </Target>
+</Project>

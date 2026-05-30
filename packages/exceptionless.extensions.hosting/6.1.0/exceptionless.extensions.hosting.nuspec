@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Exceptionless.Extensions.Hosting</id>
+    <version>6.1.0</version>
+    <authors>Exceptionless</authors>
+    <license type="file">LICENSE.txt</license>
+    <licenseUrl>https://aka.ms/deprecateLicenseUrl</licenseUrl>
+    <icon>exceptionless-icon.png</icon>
+    <projectUrl>https://github.com/exceptionless/Exceptionless.Net</projectUrl>
+    <description>Exceptionless provider for Microsoft.Extensions.Hosting. Exceptionless is a cloud based error reporting service that sends your exceptions to https://exceptionless.com and provides aggregated views and analytics.</description>
+    <releaseNotes>https://github.com/exceptionless/Exceptionless.Net/releases</releaseNotes>
+    <copyright>Copyright (c) 2025 Exceptionless.  All rights reserved.</copyright>
+    <tags>Exceptionless Error Error-Handling Error-Handler Error-Reporting Error-Management Error-Monitoring Handling Management Monitoring Report Reporting Crash-Reporting Exception Exception-Handling Exception-Handler Exception-Reporting Exceptions Log Logs Logging Unhandled Unhandled-Exceptions Feature Configuration Debug FeatureToggle Metrics ELMAH Microsoft.Extensions.Hosting Hosting</tags>
+    <repository type="git" url="https://github.com/exceptionless/Exceptionless.Net" commit="310680883096cc4e3c82766419ae370b684e136b" />
+    <dependencies>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="Exceptionless" version="6.1.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Hosting.Abstractions" version="6.0.0" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

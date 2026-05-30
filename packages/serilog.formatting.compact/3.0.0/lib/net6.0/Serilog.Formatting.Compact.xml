@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Serilog.Formatting.Compact</name>
+    </assembly>
+    <members>
+        <member name="T:Serilog.Formatting.Compact.CompactJsonFormatter">
+            <summary>
+            An <see cref="T:Serilog.Formatting.ITextFormatter"/> that writes events in a compact JSON format.
+            </summary>
+        </member>
+        <member name="M:Serilog.Formatting.Compact.CompactJsonFormatter.#ctor(Serilog.Formatting.Json.JsonValueFormatter)">
+            <summary>
+            Construct a <see cref="T:Serilog.Formatting.Compact.CompactJsonFormatter"/>, optionally supplying a formatter for
+            <see cref="T:Serilog.Events.LogEventPropertyValue"/>s on the event.
+            </summary>
+            <param name="valueFormatter">A value formatter, or null.</param>
+        </member>
+        <member name="M:Serilog.Formatting.Compact.CompactJsonFormatter.Format(Serilog.Events.LogEvent,System.IO.TextWriter)">
+            <summary>
+            Format the log event into the output. Subsequent events will be newline-delimited.
+            </summary>
+            <param name="logEvent">The event to format.</param>
+            <param name="output">The output.</param>
+        </member>
+        <member name="M:Serilog.Formatting.Compact.CompactJsonFormatter.FormatEvent(Serilog.Events.LogEvent,System.IO.TextWriter,Serilog.Formatting.Json.JsonValueFormatter)">
+            <summary>
+            Format the log event into the output.
+            </summary>
+            <param name="logEvent">The event to format.</param>
+            <param name="output">The output.</param>
+            <param name="valueFormatter">A value formatter for <see cref="T:Serilog.Events.LogEventPropertyValue"/>s on the event.</param>
+        </member>
+        <member name="T:Serilog.Formatting.Compact.EventIdHash">
+            <summary>
+            Hash functions for message templates. See <see cref="M:Serilog.Formatting.Compact.EventIdHash.Compute(System.String)"/>.
+            </summary>
+        </member>
+        <member name="M:Serilog.Formatting.Compact.EventIdHash.Compute(System.String)">
+            <summary>
+            Compute a 32-bit hash of the provided <paramref name="messageTemplate"/>.
+            The resulting hash value can be uses as an event id in lieu of transmitting
+            the full template string.
+            </summary>
+            <param name="messageTemplate">A message template.</param>
+            <returns>A 32-bit hash of the template.</returns>
+        </member>
+        <member name="T:Serilog.Formatting.Compact.RenderedCompactJsonFormatter">
+            <summary>
+            An <see cref="T:Serilog.Formatting.ITextFormatter"/> that writes events in a compact JSON format, for consumption in environments
+            without message template support. Message templates are rendered into text and a hashed event id is included.
+            </summary>
+        </member>
+        <member name="M:Serilog.Formatting.Compact.RenderedCompactJsonFormatter.#ctor(Serilog.Formatting.Json.JsonValueFormatter)">
+            <summary>
+            Construct a <see cref="T:Serilog.Formatting.Compact.CompactJsonFormatter"/>, optionally supplying a formatter for
+            <see cref="T:Serilog.Events.LogEventPropertyValue"/>s on the event.
+            </summary>
+            <param name="valueFormatter">A value formatter, or null.</param>
+        </member>
+        <member name="M:Serilog.Formatting.Compact.RenderedCompactJsonFormatter.Format(Serilog.Events.LogEvent,System.IO.TextWriter)">
+            <summary>
+            Format the log event into the output. Subsequent events will be newline-delimited.
+            </summary>
+            <param name="logEvent">The event to format.</param>
+            <param name="output">The output.</param>
+        </member>
+        <member name="M:Serilog.Formatting.Compact.RenderedCompactJsonFormatter.FormatEvent(Serilog.Events.LogEvent,System.IO.TextWriter,Serilog.Formatting.Json.JsonValueFormatter)">
+            <summary>
+            Format the log event into the output.
+            </summary>
+            <param name="logEvent">The event to format.</param>
+            <param name="output">The output.</param>
+            <param name="valueFormatter">A value formatter for <see cref="T:Serilog.Events.LogEventPropertyValue"/>s on the event.</param>
+        </member>
+    </members>
+</doc>

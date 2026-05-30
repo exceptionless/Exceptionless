@@ -1,0 +1,93 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Serilog.Enrichers.Environment</name>
+    </assembly>
+    <members>
+        <member name="M:Serilog.Enrichers.CachedPropertyEnricher.Enrich(Serilog.Events.LogEvent,Serilog.Core.ILogEventPropertyFactory)">
+            <summary>
+            Enrich the log event.
+            </summary>
+            <param name="logEvent">The log event to enrich.</param>
+            <param name="propertyFactory">Factory for creating new properties to add to the event.</param>
+        </member>
+        <member name="T:Serilog.Enrichers.EnvironmentNameEnricher">
+            <summary>
+            Enriches log events with a EnvironmentName property containing the value of the ASPNETCORE_ENVIRONMENT or DOTNET_ENVIRONMENT environment variable.
+            </summary>
+        </member>
+        <member name="F:Serilog.Enrichers.EnvironmentNameEnricher.EnvironmentNamePropertyName">
+            <summary>
+            The property name added to enriched log events.
+            </summary>
+        </member>
+        <member name="T:Serilog.Enrichers.EnvironmentUserNameEnricher">
+            <summary>
+            Enriches log events with an EnvironmentUserName property containing [<see cref="P:System.Environment.UserDomainName"/>\]<see cref="P:System.Environment.UserName"/>.
+            </summary>
+        </member>
+        <member name="F:Serilog.Enrichers.EnvironmentUserNameEnricher.EnvironmentUserNamePropertyName">
+            <summary>
+            The property name added to enriched log events.
+            </summary>
+        </member>
+        <member name="T:Serilog.Enrichers.EnvironmentVariableEnricher">
+            <summary>
+            Enriches log events with a EnvironmentName property containing the value of the ASPNETCORE_ENVIRONMENT or DOTNET_ENVIRONMENT environment variable.
+            </summary>
+        </member>
+        <member name="P:Serilog.Enrichers.EnvironmentVariableEnricher.EnvironmentVariablePropertyName">
+            <summary>
+            The property name added to enriched log events.
+            </summary>
+        </member>
+        <member name="T:Serilog.Enrichers.MachineNameEnricher">
+            <summary>
+            Enriches log events with a MachineName property containing <see cref="P:System.Environment.MachineName"/>.
+            </summary>
+        </member>
+        <member name="F:Serilog.Enrichers.MachineNameEnricher.MachineNamePropertyName">
+            <summary>
+            The property name added to enriched log events.
+            </summary>
+        </member>
+        <member name="T:Serilog.EnvironmentLoggerConfigurationExtensions">
+            <summary>
+            Extends <see cref="T:Serilog.LoggerConfiguration"/> to add enrichers for <see cref="T:System.Environment"/>.
+            capabilities.
+            </summary>
+        </member>
+        <member name="M:Serilog.EnvironmentLoggerConfigurationExtensions.WithEnvironmentName(Serilog.Configuration.LoggerEnrichmentConfiguration)">
+            <summary>
+            Enrich log events with a EnvironmentName property containing the value of the <code>ASPNETCORE_ENVIRONMENT</code>
+            or <code>DOTNET_ENVIRONMENT</code> environment variable.
+            </summary>
+            <param name="enrichmentConfiguration">Logger enrichment configuration.</param>
+            <returns>Configuration object allowing method chaining.</returns>
+        </member>
+        <member name="M:Serilog.EnvironmentLoggerConfigurationExtensions.WithMachineName(Serilog.Configuration.LoggerEnrichmentConfiguration)">
+            <summary>
+            Enrich log events with a MachineName property containing the current <see cref="P:System.Environment.MachineName"/>.
+            </summary>
+            <param name="enrichmentConfiguration">Logger enrichment configuration.</param>
+            <returns>Configuration object allowing method chaining.</returns>
+        </member>
+        <member name="M:Serilog.EnvironmentLoggerConfigurationExtensions.WithEnvironmentUserName(Serilog.Configuration.LoggerEnrichmentConfiguration)">
+            <summary>
+            Enriches log events with an EnvironmentUserName property containing <see cref="P:System.Environment.UserDomainName"/>.
+            </summary>
+            <param name="enrichmentConfiguration">Logger enrichment configuration.</param>
+            <returns>Configuration object allowing method chaining.</returns>
+        </member>
+        <member name="M:Serilog.EnvironmentLoggerConfigurationExtensions.WithEnvironmentVariable(Serilog.Configuration.LoggerEnrichmentConfiguration,System.String,System.String)">
+            <summary>
+            Enriches log events with an property containing the value of the specified Environment Variable using
+            <see cref="M:System.Environment.GetEnvironmentVariable(System.String)"/>.
+            </summary>
+            <param name="enrichmentConfiguration">Logger enrichment configuration.</param>
+            <param name="environmentVariableName">The name of the Environment Variable</param>
+            <param name="propertyName">The Optional name of the property. If empty <paramref name="environmentVariableName"/> is used</param>
+            <returns>Configuration object allowing method chaining.</returns>
+        </member>
+    </members>
+</doc>

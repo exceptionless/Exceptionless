@@ -1,0 +1,284 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Foundatio.Extensions.Hosting</name>
+    </assembly>
+    <members>
+        <member name="T:Foundatio.Extensions.Hosting.Cronos.CronExpression">
+            <summary>
+            Provides a parser and scheduler for cron expressions.
+            </summary>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Cronos.CronExpression.Parse(System.String)">
+            <summary>
+             Constructs a new <see cref="T:Foundatio.Extensions.Hosting.Cronos.CronExpression"/> based on the specified
+             cron expression. It's supported expressions consisting of 5 fields:
+             minute, hour, day of month, month, day of week.
+             If you want to parse non-standard cron expressions use <see cref="M:Foundatio.Extensions.Hosting.Cronos.CronExpression.Parse(System.String,Foundatio.Extensions.Hosting.Cronos.CronFormat)"/> with specified CronFields argument.
+             See more: <a href="https://github.com/HangfireIO/Cronos">https://github.com/HangfireIO/Cronos</a>
+             </summary>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Cronos.CronExpression.Parse(System.String,Foundatio.Extensions.Hosting.Cronos.CronFormat)">
+            <summary>
+             Constructs a new <see cref="T:Foundatio.Extensions.Hosting.Cronos.CronExpression"/> based on the specified
+             cron expression. It's supported expressions consisting of 5 or 6 fields:
+             second (optional), minute, hour, day of month, month, day of week.
+             See more: <a href="https://github.com/HangfireIO/Cronos">https://github.com/HangfireIO/Cronos</a>
+             </summary>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Cronos.CronExpression.GetNextOccurrence(System.DateTime,System.Boolean)">
+            <summary>
+            Calculates next occurrence starting with <paramref name="fromUtc"/> (optionally <paramref name="inclusive"/>) in UTC time zone.
+            </summary>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Cronos.CronExpression.GetOccurrences(System.DateTime,System.DateTime,System.Boolean,System.Boolean)">
+            <summary>
+            Returns the list of next occurrences within the given date/time range,
+            including <paramref name="fromUtc"/> and excluding <paramref name="toUtc"/>
+            by default, and UTC time zone. When none of the occurrences found, an
+            empty list is returned.
+            </summary>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Cronos.CronExpression.GetNextOccurrence(System.DateTime,System.TimeZoneInfo,System.Boolean)">
+            <summary>
+            Calculates next occurrence starting with <paramref name="fromUtc"/> (optionally <paramref name="inclusive"/>) in given <paramref name="zone"/>
+            </summary>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Cronos.CronExpression.GetOccurrences(System.DateTime,System.DateTime,System.TimeZoneInfo,System.Boolean,System.Boolean)">
+            <summary>
+            Returns the list of next occurrences within the given date/time range, including
+            <paramref name="fromUtc"/> and excluding <paramref name="toUtc"/> by default, and
+            specified time zone. When none of the occurrences found, an empty list is returned.
+            </summary>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Cronos.CronExpression.GetNextOccurrence(System.DateTimeOffset,System.TimeZoneInfo,System.Boolean)">
+            <summary>
+            Calculates next occurrence starting with <paramref name="from"/> (optionally <paramref name="inclusive"/>) in given <paramref name="zone"/>
+            </summary>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Cronos.CronExpression.GetOccurrences(System.DateTimeOffset,System.DateTimeOffset,System.TimeZoneInfo,System.Boolean,System.Boolean)">
+            <summary>
+            Returns the list of occurrences within the given date/time offset range,
+            including <paramref name="from"/> and excluding <paramref name="to"/> by
+            default. When none of the occurrences found, an empty list is returned.
+            </summary>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Cronos.CronExpression.ToString">
+            <inheritdoc />
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Cronos.CronExpression.Equals(Foundatio.Extensions.Hosting.Cronos.CronExpression)">
+            <summary>
+            Determines whether the specified <see cref="T:System.Object"/> is equal to the current <see cref="T:System.Object"/>.
+            </summary>
+            <param name="other">The <see cref="T:System.Object"/> to compare with the current <see cref="T:System.Object"/>.</param>
+            <returns>
+            <c>true</c> if the specified <see cref="T:System.Object"/> is equal to the current <see cref="T:System.Object"/>; otherwise, <c>false</c>.
+            </returns>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Cronos.CronExpression.Equals(System.Object)">
+            <summary>
+            Determines whether the specified <see cref="T:System.Object" /> is equal to this instance.
+            </summary>
+            <param name="obj">The <see cref="T:System.Object" /> to compare with this instance.</param>
+            <returns>
+            <c>true</c> if the specified <see cref="T:System.Object" /> is equal to this instance;
+            otherwise, <c>false</c>.
+            </returns>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Cronos.CronExpression.GetHashCode">
+            <summary>
+            Returns a hash code for this instance.
+            </summary>
+            <returns>
+            A hash code for this instance, suitable for use in hashing algorithms and data
+            structures like a hash table.
+            </returns>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Cronos.CronExpression.op_Equality(Foundatio.Extensions.Hosting.Cronos.CronExpression,Foundatio.Extensions.Hosting.Cronos.CronExpression)">
+            <summary>
+            Implements the operator ==.
+            </summary>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Cronos.CronExpression.op_Inequality(Foundatio.Extensions.Hosting.Cronos.CronExpression,Foundatio.Extensions.Hosting.Cronos.CronExpression)">
+            <summary>
+            Implements the operator !=.
+            </summary>
+        </member>
+        <member name="T:Foundatio.Extensions.Hosting.Cronos.CronFormat">
+            <summary>
+            Defines the cron format options that customize string parsing for <see cref="M:Foundatio.Extensions.Hosting.Cronos.CronExpression.Parse(System.String,Foundatio.Extensions.Hosting.Cronos.CronFormat)"/>.
+            </summary>
+        </member>
+        <member name="F:Foundatio.Extensions.Hosting.Cronos.CronFormat.Standard">
+            <summary>
+            Parsing string must contain only 5 fields: minute, hour, day of month, month, day of week.
+            </summary>
+        </member>
+        <member name="F:Foundatio.Extensions.Hosting.Cronos.CronFormat.IncludeSeconds">
+            <summary>
+            Second field must be specified in parsing string.
+            </summary>
+        </member>
+        <member name="T:Foundatio.Extensions.Hosting.Cronos.CronFormatException">
+            <summary>
+            Represents an exception that's thrown, when invalid Cron expression is given.
+            </summary>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Cronos.CronFormatException.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Foundatio.Extensions.Hosting.Cronos.CronFormatException"/> class with
+            the given message.
+            </summary>
+        </member>
+        <member name="T:Foundatio.Extensions.Hosting.Jobs.Cron">
+            <summary>
+            Helper class that provides common values for the cron expressions.
+            </summary>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Jobs.Cron.Minutely">
+            <summary>
+            Returns cron expression that fires every minute.
+            </summary>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Jobs.Cron.Minutely(System.Int32)">
+            <summary>
+            Returns cron expression that fires every Nth minute.
+            </summary>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Jobs.Cron.Hourly">
+            <summary>
+            Returns cron expression that fires every hour at the first minute.
+            </summary>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Jobs.Cron.Hourly(System.Int32)">
+            <summary>
+            Returns cron expression that fires every hour at the specified minute.
+            </summary>
+            <param name="minute">The minute in which the schedule will be activated (0-59).</param>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Jobs.Cron.Daily">
+            <summary>
+            Returns cron expression that fires every day at 00:00 UTC.
+            </summary>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Jobs.Cron.Daily(System.Int32)">
+            <summary>
+            Returns cron expression that fires every day at the first minute of
+            the specified hour in UTC.
+            </summary>
+            <param name="hour">The hour in which the schedule will be activated (0-23).</param>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Jobs.Cron.Daily(System.Int32,System.Int32)">
+            <summary>
+            Returns cron expression that fires every day at the specified hour and minute
+            in UTC.
+            </summary>
+            <param name="hour">The hour in which the schedule will be activated (0-23).</param>
+            <param name="minute">The minute in which the schedule will be activated (0-59).</param>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Jobs.Cron.Weekly">
+            <summary>
+            Returns cron expression that fires every week at Monday, 00:00 UTC.
+            </summary>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Jobs.Cron.Weekly(System.DayOfWeek)">
+            <summary>
+            Returns cron expression that fires every week at 00:00 UTC of the specified
+            day of the week.
+            </summary>
+            <param name="dayOfWeek">The day of week in which the schedule will be activated.</param>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Jobs.Cron.Weekly(System.DayOfWeek,System.Int32)">
+            <summary>
+            Returns cron expression that fires every week at the first minute
+            of the specified day of week and hour in UTC.
+            </summary>
+            <param name="dayOfWeek">The day of week in which the schedule will be activated.</param>
+            <param name="hour">The hour in which the schedule will be activated (0-23).</param>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Jobs.Cron.Weekly(System.DayOfWeek,System.Int32,System.Int32)">
+            <summary>
+            Returns cron expression that fires every week at the specified day
+            of week, hour and minute in UTC.
+            </summary>
+            <param name="dayOfWeek">The day of week in which the schedule will be activated.</param>
+            <param name="hour">The hour in which the schedule will be activated (0-23).</param>
+            <param name="minute">The minute in which the schedule will be activated (0-59).</param>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Jobs.Cron.Monthly">
+            <summary>
+            Returns cron expression that fires every month at 00:00 UTC of the first
+            day of month.
+            </summary>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Jobs.Cron.Monthly(System.Int32)">
+            <summary>
+            Returns cron expression that fires every month at 00:00 UTC of the specified
+            day of month.
+            </summary>
+            <param name="day">The day of month in which the schedule will be activated (1-31).</param>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Jobs.Cron.Monthly(System.Int32,System.Int32)">
+            <summary>
+            Returns cron expression that fires every month at the first minute of the
+            specified day of month and hour in UTC.
+            </summary>
+            <param name="day">The day of month in which the schedule will be activated (1-31).</param>
+            <param name="hour">The hour in which the schedule will be activated (0-23).</param>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Jobs.Cron.Monthly(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Returns cron expression that fires every month at the specified day of month,
+            hour and minute in UTC.
+            </summary>
+            <param name="day">The day of month in which the schedule will be activated (1-31).</param>
+            <param name="hour">The hour in which the schedule will be activated (0-23).</param>
+            <param name="minute">The minute in which the schedule will be activated (0-59).</param>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Jobs.Cron.Yearly">
+            <summary>
+            Returns cron expression that fires every year on Jan, 1st at 00:00 UTC.
+            </summary>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Jobs.Cron.Yearly(System.Int32)">
+            <summary>
+            Returns cron expression that fires every year in the first day at 00:00 UTC
+            of the specified month.
+            </summary>
+            <param name="month">The month in which the schedule will be activated (1-12).</param>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Jobs.Cron.Yearly(System.Int32,System.Int32)">
+            <summary>
+            Returns cron expression that fires every year at 00:00 UTC of the specified
+            month and day of month.
+            </summary>
+            <param name="month">The month in which the schedule will be activated (1-12).</param>
+            <param name="day">The day of month in which the schedule will be activated (1-31).</param>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Jobs.Cron.Yearly(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Returns cron expression that fires every year at the first minute of the
+            specified month, day and hour in UTC.
+            </summary>
+            <param name="month">The month in which the schedule will be activated (1-12).</param>
+            <param name="day">The day of month in which the schedule will be activated (1-31).</param>
+            <param name="hour">The hour in which the schedule will be activated (0-23).</param>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Jobs.Cron.Yearly(System.Int32,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Returns cron expression that fires every year at the specified month, day,
+            hour and minute in UTC.
+            </summary>
+            <param name="month">The month in which the schedule will be activated (1-12).</param>
+            <param name="day">The day of month in which the schedule will be activated (1-31).</param>
+            <param name="hour">The hour in which the schedule will be activated (0-23).</param>
+            <param name="minute">The minute in which the schedule will be activated (0-59).</param>
+        </member>
+        <member name="M:Foundatio.Extensions.Hosting.Jobs.Cron.Never">
+            <summary>
+            Returns cron expression that never fires. Specifically 31st of February
+            </summary>
+            <returns></returns>
+        </member>
+    </members>
+</doc>

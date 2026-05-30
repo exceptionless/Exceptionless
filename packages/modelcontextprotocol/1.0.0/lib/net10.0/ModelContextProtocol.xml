@@ -1,0 +1,1028 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>ModelContextProtocol</name>
+    </assembly>
+    <members>
+        <member name="T:System.IdHelpers">
+            <summary>
+            Provides helper methods for monotonic ID generation.
+            </summary>
+        </member>
+        <member name="M:System.IdHelpers.CreateMonotonicId(System.DateTimeOffset)">
+            <summary>
+            Creates a strictly monotonically increasing identifier string using 64-bit timestamp ticks
+            and a 64-bit counter, formatted as a 32-character hexadecimal string (GUID-like).
+            </summary>
+            <param name="timestamp">The timestamp to embed in the identifier.</param>
+            <returns>A new strictly monotonically increasing identifier string.</returns>
+            <remarks>
+            <para>
+            This method creates a 128-bit identifier composed of two 64-bit values:
+            - High 64 bits: <see cref="P:System.DateTimeOffset.Ticks"/> from the timestamp
+            - Low 64 bits: A globally monotonically increasing counter
+            </para>
+            <para>
+            The resulting string is strictly monotonically increasing when compared lexicographically,
+            which is required for keyset pagination to work correctly. Unlike <c>Guid.CreateVersion7</c>,
+            which uses random bits for intra-millisecond uniqueness, this implementation guarantees
+            strict ordering for all identifiers regardless of when they were created.
+            </para>
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.DefaultMcpServerBuilder">
+            <summary>
+            Default implementation of <see cref="T:Microsoft.Extensions.DependencyInjection.IMcpServerBuilder"/> that enables fluent configuration
+            of the Model Context Protocol (MCP) server. This builder is returned by the
+            <see cref="M:Microsoft.Extensions.DependencyInjection.McpServerServiceCollectionExtensions.AddMcpServer(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{ModelContextProtocol.Server.McpServerOptions})"/> extension method and
+            provides access to the service collection for registering additional MCP components.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.DependencyInjection.DefaultMcpServerBuilder.Services">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.DefaultMcpServerBuilder.#ctor(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.DependencyInjection.DefaultMcpServerBuilder"/> class.
+            </summary>
+            <param name="services">The service collection to which MCP server services will be added. This collection
+            is exposed through the <see cref="P:Microsoft.Extensions.DependencyInjection.DefaultMcpServerBuilder.Services"/> property to allow additional configuration.</param>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="services"/> is null.</exception>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.IMcpMessageFilterBuilder">
+            <summary>
+            Provides a builder for configuring message-level MCP server filters.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.DependencyInjection.IMcpMessageFilterBuilder.Services">
+            <summary>
+            Gets the associated service collection.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.IMcpRequestFilterBuilder">
+            <summary>
+            Provides a builder for configuring request-specific MCP server filters.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.DependencyInjection.IMcpRequestFilterBuilder.Services">
+            <summary>
+            Gets the associated service collection.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.IMcpServerBuilder">
+            <summary>
+            Provides a builder for configuring <see cref="T:ModelContextProtocol.Server.McpServer"/> instances.
+            </summary>
+            <remarks>
+            <para>
+            The <see cref="T:Microsoft.Extensions.DependencyInjection.IMcpServerBuilder"/> interface provides a fluent API for configuring Model Context Protocol (MCP) servers
+            when using dependency injection. It exposes methods for registering tools, prompts, custom request handlers,
+            and server transports, allowing for comprehensive server configuration through a chain of method calls.
+            </para>
+            <para>
+            The builder is obtained from the <see cref="M:Microsoft.Extensions.DependencyInjection.McpServerServiceCollectionExtensions.AddMcpServer(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{ModelContextProtocol.Server.McpServerOptions})"/> extension
+            method and provides access to the underlying service collection via the <see cref="P:Microsoft.Extensions.DependencyInjection.IMcpServerBuilder.Services"/> property.
+            </para>
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.DependencyInjection.IMcpServerBuilder.Services">
+            <summary>
+            Gets the associated service collection.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.McpMessageFilterBuilderExtensions">
+            <summary>
+            Provides extension methods for configuring message-level MCP server filters.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpMessageFilterBuilderExtensions.AddIncomingFilter(Microsoft.Extensions.DependencyInjection.IMcpMessageFilterBuilder,ModelContextProtocol.Server.McpMessageFilter)">
+            <summary>
+            Adds a filter to intercept all incoming JSON-RPC messages.
+            </summary>
+            <param name="builder">The message filter builder instance.</param>
+            <param name="filter">The filter function that wraps the message handler.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpMessageFilterBuilderExtensions.AddOutgoingFilter(Microsoft.Extensions.DependencyInjection.IMcpMessageFilterBuilder,ModelContextProtocol.Server.McpMessageFilter)">
+            <summary>
+            Adds a filter to intercept all outgoing JSON-RPC messages.
+            </summary>
+            <param name="builder">The message filter builder instance.</param>
+            <param name="filter">The filter function that wraps the message handler.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.McpRequestFilterBuilderExtensions">
+            <summary>
+            Provides extension methods for configuring request-specific MCP server filters.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpRequestFilterBuilderExtensions.AddListResourceTemplatesFilter(Microsoft.Extensions.DependencyInjection.IMcpRequestFilterBuilder,ModelContextProtocol.Server.McpRequestFilter{ModelContextProtocol.Protocol.ListResourceTemplatesRequestParams,ModelContextProtocol.Protocol.ListResourceTemplatesResult})">
+            <summary>
+            Adds a filter to the list resource templates handler pipeline.
+            </summary>
+            <param name="builder">The request filter builder instance.</param>
+            <param name="filter">The filter function that wraps the handler.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpRequestFilterBuilderExtensions.AddListToolsFilter(Microsoft.Extensions.DependencyInjection.IMcpRequestFilterBuilder,ModelContextProtocol.Server.McpRequestFilter{ModelContextProtocol.Protocol.ListToolsRequestParams,ModelContextProtocol.Protocol.ListToolsResult})">
+            <summary>
+            Adds a filter to the list tools handler pipeline.
+            </summary>
+            <param name="builder">The request filter builder instance.</param>
+            <param name="filter">The filter function that wraps the handler.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpRequestFilterBuilderExtensions.AddCallToolFilter(Microsoft.Extensions.DependencyInjection.IMcpRequestFilterBuilder,ModelContextProtocol.Server.McpRequestFilter{ModelContextProtocol.Protocol.CallToolRequestParams,ModelContextProtocol.Protocol.CallToolResult})">
+            <summary>
+            Adds a filter to the call tool handler pipeline.
+            </summary>
+            <param name="builder">The request filter builder instance.</param>
+            <param name="filter">The filter function that wraps the handler.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpRequestFilterBuilderExtensions.AddListPromptsFilter(Microsoft.Extensions.DependencyInjection.IMcpRequestFilterBuilder,ModelContextProtocol.Server.McpRequestFilter{ModelContextProtocol.Protocol.ListPromptsRequestParams,ModelContextProtocol.Protocol.ListPromptsResult})">
+            <summary>
+            Adds a filter to the list prompts handler pipeline.
+            </summary>
+            <param name="builder">The request filter builder instance.</param>
+            <param name="filter">The filter function that wraps the handler.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpRequestFilterBuilderExtensions.AddGetPromptFilter(Microsoft.Extensions.DependencyInjection.IMcpRequestFilterBuilder,ModelContextProtocol.Server.McpRequestFilter{ModelContextProtocol.Protocol.GetPromptRequestParams,ModelContextProtocol.Protocol.GetPromptResult})">
+            <summary>
+            Adds a filter to the get prompt handler pipeline.
+            </summary>
+            <param name="builder">The request filter builder instance.</param>
+            <param name="filter">The filter function that wraps the handler.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpRequestFilterBuilderExtensions.AddListResourcesFilter(Microsoft.Extensions.DependencyInjection.IMcpRequestFilterBuilder,ModelContextProtocol.Server.McpRequestFilter{ModelContextProtocol.Protocol.ListResourcesRequestParams,ModelContextProtocol.Protocol.ListResourcesResult})">
+            <summary>
+            Adds a filter to the list resources handler pipeline.
+            </summary>
+            <param name="builder">The request filter builder instance.</param>
+            <param name="filter">The filter function that wraps the handler.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpRequestFilterBuilderExtensions.AddReadResourceFilter(Microsoft.Extensions.DependencyInjection.IMcpRequestFilterBuilder,ModelContextProtocol.Server.McpRequestFilter{ModelContextProtocol.Protocol.ReadResourceRequestParams,ModelContextProtocol.Protocol.ReadResourceResult})">
+            <summary>
+            Adds a filter to the read resource handler pipeline.
+            </summary>
+            <param name="builder">The request filter builder instance.</param>
+            <param name="filter">The filter function that wraps the handler.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpRequestFilterBuilderExtensions.AddCompleteFilter(Microsoft.Extensions.DependencyInjection.IMcpRequestFilterBuilder,ModelContextProtocol.Server.McpRequestFilter{ModelContextProtocol.Protocol.CompleteRequestParams,ModelContextProtocol.Protocol.CompleteResult})">
+            <summary>
+            Adds a filter to the complete handler pipeline.
+            </summary>
+            <param name="builder">The request filter builder instance.</param>
+            <param name="filter">The filter function that wraps the handler.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpRequestFilterBuilderExtensions.AddSubscribeToResourcesFilter(Microsoft.Extensions.DependencyInjection.IMcpRequestFilterBuilder,ModelContextProtocol.Server.McpRequestFilter{ModelContextProtocol.Protocol.SubscribeRequestParams,ModelContextProtocol.Protocol.EmptyResult})">
+            <summary>
+            Adds a filter to the subscribe-to-resources handler pipeline.
+            </summary>
+            <param name="builder">The request filter builder instance.</param>
+            <param name="filter">The filter function that wraps the handler.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpRequestFilterBuilderExtensions.AddUnsubscribeFromResourcesFilter(Microsoft.Extensions.DependencyInjection.IMcpRequestFilterBuilder,ModelContextProtocol.Server.McpRequestFilter{ModelContextProtocol.Protocol.UnsubscribeRequestParams,ModelContextProtocol.Protocol.EmptyResult})">
+            <summary>
+            Adds a filter to the unsubscribe-from-resources handler pipeline.
+            </summary>
+            <param name="builder">The request filter builder instance.</param>
+            <param name="filter">The filter function that wraps the handler.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpRequestFilterBuilderExtensions.AddSetLoggingLevelFilter(Microsoft.Extensions.DependencyInjection.IMcpRequestFilterBuilder,ModelContextProtocol.Server.McpRequestFilter{ModelContextProtocol.Protocol.SetLevelRequestParams,ModelContextProtocol.Protocol.EmptyResult})">
+            <summary>
+            Adds a filter to the set logging level handler pipeline.
+            </summary>
+            <param name="builder">The request filter builder instance.</param>
+            <param name="filter">The filter function that wraps the handler.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions">
+            <summary>
+            Provides methods for configuring MCP servers via dependency injection.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithTools``1(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,System.Text.Json.JsonSerializerOptions)">
+            <summary>Adds <see cref="T:ModelContextProtocol.Server.McpServerTool"/> instances to the service collection backing <paramref name="builder"/>.</summary>
+            <typeparam name="TToolType">The tool type.</typeparam>
+            <param name="builder">The builder instance.</param>
+            <param name="serializerOptions">The serializer options governing tool parameter marshalling.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+            <remarks>
+            This method discovers all instance and static methods (public and non-public) on the specified <typeparamref name="TToolType"/>
+            type, where the methods are attributed as <see cref="T:ModelContextProtocol.Server.McpServerToolAttribute"/>, and adds an <see cref="T:ModelContextProtocol.Server.McpServerTool"/>
+            instance for each. For instance methods, an instance is constructed for each invocation of the tool.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithTools``1(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,``0,System.Text.Json.JsonSerializerOptions)">
+            <summary>Adds <see cref="T:ModelContextProtocol.Server.McpServerTool"/> instances to the service collection backing <paramref name="builder"/>.</summary>
+            <typeparam name="TToolType">The tool type.</typeparam>
+            <param name="builder">The builder instance.</param>
+            <param name="target">The target instance from which the tools should be sourced.</param>
+            <param name="serializerOptions">The serializer options governing tool parameter marshalling.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> or <paramref name="target"/> is <see langword="null"/>.</exception>
+            <remarks>
+            <para>
+            This method discovers all methods (public and non-public) on the specified <typeparamref name="TToolType"/>
+            type, where the methods are attributed as <see cref="T:ModelContextProtocol.Server.McpServerToolAttribute"/>, and adds an <see cref="T:ModelContextProtocol.Server.McpServerTool"/>
+            instance for each, using <paramref name="target"/> as the associated instance for instance methods.
+            </para>
+            <para>
+            However, if <typeparamref name="TToolType"/> is itself an <see cref="T:System.Collections.Generic.IEnumerable`1"/> of <see cref="T:ModelContextProtocol.Server.McpServerTool"/>,
+            this method registers those tools directly without scanning for methods on <typeparamref name="TToolType"/>.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithTools(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,System.Collections.Generic.IEnumerable{ModelContextProtocol.Server.McpServerTool})">
+            <summary>Adds <see cref="T:ModelContextProtocol.Server.McpServerTool"/> instances to the service collection backing <paramref name="builder"/>.</summary>
+            <param name="builder">The builder instance.</param>
+            <param name="tools">The <see cref="T:ModelContextProtocol.Server.McpServerTool"/> instances to add to the server.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> or <paramref name="tools"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithTools(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,System.Collections.Generic.IEnumerable{System.Type},System.Text.Json.JsonSerializerOptions)">
+            <summary>Adds <see cref="T:ModelContextProtocol.Server.McpServerTool"/> instances to the service collection backing <paramref name="builder"/>.</summary>
+            <param name="builder">The builder instance.</param>
+            <param name="toolTypes">Types with <see cref="T:ModelContextProtocol.Server.McpServerToolAttribute"/>-attributed methods to add as tools to the server.</param>
+            <param name="serializerOptions">The serializer options governing tool parameter marshalling.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> or <paramref name="toolTypes"/> is <see langword="null"/>.</exception>
+            <remarks>
+            This method discovers all instance and static methods (public and non-public) on the specified <paramref name="toolTypes"/>
+            types, where the methods are attributed as <see cref="T:ModelContextProtocol.Server.McpServerToolAttribute"/>, and adds an <see cref="T:ModelContextProtocol.Server.McpServerTool"/>
+            instance for each. For instance methods, an instance is constructed for each invocation of the tool.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithToolsFromAssembly(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,System.Reflection.Assembly,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Adds types marked with the <see cref="T:ModelContextProtocol.Server.McpServerToolTypeAttribute"/> attribute from the given assembly as tools to the server.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <param name="serializerOptions">The serializer options governing tool parameter marshalling.</param>
+            <param name="toolAssembly">The assembly to load the types from. If <see langword="null"/>, the calling assembly is used.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+            <remarks>
+            <para>
+            This method scans the specified assembly (or the calling assembly if none is provided) for classes
+            marked with the <see cref="T:ModelContextProtocol.Server.McpServerToolTypeAttribute"/>. It then discovers all methods within those
+            classes that are marked with the <see cref="T:ModelContextProtocol.Server.McpServerToolAttribute"/> and registers them as <see cref="T:ModelContextProtocol.Server.McpServerTool"/>s
+            in the <paramref name="builder"/>'s <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.
+            </para>
+            <para>
+            The method automatically handles both static and instance methods. For instance methods, a new instance
+            of the containing class is constructed for each invocation of the tool.
+            </para>
+            <para>
+            Tools registered through this method can be discovered by clients using the <c>list_tools</c> request
+            and invoked using the <c>call_tool</c> request.
+            </para>
+            <para>
+            Note that this method performs reflection at runtime and might not work in Native AOT scenarios. For
+            Native AOT compatibility, consider using the generic <see cref="M:WithTools"/> method instead.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithPrompts``1(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,System.Text.Json.JsonSerializerOptions)">
+            <summary>Adds <see cref="T:ModelContextProtocol.Server.McpServerPrompt"/> instances to the service collection backing <paramref name="builder"/>.</summary>
+            <typeparam name="TPromptType">The prompt type.</typeparam>
+            <param name="builder">The builder instance.</param>
+            <param name="serializerOptions">The serializer options governing prompt parameter marshalling.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+            <remarks>
+            This method discovers all instance and static methods (public and non-public) on the specified <typeparamref name="TPromptType"/>
+            type, where the methods are attributed as <see cref="T:ModelContextProtocol.Server.McpServerPromptAttribute"/>, and adds an <see cref="T:ModelContextProtocol.Server.McpServerPrompt"/>
+            instance for each. For instance methods, an instance is constructed for each invocation of the prompt.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithPrompts``1(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,``0,System.Text.Json.JsonSerializerOptions)">
+            <summary>Adds <see cref="T:ModelContextProtocol.Server.McpServerPrompt"/> instances to the service collection backing <paramref name="builder"/>.</summary>
+            <typeparam name="TPromptType">The prompt type.</typeparam>
+            <param name="builder">The builder instance.</param>
+            <param name="target">The target instance from which the prompts should be sourced.</param>
+            <param name="serializerOptions">The serializer options governing prompt parameter marshalling.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> or <paramref name="target"/> is <see langword="null"/>.</exception>
+            <remarks>
+            <para>
+            This method discovers all methods (public and non-public) on the specified <typeparamref name="TPromptType"/>
+            type, where the methods are attributed as <see cref="T:ModelContextProtocol.Server.McpServerPromptAttribute"/>, and adds an <see cref="T:ModelContextProtocol.Server.McpServerPrompt"/>
+            instance for each, using <paramref name="target"/> as the associated instance for instance methods.
+            </para>
+            <para>
+            However, if <typeparamref name="TPromptType"/> is itself an <see cref="T:System.Collections.Generic.IEnumerable`1"/> of <see cref="T:ModelContextProtocol.Server.McpServerPrompt"/>,
+            this method registers those prompts directly without scanning for methods on <typeparamref name="TPromptType"/>.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithPrompts(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,System.Collections.Generic.IEnumerable{ModelContextProtocol.Server.McpServerPrompt})">
+            <summary>Adds <see cref="T:ModelContextProtocol.Server.McpServerPrompt"/> instances to the service collection backing <paramref name="builder"/>.</summary>
+            <param name="builder">The builder instance.</param>
+            <param name="prompts">The <see cref="T:ModelContextProtocol.Server.McpServerPrompt"/> instances to add to the server.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> or <paramref name="prompts"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithPrompts(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,System.Collections.Generic.IEnumerable{System.Type},System.Text.Json.JsonSerializerOptions)">
+            <summary>Adds <see cref="T:ModelContextProtocol.Server.McpServerPrompt"/> instances to the service collection backing <paramref name="builder"/>.</summary>
+            <param name="builder">The builder instance.</param>
+            <param name="promptTypes">Types with marked methods to add as prompts to the server.</param>
+            <param name="serializerOptions">The serializer options governing prompt parameter marshalling.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> or <paramref name="promptTypes"/> is <see langword="null"/>.</exception>
+            <remarks>
+            This method discovers all instance and static methods (public and non-public) on the specified <paramref name="promptTypes"/>
+            types, where the methods are attributed as <see cref="T:ModelContextProtocol.Server.McpServerPromptAttribute"/>, and adds an <see cref="T:ModelContextProtocol.Server.McpServerPrompt"/>
+            instance for each. For instance methods, an instance is constructed for each invocation of the prompt.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithPromptsFromAssembly(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,System.Reflection.Assembly,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Adds types marked with the <see cref="T:ModelContextProtocol.Server.McpServerPromptTypeAttribute"/> attribute from the given assembly as prompts to the server.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <param name="serializerOptions">The serializer options governing prompt parameter marshalling.</param>
+            <param name="promptAssembly">The assembly to load the types from. If <see langword="null"/>, the calling assembly is used.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+            <remarks>
+            <para>
+            This method scans the specified assembly (or the calling assembly if none is provided) for classes
+            marked with the <see cref="T:ModelContextProtocol.Server.McpServerPromptTypeAttribute"/>. It then discovers all methods within those
+            classes that are marked with the <see cref="T:ModelContextProtocol.Server.McpServerPromptAttribute"/> and registers them as <see cref="T:ModelContextProtocol.Server.McpServerPrompt"/>s
+            in the <paramref name="builder"/>'s <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.
+            </para>
+            <para>
+            The method automatically handles both static and instance methods. For instance methods, a new instance
+            of the containing class is constructed for each invocation of the prompt.
+            </para>
+            <para>
+            Prompts registered through this method can be discovered by clients using the <c>list_prompts</c> request
+            and invoked using the <c>prompts/get</c> request.
+            </para>
+            <para>
+            Note that this method performs reflection at runtime and might not work in Native AOT scenarios. For
+            Native AOT compatibility, consider using the generic <see cref="M:WithPrompts"/> method instead.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithResources``1(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder)">
+            <summary>Adds <see cref="T:ModelContextProtocol.Server.McpServerResource"/> instances to the service collection backing <paramref name="builder"/>.</summary>
+            <typeparam name="TResourceType">The resource type.</typeparam>
+            <param name="builder">The builder instance.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+            <remarks>
+            This method discovers all instance and static methods (public and non-public) on the specified <typeparamref name="TResourceType"/>
+            type, where the members are attributed as <see cref="T:ModelContextProtocol.Server.McpServerResourceAttribute"/>, and adds an <see cref="T:ModelContextProtocol.Server.McpServerResource"/>
+            instance for each. For instance members, an instance is constructed for each invocation of the resource.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithResources``1(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,``0)">
+            <summary>Adds <see cref="T:ModelContextProtocol.Server.McpServerResource"/> instances to the service collection backing <paramref name="builder"/>.</summary>
+            <typeparam name="TResourceType">The resource type.</typeparam>
+            <param name="builder">The builder instance.</param>
+            <param name="target">The target instance from which the resources should be sourced.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> or <paramref name="target"/> is <see langword="null"/>.</exception>
+            <remarks>
+            <para>
+            This method discovers all methods (public and non-public) on the specified <typeparamref name="TResourceType"/>
+            type, where the methods are attributed as <see cref="T:ModelContextProtocol.Server.McpServerResourceAttribute"/>, and adds an <see cref="T:ModelContextProtocol.Server.McpServerResource"/>
+            instance for each, using <paramref name="target"/> as the associated instance for instance methods.
+            </para>
+            <para>
+            However, if <typeparamref name="TResourceType"/> is itself an <see cref="T:System.Collections.Generic.IEnumerable`1"/> of <see cref="T:ModelContextProtocol.Server.McpServerResource"/>,
+            this method registers those resources directly without scanning for methods on <typeparamref name="TResourceType"/>.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithResources(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,System.Collections.Generic.IEnumerable{ModelContextProtocol.Server.McpServerResource})">
+            <summary>Adds <see cref="T:ModelContextProtocol.Server.McpServerResource"/> instances to the service collection backing <paramref name="builder"/>.</summary>
+            <param name="builder">The builder instance.</param>
+            <param name="resourceTemplates">The <see cref="T:ModelContextProtocol.Server.McpServerResource"/> instances to add to the server.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> or <paramref name="resourceTemplates"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithResources(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,System.Collections.Generic.IEnumerable{System.Type})">
+            <summary>Adds <see cref="T:ModelContextProtocol.Server.McpServerResource"/> instances to the service collection backing <paramref name="builder"/>.</summary>
+            <param name="builder">The builder instance.</param>
+            <param name="resourceTemplateTypes">Types with marked methods to add as resources to the server.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> or <paramref name="resourceTemplateTypes"/> is <see langword="null"/>.</exception>
+            <remarks>
+            This method discovers all instance and static methods (public and non-public) on the specified <paramref name="resourceTemplateTypes"/>
+            types, where the methods are attributed as <see cref="T:ModelContextProtocol.Server.McpServerResourceAttribute"/>, and adds an <see cref="T:ModelContextProtocol.Server.McpServerResource"/>
+            instance for each. For instance methods, an instance is constructed for each invocation of the resource.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithResourcesFromAssembly(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,System.Reflection.Assembly)">
+            <summary>
+            Adds types marked with the <see cref="T:ModelContextProtocol.Server.McpServerResourceTypeAttribute"/> attribute from the given assembly as resources to the server.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <param name="resourceAssembly">The assembly to load the types from. If <see langword="null"/>, the calling assembly is used.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+            <remarks>
+            <para>
+            This method scans the specified assembly (or the calling assembly if none is provided) for classes
+            marked with the <see cref="T:ModelContextProtocol.Server.McpServerResourceTypeAttribute"/>. It then discovers all members within those
+            classes that are marked with the <see cref="T:ModelContextProtocol.Server.McpServerResourceAttribute"/> and registers them as <see cref="T:ModelContextProtocol.Server.McpServerResource"/>s
+            in the <paramref name="builder"/>'s <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.
+            </para>
+            <para>
+            The method automatically handles both static and instance members. For instance members, a new instance
+            of the containing class is constructed for each invocation of the resource.
+            </para>
+            <para>
+            Resource templates registered through this method can be discovered by clients using the <c>list_resourceTemplates</c> request
+            and invoked using the <c>read_resource</c> request.
+            </para>
+            <para>
+            Note that this method performs reflection at runtime and might not work in Native AOT scenarios. For
+            Native AOT compatibility, consider using the generic <see cref="M:WithResources"/> method instead.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithListResourceTemplatesHandler(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,ModelContextProtocol.Server.McpRequestHandler{ModelContextProtocol.Protocol.ListResourceTemplatesRequestParams,ModelContextProtocol.Protocol.ListResourceTemplatesResult})">
+            <summary>
+            Configures a handler for listing resource templates available from the Model Context Protocol server.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <param name="handler">The handler function that processes resource template list requests.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+            <remarks>
+            <para>
+            This handler is responsible for providing clients with information about available resource templates
+            that can be used to construct resource URIs.
+            </para>
+            <para>
+            Resource templates describe the structure of resource URIs that the server can handle. They include
+            URI templates (according to RFC 6570) that clients can use to construct valid resource URIs.
+            </para>
+            <para>
+            This handler is typically paired with <see cref="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithReadResourceHandler(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,ModelContextProtocol.Server.McpRequestHandler{ModelContextProtocol.Protocol.ReadResourceRequestParams,ModelContextProtocol.Protocol.ReadResourceResult})"/> to provide a complete
+            resource system where templates define the URI patterns and the read handler provides the actual content.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithListToolsHandler(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,ModelContextProtocol.Server.McpRequestHandler{ModelContextProtocol.Protocol.ListToolsRequestParams,ModelContextProtocol.Protocol.ListToolsResult})">
+            <summary>
+            Configures a handler for listing tools available from the Model Context Protocol server.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <param name="handler">The handler that processes list tools requests.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+            <remarks>
+            <para>
+            This handler is called when a client requests a list of available tools. It should return all tools
+            that can be invoked through the server, including their names, descriptions, and parameter specifications.
+            The handler can optionally support pagination via the cursor mechanism for large or dynamically generated
+            tool collections.
+            </para>
+            <para>
+            When tools are also defined using <see cref="T:ModelContextProtocol.Server.McpServerTool"/> collection, both sets of tools
+            will be combined in the response to clients. This allows for a mix of programmatically defined
+            tools and dynamically generated tools.
+            </para>
+            <para>
+            This method is typically paired with <see cref="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithCallToolHandler(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,ModelContextProtocol.Server.McpRequestHandler{ModelContextProtocol.Protocol.CallToolRequestParams,ModelContextProtocol.Protocol.CallToolResult})"/> to provide a complete tools implementation,
+            where <see cref="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithListToolsHandler(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,ModelContextProtocol.Server.McpRequestHandler{ModelContextProtocol.Protocol.ListToolsRequestParams,ModelContextProtocol.Protocol.ListToolsResult})"/> advertises available tools and <see cref="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithCallToolHandler(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,ModelContextProtocol.Server.McpRequestHandler{ModelContextProtocol.Protocol.CallToolRequestParams,ModelContextProtocol.Protocol.CallToolResult})"/>
+            executes them when invoked by clients.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithCallToolHandler(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,ModelContextProtocol.Server.McpRequestHandler{ModelContextProtocol.Protocol.CallToolRequestParams,ModelContextProtocol.Protocol.CallToolResult})">
+            <summary>
+            Configures a handler for calling tools available from the Model Context Protocol server.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <param name="handler">The handler function that processes tool calls.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+            <remarks>
+            The call tool handler is responsible for executing custom tools and returning their results to clients.
+            This method is typically paired with <see cref="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithListToolsHandler(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,ModelContextProtocol.Server.McpRequestHandler{ModelContextProtocol.Protocol.ListToolsRequestParams,ModelContextProtocol.Protocol.ListToolsResult})"/> to provide a complete tools implementation,
+            where <see cref="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithListToolsHandler(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,ModelContextProtocol.Server.McpRequestHandler{ModelContextProtocol.Protocol.ListToolsRequestParams,ModelContextProtocol.Protocol.ListToolsResult})"/> advertises available tools and this handler executes them.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithListPromptsHandler(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,ModelContextProtocol.Server.McpRequestHandler{ModelContextProtocol.Protocol.ListPromptsRequestParams,ModelContextProtocol.Protocol.ListPromptsResult})">
+            <summary>
+            Configures a handler for listing prompts available from the Model Context Protocol server.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <param name="handler">The handler that processes list prompts requests.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+            <remarks>
+            <para>
+            This handler is called when a client requests a list of available prompts. It should return all prompts
+            that can be invoked through the server, including their names, descriptions, and parameter specifications.
+            The handler can optionally support pagination via the cursor mechanism for large or dynamically-generated
+            prompt collections.
+            </para>
+            <para>
+            When prompts are also defined using <see cref="T:ModelContextProtocol.Server.McpServerPrompt"/> collection, both sets of prompts
+            will be combined in the response to clients. This allows for a mix of programmatically defined
+            prompts and dynamically generated prompts.
+            </para>
+            <para>
+            This method is typically paired with <see cref="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithGetPromptHandler(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,ModelContextProtocol.Server.McpRequestHandler{ModelContextProtocol.Protocol.GetPromptRequestParams,ModelContextProtocol.Protocol.GetPromptResult})"/> to provide a complete prompts implementation,
+            where <see cref="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithListPromptsHandler(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,ModelContextProtocol.Server.McpRequestHandler{ModelContextProtocol.Protocol.ListPromptsRequestParams,ModelContextProtocol.Protocol.ListPromptsResult})"/> advertises available prompts and <see cref="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithGetPromptHandler(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,ModelContextProtocol.Server.McpRequestHandler{ModelContextProtocol.Protocol.GetPromptRequestParams,ModelContextProtocol.Protocol.GetPromptResult})"/>
+            produces them when invoked by clients.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithGetPromptHandler(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,ModelContextProtocol.Server.McpRequestHandler{ModelContextProtocol.Protocol.GetPromptRequestParams,ModelContextProtocol.Protocol.GetPromptResult})">
+            <summary>
+            Configures a handler for getting a prompt available from the Model Context Protocol server.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <param name="handler">The handler function that processes prompt requests.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithListResourcesHandler(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,ModelContextProtocol.Server.McpRequestHandler{ModelContextProtocol.Protocol.ListResourcesRequestParams,ModelContextProtocol.Protocol.ListResourcesResult})">
+            <summary>
+            Configures a handler for listing resources available from the Model Context Protocol server.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <param name="handler">The handler function that processes resource list requests.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+            <remarks>
+            <para>
+            This handler is typically paired with <see cref="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithReadResourceHandler(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,ModelContextProtocol.Server.McpRequestHandler{ModelContextProtocol.Protocol.ReadResourceRequestParams,ModelContextProtocol.Protocol.ReadResourceResult})"/> to provide a complete resources implementation,
+            where this handler advertises available resources and the read handler provides their content when requested.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithReadResourceHandler(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,ModelContextProtocol.Server.McpRequestHandler{ModelContextProtocol.Protocol.ReadResourceRequestParams,ModelContextProtocol.Protocol.ReadResourceResult})">
+            <summary>
+            Configures a handler for reading a resource available from the Model Context Protocol server.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <param name="handler">The handler function that processes resource read requests.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+            <remarks>
+            This handler is typically paired with <see cref="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithListResourcesHandler(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,ModelContextProtocol.Server.McpRequestHandler{ModelContextProtocol.Protocol.ListResourcesRequestParams,ModelContextProtocol.Protocol.ListResourcesResult})"/> to provide a complete resources implementation,
+            where the list handler advertises available resources and the read handler provides their content when requested.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithCompleteHandler(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,ModelContextProtocol.Server.McpRequestHandler{ModelContextProtocol.Protocol.CompleteRequestParams,ModelContextProtocol.Protocol.CompleteResult})">
+            <summary>
+            Configures a handler for auto-completion suggestions for prompt arguments or resource references available from the Model Context Protocol server.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <param name="handler">The handler function that processes completion requests.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+            <remarks>
+            The completion handler is invoked when clients request suggestions for argument values.
+            This enables auto-complete functionality for both prompt arguments and resource references.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithSubscribeToResourcesHandler(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,ModelContextProtocol.Server.McpRequestHandler{ModelContextProtocol.Protocol.SubscribeRequestParams,ModelContextProtocol.Protocol.EmptyResult})">
+            <summary>
+            Configures a handler for resource subscription requests.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <param name="handler">The handler function that processes resource subscription requests.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+            <remarks>
+            <para>
+            The subscribe handler is responsible for registering client interest in specific resources. When a resource
+            changes, the server can notify all subscribed clients about the change.
+            </para>
+            <para>
+            This handler is typically paired with <see cref="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithUnsubscribeFromResourcesHandler(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,ModelContextProtocol.Server.McpRequestHandler{ModelContextProtocol.Protocol.UnsubscribeRequestParams,ModelContextProtocol.Protocol.EmptyResult})"/> to provide a complete
+            subscription management system. Resource subscriptions allow clients to maintain up-to-date information without
+            needing to poll resources constantly.
+            </para>
+            <para>
+            After registering a subscription, it's the server's responsibility to track which client is subscribed to which
+            resources and to send appropriate notifications through the connection when resources change.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithUnsubscribeFromResourcesHandler(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,ModelContextProtocol.Server.McpRequestHandler{ModelContextProtocol.Protocol.UnsubscribeRequestParams,ModelContextProtocol.Protocol.EmptyResult})">
+            <summary>
+            Configures a handler for resource unsubscription requests.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <param name="handler">The handler function that processes resource unsubscription requests.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+            <remarks>
+            <para>
+            The unsubscribe handler is responsible for removing client interest in specific resources. When a client
+            no longer needs to receive notifications about resource changes, it can send an unsubscribe request.
+            </para>
+            <para>
+            This handler is typically paired with <see cref="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithSubscribeToResourcesHandler(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,ModelContextProtocol.Server.McpRequestHandler{ModelContextProtocol.Protocol.SubscribeRequestParams,ModelContextProtocol.Protocol.EmptyResult})"/> to provide a complete
+            subscription management system. The unsubscribe operation is idempotent, meaning it can be called multiple
+            times for the same resource without causing errors, even if there is no active subscription.
+            </para>
+            <para>
+            After removing a subscription, the server should stop sending notifications to the client about changes
+            to the specified resource.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithSetLoggingLevelHandler(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,ModelContextProtocol.Server.McpRequestHandler{ModelContextProtocol.Protocol.SetLevelRequestParams,ModelContextProtocol.Protocol.EmptyResult})">
+            <summary>
+            Configures a handler for processing logging level change requests from clients.
+            </summary>
+            <param name="builder">The server builder instance.</param>
+            <param name="handler">The handler that processes requests to change the logging level.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+            <remarks>
+            <para>
+            When a client sends a <c>logging/setLevel</c> request, this handler will be invoked to process
+            the requested level change. The server typically adjusts its internal logging level threshold
+            and might begin sending log messages at or above the specified level to the client.
+            </para>
+            <para>
+            Regardless of whether a handler is provided, an <see cref="T:ModelContextProtocol.Server.McpServer"/> should itself handle
+            such notifications by updating its <see cref="P:ModelContextProtocol.Server.McpServer.LoggingLevel"/> property to return the
+            most recently set level.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithMessageFilters(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,System.Action{Microsoft.Extensions.DependencyInjection.IMcpMessageFilterBuilder})">
+            <summary>
+            Configures message-level filters for the MCP server.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <param name="configure">A callback used to register message filters.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> or <paramref name="configure"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithRequestFilters(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,System.Action{Microsoft.Extensions.DependencyInjection.IMcpRequestFilterBuilder})">
+            <summary>
+            Configures request-specific filters for the MCP server.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <param name="configure">A callback used to register request-specific filters.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> or <paramref name="configure"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithStdioServerTransport(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder)">
+            <summary>
+            Adds a server transport that uses standard input (stdin) and standard output (stdout) for communication.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+            <remarks>
+            <para>
+            This method configures the server to communicate using the standard input and output streams,
+            which is commonly used when the Model Context Protocol server is launched locally by a client process.
+            </para>
+            <para>
+            When using this transport, the server runs as a single-session service that exits when the
+            stdin stream is closed. This makes it suitable for scenarios where the server should terminate
+            when the parent process disconnects.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.WithStreamServerTransport(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,System.IO.Stream,System.IO.Stream)">
+            <summary>
+            Adds a server transport that uses the specified input and output streams for communication.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <param name="inputStream">The input <see cref="T:System.IO.Stream"/> to use as standard input.</param>
+            <param name="outputStream">The output <see cref="T:System.IO.Stream"/> to use as standard output.</param>
+            <returns>The builder provided in <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> or <paramref name="inputStream"/> or <paramref name="outputStream"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerBuilderExtensions.CreateTarget(System.IServiceProvider,System.Type)">
+            <summary>Creates an instance of the target object.</summary>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.McpServerServiceCollectionExtensions">
+            <summary>
+            Provides extension methods for configuring MCP servers with dependency injection.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.McpServerServiceCollectionExtensions.AddMcpServer(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{ModelContextProtocol.Server.McpServerOptions})">
+            <summary>
+            Adds the Model Context Protocol (MCP) server to the service collection with default options.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the server to.</param>
+            <param name="configureOptions">An optional callback to configure the <see cref="T:ModelContextProtocol.Server.McpServerOptions"/>.</param>
+            <returns>An <see cref="T:Microsoft.Extensions.DependencyInjection.IMcpServerBuilder"/> that can be used to further configure the MCP server.</returns>
+        </member>
+        <member name="T:ModelContextProtocol.McpServerOptionsSetup">
+            <summary>
+            Configures the McpServerOptions using additional services from DI.
+            </summary>
+            <param name="serverTools">The individually registered tools.</param>
+            <param name="serverPrompts">The individually registered prompts.</param>
+            <param name="serverResources">The individually registered resources.</param>
+            <param name="taskStore">The optional task store registered in DI.</param>
+        </member>
+        <member name="M:ModelContextProtocol.McpServerOptionsSetup.#ctor(System.Collections.Generic.IEnumerable{ModelContextProtocol.Server.McpServerTool},System.Collections.Generic.IEnumerable{ModelContextProtocol.Server.McpServerPrompt},System.Collections.Generic.IEnumerable{ModelContextProtocol.Server.McpServerResource},ModelContextProtocol.IMcpTaskStore)">
+            <summary>
+            Configures the McpServerOptions using additional services from DI.
+            </summary>
+            <param name="serverTools">The individually registered tools.</param>
+            <param name="serverPrompts">The individually registered prompts.</param>
+            <param name="serverResources">The individually registered resources.</param>
+            <param name="taskStore">The optional task store registered in DI.</param>
+        </member>
+        <member name="M:ModelContextProtocol.McpServerOptionsSetup.Configure(ModelContextProtocol.Server.McpServerOptions)">
+            <summary>
+            Configures the given McpServerOptions instance by setting server information
+            and collecting registered server primitives.
+            </summary>
+            <param name="options">The options instance to be configured.</param>
+        </member>
+        <member name="T:ModelContextProtocol.Server.DistributedCacheEventIdFormatter">
+            <summary>
+            Provides methods for formatting and parsing event IDs used by <see cref="T:ModelContextProtocol.Server.DistributedCacheEventStreamStore"/>.
+            </summary>
+            <remarks>
+            Event IDs are formatted as "{base64(sessionId)}:{base64(streamId)}:{sequence}".
+            </remarks>
+        </member>
+        <member name="M:ModelContextProtocol.Server.DistributedCacheEventIdFormatter.Format(System.String,System.String,System.Int64)">
+            <summary>
+            Formats session ID, stream ID, and sequence number into an event ID string.
+            </summary>
+        </member>
+        <member name="M:ModelContextProtocol.Server.DistributedCacheEventIdFormatter.TryParse(System.String,System.String@,System.String@,System.Int64@)">
+            <summary>
+            Attempts to parse an event ID into its component parts.
+            </summary>
+        </member>
+        <member name="T:ModelContextProtocol.Server.DistributedCacheEventStreamStore">
+            <summary>
+            An <see cref="T:ModelContextProtocol.Server.ISseEventStreamStore"/> implementation backed by <see cref="T:Microsoft.Extensions.Caching.Distributed.IDistributedCache"/>.
+            </summary>
+            <remarks>
+            <para>
+            This implementation stores SSE events in a distributed cache, enabling resumability across
+            multiple server instances. Event IDs are encoded with session, stream, and sequence information
+            to allow efficient retrieval of events after a given point.
+            </para>
+            <para>
+            The writer maintains in-memory state for sequence number generation, as there is guaranteed
+            to be only one writer per stream. Readers may be created from separate processes.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:ModelContextProtocol.Server.DistributedCacheEventStreamStore.#ctor(Microsoft.Extensions.Options.IOptions{ModelContextProtocol.Server.DistributedCacheEventStreamStoreOptions},Microsoft.Extensions.Logging.ILogger{ModelContextProtocol.Server.DistributedCacheEventStreamStore})">
+            <summary>
+            Initializes a new instance of the <see cref="T:ModelContextProtocol.Server.DistributedCacheEventStreamStore"/> class.
+            </summary>
+            <param name="options">Configuration options for the store, including the <see cref="T:Microsoft.Extensions.Caching.Distributed.IDistributedCache"/> to use.</param>
+            <param name="logger">Optional logger for diagnostic output.</param>
+        </member>
+        <member name="M:ModelContextProtocol.Server.DistributedCacheEventStreamStore.CreateStreamAsync(ModelContextProtocol.Server.SseEventStreamOptions,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:ModelContextProtocol.Server.DistributedCacheEventStreamStore.GetStreamReaderAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:ModelContextProtocol.Server.DistributedCacheEventStreamStore.CacheKeys">
+            <summary>
+            Provides methods for generating cache keys.
+            </summary>
+            <remarks>
+            Cache keys are versioned to allow format changes without conflicts with existing entries.
+            When the cache format changes, increment <see cref="F:ModelContextProtocol.Server.DistributedCacheEventStreamStore.CacheKeys.Version"/> to invalidate old entries.
+            </remarks>
+        </member>
+        <member name="F:ModelContextProtocol.Server.DistributedCacheEventStreamStore.CacheKeys.Version">
+            <summary>
+            The current cache key version. Increment this when changing the cache format
+            to ensure old entries are ignored.
+            </summary>
+        </member>
+        <member name="T:ModelContextProtocol.Server.DistributedCacheEventStreamStore.StreamMetadata">
+            <summary>
+            Metadata about a stream stored in the cache.
+            </summary>
+        </member>
+        <member name="T:ModelContextProtocol.Server.DistributedCacheEventStreamStore.StoredEvent">
+            <summary>
+            Serialized representation of an SSE event stored in the cache.
+            </summary>
+        </member>
+        <member name="T:ModelContextProtocol.Server.DistributedCacheEventStreamStore.DistributedCacheEventStreamWriter.__LogEventAlreadyHasIdStruct">
+            <summary> This API supports the logging infrastructure and is not intended to be used directly from your code. It is subject to change in the future. </summary>
+        </member>
+        <member name="T:ModelContextProtocol.Server.DistributedCacheEventStreamStoreJsonUtilities">
+            <summary>
+            Provides JSON serialization utilities for <see cref="T:ModelContextProtocol.Server.DistributedCacheEventStreamStore"/> types.
+            </summary>
+            <remarks>
+            This class provides source-generated serialization for the internal types used by
+            <see cref="T:ModelContextProtocol.Server.DistributedCacheEventStreamStore"/> to persist SSE events and stream metadata.
+            It combines with <see cref="P:ModelContextProtocol.McpJsonUtilities.DefaultOptions"/> to support the full object
+            graph including <see cref="T:ModelContextProtocol.Protocol.JsonRpcMessage"/> and its derived types.
+            </remarks>
+        </member>
+        <member name="P:ModelContextProtocol.Server.DistributedCacheEventStreamStoreJsonUtilities.DefaultOptions">
+            <summary>
+            Gets the <see cref="T:System.Text.Json.JsonSerializerOptions"/> instance for serializing distributed cache event stream store types.
+            </summary>
+            <remarks>
+            This options instance combines the source-generated context for <see cref="T:ModelContextProtocol.Server.DistributedCacheEventStreamStore.StreamMetadata"/>
+            and <see cref="T:ModelContextProtocol.Server.DistributedCacheEventStreamStore.StoredEvent"/> with <see cref="P:ModelContextProtocol.McpJsonUtilities.DefaultOptions"/>
+            to support the full object graph including <see cref="T:ModelContextProtocol.Protocol.JsonRpcMessage"/> types.
+            </remarks>
+        </member>
+        <member name="P:ModelContextProtocol.Server.DistributedCacheEventStreamStoreJsonUtilities.StreamMetadataJsonTypeInfo">
+            <summary>
+            Gets the <see cref="T:System.Text.Json.Serialization.Metadata.JsonTypeInfo`1"/> for <see cref="T:ModelContextProtocol.Server.DistributedCacheEventStreamStore.StreamMetadata"/>.
+            </summary>
+        </member>
+        <member name="P:ModelContextProtocol.Server.DistributedCacheEventStreamStoreJsonUtilities.StoredEventJsonTypeInfo">
+            <summary>
+            Gets the <see cref="T:System.Text.Json.Serialization.Metadata.JsonTypeInfo`1"/> for <see cref="T:ModelContextProtocol.Server.DistributedCacheEventStreamStore.StoredEvent"/>.
+            </summary>
+        </member>
+        <member name="P:ModelContextProtocol.Server.DistributedCacheEventStreamStoreJsonUtilities.JsonContext.Boolean">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:ModelContextProtocol.Server.DistributedCacheEventStreamStoreJsonUtilities.JsonContext.JsonRpcMessage">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:ModelContextProtocol.Server.DistributedCacheEventStreamStoreJsonUtilities.JsonContext.StoredEvent">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:ModelContextProtocol.Server.DistributedCacheEventStreamStoreJsonUtilities.JsonContext.StreamMetadata">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:ModelContextProtocol.Server.DistributedCacheEventStreamStoreJsonUtilities.JsonContext.SseEventStreamMode">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:ModelContextProtocol.Server.DistributedCacheEventStreamStoreJsonUtilities.JsonContext.Int32">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:ModelContextProtocol.Server.DistributedCacheEventStreamStoreJsonUtilities.JsonContext.NullableInt32">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:ModelContextProtocol.Server.DistributedCacheEventStreamStoreJsonUtilities.JsonContext.Int64">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:ModelContextProtocol.Server.DistributedCacheEventStreamStoreJsonUtilities.JsonContext.String">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:ModelContextProtocol.Server.DistributedCacheEventStreamStoreJsonUtilities.JsonContext.Default">
+            <summary>
+            The default <see cref="T:System.Text.Json.Serialization.JsonSerializerContext"/> associated with a default <see cref="T:System.Text.Json.JsonSerializerOptions"/> instance.
+            </summary>
+        </member>
+        <member name="P:ModelContextProtocol.Server.DistributedCacheEventStreamStoreJsonUtilities.JsonContext.GeneratedSerializerOptions">
+            <summary>
+            The source-generated options associated with this context.
+            </summary>
+        </member>
+        <member name="M:ModelContextProtocol.Server.DistributedCacheEventStreamStoreJsonUtilities.JsonContext.#ctor">
+            <inheritdoc/>
+        </member>
+        <member name="M:ModelContextProtocol.Server.DistributedCacheEventStreamStoreJsonUtilities.JsonContext.#ctor(System.Text.Json.JsonSerializerOptions)">
+            <inheritdoc/>
+        </member>
+        <member name="M:ModelContextProtocol.Server.DistributedCacheEventStreamStoreJsonUtilities.JsonContext.GetTypeInfo(System.Type)">
+            <inheritdoc/>
+        </member>
+        <member name="T:ModelContextProtocol.Server.DistributedCacheEventStreamStoreOptions">
+            <summary>
+            Configuration options for <see cref="T:ModelContextProtocol.Server.DistributedCacheEventStreamStore"/>.
+            </summary>
+        </member>
+        <member name="P:ModelContextProtocol.Server.DistributedCacheEventStreamStoreOptions.Cache">
+            <summary>
+            Gets or sets the <see cref="T:Microsoft.Extensions.Caching.Distributed.IDistributedCache"/> to use for event storage.
+            </summary>
+            <remarks>
+            When using dependency injection with <c>WithDistributedCacheEventStreamStore()</c>, this is
+            automatically populated from the <see cref="T:Microsoft.Extensions.Caching.Distributed.IDistributedCache"/> registered in DI.
+            Set this property explicitly to use a specific cache instance.
+            </remarks>
+        </member>
+        <member name="P:ModelContextProtocol.Server.DistributedCacheEventStreamStoreOptions.EventSlidingExpiration">
+            <summary>
+            Gets or sets the sliding expiration for individual events in the cache.
+            </summary>
+            <remarks>
+            Events are refreshed on each access. If an event is not accessed within this
+            time period, it may be evicted from the cache.
+            </remarks>
+        </member>
+        <member name="P:ModelContextProtocol.Server.DistributedCacheEventStreamStoreOptions.EventAbsoluteExpiration">
+            <summary>
+            Gets or sets the absolute expiration for individual events in the cache.
+            </summary>
+            <remarks>
+            Events will be evicted from the cache after this time period, regardless of access.
+            </remarks>
+        </member>
+        <member name="P:ModelContextProtocol.Server.DistributedCacheEventStreamStoreOptions.MetadataSlidingExpiration">
+            <summary>
+            Gets or sets the sliding expiration for stream metadata in the cache.
+            </summary>
+            <remarks>
+            Stream metadata includes mode and completion status. This should typically be
+            set to a longer duration than event expiration to allow for resumability.
+            </remarks>
+        </member>
+        <member name="P:ModelContextProtocol.Server.DistributedCacheEventStreamStoreOptions.MetadataAbsoluteExpiration">
+            <summary>
+            Gets or sets the absolute expiration for stream metadata in the cache.
+            </summary>
+            <remarks>
+            Stream metadata will be evicted from the cache after this time period, regardless of access.
+            </remarks>
+        </member>
+        <member name="P:ModelContextProtocol.Server.DistributedCacheEventStreamStoreOptions.StreamReaderPollingInterval">
+            <summary>
+            Gets or sets the interval between polling attempts when a stream reader is waiting for new events
+            in the default <see cref="F:ModelContextProtocol.Server.SseEventStreamMode.Streaming"/> mode.
+            </summary>
+            <remarks>
+            This only affects stream readers. A shorter interval provides lower latency for new events
+            but increases cache access frequency.
+            </remarks>
+        </member>
+        <member name="T:ModelContextProtocol.SingleSessionMcpServerHostedService">
+            <summary>
+            Hosted service for a single-session (e.g. stdio) MCP server.
+            </summary>
+            <param name="session">The server representing the session being hosted.</param>
+            <param name="lifetime">
+            The host's application lifetime. If available, it will have termination requested when the session's run completes.
+            </param>
+        </member>
+        <member name="M:ModelContextProtocol.SingleSessionMcpServerHostedService.#ctor(ModelContextProtocol.Server.McpServer,Microsoft.Extensions.Hosting.IHostApplicationLifetime)">
+            <summary>
+            Hosted service for a single-session (e.g. stdio) MCP server.
+            </summary>
+            <param name="session">The server representing the session being hosted.</param>
+            <param name="lifetime">
+            The host's application lifetime. If available, it will have termination requested when the session's run completes.
+            </param>
+        </member>
+        <member name="M:ModelContextProtocol.SingleSessionMcpServerHostedService.ExecuteAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:ModelContextProtocol.Throw">
+            <summary>Provides helper methods for throwing exceptions.</summary>
+        </member>
+        <member name="T:ModelContextProtocol.Obsoletions">
+            <summary>
+            Defines diagnostic IDs, messages, and URLs for APIs annotated with <see cref="T:System.ObsoleteAttribute"/>.
+            </summary>
+            <remarks>
+            When a deprecated API is associated with a specification change, the message
+            should refer to the specification version that introduces the change and the SEP
+            when available. If there is a SEP associated with the experimental API, the Url should
+            point to the SEP issue.
+            <para>
+            Obsolete diagnostic IDs are in the format MCP9###.
+            </para>
+            <para>
+            Diagnostic IDs cannot be reused when obsolete APIs are removed or restored.
+            This ensures that users do not suppress warnings for new diagnostics with existing
+            suppressions that might be left in place from prior uses of the same diagnostic ID.
+            </para>
+            </remarks>
+        </member>
+    </members>
+</doc>

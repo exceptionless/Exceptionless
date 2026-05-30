@@ -1,0 +1,329 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Aspire.Hosting.Redis</name>
+    </assembly>
+    <members>
+        <member name="T:Aspire.Hosting.RedisBuilderExtensions">
+            <summary>
+            Provides extension methods for adding Redis resources to the application model.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.RedisBuilderExtensions.AddRedis(Aspire.Hosting.IDistributedApplicationBuilder,System.String,System.Nullable{System.Int32})">
+            <summary>
+            Adds a Redis container to the application model.
+            </summary>
+            <param name="builder">The <see cref="T:Aspire.Hosting.IDistributedApplicationBuilder"/>.</param>
+            <param name="name">The name of the resource. This name will be used as the connection string name when referenced in a dependency.</param>
+            <param name="port">The host port to bind the underlying container to.</param>
+            <returns>A reference to the <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+            <remarks>
+            <para>
+            This resource includes built-in health checks. When this resource is referenced as a dependency
+            using the <see cref="M:Aspire.Hosting.ResourceBuilderExtensions.WaitFor``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.IResource})"/>
+            extension method then the dependent resource will wait until the Redis resource is able to service
+            requests.
+            </para>
+            This version of the package defaults to the <inheritdoc cref="F:Aspire.Hosting.Redis.RedisContainerImageTags.Tag"/> tag of the <inheritdoc cref="F:Aspire.Hosting.Redis.RedisContainerImageTags.Image"/> container image.
+            </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.RedisBuilderExtensions.AddRedis(Aspire.Hosting.IDistributedApplicationBuilder,System.String,System.Nullable{System.Int32},Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.ParameterResource})">
+            <summary>
+            Adds a Redis container to the application model.
+            </summary>
+            <param name="builder">The <see cref="T:Aspire.Hosting.IDistributedApplicationBuilder"/>.</param>
+            <param name="name">The name of the resource. This name will be used as the connection string name when referenced in a dependency.</param>
+            <param name="port">The host port to bind the underlying container to.</param>
+            <param name="password">The parameter used to provide the password for the Redis resource. If <see langword="null"/> a random password will be generated.</param>
+            <returns>A reference to the <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+            <remarks>
+            <para>
+            This resource includes built-in health checks. When this resource is referenced as a dependency
+            using the <see cref="M:Aspire.Hosting.ResourceBuilderExtensions.WaitFor``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.IResource})"/>
+            extension method then the dependent resource will wait until the Redis resource is able to service
+            requests.
+            </para>
+            This version of the package defaults to the <inheritdoc cref="F:Aspire.Hosting.Redis.RedisContainerImageTags.Tag"/> tag of the <inheritdoc cref="F:Aspire.Hosting.Redis.RedisContainerImageTags.Image"/> container image.
+            </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.RedisBuilderExtensions.WithRedisCommander(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.RedisResource},System.Action{Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Redis.RedisCommanderResource}},System.String)">
+            <summary>
+            Configures a container resource for Redis Commander which is pre-configured to connect to the <see cref="T:Aspire.Hosting.ApplicationModel.RedisResource"/> that this method is used on.
+            </summary>
+            <remarks>
+            This version of the package defaults to the <inheritdoc cref="F:Aspire.Hosting.Redis.RedisContainerImageTags.RedisCommanderTag"/> tag of the <inheritdoc cref="F:Aspire.Hosting.Redis.RedisContainerImageTags.RedisCommanderImage"/> container image.
+            </remarks>
+            <param name="builder">The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for the <see cref="T:Aspire.Hosting.ApplicationModel.RedisResource"/>.</param>
+            <param name="configureContainer">Configuration callback for Redis Commander container resource.</param>
+            <param name="containerName">Override the container name used for Redis Commander.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Aspire.Hosting.RedisBuilderExtensions.WithRedisInsight(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.RedisResource},System.Action{Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Redis.RedisInsightResource}},System.String)">
+            <summary>
+            Configures a container resource for Redis Insight which is pre-configured to connect to the <see cref="T:Aspire.Hosting.ApplicationModel.RedisResource"/> that this method is used on.
+            </summary>
+            <remarks>
+            This version of the package defaults to the <inheritdoc cref="F:Aspire.Hosting.Redis.RedisContainerImageTags.RedisInsightTag"/> tag of the <inheritdoc cref="F:Aspire.Hosting.Redis.RedisContainerImageTags.RedisInsightImage"/> container image.
+            </remarks>
+            <param name="builder">The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for the <see cref="T:Aspire.Hosting.ApplicationModel.RedisResource"/>.</param>
+            <param name="configureContainer">Configuration callback for Redis Insight container resource.</param>
+            <param name="containerName">Override the container name used for Redis Insight.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Aspire.Hosting.RedisBuilderExtensions.WithHostPort(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Redis.RedisCommanderResource},System.Nullable{System.Int32})">
+            <summary>
+            Configures the host port that the Redis Commander resource is exposed on instead of using randomly assigned port.
+            </summary>
+            <param name="builder">The resource builder for Redis Commander.</param>
+            <param name="port">The port to bind on the host. If <see langword="null"/> is used random port will be assigned.</param>
+            <returns>The resource builder for RedisCommander.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.RedisBuilderExtensions.WithHostPort(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Redis.RedisInsightResource},System.Nullable{System.Int32})">
+            <summary>
+            Configures the host port that the Redis Insight resource is exposed on instead of using randomly assigned port.
+            </summary>
+            <param name="builder">The resource builder for Redis Insight.</param>
+            <param name="port">The port to bind on the host. If <see langword="null"/> is used random port will be assigned.</param>
+            <returns>The resource builder for RedisInsight.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.RedisBuilderExtensions.WithDataVolume(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.RedisResource},System.String,System.Boolean)">
+            <summary>
+            Adds a named volume for the data folder to a Redis container resource and enables Redis persistence.
+            </summary>
+            <remarks>
+            Use <see cref="M:Aspire.Hosting.RedisBuilderExtensions.WithPersistence(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.RedisResource},System.Nullable{System.TimeSpan},System.Int64)"/> to adjust Redis persistence configuration, e.g.:
+            <code lang="csharp">
+            var cache = builder.AddRedis("cache")
+                               .WithDataVolume()
+                               .WithPersistence(TimeSpan.FromSeconds(10), 5);
+            </code>
+            </remarks>
+            <param name="builder">The resource builder.</param>
+            <param name="name">The name of the volume. Defaults to an auto-generated name based on the application and resource names.</param>
+            <param name="isReadOnly">
+            A flag that indicates if this is a read-only volume. Setting this to <c>true</c> will disable Redis persistence.<br/>
+            Defaults to <c>false</c>.
+            </param>
+            <returns>The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.RedisBuilderExtensions.WithDataBindMount(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.RedisResource},System.String,System.Boolean)">
+            <summary>
+            Adds a bind mount for the data folder to a Redis container resource and enables Redis persistence.
+            </summary>
+            <remarks>
+            Use <see cref="M:Aspire.Hosting.RedisBuilderExtensions.WithPersistence(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.RedisResource},System.Nullable{System.TimeSpan},System.Int64)"/> to adjust Redis persistence configuration, e.g.:
+            <code lang="csharp">
+            var cache = builder.AddRedis("cache")
+                               .WithDataBindMount("myredisdata")
+                               .WithPersistence(TimeSpan.FromSeconds(10), 5);
+            </code>
+            </remarks>
+            <param name="builder">The resource builder.</param>
+            <param name="source">The source directory on the host to mount into the container.</param>
+            <param name="isReadOnly">
+            A flag that indicates if this is a read-only mount. Setting this to <c>true</c> will disable Redis persistence.<br/>
+            Defaults to <c>false</c>.
+            </param>
+            <returns>The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.RedisBuilderExtensions.WithPersistence(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.RedisResource},System.Nullable{System.TimeSpan},System.Int64)">
+            <summary>
+            Configures a Redis container resource for persistence.
+            </summary>
+            <remarks>
+            Use with <see cref="M:Aspire.Hosting.RedisBuilderExtensions.WithDataBindMount(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.RedisResource},System.String,System.Boolean)"/>
+            or <see cref="M:Aspire.Hosting.RedisBuilderExtensions.WithDataVolume(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.RedisResource},System.String,System.Boolean)"/> to persist Redis data across sessions with custom persistence configuration, e.g.:
+            <code lang="csharp">
+            var cache = builder.AddRedis("cache")
+                               .WithDataVolume()
+                               .WithPersistence(TimeSpan.FromSeconds(10), 5);
+            </code>
+            </remarks>
+            <param name="builder">The resource builder.</param>
+            <param name="interval">The interval between snapshot exports. Defaults to 60 seconds.</param>
+            <param name="keysChangedThreshold">The number of key change operations required to trigger a snapshot at the interval. Defaults to 1.</param>
+            <returns>The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.RedisBuilderExtensions.WithDataVolume(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Redis.RedisInsightResource},System.String)">
+            <summary>
+            Adds a named volume for the data folder to a Redis Insight container resource.
+            </summary>
+            <param name="builder">The resource builder.</param>
+            <param name="name">The name of the volume. Defaults to an auto-generated name based on the application and resource names.</param>
+            <returns>The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.RedisBuilderExtensions.WithDataBindMount(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Redis.RedisInsightResource},System.String)">
+            <summary>
+            Adds a bind mount for the data folder to a Redis Insight container resource.
+            </summary>
+            <param name="builder">The resource builder.</param>
+            <param name="source">The source directory on the host to mount into the container.</param>
+            <returns>The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.RedisBuilderExtensions.WithPassword(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.RedisResource},Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.ParameterResource})">
+            <summary>
+            Configures the password that the Redis resource is used.
+            </summary>
+            <param name="builder">The resource builder.</param>
+            <param name="password">The parameter used to provide the password for the Redis resource. If <see langword="null"/>, no password will be configured.</param>
+            <returns>The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.RedisBuilderExtensions.WithHostPort(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.RedisResource},System.Nullable{System.Int32})">
+            <summary>
+            Configures the host port that the Redis resource is exposed on instead of using randomly assigned port.
+            </summary>
+            <param name="builder">The resource builder.</param>
+            <param name="port">The port to bind on the host. If <see langword="null"/> is used random port will be assigned.</param>
+            <returns>The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="T:Aspire.Hosting.Redis.RedisCommanderResource">
+            <summary>
+            A resource that represents a Redis Commander container.
+            </summary>
+            <param name="name">The name of the resource.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Redis.RedisCommanderResource.#ctor(System.String)">
+            <summary>
+            A resource that represents a Redis Commander container.
+            </summary>
+            <param name="name">The name of the resource.</param>
+        </member>
+        <member name="F:Aspire.Hosting.Redis.RedisContainerImageTags.Registry">
+            <remarks>docker.io</remarks>
+        </member>
+        <member name="F:Aspire.Hosting.Redis.RedisContainerImageTags.Image">
+            <remarks>library/redis</remarks>
+        </member>
+        <member name="F:Aspire.Hosting.Redis.RedisContainerImageTags.Tag">
+            <remarks>8.6</remarks>
+        </member>
+        <member name="F:Aspire.Hosting.Redis.RedisContainerImageTags.RedisCommanderRegistry">
+            <remarks>RedisCommanderRegistry</remarks>
+        </member>
+        <member name="F:Aspire.Hosting.Redis.RedisContainerImageTags.RedisCommanderImage">
+            <remarks>joeferner/redis-commander</remarks>
+        </member>
+        <member name="F:Aspire.Hosting.Redis.RedisContainerImageTags.RedisCommanderTag">
+            <remarks>latest</remarks>
+        </member>
+        <member name="F:Aspire.Hosting.Redis.RedisContainerImageTags.RedisInsightRegistry">
+            <remarks>docker.io</remarks>
+        </member>
+        <member name="F:Aspire.Hosting.Redis.RedisContainerImageTags.RedisInsightImage">
+            <remarks>redis/redisinsight</remarks>
+        </member>
+        <member name="F:Aspire.Hosting.Redis.RedisContainerImageTags.RedisInsightTag">
+            <remarks>3.0</remarks>
+        </member>
+        <member name="T:Aspire.Hosting.Redis.RedisInsightResource">
+            <summary>
+            A resource that represents a Redis Insight container.
+            </summary>
+            <param name="name">The name of the resource.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Redis.RedisInsightResource.#ctor(System.String)">
+            <summary>
+            A resource that represents a Redis Insight container.
+            </summary>
+            <param name="name">The name of the resource.</param>
+        </member>
+        <member name="P:Aspire.Hosting.Redis.RedisInsightResource.PrimaryEndpoint">
+            <summary>
+            Gets the primary endpoint for the Redis Insight.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.ApplicationModel.RedisResource">
+            <summary>
+            A resource that represents a Redis resource independent of the hosting model.
+            </summary>
+            <remarks>
+            A resource that represents a Redis resource independent of the hosting model.
+            </remarks>
+            <param name="name">The name of the resource.</param>
+        </member>
+        <member name="M:Aspire.Hosting.ApplicationModel.RedisResource.#ctor(System.String)">
+            <summary>
+            A resource that represents a Redis resource independent of the hosting model.
+            </summary>
+            <remarks>
+            A resource that represents a Redis resource independent of the hosting model.
+            </remarks>
+            <param name="name">The name of the resource.</param>
+        </member>
+        <member name="M:Aspire.Hosting.ApplicationModel.RedisResource.#ctor(System.String,Aspire.Hosting.ApplicationModel.ParameterResource)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Aspire.Hosting.ApplicationModel.RedisResource"/> class.
+            </summary>
+            <param name="name">The name of the resource.</param>
+            <param name="password">A parameter that contains the Redis server password.</param>
+        </member>
+        <member name="F:Aspire.Hosting.ApplicationModel.RedisResource.StandardRedisScheme">
+            <summary>
+            The standard URI scheme registered for Redis, similar to http. See: https://github.com/redis/redis-specifications/blob/1252427cdbc497f66a7f8550c6b5f2f35367dc92/uri/redis.txt
+            </summary>
+        </member>
+        <member name="F:Aspire.Hosting.ApplicationModel.RedisResource.TlsRedisScheme">
+            <summary>
+            The TLS URI scheme registered for Redis, similar to https. See: https://github.com/redis/redis-specifications/blob/1252427cdbc497f66a7f8550c6b5f2f35367dc92/uri/rediss.txt
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.ApplicationModel.RedisResource.PrimaryEndpoint">
+            <summary>
+            Gets the primary endpoint for the Redis server.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.ApplicationModel.RedisResource.Host">
+            <summary>
+            Gets the host endpoint reference for this resource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.ApplicationModel.RedisResource.Port">
+            <summary>
+            Gets the port endpoint reference for this resource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.ApplicationModel.RedisResource.PasswordParameter">
+            <summary>
+            Gets the parameter that contains the Redis server password.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.ApplicationModel.RedisResource.TlsEnabled">
+            <summary>
+            Indicates whether TLS is enabled for the Redis server.
+            </summary>
+            <remarks>
+            This property proxies through to <see cref="P:Aspire.Hosting.ApplicationModel.EndpointAnnotation.TlsEnabled"/> on the
+            <see cref="P:Aspire.Hosting.ApplicationModel.RedisResource.PrimaryEndpoint"/>. When set to <see langword="true"/>, the connection string
+            expression dynamically includes <c>,ssl=true</c> and the URI expression uses the
+            <c>rediss://</c> scheme. This value is resolved lazily at expression evaluation time,
+            avoiding timing issues when TLS is enabled later in the application lifecycle
+            (e.g., during the <c>BeforeStartEvent</c>).
+            </remarks>
+        </member>
+        <member name="P:Aspire.Hosting.ApplicationModel.RedisResource.Args">
+            <summary>
+            Arguments for the Dockerfile
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.ApplicationModel.RedisResource.ConnectionStringExpression">
+            <summary>
+            Gets the connection string expression for the Redis server.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.ApplicationModel.RedisResource.GetConnectionStringAsync(System.Threading.CancellationToken)">
+            <summary>
+            Gets the connection string for the Redis server.
+            </summary>
+            <param name="cancellationToken"> A <see cref="T:System.Threading.CancellationToken"/> to observe while waiting for the task to complete.</param>
+            <returns>A connection string for the redis server in the form "host:port".</returns>
+        </member>
+        <member name="P:Aspire.Hosting.ApplicationModel.RedisResource.UriExpression">
+            <summary>
+            Gets the connection URI expression for the Redis server.
+            </summary>
+            <remarks>
+            Format: <c>redis://[:{password}@]{host}:{port}</c>. The password segment is omitted when no password is configured.
+            </remarks>
+        </member>
+    </members>
+</doc>

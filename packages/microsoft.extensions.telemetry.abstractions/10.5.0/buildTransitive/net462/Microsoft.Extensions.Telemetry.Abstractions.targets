@@ -1,0 +1,12 @@
+<Project InitialTargets="NETStandardCompatError_Microsoft_Extensions_Telemetry_Abstractions_net8_0">
+  
+  <!-- This package should replace the Microsoft.Extensions.Logging.Abstractions source generator, so we set the property to remove the source generator from the project. -->
+  <PropertyGroup>
+    <DisableMicrosoftExtensionsLoggingSourceGenerator>true</DisableMicrosoftExtensionsLoggingSourceGenerator>
+  </PropertyGroup>
+
+  <Target Name="NETStandardCompatError_Microsoft_Extensions_Telemetry_Abstractions_net8_0"
+          Condition="'$(SuppressTfmSupportBuildWarnings)' == ''">
+    <Warning Text="Microsoft.Extensions.Telemetry.Abstractions 10.5.0 doesn't support $(TargetFramework) and has not been tested with it. Consider upgrading your TargetFramework to net8.0 or later. You may also set &lt;SuppressTfmSupportBuildWarnings&gt;true&lt;/SuppressTfmSupportBuildWarnings&gt; in the project file to ignore this warning and attempt to run in this unsupported configuration at your own risk." />
+  </Target>
+</Project>

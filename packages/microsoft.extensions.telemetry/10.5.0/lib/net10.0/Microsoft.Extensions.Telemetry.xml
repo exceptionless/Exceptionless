@@ -1,0 +1,2177 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Extensions.Telemetry</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.Shared.DiagnosticIds.DiagnosticIds">
+            <summary>
+             Various diagnostic IDs reported by this repo.
+            </summary>
+            <remarks>
+             When adding a new diagnostic ID, add a corresponding suppression to the root <c>Directory.Build.targets</c> file,
+             and add a documentation entry to <c>docs/list-of-diagnostics.md</c>.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Shared.DiagnosticIds.DiagnosticIds.Experiments">
+            <summary>
+             Experiments supported by this repo.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Diagnostics.Throw">
+            <summary>
+            Defines static methods used to throw exceptions.
+            </summary>
+            <remarks>
+            The main purpose is to reduce code size, improve performance, and standardize exception
+            messages.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfNull``1(``0,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentNullException"/> if the specified argument is <see langword="null"/>.
+            </summary>
+            <typeparam name="T">Argument type to be checked for <see langword="null"/>.</typeparam>
+            <param name="argument">Object to be checked for <see langword="null"/>.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfNullOrMemberNull``2(``0,``1,System.String,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentNullException"/> if the specified argument is <see langword="null"/>,
+            or <see cref="T:System.ArgumentException" /> if the specified member is <see langword="null"/>.
+            </summary>
+            <typeparam name="TParameter">Argument type to be checked for <see langword="null"/>.</typeparam>
+            <typeparam name="TMember">Member type to be checked for <see langword="null"/>.</typeparam>
+            <param name="argument">Argument to be checked for <see langword="null"/>.</param>
+            <param name="member">Object member to be checked for <see langword="null"/>.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <param name="memberName">The name of the member.</param>
+            <returns>The original value of <paramref name="member"/>.</returns>
+            <example>
+            <code language="csharp">
+            Throws.IfNullOrMemberNull(myObject, myObject?.MyProperty)
+            </code>
+            </example>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfMemberNull``2(``0,``1,System.String,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentException" /> if the specified member is <see langword="null"/>.
+            </summary>
+            <typeparam name="TParameter">Argument type.</typeparam>
+            <typeparam name="TMember">Member type to be checked for <see langword="null"/>.</typeparam>
+            <param name="argument">Argument to which member belongs.</param>
+            <param name="member">Object member to be checked for <see langword="null"/>.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <param name="memberName">The name of the member.</param>
+            <returns>The original value of <paramref name="member"/>.</returns>
+            <example>
+            <code language="csharp">
+            Throws.IfMemberNull(myObject, myObject.MyProperty)
+            </code>
+            </example>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfNullOrWhitespace(System.String,System.String)">
+            <summary>
+            Throws either an <see cref="T:System.ArgumentNullException"/> or an <see cref="T:System.ArgumentException"/>
+            if the specified string is <see langword="null"/> or whitespace respectively.
+            </summary>
+            <param name="argument">String to be checked for <see langword="null"/> or whitespace.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfNullOrEmpty(System.String,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentNullException"/> if the string is <see langword="null"/>,
+            or <see cref="T:System.ArgumentException"/> if it is empty.
+            </summary>
+            <param name="argument">String to be checked for <see langword="null"/> or empty.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfBufferTooSmall(System.Int32,System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentException"/> if the argument's buffer size is less than the required buffer size.
+            </summary>
+            <param name="bufferSize">The actual buffer size.</param>
+            <param name="requiredSize">The required buffer size.</param>
+            <param name="paramName">The name of the parameter to be checked.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfOutOfRange``1(``0,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the enum value is not valid.
+            </summary>
+            <param name="argument">The argument to evaluate.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <typeparam name="T">The type of the enumeration.</typeparam>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfNullOrEmpty``1(System.Collections.Generic.IEnumerable{``0},System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentNullException"/> if the collection is <see langword="null"/>,
+            or <see cref="T:System.ArgumentException"/> if it is empty.
+            </summary>
+            <param name="argument">The collection to evaluate.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <typeparam name="T">The type of objects in the collection.</typeparam>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentNullException(System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentNullException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentNullException(System.String,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentNullException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+            <param name="message">A message that describes the error.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentOutOfRangeException(System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentOutOfRangeException(System.String,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+            <param name="message">A message that describes the error.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentOutOfRangeException(System.String,System.Object,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+            <param name="actualValue">The value of the argument that caused this exception.</param>
+            <param name="message">A message that describes the error.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentException(System.String,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+            <param name="message">A message that describes the error.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentException(System.String,System.String,System.Exception)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+            <param name="message">A message that describes the error.</param>
+            <param name="innerException">The exception that is the cause of the current exception.</param>
+            <remarks>
+            If the <paramref name="innerException"/> is not a <see langword="null"/>, the current exception is raised in a catch
+            block that handles the inner exception.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.InvalidOperationException(System.String)">
+            <summary>
+            Throws an <see cref="T:System.InvalidOperationException"/>.
+            </summary>
+            <param name="message">A message that describes the error.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.InvalidOperationException(System.String,System.Exception)">
+            <summary>
+            Throws an <see cref="T:System.InvalidOperationException"/>.
+            </summary>
+            <param name="message">A message that describes the error.</param>
+            <param name="innerException">The exception that is the cause of the current exception.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThan(System.Int32,System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>  if the specified number is less than min.
+            </summary>
+            <param name="argument">Number to be expected being less than min.</param>
+            <param name="min">The number that must be less than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThan(System.Int32,System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater than max.
+            </summary>
+            <param name="argument">Number to be expected being greater than max.</param>
+            <param name="max">The number that must be greater than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThanOrEqual(System.Int32,System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is less or equal than min.
+            </summary>
+            <param name="argument">Number to be expected being less or equal than min.</param>
+            <param name="min">The number that must be less or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThanOrEqual(System.Int32,System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater or equal than max.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="max">The number that must be greater or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfOutOfRange(System.Int32,System.Int32,System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is not in the specified range.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="min">The lower bound of the allowed range of argument values.</param>
+            <param name="max">The upper bound of the allowed range of argument values.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfZero(System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is equal to 0.
+            </summary>
+            <param name="argument">Number to be expected being not equal to zero.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThan(System.UInt32,System.UInt32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>  if the specified number is less than min.
+            </summary>
+            <param name="argument">Number to be expected being less than min.</param>
+            <param name="min">The number that must be less than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThan(System.UInt32,System.UInt32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater than max.
+            </summary>
+            <param name="argument">Number to be expected being greater than max.</param>
+            <param name="max">The number that must be greater than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThanOrEqual(System.UInt32,System.UInt32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is less or equal than min.
+            </summary>
+            <param name="argument">Number to be expected being less or equal than min.</param>
+            <param name="min">The number that must be less or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThanOrEqual(System.UInt32,System.UInt32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater or equal than max.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="max">The number that must be greater or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfOutOfRange(System.UInt32,System.UInt32,System.UInt32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is not in the specified range.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="min">The lower bound of the allowed range of argument values.</param>
+            <param name="max">The upper bound of the allowed range of argument values.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfZero(System.UInt32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is equal to 0.
+            </summary>
+            <param name="argument">Number to be expected being not equal to zero.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThan(System.Int64,System.Int64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>  if the specified number is less than min.
+            </summary>
+            <param name="argument">Number to be expected being less than min.</param>
+            <param name="min">The number that must be less than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThan(System.Int64,System.Int64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater than max.
+            </summary>
+            <param name="argument">Number to be expected being greater than max.</param>
+            <param name="max">The number that must be greater than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThanOrEqual(System.Int64,System.Int64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is less or equal than min.
+            </summary>
+            <param name="argument">Number to be expected being less or equal than min.</param>
+            <param name="min">The number that must be less or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThanOrEqual(System.Int64,System.Int64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater or equal than max.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="max">The number that must be greater or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfOutOfRange(System.Int64,System.Int64,System.Int64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is not in the specified range.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="min">The lower bound of the allowed range of argument values.</param>
+            <param name="max">The upper bound of the allowed range of argument values.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfZero(System.Int64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is equal to 0.
+            </summary>
+            <param name="argument">Number to be expected being not equal to zero.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThan(System.UInt64,System.UInt64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>  if the specified number is less than min.
+            </summary>
+            <param name="argument">Number to be expected being less than min.</param>
+            <param name="min">The number that must be less than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThan(System.UInt64,System.UInt64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater than max.
+            </summary>
+            <param name="argument">Number to be expected being greater than max.</param>
+            <param name="max">The number that must be greater than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThanOrEqual(System.UInt64,System.UInt64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is less or equal than min.
+            </summary>
+            <param name="argument">Number to be expected being less or equal than min.</param>
+            <param name="min">The number that must be less or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThanOrEqual(System.UInt64,System.UInt64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater or equal than max.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="max">The number that must be greater or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfOutOfRange(System.UInt64,System.UInt64,System.UInt64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is not in the specified range.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="min">The lower bound of the allowed range of argument values.</param>
+            <param name="max">The upper bound of the allowed range of argument values.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfZero(System.UInt64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is equal to 0.
+            </summary>
+            <param name="argument">Number to be expected being not equal to zero.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThan(System.Double,System.Double,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is less than min.
+            </summary>
+            <param name="argument">Number to be expected being less than min.</param>
+            <param name="min">The number that must be less than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThan(System.Double,System.Double,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater than max.
+            </summary>
+            <param name="argument">Number to be expected being greater than max.</param>
+            <param name="max">The number that must be greater than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThanOrEqual(System.Double,System.Double,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is less or equal than min.
+            </summary>
+            <param name="argument">Number to be expected being less or equal than min.</param>
+            <param name="min">The number that must be less or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThanOrEqual(System.Double,System.Double,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater or equal than max.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="max">The number that must be greater or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfOutOfRange(System.Double,System.Double,System.Double,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is not in the specified range.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="min">The lower bound of the allowed range of argument values.</param>
+            <param name="max">The upper bound of the allowed range of argument values.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfZero(System.Double,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is equal to 0.
+            </summary>
+            <param name="argument">Number to be expected being not equal to zero.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.RentedSpan`1">
+             <summary>
+             Represents a span that's potentially created over a rented array.
+             </summary>
+             <typeparam name="T">The type of objects held by the span.</typeparam>
+             <remarks>
+             This type is used to implement a common pattern to improve performance
+             when using temporary buffers. The pattern encourages the use of stack-based
+             buffers when possible, which eliminate the overhead of garbage collection of
+             buffers.
+            
+             With this type, you make a speculative call to allocate a buffer. If the buffer
+             is too large to fix on the stack, it is allocated from <see cref="T:System.Buffers.ArrayPool`1"/>.
+             If the buffer could be allocated on the stack, then no buffer is acquired from the
+             array pool, and instead the caller is expected to use <see langword="stackalloc" />
+             to get the buffer.
+             </remarks>
+             <example>
+             <code language="csharp">
+             using var rental = new RentedSpan&lt;char&gt;(length);
+             var span = rental.Rented ? rental.Span : stackalloc char[length];
+             </code>
+             </example>
+        </member>
+        <member name="F:Microsoft.Shared.Pools.RentedSpan`1.MinimumRentalSpace">
+            <summary>
+            The minimum size in bytes that triggers buffer rental.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.RentedSpan`1.#ctor(System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Shared.Pools.RentedSpan`1"/> struct.
+            </summary>
+            <param name="length">The desired length of the span. if this value is %lt;= 0, no buffer is allocated.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.RentedSpan`1.Dispose">
+             <summary>
+             Returns a rented array back to the array pool.
+             </summary>
+             <remarks>
+             If no array was actually allocated from the array pool
+             (when <see cref="P:Microsoft.Shared.Pools.RentedSpan`1.Rented"/> is <see langword="false" />),
+             then this method has no effect.
+            
+             Calling this method multiple times on the same object is not supported, don't do it.
+             </remarks>
+        </member>
+        <member name="P:Microsoft.Shared.Pools.RentedSpan`1.Span">
+            <summary>
+            Gets a span over the rented buffer.
+            </summary>
+            <remarks>
+            If no buffer was rented (because the buffer was deemed too small), then this returns an empty span.
+            When a buffer isn't rented by this type, it's a cue to you to allocate buffer from the stack instead
+            using stackalloc.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Shared.Pools.RentedSpan`1.Rented">
+            <summary>
+            Gets a value indicating whether a buffer has been rented.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.NoopPooledObjectPolicy`1">
+            <summary>
+            An object pool policy that does nothing.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.PooledCancellationTokenSourcePolicy">
+            <summary>
+            An object pool policy for cancellation token sources.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.PooledDictionaryPolicy`2">
+            <summary>
+            An object pool policy for dictionaries.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.PooledListPolicy`1">
+            <summary>
+            An object pool policy for lists.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.PooledListWithCapacityPolicy`1">
+            <summary>
+            An object pool policy for lists with capacity.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.PooledSetPolicy`1">
+            <summary>
+            An object pool policy for sets.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.PoolFactory">
+            <summary>
+            A factory of object pools.
+            </summary>
+            <remarks>
+            This class makes it easy to create efficient object pools used to improve performance by reducing
+            strain on the garbage collector.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreatePool``1(System.Int32)">
+            <summary>
+            Creates an object pool.
+            </summary>
+            <typeparam name="T">The type of object to keep in the pool.</typeparam>
+            <param name="maxCapacity">The maximum number of items to keep in the pool. This defaults to 1024. This value is a recommendation, the pool may keep more objects than this.</param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreatePool``1(Microsoft.Extensions.ObjectPool.IPooledObjectPolicy{``0},System.Int32)">
+            <summary>
+            Creates an object pool with a custom policy.
+            </summary>
+            <typeparam name="T">The type of object to keep in the pool.</typeparam>
+            <param name="policy">The custom policy that is responsible for creating new objects and preparing objects to be added to the pool.</param>
+            <param name="maxCapacity">The maximum number of items to keep in the pool. This defaults to 1024. This value is a recommendation, the pool may keep more objects than this.</param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateResettingPool``1(System.Int32)">
+            <summary>
+            Creates an object pool for resettable objects.
+            </summary>
+            <typeparam name="T">The type of object to keep in the pool.</typeparam>
+            <param name="maxCapacity">The maximum number of items to keep in the pool. This defaults to 1024. This value is a recommendation, the pool may keep more objects than this.</param>
+            <returns>The pool.</returns>
+            <remarks>
+            Objects are systematically reset before being added to the pool.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateStringBuilderPool(System.Int32,System.Int32)">
+            <summary>
+            Creates a pool of <see cref="T:System.Text.StringBuilder"/> instances.
+            </summary>
+            <param name="maxCapacity">The maximum number of items to keep in the pool. This defaults to 1024. This value is a recommendation, the pool may keep more objects than this.</param>
+            <param name="maxStringBuilderCapacity">The maximum capacity of the string builders to keep in the pool. This defaults to 64K.</param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateListPool``1(System.Int32)">
+            <summary>
+            Creates an object pool of <see cref="T:System.Collections.Generic.List`1"/> instances.
+            </summary>
+            <typeparam name="T">The type of object held by the lists.</typeparam>
+            <param name="maxCapacity">
+            The maximum number of items to keep in the pool.
+            This defaults to 1024.
+            This value is a recommendation, the pool may keep more objects than this.
+            </param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateListPoolWithCapacity``1(System.Int32,System.Int32)">
+            <summary>
+            Creates an object pool of <see cref="T:System.Collections.Generic.List`1"/> instances, each with provided  <paramref name="listCapacity"/>.
+            </summary>
+            <typeparam name="T">The type of object held by the lists.</typeparam>
+            <param name="listCapacity">The capacity of each created <see cref="T:System.Collections.Generic.List`1"/> instance.</param>
+            <param name="maxCapacity">
+            The maximum number of items to keep in the pool.
+            This defaults to 1024.
+            This value is a recommendation, the pool may keep more objects than this.
+            </param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateDictionaryPool``2(System.Collections.Generic.IEqualityComparer{``0},System.Int32)">
+            <summary>
+            Creates an object pool of <see cref="T:System.Collections.Generic.Dictionary`2"/> instances.
+            </summary>
+            <typeparam name="TKey">The type of the dictionary keys.</typeparam>
+            <typeparam name="TValue">The type of the dictionary values.</typeparam>
+            <param name="comparer">Optional key comparer used by the dictionaries.</param>
+            <param name="maxCapacity">
+            The maximum number of items to keep in the pool.
+            This defaults to 1024.
+            This value is a recommendation, the pool may keep more objects than this.
+            </param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateHashSetPool``1(System.Collections.Generic.IEqualityComparer{``0},System.Int32)">
+            <summary>
+            Creates an object pool of <see cref="T:System.Collections.Generic.HashSet`1"/> instances.
+            </summary>
+            <typeparam name="T">The type of objects held in the sets.</typeparam>
+            <param name="comparer">Optional key comparer used by the sets.</param>
+            <param name="maxCapacity">
+            The maximum number of items to keep in the pool.
+            This defaults to 1024.
+            This value is a recommendation, the pool may keep more objects than this.
+            </param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateCancellationTokenSourcePool(System.Int32)">
+            <summary>
+            Creates an object pool of <see cref="T:System.Threading.CancellationTokenSource" /> instances.
+            </summary>
+            <param name="maxCapacity">
+            The maximum number of items to keep in the pool.
+            This defaults to 1024.
+            This value is a recommendation, the pool may keep more objects than this.
+            </param>
+            <returns>The pool.</returns>
+            <remarks>
+            On .NET 6 and above, cancellation token sources are reusable and this pool leverages this feature.
+            When running on older frameworks, this pool is actually a no-op, every time a source is fetched
+            from the pool, it is always a new instance. In that case, returning an object to the pool merely
+            disposes it.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Shared.Pools.PoolFactory.SharedStringBuilderPool">
+            <summary>
+            Gets the shared pool of <see cref="T:System.Text.StringBuilder"/> instances.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Text.NumericExtensions">
+            <summary>
+            Utilities to augment the basic numeric types.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Shared.Text.NumericExtensions.ToInvariantString(System.Int32)">
+            <summary>
+            Formats an integer as an invariant string.
+            </summary>
+            <param name="value">The value to format as a string.</param>
+            <returns>The string representation of the integer value.</returns>
+            <remarks>
+            This works identically to <c>value.ToString(CultureInfo.InvariantCulture)</c> except that it is faster as it maintains
+            preformatted strings for common integer values.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Text.NumericExtensions.ToInvariantString(System.Int64)">
+            <summary>
+            Formats a 64-bit integer as an invariant string.
+            </summary>
+            <param name="value">The value to format as a string.</param>
+            <returns>The string representation of the integer value.</returns>
+            <remarks>
+            This works identically to <c>value.ToString(CultureInfo.InvariantCulture)</c> except that it is faster as it maintains
+            preformatted strings for common integer values.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Shared.Memoization.Memoize">
+            <summary>
+            Given a function of arity N (1 &lt;= N &lt;= 2), return a function that behaves identically, except that
+            repeated invocations with the same parameters return a cached value rather than redoing the computation.
+            </summary>
+            <remarks>
+            Memoize is like a <see cref="T:System.Lazy`1" />, but for functions instead of values.
+            Memoize will use the equality of the types of the input parameters. This means that arbitrary objects
+            will use reference equality, unless those types define their own equality semantics. This implies that
+            callers should take care to use types with Memoize that would be safe to put in a dictionary: if the
+            type is mutable, and its Equals/GetHashCode depends on those mutable parts, unexpected behaviour may
+            result.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Memoization.Memoize.Function``2(System.Func{``0,``1})">
+            <summary>
+            Returns a function that remembers the results of previous invocations of the given function.
+            </summary>
+            <typeparam name="TParameter">The function input type.</typeparam>
+            <typeparam name="TResult">The function output type.</typeparam>
+            <param name="f">The function that needs to be memoized.</param>
+            <returns>A function that appears identical to the original function, but duplicate invocations are nearly instant.</returns>
+            <remarks>
+            Computed values consume memory. Garbage collection will free up that memory when the returned
+            Func is freed. If you're computing values for large numbers of inputs, bear this in mind: if
+            the Func lives for a long time, memory usage can increase without bound.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Memoization.Memoize.Function``3(System.Func{``0,``1,``2})">
+            <summary>
+            Returns a function that remembers the results of previous invocations of the given function.
+            </summary>
+            <typeparam name="TParameter1">The type of the function's first parameter.</typeparam>
+            <typeparam name="TParameter2">The type of the function's second parameter.</typeparam>
+            <typeparam name="TResult">The function output type.</typeparam>
+            <param name="f">The function that needs to be memoized.</param>
+            <returns>A function that appears identical to the original function, but duplicate invocations are nearly instant.</returns>
+            <remarks>
+            Computed values consume memory. Garbage collection will free up that memory when the returned
+            Func is freed. If you're computing values for large numbers of inputs, bear this in mind: if
+            the Func lives for a long time, memory usage can increase without bound.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Shared.Memoization.MemoizedFunction`2">
+            <summary>
+            Memoizer for functions of arity 1.
+            </summary>
+            <remarks>
+            We don't use weak references because those can only wrap reference types, and we wish to support functions that return other kinds of values.
+            </remarks>
+            <typeparam name="TParameter">Input parameter type for the memoized function.</typeparam>
+            <typeparam name="TResult">Return type for the memoized function.</typeparam>
+        </member>
+        <member name="M:Microsoft.Shared.Memoization.MemoizedFunction`2.#ctor(System.Func{`0,`1})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Shared.Memoization.MemoizedFunction`2"/> class.
+            </summary>
+            <param name="function">The function whose results will be memoized.</param>
+        </member>
+        <member name="T:Microsoft.Shared.Memoization.MemoizedFunction`3">
+            <summary>
+            Memoizer for functions of arity 2.
+            </summary>
+            <typeparam name="TParameter1">First input parameter type for the memoized function.</typeparam>
+            <typeparam name="TParameter2">Second input parameter type for the memoized function.</typeparam>
+            <typeparam name="TResult">Return type for the memoized function.</typeparam>
+        </member>
+        <member name="M:Microsoft.Shared.Memoization.MemoizedFunction`3.#ctor(System.Func{`0,`1,`2})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Shared.Memoization.MemoizedFunction`3"/> class.
+            </summary>
+            <param name="function">The function whose results will be memoized.</param>
+        </member>
+        <member name="T:Microsoft.Shared.Data.Validation.LengthAttribute">
+            <summary>
+            Specifies the minimum length of any <see cref="T:System.Collections.IEnumerable"/> or <see cref="T:System.String"/> objects.
+            </summary>
+            <remarks>
+            The standard <see cref="T:System.ComponentModel.DataAnnotations.MinLengthAttribute" /> supports only non generic <see cref="T:System.Array"/> or <see cref="T:System.String"/> typed objects
+            on .NET Framework, while <see cref="T:System.Collections.Generic.ICollection`1"/> type is supported only on .NET Core.
+            See issue here <see href="https://github.com/dotnet/runtime/issues/23288"/>.
+            This attribute aims to allow validation of all these objects in a consistent manner across target frameworks.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Shared.Data.Validation.LengthAttribute.MinimumLength">
+            <summary>
+            Gets the minimum allowed length of the collection or string.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Shared.Data.Validation.LengthAttribute.MaximumLength">
+            <summary>
+            Gets the maximum allowed length of the collection or string.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Shared.Data.Validation.LengthAttribute.Exclusive">
+            <summary>
+            Gets or sets a value indicating whether the length validation should exclude the <see cref="P:Microsoft.Shared.Data.Validation.LengthAttribute.MinimumLength"/> and <see cref="P:Microsoft.Shared.Data.Validation.LengthAttribute.MaximumLength"/> values.
+            </summary>
+            <value>
+            The default value is <c>false</c>.
+            </value>
+        </member>
+        <member name="M:Microsoft.Shared.Data.Validation.LengthAttribute.#ctor(System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Shared.Data.Validation.LengthAttribute"/> class.
+            </summary>
+            <param name="minimumLength">
+            The minimum allowable length of array/string data.
+            Value must be greater than or equal to zero.
+            </param>
+        </member>
+        <member name="M:Microsoft.Shared.Data.Validation.LengthAttribute.#ctor(System.Int32,System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Shared.Data.Validation.LengthAttribute"/> class.
+            </summary>
+            <param name="minimumLength">
+            The minimum allowable length of array/string data.
+            Value must be greater than or equal to zero.
+            </param>
+            <param name="maximumLength">
+            The maximum allowable length of array/string data.
+            Value must be greater than or equal to zero.
+            </param>
+        </member>
+        <member name="M:Microsoft.Shared.Data.Validation.LengthAttribute.IsValid(System.Object,System.ComponentModel.DataAnnotations.ValidationContext)">
+            <summary>
+            Validates that a given value is in range.
+            </summary>
+            <remarks>
+            This method returns <c>true</c> if the <paramref name = "value" /> is <see langword="null"/>.
+            It is assumed the <see cref = "T:System.ComponentModel.DataAnnotations.RequiredAttribute" /> is used if the value may not be <see langword="null"/>.
+            </remarks>
+            <param name="value">The value to validate.</param>
+            <param name="validationContext">Additional context for this validation.</param>
+            <returns>A value indicating success or failure.</returns>
+            <exception cref="T:System.ArgumentOutOfRangeException"><see cref="P:Microsoft.Shared.Data.Validation.LengthAttribute.MinimumLength"/> is less than zero or if it is greater than <see cref="P:Microsoft.Shared.Data.Validation.LengthAttribute.MaximumLength"/>.</exception>
+            <exception cref="T:System.InvalidOperationException">The validated type is not supported.</exception>
+        </member>
+        <member name="T:Microsoft.Shared.Data.Validation.TimeSpanAttribute">
+            <summary>
+            Provides boundary validation for <see cref="T:System.TimeSpan"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Shared.Data.Validation.TimeSpanAttribute.Minimum">
+            <summary>
+            Gets the lower bound for time span.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Shared.Data.Validation.TimeSpanAttribute.Maximum">
+            <summary>
+            Gets the upper bound for time span.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Shared.Data.Validation.TimeSpanAttribute.Exclusive">
+            <summary>
+            Gets or sets a value indicating whether the time span validation should exclude the minimum and maximum values.
+            </summary>
+            <value>
+            The default value is <c>false</c>.
+            </value>
+        </member>
+        <member name="M:Microsoft.Shared.Data.Validation.TimeSpanAttribute.#ctor(System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Shared.Data.Validation.TimeSpanAttribute"/> class.
+            </summary>
+            <param name="minMs">Minimum in milliseconds.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Data.Validation.TimeSpanAttribute.#ctor(System.Int32,System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Shared.Data.Validation.TimeSpanAttribute"/> class.
+            </summary>
+            <param name="minMs">Minimum in milliseconds.</param>
+            <param name="maxMs">Maximum in milliseconds.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Data.Validation.TimeSpanAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Shared.Data.Validation.TimeSpanAttribute"/> class.
+            </summary>
+            <param name="min">Minimum represented as time span string.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Data.Validation.TimeSpanAttribute.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Shared.Data.Validation.TimeSpanAttribute"/> class.
+            </summary>
+            <param name="min">Minimum represented as time span string.</param>
+            <param name="max">Maximum represented as time span string.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Data.Validation.TimeSpanAttribute.IsValid(System.Object,System.ComponentModel.DataAnnotations.ValidationContext)">
+            <summary>
+            Validates that a given value represents an in-range TimeSpan value.
+            </summary>
+            <param name="value">The value to validate.</param>
+            <param name="validationContext">Additional context for this validation.</param>
+            <returns>A value indicating success or failure.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Buffering.DeserializedLogRecord">
+            <summary>
+            Represents a log record deserialized from somewhere, such as buffer.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Buffering.DeserializedLogRecord.#ctor(System.DateTimeOffset,Microsoft.Extensions.Logging.LogLevel,Microsoft.Extensions.Logging.EventId,System.String,System.String,System.Collections.Generic.IReadOnlyList{System.Collections.Generic.KeyValuePair{System.String,System.Object}})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Buffering.DeserializedLogRecord"/> class.
+            </summary>
+            <param name="timestamp">The time when the log record was first created.</param>
+            <param name="logLevel">Logging severity level.</param>
+            <param name="eventId">Event ID.</param>
+            <param name="exception">An exception string for this record.</param>
+            <param name="formattedMessage">The formatted log message.</param>
+            <param name="attributes">The set of name/value pairs associated with the record.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Buffering.DeserializedLogRecord.Timestamp">
+            <inheritdoc/>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Buffering.DeserializedLogRecord.LogLevel">
+            <inheritdoc/>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Buffering.DeserializedLogRecord.EventId">
+            <inheritdoc/>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Buffering.DeserializedLogRecord.Exception">
+            <inheritdoc/>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Buffering.DeserializedLogRecord.FormattedMessage">
+            <inheritdoc/>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Buffering.DeserializedLogRecord.Attributes">
+            <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Buffering.SerializedLogRecord">
+            <summary>
+            Represents a log record that has been serialized for purposes of buffering or similar.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Buffering.SerializedLogRecord.#ctor(Microsoft.Extensions.Logging.LogLevel,Microsoft.Extensions.Logging.EventId,System.DateTimeOffset,System.Collections.Generic.List{System.Collections.Generic.KeyValuePair{System.String,System.Object}},System.String,System.String,System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Buffering.SerializedLogRecord"/> struct.
+            </summary>
+            <param name="logLevel">Logging severity level.</param>
+            <param name="eventId">Event ID.</param>
+            <param name="timestamp">The time when the log record was first created.</param>
+            <param name="attributes">The set of name/value pairs associated with the record.</param>
+            <param name="exceptionMessage">An exception message for this record.</param>
+            <param name="formattedMessage">The formatted log message.</param>
+            <param name="sizeInBytes">The approximate size in bytes of this instance.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Buffering.SerializedLogRecord.LogLevel">
+            <summary>
+            Gets the record's logging severity level.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Buffering.SerializedLogRecord.EventId">
+            <summary>
+            Gets the record's event ID.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Buffering.SerializedLogRecord.Timestamp">
+            <summary>
+            Gets the time when the log record was first created.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Buffering.SerializedLogRecord.Attributes">
+            <summary>
+            Gets the variable set of name/value pairs associated with the record.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Buffering.SerializedLogRecord.Exception">
+            <summary>
+            Gets an exception string for this record.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Buffering.SerializedLogRecord.FormattedMessage">
+            <summary>
+            Gets the formatted log message.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Buffering.SerializedLogRecord.SizeInBytes">
+            <summary>
+            Gets the approximate size of the serialized log record in bytes.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Buffering.GlobalLogBufferingOptions">
+            <summary>
+            The options for global log buffering.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Buffering.GlobalLogBufferingOptions.AutoFlushDuration">
+            <summary>
+            Gets or sets the time to do automatic flushing after manual flushing was triggered.
+            </summary>
+            <remarks>
+            Use this to temporarily suspend buffering after a flush, e.g. in case of an incident you may want all logs to be emitted immediately,
+            so the buffering will be suspended for the <see cref="P:Microsoft.Extensions.Diagnostics.Buffering.GlobalLogBufferingOptions.AutoFlushDuration"/> time.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Buffering.GlobalLogBufferingOptions.MaxLogRecordSizeInBytes">
+            <summary>
+            Gets or sets the maximum size of each individual log record in bytes.
+            </summary>
+            <remarks>
+            If the size of a log record exceeds this limit, it won't be buffered.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Buffering.GlobalLogBufferingOptions.MaxBufferSizeInBytes">
+            <summary>
+            Gets or sets the maximum size of the buffer in bytes.
+            </summary>
+            <remarks>
+            If adding a new log entry would cause the buffer size to exceed this limit,
+            the oldest buffered log records will be dropped to make room.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Buffering.GlobalLogBufferingOptions.Rules">
+            <summary>
+            Gets or sets the collection of <see cref="T:Microsoft.Extensions.Diagnostics.Buffering.LogBufferingFilterRule"/> used for filtering log messages for the purpose of further buffering.
+            </summary>
+            <remarks>
+            If a log entry matches a rule, it will be buffered. Consequently, it will later be emitted when the buffer is flushed.
+            If a log entry does not match any rule, it will be emitted normally.
+            If the buffer size limit is reached, the oldest buffered log entries will be dropped (not emitted!) to make room for new ones.
+            If a log entry size is greater than <see cref="P:Microsoft.Extensions.Diagnostics.Buffering.GlobalLogBufferingOptions.MaxLogRecordSizeInBytes"/>, it will not be buffered and will be emitted normally.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Buffering.GlobalLogBufferingOptionsValidator.Validate(System.String,Microsoft.Extensions.Diagnostics.Buffering.GlobalLogBufferingOptions)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>Validation result.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Buffering.LogBufferingFilterRule">
+            <summary>
+            Defines a rule used to filter log messages for purposes of further buffering.
+            </summary>
+            <remarks>
+            If a log entry matches a rule, it will be buffered. Consequently, it will later be emitted when the buffer is flushed.
+            If a log entry does not match any rule, it will be emitted normally.
+            If the buffer size limit is reached, the oldest buffered log entries will be dropped (not emitted!) to make room for new ones.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Buffering.LogBufferingFilterRule.#ctor(System.String,System.Nullable{Microsoft.Extensions.Logging.LogLevel},System.Nullable{System.Int32},System.String,System.Collections.Generic.IReadOnlyList{System.Collections.Generic.KeyValuePair{System.String,System.Object}})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Buffering.LogBufferingFilterRule"/> class.
+            </summary>
+            <param name="categoryName">The category name to use in this filter rule.</param>
+            <param name="logLevel">The <see cref="P:Microsoft.Extensions.Diagnostics.Buffering.LogBufferingFilterRule.LogLevel"/> to use in this filter rule.</param>
+            <param name="eventId">The event ID to use in this filter rule.</param>
+            <param name="eventName">The event name to use in this filter rule.</param>
+            <param name="attributes">The log state attributes to use in this filter rule.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Buffering.LogBufferingFilterRule.CategoryName">
+            <summary>
+            Gets the logger category name this rule applies to.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Buffering.LogBufferingFilterRule.LogLevel">
+            <summary>
+            Gets the maximum <see cref="P:Microsoft.Extensions.Diagnostics.Buffering.LogBufferingFilterRule.LogLevel"/> of messages this rule applies to.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Buffering.LogBufferingFilterRule.EventId">
+            <summary>
+            Gets the event ID of messages where this rule applies to.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Buffering.LogBufferingFilterRule.EventName">
+            <summary>
+            Gets the name of the event this rule applies to.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Buffering.LogBufferingFilterRule.Attributes">
+            <summary>
+            Gets the log state attributes of messages where this rule applies to.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Buffering.LogBufferingFilterRuleSelector">
+            <summary>
+            Selects the best rule from the list of rules for a given log event.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Enrichment.ApplicationEnricherTags">
+            <summary>
+            Constants used for enrichment tags.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Diagnostics.Enrichment.ApplicationEnricherTags.ApplicationName">
+            <summary>
+            Application name.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Diagnostics.Enrichment.ApplicationEnricherTags.EnvironmentName">
+            <summary>
+            Environment name.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Diagnostics.Enrichment.ApplicationEnricherTags.DeploymentRing">
+            <summary>
+            Deployment ring.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Diagnostics.Enrichment.ApplicationEnricherTags.BuildVersion">
+            <summary>
+            Build version.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Enrichment.ApplicationEnricherTags.DimensionNames">
+            <summary>
+            Gets a list of all dimension names.
+            </summary>
+            <returns>A read-only <see cref="T:System.Collections.Generic.IReadOnlyList`1"/> of all dimension names.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Enrichment.ApplicationLogEnricherOptions">
+            <summary>
+            Options for the application log enricher.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Enrichment.ApplicationLogEnricherOptions.EnvironmentName">
+            <summary>
+            Gets or sets a value indicating whether <see cref="P:Microsoft.Extensions.AmbientMetadata.ApplicationMetadata.EnvironmentName"/> is used for logs enrichment.
+            </summary>
+            <value>
+            The default value is <see langword="true" />.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Enrichment.ApplicationLogEnricherOptions.ApplicationName">
+            <summary>
+            Gets or sets a value indicating whether <see cref="P:Microsoft.Extensions.AmbientMetadata.ApplicationMetadata.ApplicationName"/> is used for logs enrichment.
+            </summary>
+            <value>
+            The default value is <see langword="true" />.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Enrichment.ApplicationLogEnricherOptions.DeploymentRing">
+            <summary>
+            Gets or sets a value indicating whether <see cref="P:Microsoft.Extensions.AmbientMetadata.ApplicationMetadata.DeploymentRing"/> is used for logs enrichment.
+            </summary>
+            <value>
+            The default value is <see langword="false" />.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Enrichment.ApplicationLogEnricherOptions.BuildVersion">
+            <summary>
+            Gets or sets a value indicating whether <see cref="P:Microsoft.Extensions.AmbientMetadata.ApplicationMetadata.BuildVersion"/> is used for logs enrichment.
+            </summary>
+            <value>
+            The default value is <see langword="false" />.
+            </value>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Enrichment.ProcessEnricherTagNames">
+            <summary>
+            Constants used for enrichment tags.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Diagnostics.Enrichment.ProcessEnricherTagNames.ProcessId">
+            <summary>
+            Process ID.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Diagnostics.Enrichment.ProcessEnricherTagNames.ThreadId">
+            <summary>
+            Thread ID.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Enrichment.ProcessEnricherTagNames.DimensionNames">
+            <summary>
+            Gets a list of all dimension names.
+            </summary>
+            <returns>A read-only <see cref="T:System.Collections.Generic.IReadOnlyList`1"/> of all dimension names.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Enrichment.ProcessLogEnricher">
+            <summary>
+            Enriches logs with process information.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Enrichment.ProcessLogEnricherOptions">
+            <summary>
+            Options for the process enricher.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Enrichment.ProcessLogEnricherOptions.ProcessId">
+            <summary>
+            Gets or sets a value indicating whether current process ID is used for log enrichment.
+            </summary>
+            <value>
+            The default value is <see langword="true" />.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Enrichment.ProcessLogEnricherOptions.ThreadId">
+            <summary>
+            Gets or sets a value indicating whether current thread ID is used for log enrichment.
+            </summary>
+            <value>
+            The default value is <see langword="false" />.
+            </value>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Enrichment.StaticProcessLogEnricher">
+            <summary>
+            Enriches logs with process information.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Latency.Internal.CheckpointTracker">
+            <summary>
+            Class that tracks checkpoints.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Internal.CheckpointTracker.#ctor(Microsoft.Extensions.Diagnostics.Latency.Internal.Registry)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Latency.Internal.CheckpointTracker"/> class.
+            </summary>
+            <param name="registry">Registry of checkpoint names.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Internal.CheckpointTracker.TryReset">
+            <summary>
+            Resets the CheckpointTracker.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Internal.CheckpointTracker.Add(Microsoft.Extensions.Diagnostics.Latency.CheckpointToken)">
+            <summary>
+            Add checkpoint for token.
+            </summary>
+            <param name="token">Token for checkpoint.</param>
+            <remarks> If same checkpoint is added more than once, first write wins.</remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.Internal.CheckpointTracker.Checkpoints">
+            <summary>
+            Gets list of checkpoints added.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Latency.Internal.LatencyContext">
+            <summary>
+            Implementation of <see cref="T:Microsoft.Extensions.Diagnostics.Latency.ILatencyContext"/>.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Latency.Internal.LatencyContextPool">
+            <summary>
+            Object pools for instruments used for latency measurement.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Internal.LatencyContextPool.#ctor(Microsoft.Extensions.Diagnostics.Latency.Internal.LatencyInstrumentProvider)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Latency.Internal.LatencyContextPool"/> class.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Latency.Internal.LatencyContextPool.LatencyContextPolicy">
+            <summary>
+            Object pool policy for <see cref="T:Microsoft.Extensions.Diagnostics.Latency.Internal.LatencyContextPool"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Internal.LatencyContextPool.LatencyContextPolicy.#ctor(Microsoft.Extensions.Diagnostics.Latency.Internal.LatencyContextPool)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Latency.Internal.LatencyContextPool.LatencyContextPolicy"/> class.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Internal.LatencyContextPool.LatencyContextPolicy.Create">
+            <summary>
+            Creates the object.
+            </summary>
+            <returns>Created object.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Internal.LatencyContextPool.LatencyContextPolicy.Return(Microsoft.Extensions.Diagnostics.Latency.Internal.LatencyContext)">
+            <summary>
+            Return object to the pool.
+            </summary>
+            <param name="obj">Object to be returned.</param>
+            <returns>True, indicating object is to be returned.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Latency.Internal.LatencyContextProvider">
+            <summary>
+            Implementation of <see cref="T:Microsoft.Extensions.Diagnostics.Latency.ILatencyContextProvider"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Internal.LatencyContextProvider.#ctor(Microsoft.Extensions.Diagnostics.Latency.Internal.LatencyInstrumentProvider)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Latency.Internal.LatencyContextProvider"/> class.
+            </summary>
+            <param name="latencyInstrumentProvider">Latency instrument provider.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Latency.Internal.LatencyContextRegistrySet">
+            <summary>
+            Class that holds registry of names used with <see cref="T:Microsoft.Extensions.Diagnostics.Latency.Internal.LatencyContext"/> APIs.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.Internal.LatencyContextRegistrySet.CheckpointNameRegistry">
+            <summary>
+            Gets the registry of checkpoint names.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.Internal.LatencyContextRegistrySet.TagNameRegistry">
+            <summary>
+            Gets the registry of tag names.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.Internal.LatencyContextRegistrySet.MeasureNameRegistry">
+            <summary>
+            Gets the registry of counter names.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Internal.MeasureTracker.#ctor(Microsoft.Extensions.Diagnostics.Latency.Internal.Registry)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Latency.Internal.MeasureTracker"/> class.
+            </summary>
+            <param name="registry">Registry of measure names.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Internal.MeasureTracker.TryReset">
+            <summary>
+            Resets the MeasureTracker.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Internal.MeasureTracker.AddLong(Microsoft.Extensions.Diagnostics.Latency.MeasureToken,System.Int64)">
+            <summary>
+            Add value to measure.
+            </summary>
+            <param name="token">Token for measure.</param>
+            <param name="value">Value of measure.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Internal.MeasureTracker.SetLong(Microsoft.Extensions.Diagnostics.Latency.MeasureToken,System.Int64)">
+            <summary>
+            Set value of measure.
+            </summary>
+            <param name="token">Token for measure.</param>
+            <param name="value">Value of measure.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Internal.MeasureTracker.GetPositionOfMeasure(Microsoft.Extensions.Diagnostics.Latency.MeasureToken)">
+            <summary>
+            Gets the position at which a measure has been added.
+            </summary>
+            <param name="measureToken">Token for the measure.</param>
+            <returns>Position of the measure.</returns>
+            <remarks> This function uses _measurePosition as a dictionary. The key is
+            the order of the name in the registry. The value is the position in the tracking arrays,
+            _measureNames and _measureValues. </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.Internal.MeasureTracker.Measures">
+            <summary>
+            Gets the list of measures added.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Latency.Internal.Registry">
+            <summary>
+            Provides registry functionality.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Internal.Registry.#ctor(System.String[],System.Boolean)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Latency.Internal.Registry"/> class.
+            </summary>
+            <param name="keys">Set of keys to be registered.</param>
+            <param name="throwOnUnregisteredKeyLookup">Throws when getting order for unregistered keys if true.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.Internal.Registry.OrderedKeys">
+            <summary>
+            Gets the list of registered keys, ordered using default comparator.
+            </summary>
+            <returns>List of ordered keys.</returns>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.Internal.Registry.KeyCount">
+            <summary>
+            Gets the number of registered keys.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Internal.Registry.GetRegisteredKeyIndex(System.String)">
+            <summary>
+            Gets the zero-based order of registered key.
+            </summary>
+            <param name="key">The key to get order for.</param>
+            <returns>Index of key. Returns -1 if not registered.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Internal.ResetOnGetObjectPool`1.#ctor(Microsoft.Extensions.ObjectPool.PooledObjectPolicy{`0})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Latency.Internal.ResetOnGetObjectPool`1"/> class.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Latency.Internal.TagCollection">
+            <summary>
+            Class used to add tags.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Internal.TagCollection.#ctor(Microsoft.Extensions.Diagnostics.Latency.Internal.Registry)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Latency.Internal.TagCollection"/> class.
+            </summary>
+            <param name="registry">Registry of tag names.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Internal.TagCollection.TryReset">
+            <summary>
+            Resets <see cref="T:Microsoft.Extensions.Diagnostics.Latency.Internal.TagCollection"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Internal.TagCollection.Set(Microsoft.Extensions.Diagnostics.Latency.TagToken,System.String)">
+            <summary>
+            Set value of the tag.
+            </summary>
+            <param name="token">Token for the tag.</param>
+            <param name="value">Value of the tag.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.Internal.TagCollection.Tags">
+            <summary>
+            Gets the list of tags that have been added.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Latency.LatencyConsoleOptions">
+            <summary>
+            Options for console latency data exporter.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.LatencyConsoleOptions.OutputCheckpoints">
+            <summary>
+            Gets or sets a value indicating whether to emit latency checkpoint information to the console.
+            </summary>
+            <value>
+            Defaults to <see langword="true" />.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.LatencyConsoleOptions.OutputTags">
+            <summary>
+            Gets or sets a value indicating whether to emit latency tag information to the console.
+            </summary>
+            <value>
+            Defaults to <see langword="true" />.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.LatencyConsoleOptions.OutputMeasures">
+            <summary>
+            Gets or sets a value indicating whether to emit latency measure information to the console.
+            </summary>
+            <value>
+            Defaults to <see langword="true" />.
+            </value>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Latency.LatencyContextOptions">
+            <summary>
+            Options for LatencyContext.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.LatencyContextOptions.ThrowOnUnregisteredNames">
+            <summary>
+            Gets or sets a value indicating whether an exception is thrown when using unregistered names.
+            </summary>
+            <value>
+            <see langword="true" /> if the ILatencyContext APIs throws when using unregistered names. <see langword="false" /> if it no-ops. The default value is <see langword="false" />.
+            </value>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Sampling.ILogSamplingFilterRule">
+            <summary>
+            Represents a rule used for filtering log messages for purposes of log sampling and buffering.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Sampling.ILogSamplingFilterRule.CategoryName">
+            <summary>
+            Gets the logger category this rule applies to.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Sampling.ILogSamplingFilterRule.LogLevel">
+            <summary>
+            Gets the maximum <see cref="P:Microsoft.Extensions.Diagnostics.Sampling.ILogSamplingFilterRule.LogLevel"/> of messages.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Sampling.ILogSamplingFilterRule.EventId">
+            <summary>
+            Gets the event ID this rule applies to.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Sampling.ILogSamplingFilterRule.EventName">
+            <summary>
+            Gets the name of the event this rule applies to.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Sampling.RandomProbabilisticSampler">
+            <summary>
+            Randomly samples logs according to the specified probability.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Sampling.RandomProbabilisticSampler.#ctor(Microsoft.Extensions.Diagnostics.Sampling.LogSamplingRuleSelector{Microsoft.Extensions.Diagnostics.Sampling.RandomProbabilisticSamplerFilterRule},Microsoft.Extensions.Options.IOptionsMonitor{Microsoft.Extensions.Diagnostics.Sampling.RandomProbabilisticSamplerOptions})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Sampling.RandomProbabilisticSampler"/> class.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Sampling.RandomProbabilisticSampler.ShouldSample``1(Microsoft.Extensions.Logging.Abstractions.LogEntry{``0}@)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Sampling.RandomProbabilisticSamplerFilterRule">
+            <summary>
+            Defines a rule used to filter log messages for purposes of sampling.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Sampling.RandomProbabilisticSamplerFilterRule.#ctor(System.Double,System.String,System.Nullable{Microsoft.Extensions.Logging.LogLevel},System.Nullable{System.Int32},System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Sampling.RandomProbabilisticSamplerFilterRule"/> class.
+            </summary>
+            <param name="probability">The probability for sampling in if this rule applies.</param>
+            <param name="categoryName">The category name to use in this filter rule.</param>
+            <param name="logLevel">The <see cref="P:Microsoft.Extensions.Diagnostics.Sampling.RandomProbabilisticSamplerFilterRule.LogLevel"/> to use in this filter rule.</param>
+            <param name="eventId">The event ID to use in this filter rule.</param>
+            <param name="eventName">The event name to use in this filter rule.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Sampling.RandomProbabilisticSamplerFilterRule.Probability">
+            <summary>
+            Gets the probability for sampling in if this rule applies.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Sampling.RandomProbabilisticSamplerFilterRule.CategoryName">
+            <inheritdoc/>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Sampling.RandomProbabilisticSamplerFilterRule.LogLevel">
+            <inheritdoc/>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Sampling.RandomProbabilisticSamplerFilterRule.EventId">
+            <inheritdoc/>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Sampling.RandomProbabilisticSamplerFilterRule.EventName">
+            <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Sampling.RandomProbabilisticSamplerOptions">
+            <summary>
+            The options for the Random Probabilistic sampler.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Sampling.RandomProbabilisticSamplerOptions.Rules">
+            <summary>
+            Gets or sets the collection of <see cref="T:Microsoft.Extensions.Diagnostics.Sampling.RandomProbabilisticSamplerFilterRule"/> used for filtering log messages.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Sampling.RandomProbabilisticSamplerOptionsValidator.Validate(System.String,Microsoft.Extensions.Diagnostics.Sampling.RandomProbabilisticSamplerOptions)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>Validation result.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Sampling.__RandomProbabilisticSamplerFilterRuleValidator__.Validate(System.String,Microsoft.Extensions.Diagnostics.Sampling.RandomProbabilisticSamplerFilterRule)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>Validation result.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.GlobalBufferLoggingBuilderExtensions">
+            <summary>
+            Lets you register log buffering in a dependency injection container.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.GlobalBufferLoggingBuilderExtensions.AddGlobalBuffer(Microsoft.Extensions.Logging.ILoggingBuilder,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Adds global log buffering to the logging infrastructure.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder" />.</param>
+            <param name="configuration">The <see cref="T:Microsoft.Extensions.Configuration.IConfiguration" /> to add.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+            <remarks>
+            Matched logs will be buffered and can optionally be flushed and emitted.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.GlobalBufferLoggingBuilderExtensions.AddGlobalBuffer(Microsoft.Extensions.Logging.ILoggingBuilder,System.Action{Microsoft.Extensions.Diagnostics.Buffering.GlobalLogBufferingOptions})">
+            <summary>
+            Adds global log buffering to the logging infrastructure.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder" />.</param>
+            <param name="configure">Configure buffer options.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+            <remarks>
+            Matched logs will be buffered and can optionally be flushed and emitted.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.GlobalBufferLoggingBuilderExtensions.AddGlobalBuffer(Microsoft.Extensions.Logging.ILoggingBuilder,System.Nullable{Microsoft.Extensions.Logging.LogLevel})">
+            <summary>
+            Adds global log buffering to the logging infrastructure.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder" />.</param>
+            <param name="logLevel">The log level (and below) to apply the buffer to.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+            <remarks>
+            Matched logs will be buffered and can optionally be flushed and emitted.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.ExtendedLogger.EnrichmentTagCollector">
+            <summary>
+            Used to collect tags in the modern logging path.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ExtendedLogger.EnrichmentTagCollector.#ctor(System.Collections.Generic.List{System.Collections.Generic.KeyValuePair{System.String,System.Object}})">
+            <summary>
+            Used to collect tags in the modern logging path.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.ExtendedLogger.LegacyTagJoiner">
+            <summary>
+            Used to collect tags in the legacy logging path.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.ExtendedLogger.ModernTagJoiner">
+            <summary>
+            Used to collect tags in the modern logging path.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.ExtendedLoggerFactory.Config">
+            <summary>
+            Gets the current config state that loggers should use.
+            </summary>
+            <remarks>
+            This gets replaced whenever option monitors trigger. The loggers should sample this value
+            and use it for an entire call to ILogger.Log so as to get a consistent view of config for the
+            execution span of the function.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.LoggerFactoryScopeProvider">
+            <summary>
+            Default implementation of <see cref="T:Microsoft.Extensions.Logging.IExternalScopeProvider"/>
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.NullScope">
+            <summary>
+            An empty scope without any logic
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.NullScope.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.JustInTimeRedactor">
+            <summary>
+            Performs delayed redaction in order to avoid allocating intermediate strings and enabling redacting from span to span when possible.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.LoggerEnrichmentOptions">
+            <summary>
+            Options for logging enrichment features.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.LoggerEnrichmentOptions.CaptureStackTraces">
+            <summary>
+            Gets or sets a value indicating whether to include stack traces when an exception is logged.
+            </summary>
+            <value>
+            The default value is <see langword="false"/>.
+            </value>
+            <remarks>
+            When set to <see langword="true"/> and exceptions are logged, the logger will add exception stack trace
+            with inner exception as a separate key-value pair with key 'stackTrace'. The maximum length of the column
+            defaults to 4096 characters and can be modified by setting the <see cref="P:Microsoft.Extensions.Logging.LoggerEnrichmentOptions.MaxStackTraceLength"/> property.
+            The stack trace beyond the current limit will be truncated.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.LoggerEnrichmentOptions.UseFileInfoForStackTraces">
+             <summary>
+             Gets or sets a value indicating whether to consult debugging files (PDB files) when producing stack traces.
+             </summary>
+             <remarks>
+             Reading available debugging files produces richer stack traces, but can cost a substantial amount of time
+             to generate. As a result, this option should only be turned on in development scenarios, not for production use.
+            
+             This property has no effect if <see cref="P:Microsoft.Extensions.Logging.LoggerEnrichmentOptions.CaptureStackTraces"/> is <see langword="false"/>.
+             
+             This defaults to <see langword="false"/>.
+             </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.LoggerEnrichmentOptions.IncludeExceptionMessage">
+            <summary>
+            Gets or sets a value indicating whether to include the exception message when an exception is logged.
+            </summary>
+            <value>
+            This defaults to <see langword="false"/>.
+            </value>
+            <remarks>
+            When both <see cref="P:Microsoft.Extensions.Logging.LoggerEnrichmentOptions.IncludeExceptionMessage"/> and <see cref="P:Microsoft.Extensions.Logging.LoggerEnrichmentOptions.CaptureStackTraces"/> are set to
+            <see langword="true"/> exception messages are also included in stack traces.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.LoggerEnrichmentOptions.MaxStackTraceLength">
+             <summary>
+             Gets or sets the maximum stack trace length to emit for a given log record.
+             </summary>
+             <value>
+             The default value is 4096.
+             </value>
+             <remarks>
+             When set to a value less than 2 KB or greater than 32 KB, an exception will be thrown.
+            
+             This property has no effect if <see cref="P:Microsoft.Extensions.Logging.LoggerEnrichmentOptions.CaptureStackTraces"/> is <see langword="false"/>.
+             </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.LoggerEnrichmentOptionsValidator.Validate(System.String,Microsoft.Extensions.Logging.LoggerEnrichmentOptions)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>Validation result.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.LoggerRedactionOptions">
+            <summary>
+            Options to control redaction.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.LoggerRedactionOptions.ApplyDiscriminator">
+            <summary>
+            Gets or sets a value indicating whether a discriminator value is applied to each redacted value.
+            </summary>
+            <value>
+            Defaults to <see langword="true" />.
+            </value>
+            <remarks>
+            The discriminator is used to constrain the ability to correlate data between pieces of state. When this property is <see langword="true" />,
+            the tag name of each value is included as part of the redacted text, generally making it impossible to correlate data between
+            tags of different names.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.LoggingEnrichmentExtensions">
+            <summary>
+            Extensions for configuring logging enrichment features.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.LoggingEnrichmentExtensions.EnableEnrichment(Microsoft.Extensions.Logging.ILoggingBuilder)">
+            <summary>
+            Enables enrichment functionality within the logging infrastructure.
+            </summary>
+            <param name="builder">The dependency injection container to add logging to.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.LoggingEnrichmentExtensions.EnableEnrichment(Microsoft.Extensions.Logging.ILoggingBuilder,System.Action{Microsoft.Extensions.Logging.LoggerEnrichmentOptions})">
+            <summary>
+            Enables enrichment functionality within the logging infrastructure.
+            </summary>
+            <param name="builder">The dependency injection container to add logging to.</param>
+            <param name="configure">Delegate the fine-tune the options.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.LoggingEnrichmentExtensions.EnableEnrichment(Microsoft.Extensions.Logging.ILoggingBuilder,Microsoft.Extensions.Configuration.IConfigurationSection)">
+            <summary>
+            Enables enrichment functionality within the logging infrastructure.
+            </summary>
+            <param name="builder">The dependency injection container to add logging to.</param>
+            <param name="section">Configuration section that contains <see cref="T:Microsoft.Extensions.Logging.LoggerEnrichmentOptions"/>.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.LoggingEnrichmentExtensions.AddExtendedLoggerFeactory(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds a default implementation of the <see cref="T:Microsoft.Extensions.Logging.ILoggerFactory"/> to the service collection.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" />.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.LoggingRedactionExtensions">
+            <summary>
+            Extensions for configuring logging redaction features.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.LoggingRedactionExtensions.EnableRedaction(Microsoft.Extensions.Logging.ILoggingBuilder)">
+            <summary>
+            Enables redaction functionality within the logging infrastructure.
+            </summary>
+            <param name="builder">The dependency injection container to add logging to.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.LoggingRedactionExtensions.EnableRedaction(Microsoft.Extensions.Logging.ILoggingBuilder,System.Action{Microsoft.Extensions.Logging.LoggerRedactionOptions})">
+            <summary>
+            Enables redaction functionality within the logging infrastructure.
+            </summary>
+            <param name="builder">The dependency injection container to add logging to.</param>
+            <param name="configure">Delegate the fine-tune the options.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.LoggingRedactionExtensions.EnableRedaction(Microsoft.Extensions.Logging.ILoggingBuilder,Microsoft.Extensions.Configuration.IConfigurationSection)">
+            <summary>
+            Enables redaction functionality within the logging infrastructure.
+            </summary>
+            <param name="builder">The dependency injection container to add logging to.</param>
+            <param name="section">Configuration section that contains <see cref="T:Microsoft.Extensions.Logging.LoggerRedactionOptions"/>.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.SamplingLoggerBuilderExtensions">
+            <summary>
+            Extensions for configuring logging sampling.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.SamplingLoggerBuilderExtensions.AddTraceBasedSampler(Microsoft.Extensions.Logging.ILoggingBuilder)">
+            <summary>
+            Adds Trace-based logging sampler to the logging infrastructure.
+            </summary>
+            <param name="builder">The dependency injection container to add logging to.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+            <remarks>Sampling decisions for logs match exactly the sampling decisions for the underlying <see cref="T:System.Diagnostics.Activity"/>.
+            You may want to configure Tracing Sampling separately as part of OpenTelemetry .NET.</remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.SamplingLoggerBuilderExtensions.AddRandomProbabilisticSampler(Microsoft.Extensions.Logging.ILoggingBuilder,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Adds Random Probabilistic logging sampler to the logging infrastructure.
+            </summary>
+            <param name="builder">The dependency injection container to add logging to.</param>
+            <param name="configuration">The <see cref="T:Microsoft.Extensions.Configuration.IConfiguration" /> to add.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+            <remarks>
+            Matched logs will be randomly sampled according to the configured probability.
+            Higher the probability value, higher is the probability of a given log record to be sampled in.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.SamplingLoggerBuilderExtensions.AddRandomProbabilisticSampler(Microsoft.Extensions.Logging.ILoggingBuilder,System.Action{Microsoft.Extensions.Diagnostics.Sampling.RandomProbabilisticSamplerOptions})">
+            <summary>
+            Adds Random Probabilistic logging sampler to the logging infrastructure.
+            </summary>
+            <param name="builder">The dependency injection container to add logging to.</param>
+            <param name="configure">The <see cref="T:Microsoft.Extensions.Diagnostics.Sampling.RandomProbabilisticSamplerOptions"/> configuration delegate.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> or <paramref name="configure"/> is <see langword="null"/>.</exception>
+            <remarks>
+            Matched logs will be randmoly sampled according to the configured probability.
+            Higher the probability value, higher is the probability of a given log record to be sampled in.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.SamplingLoggerBuilderExtensions.AddRandomProbabilisticSampler(Microsoft.Extensions.Logging.ILoggingBuilder,System.Double,System.Nullable{Microsoft.Extensions.Logging.LogLevel})">
+            <summary>
+            Adds Random Probabilistic logging sampler to the logging infrastructure.
+            </summary>
+            <param name="builder">The dependency injection container to add logging to.</param>
+            <param name="probability">Probability from 0.0 to 1.0.</param>
+            <param name="level">The log level (and below) to apply the sampler to.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="probability"/> is less than 0 or greater than 1.</exception>
+            <remarks>
+            Matched logs will be randomly sampled according to the configured <paramref name="probability"/>.
+            Higher the probability value, higher is the probability of a given log record to be sampled in.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.SamplingLoggerBuilderExtensions.AddSampler``1(Microsoft.Extensions.Logging.ILoggingBuilder)">
+            <summary>
+            Adds a logging sampler type to the logging infrastructure.
+            </summary>
+            <typeparam name="T">Logging sampler type.</typeparam>
+            <param name="builder">The dependency injection container to add logging to.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.SamplingLoggerBuilderExtensions.AddSampler(Microsoft.Extensions.Logging.ILoggingBuilder,Microsoft.Extensions.Logging.LoggingSampler)">
+            <summary>
+            Adds a logging sampler instance to the logging infrastructure.
+            </summary>
+            <param name="builder">The dependency injection container to add logging to.</param>
+            <param name="sampler">The sampler instance to add.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="builder"/> or <paramref name="sampler"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.ApplicationEnricherServiceCollectionExtensions">
+            <summary>
+            Provides extension methods for setting up the service enrichers in an <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" />.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ApplicationEnricherServiceCollectionExtensions.AddServiceLogEnricher(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds an instance of the service enricher to the <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the service enricher to.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ApplicationEnricherServiceCollectionExtensions.AddServiceLogEnricher(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Microsoft.Extensions.Diagnostics.Enrichment.ApplicationLogEnricherOptions})">
+            <summary>
+            Adds an instance of the service enricher to the <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the service enricher to.</param>
+            <param name="configure">The <see cref="T:Microsoft.Extensions.Diagnostics.Enrichment.ApplicationLogEnricherOptions"/> configuration delegate.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+            <exception cref="T:System.ArgumentNullException">Any of the arguments is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ApplicationEnricherServiceCollectionExtensions.AddServiceLogEnricher(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfigurationSection)">
+            <summary>
+            Adds an instance of the service enricher to the <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the service enricher to.</param>
+            <param name="section">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationSection"/> to use for configuring <see cref="T:Microsoft.Extensions.Diagnostics.Enrichment.ApplicationLogEnricherOptions"/> in the service enricher.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+            <exception cref="T:System.ArgumentNullException">Any of the arguments is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ApplicationEnricherServiceCollectionExtensions.AddApplicationLogEnricher(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds an instance of the application enricher to the <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the application enricher to.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ApplicationEnricherServiceCollectionExtensions.AddApplicationLogEnricher(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Microsoft.Extensions.Diagnostics.Enrichment.ApplicationLogEnricherOptions})">
+            <summary>
+            Adds an instance of the application enricher to the <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the application enricher to.</param>
+            <param name="configure">The <see cref="T:Microsoft.Extensions.Diagnostics.Enrichment.ApplicationLogEnricherOptions"/> configuration delegate.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+            <exception cref="T:System.ArgumentNullException">Any of the arguments is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ApplicationEnricherServiceCollectionExtensions.AddApplicationLogEnricher(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfigurationSection)">
+            <summary>
+            Adds an instance of the application enricher to the <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the application enricher to.</param>
+            <param name="section">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationSection"/> to use for configuring <see cref="T:Microsoft.Extensions.Diagnostics.Enrichment.ApplicationLogEnricherOptions"/> in the application enricher.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+            <exception cref="T:System.ArgumentNullException">Any of the arguments is <see langword="null"/>.</exception>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.ProcessEnricherServiceCollectionExtensions">
+            <summary>
+            Provides extension methods for setting up Process enrichers in an <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" />.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ProcessEnricherServiceCollectionExtensions.AddProcessLogEnricher(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds an instance of the process enricher to the <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the process enricher to.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="services"/> is <see langword="null" />.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ProcessEnricherServiceCollectionExtensions.AddProcessLogEnricher(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Microsoft.Extensions.Diagnostics.Enrichment.ProcessLogEnricherOptions})">
+            <summary>
+            Adds an instance of the process enricher to the <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the process enricher to.</param>
+            <param name="configure">The <see cref="T:Microsoft.Extensions.Diagnostics.Enrichment.ProcessLogEnricherOptions"/> configuration delegate.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+            <exception cref="T:System.ArgumentNullException">Any of the arguments is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ProcessEnricherServiceCollectionExtensions.AddProcessLogEnricher(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfigurationSection)">
+            <summary>
+            Adds an instance of the host enricher to the <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the process enricher to.</param>
+            <param name="section">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationSection"/> to use for configuring <see cref="T:Microsoft.Extensions.Diagnostics.Enrichment.ProcessLogEnricherOptions"/> in the process enricher.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+            <exception cref="T:System.ArgumentNullException">Any of the arguments is <see langword="null"/>.</exception>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.LatencyConsoleExtensions">
+            <summary>
+            Extensions to add console latency data exporter.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.LatencyConsoleExtensions.AddConsoleLatencyDataExporter(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Add latency data exporter for the console.
+            </summary>
+            <param name="services">Dependency injection container.</param>
+            <returns>The value of <paramref name="services" />.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.LatencyConsoleExtensions.AddConsoleLatencyDataExporter(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Microsoft.Extensions.Diagnostics.Latency.LatencyConsoleOptions})">
+            <summary>
+            Add latency data exporter for the console.
+            </summary>
+            <param name="services">Dependency injection container.</param>
+            <param name="configure"><see cref="T:Microsoft.Extensions.Diagnostics.Latency.LatencyConsoleOptions"/> configuration delegate.</param>
+            <returns>The value of <paramref name="services" />.</returns>
+            <exception cref="T:System.ArgumentNullException">Either <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.LatencyConsoleExtensions.AddConsoleLatencyDataExporter(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfigurationSection)">
+            <summary>
+            Add latency data exporter for the console.
+            </summary>
+            <param name="services">Dependency injection container.</param>
+            <param name="section">Configuration of <see cref="T:Microsoft.Extensions.Diagnostics.Latency.LatencyConsoleOptions"/>.</param>
+            <returns>The value of <paramref name="services" />.</returns>
+            <exception cref="T:System.ArgumentNullException">Either <paramref name="services"/> or <paramref name="section"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.LatencyContextExtensions">
+            <summary>
+            Extensions to add latency context.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.LatencyContextExtensions.AddLatencyContext(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds latency context.
+            </summary>
+            <param name="services">The dependency injection container.</param>
+            <returns>The value of <paramref name="services" />.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.LatencyContextExtensions.AddLatencyContext(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Microsoft.Extensions.Diagnostics.Latency.LatencyContextOptions})">
+            <summary>
+            Adds latency context.
+            </summary>
+            <param name="services">The dependency injection container.</param>
+            <param name="configure">The <see cref="T:Microsoft.Extensions.Diagnostics.Latency.LatencyContextOptions"/> configuration delegate.</param>
+            <returns>The value of <paramref name="services" />.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.LatencyContextExtensions.AddLatencyContext(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfigurationSection)">
+            <summary>
+            Adds latency context.
+            </summary>
+            <param name="services">The dependency injection container.</param>
+            <param name="section">The configuration of <see cref="T:Microsoft.Extensions.Diagnostics.Latency.LatencyContextOptions"/>.</param>
+            <returns>The value of <paramref name="services" />.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Diagnostics.HttpRouteParameter">
+            <summary>
+            Struct to hold metadata about a route parameter.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Diagnostics.HttpRouteParameter.#ctor(System.String,System.String,System.Boolean)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Http.Diagnostics.HttpRouteParameter"/> struct.
+            </summary>
+            <param name="name">parameter name.</param>
+            <param name="value">parameter value.</param>
+            <param name="isRedacted">conveys if the parameter value is redacted.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Diagnostics.HttpRouteParameter.Name">
+            <summary>
+            Gets parameter name.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Diagnostics.HttpRouteParameter.Value">
+            <summary>
+            Gets parameter value.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Diagnostics.HttpRouteParameter.IsRedacted">
+            <summary>
+            Gets a value indicating whether the parameter value is redacted.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Diagnostics.IHttpRouteFormatter">
+            <summary>
+            Http request route formatter.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Diagnostics.IHttpRouteFormatter.Format(System.String,System.String,Microsoft.Extensions.Http.Diagnostics.HttpRouteParameterRedactionMode,System.Collections.Generic.IReadOnlyDictionary{System.String,Microsoft.Extensions.Compliance.Classification.DataClassification})">
+            <summary>
+            Format the http path using the route template with sensitive parameters redacted.
+            </summary>
+            <param name="httpRoute">Http request route template.</param>
+            <param name="httpPath">Http request's absolute path.</param>
+            <param name="redactionMode">Strategy to decide how parameters are redacted.</param>
+            <param name="parametersToRedact">Dictionary of parameters with their data classification that needs to be redacted.</param>
+            <returns>Returns formatted path with sensitive parameter values redacted.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Diagnostics.IHttpRouteFormatter.Format(Microsoft.Extensions.Http.Diagnostics.ParsedRouteSegments@,System.String,Microsoft.Extensions.Http.Diagnostics.HttpRouteParameterRedactionMode,System.Collections.Generic.IReadOnlyDictionary{System.String,Microsoft.Extensions.Compliance.Classification.DataClassification})">
+            <summary>
+            Format the http path using the route template with sensitive parameters redacted.
+            </summary>
+            <param name="routeSegments">Http request's route segments.</param>
+            <param name="httpPath">Http request's absolute path.</param>
+            <param name="redactionMode">Strategy to decide how parameters are redacted.</param>
+            <param name="parametersToRedact">Dictionary of parameters with their data classification that needs to be redacted.</param>
+            <returns>Returns formatted path with sensitive parameter values redacted.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Diagnostics.IHttpRouteParser">
+            <summary>
+            Http request route parser.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Diagnostics.IHttpRouteParser.ParseRoute(System.String)">
+            <summary>
+            Parses http route and breaks it into text and parameter segments.
+            </summary>
+            <param name="httpRoute">Http request's route template.</param>
+            <returns>Returns text and parameter segments of route.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Diagnostics.IHttpRouteParser.TryExtractParameters(System.String,Microsoft.Extensions.Http.Diagnostics.ParsedRouteSegments@,Microsoft.Extensions.Http.Diagnostics.HttpRouteParameterRedactionMode,System.Collections.Generic.IReadOnlyDictionary{System.String,Microsoft.Extensions.Compliance.Classification.DataClassification},Microsoft.Extensions.Http.Diagnostics.HttpRouteParameter[]@)">
+            <summary>
+            Extract parameters values from the http request path.
+            </summary>
+            <param name="httpPath">Http request's absolute path.</param>
+            <param name="routeSegments">Route segments containing text and parameter segments of the route.</param>
+            <param name="redactionMode">Strategy to decide how parameters are redacted.</param>
+            <param name="parametersToRedact">Dictionary of parameters with their data classification that needs to be redacted.</param>
+            <param name="httpRouteParameters">Output array where parameters will be stored. Caller must provide the array with enough capacity to hold all parameters in route segment.</param>
+            <returns>Returns true if parameters were extracted successfully, return false otherwise.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Diagnostics.ParsedRouteSegments">
+            <summary>
+            Struct to hold the route segments created after parsing the route.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Diagnostics.ParsedRouteSegments.#ctor(System.String,Microsoft.Extensions.Http.Diagnostics.Segment[])">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Http.Diagnostics.ParsedRouteSegments"/> struct.
+            </summary>
+            <param name="routeTemplate">Route's template.</param>
+            <param name="segments">Array of segments.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Diagnostics.ParsedRouteSegments.RouteTemplate">
+            <summary>
+            Gets the route template.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Diagnostics.ParsedRouteSegments.Segments">
+            <summary>
+            Gets all segments of the route.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Diagnostics.ParsedRouteSegments.ParameterCount">
+            <summary>
+            Gets the count of parameters in the route.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Diagnostics.Segment">
+            <summary>
+            Struct to hold the metadata about a route's segment.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Diagnostics.Segment.#ctor(System.Int32,System.Int32,System.String,System.Boolean,System.String,System.String,System.Boolean)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Http.Diagnostics.Segment"/> struct.
+            </summary>
+            <param name="start">Start index of the segment.</param>
+            <param name="end">End index of the segment.</param>
+            <param name="content">Actual content of the segment.</param>
+            <param name="isParam">If the segment is a param.</param>
+            <param name="paramName">Name of the parameter.</param>
+            <param name="defaultValue">Default value of the parameter.</param>
+            <param name="isCatchAll">If the segment is a catch-all parameter.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Diagnostics.Segment.Start">
+            <summary>
+            Gets start index of the segment.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Diagnostics.Segment.End">
+            <summary>
+            Gets end index of the segment.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Diagnostics.Segment.Content">
+            <summary>
+            Gets content of the segment.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Diagnostics.Segment.IsParam">
+            <summary>
+            Gets a value indicating whether the segment is a parameter.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Diagnostics.Segment.ParamName">
+            <summary>
+            Gets a name of the parameter.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Diagnostics.Segment.DefaultValue">
+            <summary>
+            Gets a default value of the parameter.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Diagnostics.Segment.IsCatchAll">
+            <summary>
+            Gets a value indicating whether the segment is a catch-all parameter.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Diagnostics.TelemetryCommonExtensions">
+            <summary>
+            Extensions for common telemetry utilities.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Diagnostics.TelemetryCommonExtensions.AddHttpRouteProcessor(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds http route processing elements.
+            </summary>
+            <param name="services"><see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> object.</param>
+            <returns>Returns <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> object.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.Get``1(Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>Attempts to bind the configuration instance to a new instance of type T.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.Bind``1(Microsoft.Extensions.Options.OptionsBuilder{``0},Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>Registers a configuration instance which <typeparamref name="TOptions"/> will bind against.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.Bind``1(Microsoft.Extensions.Options.OptionsBuilder{``0},Microsoft.Extensions.Configuration.IConfiguration,System.Action{Microsoft.Extensions.Configuration.BinderOptions})">
+            <summary>Registers a configuration instance which <typeparamref name="TOptions"/> will bind against.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.Configure``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>Registers a configuration instance which TOptions will bind against.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.Configure``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String,Microsoft.Extensions.Configuration.IConfiguration,System.Action{Microsoft.Extensions.Configuration.BinderOptions})">
+            <summary>Registers a configuration instance which TOptions will bind against.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.TryGetConfigurationValue(Microsoft.Extensions.Configuration.IConfiguration,System.String,System.String@)">
+            <summary>Tries to get the configuration value for the specified key.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.ValidateConfigurationKeys(System.Type,System.Lazy{System.Collections.Generic.HashSet{System.String}},Microsoft.Extensions.Configuration.IConfiguration,Microsoft.Extensions.Configuration.BinderOptions)">
+            <summary>If required by the binder options, validates that there are no unknown keys in the input configuration object.</summary>
+        </member>
+    </members>
+</doc>

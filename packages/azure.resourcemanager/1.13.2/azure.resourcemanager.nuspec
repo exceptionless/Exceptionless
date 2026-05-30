@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Azure.ResourceManager</id>
+    <version>1.13.2</version>
+    <authors>Microsoft</authors>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>azureicon.png</icon>
+    <readme>README.md</readme>
+    <projectUrl>https://github.com/Azure/azure-sdk-for-net/blob/Azure.ResourceManager_1.13.2/sdk/resourcemanager/Azure.ResourceManager/README.md</projectUrl>
+    <description>Microsoft Azure Resource Manager client SDK for Azure resources.</description>
+    <releaseNotes>https://github.com/Azure/azure-sdk-for-net/blob/Azure.ResourceManager_1.13.2/sdk/resourcemanager/Azure.ResourceManager/CHANGELOG.md</releaseNotes>
+    <copyright>© Microsoft Corporation. All rights reserved.</copyright>
+    <tags>azure management resource</tags>
+    <repository type="git" url="https://github.com/Azure/azure-sdk-for-net" commit="6e97d639468f04e530a6fab94bbf89b6524e752e" />
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="Azure.Core" version="1.47.1" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="Azure.Core" version="1.47.1" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

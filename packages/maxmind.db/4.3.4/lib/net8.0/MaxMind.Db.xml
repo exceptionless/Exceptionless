@@ -1,0 +1,698 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MaxMind.Db</name>
+    </assembly>
+    <members>
+        <member name="M:MaxMind.Db.ArrayBuffer.ReadInt(System.Int64)">
+            <summary>
+                Read an int from the buffer.
+            </summary>
+        </member>
+        <member name="M:MaxMind.Db.ArrayBuffer.ReadVarInt(System.Int64,System.Int32)">
+            <summary>
+                Read a variable-sized int from the buffer.
+            </summary>
+        </member>
+        <member name="M:MaxMind.Db.Buffer.ReadBigInteger(System.Int64,System.Int32)">
+            <summary>
+                Read a big integer from the buffer.
+            </summary>
+        </member>
+        <member name="M:MaxMind.Db.Buffer.ReadDouble(System.Int64)">
+            <summary>
+                Read a double from the buffer.
+            </summary>
+        </member>
+        <member name="M:MaxMind.Db.Buffer.ReadFloat(System.Int64)">
+            <summary>
+                Read a float from the buffer.
+            </summary>
+        </member>
+        <member name="M:MaxMind.Db.Buffer.ReadLong(System.Int64,System.Int32)">
+            <summary>
+                Read a long from the buffer.
+            </summary>
+        </member>
+        <member name="M:MaxMind.Db.Buffer.ReadULong(System.Int64,System.Int32)">
+            <summary>
+                Read a uint64 from the buffer.
+            </summary>
+        </member>
+        <member name="T:MaxMind.Db.CachedDictionary`2">
+            <summary>
+            A dictionary that caches up to N values in memory. Once the dictionary reaches N count, the last item in the internal list is removed.
+            New items are always added to the start of the internal list.
+            </summary>
+        </member>
+        <member name="M:MaxMind.Db.CachedDictionary`2.OnGetExternalKeyValue(`0@,`1@)">
+            <summary>
+            Fires when a key is not found in the in memory dictionary. This gives derived classes an opportunity to look in external sources like
+            files or databases for the value that key represents. If the derived class finds a value matching the key in the external source,
+            then the derived class can set value and return true; when this happens the newly added value is added to the priority list.
+            </summary>
+            <param name="key">Key (can be replaced by the found key if desired)</param>
+            <param name="value">Value that was found</param>
+            <returns>True if found from external source, false if not</returns>
+        </member>
+        <member name="M:MaxMind.Db.CachedDictionary`2.SetComparer(System.Collections.Generic.IEqualityComparer{`0})">
+            <summary>
+            Sets a new comparer. Clears the cache.
+            </summary>
+            <param name="comparer">New comparer</param>
+        </member>
+        <member name="M:MaxMind.Db.CachedDictionary`2.OnRemoveExternalKey(`0)">
+            <summary>
+            Removes an external key. The key will have already been normalized. This implementation does nothing.
+            </summary>
+            <param name="key">Key to remove</param>
+            <returns>True if the key was removed, false if not</returns>
+        </member>
+        <member name="M:MaxMind.Db.CachedDictionary`2.#ctor(System.Int32,System.Collections.Generic.IEqualityComparer{`0})">
+            <summary>
+            Constructor
+            </summary>
+            <param name="maxCount">Maximum count the in memory dictionary will be allowed to grow to</param>
+            <param name="comparer">Comparer for TKey (can be null for default)</param>
+        </member>
+        <member name="M:MaxMind.Db.CachedDictionary`2.Dispose">
+            <summary>
+            Disposes of all resources. Derived classes should call this base class method last.
+            </summary>
+        </member>
+        <member name="M:MaxMind.Db.CachedDictionary`2.Add(`0,`1)">
+            <summary>
+            Adds a key / value pair to the dictionary. If the key already exists, it's value is replaced and moved to the front.
+            </summary>
+            <param name="key">Key to add</param>
+            <param name="value">Value to add</param>
+        </member>
+        <member name="M:MaxMind.Db.CachedDictionary`2.ContainsKey(`0)">
+            <summary>
+            Checks to see if the given key is in the dictionary by calling TryGetValue.
+            </summary>
+            <param name="key">Key</param>
+            <returns>True if in dictionary, false if not</returns>
+        </member>
+        <member name="M:MaxMind.Db.CachedDictionary`2.Remove(`0)">
+            <summary>
+            Removes a key from memory. If there is an external source, the key will be removed from the external source if it is
+            not in the dictionary.
+            </summary>
+            <param name="key">Key to remove</param>
+            <returns>True if key was removed, false if not</returns>
+        </member>
+        <member name="M:MaxMind.Db.CachedDictionary`2.TryGetValue(`0,`1@)">
+            <summary>
+            Attempts to get a value given a key. If the key is not found in memory, it is
+            possible for derived classes to search an external source to find the value. In cases where this
+            is done, the newly found item may replace the leased used item if the dictionary is at max count.
+            </summary>
+            <param name="key">Key to find</param>
+            <param name="value">Found value (default of TValue if not found)</param>
+            <returns>True if found, false if not</returns>
+        </member>
+        <member name="M:MaxMind.Db.CachedDictionary`2.TryGetValueRef(`0@,`1@)">
+            <summary>
+            Attempts to get a value given a key. If the key is not found in memory, it is
+            possible for derived classes to search an external source to find the value. In cases where this
+            is done, the newly found item may replace the leased used item if the dictionary is at max count.
+            </summary>
+            <param name="key">Key to find (receives the found key)</param>
+            <param name="value">Found value (default of TValue if not found)</param>
+            <returns>True if found, false if not</returns>
+        </member>
+        <member name="P:MaxMind.Db.CachedDictionary`2.Item(`0)">
+            <summary>
+            Not supported
+            </summary>
+            <param name="key">N/A</param>
+            <returns>N/A</returns>
+        </member>
+        <member name="P:MaxMind.Db.CachedDictionary`2.Keys">
+            <summary>
+            Gets all the keys that are in memory
+            </summary>
+        </member>
+        <member name="P:MaxMind.Db.CachedDictionary`2.Values">
+            <summary>
+            Gets all of the values that are in memory, external values are not returned
+            </summary>
+        </member>
+        <member name="M:MaxMind.Db.CachedDictionary`2.Add(System.Collections.Generic.KeyValuePair{`0,`1})">
+            <summary>
+            Adds an item with the key and value
+            </summary>
+            <param name="item">Item to add</param>
+            <exception cref="T:System.ArgumentException">An item with the key already exists</exception>
+        </member>
+        <member name="M:MaxMind.Db.CachedDictionary`2.Clear">
+            <summary>
+            Clears the dictionary of all items and priority information
+            </summary>
+        </member>
+        <member name="M:MaxMind.Db.CachedDictionary`2.Contains(System.Collections.Generic.KeyValuePair{`0,`1})">
+            <summary>
+            Checks to see if an item exists in the dictionary
+            </summary>
+            <param name="item">Item to check for</param>
+            <returns>True if key of item exists in dictionary, false if not</returns>
+        </member>
+        <member name="M:MaxMind.Db.CachedDictionary`2.CopyTo(System.Collections.Generic.KeyValuePair{`0,`1}[],System.Int32)">
+            <summary>
+            Copies all items from the in memory dictionary to an array
+            </summary>
+            <param name="array">Array</param>
+            <param name="arrayIndex">Start index to copy into array</param>
+        </member>
+        <member name="P:MaxMind.Db.CachedDictionary`2.Count">
+            <summary>
+            Number of items in the in memory dictionary
+            </summary>
+        </member>
+        <member name="P:MaxMind.Db.CachedDictionary`2.IsReadOnly">
+            <summary>
+            Always false
+            </summary>
+        </member>
+        <member name="M:MaxMind.Db.CachedDictionary`2.Remove(System.Collections.Generic.KeyValuePair{`0,`1})">
+            <summary>
+            Removes an item from the in memory dictionary
+            </summary>
+            <param name="item">Item to remove</param>
+            <returns>True if an item was removed, false if not</returns>
+        </member>
+        <member name="M:MaxMind.Db.CachedDictionary`2.GetEnumerator">
+            <summary>
+            Enumerates all key value pairs in the dictionary, external values are not enumerated
+            </summary>
+            <returns>Enumerator</returns>
+        </member>
+        <member name="M:MaxMind.Db.CachedDictionary`2.System#Collections#IEnumerable#GetEnumerator">
+            <summary>
+            Enumerates all key value pairs in the dictionary, external values are not enumerated
+            </summary>
+            <returns>Enumerator</returns>
+        </member>
+        <member name="T:MaxMind.Db.ConstructorAttribute">
+            <summary>
+                Instruct <c>Reader</c> to use the constructor when deserializing.
+            </summary>
+        </member>
+        <member name="T:MaxMind.Db.ObjectType">
+            <summary>
+                Enumeration representing the types of objects read from the database
+            </summary>
+        </member>
+        <member name="T:MaxMind.Db.Decoder">
+            <summary>
+                Given a stream, this class decodes the object graph at a particular location
+            </summary>
+        </member>
+        <member name="M:MaxMind.Db.Decoder.#ctor(MaxMind.Db.Buffer,System.Int64,System.Boolean)">
+            <summary>
+                Initializes a new instance of the <see cref="T:MaxMind.Db.Decoder" /> class.
+            </summary>
+            <param name="database">The database.</param>
+            <param name="pointerBase">The base address in the stream.</param>
+            <param name="followPointers">Whether to follow pointers. For testing.</param>
+        </member>
+        <member name="M:MaxMind.Db.Decoder.Decode``1(System.Int64,System.Int64@,MaxMind.Db.InjectableValues,MaxMind.Db.Network)">
+            <summary>
+                Decodes the object at the specified offset.
+            </summary>
+            <param name="offset">The offset.</param>
+            <param name="outOffset">The out offset</param>
+            <param name="injectables"></param>
+            <param name="network"></param>
+            <returns>An object containing the data read from the stream</returns>
+        </member>
+        <member name="M:MaxMind.Db.Decoder.DecodeByType(System.Type,MaxMind.Db.ObjectType,System.Int64,System.Int32,System.Int64@,MaxMind.Db.InjectableValues,MaxMind.Db.Network)">
+            <summary>
+                Decodes the type of the by.
+            </summary>
+            <param name="expectedType"></param>
+            <param name="type">The type.</param>
+            <param name="offset">The offset.</param>
+            <param name="size">The size.</param>
+            <param name="outOffset">The out offset</param>
+            <param name="injectables"></param>
+            <param name="network"></param>
+            <returns></returns>
+            <exception cref="T:System.Exception">Unable to handle type!</exception>
+        </member>
+        <member name="M:MaxMind.Db.Decoder.DecodeBoolean(System.Type,System.Int32)">
+            <summary>
+                Decodes the boolean.
+            </summary>
+            <param name="expectedType"></param>
+            <param name="size">The size of the structure.</param>
+            <returns></returns>
+        </member>
+        <member name="M:MaxMind.Db.Decoder.DecodeDouble(System.Type,System.Int64,System.Int32)">
+            <summary>
+                Decodes the double.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MaxMind.Db.Decoder.DecodeFloat(System.Type,System.Int64,System.Int32)">
+            <summary>
+                Decodes the float.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MaxMind.Db.Decoder.DecodeString(System.Type,System.Int64,System.Int32)">
+            <summary>
+                Decodes the string.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MaxMind.Db.Decoder.DecodeMap(System.Type,System.Int64,System.Int32,System.Int64@,MaxMind.Db.InjectableValues,MaxMind.Db.Network)">
+            <summary>
+                Decodes the map.
+            </summary>
+            <param name="expectedType"></param>
+            <param name="offset">The offset.</param>
+            <param name="size">The size.</param>
+            <param name="outOffset">The out offset.</param>
+            <param name="injectables"></param>
+            <param name="network"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MaxMind.Db.Decoder.DecodeLong(System.Type,System.Int64,System.Int32)">
+            <summary>
+                Decodes the long.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MaxMind.Db.Decoder.DecodeArray(System.Type,System.Int32,System.Int64,System.Int64@,MaxMind.Db.InjectableValues,MaxMind.Db.Network)">
+            <summary>
+                Decodes the array.
+            </summary>
+            <param name="expectedType"></param>
+            <param name="size">The size.</param>
+            <param name="offset">The offset.</param>
+            <param name="outOffset">The out offset.</param>
+            <param name="injectables"></param>
+            <param name="network"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MaxMind.Db.Decoder.DecodeUInt64(System.Type,System.Int64,System.Int32)">
+            <summary>
+                Decodes the uint64.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MaxMind.Db.Decoder.DecodeBigInteger(System.Type,System.Int64,System.Int32)">
+            <summary>
+                Decodes the big integer.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MaxMind.Db.Decoder.DecodePointer(System.Int64,System.Int32,System.Int64@)">
+            <summary>
+                Decodes the pointer.
+            </summary>
+            <param name="offset">The offset.</param>
+            <param name="size"></param>
+            <param name="outOffset">The resulting offset</param>
+            <returns></returns>
+        </member>
+        <member name="M:MaxMind.Db.Decoder.DecodeInteger(System.Type,System.Int64,System.Int32)">
+            <summary>
+                Decodes the integer.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:MaxMind.Db.DeserializationException">
+            <summary>
+                Thrown when there is an error deserializing to the provided type.
+            </summary>
+        </member>
+        <member name="M:MaxMind.Db.DeserializationException.#ctor">
+            <summary>
+                Construct a DeserializationException
+            </summary>
+        </member>
+        <member name="M:MaxMind.Db.DeserializationException.#ctor(System.String)">
+            <summary>
+                Construct a DeserializationException
+            </summary>
+            <param name="message"></param>
+        </member>
+        <member name="M:MaxMind.Db.DeserializationException.#ctor(System.String,System.Exception)">
+            <summary>
+                Construct a DeserializationException
+            </summary>
+            <param name="message"></param>
+            <param name="innerException">The underlying exception that caused this one.</param>
+        </member>
+        <member name="M:MaxMind.Db.DeserializationException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+                Construct a DeserializationException
+            </summary>
+            <param name="info">The SerializationInfo with data.</param>
+            <param name="context">The source for this deserialization.</param>
+        </member>
+        <member name="T:MaxMind.Db.InjectableValues">
+            <summary>
+                Values to be injected into classes during deserialization.
+            </summary>
+        </member>
+        <member name="M:MaxMind.Db.InjectableValues.AddValue(System.String,System.Object)">
+            <summary>
+                Add a value to be injected into the class during serialization
+            </summary>
+            <param name="key">
+                The key name as set with the <c>InectAttribute</c> used to determine
+                where to inject the value.
+            </param>
+            <param name="value">The value to be injected.</param>
+        </member>
+        <member name="T:MaxMind.Db.InjectAttribute">
+            <summary>
+                Instruct <c>Reader</c> to map database key to constructor parameter.
+            </summary>
+            <param name="parameterName">The name to use for the property.</param>
+        </member>
+        <member name="M:MaxMind.Db.InjectAttribute.#ctor(System.String)">
+            <summary>
+                Instruct <c>Reader</c> to map database key to constructor parameter.
+            </summary>
+            <param name="parameterName">The name to use for the property.</param>
+        </member>
+        <member name="P:MaxMind.Db.InjectAttribute.ParameterName">
+            <summary>
+                The name to use for the property.
+            </summary>
+        </member>
+        <member name="T:MaxMind.Db.InvalidDatabaseException">
+            <summary>
+                Thrown when the MaxMind database file is incorrectly formatted
+            </summary>
+        </member>
+        <member name="M:MaxMind.Db.InvalidDatabaseException.#ctor(System.String)">
+            <summary>
+                Initializes a new instance of the <see cref="T:MaxMind.Db.InvalidDatabaseException" /> class.
+            </summary>
+            <param name="message">A message that describes the error.</param>
+        </member>
+        <member name="M:MaxMind.Db.InvalidDatabaseException.#ctor(System.String,System.Exception)">
+            <summary>
+                Initializes a new instance of the <see cref="T:MaxMind.Db.InvalidDatabaseException" /> class.
+            </summary>
+            <param name="message">The error message that explains the reason for the exception.</param>
+            <param name="innerException">
+                The exception that is the cause of the current exception. If the
+                <paramref name="innerException" /> parameter is not a null reference, the current exception is raised in a catch
+                block that handles the inner exception.
+            </param>
+        </member>
+        <member name="M:MaxMind.Db.InvalidDatabaseException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+                Constructor for deserialization.
+            </summary>
+            <param name="info">The SerializationInfo with data.</param>
+            <param name="context">The source for this deserialization.</param>
+        </member>
+        <member name="M:MaxMind.Db.MemoryMapBuffer.ReadInt(System.Int64)">
+            <summary>
+                Read an int from the buffer.
+            </summary>
+        </member>
+        <member name="M:MaxMind.Db.MemoryMapBuffer.ReadVarInt(System.Int64,System.Int32)">
+            <summary>
+                Read a variable-sized int from the buffer.
+            </summary>
+        </member>
+        <member name="M:MaxMind.Db.MemoryMapBuffer.Dispose(System.Boolean)">
+            <summary>
+                Release resources back to the system.
+            </summary>
+            <param name="disposing"></param>
+        </member>
+        <member name="T:MaxMind.Db.Metadata">
+            <summary>
+                Data about the database file itself
+            </summary>
+        </member>
+        <member name="M:MaxMind.Db.Metadata.#ctor(System.Int32,System.Int32,System.UInt64,System.String,System.Collections.Generic.IDictionary{System.String,System.String},System.Int32,System.Collections.Generic.IReadOnlyList{System.String},System.Int64,System.Int32)">
+            <summary>
+                Construct a metadata object.
+            </summary>
+            <param name="binaryFormatMajorVersion"></param>
+            <param name="binaryFormatMinorVersion"></param>
+            <param name="buildEpoch"></param>
+            <param name="databaseType"></param>
+            <param name="description"></param>
+            <param name="ipVersion"></param>
+            <param name="languages"></param>
+            <param name="nodeCount"></param>
+            <param name="recordSize"></param>
+        </member>
+        <member name="P:MaxMind.Db.Metadata.BinaryFormatMajorVersion">
+            <summary>
+                The major version number for the MaxMind DB binary format used by the database.
+            </summary>
+        </member>
+        <member name="P:MaxMind.Db.Metadata.BinaryFormatMinorVersion">
+            <summary>
+                The minor version number for the MaxMind DB binary format used by the database.
+            </summary>
+        </member>
+        <member name="P:MaxMind.Db.Metadata.BuildDate">
+            <summary>
+                The date-time of the database build.
+            </summary>
+        </member>
+        <member name="P:MaxMind.Db.Metadata.DatabaseType">
+            <summary>
+                The MaxMind DB database type.
+            </summary>
+        </member>
+        <member name="P:MaxMind.Db.Metadata.Description">
+            <summary>
+                A map from locale codes to the database description in that language.
+            </summary>
+        </member>
+        <member name="P:MaxMind.Db.Metadata.IPVersion">
+            <summary>
+                The IP version that the database supports. This will be 4 or 6.
+            </summary>
+        </member>
+        <member name="P:MaxMind.Db.Metadata.Languages">
+            <summary>
+                A list of locale codes for languages that the database supports.
+            </summary>
+        </member>
+        <member name="T:MaxMind.Db.Network">
+            <summary>
+              <c>Network</c> represents an IP network.
+            </summary>
+        </member>
+        <member name="P:MaxMind.Db.Network.PrefixLength">
+            <summary>
+                The prefix length is the number of leading 1 bits in the
+                subnet mask. Sometimes also known as netmask length.
+            </summary>
+        </member>
+        <member name="P:MaxMind.Db.Network.NetworkAddress">
+            <summary>
+                The first address in the network.
+            </summary>
+        </member>
+        <member name="M:MaxMind.Db.Network.#ctor(System.Net.IPAddress,System.Int32)">
+            <summary>
+                Constructs a <c>Network</c>.
+            </summary>
+            <param name="ip">
+                An IP address in the network. This does not have to be the
+                first address in the network.
+            </param>
+            <param name="prefixLength">The prefix length for the network.</param>
+        </member>
+        <member name="M:MaxMind.Db.Network.ToString">
+            <summary>
+                A string representation of the network in CIDR notation, e.g.,
+                1.2.3.0/24 or 2001::/8.
+            </summary>
+        </member>
+        <member name="T:MaxMind.Db.NetworkAttribute">
+            <summary>
+                Instruct <c>Reader</c> to set the parameter to be the network in CIDR format.
+            </summary>
+        </member>
+        <member name="T:MaxMind.Db.ParameterAttribute">
+            <summary>
+                Instruct <c>Reader</c> to map database key to constructor parameter.
+            </summary>
+            <param name="parameterName">The name of the parameter.</param>
+            <param name="alwaysCreate">
+                Whether to create the object even if the key
+                is not present in the database. If this is false, the default value will be used
+                (null for nullable types)
+            </param>
+        </member>
+        <member name="M:MaxMind.Db.ParameterAttribute.#ctor(System.String,System.Boolean)">
+            <summary>
+                Instruct <c>Reader</c> to map database key to constructor parameter.
+            </summary>
+            <param name="parameterName">The name of the parameter.</param>
+            <param name="alwaysCreate">
+                Whether to create the object even if the key
+                is not present in the database. If this is false, the default value will be used
+                (null for nullable types)
+            </param>
+        </member>
+        <member name="P:MaxMind.Db.ParameterAttribute.ParameterName">
+            <summary>
+                The name to use for the property.
+            </summary>
+        </member>
+        <member name="P:MaxMind.Db.ParameterAttribute.AlwaysCreate">
+            <summary>
+                Whether to create the object even if the key is not present in
+                the database. If this is false, the default value will be used
+                (null for nullable types).
+            </summary>
+        </member>
+        <member name="T:MaxMind.Db.FileAccessMode">
+            <summary>
+                An enumeration specifying the API to use to read the database
+            </summary>
+        </member>
+        <member name="F:MaxMind.Db.FileAccessMode.MemoryMapped">
+            <summary>
+                Open the file in memory mapped mode. Does not load into real memory.
+            </summary>
+        </member>
+        <member name="F:MaxMind.Db.FileAccessMode.MemoryMappedGlobal">
+            <summary>
+                Open the file in global memory mapped mode. Requires the 'create global objects' right. Does not load into real memory.
+            </summary>
+            <remarks>
+                For information on the 'create global objects' right, see: https://docs.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/create-global-objects
+            </remarks>
+        </member>
+        <member name="F:MaxMind.Db.FileAccessMode.Memory">
+            <summary>
+                Load the file into memory.
+            </summary>
+        </member>
+        <member name="T:MaxMind.Db.Reader">
+            <summary>
+                Given a MaxMind DB file, this class will retrieve information about an IP address
+            </summary>
+        </member>
+        <member name="T:MaxMind.Db.Reader.ReaderIteratorNode`1">
+            <summary>
+            A node from the reader iterator
+            </summary>
+        </member>
+        <member name="M:MaxMind.Db.Reader.ReaderIteratorNode`1.#ctor(System.Net.IPAddress,System.Int32,`0)">
+            <summary>
+            Internal constructor
+            </summary>
+            <param name="start">Start ip</param>
+            <param name="prefixLength">Prefix length</param>
+            <param name="data">Data</param>
+        </member>
+        <member name="P:MaxMind.Db.Reader.ReaderIteratorNode`1.Start">
+            <summary>
+            Start ip address
+            </summary>
+        </member>
+        <member name="P:MaxMind.Db.Reader.ReaderIteratorNode`1.PrefixLength">
+            <summary>
+            Prefix/mask length
+            </summary>
+        </member>
+        <member name="P:MaxMind.Db.Reader.ReaderIteratorNode`1.Data">
+            <summary>
+            Data
+            </summary>
+        </member>
+        <member name="M:MaxMind.Db.Reader.#ctor(System.String)">
+            <summary>
+                Initializes a new instance of the <see cref="T:MaxMind.Db.Reader" /> class.
+            </summary>
+            <param name="file">The file.</param>
+        </member>
+        <member name="M:MaxMind.Db.Reader.#ctor(System.String,MaxMind.Db.FileAccessMode)">
+            <summary>
+                Initializes a new instance of the <see cref="T:MaxMind.Db.Reader" /> class.
+            </summary>
+            <param name="file">The MaxMind DB file.</param>
+            <param name="mode">The mode by which to access the DB file.</param>
+        </member>
+        <member name="M:MaxMind.Db.Reader.#ctor(System.IO.Stream)">
+            <summary>
+                Initialize with <c>Stream</c>. The current position of the
+                string must point to the start of the database. The content
+                between the current position and the end of the stream must
+                be a valid MaxMind DB.
+            </summary>
+            <param name="stream">The stream to use. It will be used from its
+                                 current position. </param>
+            <exception cref="T:System.ArgumentNullException"></exception>
+        </member>
+        <member name="M:MaxMind.Db.Reader.CreateAsync(System.String)">
+            <summary>
+                Asynchronously initializes a new instance of the <see cref="T:MaxMind.Db.Reader" /> class by loading the specified file into memory.
+            </summary>
+            <param name="file">The file.</param>
+        </member>
+        <member name="M:MaxMind.Db.Reader.CreateAsync(System.IO.Stream)">
+            <summary>
+                Asynchronously initialize with Stream.
+            </summary>
+            <param name="stream">The stream to use. It will be used from its current position. </param>
+            <exception cref="T:System.ArgumentNullException"></exception>
+        </member>
+        <member name="P:MaxMind.Db.Reader.Metadata">
+            <summary>
+                The metadata for the open database.
+            </summary>
+            <value>
+                The metadata.
+            </value>
+        </member>
+        <member name="M:MaxMind.Db.Reader.Dispose">
+            <summary>
+                Release resources back to the system.
+            </summary>
+        </member>
+        <member name="M:MaxMind.Db.Reader.Dispose(System.Boolean)">
+            <summary>
+                Release resources back to the system.
+            </summary>
+            <param name="disposing"></param>
+        </member>
+        <member name="M:MaxMind.Db.Reader.Find``1(System.Net.IPAddress,MaxMind.Db.InjectableValues)">
+            <summary>
+                Finds the data related to the specified address.
+            </summary>
+            <param name="ipAddress">The IP address.</param>
+            <param name="injectables">Value to inject during deserialization</param>
+            <returns>An object containing the IP related data</returns>
+        </member>
+        <member name="M:MaxMind.Db.Reader.Find``1(System.Net.IPAddress,System.Int32@,MaxMind.Db.InjectableValues)">
+            <summary>
+                Finds the data related to the specified address.
+            </summary>
+            <param name="ipAddress">The IP address.</param>
+            <param name="prefixLength">The network prefix length for the network record in the database containing the IP address looked up.</param>
+            <param name="injectables">Value to inject during deserialization</param>
+            <returns>An object containing the IP related data</returns>
+        </member>
+        <member name="M:MaxMind.Db.Reader.FindAll``1(MaxMind.Db.InjectableValues,System.Int32)">
+            <summary>
+            <para>Get an enumerator that iterates all data nodes in the database. Do not modify the object as it may be cached.</para>
+            <para>Note that due to caching, the Network attribute on constructor parameters will be ignored.</para>
+            </summary>
+            <param name="injectables">Value to inject during deserialization</param>
+            <param name="cacheSize">The size of the data cache. This can greatly speed enumeration at the cost of memory usage.</param>
+            <returns>Enumerator for all data nodes</returns>
+        </member>
+    </members>
+</doc>

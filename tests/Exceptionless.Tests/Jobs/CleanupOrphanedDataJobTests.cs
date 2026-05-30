@@ -42,6 +42,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     [Fact]
     public async Task DeleteOrphanedEventsByStack_WithMissingStacks_DeletesOrphanedEvents()
     {
+        // Arrange
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
         await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
         var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
@@ -49,24 +50,24 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
         await _eventRepository.AddAsync(_eventData.GenerateEvents(50, organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
 
-        // Create orphaned events pointing to non-existent stacks
         var orphanedEvents = _eventData.GenerateEvents(100, organization.Id, project.Id).ToList();
         orphanedEvents.ForEach(e => e.StackId = ObjectId.GenerateNewId().ToString());
         await _eventRepository.AddAsync(orphanedEvents, o => o.ImmediateConsistency());
 
-        var eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes());
-        Assert.Equal(150, eventCount);
+        Assert.Equal(150, await _eventRepository.CountAsync(o => o.IncludeSoftDeletes()));
 
+        // Act
         await _job.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
 
-        eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes());
-        Assert.Equal(50, eventCount);
+        // Assert
+        Assert.Equal(50, await _eventRepository.CountAsync(o => o.IncludeSoftDeletes()));
     }
 
     [Fact]
     public async Task DeleteOrphanedEventsByStack_WithManyUniqueOrphanedStacks_DeletesAllOrphanedEvents()
     {
+        // Arrange
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
         await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
         var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
@@ -74,136 +75,135 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
         await _eventRepository.AddAsync(_eventData.GenerateEvents(50, organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
 
-        // Create orphaned events each pointing to different non-existent stacks (tests partition logic)
+        // Each orphaned event points to a different non-existent stack (exercises batched partition logic)
         var orphanedEvents = _eventData.GenerateEvents(200, organization.Id, project.Id).ToList();
         var uniqueStackIds = Enumerable.Range(0, 200).Select(_ => ObjectId.GenerateNewId().ToString()).ToList();
         for (int i = 0; i < orphanedEvents.Count; i++)
             orphanedEvents[i].StackId = uniqueStackIds[i];
         await _eventRepository.AddAsync(orphanedEvents, o => o.ImmediateConsistency());
 
-        var eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes());
-        Assert.Equal(250, eventCount);
+        Assert.Equal(250, await _eventRepository.CountAsync(o => o.IncludeSoftDeletes()));
 
+        // Act
         await _job.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
 
-        eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes());
-        Assert.Equal(50, eventCount);
+        // Assert
+        Assert.Equal(50, await _eventRepository.CountAsync(o => o.IncludeSoftDeletes()));
     }
 
     [Fact]
     public async Task DeleteOrphanedEventsByProject_WithMissingProjects_DeletesOrphanedEvents()
     {
+        // Arrange
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
         await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
         var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
         var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
         await _eventRepository.AddAsync(_eventData.GenerateEvents(50, organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
 
-        // Create orphaned events pointing to a non-existent project but a valid stack,
-        // so the stack-cleanup phase doesn't eat them before project cleanup runs.
+        // Use a valid stack ID so the stack-cleanup phase doesn't delete these events
+        // before the project-cleanup phase has a chance to process them.
         string fakeProjectId = ObjectId.GenerateNewId().ToString();
         var orphanedEvents = _eventData.GenerateEvents(100, organization.Id, fakeProjectId).ToList();
         orphanedEvents.ForEach(e => e.StackId = stack.Id);
         await _eventRepository.AddAsync(orphanedEvents, o => o.ImmediateConsistency());
 
-        var eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes());
-        Assert.Equal(150, eventCount);
+        Assert.Equal(150, await _eventRepository.CountAsync(o => o.IncludeSoftDeletes()));
 
+        // Act
         await _job.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
 
-        eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes());
-        Assert.Equal(50, eventCount);
+        // Assert
+        Assert.Equal(50, await _eventRepository.CountAsync(o => o.IncludeSoftDeletes()));
     }
 
     [Fact]
     public async Task DeleteOrphanedEventsByOrganization_WithMissingOrganizations_DeletesOrphanedEvents()
     {
+        // Arrange
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
         await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
         var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
         var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
         await _eventRepository.AddAsync(_eventData.GenerateEvents(50, organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
 
-        // Create orphaned events pointing to a non-existent organization but a valid stack,
-        // so the stack-cleanup phase doesn't eat them before organization cleanup runs.
+        // Use a valid stack ID so the stack-cleanup phase doesn't delete these events
+        // before the organization-cleanup phase has a chance to process them.
         string fakeOrgId = ObjectId.GenerateNewId().ToString();
         var orphanedEvents = _eventData.GenerateEvents(100, fakeOrgId, project.Id).ToList();
         orphanedEvents.ForEach(e => e.StackId = stack.Id);
         await _eventRepository.AddAsync(orphanedEvents, o => o.ImmediateConsistency());
 
-        var eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes());
-        Assert.Equal(150, eventCount);
+        Assert.Equal(150, await _eventRepository.CountAsync(o => o.IncludeSoftDeletes()));
 
+        // Act
         await _job.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
 
-        eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes());
-        Assert.Equal(50, eventCount);
+        // Assert
+        Assert.Equal(50, await _eventRepository.CountAsync(o => o.IncludeSoftDeletes()));
     }
 
     [Fact]
     public async Task DeleteOrphanedEvents_WithAllValidParents_DeletesNothing()
     {
+        // Arrange
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
         await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
         var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
         var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
         await _eventRepository.AddAsync(_eventData.GenerateEvents(100, organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
 
-        var eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes());
-        Assert.Equal(100, eventCount);
+        Assert.Equal(100, await _eventRepository.CountAsync(o => o.IncludeSoftDeletes()));
 
+        // Act
         await _job.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
 
-        // No events should be deleted since all parents exist
-        eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes());
-        Assert.Equal(100, eventCount);
+        // Assert - no events should be deleted since all parents exist
+        Assert.Equal(100, await _eventRepository.CountAsync(o => o.IncludeSoftDeletes()));
     }
 
     [Fact]
     public async Task DeleteOrphanedEventsByStack_WithSoftDeletedStack_DeletesOrphanedEvents()
     {
+        // Arrange
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
         await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
         var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
 
-        // Create a valid stack with events
         var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
         await _eventRepository.AddAsync(_eventData.GenerateEvents(50, organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
 
-        // Create a soft-deleted stack with events still pointing to it
         var softDeletedStack = _stackData.GenerateStack(generateId: true, organizationId: organization.Id, projectId: project.Id);
         softDeletedStack.IsDeleted = true;
         softDeletedStack = await _stackRepository.AddAsync(softDeletedStack, o => o.ImmediateConsistency());
         var orphanedEvents = _eventData.GenerateEvents(100, organization.Id, project.Id, softDeletedStack.Id).ToList();
         await _eventRepository.AddAsync(orphanedEvents, o => o.ImmediateConsistency());
 
-        var eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes());
-        Assert.Equal(150, eventCount);
+        Assert.Equal(150, await _eventRepository.CountAsync(o => o.IncludeSoftDeletes()));
 
+        // Act
         await _job.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
 
-        // Events pointing to the soft-deleted stack should be cleaned up
-        eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes());
-        Assert.Equal(50, eventCount);
+        // Assert - events pointing to the soft-deleted stack should be cleaned up
+        Assert.Equal(50, await _eventRepository.CountAsync(o => o.IncludeSoftDeletes()));
     }
 
     [Fact]
     public async Task DeleteOrphanedEventsByProject_WithSoftDeletedProject_DeletesOrphanedEvents()
     {
+        // Arrange
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
         await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
 
-        // Create a valid project with events
         var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
         var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
         await _eventRepository.AddAsync(_eventData.GenerateEvents(50, organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
 
-        // Create a soft-deleted project with events still pointing to it
         var softDeletedProject = _projectData.GenerateProject(generateId: true, organizationId: organization.Id);
         softDeletedProject.IsDeleted = true;
         softDeletedProject = await _projectRepository.AddAsync(softDeletedProject, o => o.ImmediateConsistency());
@@ -213,28 +213,26 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         orphanedEvents.ForEach(e => e.StackId = stack.Id);
         await _eventRepository.AddAsync(orphanedEvents, o => o.ImmediateConsistency());
 
-        var eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes());
-        Assert.Equal(150, eventCount);
+        Assert.Equal(150, await _eventRepository.CountAsync(o => o.IncludeSoftDeletes()));
 
+        // Act
         await _job.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
 
-        // Events pointing to the soft-deleted project should be cleaned up
-        eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes());
-        Assert.Equal(50, eventCount);
+        // Assert - events pointing to the soft-deleted project should be cleaned up
+        Assert.Equal(50, await _eventRepository.CountAsync(o => o.IncludeSoftDeletes()));
     }
 
     [Fact]
     public async Task DeleteOrphanedEventsByOrganization_WithSoftDeletedOrganization_DeletesOrphanedEvents()
     {
-        // Create a valid organization with events
+        // Arrange
         var validOrganization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
         await _organizationRepository.AddAsync(validOrganization, o => o.ImmediateConsistency());
         var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
         var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
         await _eventRepository.AddAsync(_eventData.GenerateEvents(50, validOrganization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
 
-        // Create a soft-deleted organization with events still pointing to it
         var softDeletedOrg = _organizationData.GenerateOrganization(_billingManager, _plans, generateId: true);
         softDeletedOrg.IsDeleted = true;
         softDeletedOrg = await _organizationRepository.AddAsync(softDeletedOrg, o => o.ImmediateConsistency());
@@ -244,25 +242,24 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         orphanedEvents.ForEach(e => e.StackId = stack.Id);
         await _eventRepository.AddAsync(orphanedEvents, o => o.ImmediateConsistency());
 
-        var eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes());
-        Assert.Equal(150, eventCount);
+        Assert.Equal(150, await _eventRepository.CountAsync(o => o.IncludeSoftDeletes()));
 
+        // Act
         await _job.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
 
-        // Events pointing to the soft-deleted organization should be cleaned up
-        eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes());
-        Assert.Equal(50, eventCount);
+        // Assert - events pointing to the soft-deleted organization should be cleaned up
+        Assert.Equal(50, await _eventRepository.CountAsync(o => o.IncludeSoftDeletes()));
     }
 
     [Fact]
     public async Task FixDuplicateStacks_WithDuplicateSignatures_MergesIntoMostPopularStack()
     {
+        // Arrange
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
         await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
         var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
 
-        // Create two stacks with the same duplicate signature
         var originalStack = _stackData.GenerateStack(generateId: true, organizationId: organization.Id, projectId: project.Id);
         originalStack.TotalOccurrences = 100;
         var duplicateStack = originalStack.DeepClone();
@@ -271,15 +268,14 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
 
         originalStack = await _stackRepository.AddAsync(originalStack, o => o.ImmediateConsistency());
         duplicateStack = await _stackRepository.AddAsync(duplicateStack, o => o.ImmediateConsistency());
-
-        // Add events to both stacks
         await _eventRepository.AddAsync(_eventData.GenerateEvents(100, organization.Id, project.Id, originalStack.Id), o => o.ImmediateConsistency());
         await _eventRepository.AddAsync(_eventData.GenerateEvents(10, organization.Id, project.Id, duplicateStack.Id), o => o.ImmediateConsistency());
 
+        // Act
         await _job.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
 
-        // The stack with more events should be the target
+        // Assert - the stack with more events is kept; duplicate is soft-deleted; events reassigned
         var updatedOriginal = await _stackRepository.GetByIdAsync(originalStack.Id, o => o.IncludeSoftDeletes());
         var updatedDuplicate = await _stackRepository.GetByIdAsync(duplicateStack.Id, o => o.IncludeSoftDeletes());
 
@@ -289,25 +285,19 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         Assert.True(updatedDuplicate.IsDeleted);
         Assert.Equal(110, updatedOriginal.TotalOccurrences);
 
-        // All events should be on the target stack
-        var eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes());
-        Assert.Equal(110, eventCount);
-
-        // Verify reassignment: all 110 events must be on the surviving stack, none on the deleted duplicate
-        var targetStackEventCount = await _eventRepository.CountAsync(q => q.Stack(originalStack.Id));
-        var duplicateStackEventCount = await _eventRepository.CountAsync(q => q.Stack(duplicateStack.Id));
-        Assert.Equal(110, targetStackEventCount);
-        Assert.Equal(0, duplicateStackEventCount);
+        Assert.Equal(110, await _eventRepository.CountAsync(o => o.IncludeSoftDeletes()));
+        Assert.Equal(110, await _eventRepository.CountAsync(q => q.Stack(originalStack.Id)));
+        Assert.Equal(0, await _eventRepository.CountAsync(q => q.Stack(duplicateStack.Id)));
     }
 
     [Fact]
     public async Task FixDuplicateStacks_WithNoEvents_KeepsOldestStack()
     {
+        // Arrange
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
         await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
         var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
 
-        // Create two stacks with the same duplicate signature but no events
         var originalStack = _stackData.GenerateStack(generateId: true, organizationId: organization.Id, projectId: project.Id);
         originalStack.CreatedUtc = DateTime.UtcNow.AddMinutes(-10);
         var duplicateStack = originalStack.DeepClone();
@@ -317,10 +307,11 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         originalStack = await _stackRepository.AddAsync(originalStack, o => o.ImmediateConsistency());
         duplicateStack = await _stackRepository.AddAsync(duplicateStack, o => o.ImmediateConsistency());
 
+        // Act
         await _job.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
 
-        // Oldest stack should be kept when there are no events
+        // Assert - oldest stack should be kept when there are no events
         var updatedOriginal = await _stackRepository.GetByIdAsync(originalStack.Id, o => o.IncludeSoftDeletes());
         var updatedDuplicate = await _stackRepository.GetByIdAsync(duplicateStack.Id, o => o.IncludeSoftDeletes());
 

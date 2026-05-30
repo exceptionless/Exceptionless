@@ -1,0 +1,1028 @@
+{
+  "files": [
+    {
+      "fileName": "./lib/net8.0/StreamJsonRpc.dll",
+      "SPDXID": "SPDXRef-File--lib-net8.0-StreamJsonRpc.dll-587BD69ADCA120422566840DC555DBA6D9CE8F16",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "46256935fae63f9545db4205524c9ce90dadbda80fb1fb6c90391bf64324406d"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "587bd69adca120422566840dc555dba6d9ce8f16"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./PackageIcon.png",
+      "SPDXID": "SPDXRef-File--PackageIcon.png-35E0B5FB0A15D22F442B5C76A3AC1D6631E3E399",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "1f8da83c8330ae62fd1bbe2dd9d0d5064db93ecda77110669f815444ad7a6ae3"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "35e0b5fb0a15d22f442b5c76a3ac1d6631e3e399"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/net8.0/cs/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-net8.0-cs-StreamJsonRpc.resources.dll-CDC6322BB9433B4B1B5C8CD0932A32900FDABB29",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e28958e9e0905e1759d98a354dd0fb37cd66ff141e6b6848238a9802b8ebc965"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "cdc6322bb9433b4b1b5c8cd0932a32900fdabb29"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/net8.0/StreamJsonRpc.xml",
+      "SPDXID": "SPDXRef-File--lib-net8.0-StreamJsonRpc.xml-5993A624D744191168DAB16C052D210F9C8BDFB7",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "d9332fafb69ef92af109ca73151b44a58f05190cf7203184b8e79bc62811a0ed"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "5993a624d744191168dab16c052d210f9c8bdfb7"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/net8.0/fr/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-net8.0-fr-StreamJsonRpc.resources.dll-62CCB9396E6002F24D18918CC2CE4FCDFCC46BEB",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "ad8caf49b0f9faacbe1307f33d3ebbedaf35042c3c0905d530f6234d467a9549"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "62ccb9396e6002f24d18918cc2ce4fcdfcc46beb"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/net8.0/de/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-net8.0-de-StreamJsonRpc.resources.dll-B80AF952F399DC4A079145935D7E86B0BED79A45",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "f59e8a4ab59ae46d29225e59543c8624f7ec3b19c25b6da009759c657d1b5d9c"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "b80af952f399dc4a079145935d7e86b0bed79a45"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/net8.0/pt-BR/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-net8.0-pt-BR-StreamJsonRpc.resources.dll-46F58DFFC1B90A84507B0E4EA8A3A6729EA14ACE",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "3a16d559e2848c343f83f4eb4e7c677289d471f46027b9efe685b9c1ec214cd7"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "46f58dffc1b90a84507b0e4ea8a3a6729ea14ace"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/net8.0/zh-Hans/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-net8.0-zh-Hans-StreamJsonRpc.resources.dll-09985C5188E0EEC456B6744C7349C4179C62E432",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "88cfd4cf6b3ab6b3394700e466c7ce4f61ea9484a76867bb040624e4af3660b1"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "09985c5188e0eec456b6744c7349c4179c62e432"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/net8.0/ru/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-net8.0-ru-StreamJsonRpc.resources.dll-CE4B51C252C395718FDE647FB311AB38D6E9ACF8",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e92413719bb2334cdd0445e3dcb1fd30b0a3a886b9af6ec0df7862c9d2904497"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "ce4b51c252c395718fde647fb311ab38d6e9acf8"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/net8.0/ko/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-net8.0-ko-StreamJsonRpc.resources.dll-89BB329C786BC779A7FAC16AAF1FEC707D619C29",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "997c0048fcec131a736528f950d7808023c347caa08e0c5b59cc38f28f9840cf"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "89bb329c786bc779a7fac16aaf1fec707d619c29"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.0/it/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.0-it-StreamJsonRpc.resources.dll-1A5077BE69B787D45E0EAC3841A978D56A9760E2",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "1544ff1c3384b47e74794de22220b91fd36a1895bfc1ffc417518ebb0e277565"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "1a5077be69b787d45e0eac3841a978d56a9760e2"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.0/de/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.0-de-StreamJsonRpc.resources.dll-F254FE2AC29C588D0F87A0B2B667AA57BF58F8C2",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "79d4e75330756071023451832b99363c8075a021ca1899965660e492b68a3af9"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "f254fe2ac29c588d0f87a0b2b667aa57bf58f8c2"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./NOTICE",
+      "SPDXID": "SPDXRef-File--NOTICE-8E56FD22F81087338EB04AFBDEA75181266321DD",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "42989345ffce5051f0d8aad479e971d17192458b83b775a0bbb3902ca26777f8"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "8e56fd22f81087338eb04afbdea75181266321dd"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.0/StreamJsonRpc.xml",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.0-StreamJsonRpc.xml-1C96DB793E4EDC04A8C83D548C159B70E50227B1",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "5f684d303115e413520005b456e04c177973937426ef53b80e363cb37df31802"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "1c96db793e4edc04a8c83d548c159b70e50227b1"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.0/zh-Hant/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.0-zh-Hant-StreamJsonRpc.resources.dll-8B432F02C3DDE92A397E65E68487AE99797F7D5A",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "47d368b6822c07d2a3982421c0aa7126c015852183abc24434011685e120a19d"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "8b432f02c3dde92a397e65e68487ae99797f7d5a"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/net8.0/pl/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-net8.0-pl-StreamJsonRpc.resources.dll-3FA5B341634EA7903594335F182AF8345861E7F1",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "42aa620d9e296f8a4f67eea3834388b8f50874a35f1e5272a83ff8392d1efab2"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "3fa5b341634ea7903594335f182af8345861e7f1"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.1/ja/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.1-ja-StreamJsonRpc.resources.dll-9E5690B6CDB6241CDD17D820C5C8CFCAD74D7BAE",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "0f69573245bbfcb882671cf638c1e3f15d5be5467e6b43ac02efcba815e4c41b"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "9e5690b6cdb6241cdd17d820c5c8cfcad74d7bae"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.0/cs/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.0-cs-StreamJsonRpc.resources.dll-747DABAEB12D7011136FE4670BC1360A28EECA44",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "9221f47ba300a7e07998a7f0f6e822b499af70299ded54904601ce386340aaed"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "747dabaeb12d7011136fe4670bc1360a28eeca44"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.0/pt-BR/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.0-pt-BR-StreamJsonRpc.resources.dll-C397AE80635FD1850A1AC1F196DA181A825934E3",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "ef4ee4327e444b814428eeece1132b9ed57d15ec1fb8c73557c4c77b1598f486"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "c397ae80635fd1850a1ac1f196da181a825934e3"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.1/de/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.1-de-StreamJsonRpc.resources.dll-BDCB1FF21901D34EDEDFB21B8601F0185AE93749",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "17eaaa39fc8bbb5664935ef6c4b1d02aa34486283f7309e652c79782b2aac45d"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "bdcb1ff21901d34ededfb21b8601f0185ae93749"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.1/ru/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.1-ru-StreamJsonRpc.resources.dll-250B1C6A918BFCE754AB36DA13A81EF20A6D7064",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "effb45175e6b61d6eba3bc4904c89d5fcd066f7d44f90169ea8addfd5aa3016b"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "250b1c6a918bfce754ab36da13a81ef20a6d7064"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.0/ru/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.0-ru-StreamJsonRpc.resources.dll-2AFF6AD414EB1DDA5B877F8EB27986BB5BF21C16",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "5e6067ebd92ad9da920f1809db71d13c276d37f779f25b43c054d2fafbfce7e7"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "2aff6ad414eb1dda5b877f8eb27986bb5bf21c16"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.1/es/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.1-es-StreamJsonRpc.resources.dll-39CE99EB5F20AF7BB2B22A73668575ED87707E65",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "bb99e4d36b5d366f08440073dd4f4bcd45b9982473707c7082bc96866b8934f2"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "39ce99eb5f20af7bb2b22a73668575ed87707e65"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.1/tr/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.1-tr-StreamJsonRpc.resources.dll-5200D9A968FDE0A30606C5751EAD1552C6197F6E",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "439b99edf0db0358184591723e9ab6cc751e4f4ac58f9f1b902f50b0a2738311"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "5200d9a968fde0a30606c5751ead1552c6197f6e"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/net8.0/es/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-net8.0-es-StreamJsonRpc.resources.dll-7BDC512E5A96706245A3FB07D2C1AC5603BF4971",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "c3f83d0e5c50482ec1ee7ed9b4e43f8eb73d205b3c541d3d0a48ea16323c709b"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "7bdc512e5a96706245a3fb07d2c1ac5603bf4971"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/net8.0/tr/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-net8.0-tr-StreamJsonRpc.resources.dll-AA475F2826CD91EBD70350BC9F8ED086C8C90D9D",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "f5420862ce41eb381a4b8b8b592136b0d2db589d0c6db1dd8f21ac7b9a7e0685"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "aa475f2826cd91ebd70350bc9f8ed086c8c90d9d"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.0/fr/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.0-fr-StreamJsonRpc.resources.dll-EE81EDAE3689B4C3A2A57E30D219843C6DB0CE46",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "3e82ab4a3d5e41c317e7f03ae5fc78daba8c3fc6f91829391106235aa4d0c550"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "ee81edae3689b4c3a2a57e30d219843c6db0ce46"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.0/zh-Hans/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.0-zh-Hans-StreamJsonRpc.resources.dll-6F58D9B12CB6279C06083C4CB80010A0A61F2870",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "b35329c5fcccd5830199bd004943dda3d4ce8e794f7610c409cd031499a60323"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "6f58d9b12cb6279c06083c4cb80010a0a61f2870"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.1/it/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.1-it-StreamJsonRpc.resources.dll-E2442E64BA5B0B43FB746A2BD3B1FA25F409453F",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "d0b2630747d796260f494805d6f86d3bbe108e92f4e79a26906ec03adb583985"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "e2442e64ba5b0b43fb746a2bd3b1fa25f409453f"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./StreamJsonRpc.nuspec",
+      "SPDXID": "SPDXRef-File--StreamJsonRpc.nuspec-AA3E342AC3167A9124992899A086EA5CD9AA039C",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "f3eb47d8201ab225053d520e9c66d0b57e02bc8011ef90d7611f176bed3277c1"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "aa3e342ac3167a9124992899a086ea5cd9aa039c"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.1/zh-Hant/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.1-zh-Hant-StreamJsonRpc.resources.dll-2392F4ECF1C386EF6B58992955419ED45B3A0E33",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "6cfb2f96b31d0097511507dad01c9b3539fa49b75e7991ae4cbec231755d0287"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "2392f4ecf1c386ef6b58992955419ed45b3a0e33"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/net8.0/ja/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-net8.0-ja-StreamJsonRpc.resources.dll-CAE1A280D3742FDAE7986047B8DA12BEAA54FD0A",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "d76840d09b00a0fa065fadd92d03d391db964866cd99f1e6ab3f40d97a13d02d"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "cae1a280d3742fdae7986047b8da12beaa54fd0a"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.0/StreamJsonRpc.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.0-StreamJsonRpc.dll-EAF1DA7FE51DF16E64B85A74F4296DD8A2372A40",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "d9fdf21f642cf444c3a7d5e1f5820c53514669b720107e8240bbc225a9ab12cb"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "eaf1da7fe51df16e64b85a74f4296dd8a2372a40"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.0/ko/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.0-ko-StreamJsonRpc.resources.dll-BE90B87CB6164737099373C8B48C60E52B3A07FA",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "1bf90edd5abb343bbb5e0b7d30c631d530fd5d01e1682c39805d9f5af03c566e"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "be90b87cb6164737099373c8b48c60e52b3a07fa"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.1/StreamJsonRpc.xml",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.1-StreamJsonRpc.xml-9E8940F949C99BFF861EB2B948B638CC80EA4AA3",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "66ec6da35f833fcad2fa9556056cba108f9717dd5a3715bac91354390e96b926"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "9e8940f949c99bff861eb2b948b638cc80ea4aa3"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.1/pl/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.1-pl-StreamJsonRpc.resources.dll-2088AB78E4CB9EF90DE8DC7D2A9AAEB13EE77CAB",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "5a5fa64d875c569438bcbd87e0c0fd9394d29c8731aaf663cf74244a24f2ebf3"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "2088ab78e4cb9ef90de8dc7d2a9aaeb13ee77cab"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.0/pl/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.0-pl-StreamJsonRpc.resources.dll-0122B520E792412D87B24D429884E10E6A217F4D",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "97792e41e6ba148836146e70f10f5afb274aa065dafc9a60485e3eb3169e8956"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "0122b520e792412d87b24d429884e10e6a217f4d"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.1/cs/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.1-cs-StreamJsonRpc.resources.dll-33AB8E99F8F0E97B357174EE97147EEF6BB33374",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "082c371fb8ffef91ecf679ad4c60f604b6285d373b0fb8a48ad5fe933781d3d6"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "33ab8e99f8f0e97b357174ee97147eef6bb33374"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.1/pt-BR/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.1-pt-BR-StreamJsonRpc.resources.dll-E8BAE8D8655BE04C3EB7E4B00CE5917F5FD71BEF",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "02abedefcdd635303e70467a5a6a650ccd78f8369cf5613e0049a15d7b1f326e"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "e8bae8d8655be04c3eb7e4b00ce5917f5fd71bef"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.0/es/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.0-es-StreamJsonRpc.resources.dll-C0424F113FA3346061374E917627566470860CB7",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "b1833c43244eead518e697826f5ed61501dcd18fbb820737ad14d664380e3f09"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "c0424f113fa3346061374e917627566470860cb7"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.0/tr/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.0-tr-StreamJsonRpc.resources.dll-D3B445E7345CC3667CB94F674A6265D03285CA3B",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "16ad2a0001bf3c7c3aaa0912b9593875e590bd6ae761bc2a2affa77661b8d217"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "d3b445e7345cc3667cb94f674a6265d03285ca3b"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./README.md",
+      "SPDXID": "SPDXRef-File--README.md-C40ED3FFFC9119651EDB9D40901107B7EED1E00A",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "c2d363dde0de20149ecd4d90025a012bc36c6c438c0eb4372a06de1c35ae6ded"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "c40ed3fffc9119651edb9d40901107b7eed1e00a"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.1/fr/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.1-fr-StreamJsonRpc.resources.dll-BA54CADF52AFE898DDB5EB25DA834D00FEF18379",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "f9933c148b5c5613544133451e4d48deded09e295cce31f7e6e048faf66ab6cf"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "ba54cadf52afe898ddb5eb25da834d00fef18379"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/net8.0/it/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-net8.0-it-StreamJsonRpc.resources.dll-E26BE08B143DF3FA2A046C135B637EF06C8D9603",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "805a4a193e3f62ea93086c4c679b24a2ea792e87a8b9d3eb36755ed2d2883a89"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "e26be08b143df3fa2a046c135b637ef06c8d9603"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/net8.0/zh-Hant/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-net8.0-zh-Hant-StreamJsonRpc.resources.dll-16A50E1F1EC1681F22D102AF935CADC1C86999CF",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "cc197725f924c7f3ab73016fddf015845688b2fbb853691ae2f0c85e8d0930fa"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "16a50e1f1ec1681f22d102af935cadc1c86999cf"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.0/ja/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.0-ja-StreamJsonRpc.resources.dll-A8C0CF46B64D1575863BF77CC266E16BE219F032",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "253d9ab6200d590b8705a141dce702e707a1a3531c213a00d9856796fcfd8cdf"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "a8c0cf46b64d1575863bf77cc266e16be219f032"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.1/zh-Hans/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.1-zh-Hans-StreamJsonRpc.resources.dll-4759A7610A3B54165BE5A6219160B48CD6659779",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "3deafd7241e9c4f753b5ebc4ce7d75e1200d6fd3aa6ebdf5fd62386e9142bd5d"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "4759a7610a3b54165be5a6219160b48cd6659779"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.1/StreamJsonRpc.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.1-StreamJsonRpc.dll-5CEF4ABC2F52584991AAD015BF36376D21EDE0A3",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "5699ef9d8935000f004bbecd3884835c9c3728f0bbdfaac8675046be24f55664"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "5cef4abc2f52584991aad015bf36376d21ede0a3"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": "./lib/netstandard2.1/ko/StreamJsonRpc.resources.dll",
+      "SPDXID": "SPDXRef-File--lib-netstandard2.1-ko-StreamJsonRpc.resources.dll-A93B67F0E03A90153BC427BC04E1BA80D5D92735",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "4f87c44de0d2695cee72e99799ed63c5d24f2ee4e39986718769463e719c8e94"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "a93b67f0e03a90153bc427bc04e1ba80d5d92735"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    }
+  ],
+  "packages": [
+    {
+      "name": "StreamJsonRpc",
+      "SPDXID": "SPDXRef-RootPackage",
+      "downloadLocation": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "faa88ac81c1d9ee2ee0f05c5cfa7f67579ce294e"
+      },
+      "filesAnalyzed": true,
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoFromFiles": [
+        "NOASSERTION"
+      ],
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "versionInfo": "1.0.0",
+      "supplier": "Organization: Microsoft",
+      "hasFiles": [
+        "SPDXRef-File--lib-netstandard2.1-pl-StreamJsonRpc.resources.dll-2088AB78E4CB9EF90DE8DC7D2A9AAEB13EE77CAB",
+        "SPDXRef-File--lib-netstandard2.1-StreamJsonRpc.xml-9E8940F949C99BFF861EB2B948B638CC80EA4AA3",
+        "SPDXRef-File--lib-netstandard2.0-ko-StreamJsonRpc.resources.dll-BE90B87CB6164737099373C8B48C60E52B3A07FA",
+        "SPDXRef-File--lib-netstandard2.0-StreamJsonRpc.dll-EAF1DA7FE51DF16E64B85A74F4296DD8A2372A40",
+        "SPDXRef-File--lib-net8.0-ja-StreamJsonRpc.resources.dll-CAE1A280D3742FDAE7986047B8DA12BEAA54FD0A",
+        "SPDXRef-File--StreamJsonRpc.nuspec-AA3E342AC3167A9124992899A086EA5CD9AA039C",
+        "SPDXRef-File--lib-netstandard2.1-ja-StreamJsonRpc.resources.dll-9E5690B6CDB6241CDD17D820C5C8CFCAD74D7BAE",
+        "SPDXRef-File--lib-netstandard2.0-zh-Hant-StreamJsonRpc.resources.dll-8B432F02C3DDE92A397E65E68487AE99797F7D5A",
+        "SPDXRef-File--lib-netstandard2.0-it-StreamJsonRpc.resources.dll-1A5077BE69B787D45E0EAC3841A978D56A9760E2",
+        "SPDXRef-File--lib-net8.0-zh-Hans-StreamJsonRpc.resources.dll-09985C5188E0EEC456B6744C7349C4179C62E432",
+        "SPDXRef-File--lib-net8.0-fr-StreamJsonRpc.resources.dll-62CCB9396E6002F24D18918CC2CE4FCDFCC46BEB",
+        "SPDXRef-File--PackageIcon.png-35E0B5FB0A15D22F442B5C76A3AC1D6631E3E399",
+        "SPDXRef-File--lib-netstandard2.1-ru-StreamJsonRpc.resources.dll-250B1C6A918BFCE754AB36DA13A81EF20A6D7064",
+        "SPDXRef-File--lib-netstandard2.1-de-StreamJsonRpc.resources.dll-BDCB1FF21901D34EDEDFB21B8601F0185AE93749",
+        "SPDXRef-File--lib-netstandard2.0-pt-BR-StreamJsonRpc.resources.dll-C397AE80635FD1850A1AC1F196DA181A825934E3",
+        "SPDXRef-File--lib-netstandard2.0-cs-StreamJsonRpc.resources.dll-747DABAEB12D7011136FE4670BC1360A28EECA44",
+        "SPDXRef-File--lib-net8.0-pl-StreamJsonRpc.resources.dll-3FA5B341634EA7903594335F182AF8345861E7F1",
+        "SPDXRef-File--lib-net8.0-StreamJsonRpc.xml-5993A624D744191168DAB16C052D210F9C8BDFB7",
+        "SPDXRef-File--lib-netstandard2.1-tr-StreamJsonRpc.resources.dll-5200D9A968FDE0A30606C5751EAD1552C6197F6E",
+        "SPDXRef-File--lib-netstandard2.1-es-StreamJsonRpc.resources.dll-39CE99EB5F20AF7BB2B22A73668575ED87707E65",
+        "SPDXRef-File--lib-netstandard2.0-ru-StreamJsonRpc.resources.dll-2AFF6AD414EB1DDA5B877F8EB27986BB5BF21C16",
+        "SPDXRef-File--lib-netstandard2.0-de-StreamJsonRpc.resources.dll-F254FE2AC29C588D0F87A0B2B667AA57BF58F8C2",
+        "SPDXRef-File--lib-net8.0-pt-BR-StreamJsonRpc.resources.dll-46F58DFFC1B90A84507B0E4EA8A3A6729EA14ACE",
+        "SPDXRef-File--lib-net8.0-cs-StreamJsonRpc.resources.dll-CDC6322BB9433B4B1B5C8CD0932A32900FDABB29",
+        "SPDXRef-File--lib-netstandard2.1-zh-Hant-StreamJsonRpc.resources.dll-2392F4ECF1C386EF6B58992955419ED45B3A0E33",
+        "SPDXRef-File--lib-netstandard2.1-it-StreamJsonRpc.resources.dll-E2442E64BA5B0B43FB746A2BD3B1FA25F409453F",
+        "SPDXRef-File--lib-netstandard2.0-zh-Hans-StreamJsonRpc.resources.dll-6F58D9B12CB6279C06083C4CB80010A0A61F2870",
+        "SPDXRef-File--lib-netstandard2.0-fr-StreamJsonRpc.resources.dll-EE81EDAE3689B4C3A2A57E30D219843C6DB0CE46",
+        "SPDXRef-File--lib-net8.0-tr-StreamJsonRpc.resources.dll-AA475F2826CD91EBD70350BC9F8ED086C8C90D9D",
+        "SPDXRef-File--lib-net8.0-es-StreamJsonRpc.resources.dll-7BDC512E5A96706245A3FB07D2C1AC5603BF4971",
+        "SPDXRef-File--NOTICE-8E56FD22F81087338EB04AFBDEA75181266321DD",
+        "SPDXRef-File--lib-netstandard2.1-pt-BR-StreamJsonRpc.resources.dll-E8BAE8D8655BE04C3EB7E4B00CE5917F5FD71BEF",
+        "SPDXRef-File--lib-netstandard2.1-cs-StreamJsonRpc.resources.dll-33AB8E99F8F0E97B357174EE97147EEF6BB33374",
+        "SPDXRef-File--lib-netstandard2.0-pl-StreamJsonRpc.resources.dll-0122B520E792412D87B24D429884E10E6A217F4D",
+        "SPDXRef-File--lib-netstandard2.0-StreamJsonRpc.xml-1C96DB793E4EDC04A8C83D548C159B70E50227B1",
+        "SPDXRef-File--lib-net8.0-ko-StreamJsonRpc.resources.dll-89BB329C786BC779A7FAC16AAF1FEC707D619C29",
+        "SPDXRef-File--lib-net8.0-StreamJsonRpc.dll-587BD69ADCA120422566840DC555DBA6D9CE8F16",
+        "SPDXRef-File--lib-netstandard2.1-zh-Hans-StreamJsonRpc.resources.dll-4759A7610A3B54165BE5A6219160B48CD6659779",
+        "SPDXRef-File--lib-netstandard2.1-fr-StreamJsonRpc.resources.dll-BA54CADF52AFE898DDB5EB25DA834D00FEF18379",
+        "SPDXRef-File--lib-netstandard2.0-tr-StreamJsonRpc.resources.dll-D3B445E7345CC3667CB94F674A6265D03285CA3B",
+        "SPDXRef-File--lib-netstandard2.0-es-StreamJsonRpc.resources.dll-C0424F113FA3346061374E917627566470860CB7",
+        "SPDXRef-File--lib-net8.0-ru-StreamJsonRpc.resources.dll-CE4B51C252C395718FDE647FB311AB38D6E9ACF8",
+        "SPDXRef-File--lib-net8.0-de-StreamJsonRpc.resources.dll-B80AF952F399DC4A079145935D7E86B0BED79A45",
+        "SPDXRef-File--lib-netstandard2.1-ko-StreamJsonRpc.resources.dll-A93B67F0E03A90153BC427BC04E1BA80D5D92735",
+        "SPDXRef-File--lib-netstandard2.1-StreamJsonRpc.dll-5CEF4ABC2F52584991AAD015BF36376D21EDE0A3",
+        "SPDXRef-File--lib-netstandard2.0-ja-StreamJsonRpc.resources.dll-A8C0CF46B64D1575863BF77CC266E16BE219F032",
+        "SPDXRef-File--lib-net8.0-zh-Hant-StreamJsonRpc.resources.dll-16A50E1F1EC1681F22D102AF935CADC1C86999CF",
+        "SPDXRef-File--lib-net8.0-it-StreamJsonRpc.resources.dll-E26BE08B143DF3FA2A046C135B637EF06C8D9603",
+        "SPDXRef-File--README.md-C40ED3FFFC9119651EDB9D40901107B7EED1E00A"
+      ]
+    }
+  ],
+  "externalDocumentRefs": [],
+  "relationships": [
+    {
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-RootPackage",
+      "spdxElementId": "SPDXRef-DOCUMENT"
+    }
+  ],
+  "spdxVersion": "SPDX-2.2",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "StreamJsonRpc 1.0.0",
+  "documentNamespace": "https://sbom.microsoft/1:34sbAVZth0--DQCSE2iE2Q:kMXbC2KgP0yw9pOD9nhl7g/8125:12219619/StreamJsonRpc:1.0.0:s4ER4n8I8k2LbY-rst-gQQ",
+  "creationInfo": {
+    "created": "2025-08-19T22:34:21Z",
+    "creators": [
+      "Organization: Microsoft",
+      "Tool: Microsoft.SBOMTool-0.2.7"
+    ]
+  },
+  "documentDescribes": [
+    "SPDXRef-RootPackage"
+  ]
+}

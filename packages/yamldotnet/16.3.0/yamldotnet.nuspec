@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>YamlDotNet</id>
+    <version>16.3.0</version>
+    <authors>Antoine Aubry</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>images/yamldotnet.png</icon>
+    <readme>README.md</readme>
+    <projectUrl>https://github.com/aaubry/YamlDotNet/wiki</projectUrl>
+    <description>YamlDotNet is a .NET library for YAML. YamlDotNet provides low level parsing and emitting of YAML as well as a high level object model similar to XmlDocument. A serialization library is also included that allows to read and write objects from and to YAML streams.</description>
+    <copyright>Copyright (c) Antoine Aubry and contributors</copyright>
+    <tags>yaml parser development library serialization</tags>
+    <repository type="git" url="https://github.com/aaubry/YamlDotNet" commit="ae480660f4fb26f3eb0b41c1d1fcf21c0e9d9e73" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.7" />
+      <group targetFramework="net6.0" />
+      <group targetFramework="net8.0" />
+      <group targetFramework=".NETStandard2.0" />
+      <group targetFramework=".NETStandard2.1" />
+    </dependencies>
+  </metadata>
+</package>

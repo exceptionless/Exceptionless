@@ -1,0 +1,1134 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Pegasus</name>
+    </assembly>
+    <members>
+        <member name="T:Pegasus.CompileManager">
+            <summary>
+            Provides a simple interface for parsing and compiling a PEG grammar.
+            </summary>
+        </member>
+        <member name="M:Pegasus.CompileManager.CompileFile(System.String,System.String,System.Action{System.CodeDom.Compiler.CompilerError})">
+            <summary>
+            Parse and compile a PEG grammar from a file.
+            </summary>
+            <param name="inputFile">The source filename.</param>
+            <param name="outputFile">The desired destination filename, or <c>null</c> to use the default.</param>
+            <param name="logError">An action that will be called for every warning or error.</param>
+        </member>
+        <member name="M:Pegasus.CompileManager.CompileString(System.String,System.String)">
+            <summary>
+            Parse and compile a PEG grammar from a string.
+            </summary>
+            <param name="subject">The PEG grammar to parse and compile.</param>
+            <param name="fileName">The filename to use in errors.</param>
+            <returns>A <see cref="T:Pegasus.Compiler.CompileResult"/> containing the result of the compilation.</returns>
+        </member>
+        <member name="M:Pegasus.CompileManager.MakePragmaPath(System.String,System.String)">
+            <summary>
+            Compares the input and output path and returns the appropriate filename to use in <c>#line</c> pragmas.
+            </summary>
+            <param name="input">The input file path.</param>
+            <param name="output">The output file path.</param>
+            <returns>The input path transformed to the appropriate pragma path.</returns>
+        </member>
+        <member name="T:Pegasus.CompilePegGrammar">
+            <summary>
+            Provides compilation services for PEG grammars as an MSBuild task.
+            </summary>
+        </member>
+        <member name="P:Pegasus.CompilePegGrammar.InputFiles">
+            <summary>
+            Gets or sets the filenames containing grammars in PEG-format.
+            </summary>
+        </member>
+        <member name="P:Pegasus.CompilePegGrammar.OutputFiles">
+            <summary>
+            Gets or sets the output filenames that will contain the resulting code.
+            </summary>
+            <remarks>
+            Set to null to use the default, which is the input filenames with ".g.cs" appended.
+            </remarks>
+        </member>
+        <member name="M:Pegasus.CompilePegGrammar.Execute">
+            <summary>
+            Reads and compiles the specified grammars.
+            </summary>
+            <returns>true, if the compilation was successful; false, otherwise.</returns>
+        </member>
+        <member name="T:Pegasus.Compiler.CompileResult">
+            <summary>
+            Encapsulates the results and errors from the compilation of a PEG grammar.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Compiler.CompileResult.#ctor(Pegasus.Expressions.Grammar)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Pegasus.Compiler.CompileResult"/> class.
+            </summary>
+            <param name="grammar">The grammar to which this <see cref="T:Pegasus.Compiler.CompileResult"/> pertains.</param>
+        </member>
+        <member name="P:Pegasus.Compiler.CompileResult.Code">
+            <summary>
+            Gets or sets the code resulting from compilation.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Compiler.CompileResult.Errors">
+            <summary>
+            Gets the collection of errors that occurred during compilation.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Compiler.CompileResult.ExpressionTypes">
+            <summary>
+            Gets a dictionary of expressions and their corresponding types.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Compiler.CompileResult.LeftAdjacentExpressions">
+            <summary>
+            Gets the collection of left-recursive rules.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Compiler.CompileResult.LeftRecursiveRules">
+            <summary>
+            Gets the collection of left-recursive rules.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Compiler.CompileResult.MutuallyRecursiveRules">
+            <summary>
+            Gets the collection of mutually left-recursive rules.
+            </summary>
+        </member>
+        <member name="T:Pegasus.Compiler.ContainsAssertionsEvaluator">
+            <summary>
+            Performs assertion detection services for Pegasus <see cref="T:Pegasus.Expressions.Grammar">Grammars</see>.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Compiler.ContainsAssertionsEvaluator.Evaluate(Pegasus.Expressions.Grammar)">
+            <summary>
+            Evaluates the expressions in a Pegasus <see cref="T:Pegasus.Expressions.Grammar"/> to determine which of them contain assertions.
+            </summary>
+            <param name="grammar">The <see cref="T:Pegasus.Expressions.Grammar"/> to evaluate.</param>
+            <returns>A <see cref="T:System.Collections.Generic.Dictionary`2"/> detailing the whether each expression in the grammar contains assertions.</returns>
+        </member>
+        <member name="T:Pegasus.Compiler.ExpressionDispatch">
+            <summary>
+            Provides expression dispatch.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Compiler.ExpressionDispatch.CreateDispatcher(System.Action{Pegasus.Expressions.AndExpression},System.Action{Pegasus.Expressions.AndCodeExpression},System.Action{Pegasus.Expressions.ChoiceExpression},System.Action{Pegasus.Expressions.ClassExpression},System.Action{Pegasus.Expressions.CodeExpression},System.Action{Pegasus.Expressions.LiteralExpression},System.Action{Pegasus.Expressions.NameExpression},System.Action{Pegasus.Expressions.NotExpression},System.Action{Pegasus.Expressions.NotCodeExpression},System.Action{Pegasus.Expressions.PrefixedExpression},System.Action{Pegasus.Expressions.RepetitionExpression},System.Action{Pegasus.Expressions.SequenceExpression},System.Action{Pegasus.Expressions.TypedExpression},System.Action{Pegasus.Expressions.WildcardExpression})">
+            <summary>
+            Creates an expression dispatcher.
+            </summary>
+            <param name="And">The action to be performed in the case of a <see cref="T:Pegasus.Expressions.AndExpression"/></param>
+            <param name="AndCode">The action to be performed in the case of a <see cref="T:Pegasus.Expressions.AndCodeExpression"/></param>
+            <param name="Choice">The action to be performed in the case of a <see cref="T:Pegasus.Expressions.ChoiceExpression"/></param>
+            <param name="Class">The action to be performed in the case of a <see cref="T:Pegasus.Expressions.ClassExpression"/></param>
+            <param name="Code">The action to be performed in the case of a <see cref="T:Pegasus.Expressions.CodeExpression"/></param>
+            <param name="Literal">The action to be performed in the case of a <see cref="T:Pegasus.Expressions.LiteralExpression"/></param>
+            <param name="Name">The action to be performed in the case of a <see cref="T:Pegasus.Expressions.NameExpression"/></param>
+            <param name="Not">The action to be performed in the case of a <see cref="T:Pegasus.Expressions.NotExpression"/></param>
+            <param name="NotCode">The action to be performed in the case of a <see cref="T:Pegasus.Expressions.NotCodeExpression"/></param>
+            <param name="Prefixed">The action to be performed in the case of a <see cref="T:Pegasus.Expressions.PrefixedExpression"/></param>
+            <param name="Repetition">The action to be performed in the case of a <see cref="T:Pegasus.Expressions.RepetitionExpression"/></param>
+            <param name="Sequence">The action to be performed in the case of a <see cref="T:Pegasus.Expressions.SequenceExpression"/></param>
+            <param name="Typed">The action to be performed in the case of a <see cref="T:Pegasus.Expressions.TypedExpression"/></param>
+            <param name="Wildcard">The action to be performed in the case of a <see cref="T:Pegasus.Expressions.WildcardExpression"/></param>
+            <returns>The expression dispatcher that will take perform specified action for a given <see cref="T:Pegasus.Expressions.Expression"/>.</returns>
+        </member>
+        <member name="T:Pegasus.Compiler.LeftAdjacencyDetector">
+            <summary>
+            Provides left adjacency detection services for Pegasus <see cref="T:Pegasus.Expressions.Grammar">Grammars</see>.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Compiler.LeftAdjacencyDetector.Detect(Pegasus.Expressions.Grammar)">
+            <summary>
+            Detects which expressions in a <see cref="T:Pegasus.Expressions.Grammar"/> are left-adjacent.
+            </summary>
+            <param name="grammar">The <see cref="T:Pegasus.Expressions.Grammar"/> to inspect.</param>
+            <returns>A <see cref="T:System.Linq.ILookup`2"/> containing the left-adjacent rules.</returns>
+        </member>
+        <member name="T:Pegasus.Compiler.LeftRecursionDetector">
+            <summary>
+            Provides left-recursion detection services for Pegasus <see cref="T:Pegasus.Expressions.Grammar">Grammars</see>.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Compiler.LeftRecursionDetector.Detect(System.Linq.ILookup{Pegasus.Expressions.Rule,Pegasus.Expressions.Expression})">
+            <summary>
+            Detects which rules in a <see cref="T:Pegasus.Expressions.Grammar"/> are left-recursive.
+            </summary>
+            <param name="leftAdjacentExpressions">The left-adjacent expressions to inspect.</param>
+            <returns>A <see cref="T:System.Collections.Generic.HashSet`1"/> containing the left-recursive rules.</returns>
+            <remarks>This does not detect mutual left-recursion.</remarks>
+        </member>
+        <member name="T:Pegasus.Compiler.MutualRecursionDetector">
+            <summary>
+            Provides mutual left-recursion detection services for Pegasus <see cref="T:Pegasus.Expressions.Grammar">Grammars</see>.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Compiler.MutualRecursionDetector.Detect(System.Linq.ILookup{Pegasus.Expressions.Rule,Pegasus.Expressions.Expression})">
+            <summary>
+            Detects which rules in a <see cref="T:Pegasus.Expressions.Grammar"/> are mutually left-recursive.
+            </summary>
+            <param name="leftAdjacentExpressions">The set of left-adjacent <see cref="T:Pegasus.Expressions.Expression">expressions</see> to inspect.</param>
+            <returns>A collection containing the mutually left-recursive rules.</returns>
+        </member>
+        <member name="T:Pegasus.Compiler.PegCompiler">
+            <summary>
+            Provides error checking and compilation services for PEG grammars.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Compiler.PegCompiler.Compile(Pegasus.Expressions.Grammar)">
+            <summary>
+            Compiles a PEG grammar into a program.
+            </summary>
+            <param name="grammar">The grammar to compile.</param>
+            <returns>A <see cref="T:Pegasus.Compiler.CompileResult"/> containing the errors, warnings, and results of compilation.</returns>
+        </member>
+        <member name="T:Pegasus.Compiler.PublicRuleFinder">
+            <summary>
+            Contains the logic for discovering publicly visible rules.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Compiler.PublicRuleFinder.Find(Pegasus.Expressions.Grammar)">
+            <summary>
+            Finds the publicly visible rules.
+            </summary>
+            <param name="grammar">The grammar to search.</param>
+            <returns>An object describing the publicly visible rules for the specified grammar.</returns>
+        </member>
+        <member name="M:Pegasus.Compiler.PublicRuleFinder.GetPublicName(Pegasus.Expressions.Rule)">
+            <summary>
+            Gets the public name for the specified rule.
+            </summary>
+            <param name="rule">The rule whose public name will be determined.</param>
+            <returns>The public name.</returns>
+        </member>
+        <member name="M:Pegasus.Compiler.PublicRuleFinder.GetPublicName(Pegasus.Expressions.Identifier)">
+            <summary>
+            Gets the public name for the specified identifier.
+            </summary>
+            <param name="identifier">The identifier whose public name will be determined.</param>
+            <returns>The public name.</returns>
+        </member>
+        <member name="M:Pegasus.Compiler.PublicRuleFinder.GetPublicName(System.String)">
+            <summary>
+            Gets the public name for the specified rule name.
+            </summary>
+            <param name="name">The name to be made into a public name.</param>
+            <returns>The public name.</returns>
+        </member>
+        <member name="T:Pegasus.Compiler.ResultTypeFinder">
+            <summary>
+            Provides result type finding services for Pegasus <see cref="T:Pegasus.Expressions.Grammar">Grammars</see>.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Compiler.ResultTypeFinder.Find(Pegasus.Expressions.Grammar)">
+            <summary>
+            Finds the known result types of all expressions in the <see cref="T:Pegasus.Expressions.Grammar"/>.
+            </summary>
+            <param name="grammar">The <see cref="T:Pegasus.Expressions.Grammar"/> to inspect.</param>
+            <returns>A <see cref="T:System.Collections.Generic.Dictionary`2"/> of expressions and their types.</returns>
+        </member>
+        <member name="T:Pegasus.Compiler.SettingName">
+            <summary>
+            Contains constants with the supported setting names.
+            </summary>
+        </member>
+        <member name="F:Pegasus.Compiler.SettingName.Accessibility">
+            <summary>
+            The "accessibility" setting.
+            </summary>
+        </member>
+        <member name="F:Pegasus.Compiler.SettingName.ClassName">
+            <summary>
+            The "classname" setting.
+            </summary>
+        </member>
+        <member name="F:Pegasus.Compiler.SettingName.IgnoreCase">
+            <summary>
+            The "ignorecase" setting.
+            </summary>
+        </member>
+        <member name="F:Pegasus.Compiler.SettingName.Members">
+            <summary>
+            The "members" setting.
+            </summary>
+        </member>
+        <member name="F:Pegasus.Compiler.SettingName.Namespace">
+            <summary>
+            The "namespace" setting.
+            </summary>
+        </member>
+        <member name="F:Pegasus.Compiler.SettingName.Resources">
+            <summary>
+            The "resources" setting.
+            </summary>
+        </member>
+        <member name="F:Pegasus.Compiler.SettingName.Start">
+            <summary>
+            The "start" setting.
+            </summary>
+        </member>
+        <member name="F:Pegasus.Compiler.SettingName.Trace">
+            <summary>
+            The "trace" setting.
+            </summary>
+        </member>
+        <member name="F:Pegasus.Compiler.SettingName.Using">
+            <summary>
+            The "using" setting.
+            </summary>
+        </member>
+        <member name="T:Pegasus.Compiler.VisibleRules">
+            <summary>
+            Describles the publicly visible rules for a grammar.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Compiler.VisibleRules.#ctor(Pegasus.Expressions.Rule,System.Collections.Generic.List{Pegasus.Expressions.Rule},System.Collections.Generic.List{Pegasus.Expressions.Rule})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Pegasus.Compiler.VisibleRules"/> class.
+            </summary>
+            <param name="startRule">The starting rule. This will be exposed via the <c>Parse</c> method.</param>
+            <param name="publicRules">The public rules. These will be exposed via <c>ParseRuleName</c> methods.</param>
+            <param name="exportedRules">The exported rules. These will be exposed via the <c>Exported</c> collection.</param>
+        </member>
+        <member name="P:Pegasus.Compiler.VisibleRules.ExportedRules">
+            <summary>
+            Gets the exported rules.
+            </summary>
+            <remarks>
+            These will be exposed via the <c>Exported</c> collection.
+            </remarks>
+        </member>
+        <member name="P:Pegasus.Compiler.VisibleRules.PublicRules">
+            <summary>
+            Gets the public rules.
+            </summary>
+            <remarks>
+            These will be exposed via <c>ParseRuleName</c> methods.
+            </remarks>
+        </member>
+        <member name="P:Pegasus.Compiler.VisibleRules.StartRule">
+            <summary>
+            Gets the starting rule.
+            </summary>
+            <remarks>
+            This will be exposed via the <c>Parse</c> method.
+            </remarks>
+        </member>
+        <member name="T:Pegasus.Compiler.ZeroWidthEvaluator">
+            <summary>
+            Performs zero-width evaluation services for Pegasus <see cref="T:Pegasus.Expressions.Grammar">Grammars</see>.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Compiler.ZeroWidthEvaluator.Evaluate(Pegasus.Expressions.Grammar)">
+            <summary>
+            Evaluates the expressions in a Pegasus <see cref="T:Pegasus.Expressions.Grammar"/> to determine which of them are zero-width.
+            </summary>
+            <param name="grammar">The <see cref="T:Pegasus.Expressions.Grammar"/> to evaluate.</param>
+            <returns>A <see cref="T:System.Collections.Generic.Dictionary`2"/> detailing the whether each expression in the grammar is zero-width.</returns>
+        </member>
+        <member name="T:Pegasus.Expressions.AndCodeExpression">
+            <summary>
+            Represents an assertion.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Expressions.AndCodeExpression.#ctor(Pegasus.Expressions.CodeSpan)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Pegasus.Expressions.AndCodeExpression"/> class.
+            </summary>
+            <param name="code">The code to execute for the assertion.</param>
+        </member>
+        <member name="P:Pegasus.Expressions.AndCodeExpression.Code">
+            <summary>
+            Gets the code expression to be used as an assertion.
+            </summary>
+        </member>
+        <member name="T:Pegasus.Expressions.AndExpression">
+            <summary>
+            Represents a positive look-ahead.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Expressions.AndExpression.#ctor(Pegasus.Expressions.Expression)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Pegasus.Expressions.AndExpression"/> class.
+            </summary>
+            <param name="expression">An expression that must match at a location for this expression to match at that location.</param>
+        </member>
+        <member name="P:Pegasus.Expressions.AndExpression.Expression">
+            <summary>
+            Gets the expression that must match at a location for this expression to match at that location.
+            </summary>
+        </member>
+        <member name="T:Pegasus.Expressions.CharacterRange">
+            <summary>
+            Represents an inclusive range of characters.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Expressions.CharacterRange.#ctor(System.Char,System.Char)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Pegasus.Expressions.CharacterRange"/> class.
+            </summary>
+            <param name="min">The minimum character value, inclusive.</param>
+            <param name="max">The maximum character value, inclusive.</param>
+        </member>
+        <member name="P:Pegasus.Expressions.CharacterRange.Max">
+            <summary>
+            Gets the minimum character value, inclusive.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Expressions.CharacterRange.Min">
+            <summary>
+            Gets the maximum character value, inclusive.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Expressions.CharacterRange.Equals(System.Object)">
+            <summary>
+            Determines whether the specified <see cref="T:System.Object"/> is equal to the current <see cref="T:Pegasus.Expressions.CharacterRange"/>.
+            </summary>
+            <param name="obj">The <see cref="T:System.Object"/> to compare with the current <see cref="T:Pegasus.Expressions.CharacterRange"/>.</param>
+            <returns>true if the specified <see cref="T:System.Object"/> is equal to the current <see cref="T:Pegasus.Expressions.CharacterRange"/>; otherwise, false.</returns>
+        </member>
+        <member name="M:Pegasus.Expressions.CharacterRange.Equals(Pegasus.Expressions.CharacterRange)">
+            <summary>
+            Determines whether the specified <see cref="T:Pegasus.Expressions.CharacterRange"/> is equal to the current <see cref="T:Pegasus.Expressions.CharacterRange"/>.
+            </summary>
+            <param name="other">The <see cref="T:Pegasus.Expressions.CharacterRange"/> to compare with the current <see cref="T:Pegasus.Expressions.CharacterRange"/>.</param>
+            <returns>true if the specified <see cref="T:Pegasus.Expressions.CharacterRange"/> is equal to the current <see cref="T:Pegasus.Expressions.CharacterRange"/>; otherwise, false.</returns>
+        </member>
+        <member name="M:Pegasus.Expressions.CharacterRange.GetHashCode">
+            <summary>
+            Returns the hash code for this instance.
+            </summary>
+            <returns>A 32-bit signed integer hash code.</returns>
+        </member>
+        <member name="T:Pegasus.Expressions.ChoiceExpression">
+            <summary>
+            Represents an ordered choice between a set of expressions.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Expressions.ChoiceExpression.#ctor(System.Collections.Generic.IEnumerable{Pegasus.Expressions.Expression})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Pegasus.Expressions.ChoiceExpression"/> class.
+            </summary>
+            <param name="choices">The set of expressions to be used as choices.</param>
+        </member>
+        <member name="P:Pegasus.Expressions.ChoiceExpression.Choices">
+            <summary>
+            Gets the ordered set of choices that this expression can match.
+            </summary>
+        </member>
+        <member name="T:Pegasus.Expressions.ClassExpression">
+            <summary>
+            Represents a of a single character within certain character ranges.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Expressions.ClassExpression.#ctor(System.Collections.Generic.IEnumerable{Pegasus.Expressions.CharacterRange},System.Boolean,System.Nullable{System.Boolean})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Pegasus.Expressions.ClassExpression"/> class.
+            </summary>
+            <param name="ranges">The ranges that match.</param>
+            <param name="negated">A value indicating whether or not the expression is negated.</param>
+            <param name="ignoreCase">A value indicating whether or not the expression should ignore case differences when matching.</param>
+        </member>
+        <member name="P:Pegasus.Expressions.ClassExpression.IgnoreCase">
+            <summary>
+            Gets a value indicating whether the expression should ignore case differences when matching.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Expressions.ClassExpression.Negated">
+            <summary>
+            Gets a value indicating whether this expression is negated.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Expressions.ClassExpression.Ranges">
+            <summary>
+            Gets the character ranges that match.
+            </summary>
+        </member>
+        <member name="T:Pegasus.Expressions.CodeType">
+            <summary>
+            Describes the semantics of a code expression.
+            </summary>
+        </member>
+        <member name="F:Pegasus.Expressions.CodeType.Result">
+            <summary>
+            Indicates that the code should be used as a successful result.
+            </summary>
+        </member>
+        <member name="F:Pegasus.Expressions.CodeType.Error">
+            <summary>
+            Indicates that the code should be used to throw an error.
+            </summary>
+        </member>
+        <member name="F:Pegasus.Expressions.CodeType.State">
+            <summary>
+            Indicates that the code should be used to modify the current parser state.
+            </summary>
+        </member>
+        <member name="F:Pegasus.Expressions.CodeType.Parse">
+            <summary>
+            Indicates that the code should be used as the body of a parse method.
+            </summary>
+        </member>
+        <member name="T:Pegasus.Expressions.CodeExpression">
+            <summary>
+            Represents a code expression to be emitted in the source code of the generated parser.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Expressions.CodeExpression.#ctor(Pegasus.Expressions.CodeSpan,Pegasus.Expressions.CodeType)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Pegasus.Expressions.CodeExpression"/> class.
+            </summary>
+            <param name="codeSpan">The literal code to be contained by this expression.</param>
+            <param name="codeType">The semantic usage of this expression.</param>
+        </member>
+        <member name="P:Pegasus.Expressions.CodeExpression.CodeSpan">
+            <summary>
+            Gets the code that this expression contains.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Expressions.CodeExpression.CodeType">
+            <summary>
+            Gets the semantic usage of this expression.
+            </summary>
+        </member>
+        <member name="T:Pegasus.Expressions.CodeSpan">
+            <summary>
+            Tracks the contents and region of a code expression.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Expressions.CodeSpan.#ctor(System.String,Pegasus.Common.Cursor,Pegasus.Common.Cursor,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Pegasus.Expressions.CodeSpan"/> class.
+            </summary>
+            <param name="code">The string contents of the code span.</param>
+            <param name="start">The start of the code region.</param>
+            <param name="end">The end of the code region.</param>
+            <param name="value">The value of the code span.</param>
+        </member>
+        <member name="P:Pegasus.Expressions.CodeSpan.Code">
+            <summary>
+            Gets the contents of the code span.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Expressions.CodeSpan.End">
+            <summary>
+            Gets the start of the code region.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Expressions.CodeSpan.Start">
+            <summary>
+            Gets the end of the code region.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Expressions.CodeSpan.ToString">
+            <summary>
+            Returns the string value of this <see cref="T:Pegasus.Expressions.CodeSpan"/>.
+            </summary>
+            <returns>The string value of this <see cref="T:Pegasus.Expressions.CodeSpan"/>.</returns>
+        </member>
+        <member name="T:Pegasus.Expressions.Expression">
+            <summary>
+            Represents an expression that can be matched against a subject.
+            </summary>
+        </member>
+        <member name="T:Pegasus.Expressions.Grammar">
+            <summary>
+            Represents a full set of grammar rules.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Expressions.Grammar.#ctor(System.Collections.Generic.IEnumerable{Pegasus.Expressions.Rule},System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{Pegasus.Expressions.Identifier,System.Object}},Pegasus.Common.Cursor)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Pegasus.Expressions.Grammar"/> class.
+            </summary>
+            <param name="rules">The rules for this <see cref="T:Pegasus.Expressions.Grammar"/>.</param>
+            <param name="settings">A collection of <see cref="T:System.Collections.Generic.KeyValuePair`2"/> to be used as the settings for the compiler.</param>
+            <param name="end">The ending cursor for this <see cref="T:Pegasus.Expressions.Grammar"/>.</param>
+        </member>
+        <member name="P:Pegasus.Expressions.Grammar.End">
+            <summary>
+            Gets the ending cursor for this <see cref="T:Pegasus.Expressions.Grammar"/>.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Expressions.Grammar.Rules">
+            <summary>
+            Gets the rules for this <see cref="T:Pegasus.Expressions.Grammar"/>.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Expressions.Grammar.Settings">
+            <summary>
+            Gets the settings for this <see cref="T:Pegasus.Expressions.Grammar"/>.
+            </summary>
+        </member>
+        <member name="T:Pegasus.Expressions.Identifier">
+            <summary>
+            Represents a lexical identifier.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Expressions.Identifier.#ctor(System.String,Pegasus.Common.Cursor,Pegasus.Common.Cursor)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Pegasus.Expressions.Identifier"/> class.
+            </summary>
+            <param name="name">The name of the <see cref="T:Pegasus.Expressions.Identifier"/>.</param>
+            <param name="start">The cursor just before the <see cref="T:Pegasus.Expressions.Identifier"/>.</param>
+            <param name="end">The cursor just after the <see cref="T:Pegasus.Expressions.Identifier"/>.</param>
+        </member>
+        <member name="P:Pegasus.Expressions.Identifier.End">
+            <summary>
+            Gets the cursor just after the <see cref="T:Pegasus.Expressions.Identifier"/>.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Expressions.Identifier.Name">
+            <summary>
+            Gets the name of the <see cref="T:Pegasus.Expressions.Identifier"/>.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Expressions.Identifier.Start">
+            <summary>
+            Gets the cursor just before the <see cref="T:Pegasus.Expressions.Identifier"/>.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Expressions.Identifier.ToString">
+            <inheritdoc />
+        </member>
+        <member name="T:Pegasus.Expressions.LiteralExpression">
+            <summary>
+            Represents a literal string.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Expressions.LiteralExpression.#ctor(Pegasus.Common.Cursor,Pegasus.Common.Cursor,System.String,System.Nullable{System.Boolean},System.Boolean)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Pegasus.Expressions.LiteralExpression"/> class.
+            </summary>
+            <param name="start">The cursor just before the <see cref="T:Pegasus.Expressions.LiteralExpression"/>.</param>
+            <param name="end">The cursor just after the <see cref="T:Pegasus.Expressions.LiteralExpression"/>.</param>
+            <param name="value">The literal value.</param>
+            <param name="ignoreCase">A value indicating whether or not the expression should ignore case differences when matching.</param>
+            <param name="fromResource">A value indicating whether <paramref name="value"/> corresponds to a resource name or a literal value.</param>
+        </member>
+        <member name="P:Pegasus.Expressions.LiteralExpression.End">
+            <summary>
+            Gets the cursor just after the <see cref="T:Pegasus.Expressions.LiteralExpression"/>.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Expressions.LiteralExpression.FromResource">
+            <summary>
+            Gets a value indicating whether <see cref="P:Pegasus.Expressions.LiteralExpression.Value"/> corresponds to a resource name or a literal value.
+            </summary>
+            <value>
+            True, if <see cref="P:Pegasus.Expressions.LiteralExpression.Value"/> corresponds to a resource name that will be used as the literal value; false, otherwise.
+            </value>
+        </member>
+        <member name="P:Pegasus.Expressions.LiteralExpression.IgnoreCase">
+            <summary>
+            Gets a value indicating whether the expression should ignore case differences when matching.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Expressions.LiteralExpression.Start">
+            <summary>
+            Gets the cursor just before the <see cref="T:Pegasus.Expressions.LiteralExpression"/>.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Expressions.LiteralExpression.Value">
+            <summary>
+            Gets the value of this expression.
+            </summary>
+        </member>
+        <member name="T:Pegasus.Expressions.NameExpression">
+            <summary>
+            Represents a reference to another expression by name.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Expressions.NameExpression.#ctor(Pegasus.Expressions.Identifier)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Pegasus.Expressions.NameExpression"/> class.
+            </summary>
+            <param name="identifier">The name of the referenced expression.</param>
+        </member>
+        <member name="P:Pegasus.Expressions.NameExpression.Identifier">
+            <summary>
+            Gets the name of the referenced expression.
+            </summary>
+        </member>
+        <member name="T:Pegasus.Expressions.NotCodeExpression">
+            <summary>
+            Represents a negative assertion.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Expressions.NotCodeExpression.#ctor(Pegasus.Expressions.CodeSpan)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Pegasus.Expressions.NotCodeExpression"/> class.
+            </summary>
+            <param name="code">The code to execute for the negative assertion.</param>
+        </member>
+        <member name="P:Pegasus.Expressions.NotCodeExpression.Code">
+            <summary>
+            Gets the code expression to be used as an assertion.
+            </summary>
+        </member>
+        <member name="T:Pegasus.Expressions.NotExpression">
+            <summary>
+            Represents a negative look-ahead.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Expressions.NotExpression.#ctor(Pegasus.Expressions.Expression)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Pegasus.Expressions.NotExpression"/> class.
+            </summary>
+            <param name="expression">An expression that must not match at a location for this expression to match at that location.</param>
+        </member>
+        <member name="P:Pegasus.Expressions.NotExpression.Expression">
+            <summary>
+            Gets the expression that must not match at a location for this expression to match at that location.
+            </summary>
+        </member>
+        <member name="T:Pegasus.Expressions.PrefixedExpression">
+            <summary>
+            Represents an expression that has been given a name as a prefix.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Expressions.PrefixedExpression.#ctor(Pegasus.Expressions.Identifier,Pegasus.Expressions.Expression)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Pegasus.Expressions.PrefixedExpression"/> class.
+            </summary>
+            <param name="prefix">The name given to this expression as a prefix.</param>
+            <param name="expression">The expression that has been prefixed.</param>
+        </member>
+        <member name="P:Pegasus.Expressions.PrefixedExpression.Expression">
+            <summary>
+            Gets the expression that has been prefixed.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Expressions.PrefixedExpression.Prefix">
+            <summary>
+            Gets the name given to this expression as a prefix.
+            </summary>
+        </member>
+        <member name="T:Pegasus.Expressions.Quantifier">
+            <summary>
+            Represents the rules for repeating an expression.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Expressions.Quantifier.#ctor(Pegasus.Common.Cursor,Pegasus.Common.Cursor,System.Int32,System.Nullable{System.Int32},Pegasus.Expressions.Expression)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Pegasus.Expressions.Quantifier"/> class.
+            </summary>
+            <param name="start">The cursor just before the <see cref="T:Pegasus.Expressions.Quantifier"/>.</param>
+            <param name="end">The cursor just after the <see cref="T:Pegasus.Expressions.Quantifier"/>.</param>
+            <param name="min">The minimum number of times to match.</param>
+            <param name="max">The maximum number of times to match, if limited; or null, otherwise.</param>
+            <param name="delimiter">The expression to use as a delimiter.</param>
+        </member>
+        <member name="P:Pegasus.Expressions.Quantifier.Delimiter">
+            <summary>
+            Gets the expression to use as a delimiter.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Expressions.Quantifier.End">
+            <summary>
+            Gets the cursor just after the <see cref="T:Pegasus.Expressions.Quantifier"/>.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Expressions.Quantifier.Max">
+            <summary>
+            Gets the maximum number of times to match, if limited; or null, if there is no limit.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Expressions.Quantifier.Min">
+            <summary>
+            Gets the minimum number of times to match.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Expressions.Quantifier.Start">
+            <summary>
+            Gets the cursor just before the <see cref="T:Pegasus.Expressions.Quantifier"/>.
+            </summary>
+        </member>
+        <member name="T:Pegasus.Expressions.RepetitionExpression">
+            <summary>
+            Represents the repetition of an expression.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Expressions.RepetitionExpression.#ctor(Pegasus.Expressions.Expression,Pegasus.Expressions.Quantifier)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Pegasus.Expressions.RepetitionExpression"/> class.
+            </summary>
+            <param name="expression">The expression to be repeatedly matched.</param>
+            <param name="quantifier">The quantifier that specifies how many times to match and the delimiter of the matches.</param>
+        </member>
+        <member name="P:Pegasus.Expressions.RepetitionExpression.Expression">
+            <summary>
+            Gets the expression to be repeatedly matched.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Expressions.RepetitionExpression.Quantifier">
+            <summary>
+            Gets the quantifier that specifies how many times to match and the delimiter of the matches.
+            </summary>
+        </member>
+        <member name="T:Pegasus.Expressions.Rule">
+            <summary>
+            Represents a parse rule.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Expressions.Rule.#ctor(Pegasus.Expressions.Identifier,Pegasus.Expressions.Expression,System.Collections.Generic.IEnumerable{Pegasus.Expressions.Identifier})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Pegasus.Expressions.Rule"/> class.
+            </summary>
+            <param name="identifier">The identifier that represents the <see cref="T:Pegasus.Expressions.Rule"/>.</param>
+            <param name="expression">The expression that this <see cref="T:Pegasus.Expressions.Rule"/> represents.</param>
+            <param name="flags" >The flags to be set on this <see cref="T:Pegasus.Expressions.Rule"/>.</param>
+        </member>
+        <member name="P:Pegasus.Expressions.Rule.Expression">
+            <summary>
+            Gets the expression that this <see cref="T:Pegasus.Expressions.Rule"/> represents.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Expressions.Rule.Flags">
+            <summary>
+            Gets the flags that have been set on this <see cref="T:Pegasus.Expressions.Rule"/>.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Expressions.Rule.Identifier">
+            <summary>
+            Gets the name of this <see cref="T:Pegasus.Expressions.Rule"/>.
+            </summary>
+        </member>
+        <member name="T:Pegasus.Expressions.SequenceExpression">
+            <summary>
+            Represents a sequence of expressions to match.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Expressions.SequenceExpression.#ctor(System.Collections.Generic.IEnumerable{Pegasus.Expressions.Expression})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Pegasus.Expressions.SequenceExpression"/> class.
+            </summary>
+            <param name="sequence">The sequence of expressions to match.</param>
+        </member>
+        <member name="P:Pegasus.Expressions.SequenceExpression.Sequence">
+            <summary>
+            Gets the sequence of expressions to match.
+            </summary>
+        </member>
+        <member name="T:Pegasus.Expressions.TypedExpression">
+            <summary>
+            Represents an expression with a specific type.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Expressions.TypedExpression.#ctor(Pegasus.Expressions.CodeSpan,Pegasus.Expressions.Expression)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Pegasus.Expressions.TypedExpression"/> class.
+            </summary>
+            <param name="type">The specific type of the wrapped expression.</param>
+            <param name="expression">The wrapped expression.</param>
+        </member>
+        <member name="P:Pegasus.Expressions.TypedExpression.Expression">
+            <summary>
+            Gets the wrapped expression.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Expressions.TypedExpression.Type">
+            <summary>
+            Gets the specific type of the wrapped expression.
+            </summary>
+        </member>
+        <member name="T:Pegasus.Expressions.WildcardExpression">
+            <summary>
+            Represents a match of any single character.
+            </summary>
+        </member>
+        <member name="T:Pegasus.Parser.CSharpParser">
+            <summary>
+             Parses a string according to the rules of the <see cref="T:Pegasus.Parser.CSharpParser" /> grammar.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Parser.CSharpParser.Exported">
+            <summary>
+            Gets the set of rules exported by this parser.
+            </summary>
+        </member>
+        <member name="T:Pegasus.Parser.CSharpParser.ExportedRules">
+            <summary>
+            Defines the set of rules exported by this parser.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Parser.CSharpParser.ExportedRules.ArgumentList(Pegasus.Common.Cursor@)">
+            <summary>
+             Executes the <c>ArgumentList</c> rule and advances the cursor.
+            </summary>
+            <returns>
+             A parse result containing the parsed <see cref="T:Microsoft.CodeAnalysis.CSharp.Syntax.ArgumentListSyntax"/> if the parse was successful, <c>null</c> otherwise.
+            </returns>
+        </member>
+        <member name="M:Pegasus.Parser.CSharpParser.ExportedRules.AttributeArgumentList(Pegasus.Common.Cursor@)">
+            <summary>
+             Executes the <c>AttributeArgumentList</c> rule and advances the cursor.
+            </summary>
+            <returns>
+             A parse result containing the parsed <see cref="T:Microsoft.CodeAnalysis.CSharp.Syntax.AttributeArgumentListSyntax"/> if the parse was successful, <c>null</c> otherwise.
+            </returns>
+        </member>
+        <member name="M:Pegasus.Parser.CSharpParser.ExportedRules.BracketedArgumentList(Pegasus.Common.Cursor@)">
+            <summary>
+             Executes the <c>BracketedArgumentList</c> rule and advances the cursor.
+            </summary>
+            <returns>
+             A parse result containing the parsed <see cref="T:Microsoft.CodeAnalysis.CSharp.Syntax.BracketedArgumentListSyntax"/> if the parse was successful, <c>null</c> otherwise.
+            </returns>
+        </member>
+        <member name="M:Pegasus.Parser.CSharpParser.ExportedRules.BracketedParameterList(Pegasus.Common.Cursor@)">
+            <summary>
+             Executes the <c>BracketedParameterList</c> rule and advances the cursor.
+            </summary>
+            <returns>
+             A parse result containing the parsed <see cref="T:Microsoft.CodeAnalysis.CSharp.Syntax.BracketedParameterListSyntax"/> if the parse was successful, <c>null</c> otherwise.
+            </returns>
+        </member>
+        <member name="M:Pegasus.Parser.CSharpParser.ExportedRules.Expression(Pegasus.Common.Cursor@)">
+            <summary>
+             Executes the <c>Expression</c> rule and advances the cursor.
+            </summary>
+            <returns>
+             A parse result containing the parsed <see cref="T:Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax"/> if the parse was successful, <c>null</c> otherwise.
+            </returns>
+        </member>
+        <member name="M:Pegasus.Parser.CSharpParser.ExportedRules.Name(Pegasus.Common.Cursor@)">
+            <summary>
+             Executes the <c>Name</c> rule and advances the cursor.
+            </summary>
+            <returns>
+             A parse result containing the parsed <see cref="T:Microsoft.CodeAnalysis.CSharp.Syntax.NameSyntax"/> if the parse was successful, <c>null</c> otherwise.
+            </returns>
+        </member>
+        <member name="M:Pegasus.Parser.CSharpParser.ExportedRules.ParameterList(Pegasus.Common.Cursor@)">
+            <summary>
+             Executes the <c>ParameterList</c> rule and advances the cursor.
+            </summary>
+            <returns>
+             A parse result containing the parsed <see cref="T:Microsoft.CodeAnalysis.CSharp.Syntax.ParameterListSyntax"/> if the parse was successful, <c>null</c> otherwise.
+            </returns>
+        </member>
+        <member name="M:Pegasus.Parser.CSharpParser.ExportedRules.Statement(Pegasus.Common.Cursor@)">
+            <summary>
+             Executes the <c>Statement</c> rule and advances the cursor.
+            </summary>
+            <returns>
+             A parse result containing the parsed <see cref="T:Microsoft.CodeAnalysis.CSharp.Syntax.StatementSyntax"/> if the parse was successful, <c>null</c> otherwise.
+            </returns>
+        </member>
+        <member name="M:Pegasus.Parser.CSharpParser.ExportedRules.Type(Pegasus.Common.Cursor@)">
+            <summary>
+             Executes the <c>Type</c> rule and advances the cursor.
+            </summary>
+            <returns>
+             A parse result containing the parsed <see cref="T:Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax"/> if the parse was successful, <c>null</c> otherwise.
+            </returns>
+        </member>
+        <member name="T:Pegasus.Parser.PegParser">
+            <summary>
+             Parses a string according to the rules of the <see cref="T:Pegasus.Parser.PegParser" /> grammar.
+            </summary>
+        </member>
+        <member name="M:Pegasus.Parser.PegParser.Parse(System.String,System.String)">
+            <summary>
+             Parses a string according to the rules of the <see cref="T:Pegasus.Parser.PegParser" /> grammar.
+            </summary>
+            <param name="subject">The parsing subject.</param>
+            <param name="fileName">The optional file name to use in error messages.</param>
+            <returns>The <see cref="T:Pegasus.Expressions.Grammar" /> parsed from <paramref name="subject" />.</returns>
+            <exception cref="T:System.FormatException">
+             Thrown when parsing fails against <paramref name="subject"/>.  The exception's <code>Data["cursor"]</code> will be set with the cursor where the fatal error occurred.
+            </exception>
+        </member>
+        <member name="M:Pegasus.Parser.PegParser.Parse(System.String,System.String,System.Collections.Generic.IList{Pegasus.Common.LexicalElement}@)">
+            <summary>
+             Parses a string according to the rules of the <see cref="T:Pegasus.Parser.PegParser" /> grammar.
+            </summary>
+            <param name="subject">The parsing subject.</param>
+            <param name="fileName">The optional file name to use in error messages.</param>
+            <param name="lexicalElements">When this method returns, contains the lexical elements for the parsing subject. This parameter is passed uninitialized.</param>
+            <returns>The <see cref="T:Pegasus.Expressions.Grammar" /> parsed from <paramref name="subject" />.</returns>
+            <exception cref="T:System.FormatException">
+             Thrown when parsing fails against <paramref name="subject"/>.  The exception's <code>Data["cursor"]</code> will be set with the cursor where the fatal error occurred.
+            </exception>
+        </member>
+        <member name="T:Pegasus.Properties.Resources">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0001_ERROR_NoRulesDefined">
+            <summary>
+              Looks up a localized string similar to No grammar rules were defined..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0002_ERROR_RuleAlreadyDefined">
+            <summary>
+              Looks up a localized string similar to The rule &apos;{0}&apos; has already been defined..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0003_ERROR_RuleDoesNotExist">
+            <summary>
+              Looks up a localized string similar to The referenced rule &apos;{0}&apos; does not exist..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0004_ERROR_OBSOLETE_LeftRecursionDetected">
+            <summary>
+              Looks up a localized string similar to The rule &apos;{0}&apos; is left-recursive..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0005_ERROR_SettingAlreadySpecified">
+            <summary>
+              Looks up a localized string similar to The setting &apos;{0}&apos; has already been specified..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0006_WARNING_SettingUnknown">
+            <summary>
+              Looks up a localized string similar to The setting &apos;{0}&apos; is not recognized..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0007_ERROR_PrefixAlreadyDeclared">
+            <summary>
+              Looks up a localized string similar to A prefix &apos;{0}&apos; cannot be declared here because it would give a different meaning to &apos;{0}&apos; which is already declared in the current scope..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0008_ERROR_PARSER_UnexpectedEndOfInput">
+            <summary>
+              Looks up a localized string similar to Unexpected character &apos;{0}&apos;..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0009_ERROR_PARSER_UnterminatedString">
+            <summary>
+              Looks up a localized string similar to Unterminated string literal..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0010_ERROR_PARSER_UnterminatedClass">
+            <summary>
+              Looks up a localized string similar to Unterminated character class..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0011_ERROR_PARSER_UnterminatedCode">
+            <summary>
+              Looks up a localized string similar to Unterminated code section..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0012_ERROR_SettingValueInvalid">
+            <summary>
+              Looks up a localized string similar to The value &apos;{0}&apos; is invalid for the &apos;{1}&apos; setting..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0013_WARNING_FlagUnknown">
+            <summary>
+              Looks up a localized string similar to The flag &apos;{0}&apos; is not recognized..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0014_ERROR_PARSER_InvalidType">
+            <summary>
+              Looks up a localized string similar to Invalid type definition..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0015_WARNING_QuantifierInvalid">
+            <summary>
+              Looks up a localized string similar to This quantifier will always fail to match..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0016_ERROR_ResourcesNotSpecified">
+            <summary>
+              Looks up a localized string similar to Resource-based literal expressions require a &apos;resources&apos; setting..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0017_WARNING_UnusedRule">
+            <summary>
+              Looks up a localized string similar to The rule &apos;{0}&apos; is never used..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0018_WARNING_UnreachableAlternative">
+            <summary>
+              Looks up a localized string similar to Unreachable branch detected..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0019_ERROR_UnknownType">
+            <summary>
+              Looks up a localized string similar to Could not determine a type for the rule &apos;{0}&apos;..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0020_ERROR_UnmemoizedLeftRecursion">
+            <summary>
+              Looks up a localized string similar to The rule &apos;{0}&apos; is left-recursive. Left-recursive rules must be memoized.  Mark this rule with the &apos;-memoize&apos; flag or eliminate the left-recursion..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0021_ERROR_ZeroWidthRepetition_Certain">
+            <summary>
+              Looks up a localized string similar to Repetition of a zero-width expression with no maximum repetition count will result in an infinite loop..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0021_WARNING_ZeroWidthRepetition_Possible">
+            <summary>
+              Looks up a localized string similar to Repetition of a zero-width expression with no maximum repetition count may result in an infinite loop..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0022_WARNING_ZeroWidthRepetition_Certain">
+            <summary>
+              Looks up a localized string similar to Repetition of a zero-width expression will always result in the maximum repetition count..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0022_WARNING_ZeroWidthRepetition_Possible">
+            <summary>
+              Looks up a localized string similar to Repetition of a zero-width expression may always result in the maximum repetition count..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0023_ERROR_AmbiguousLeftRecursionDetected">
+            <summary>
+              Looks up a localized string similar to The rule &apos;{0}&apos; is ambiguously left-recursive. ({1}).
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0024_WARNING_UnusedDelimiter">
+            <summary>
+              Looks up a localized string similar to The delimiter is never used..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0025_WARNING_LowercaseExportedRule">
+            <summary>
+              Looks up a localized string similar to The rule &apos;{0}&apos; is exported. Exported rule names should begin with an uppercase letter..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0025_WARNING_LowercasePublicRule">
+            <summary>
+              Looks up a localized string similar to The rule &apos;{0}&apos; is public. Public rule names should begin with an uppercase letter..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0026_ERROR_PARSER_CharacterClassFlagsUnrecognized">
+            <summary>
+              Looks up a localized string similar to The character class flags &apos;{0}&apos; were unrecognized..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0026_ERROR_PARSER_StringFlagsUnrecognized">
+            <summary>
+              Looks up a localized string similar to The string flags &apos;{0}&apos; were unrecognized..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.PEG0027_ERROR_WrongNumberOfOutputFiles">
+            <summary>
+              Looks up a localized string similar to The number of output files must match the number of input files..
+            </summary>
+        </member>
+        <member name="P:Pegasus.Properties.Resources.Usage">
+            <summary>
+              Looks up a localized string similar to Usage:
+               pegasus file.
+            </summary>
+        </member>
+    </members>
+</doc>

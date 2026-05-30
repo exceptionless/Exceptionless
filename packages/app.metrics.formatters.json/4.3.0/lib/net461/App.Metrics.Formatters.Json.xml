@@ -1,0 +1,212 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>App.Metrics.Formatters.Json</name>
+    </assembly>
+    <members>
+        <member name="T:App.Metrics.Formatters.Json.BucketHistogramMetric">
+            <summary>
+                <para>
+                    Bucket Histogram metric types track the count of a set of values. They allow you to measure the
+                    count of values per bucket
+                </para>
+            </summary>
+        </member>
+        <member name="T:App.Metrics.Formatters.Json.BucketTimerMetric">
+            <summary>
+                <para>
+                    Timer metric types are essentially a special case of <see cref="P:App.Metrics.Formatters.Json.BucketTimerMetric.Histogram" />
+                </para>
+                <para>
+                    As well as providing a <see cref="P:App.Metrics.Formatters.Json.BucketTimerMetric.Histogram" /> of the duration of a type of event, timers also provide a
+                    <see cref="T:App.Metrics.Formatters.Json.MeterMetric" /> of the rate of the events occurrence.
+                </para>
+                <para>
+                    Like <see cref="P:App.Metrics.Formatters.Json.BucketTimerMetric.Histogram" />s, timers also allow us to track user values, where for all user values provided
+                    the min, max and last user value values is recorded.
+                </para>
+            </summary>
+            <seealso cref="T:App.Metrics.Formatters.Json.MetricBase" />
+        </member>
+        <member name="T:App.Metrics.Formatters.Json.Converters.DictionaryConverter">
+            <summary>
+                Enables reading/writing a dictionary as JSON.
+                Implemented to support reading/writing non-standard keys.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Formatters.Json.Converters.DictionaryConverter.CanConvert(System.Type)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Formatters.Json.Converters.DictionaryConverter.CreateConverter(System.Type,System.Text.Json.JsonSerializerOptions)">
+            <inheritdoc />
+        </member>
+        <member name="T:App.Metrics.Formatters.Json.Converters.DictionaryConverter`2">
+            <summary>
+                Enables reading/writing a dictionary as JSON.
+                Implemented to support reading/writing non-standard keys.
+            </summary>
+            <typeparam name="TKey">The type of the key.</typeparam>
+            <typeparam name="TValue">The value type.</typeparam>
+        </member>
+        <member name="M:App.Metrics.Formatters.Json.Converters.DictionaryConverter`2.Read(System.Text.Json.Utf8JsonReader@,System.Type,System.Text.Json.JsonSerializerOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Formatters.Json.Converters.DictionaryConverter`2.Write(System.Text.Json.Utf8JsonWriter,System.Collections.Generic.Dictionary{`0,`1},System.Text.Json.JsonSerializerOptions)">
+            <inheritdoc />
+        </member>
+        <member name="T:App.Metrics.Formatters.Json.CounterMetric">
+            <summary>
+                <para>
+                    Counter metric types track how many times something happens, they can incremented or decremented.
+                </para>
+                <para>
+                    Counters represent a 64-bit integer value.
+                </para>
+                <para>
+                    Counters provide the ability to track a counter for each item in a finite set, as well as tracking a per item
+                    count the overall percentage is also recorded. This is useful for example if we needed to track the total
+                    number of emails sent but also the count of each type of emails sent.
+                </para>
+            </summary>
+            <seealso cref="T:App.Metrics.Formatters.Json.MetricBase" />
+        </member>
+        <member name="M:App.Metrics.Formatters.Json.DefaultJsonSerializerSettings.CreateSerializerOptions">
+            <summary>
+                Creates default <see cref="T:System.Text.Json.JsonSerializerOptions" />.
+            </summary>
+            <returns>Default <see cref="T:System.Text.Json.JsonSerializerOptions" />.</returns>
+        </member>
+        <member name="P:App.Metrics.Formatters.Json.EnvInfoJsonOutputFormatter.MediaType">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Formatters.Json.EnvInfoJsonOutputFormatter.WriteAsync(System.IO.Stream,App.Metrics.Infrastructure.EnvironmentInfo,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:App.Metrics.Formatters.Json.GaugeMetric">
+            <summary>
+                <para>
+                    Gauge metric types measure the value of a particular thing at a particular time, it represents an instantaneous
+                    value.
+                </para>
+                <para>
+                    Gauges represent a double value.
+                </para>
+            </summary>
+            <seealso cref="T:App.Metrics.Formatters.Json.MetricBase" />
+        </member>
+        <member name="T:App.Metrics.Formatters.Json.HistogramMetric">
+            <summary>
+                <para>
+                    Histogram metric types track the statistical distribution of a set of values. They allow you to measure the
+                    min, mean, max, standard deviation of values and also quantiles such as the median, 95th percentile, 98th
+                    percentile etc.
+                </para>
+                <para>
+                    To avoid unbound memory usage, the histogram values are genreated from a <see cref="T:App.Metrics.ReservoirSampling.IReservoir" /> of values.
+                    This is done by sampling the data as it goes through by maintaining a small manageable  reservoir which is
+                    statistically representative of the data stream as a whole, allowing us to quickly calculate the quantiles
+                    which are valid approximations of the actual quantiles. https://en.wikipedia.org/wiki/Reservoir_sampling
+                </para>
+                <para>
+                    Histograms also allow us to track user values, where for all user values provided the min, max and last user
+                    value values is recorded.
+                </para>
+            </summary>
+        </member>
+        <member name="T:App.Metrics.Formatters.Json.MeterMetric">
+            <summary>
+                <para>
+                    Meter metric types are increment-only counters that also measure the rate of events over time.
+                </para>
+                <para>
+                    The mean rate is recorded, but is only generally used for trivia as it represents the total rate for the
+                    lifetime of your application, not offering a sense of recency.
+                </para>
+                <para>
+                    Other than the mean rate, meters also are recorded using three different exponentially-weighted moving average
+                    rates, 1 min, 5 min and 15 min moving averages which do provide a sense of recency.
+                </para>
+                <para>
+                    Meters also provide the ability to track the rate for each item in a finite set, as well as tracking a per item
+                    rate the overall percentage is also recorded. This is useful for example if we needed to track the total
+                    number of emails sent but also the rate at which each type of email is sent.
+                </para>
+            </summary>
+            <seealso cref="T:App.Metrics.Formatters.Json.MetricBase" />
+        </member>
+        <member name="T:App.Metrics.Formatters.Json.MetricsContext">
+            <summary>
+                MetricsContext's are a way of grouping metrics withing a context, for example we can record all database related
+                metrics in a "Application.Database" Context. Metric names can be duplicated across contexts
+            </summary>
+        </member>
+        <member name="T:App.Metrics.Formatters.Json.MetricsJsonOptions">
+            <summary>
+                Provides programmatic configuration for JSON formatting the App Metrics framework.
+            </summary>
+        </member>
+        <member name="P:App.Metrics.Formatters.Json.MetricsJsonOutputFormatter.MediaType">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Formatters.Json.MetricsJsonOutputFormatter.MetricFields">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Formatters.Json.MetricsJsonOutputFormatter.WriteAsync(System.IO.Stream,App.Metrics.MetricsDataValueSource,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:App.Metrics.Formatters.Json.TimerMetric">
+            <summary>
+                <para>
+                    Timer metric types are essentially a special case of <see cref="P:App.Metrics.Formatters.Json.TimerMetric.Histogram" />
+                </para>
+                <para>
+                    As well as providing a <see cref="P:App.Metrics.Formatters.Json.TimerMetric.Histogram" /> of the duration of a type of event, timers also provide a
+                    <see cref="T:App.Metrics.Formatters.Json.MeterMetric" /> of the rate of the events occurrence.
+                </para>
+                <para>
+                    Like <see cref="P:App.Metrics.Formatters.Json.TimerMetric.Histogram" />s, timers also allow us to track user values, where for all user values provided
+                    the min, max and last user value values is recorded.
+                </para>
+            </summary>
+            <seealso cref="T:App.Metrics.Formatters.Json.MetricBase" />
+        </member>
+        <member name="T:App.Metrics.EnvJsonOutputFormatterBuilder">
+            <summary>
+                Builder for configuring environment information JSON output formatting using an
+                <see cref="T:App.Metrics.IMetricsBuilder" />.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.EnvJsonOutputFormatterBuilder.AsJson(App.Metrics.IEnvOutputFormattingBuilder,System.Action{App.Metrics.Formatters.Json.MetricsJsonOptions})">
+            <summary>
+                Add the <see cref="T:App.Metrics.Formatters.Json.EnvInfoJsonOutputFormatter" /> allowing metric values to optionally be reported as JSON.
+            </summary>
+            <param name="envFormattingBuilder">
+                The <see cref="T:App.Metrics.IEnvOutputFormattingBuilder" /> used to configure JSON formatting
+                options.
+            </param>
+            <param name="setupAction">The JSON formatting options to use.</param>
+            <returns>
+                An <see cref="T:App.Metrics.IMetricsBuilder" /> that can be used to further configure App Metrics.
+            </returns>
+        </member>
+        <member name="T:App.Metrics.MetricsJsonOutputFormatterBuilder">
+            <summary>
+                Builder for configuring metric JSON output formatting using an
+                <see cref="T:App.Metrics.IMetricsBuilder" />.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.MetricsJsonOutputFormatterBuilder.AsJson(App.Metrics.IMetricsOutputFormattingBuilder,System.Action{App.Metrics.Formatters.Json.MetricsJsonOptions})">
+            <summary>
+                Add the <see cref="T:App.Metrics.Formatters.Json.MetricsJsonOutputFormatter" /> allowing metrics to optionally be reported as JSON.
+            </summary>
+            <param name="metricFormattingBuilder">
+                The <see cref="T:App.Metrics.IMetricsOutputFormattingBuilder" /> used to configure JSON formatting
+                options.
+            </param>
+            <param name="setupAction">The JSON formatting options to use.</param>
+            <returns>
+                An <see cref="T:App.Metrics.IMetricsBuilder" /> that can be used to further configure App Metrics.
+            </returns>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,31 @@
+<Project>
+  <Target Name="_Microsoft_Extensions_Logging_AbstractionsGatherAnalyzers">
+
+    <ItemGroup>
+      <_Microsoft_Extensions_Logging_AbstractionsAnalyzer Include="@(Analyzer)" Condition="'%(Analyzer.NuGetPackageId)' == 'Microsoft.Extensions.Logging.Abstractions'" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_Microsoft_Extensions_Logging_AbstractionsAnalyzerMultiTargeting" 
+          Condition="'$(SupportsRoslynComponentVersioning)' != 'true'" 
+          AfterTargets="ResolvePackageDependenciesForBuild;ResolveNuGetPackageAssets"
+          DependsOnTargets="_Microsoft_Extensions_Logging_AbstractionsGatherAnalyzers">
+
+    <ItemGroup>
+      <!-- Remove our analyzers targeting roslyn4.x -->
+      <Analyzer Remove="@(_Microsoft_Extensions_Logging_AbstractionsAnalyzer)"
+                Condition="$([System.String]::Copy('%(_Microsoft_Extensions_Logging_AbstractionsAnalyzer.Identity)').IndexOf('roslyn4')) &gt;= 0"/>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_Microsoft_Extensions_Logging_AbstractionsRemoveAnalyzers" 
+          Condition="'$(DisableMicrosoftExtensionsLoggingSourceGenerator)' == 'true'"
+          AfterTargets="ResolvePackageDependenciesForBuild;ResolveNuGetPackageAssets"
+          DependsOnTargets="_Microsoft_Extensions_Logging_AbstractionsGatherAnalyzers">
+
+    <!-- Remove all our analyzers -->
+    <ItemGroup>
+      <Analyzer Remove="@(_Microsoft_Extensions_Logging_AbstractionsAnalyzer)" />
+    </ItemGroup>
+  </Target>
+</Project>

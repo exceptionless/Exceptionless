@@ -1,0 +1,358 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>JsonPatch.Net</name>
+    </assembly>
+    <members>
+        <member name="T:Json.Patch.JsonPatch">
+            <summary>
+            Models a JSON Patch document.
+            </summary>
+        </member>
+        <member name="P:Json.Patch.JsonPatch.Operations">
+            <summary>
+            Gets the collection of operations.
+            </summary>
+        </member>
+        <member name="M:Json.Patch.JsonPatch.#ctor(Json.Patch.PatchOperation[])">
+            <summary>
+            Creates a new instance of the <see cref="T:Json.Patch.JsonPatch"/> class.
+            </summary>
+            <param name="operations">The collection of operations.</param>
+        </member>
+        <member name="M:Json.Patch.JsonPatch.#ctor(System.Collections.Generic.IEnumerable{Json.Patch.PatchOperation})">
+            <summary>
+            Creates a new instance of the <see cref="T:Json.Patch.JsonPatch"/> class.
+            </summary>
+            <param name="operations">The collection of operations.</param>
+        </member>
+        <member name="M:Json.Patch.JsonPatch.#ctor(System.Collections.Generic.List{Json.Patch.PatchOperation})">
+            <summary>
+            Creates a new instance of the <see cref="T:Json.Patch.JsonPatch"/> class.
+            </summary>
+            <param name="operations">The collection of operations.</param>
+        </member>
+        <member name="M:Json.Patch.JsonPatch.Apply(System.Text.Json.Nodes.JsonNode)">
+            <summary>
+            Applies the patch to a JSON document.
+            </summary>
+            <param name="source">The JSON document.</param>
+            <returns>A result object containing the output JSON and a possible error message.</returns>
+        </member>
+        <member name="M:Json.Patch.JsonPatch.Equals(Json.Patch.JsonPatch)">
+            <summary>Indicates whether the current object is equal to another object of the same type.</summary>
+            <param name="other">An object to compare with this object.</param>
+            <returns>true if the current object is equal to the <paramref name="other">other</paramref> parameter; otherwise, false.</returns>
+        </member>
+        <member name="M:Json.Patch.JsonPatch.Equals(System.Object)">
+            <summary>Determines whether the specified object is equal to the current object.</summary>
+            <param name="obj">The object to compare with the current object.</param>
+            <returns>true if the specified object  is equal to the current object; otherwise, false.</returns>
+        </member>
+        <member name="M:Json.Patch.JsonPatch.GetHashCode">
+            <summary>Serves as the default hash function.</summary>
+            <returns>A hash code for the current object.</returns>
+        </member>
+        <member name="T:Json.Patch.PatchJsonConverter">
+            <summary>
+            Provides JSON conversion logic for <see cref="T:Json.Patch.JsonPatch"/>.
+            </summary>
+        </member>
+        <member name="M:Json.Patch.PatchJsonConverter.Read(System.Text.Json.Utf8JsonReader@,System.Type,System.Text.Json.JsonSerializerOptions)">
+            <summary>Reads and converts the JSON to type <see cref="T:Json.Patch.JsonPatch"/>.</summary>
+            <param name="reader">The reader.</param>
+            <param name="typeToConvert">The type to convert.</param>
+            <param name="options">An object that specifies serialization options to use.</param>
+            <returns>The converted value.</returns>
+        </member>
+        <member name="M:Json.Patch.PatchJsonConverter.Write(System.Text.Json.Utf8JsonWriter,Json.Patch.JsonPatch,System.Text.Json.JsonSerializerOptions)">
+            <summary>Writes a specified value as JSON.</summary>
+            <param name="writer">The writer to write to.</param>
+            <param name="value">The value to convert to JSON.</param>
+            <param name="options">An object that specifies serialization options to use.</param>
+        </member>
+        <member name="T:Json.Patch.JsonPatchSerializerContext">
+            <summary>
+            A serializer context for this library.
+            </summary>
+        </member>
+        <member name="P:Json.Patch.JsonPatchSerializerContext.Boolean">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Json.Patch.JsonPatchSerializerContext.JsonPatch">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Json.Patch.JsonPatchSerializerContext.OperationType">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Json.Patch.JsonPatchSerializerContext.PatchOperation">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Json.Patch.JsonPatchSerializerContext.Model">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Json.Patch.JsonPatchSerializerContext.PatchResult">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Json.Patch.JsonPatchSerializerContext.JsonPointer">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Json.Patch.JsonPatchSerializerContext.ListPatchOperation">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Json.Patch.JsonPatchSerializerContext.JsonElement">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Json.Patch.JsonPatchSerializerContext.JsonNode">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Json.Patch.JsonPatchSerializerContext.Int32">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Json.Patch.JsonPatchSerializerContext.String">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Json.Patch.JsonPatchSerializerContext.Default">
+            <summary>
+            The default <see cref="T:System.Text.Json.Serialization.JsonSerializerContext"/> associated with a default <see cref="T:System.Text.Json.JsonSerializerOptions"/> instance.
+            </summary>
+        </member>
+        <member name="P:Json.Patch.JsonPatchSerializerContext.GeneratedSerializerOptions">
+            <summary>
+            The source-generated options associated with this context.
+            </summary>
+        </member>
+        <member name="M:Json.Patch.JsonPatchSerializerContext.#ctor">
+            <inheritdoc/>
+        </member>
+        <member name="M:Json.Patch.JsonPatchSerializerContext.#ctor(System.Text.Json.JsonSerializerOptions)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Json.Patch.JsonPatchSerializerContext.GetTypeInfo(System.Type)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Json.Patch.OperationType">
+            <summary>
+            Enumerates the valid JSON Patch operation types.
+            </summary>
+        </member>
+        <member name="F:Json.Patch.OperationType.Unknown">
+            <summary>
+            Default value.  Not valid.
+            </summary>
+        </member>
+        <member name="F:Json.Patch.OperationType.Add">
+            <summary>
+            Represents the `add` operation.
+            </summary>
+        </member>
+        <member name="F:Json.Patch.OperationType.Remove">
+            <summary>
+            Represents the `remove` operation.
+            </summary>
+        </member>
+        <member name="F:Json.Patch.OperationType.Replace">
+            <summary>
+            Represents the `replace` operation.
+            </summary>
+        </member>
+        <member name="F:Json.Patch.OperationType.Move">
+            <summary>
+            Represents the `move` operation.
+            </summary>
+        </member>
+        <member name="F:Json.Patch.OperationType.Copy">
+            <summary>
+            Represents the `copy` operation.
+            </summary>
+        </member>
+        <member name="F:Json.Patch.OperationType.Test">
+            <summary>
+            Represents the `test` operation.
+            </summary>
+        </member>
+        <member name="T:Json.Patch.PatchExtensions">
+            <summary>
+            Provides extension methods for <see cref="T:Json.Patch.JsonPatch"/>.
+            </summary>
+        </member>
+        <member name="M:Json.Patch.PatchExtensions.Apply``1(Json.Patch.JsonPatch,``0,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Apply a patch to an object to transform its data.
+            </summary>
+            <param name="patch">The patch</param>
+            <param name="obj">The object</param>
+            <param name="options">Serializer options.</param>
+            <typeparam name="T">The type of the object.</typeparam>
+            <returns>New instance of patched object</returns>
+            <exception cref="T:System.InvalidOperationException">Thrown when the patch cannot be applied.</exception>
+        </member>
+        <member name="M:Json.Patch.PatchExtensions.Apply``2(Json.Patch.JsonPatch,``0,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Apply a patch to an object to transform it to another type.
+            </summary>
+            <param name="patch">The patch</param>
+            <param name="obj">The object</param>
+            <param name="options">Serializer options.</param>
+            <typeparam name="TOriginal">The type of the original object.</typeparam>
+            <typeparam name="TTarget">The type of the target object.</typeparam>
+            <returns>New instance of patched object</returns>
+            <exception cref="T:System.InvalidOperationException">Thrown when the patch cannot be applied.</exception>
+        </member>
+        <member name="M:Json.Patch.PatchExtensions.CreatePatch``2(``0,``1,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Creates a <see cref="T:Json.Patch.JsonPatch"/> by analyzing the difference between original and target versions.
+            </summary>
+            <param name="original">The original object.</param>
+            <param name="target">The target object.</param>
+            <param name="options">Serializer options.</param>
+            <typeparam name="TOriginal">The type of the original object.</typeparam>
+            <typeparam name="TTarget">The type of target object.</typeparam>
+            <returns>A <see cref="T:Json.Patch.JsonPatch"/> that represents the transformation.</returns>
+        </member>
+        <member name="M:Json.Patch.PatchExtensions.CreatePatch(System.Text.Json.Nodes.JsonNode,System.Text.Json.Nodes.JsonNode)">
+            <summary>
+            Create JsonPatch from difference between original and target
+            </summary>
+            <param name="original">Original object</param>
+            <param name="target">target object</param>
+            <returns>JsonPatch</returns>
+            <exception cref="T:System.ArgumentException">Only Object and Array type json object allowed</exception>
+        </member>
+        <member name="T:Json.Patch.PatchOperation">
+            <summary>
+            Represents a single JSON Patch operation.
+            </summary>
+        </member>
+        <member name="P:Json.Patch.PatchOperation.Op">
+            <summary>
+            Gets the operation type.
+            </summary>
+        </member>
+        <member name="P:Json.Patch.PatchOperation.From">
+            <summary>
+            Gets the source path.
+            </summary>
+        </member>
+        <member name="P:Json.Patch.PatchOperation.Path">
+            <summary>
+            Gets the target path.
+            </summary>
+        </member>
+        <member name="P:Json.Patch.PatchOperation.Value">
+            <summary>
+            Gets the discrete value.
+            </summary>
+        </member>
+        <member name="M:Json.Patch.PatchOperation.Add(Json.Pointer.JsonPointer,System.Text.Json.Nodes.JsonNode)">
+            <summary>
+            Creates an `add` operation.
+            </summary>
+            <param name="path">The source path.</param>
+            <param name="value">The value to add.</param>
+            <returns>An `add` operation.</returns>
+        </member>
+        <member name="M:Json.Patch.PatchOperation.Remove(Json.Pointer.JsonPointer)">
+            <summary>
+            Creates an `remove` operation.
+            </summary>
+            <param name="path">The source path.</param>
+            <returns>An `remove` operation.</returns>
+        </member>
+        <member name="M:Json.Patch.PatchOperation.Replace(Json.Pointer.JsonPointer,System.Text.Json.Nodes.JsonNode)">
+            <summary>
+            Creates an `replace` operation.
+            </summary>
+            <param name="path">The source path.</param>
+            <param name="value">The value to add.</param>
+            <returns>An `replace` operation.</returns>
+        </member>
+        <member name="M:Json.Patch.PatchOperation.Move(Json.Pointer.JsonPointer,Json.Pointer.JsonPointer)">
+            <summary>
+            Creates an `move` operation.
+            </summary>
+            <param name="path">The target path.</param>
+            <param name="from">The path to the value to move.</param>
+            <returns>An `move` operation.</returns>
+        </member>
+        <member name="M:Json.Patch.PatchOperation.Copy(Json.Pointer.JsonPointer,Json.Pointer.JsonPointer)">
+            <summary>
+            Creates an `copy` operation.
+            </summary>
+            <param name="path">The target path.</param>
+            <param name="from">The path to the value to move.</param>
+            <returns>An `copy` operation.</returns>
+        </member>
+        <member name="M:Json.Patch.PatchOperation.Test(Json.Pointer.JsonPointer,System.Text.Json.Nodes.JsonNode)">
+            <summary>
+            Creates an `test` operation.
+            </summary>
+            <param name="path">The source path.</param>
+            <param name="value">The value to match.</param>
+            <returns>An `test` operation.</returns>
+        </member>
+        <member name="M:Json.Patch.PatchOperation.Equals(Json.Patch.PatchOperation)">
+            <summary>Indicates whether the current object is equal to another object of the same type.</summary>
+            <param name="other">An object to compare with this object.</param>
+            <returns>true if the current object is equal to the <paramref name="other">other</paramref> parameter; otherwise, false.</returns>
+        </member>
+        <member name="M:Json.Patch.PatchOperation.Equals(System.Object)">
+            <summary>Indicates whether this instance and a specified object are equal.</summary>
+            <param name="obj">The object to compare with the current instance.</param>
+            <returns>true if <paramref name="obj">obj</paramref> and this instance are the same type and represent the same value; otherwise, false.</returns>
+        </member>
+        <member name="M:Json.Patch.PatchOperation.GetHashCode">
+            <summary>Returns the hash code for this instance.</summary>
+            <returns>A 32-bit signed integer that is the hash code for this instance.</returns>
+        </member>
+        <member name="T:Json.Patch.PatchResult">
+            <summary>
+            Results for a JSON Patch application.
+            </summary>
+        </member>
+        <member name="P:Json.Patch.PatchResult.Result">
+            <summary>
+            Gets the resulting JSON document.
+            </summary>
+        </member>
+        <member name="P:Json.Patch.PatchResult.Error">
+            <summary>
+            Gets any error that occurred.
+            </summary>
+        </member>
+        <member name="P:Json.Patch.PatchResult.Operation">
+            <summary>
+            Gets the last operation that was attempted.
+            </summary>
+        </member>
+        <member name="P:Json.Patch.PatchResult.IsSuccess">
+            <summary>
+            Gets whether there was an error.
+            </summary>
+        </member>
+    </members>
+</doc>

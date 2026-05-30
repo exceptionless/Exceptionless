@@ -269,15 +269,18 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     [Fact]
     public async Task GetDistinctStackIds_WithMultipleStacks_ReturnsAllUniqueIds()
     {
+        // Arrange
         var stack1 = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
         var stack2 = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
 
         await _repository.AddAsync(_eventData.GenerateEvents(5, TestConstants.OrganizationId, TestConstants.ProjectId, stack1.Id), o => o.ImmediateConsistency());
         await _repository.AddAsync(_eventData.GenerateEvents(3, TestConstants.OrganizationId, TestConstants.ProjectId, stack2.Id), o => o.ImmediateConsistency());
 
+        // Act
         var afterKey = new CompositeKeyResult();
         var stackIds = await _repository.GetDistinctStackIdsAsync(100, afterKey);
 
+        // Assert
         Assert.Equal(2, stackIds.Count);
         Assert.Contains(stack1.Id, stackIds);
         Assert.Contains(stack2.Id, stackIds);
@@ -286,6 +289,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     [Fact]
     public async Task GetDistinctStackIds_WithPagination_ReturnsAllIds()
     {
+        // Arrange
         var stacks = new List<Stack>();
         for (int i = 0; i < 5; i++)
             stacks.Add(await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency()));
@@ -293,7 +297,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         foreach (var stack in stacks)
             await _repository.AddAsync(_eventData.GenerateEvents(2, TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id), o => o.ImmediateConsistency());
 
-        // Page through with batch size of 2
+        // Act - page through with batch size of 2
         var allIds = new HashSet<string>();
         var afterKey = new CompositeKeyResult();
         IReadOnlyCollection<string> batch;
@@ -304,6 +308,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
                 allIds.Add(id);
         } while (batch.Count == 2);
 
+        // Assert
         Assert.Equal(5, allIds.Count);
         foreach (var stack in stacks)
             Assert.Contains(stack.Id, allIds);
@@ -312,95 +317,110 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     [Fact]
     public async Task ReassignStack_WithSourceEvents_MovesAllEventsToTarget()
     {
+        // Arrange
         var stack1 = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
         var stack2 = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
 
         await _repository.AddAsync(_eventData.GenerateEvents(10, TestConstants.OrganizationId, TestConstants.ProjectId, stack1.Id), o => o.ImmediateConsistency());
         await _repository.AddAsync(_eventData.GenerateEvents(5, TestConstants.OrganizationId, TestConstants.ProjectId, stack2.Id), o => o.ImmediateConsistency());
 
+        // Act
         long affected = await _repository.ReassignStackAsync([stack1.Id], stack2.Id);
+
+        // Assert
         Assert.Equal(10, affected);
 
         await RefreshDataAsync();
 
-        var stack1Events = await _repository.CountAsync(q => q.Stack(stack1.Id));
-        var stack2Events = await _repository.CountAsync(q => q.Stack(stack2.Id));
-        Assert.Equal(0, stack1Events);
-        Assert.Equal(15, stack2Events);
+        Assert.Equal(0, await _repository.CountAsync(q => q.Stack(stack1.Id)));
+        Assert.Equal(15, await _repository.CountAsync(q => q.Stack(stack2.Id)));
     }
 
     [Fact]
     public async Task RemoveAllByProjectIds_WithMatchingEvents_RemovesAll()
     {
+        // Arrange
         var stack = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
         await _repository.AddAsync(_eventData.GenerateEvents(10, TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id), o => o.ImmediateConsistency());
 
+        // Act
         long removed = await _repository.RemoveAllByProjectIdsAsync([TestConstants.ProjectId]);
+
+        // Assert
         Assert.Equal(10, removed);
 
         await RefreshDataAsync();
-        var count = await _repository.CountAsync(o => o.IncludeSoftDeletes());
-        Assert.Equal(0, count);
+        Assert.Equal(0, await _repository.CountAsync(o => o.IncludeSoftDeletes()));
     }
 
     [Fact]
     public async Task RemoveAllByOrganizationIds_WithMatchingEvents_RemovesAll()
     {
+        // Arrange
         var stack = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
         await _repository.AddAsync(_eventData.GenerateEvents(10, TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id), o => o.ImmediateConsistency());
 
+        // Act
         long removed = await _repository.RemoveAllByOrganizationIdsAsync([TestConstants.OrganizationId]);
+
+        // Assert
         Assert.Equal(10, removed);
 
         await RefreshDataAsync();
-        var count = await _repository.CountAsync(o => o.IncludeSoftDeletes());
-        Assert.Equal(0, count);
+        Assert.Equal(0, await _repository.CountAsync(o => o.IncludeSoftDeletes()));
     }
 
     [Fact]
     public async Task RemoveAllByStackIds_WithMatchingEvents_RemovesAll()
     {
+        // Arrange
         var stack = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
         await _repository.AddAsync(_eventData.GenerateEvents(10, TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id), o => o.ImmediateConsistency());
 
+        // Act
         long removed = await _repository.RemoveAllByStackIdsAsync([stack.Id]);
+
+        // Assert
         Assert.Equal(10, removed);
 
         await RefreshDataAsync();
-        var count = await _repository.CountAsync(o => o.IncludeSoftDeletes());
-        Assert.Equal(0, count);
+        Assert.Equal(0, await _repository.CountAsync(o => o.IncludeSoftDeletes()));
     }
 
     [Fact]
     public async Task ReassignStack_WithEmptySourceIds_ReturnsZeroWithoutModification()
     {
+        // Arrange
         var stack1 = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
         var stack2 = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
         await _repository.AddAsync(_eventData.GenerateEvents(10, TestConstants.OrganizationId, TestConstants.ProjectId, stack1.Id), o => o.ImmediateConsistency());
 
-        // Empty source list must be a no-op; an unchecked empty .Stack() filter would patch ALL events.
+        // Act - empty source list must be a no-op; an unchecked empty .Stack() filter would patch ALL events
         long affected = await _repository.ReassignStackAsync([], stack2.Id);
+
+        // Assert
         Assert.Equal(0, affected);
 
         await RefreshDataAsync();
-        var stack1Events = await _repository.CountAsync(q => q.Stack(stack1.Id));
-        var stack2Events = await _repository.CountAsync(q => q.Stack(stack2.Id));
-        Assert.Equal(10, stack1Events);
-        Assert.Equal(0, stack2Events);
+        Assert.Equal(10, await _repository.CountAsync(q => q.Stack(stack1.Id)));
+        Assert.Equal(0, await _repository.CountAsync(q => q.Stack(stack2.Id)));
     }
 
     [Fact]
     public async Task GetDistinctProjectIds_WithMultipleProjects_ReturnsAllUniqueIds()
     {
+        // Arrange
         var stack = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
         string project2Id = ObjectId.GenerateNewId().ToString();
 
         await _repository.AddAsync(_eventData.GenerateEvents(3, TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id), o => o.ImmediateConsistency());
         await _repository.AddAsync(_eventData.GenerateEvents(2, TestConstants.OrganizationId, project2Id, stack.Id), o => o.ImmediateConsistency());
 
+        // Act
         var afterKey = new CompositeKeyResult();
         var projectIds = await _repository.GetDistinctProjectIdsAsync(100, afterKey);
 
+        // Assert
         Assert.Equal(2, projectIds.Count);
         Assert.Contains(TestConstants.ProjectId, projectIds);
         Assert.Contains(project2Id, projectIds);
@@ -409,15 +429,18 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     [Fact]
     public async Task GetDistinctOrganizationIds_WithMultipleOrganizations_ReturnsAllUniqueIds()
     {
+        // Arrange
         var stack = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
         string org2Id = ObjectId.GenerateNewId().ToString();
 
         await _repository.AddAsync(_eventData.GenerateEvents(3, TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id), o => o.ImmediateConsistency());
         await _repository.AddAsync(_eventData.GenerateEvents(2, org2Id, TestConstants.ProjectId, stack.Id), o => o.ImmediateConsistency());
 
+        // Act
         var afterKey = new CompositeKeyResult();
         var orgIds = await _repository.GetDistinctOrganizationIdsAsync(100, afterKey);
 
+        // Assert
         Assert.Equal(2, orgIds.Count);
         Assert.Contains(TestConstants.OrganizationId, orgIds);
         Assert.Contains(org2Id, orgIds);

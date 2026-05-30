@@ -1,0 +1,643 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>System.Security.Cryptography.Pkcs</name>
+    </assembly>
+    <members>
+        <member name="M:System.Security.Cryptography.Pkcs.EnvelopedCms.Decode(System.ReadOnlySpan{System.Byte})">
+            <summary>
+              Decodes the provided data as a CMS/PKCS#7 EnvelopedData message.
+            </summary>
+            <param name="encodedMessage">
+              The data to decode.
+            </param>
+            <exception cref="T:System.Security.Cryptography.CryptographicException">
+              The <paramref name="encodedMessage"/> parameter was not successfully decoded.
+            </exception>
+        </member>
+        <member name="P:System.Security.Cryptography.Pkcs.CmsSigner.SignaturePadding">
+            <summary>
+            Gets or sets the RSA signature padding to use.
+            </summary>
+            <value>The RSA signature padding to use.</value>
+        </member>
+        <member name="M:System.Security.Cryptography.Pkcs.CmsSigner.#ctor(System.Security.Cryptography.Pkcs.SubjectIdentifierType,System.Security.Cryptography.X509Certificates.X509Certificate2,System.Security.Cryptography.RSA,System.Security.Cryptography.RSASignaturePadding)">
+            <summary>
+            Initializes a new instance of the CmsSigner class with a specified signer
+            certificate, subject identifier type, private key object, and RSA signature padding.
+            </summary>
+            <param name="signerIdentifierType">
+            One of the enumeration values that specifies the scheme to use for identifying
+            which signing certificate was used.
+            </param>
+            <param name="certificate">
+            The certificate whose private key will be used to sign a message.
+            </param>
+            <param name="privateKey">
+            The private key object to use when signing the message.
+            </param>
+            <param name="signaturePadding">
+            The RSA signature padding to use.
+            </param>
+        </member>
+        <member name="M:System.Security.Cryptography.Pkcs.Pkcs12CertBag.#ctor(System.Security.Cryptography.Oid,System.ReadOnlyMemory{System.Byte})">
+            <summary>
+            Create a CertBag for a specified certificate type and encoding.
+            </summary>
+            <param name="certificateType">The identifier for the certificate type</param>
+            <param name="encodedCertificate">The encoded value</param>
+            <remarks>
+            No validation is done to ensure that the <paramref name="encodedCertificate"/> value is
+            correct for the indicated <paramref name="certificateType"/>.  Note that for X.509
+            public-key certificates the correct encoding for a CertBag value is to wrap the
+            DER-encoded certificate in an OCTET STRING.
+            </remarks>
+        </member>
+        <member name="M:System.Security.Cryptography.Pkcs.Rfc3161TimestampRequest.CreateFromHash(System.ReadOnlyMemory{System.Byte},System.Security.Cryptography.Oid,System.Security.Cryptography.Oid,System.Nullable{System.ReadOnlyMemory{System.Byte}},System.Boolean,System.Security.Cryptography.X509Certificates.X509ExtensionCollection)">
+            <summary>
+            Create a timestamp request using a pre-computed hash value.
+            </summary>
+            <param name="hash">The pre-computed hash value to be timestamped.</param>
+            <param name="hashAlgorithmId">
+              The Object Identifier (OID) for the hash algorithm which produced <paramref name="hash"/>.
+            </param>
+            <param name="requestedPolicyId">
+              The Object Identifier (OID) for a timestamp policy the Timestamp Authority (TSA) should use,
+              or <c>null</c> to express no preference.
+            </param>
+            <param name="nonce">
+              An optional nonce (number used once) to uniquely identify this request to pair it with the response.
+              The value is interpreted as an unsigned big-endian integer and may be normalized to the encoding format.
+            </param>
+            <param name="requestSignerCertificates">
+              Indicates whether the Timestamp Authority (TSA) must (<c>true</c>) or must not (<c>false</c>) include
+              the signing certificate in the issued timestamp token.
+            </param>
+            <param name="extensions">RFC3161 extensions to present with the request.</param>
+            <returns>
+              An <see cref="T:System.Security.Cryptography.Pkcs.Rfc3161TimestampRequest"/> representing the chosen values.
+            </returns>
+            <seealso cref="M:System.Security.Cryptography.Pkcs.Rfc3161TimestampRequest.Encode"/>
+            <seealso cref="M:System.Security.Cryptography.Pkcs.Rfc3161TimestampRequest.TryEncode(System.Span{System.Byte},System.Int32@)"/>
+        </member>
+        <member name="M:System.Security.Cryptography.Pkcs.Rfc3161TimestampToken.AsSignedCms">
+            <summary>
+            Get a SignedCms representation of the RFC3161 Timestamp Token.
+            </summary>
+            <returns>The SignedCms representation of the RFC3161 Timestamp Token.</returns>
+            <remarks>
+            Successive calls to this method return the same object.
+            The SignedCms class is mutable, but changes to that object are not reflected in the
+            <see cref="T:System.Security.Cryptography.Pkcs.Rfc3161TimestampToken"/> object which produced it.
+            The value from calling <see cref="M:System.Security.Cryptography.Pkcs.SignedCms.Encode"/> can be interpreted again as an
+            <see cref="T:System.Security.Cryptography.Pkcs.Rfc3161TimestampToken"/> via another call to <see cref="M:System.Security.Cryptography.Pkcs.Rfc3161TimestampToken.TryDecode(System.ReadOnlyMemory{System.Byte},System.Security.Cryptography.Pkcs.Rfc3161TimestampToken@,System.Int32@)"/>.
+            </remarks>
+        </member>
+        <member name="T:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo">
+            <summary>
+            Represents the timestamp token information class defined in RFC3161 as TSTInfo.
+            </summary>
+        </member>
+        <member name="M:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo.#ctor(System.Security.Cryptography.Oid,System.Security.Cryptography.Oid,System.ReadOnlyMemory{System.Byte},System.ReadOnlyMemory{System.Byte},System.DateTimeOffset,System.Nullable{System.Int64},System.Boolean,System.Nullable{System.ReadOnlyMemory{System.Byte}},System.Nullable{System.ReadOnlyMemory{System.Byte}},System.Security.Cryptography.X509Certificates.X509ExtensionCollection)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo" /> class with the specified parameters.
+            </summary>
+            <param name="policyId">An OID representing the TSA's policy under which the response was produced.</param>
+            <param name="hashAlgorithmId">A hash algorithm OID of the data to be timestamped.</param>
+            <param name="messageHash">A hash value of the data to be timestamped.</param>
+            <param name="serialNumber">An integer assigned by the TSA to the <see cref="T:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo"/>.</param>
+            <param name="timestamp">The timestamp encoded in the token.</param>
+            <param name="accuracyInMicroseconds">The accuracy with which <paramref name="timestamp"/> is compared. Also see <paramref name="isOrdering"/>.</param>
+            <param name="isOrdering"><see langword="true" /> to ensure that every timestamp token from the same TSA can always be ordered based on the <paramref name="timestamp"/>, regardless of the accuracy; <see langword="false" /> to make <paramref name="timestamp"/> indicate when token has been created by the TSA.</param>
+            <param name="nonce">The nonce associated with this timestamp token. Using a nonce always allows to detect replays, and hence its use is recommended.</param>
+            <param name="timestampAuthorityName">The hint in the TSA name identification. The actual identification of the entity that signed the response will always occur through the use of the certificate identifier.</param>
+            <param name="extensions">The extension values associated with the timestamp.</param>
+            <remarks>If <paramref name="hashAlgorithmId" />, <paramref name="messageHash" />, <paramref name="policyId" /> or <paramref name="nonce" /> are present in the <see cref="T:System.Security.Cryptography.Pkcs.Rfc3161TimestampRequest"/>, then the same value should be used. If <paramref name="accuracyInMicroseconds"/> is not provided, then the accuracy may be available through other means such as i.e. <paramref name="policyId" />.</remarks>
+            <exception cref="T:System.Security.Cryptography.CryptographicException">ASN.1 corrupted data.</exception>
+        </member>
+        <member name="P:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo.Version">
+            <summary>
+            Gets the version of the timestamp token.
+            </summary>
+            <value>The version of the timestamp token.</value>
+        </member>
+        <member name="P:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo.PolicyId">
+            <summary>
+            Gets an OID representing the TSA's policy under which the response was produced.
+            </summary>
+            <value>An OID representing the TSA's policy under which the response was produced.</value>
+        </member>
+        <member name="P:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo.HashAlgorithmId">
+            <summary>
+            Gets an OID of the hash algorithm.
+            </summary>
+            <value>An OID of the hash algorithm.</value>
+        </member>
+        <member name="M:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo.GetMessageHash">
+            <summary>
+            Gets the data representing the message hash.
+            </summary>
+            <returns>The data representing the message hash.</returns>
+        </member>
+        <member name="M:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo.GetSerialNumber">
+            <summary>
+            Gets an integer assigned by the TSA to the <see cref="T:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo"/>.
+            </summary>
+            <returns>An integer assigned by the TSA to the <see cref="T:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo"/>.</returns>
+        </member>
+        <member name="P:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo.Timestamp">
+            <summary>
+            Gets the timestamp encoded in the token.
+            </summary>
+            <value>The timestamp encoded in the token.</value>
+        </member>
+        <member name="P:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo.AccuracyInMicroseconds">
+            <summary>
+            Gets the accuracy with which <see cref="P:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo.Timestamp"/> is compared.
+            </summary>
+            <seealso cref="P:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo.IsOrdering" />
+            <value>The accuracy with which <see cref="P:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo.Timestamp"/> is compared.</value>
+        </member>
+        <member name="P:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo.IsOrdering">
+            <summary>
+            Gets a value indicating if every timestamp token from the same TSA can always be ordered based on the <see cref="P:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo.Timestamp"/>, regardless of the accuracy; If <see langword="false" />, <see cref="P:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo.Timestamp"/> indicates when the token has been created by the TSA.
+            </summary>
+            <value>A value indicating if every timestamp token from the same TSA can always be ordered based on the <see cref="P:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo.Timestamp"/>.</value>
+        </member>
+        <member name="M:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo.GetNonce">
+            <summary>
+            Gets the nonce associated with this timestamp token.
+            </summary>
+            <returns>The nonce associated with this timestamp token.</returns>
+        </member>
+        <member name="P:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo.HasExtensions">
+            <summary>
+            Gets a value indicating whether there are any extensions associated with this timestamp token.
+            </summary>
+            <value>A value indicating whether there are any extensions associated with this timestamp token.</value>
+        </member>
+        <member name="M:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo.GetTimestampAuthorityName">
+            <summary>
+            Gets the data representing the hint in the TSA name identification.
+            </summary>
+            <returns>The data representing the hint in the TSA name identification.</returns>
+            <remarks>
+            The actual identification of the entity that signed the response
+            will always occur through the use of the certificate identifier (ESSCertID Attribute)
+            inside a SigningCertificate attribute which is part of the signer info.
+            </remarks>
+        </member>
+        <member name="M:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo.GetExtensions">
+            <summary>
+            Gets the extension values associated with the timestamp.
+            </summary>
+            <returns>The extension values associated with the timestamp.</returns>
+        </member>
+        <member name="M:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo.Encode">
+            <summary>
+            Encodes this object into a TSTInfo value
+            </summary>
+            <returns>The encoded TSTInfo value.</returns>
+        </member>
+        <member name="M:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo.TryEncode(System.Span{System.Byte},System.Int32@)">
+            <summary>
+            Attempts to encode this object as a TSTInfo value, writing the result into the provided buffer.
+            </summary>
+            <param name="destination">The destination buffer.</param>
+            <param name="bytesWritten">When this method returns <see langword="true" />, contains the bytes written to the <paramref name="destination" /> buffer.</param>
+            <returns><see langword="true" /> if the operation succeeded; <see langword="false" /> if the buffer size was insufficient.</returns>
+        </member>
+        <member name="M:System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo.TryDecode(System.ReadOnlyMemory{System.Byte},System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo@,System.Int32@)">
+            <summary>
+            Decodes an encoded TSTInfo value.
+            </summary>
+            <param name="encodedBytes">The input or source buffer.</param>
+            <param name="timestampTokenInfo">When this method returns <see langword="true" />, the decoded data. When this method returns <see langword="false" />, the value is <see langword="null" />, meaning the data could not be decoded.</param>
+            <param name="bytesConsumed">The number of bytes used for decoding.</param>
+            <returns><see langword="true" /> if the operation succeeded; <see langword="false" /> otherwise.</returns>
+        </member>
+        <member name="T:System.Security.Cryptography.SafeHashHandle">
+            <summary>
+            SafeHandle representing HCRYPTHASH handle
+            </summary>
+        </member>
+        <member name="T:System.Security.Cryptography.SafeCapiKeyHandle">
+            <summary>
+                Safe handle representing a HCRYPTKEY
+            </summary>
+            <summary>
+                Since we need to delete the key handle before the provider is released we need to actually hold a
+                pointer to a CRYPT_KEY_CTX unmanaged structure whose destructor decrements a refCount. Only when
+                the provider refCount is 0 it is deleted. This way, we loose a race in the critical finalization
+                of the key handle and provider handle. This also applies to hash handles, which point to a
+                CRYPT_HASH_CTX. Those structures are defined in COMCryptography.h
+            </summary>
+        </member>
+        <member name="T:System.Security.Cryptography.SafeProvHandle">
+            <summary>
+            Safehandle representing HCRYPTPROV
+            </summary>
+        </member>
+        <member name="P:System.HexConverter.CharToHexLookup">
+            <summary>Map from an ASCII char to its hex value, e.g. arr['b'] == 11. 0xFF means it's not a hex digit.</summary>
+        </member>
+        <member name="P:System.SR.Arg_EmptyOrNullString_Named">
+            <summary>The `{0}` string cannot be empty or null.</summary>
+        </member>
+        <member name="P:System.SR.Arg_RankMultiDimNotSupported">
+            <summary>Only single dimensional arrays are supported for the requested action.</summary>
+        </member>
+        <member name="P:System.SR.Argument_EncodeDestinationTooSmall">
+            <summary>The destination is too small to hold the encoded value.</summary>
+        </member>
+        <member name="P:System.SR.Argument_InvalidOffLen">
+            <summary>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</summary>
+        </member>
+        <member name="P:System.SR.Argument_InvalidOidValue">
+            <summary>The OID value was invalid.</summary>
+        </member>
+        <member name="P:System.SR.Argument_InvalidValue">
+            <summary>Value was invalid.</summary>
+        </member>
+        <member name="P:System.SR.Argument_InvalidRsaSignaturePadding">
+            <summary>The RSA padding must be Pkcs1 or Pss.</summary>
+        </member>
+        <member name="P:System.SR.ArgumentOutOfRange_IndexMustBeLess">
+            <summary>Index was out of range. Must be non-negative and less than the size of the collection.</summary>
+        </member>
+        <member name="P:System.SR.ArgumentOutOfRange_IndexMustBeLessOrEqual">
+            <summary>Index was out of range. Must be non-negative and less than or equal to the size of the collection.</summary>
+        </member>
+        <member name="P:System.SR.ArgumentOutOfRange_NeedPosNum">
+            <summary>Positive number required.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_AlgKdfRequiresChars">
+            <summary>The KDF for algorithm '{0}' requires a char-based password input.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_BadHashValue">
+            <summary>The hash value is not correct.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_BadSignature">
+            <summary>Invalid signature.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_CannotDetermineSignatureAlgorithm">
+            <summary>Could not determine signature algorithm for the signer certificate.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_IncompleteCertChain">
+            <summary>The certificate chain is incomplete, the self-signed root authority could not be determined.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_Invalid_Originator_Identifier_Choice">
+            <summary>Invalid originator identifier choice {0} found in decoded CMS.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_Invalid_Subject_Identifier_Type">
+            <summary>The subject identifier type {0} is not valid.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_InvalidMessageType">
+            <summary>Invalid cryptographic message type.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_InvalidSignerHashForSignatureAlg">
+            <summary>SignerInfo digest algorithm '{0}' is not valid for signature algorithm '{1}'.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_Key_Agree_Date_Not_Available">
+            <summary>The Date property is not available for none KID key agree recipient.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_MessageNotEncrypted">
+            <summary>The CMS message is not encrypted.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_MessageNotSigned">
+            <summary>The CMS message is not signed.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_MissingAuthenticatedAttribute">
+            <summary>The cryptographic message does not contain an expected authenticated attribute.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_NoCounterCounterSigner">
+            <summary>Only one level of counter-signatures are supported on this platform.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_NoRecipients">
+            <summary>The recipients collection is empty. You must specify at least one recipient. This platform does not implement the certificate picker UI.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_NoSignerCert">
+            <summary>No signer certificate was provided. This platform does not implement the certificate picker UI.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_NoSignerCertSilent">
+            <summary>No signer certificate was provided.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_NoSignerAtIndex">
+            <summary>The signed cryptographic message does not have a signer for the specified signer index.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_RecipientNotFound">
+            <summary>The enveloped-data message does not contain the specified recipient.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_RecipientType_NotSupported">
+            <summary>The recipient type '{0}' is not supported for encryption or decryption on this platform.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_Sign_Empty_Content">
+            <summary>Cannot create CMS signature for empty content.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_Sign_No_Signature_First_Signer">
+            <summary>CmsSigner has to be the first signer with NoSignature.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_SignerNotFound">
+            <summary>Cannot find the original signer.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_Signing_RequiresPrivateKey">
+            <summary>A certificate with a private key is required.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_Ktri_RSARequired">
+            <summary>An RSA key is required to decrypt for a RecipientInfo with a KeyTransport recipient type.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_Recipient_RSARequired_RSAPaddingModeSupplied">
+            <summary>An RSA certificate is required for a CmsRecipient when used with RSAEncryptionPadding.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_TrustFailure">
+            <summary>Certificate trust could not be established. The first reported error is: {0}</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_UnknownAlgorithm">
+            <summary>Unknown algorithm '{0}'.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_UnknownKeySpec">
+            <summary>Unable to determine the type of key handle from this keyspec {0}.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_WrongKeyUsage">
+            <summary>The certificate is not valid for the requested usage.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_NotValidPublicOrPrivateKey">
+            <summary>Key is not a valid public or private key.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Pkcs12_CannotProcessEncryptedSafeContents">
+            <summary>This operation is not valid on an encrypted or enveloped Pkcs12SafeContents.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Pkcs12_CertBagNotX509">
+            <summary>The Pkcs12CertBag contents are not an X.509 certificate.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Pkcs12_PfxIsSealed">
+            <summary>The Pkcs12Builder can no longer be modified because one of the Seal methods was already invoked.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Pkcs12_PfxMustBeSealed">
+            <summary>One of the Seal methods must be invoked on the Pkcs12Builder before invoking an Encode method.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Pkcs12_SafeContentsIsEncrypted">
+            <summary>Cannot enumerate the contents of an encrypted or enveloped Pkcs12SafeContents.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Pkcs12_SafeContentsIsReadOnly">
+            <summary>New Pkcs12SafeBag values cannot be added to a Pkcs12SafeContents that was read from existing data.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Pkcs12_WrongModeForDecrypt">
+            <summary>This decryption operation applies to 'Pkcs12ConfidentialityMode.{0}', but the target object is in 'Pkcs12ConfidentialityMode.{1}'.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Pkcs12_WrongModeForVerify">
+            <summary>This verification operation applies to 'Pkcs12IntegrityMode.{0}', but the target object is in 'Pkcs12IntegrityMode.{1}'.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Pkcs_InvalidSignatureParameters">
+            <summary>Invalid signature parameters.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Pkcs8_EncryptedReadFailed">
+            <summary>The EncryptedPrivateKeyInfo structure was decoded but was not successfully interpreted, the password may be incorrect.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Pkcs9_AttributeMismatch">
+            <summary>The parameter should be a PKCS 9 attribute.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Pkcs9_MultipleSigningTimeNotAllowed">
+            <summary>Cannot add multiple PKCS 9 signing time attributes.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Pkcs_PssParametersMissing">
+            <summary>PSS parameters were not present.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Pkcs_PssParametersHashMismatch">
+            <summary>This platform requires that the PSS hash algorithm ({0}) match the data digest algorithm ({1}).</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Pkcs_PssParametersMgfHashMismatch">
+            <summary>This platform does not support the MGF hash algorithm ({0}) being different from the signature hash algorithm ({1}).</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Pkcs_PssParametersMgfNotSupported">
+            <summary>Mask generation function '{0}' is not supported by this platform.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Pkcs_PssParametersSaltMismatch">
+            <summary>PSS salt size {0} is not supported by this platform with hash algorithm {1}.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_TimestampReq_BadNonce">
+            <summary>The response from the timestamping server did not match the request nonce.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_TimestampReq_BadResponse">
+            <summary>The response from the timestamping server was not understood.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_TimestampReq_Failure">
+            <summary>The timestamping server did not grant the request. The request status is '{0}' with failure info '{1}'.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_TimestampReq_NoCertFound">
+            <summary>The timestamping request required the TSA certificate in the response, but it was not found.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_TimestampReq_UnexpectedCertFound">
+            <summary>The timestamping request required the TSA certificate not be included in the response, but certificates were present.</summary>
+        </member>
+        <member name="P:System.SR.InvalidOperation_DuplicateItemNotAllowed">
+            <summary>Duplicate items are not allowed in the collection.</summary>
+        </member>
+        <member name="P:System.SR.InvalidOperation_WrongOidInAsnCollection">
+            <summary>AsnEncodedData element in the collection has wrong Oid value: expected = '{0}', actual = '{1}'.</summary>
+        </member>
+        <member name="P:System.SR.PlatformNotSupported_CryptographyPkcs">
+            <summary>System.Security.Cryptography.Pkcs is only supported on Windows platforms.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_AlgorithmNotSupported">
+            <summary>Algorithm '{0}' is not supported on this platform.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Der_Invalid_Encoding">
+            <summary>ASN1 corrupted data.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Invalid_IA5String">
+            <summary>The string contains a character not in the 7 bit ASCII character set.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_UnknownAlgorithmIdentifier">
+            <summary>The algorithm identified by '{0}' is unknown, not valid for the requested usage, or was not handled.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_UnknownHashAlgorithm">
+            <summary>'{0}' is not a known hash algorithm.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_NoAttributeFound">
+            <summary>Attribute not found.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_NoCertificateFound">
+            <summary>Certificate not found.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_CertificateAlreadyInCollection">
+            <summary>Certificate already present in the collection.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_InvalidSymmetricKey">
+            <summary>The key in the enveloped message is not valid or could not be decoded.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_Cms_CertificateDoesNotSupportNoSignature">
+            <summary>SignatureIdentifierType.NoSignature is not valid with the provided certificate.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_X509_PfxWithoutPassword_MaxAllowedIterationsExceeded">
+            <summary>PKCS12 (PFX) without a supplied password has exceeded maximum allowed iterations. See https://go.microsoft.com/fwlink/?linkid=2233907 for more information.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_X509_PfxWithoutPassword_ProblemFound">
+            <summary>There was a problem with the PKCS12 (PFX) without a supplied password. See https://go.microsoft.com/fwlink/?linkid=2233907 for more information.</summary>
+        </member>
+        <member name="P:Internal.Cryptography.DecryptorPal.RecipientInfos">
+             <summary>
+             Return the managed representation of the recipients.
+            
+             .NET Framework compat: Unlike the desktop, we compute this once and then latch it. Since both RecipientInfo and RecipientInfoCollection are immutable objects, this should be
+             a safe optimization to make.
+             </summary>
+        </member>
+        <member name="M:Internal.Cryptography.DecryptorPal.TryDecrypt(System.Security.Cryptography.Pkcs.RecipientInfo,System.Security.Cryptography.X509Certificates.X509Certificate2,System.Security.Cryptography.AsymmetricAlgorithm,System.Security.Cryptography.X509Certificates.X509Certificate2Collection,System.Security.Cryptography.X509Certificates.X509Certificate2Collection,System.Exception@)">
+            <summary>
+            Attempt to decrypt the CMS using the specified "cert". If successful, return the ContentInfo that contains the decrypted content. If unsuccessful, return null and set "exception"
+            to a valid Exception object. Do not throw the exception as EnvelopedCms will want to continue decryption attempts against other recipients. Only if all the recipients fail to
+            decrypt will then EnvelopedCms throw the exception from the last failed attempt.
+            </summary>
+        </member>
+        <member name="M:Internal.Cryptography.PkcsHelpers.Resize(System.Byte[],System.Int32)">
+            <summary>
+            This is not just a convenience wrapper for Array.Resize(). In DEBUG builds, it forces the array to move in memory even if no resize is needed. This should be used by
+            helper methods that do anything of the form "call a native api once to get the estimated size, call it again to get the data and return the data in a byte[] array."
+            Sometimes, that data consist of a native data structure containing pointers to other parts of the block. Using such a helper to retrieve such a block results in an intermittent
+            AV. By using this helper, you make that AV repro every time.
+            </summary>
+        </member>
+        <member name="M:Internal.Cryptography.PkcsHelpers.TryFindMatchingCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2Collection,System.Security.Cryptography.Pkcs.SubjectIdentifier)">
+            <summary>
+            .NET Framework compat: We do not complain about multiple matches. Just take the first one and ignore the rest.
+            </summary>
+        </member>
+        <member name="M:Internal.Cryptography.PkcsHelpers.ToSkiBytes(System.String)">
+             <summary>
+             Asserts on bad or non-canonicalized input. Input must come from trusted sources.
+            
+             Subject Key Identifier is string-ized as an upper case hex string. This format is part of the public api behavior and cannot be changed.
+             </summary>
+        </member>
+        <member name="M:Internal.Cryptography.PkcsHelpers.ToSerialBytes(System.String)">
+             <summary>
+             Asserts on bad or non-canonicalized input. Input must come from trusted sources.
+            
+             Serial number is string-ized as a reversed upper case hex string. This format is part of the public api behavior and cannot be changed.
+             </summary>
+        </member>
+        <member name="M:Internal.Cryptography.PkcsHelpers.UpperHexStringToByteArray(System.String)">
+            <summary>
+            Asserts on bad input. Input must come from trusted sources.
+            </summary>
+        </member>
+        <member name="M:Internal.Cryptography.PkcsHelpers.UpperHexCharToNybble(System.Char)">
+            <summary>
+            Asserts on bad input. Input must come from trusted sources.
+            </summary>
+        </member>
+        <member name="M:Internal.Cryptography.PkcsHelpers.CreateBestPkcs9AttributeObjectAvailable(System.Security.Cryptography.Oid,System.ReadOnlySpan{System.Byte})">
+            <summary>
+            Useful helper for "upgrading" well-known CMS attributes to type-specific objects such as Pkcs9DocumentName, Pkcs9DocumentDescription, etc.
+            </summary>
+        </member>
+        <member name="M:Internal.Cryptography.PkcsPal.Encrypt(System.Security.Cryptography.Pkcs.CmsRecipientCollection,System.Security.Cryptography.Pkcs.ContentInfo,System.Security.Cryptography.Pkcs.AlgorithmIdentifier,System.Security.Cryptography.X509Certificates.X509Certificate2Collection,System.Security.Cryptography.CryptographicAttributeObjectCollection)">
+            <summary>
+            Encrypt and encode a CMS. Return value is the RFC-compliant representation of the CMS that can be transmitted "on the wire."
+            </summary>
+        </member>
+        <member name="M:Internal.Cryptography.PkcsPal.Decode(System.ReadOnlySpan{System.Byte},System.Int32@,System.Security.Cryptography.Pkcs.ContentInfo@,System.Security.Cryptography.Pkcs.AlgorithmIdentifier@,System.Security.Cryptography.X509Certificates.X509Certificate2Collection@,System.Security.Cryptography.CryptographicAttributeObjectCollection@)">
+            <summary>
+            Decode an encoded CMS.
+               Call RecipientInfos on the returned pal object to get the recipients.
+               Call TryDecrypt() on the returned pal object to attempt a decrypt for a single recipient.
+            </summary>
+        </member>
+        <member name="M:Internal.Cryptography.PkcsPal.GetEncodedMessageType(System.ReadOnlySpan{System.Byte})">
+            <summary>
+            Implements the ContentInfo.GetContentType() behavior.
+            </summary>
+        </member>
+        <member name="M:Internal.Cryptography.PkcsPal.AddCertsFromStoreForDecryption(System.Security.Cryptography.X509Certificates.X509Certificate2Collection)">
+            <summary>
+            EnvelopedCms.Decrypt() looks for qualifying certs from the "MY" store (as well as any "extraStore" passed to Decrypt()).
+            This method encapsulates exactly what a particular OS considers to be "the MY store."
+            </summary>
+        </member>
+        <member name="M:Internal.Cryptography.PkcsPal.CreateRecipientsNotFoundException">
+            <summary>
+            If EnvelopedCms.Decrypt() fails to find any matching certs for any recipients, it throws CryptographicException(CRYPT_E_RECIPIENT_NOT_FOUND) on Windows.
+            This method encapsulates what other OS's decide to throw in this situation.
+            </summary>
+        </member>
+        <member name="M:Internal.Cryptography.PkcsPal.CreateRecipientInfosAfterEncryptException">
+            <summary>
+            If you call RecipientInfos after an Encrypt(), the framework throws CryptographicException(CRYPT_E_INVALID_MSG_TYPE) on Windows.
+            This method encapsulates what other OS's decide to throw in this situation.
+            </summary>
+        </member>
+        <member name="M:Internal.Cryptography.PkcsPal.CreateDecryptAfterEncryptException">
+            <summary>
+            If you call Decrypt() after an Encrypt(), the framework throws CryptographicException(CRYPT_E_INVALID_MSG_TYPE) on Windows.
+            This method encapsulates what other OS's decide to throw in this situation.
+            </summary>
+        </member>
+        <member name="M:Internal.Cryptography.PkcsPal.CreateDecryptTwiceException">
+            <summary>
+            If you call Decrypt() after a Encrypt(), the framework throws CryptographicException(CRYPT_E_INVALID_MSG_TYPE) on Windows.
+            This method encapsulates what other OS's decide to throw in this situation.
+            </summary>
+        </member>
+        <member name="M:Internal.Cryptography.PkcsPal.GetSubjectKeyIdentifier(System.Security.Cryptography.X509Certificates.X509Certificate2)">
+            <summary>
+            Retrieve the certificate's subject key identifier value.
+            </summary>
+        </member>
+        <member name="M:Internal.Cryptography.PkcsPal.GetPrivateKeyForSigning``1(System.Security.Cryptography.X509Certificates.X509Certificate2,System.Boolean)">
+            <summary>
+            Retrieve a private key object for the certificate to use with signing.
+            </summary>
+        </member>
+        <member name="M:Internal.Cryptography.PkcsPal.GetPrivateKeyForDecryption``1(System.Security.Cryptography.X509Certificates.X509Certificate2,System.Boolean)">
+            <summary>
+            Retrieve a private key object for the certificate to use with decryption.
+            </summary>
+        </member>
+        <member name="P:Internal.Cryptography.PkcsPal.Instance">
+            <summary>
+            Get the one instance of PkcsPal.
+            </summary>
+        </member>
+        <member name="M:Internal.Cryptography.Pal.Windows.HelpersWindows.GetContentInfo(Microsoft.Win32.SafeHandles.SafeCryptMsgHandle)">
+             <summary>
+             Returns the inner content of the CMS.
+            
+             Special case: If the CMS is an enveloped CMS that has been decrypted and the inner content type is Oids.Pkcs7Data, the returned
+             content bytes are the decoded octet bytes, rather than the encoding of those bytes. This is a documented convenience behavior of
+             CryptMsgGetParam(CMSG_CONTENT_PARAM) that apparently got baked into the behavior of the managed EnvelopedCms class.
+             </summary>
+        </member>
+        <member name="M:Internal.Cryptography.Pal.Windows.HelpersWindows.ToAlgId(System.String)">
+            <summary>
+            Returns (AlgId)(-1) if oid is unknown.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Win32.SafeHandles.SafeHandleCache`1">
+            <summary>Provides a cache for special instances of SafeHandles.</summary>
+            <typeparam name="T">Specifies the type of SafeHandle.</typeparam>
+        </member>
+        <member name="M:Microsoft.Win32.SafeHandles.SafeHandleCache`1.GetInvalidHandle(System.Func{`0})">
+            <summary>
+            Gets a cached, invalid handle.  As the instance is cached, it should either never be Disposed
+            or it should override <see cref="M:System.Runtime.InteropServices.SafeHandle.Dispose(System.Boolean)"/> to prevent disposal when the
+            instance represents an invalid handle: <see cref="P:System.Runtime.InteropServices.SafeHandle.IsInvalid"/> returns <see language="true"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Win32.SafeHandles.SafeHandleCache`1.IsCachedInvalidHandle(System.Runtime.InteropServices.SafeHandle)">
+            <summary>Gets whether the specified handle is invalid handle.</summary>
+            <param name="handle">The handle to compare.</param>
+            <returns>true if <paramref name="handle"/> is invalid handle; otherwise, false.</returns>
+        </member>
+        <member name="M:Interop.Kernel32.GetMessage(System.Int32)">
+            <summary>
+                Returns a string message for the specified Win32 error code.
+            </summary>
+        </member>
+        <member name="T:Interop.NCrypt.ErrorCode">
+            <summary>
+                Result codes from NCrypt APIs
+            </summary>
+        </member>
+    </members>
+</doc>

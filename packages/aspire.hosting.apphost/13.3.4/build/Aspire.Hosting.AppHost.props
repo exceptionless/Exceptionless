@@ -1,0 +1,14 @@
+<Project>
+
+  <PropertyGroup>
+    <!-- Aspire hosting projects aren't publishable right now until https://github.com/microsoft/aspire/issues/147 is good -->
+    <IsPublishable Condition="'$(IsPublishable)' == ''">false</IsPublishable>
+    <IsPackable Condition="'$(IsPackable)' == ''">false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(Language)' == 'C#' AND ('$(ImplicitUsings)' == 'true' or '$(ImplicitUsings)' == 'enable')">
+    <Using Include="Aspire.Hosting" />
+    <Using Include="Aspire.Hosting.ApplicationModel" />
+  </ItemGroup>
+
+</Project>

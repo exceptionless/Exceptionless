@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>OpenTelemetry.Instrumentation.AspNetCore</id>
+    <version>1.15.2</version>
+    <authors>OpenTelemetry Authors</authors>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <license type="expression">Apache-2.0</license>
+    <licenseUrl>https://licenses.nuget.org/Apache-2.0</licenseUrl>
+    <icon>opentelemetry-icon-color.png</icon>
+    <readme>README.md</readme>
+    <projectUrl>https://opentelemetry.io/</projectUrl>
+    <description>ASP.NET Core instrumentation for OpenTelemetry .NET</description>
+    <releaseNotes>For detailed changes see: https://github.com/open-telemetry/opentelemetry-dotnet-contrib/blob/96ef3bf6df7c93c59dce07fc0b0d2682d6797e76/src/OpenTelemetry.Instrumentation.AspNetCore/CHANGELOG.md.</releaseNotes>
+    <copyright>Copyright The OpenTelemetry Authors</copyright>
+    <tags>Observability OpenTelemetry Monitoring Telemetry distributed-tracing AspNetCore</tags>
+    <repository type="git" url="https://github.com/open-telemetry/opentelemetry-dotnet-contrib" commit="96ef3bf6df7c93c59dce07fc0b0d2682d6797e76" />
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="OpenTelemetry.Api.ProviderBuilderExtensions" version="[1.15.3, 2.0.0)" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net10.0">
+        <dependency id="OpenTelemetry.Api.ProviderBuilderExtensions" version="[1.15.3, 2.0.0)" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="Microsoft.AspNetCore.Http.Abstractions" version="[2.1.1, 6.0.0)" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.AspNetCore.Http.Features" version="[2.1.1, 6.0.0)" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Configuration" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Options" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="OpenTelemetry.Api.ProviderBuilderExtensions" version="[1.15.3, 2.0.0)" exclude="Build,Analyzers" />
+        <dependency id="System.Text.Encodings.Web" version="4.7.2" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+    <frameworkReferences>
+      <group targetFramework="net8.0">
+        <frameworkReference name="Microsoft.AspNetCore.App" />
+      </group>
+      <group targetFramework="net10.0">
+        <frameworkReference name="Microsoft.AspNetCore.App" />
+      </group>
+      <group targetFramework=".NETStandard2.0" />
+    </frameworkReferences>
+  </metadata>
+</package>

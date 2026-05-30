@@ -1,0 +1,526 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Aspire.Hosting.Browsers</name>
+    </assembly>
+    <members>
+        <member name="T:Aspire.Hosting.BrowserConfiguration">
+            <summary>
+            Resolved browser configuration used for one tracked browser session.
+            </summary>
+            <remarks>
+            Resolution keeps "which browser/profile did the caller ask for?" separate from "which user data directory
+            does that imply?". The later user-data-directory decision belongs to <see cref="T:Aspire.Hosting.BrowserHostRegistry"/>, where
+            the resolved browser executable path is available.
+            </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.BrowserConfiguration.#ctor(System.String,System.String,Aspire.Hosting.BrowserUserDataMode,System.String)">
+            <summary>
+            Resolved browser configuration used for one tracked browser session.
+            </summary>
+            <remarks>
+            Resolution keeps "which browser/profile did the caller ask for?" separate from "which user data directory
+            does that imply?". The later user-data-directory decision belongs to <see cref="T:Aspire.Hosting.BrowserHostRegistry"/>, where
+            the resolved browser executable path is available.
+            </remarks>
+        </member>
+        <member name="F:Aspire.Hosting.BrowserConfiguration.DefaultUserDataMode">
+            <summary>
+            The default mode points at an Aspire-managed persistent user data directory shared across every Aspire
+            AppHost on the machine, so cookies, sign-ins, and extensions persist between runs.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.BrowserConfiguration.Resolve(Microsoft.Extensions.Configuration.IConfiguration,System.String,Aspire.Hosting.BrowserConfigurationExplicitValues,System.Nullable{Aspire.Hosting.BrowserConfiguration},System.Nullable{Aspire.Hosting.BrowserConfiguration})">
+            <summary>
+            Resolves explicit method arguments, resource-scoped configuration, global configuration, and defaults.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.BrowserConfiguration.GetDefaultBrowser(System.Func{System.String,System.String})">
+            <summary>
+            Selects the default browser for the default user data mode.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.BrowserConfiguration.GetDefaultBrowser(Aspire.Hosting.BrowserUserDataMode,System.Func{System.String,System.String})">
+            <summary>
+            Selects the default browser for the effective user data mode.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.BrowserConfigurationExplicitValues">
+            <summary>
+            Browser configuration values explicitly supplied by the resource builder.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.BrowserConfigurationExplicitValues.#ctor(System.String,System.String,System.Nullable{Aspire.Hosting.BrowserUserDataMode})">
+            <summary>
+            Browser configuration values explicitly supplied by the resource builder.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserEndpointJsonContext.BrowserDebugEndpointMetadata">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserEndpointJsonContext.BrowserJsonVersionResponse">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserEndpointJsonContext.DateTimeOffset">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserEndpointJsonContext.Int32">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserEndpointJsonContext.String">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserEndpointJsonContext.Default">
+            <summary>
+            The default <see cref="T:System.Text.Json.Serialization.JsonSerializerContext"/> associated with a default <see cref="T:System.Text.Json.JsonSerializerOptions"/> instance.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserEndpointJsonContext.GeneratedSerializerOptions">
+            <summary>
+            The source-generated options associated with this context.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.BrowserEndpointJsonContext.#ctor">
+            <inheritdoc/>
+        </member>
+        <member name="M:Aspire.Hosting.BrowserEndpointJsonContext.#ctor(System.Text.Json.JsonSerializerOptions)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Aspire.Hosting.BrowserEndpointJsonContext.GetTypeInfo(System.Type)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Aspire.Hosting.BrowserLogsBuilderExtensions">
+            <summary>
+            Extension methods for adding tracked browser log resources to browser-based application resources.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.BrowserLogsBuilderExtensions.WithBrowserLogs``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,System.String,System.Nullable{Aspire.Hosting.BrowserUserDataMode})">
+             <summary>
+             Adds a child resource that can open the application's primary browser endpoint in a tracked browser session,
+             surface browser diagnostics, and capture screenshots.
+             </summary>
+             <typeparam name="T">The type of resource being configured.</typeparam>
+             <param name="builder">The resource builder.</param>
+             <param name="browser">
+             The browser to launch. When not specified, the tracked browser uses the configured value from
+             <c>Aspire:Hosting:BrowserLogs</c> and otherwise prefers an installed <c>"msedge"</c> browser in shared user data
+             mode, an installed <c>"chrome"</c> browser in isolated user data mode, and finally falls back to <c>"chrome"</c>.
+             Supported values include logical
+             browser names such as <c>"msedge"</c> and <c>"chrome"</c>, or an explicit browser executable path.
+             </param>
+             <param name="profile">
+             Optional Chromium profile name or directory name to use. Only valid when the effective user data mode
+             is <see cref="F:Aspire.Hosting.BrowserUserDataMode.Shared"/>. When not specified, the tracked browser uses the
+             configured value from <c>Aspire:Hosting:BrowserLogs</c> if present.
+             </param>
+             <param name="userDataMode">
+             Optional <see cref="T:Aspire.Hosting.BrowserUserDataMode"/> that selects whether the tracked browser launches against
+             a persistent Aspire-managed user data directory shared across all AppHosts on the machine
+             (<see cref="F:Aspire.Hosting.BrowserUserDataMode.Shared"/>, the default) or a per-AppHost persistent user data directory
+             (<see cref="F:Aspire.Hosting.BrowserUserDataMode.Isolated"/>). Both modes use Aspire-managed paths under
+             <c>%LocalAppData%\Aspire\BrowserData</c> on Windows (or platform equivalents); the user's normal browser
+             profile is never used. When not specified, the tracked browser uses the configured value from
+             <c>Aspire:Hosting:BrowserLogs</c> and otherwise defaults to <see cref="F:Aspire.Hosting.BrowserUserDataMode.Shared"/>.
+             </param>
+             <returns>A reference to the original <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for further chaining.</returns>
+             <remarks>
+             <para>
+             This method adds a child browser logs resource beneath the parent resource represented by <paramref name="builder"/>.
+             The child resource exposes a dashboard command that launches a Chromium-based browser in a tracked mode, attaches to
+             the browser's debugging protocol, forwards browser console, error, exception, and network output to the child
+             resource's console log stream, and can capture screenshots as command artifacts.
+             </para>
+             <para>
+             The tracked browser session uses the <a href="https://chromedevtools.github.io/devtools-protocol/">Chrome DevTools
+             Protocol (CDP)</a> to subscribe to browser runtime, log, page, and network events.
+             </para>
+             <para>
+             The parent resource must expose at least one HTTP or HTTPS endpoint. HTTPS endpoints are preferred over HTTP
+             endpoints when selecting the browser target URL.
+             </para>
+             <para>
+             Browser, profile, and user data mode settings can also be supplied from configuration
+             using <c>Aspire:Hosting:BrowserLogs:Browser</c>, <c>Aspire:Hosting:BrowserLogs:Profile</c>,
+             and <c>Aspire:Hosting:BrowserLogs:UserDataMode</c>, or scoped to a specific resource with
+             <c>Aspire:Hosting:BrowserLogs:{ResourceName}:Browser</c>,
+             <c>Aspire:Hosting:BrowserLogs:{ResourceName}:Profile</c>, and
+             <c>Aspire:Hosting:BrowserLogs:{ResourceName}:UserDataMode</c>. Explicit method arguments override configuration.
+             </para>
+             </remarks>
+             <example>
+             Add tracked browser logs for a web front end:
+             <code>
+             var builder = DistributedApplication.CreateBuilder(args);
+            
+             builder.AddProject&lt;Projects.WebFrontend&gt;("web")
+                 .WithExternalHttpEndpoints()
+                 .WithBrowserLogs();
+             </code>
+             </example>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.Boolean">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.NullableBoolean">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.Double">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.NullableDouble">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsAttachToTargetResponseEnvelope">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsAttachToTargetResult">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsCaptureScreenshotResponseEnvelope">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsCaptureScreenshotResult">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsCdpProtocolError">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsCdpProtocolRemoteObject">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsCdpProtocolRemoteObjectArray">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsCdpProtocolValue">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsCommandAckResponseEnvelope">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsConsoleApiCalledEnvelope">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsCreateTargetResponseEnvelope">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsCreateTargetResult">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsDetachedFromTargetEnvelope">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsDetachedFromTargetParameters">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsExceptionDetails">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsExceptionObject">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsExceptionThrownEnvelope">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsExceptionThrownParameters">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsGetTargetsResponseEnvelope">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsGetTargetsResult">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsInspectorDetachedEnvelope">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsInspectorDetachedParameters">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsLoadingFailedEnvelope">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsLoadingFailedParameters">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsLoadingFinishedEnvelope">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsLoadingFinishedParameters">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsLogEntry">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsLogEntryAddedEnvelope">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsLogEntryAddedParameters">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsRequest">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsRequestWillBeSentEnvelope">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsRequestWillBeSentParameters">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsResponse">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsResponseReceivedEnvelope">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsResponseReceivedParameters">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsRuntimeConsoleApiCalledParameters">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsTargetCrashedEnvelope">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsTargetCrashedParameters">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsTargetDestroyedEnvelope">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsTargetDestroyedParameters">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsTargetInfo">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.BrowserLogsTargetInfoArray">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.Int32">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.NullableInt32">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.Int64">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.String">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.Default">
+            <summary>
+            The default <see cref="T:System.Text.Json.Serialization.JsonSerializerContext"/> associated with a default <see cref="T:System.Text.Json.JsonSerializerOptions"/> instance.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.GeneratedSerializerOptions">
+            <summary>
+            The source-generated options associated with this context.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.#ctor">
+            <inheritdoc/>
+        </member>
+        <member name="M:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.#ctor(System.Text.Json.JsonSerializerOptions)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Aspire.Hosting.BrowserLogsCdpProtocolJsonContext.GetTypeInfo(System.Type)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Aspire.Hosting.BrowserUserDataMode">
+            <summary>
+            Selects the Chromium user data directory used by tracked browser sessions.
+            </summary>
+        </member>
+        <member name="F:Aspire.Hosting.BrowserUserDataMode.Shared">
+            <summary>
+            Use a persistent Aspire-managed user data directory shared across all AppHosts on the machine. State such as
+            cookies, sign-ins, and extensions persist across runs and are visible to every AppHost using the same browser.
+            </summary>
+            <remarks>
+            The directory lives under a well-known path (for example <c>%LocalAppData%\Aspire\BrowserData\shared\&lt;browser&gt;</c>
+            on Windows). The directory is persistent across AppHost restarts, but the default tracked browser process is
+            owned by the AppHost that launched it.
+            </remarks>
+        </member>
+        <member name="F:Aspire.Hosting.BrowserUserDataMode.Isolated">
+            <summary>
+            Use a persistent Aspire-managed user data directory scoped to the current AppHost project. Each AppHost gets
+            its own state that persists across runs but is not shared with other AppHosts.
+            </summary>
+            <remarks>
+            The directory is keyed on a stable hash of the AppHost project path (for example
+            <c>%LocalAppData%\Aspire\BrowserData\isolated\&lt;hash&gt;\&lt;browser&gt;</c> on Windows). The directory persists across
+            runs, but the default tracked browser process is owned by the AppHost that launched it.
+            </remarks>
+        </member>
+        <member name="T:Aspire.Hosting.ChromiumBrowserResolver">
+            <summary>
+            Resolves Chromium-based browser executables, user data directories, and profile directories.
+            </summary>
+            <remarks>
+            This type translates the resolved browser-log configuration into local machine paths. Keep OS/browser probing here
+            so <see cref="T:Aspire.Hosting.BrowserConfiguration"/> stays focused on configuration precedence and effective option values.
+            </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.ChromiumBrowserResolver.TryResolveExecutable(System.String)">
+            <summary>
+            Resolves a logical browser name or explicit executable path to a runnable browser executable.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.ChromiumBrowserResolver.ResolveProfileDirectory(System.String,System.String)">
+            <summary>
+            Resolves a Chromium profile directory name from a directory name, profile display name, or shortcut name.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.ChromiumBrowserResolver.TryResolveProfileDirectory(System.Text.Json.JsonElement,System.String,System.String)">
+            <summary>
+            Resolves a profile directory from Chromium's parsed Local State metadata.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.ChromiumBrowserResolver.GetBrowserCandidates(System.String)">
+            <summary>
+            Gets platform-specific candidate executables for logical browser names.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.ChromiumDevToolsActivePortParser">
+            <summary>
+            Parses Chromium's DevToolsActivePort file into a browser-level CDP endpoint.
+            </summary>
+        </member>
+        <member name="T:PathLookupHelper">
+            <summary>
+            Provides helper methods for looking up executables on the system PATH.
+            </summary>
+        </member>
+        <member name="M:PathLookupHelper.FindFullPathFromPath(System.String)">
+            <summary>
+            Finds the full path of a command by searching the system PATH.
+            On Windows, this also searches for executables with common extensions (.exe, .cmd, .bat, etc.).
+            </summary>
+            <param name="command">The command name to search for.</param>
+            <returns>The full path to the executable if found; otherwise, <c>null</c>.</returns>
+        </member>
+        <member name="M:PathLookupHelper.FindFullPathFromPath(System.String,System.String,System.Char,System.Func{System.String,System.Boolean},System.String[])">
+            <summary>
+            Finds the full path of a command by searching the specified PATH variable.
+            </summary>
+            <param name="command">The command name to search for.</param>
+            <param name="pathVariable">The PATH environment variable value to search.</param>
+            <param name="pathSeparator">The character used to separate paths in the PATH variable.</param>
+            <param name="fileExists">A function to check if a file exists at a given path.</param>
+            <param name="pathExtensions">Optional array of executable extensions to try (e.g., .exe, .cmd). When provided, these extensions will be appended to the command if not already present.</param>
+            <returns>The full path to the executable if found; otherwise, <c>null</c>.</returns>
+        </member>
+    </members>
+</doc>

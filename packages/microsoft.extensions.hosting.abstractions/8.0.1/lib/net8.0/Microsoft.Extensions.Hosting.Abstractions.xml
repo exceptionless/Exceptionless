@@ -1,0 +1,704 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Extensions.Hosting.Abstractions</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.Extensions.Hosting.BackgroundService">
+            <summary>
+            Base class for implementing a long running <see cref="T:Microsoft.Extensions.Hosting.IHostedService"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.BackgroundService.ExecuteTask">
+            <summary>
+            Gets the Task that executes the background operation.
+            </summary>
+            <remarks>
+            Will return <see langword="null"/> if the background operation hasn't started.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.BackgroundService.ExecuteAsync(System.Threading.CancellationToken)">
+            <summary>
+            This method is called when the <see cref="T:Microsoft.Extensions.Hosting.IHostedService"/> starts. The implementation should return a task that represents
+            the lifetime of the long running operation(s) being performed.
+            </summary>
+            <param name="stoppingToken">Triggered when <see cref="M:Microsoft.Extensions.Hosting.IHostedService.StopAsync(System.Threading.CancellationToken)"/> is called.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/> that represents the long running operations.</returns>
+            <remarks>See <see href="https://docs.microsoft.com/dotnet/core/extensions/workers">Worker Services in .NET</see> for implementation guidelines.</remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.BackgroundService.StartAsync(System.Threading.CancellationToken)">
+            <summary>
+            Triggered when the application host is ready to start the service.
+            </summary>
+            <param name="cancellationToken">Indicates that the start process has been aborted.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/> that represents the asynchronous Start operation.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.BackgroundService.StopAsync(System.Threading.CancellationToken)">
+            <summary>
+            Triggered when the application host is performing a graceful shutdown.
+            </summary>
+            <param name="cancellationToken">Indicates that the shutdown process should no longer be graceful.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/> that represents the asynchronous Stop operation.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.BackgroundService.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.EnvironmentName">
+            <summary>
+            Commonly used environment names.
+            <para>
+             This type is obsolete and will be removed in a future version.
+             The recommended alternative is Microsoft.Extensions.Hosting.Environments.
+            </para>
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Hosting.EnvironmentName.Development">
+            <summary>
+            The name of the Development environment.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Hosting.EnvironmentName.Staging">
+            <summary>
+            The name of the Staging environment.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Hosting.EnvironmentName.Production">
+            <summary>
+            The name of the Production environment.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.Environments">
+            <summary>
+            Commonly used environment names.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Hosting.Environments.Development">
+            <summary>
+            Specifies the Development environment.
+            </summary>
+            <remarks>The development environment can enable features that shouldn't be exposed in production. Because of the performance cost, scope validation and dependency validation only happens in development.</remarks>
+        </member>
+        <member name="F:Microsoft.Extensions.Hosting.Environments.Staging">
+            <summary>
+            Specifies the Staging environment.
+            </summary>
+            <remarks>The staging environment can be used to validate app changes before changing the environment to production.</remarks>
+        </member>
+        <member name="F:Microsoft.Extensions.Hosting.Environments.Production">
+            <summary>
+            Specifies the Production environment.
+            </summary>
+            <remarks>The production environment should be configured to maximize security, performance, and application robustness.</remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.HostAbortedException">
+            <summary>
+            The exception that is thrown upon <see cref="T:Microsoft.Extensions.Hosting.IHost"/> abortion.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostAbortedException.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Hosting.HostAbortedException"/> class
+            with a system-supplied error message.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostAbortedException.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Hosting.HostAbortedException"/> class
+            with a specified error message.
+            </summary>
+            <param name="message">
+            The error message that explains the reason for the exception.
+            </param>
+            <remarks>
+            The content of <paramref name="message"/> is intended to be understood by humans.
+            The caller of this constructor is required to ensure that this string has been localized for the
+            current system culture.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostAbortedException.#ctor(System.String,System.Exception)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Hosting.HostAbortedException"/> class
+            with a specified error message and a reference to the inner exception that
+            is the cause of this exception.
+            </summary>
+            <param name="message">
+            The error message that explains the reason for the exception.
+            </param>
+            <param name="innerException">
+            The exception that is the cause of the current exception.
+            </param>
+            <remarks>
+            The content of <paramref name="message"/> is intended to be understood by humans.
+            The caller of this constructor is required to ensure that this string has been localized for the
+            current system culture.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.HostBuilderContext">
+            <summary>
+            Context containing the common services on the <see cref="T:Microsoft.Extensions.Hosting.IHost" />. Some properties may be null until set by the <see cref="T:Microsoft.Extensions.Hosting.IHost" />.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostBuilderContext.#ctor(System.Collections.Generic.IDictionary{System.Object,System.Object})">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.Extensions.Hosting.HostBuilderContext"/>.
+            </summary>
+            <param name="properties">A non-null <see cref="T:System.Collections.Generic.IDictionary`2"/> for sharing state between components during the host building process.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.HostBuilderContext.HostingEnvironment">
+            <summary>
+            The <see cref="T:Microsoft.Extensions.Hosting.IHostEnvironment" /> initialized by the <see cref="T:Microsoft.Extensions.Hosting.IHost" />.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.HostBuilderContext.Configuration">
+            <summary>
+            The <see cref="T:Microsoft.Extensions.Configuration.IConfiguration" /> containing the merged configuration of the application and the <see cref="T:Microsoft.Extensions.Hosting.IHost" />.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.HostBuilderContext.Properties">
+            <summary>
+            A central location for sharing state between components during the host building process.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.HostDefaults">
+            <summary>
+            Constants for HostBuilder configuration keys.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Hosting.HostDefaults.ApplicationKey">
+            <summary>
+            The configuration key used to set <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.ApplicationName"/>.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Hosting.HostDefaults.EnvironmentKey">
+            <summary>
+            The configuration key used to set <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/>.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Hosting.HostDefaults.ContentRootKey">
+            <summary>
+            The configuration key used to set <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.ContentRootPath"/>
+            and <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.ContentRootFileProvider"/>.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.HostEnvironmentEnvExtensions">
+            <summary>
+            Extension methods for <see cref="T:Microsoft.Extensions.Hosting.IHostEnvironment"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostEnvironmentEnvExtensions.IsDevelopment(Microsoft.Extensions.Hosting.IHostEnvironment)">
+            <summary>
+            Checks if the current host environment name is <see cref="F:Microsoft.Extensions.Hosting.Environments.Development"/>.
+            </summary>
+            <param name="hostEnvironment">An instance of <see cref="T:Microsoft.Extensions.Hosting.IHostEnvironment"/>.</param>
+            <returns>True if the environment name is <see cref="F:Microsoft.Extensions.Hosting.Environments.Development"/>, otherwise false.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostEnvironmentEnvExtensions.IsStaging(Microsoft.Extensions.Hosting.IHostEnvironment)">
+            <summary>
+            Checks if the current host environment name is <see cref="F:Microsoft.Extensions.Hosting.Environments.Staging"/>.
+            </summary>
+            <param name="hostEnvironment">An instance of <see cref="T:Microsoft.Extensions.Hosting.IHostEnvironment"/>.</param>
+            <returns>True if the environment name is <see cref="F:Microsoft.Extensions.Hosting.Environments.Staging"/>, otherwise false.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostEnvironmentEnvExtensions.IsProduction(Microsoft.Extensions.Hosting.IHostEnvironment)">
+            <summary>
+            Checks if the current host environment name is <see cref="F:Microsoft.Extensions.Hosting.Environments.Production"/>.
+            </summary>
+            <param name="hostEnvironment">An instance of <see cref="T:Microsoft.Extensions.Hosting.IHostEnvironment"/>.</param>
+            <returns>True if the environment name is <see cref="F:Microsoft.Extensions.Hosting.Environments.Production"/>, otherwise false.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostEnvironmentEnvExtensions.IsEnvironment(Microsoft.Extensions.Hosting.IHostEnvironment,System.String)">
+            <summary>
+            Compares the current host environment name against the specified value.
+            </summary>
+            <param name="hostEnvironment">An instance of <see cref="T:Microsoft.Extensions.Hosting.IHostEnvironment"/>.</param>
+            <param name="environmentName">Environment name to validate against.</param>
+            <returns>True if the specified name is the same as the current environment, otherwise false.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.HostingAbstractionsHostBuilderExtensions">
+            <summary>
+            Provides extension methods for the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> from the hosting abstractions package.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingAbstractionsHostBuilderExtensions.Start(Microsoft.Extensions.Hosting.IHostBuilder)">
+            <summary>
+            Builds and starts the host.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> to start.</param>
+            <returns>The started <see cref="T:Microsoft.Extensions.Hosting.IHost"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingAbstractionsHostBuilderExtensions.StartAsync(Microsoft.Extensions.Hosting.IHostBuilder,System.Threading.CancellationToken)">
+            <summary>
+            Builds and starts the host.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> to start.</param>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken"/> that can be used to cancel the start.</param>
+            <returns>The started <see cref="T:Microsoft.Extensions.Hosting.IHost"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.HostingAbstractionsHostExtensions">
+            <summary>
+            Provides extension methods for the <see cref="T:Microsoft.Extensions.Hosting.IHost"/> from the hosting abstractions package.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingAbstractionsHostExtensions.Start(Microsoft.Extensions.Hosting.IHost)">
+            <summary>
+            Starts the host synchronously.
+            </summary>
+            <param name="host">The <see cref="T:Microsoft.Extensions.Hosting.IHost"/> to start.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingAbstractionsHostExtensions.StopAsync(Microsoft.Extensions.Hosting.IHost,System.TimeSpan)">
+            <summary>
+            Attempts to gracefully stop the host with the given timeout.
+            </summary>
+            <param name="host">The <see cref="T:Microsoft.Extensions.Hosting.IHost"/> to stop.</param>
+            <param name="timeout">The timeout for stopping gracefully. Once expired the
+            server may terminate any remaining active connections.</param>
+            <returns>The <see cref="T:System.Threading.Tasks.Task"/> that represents the asynchronous operation.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingAbstractionsHostExtensions.WaitForShutdown(Microsoft.Extensions.Hosting.IHost)">
+            <summary>
+            Block the calling thread until shutdown is triggered via Ctrl+C or SIGTERM.
+            </summary>
+            <param name="host">The running <see cref="T:Microsoft.Extensions.Hosting.IHost"/>.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingAbstractionsHostExtensions.Run(Microsoft.Extensions.Hosting.IHost)">
+            <summary>
+            Runs an application and block the calling thread until host shutdown.
+            </summary>
+            <param name="host">The <see cref="T:Microsoft.Extensions.Hosting.IHost"/> to run.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingAbstractionsHostExtensions.RunAsync(Microsoft.Extensions.Hosting.IHost,System.Threading.CancellationToken)">
+            <summary>
+            Runs an application and returns a <see cref="T:System.Threading.Tasks.Task"/> that only completes when the token is triggered or shutdown is triggered.
+            The <paramref name="host"/> instance is disposed of after running.
+            </summary>
+            <param name="host">The <see cref="T:Microsoft.Extensions.Hosting.IHost"/> to run.</param>
+            <param name="token">The token to trigger shutdown.</param>
+            <returns>The <see cref="T:System.Threading.Tasks.Task"/> that represents the asynchronous operation.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingAbstractionsHostExtensions.WaitForShutdownAsync(Microsoft.Extensions.Hosting.IHost,System.Threading.CancellationToken)">
+            <summary>
+            Returns a Task that completes when shutdown is triggered via the given token.
+            </summary>
+            <param name="host">The running <see cref="T:Microsoft.Extensions.Hosting.IHost"/>.</param>
+            <param name="token">The token to trigger shutdown.</param>
+            <returns>The <see cref="T:System.Threading.Tasks.Task"/> that represents the asynchronous operation.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.HostingEnvironmentExtensions">
+            <summary>
+            Extension methods for <see cref="T:Microsoft.Extensions.Hosting.IHostingEnvironment"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingEnvironmentExtensions.IsDevelopment(Microsoft.Extensions.Hosting.IHostingEnvironment)">
+            <summary>
+            Checks if the current hosting environment name is <see cref="F:Microsoft.Extensions.Hosting.EnvironmentName.Development"/>.
+            </summary>
+            <param name="hostingEnvironment">An instance of <see cref="T:Microsoft.Extensions.Hosting.IHostingEnvironment"/>.</param>
+            <returns>True if the environment name is <see cref="F:Microsoft.Extensions.Hosting.EnvironmentName.Development"/>, otherwise false.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingEnvironmentExtensions.IsStaging(Microsoft.Extensions.Hosting.IHostingEnvironment)">
+            <summary>
+            Checks if the current hosting environment name is <see cref="F:Microsoft.Extensions.Hosting.EnvironmentName.Staging"/>.
+            </summary>
+            <param name="hostingEnvironment">An instance of <see cref="T:Microsoft.Extensions.Hosting.IHostingEnvironment"/>.</param>
+            <returns>True if the environment name is <see cref="F:Microsoft.Extensions.Hosting.EnvironmentName.Staging"/>, otherwise false.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingEnvironmentExtensions.IsProduction(Microsoft.Extensions.Hosting.IHostingEnvironment)">
+            <summary>
+            Checks if the current hosting environment name is <see cref="F:Microsoft.Extensions.Hosting.EnvironmentName.Production"/>.
+            </summary>
+            <param name="hostingEnvironment">An instance of <see cref="T:Microsoft.Extensions.Hosting.IHostingEnvironment"/>.</param>
+            <returns>True if the environment name is <see cref="F:Microsoft.Extensions.Hosting.EnvironmentName.Production"/>, otherwise false.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingEnvironmentExtensions.IsEnvironment(Microsoft.Extensions.Hosting.IHostingEnvironment,System.String)">
+            <summary>
+            Compares the current hosting environment name against the specified value.
+            </summary>
+            <param name="hostingEnvironment">An instance of <see cref="T:Microsoft.Extensions.Hosting.IHostingEnvironment"/>.</param>
+            <param name="environmentName">Environment name to validate against.</param>
+            <returns>True if the specified name is the same as the current environment, otherwise false.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.IApplicationLifetime">
+            <summary>
+            Allows consumers to perform cleanup during a graceful shutdown.
+            <para>
+             This type is obsolete and will be removed in a future version.
+             The recommended alternative is Microsoft.Extensions.Hosting.IHostApplicationLifetime.
+            </para>
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.IApplicationLifetime.ApplicationStarted">
+            <summary>
+            Triggered when the application host has fully started and is about to wait
+            for a graceful shutdown.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.IApplicationLifetime.ApplicationStopping">
+            <summary>
+            Triggered when the application host is performing a graceful shutdown.
+            Requests may still be in flight. Shutdown will block until this event completes.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.IApplicationLifetime.ApplicationStopped">
+            <summary>
+            Triggered when the application host is performing a graceful shutdown.
+            All requests should be complete at this point. Shutdown will block
+            until this event completes.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.IApplicationLifetime.StopApplication">
+            <summary>
+            Requests termination of the current application.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.IHost">
+            <summary>
+            A program abstraction.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.IHost.Services">
+            <summary>
+            Gets the services configured for the program (for example, using <see cref="M:HostBuilder.ConfigureServices(Action&lt;HostBuilderContext,IServiceCollection&gt;)" />).
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.IHost.StartAsync(System.Threading.CancellationToken)">
+            <summary>
+            Starts the <see cref="T:Microsoft.Extensions.Hosting.IHostedService" /> objects configured for the program.
+            The application will run until interrupted or until <see cref="M:IHostApplicationLifetime.StopApplication()" /> is called.
+            </summary>
+            <param name="cancellationToken">Used to abort program start.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/> that will be completed when the <see cref="T:Microsoft.Extensions.Hosting.IHost"/> starts.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.IHost.StopAsync(System.Threading.CancellationToken)">
+            <summary>
+            Attempts to gracefully stop the program.
+            </summary>
+            <param name="cancellationToken">Used to indicate when stop should no longer be graceful.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/> that will be completed when the <see cref="T:Microsoft.Extensions.Hosting.IHost"/> stops.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.IHostApplicationBuilder">
+            <summary>
+            Represents a hosted applications and services builder which helps manage configuration, logging, lifetime, and more.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.IHostApplicationBuilder.Properties">
+            <summary>
+            Gets a central location for sharing state between components during the host building process.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.IHostApplicationBuilder.Configuration">
+            <summary>
+            Gets the set of key/value configuration properties.
+            </summary>
+            <remarks>
+            This can be mutated by adding more configuration sources, which will update its current view.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.IHostApplicationBuilder.Environment">
+            <summary>
+            Gets the information about the hosting environment an application is running in.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.IHostApplicationBuilder.Logging">
+            <summary>
+            Gets a collection of logging providers for the application to compose. This is useful for adding new logging providers.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.IHostApplicationBuilder.Metrics">
+            <summary>
+            Allows enabling metrics and directing their output.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.IHostApplicationBuilder.Services">
+            <summary>
+            Gets a collection of services for the application to compose. This is useful for adding user provided or framework provided services.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.IHostApplicationBuilder.ConfigureContainer``1(Microsoft.Extensions.DependencyInjection.IServiceProviderFactory{``0},System.Action{``0})">
+            <summary>
+            Registers a <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceProviderFactory`1" /> instance to be used to create the <see cref="T:System.IServiceProvider" />.
+            </summary>
+            <param name="factory">The factory object that can create the <typeparamref name="TContainerBuilder"/> and <see cref="T:System.IServiceProvider"/>.</param>
+            <param name="configure">
+            A delegate used to configure the <typeparamref T="TContainerBuilder" />. This can be used to configure services using
+            APIS specific to the <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceProviderFactory`1" /> implementation.
+            </param>
+            <typeparam name="TContainerBuilder">The type of builder provided by the <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceProviderFactory`1" />.</typeparam>
+            <remarks>
+            <para>
+            The <see cref="T:System.IServiceProvider"/> is created when this builder is built and so the delegate provided
+            by <paramref name="configure"/> will run after all other services have been registered.
+            </para>
+            <para>
+            Multiple calls to <see cref="M:Microsoft.Extensions.Hosting.IHostApplicationBuilder.ConfigureContainer``1(Microsoft.Extensions.DependencyInjection.IServiceProviderFactory{``0},System.Action{``0})"/> will replace
+            the previously stored <paramref name="factory"/> and <paramref name="configure"/> delegate.
+            </para>
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.IHostApplicationLifetime">
+            <summary>
+            Allows consumers to be notified of application lifetime events. This interface is not intended to be user-replaceable.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.IHostApplicationLifetime.ApplicationStarted">
+            <summary>
+            Triggered when the application host has fully started.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.IHostApplicationLifetime.ApplicationStopping">
+            <summary>
+            Triggered when the application host is starting a graceful shutdown.
+            Shutdown will block until all callbacks registered on this token have completed.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.IHostApplicationLifetime.ApplicationStopped">
+            <summary>
+            Triggered when the application host has completed a graceful shutdown.
+            The application will not exit until all callbacks registered on this token have completed.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.IHostApplicationLifetime.StopApplication">
+            <summary>
+            Requests termination of the current application.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.IHostBuilder">
+            <summary>
+            A program initialization abstraction.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.IHostBuilder.Properties">
+            <summary>
+            A central location for sharing state between components during the host building process.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.IHostBuilder.ConfigureHostConfiguration(System.Action{Microsoft.Extensions.Configuration.IConfigurationBuilder})">
+            <summary>
+            Set up the configuration for the builder itself. This will be used to initialize the <see cref="T:Microsoft.Extensions.Hosting.IHostEnvironment"/>
+            for use later in the build process. This can be called multiple times and the results will be additive.
+            </summary>
+            <param name="configureDelegate">The delegate for configuring the <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/> that will be used
+            to construct the <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> for the host.</param>
+            <returns>The same instance of the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.IHostBuilder.ConfigureAppConfiguration(System.Action{Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.Configuration.IConfigurationBuilder})">
+            <summary>
+            Sets up the configuration for the remainder of the build process and application. This can be called multiple times and
+            the results will be additive. The results will be available at <see cref="P:Microsoft.Extensions.Hosting.HostBuilderContext.Configuration"/> for
+            subsequent operations, as well as in <see cref="P:Microsoft.Extensions.Hosting.IHost.Services"/>.
+            </summary>
+            <param name="configureDelegate">The delegate for configuring the <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/> that will be used
+            to construct the <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> for the application.</param>
+            <returns>The same instance of the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.IHostBuilder.ConfigureServices(System.Action{Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.DependencyInjection.IServiceCollection})">
+            <summary>
+            Adds services to the container. This can be called multiple times and the results will be additive.
+            </summary>
+            <param name="configureDelegate">The delegate for configuring the <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> that will be used
+            to construct the <see cref="T:System.IServiceProvider"/>.</param>
+            <returns>The same instance of the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.IHostBuilder.UseServiceProviderFactory``1(Microsoft.Extensions.DependencyInjection.IServiceProviderFactory{``0})">
+            <summary>
+            Overrides the factory used to create the service provider.
+            </summary>
+            <typeparam name="TContainerBuilder">The type of builder.</typeparam>
+            <param name="factory">The factory to register.</param>
+            <returns>The same instance of the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.IHostBuilder.UseServiceProviderFactory``1(System.Func{Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.DependencyInjection.IServiceProviderFactory{``0}})">
+            <summary>
+            Overrides the factory used to create the service provider.
+            </summary>
+            <typeparam name="TContainerBuilder">The type of builder.</typeparam>
+            <param name="factory">The factory to register.</param>
+            <returns>The same instance of the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.IHostBuilder.ConfigureContainer``1(System.Action{Microsoft.Extensions.Hosting.HostBuilderContext,``0})">
+            <summary>
+            Enables configuring the instantiated dependency container. This can be called multiple times and
+            the results will be additive.
+            </summary>
+            <typeparam name="TContainerBuilder">The type of builder.</typeparam>
+            <param name="configureDelegate">The delegate which configures the builder.</param>
+            <returns>The same instance of the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.IHostBuilder.Build">
+            <summary>
+            Run the given actions to initialize the host. This can only be called once.
+            </summary>
+            <returns>An initialized <see cref="T:Microsoft.Extensions.Hosting.IHost"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.IHostedLifecycleService">
+            <summary>
+            Defines methods that are run before or after
+            <see cref="M:Microsoft.Extensions.Hosting.IHostedService.StartAsync(System.Threading.CancellationToken)"/> and
+            <see cref="M:Microsoft.Extensions.Hosting.IHostedService.StopAsync(System.Threading.CancellationToken)"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.IHostedLifecycleService.StartingAsync(System.Threading.CancellationToken)">
+            <summary>
+            Triggered before <see cref="M:Microsoft.Extensions.Hosting.IHostedService.StartAsync(System.Threading.CancellationToken)"/>.
+            </summary>
+            <param name="cancellationToken">Indicates that the start process has been aborted.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/> that represents the asynchronous operation.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.IHostedLifecycleService.StartedAsync(System.Threading.CancellationToken)">
+            <summary>
+            Triggered after <see cref="M:Microsoft.Extensions.Hosting.IHostedService.StartAsync(System.Threading.CancellationToken)"/>.
+            </summary>
+            <param name="cancellationToken">Indicates that the start process has been aborted.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/> that represents the asynchronous operation.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.IHostedLifecycleService.StoppingAsync(System.Threading.CancellationToken)">
+            <summary>
+            Triggered before <see cref="M:Microsoft.Extensions.Hosting.IHostedService.StopAsync(System.Threading.CancellationToken)"/>.
+            </summary>
+            <param name="cancellationToken">Indicates that the start process has been aborted.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/> that represents the asynchronous operation.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.IHostedLifecycleService.StoppedAsync(System.Threading.CancellationToken)">
+            <summary>
+            Triggered after <see cref="M:Microsoft.Extensions.Hosting.IHostedService.StopAsync(System.Threading.CancellationToken)"/>.
+            </summary>
+            <param name="cancellationToken">Indicates that the stop process has been aborted.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/> that represents the asynchronous operation.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.IHostedService">
+            <summary>
+            Defines methods for objects that are managed by the host.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.IHostedService.StartAsync(System.Threading.CancellationToken)">
+            <summary>
+            Triggered when the application host is ready to start the service.
+            </summary>
+            <param name="cancellationToken">Indicates that the start process has been aborted.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/> that represents the asynchronous Start operation.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.IHostedService.StopAsync(System.Threading.CancellationToken)">
+            <summary>
+            Triggered when the application host is performing a graceful shutdown.
+            </summary>
+            <param name="cancellationToken">Indicates that the shutdown process should no longer be graceful.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/> that represents the asynchronous Stop operation.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.IHostEnvironment">
+            <summary>
+            Provides information about the hosting environment an application is running in.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName">
+            <summary>
+            Gets or sets the name of the environment. The host automatically sets this property to the value of the
+            "environment" key as specified in configuration.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.IHostEnvironment.ApplicationName">
+            <summary>
+            Gets or sets the name of the application. This property is automatically set by the host to the assembly containing
+            the application entry point.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.IHostEnvironment.ContentRootPath">
+            <summary>
+            Gets or sets the absolute path to the directory that contains the application content files.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.IHostEnvironment.ContentRootFileProvider">
+            <summary>
+            Gets or sets an <see cref="T:Microsoft.Extensions.FileProviders.IFileProvider"/> pointing at <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.ContentRootPath"/>.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.IHostingEnvironment">
+            <summary>
+            Provides information about the hosting environment an application is running in.
+            <para>
+             This type is obsolete and will be removed in a future version.
+             The recommended alternative is Microsoft.Extensions.Hosting.IHostEnvironment.
+            </para>
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.IHostingEnvironment.EnvironmentName">
+            <summary>
+            Gets or sets the name of the environment. The host automatically sets this property to the value of the
+            of the "environment" key as specified in configuration.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.IHostingEnvironment.ApplicationName">
+            <summary>
+            Gets or sets the name of the application. This property is automatically set by the host to the assembly containing
+            the application entry point.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.IHostingEnvironment.ContentRootPath">
+            <summary>
+            Gets or sets the absolute path to the directory that contains the application content files.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.IHostingEnvironment.ContentRootFileProvider">
+            <summary>
+            Gets or sets an <see cref="T:Microsoft.Extensions.FileProviders.IFileProvider"/> pointing at <see cref="P:Microsoft.Extensions.Hosting.IHostingEnvironment.ContentRootPath"/>.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.IHostLifetime">
+            <summary>
+            Tracks host lifetime.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.IHostLifetime.WaitForStartAsync(System.Threading.CancellationToken)">
+            <summary>
+            Called at the start of <see cref="M:Microsoft.Extensions.Hosting.IHost.StartAsync(System.Threading.CancellationToken)"/> which will wait until it's complete before
+            continuing. This can be used to delay startup until signaled by an external event.
+            </summary>
+            <param name="cancellationToken">Used to abort program start.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.IHostLifetime.StopAsync(System.Threading.CancellationToken)">
+            <summary>
+            Called from <see cref="M:Microsoft.Extensions.Hosting.IHost.StopAsync(System.Threading.CancellationToken)"/> to indicate that the host is stopping and it's time to shut down.
+            </summary>
+            <param name="cancellationToken">Used to indicate when stop should no longer be graceful.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.ServiceCollectionHostedServiceExtensions">
+            <summary>
+            Extension methods for adding hosted services to an <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" />.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ServiceCollectionHostedServiceExtensions.AddHostedService``1(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Add an <see cref="T:Microsoft.Extensions.Hosting.IHostedService"/> registration for the given type.
+            </summary>
+            <typeparam name="THostedService">An <see cref="T:Microsoft.Extensions.Hosting.IHostedService"/> to register.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to register with.</param>
+            <returns>The original <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ServiceCollectionHostedServiceExtensions.AddHostedService``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Func{System.IServiceProvider,``0})">
+            <summary>
+            Add an <see cref="T:Microsoft.Extensions.Hosting.IHostedService"/> registration for the given type.
+            </summary>
+            <typeparam name="THostedService">An <see cref="T:Microsoft.Extensions.Hosting.IHostedService"/> to register.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to register with.</param>
+            <param name="implementationFactory">A factory to create new instances of the service implementation.</param>
+            <returns>The original <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.</returns>
+        </member>
+        <member name="M:System.ThrowHelper.ThrowIfNull(System.Object,System.String)">
+            <summary>Throws an <see cref="T:System.ArgumentNullException"/> if <paramref name="argument"/> is null.</summary>
+            <param name="argument">The reference type argument to validate as non-null.</param>
+            <param name="paramName">The name of the parameter with which <paramref name="argument"/> corresponds.</param>
+        </member>
+        <member name="M:System.ThrowHelper.IfNullOrWhitespace(System.String,System.String)">
+            <summary>
+            Throws either an <see cref="T:System.ArgumentNullException"/> or an <see cref="T:System.ArgumentException"/>
+            if the specified string is <see langword="null"/> or whitespace respectively.
+            </summary>
+            <param name="argument">String to be checked for <see langword="null"/> or whitespace.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="P:System.SR.HostAbortedExceptionMessage">
+            <summary>The host was aborted.</summary>
+        </member>
+    </members>
+</doc>

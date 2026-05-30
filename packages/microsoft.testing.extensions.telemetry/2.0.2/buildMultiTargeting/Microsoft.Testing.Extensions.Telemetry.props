@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Project>
+  <ItemGroup>
+    <TestingPlatformBuilderHook Include="98058041-B5B6-4A75-9834-58E6DF796A22" >
+      <DisplayName>Microsoft.Testing.Extensions.Telemetry</DisplayName>
+      <TypeFullName>Microsoft.Testing.Extensions.Telemetry.TestingPlatformBuilderHook</TypeFullName>
+    </TestingPlatformBuilderHook>
+  </ItemGroup>
+</Project>

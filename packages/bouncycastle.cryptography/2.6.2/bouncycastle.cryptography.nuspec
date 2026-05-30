@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>BouncyCastle.Cryptography</id>
+    <version>2.6.2</version>
+    <title>BouncyCastle.NET Cryptography</title>
+    <authors>Legion of the Bouncy Castle Inc.</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>packageIcon.png</icon>
+    <readme>README.md</readme>
+    <projectUrl>https://www.bouncycastle.org/stable/nuget/csharp/website</projectUrl>
+    <iconUrl>https://www.bouncycastle.org/stable/nuget/csharp/packageIcon.png</iconUrl>
+    <description>BouncyCastle.NET is a popular cryptography library for .NET</description>
+    <releaseNotes>https://www.bouncycastle.org/stable/nuget/csharp/release_notes</releaseNotes>
+    <copyright>Copyright © Legion of the Bouncy Castle Inc. 2000-2025</copyright>
+    <tags>bouncycastle cryptography dtls encryption open-source openpgp post-quantum security tls</tags>
+    <repository type="git" url="https://github.com/bcgit/bc-csharp" branch="refs/heads/release/v2.6" commit="b4f2f6ad76bcd1f11f365ee50cc7447fbce79077" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.6.1" />
+      <group targetFramework="net6.0" />
+      <group targetFramework=".NETStandard2.0" />
+    </dependencies>
+  </metadata>
+</package>

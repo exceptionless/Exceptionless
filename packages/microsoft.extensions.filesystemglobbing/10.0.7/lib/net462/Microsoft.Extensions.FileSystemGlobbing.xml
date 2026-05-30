@@ -1,0 +1,653 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<doc>
+  <assembly>
+    <name>Microsoft.Extensions.FileSystemGlobbing</name>
+  </assembly>
+  <members>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase">
+      <summary>Represents a directory.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase.#ctor" />
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase.EnumerateFileSystemInfos">
+      <summary>Enumerates all files and directories in the directory.</summary>
+      <returns>Collection of files and directories.</returns>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase.GetDirectory(System.String)">
+      <summary>Returns an instance of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase" /> that represents a subdirectory.</summary>
+      <param name="path">The directory name.</param>
+      <returns>Instance of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase" /> even if directory does not exist.</returns>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase.GetFile(System.String)">
+      <summary>Returns an instance of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoBase" /> that represents a file in the directory.</summary>
+      <param name="path">The file name.</param>
+      <returns>Instance of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoBase" /> even if file does not exist.</returns>
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoWrapper">
+      <summary>Wraps an instance of <see cref="T:System.IO.DirectoryInfo" /> and provides implementation of
+            <see cref="T:Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase" />.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoWrapper.#ctor(System.IO.DirectoryInfo)">
+      <summary>Initializes an instance of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoWrapper" />.</summary>
+      <param name="directoryInfo">The <see cref="T:System.IO.DirectoryInfo" />.</param>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoWrapper.EnumerateFileSystemInfos">
+      <summary>Enumerates all files and directories in the directory.</summary>
+      <returns>Collection of files and directories.</returns>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoWrapper.GetDirectory(System.String)">
+      <summary>Returns an instance of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase" /> that represents a subdirectory.</summary>
+      <param name="name">The directory name.</param>
+      <returns>The directory.</returns>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoWrapper.GetFile(System.String)">
+      <summary>Returns an instance of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoBase" /> that represents a file in the directory.</summary>
+      <param name="name" />
+      <returns>Instance of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoBase" /> even if file does not exist.</returns>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoWrapper.FullName">
+      <summary>Returns the full path to the directory.</summary>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoWrapper.Name">
+      <summary>Gets the name of the file or directory.</summary>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoWrapper.ParentDirectory">
+      <summary>Returns the parent directory.</summary>
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoBase">
+      <summary>Represents a file.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoBase.#ctor" />
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoWrapper">
+      <summary>Wraps an instance of <see cref="T:System.IO.FileInfo" /> to provide implementation of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoBase" />.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoWrapper.#ctor(System.IO.FileInfo)">
+      <summary>Initializes instance of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoWrapper" /> to wrap the specified object <see cref="T:System.IO.FileInfo" />.</summary>
+      <param name="fileInfo">The <see cref="T:System.IO.FileInfo" />.</param>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoWrapper.FullName">
+      <summary>The full path of the file. (Overrides <see cref="P:Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileSystemInfoBase.FullName" />).</summary>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoWrapper.Name">
+      <summary>The file name. (Overrides <see cref="P:Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileSystemInfoBase.Name" />).</summary>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoWrapper.ParentDirectory">
+      <summary>The directory containing the file. (Overrides <see cref="P:Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileSystemInfoBase.ParentDirectory" />).</summary>
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileSystemInfoBase">
+      <summary>Shared abstraction for files and directories.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileSystemInfoBase.#ctor" />
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileSystemInfoBase.FullName">
+      <summary>A string containing the full path of the file or directory.</summary>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileSystemInfoBase.Name">
+      <summary>A string containing the name of the file or directory.</summary>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileSystemInfoBase.ParentDirectory">
+      <summary>The parent directory for the current file or directory.</summary>
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch">
+      <summary>Represents a file that was matched by searching using a globbing pattern.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch.#ctor(System.String,System.String)">
+      <summary>Initializes new instance of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch" />.</summary>
+      <param name="path">The path to the file matched, relative to the beginning of the matching search pattern.</param>
+      <param name="stem">The subpath to the file matched, relative to the first wildcard in the matching search pattern.</param>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch.Equals(Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch)">
+      <summary>Determines if the specified match is equivalent to the current match using a case-insensitive comparison.</summary>
+      <param name="other">The other match to be compared.</param>
+      <returns>
+        <see langword="true" /> if <see cref="P:Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch.Path" /> and <see cref="P:Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch.Stem" /> are equal using case-insensitive comparison; otherwise, <see langword="false" />.</returns>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch.Equals(System.Object)">
+      <summary>Determines if the specified object is equivalent to the current match using a case-insensitive comparison.</summary>
+      <param name="obj">The object to be compared.</param>
+      <returns>
+        <see langword="true" /> when <see cref="M:Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch.Equals(Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch)" />.</returns>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch.GetHashCode">
+      <summary>Gets a hash for the file pattern match.</summary>
+      <returns>Some number.</returns>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch.Path">
+      <summary>Gets the path to the matched file, relative to the beginning of the matching search pattern.</summary>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch.Stem">
+      <summary>Gets the subpath to the matched file, relative to the first wildcard in the matching search pattern.</summary>
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.InMemoryDirectoryInfo">
+      <summary>Avoids using disk for uses like Pattern Matching.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.InMemoryDirectoryInfo.#ctor(System.String,System.Collections.Generic.IEnumerable{System.String})">
+      <summary>Creates a new InMemoryDirectoryInfo with the root directory and files given.</summary>
+      <param name="rootDir">The root directory that this FileSystem will use.</param>
+      <param name="files">Collection of file names. If relative paths <paramref name="rootDir" /> will be prepended to the paths.</param>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.InMemoryDirectoryInfo.EnumerateFileSystemInfos">
+      <summary>Enumerates all files and directories in the directory.</summary>
+      <returns>Collection of files and directories.</returns>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.InMemoryDirectoryInfo.GetDirectory(System.String)">
+      <summary>Returns an instance of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase" /> that represents a subdirectory.</summary>
+      <param name="path">The directory name.</param>
+      <returns>Instance of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase" /> even if directory does not exist.</returns>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.InMemoryDirectoryInfo.GetFile(System.String)">
+      <summary>Returns an instance of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoBase" /> that matches the <paramref name="path" /> given.</summary>
+      <param name="path">The filename.</param>
+      <returns>Instance of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoBase" /> if the file exists, null otherwise.</returns>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.InMemoryDirectoryInfo.FullName">
+      <summary>Gets the full path of the file or directory.</summary>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.InMemoryDirectoryInfo.Name">
+      <summary>Gets the name of the file or directory.</summary>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.InMemoryDirectoryInfo.ParentDirectory">
+      <summary>Gets the parent directory for the current file or directory.</summary>
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Internal.ILinearPattern">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Internal.ILinearPattern.Segments">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Internal.IPathSegment">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.IPathSegment.Match(System.String)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="value" />
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Internal.IPathSegment.CanProduceStem">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Internal.IPattern">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.IPattern.CreatePatternContextForExclude">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.IPattern.CreatePatternContextForInclude">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Internal.IPatternContext">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.IPatternContext.Declare(System.Action{Microsoft.Extensions.FileSystemGlobbing.Internal.IPathSegment,System.Boolean})">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="onDeclare" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.IPatternContext.PopDirectory">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.IPatternContext.PushDirectory(Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="directory" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.IPatternContext.Test(Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="directory" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.IPatternContext.Test(Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoBase)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="file" />
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Internal.IRaggedPattern">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Internal.IRaggedPattern.Contains">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Internal.IRaggedPattern.EndsWith">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Internal.IRaggedPattern.Segments">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Internal.IRaggedPattern.StartsWith">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Internal.MatcherContext">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.MatcherContext.#ctor(System.Collections.Generic.IEnumerable{Microsoft.Extensions.FileSystemGlobbing.Internal.IPattern},System.Collections.Generic.IEnumerable{Microsoft.Extensions.FileSystemGlobbing.Internal.IPattern},Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase,System.StringComparison)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="includePatterns" />
+      <param name="excludePatterns" />
+      <param name="directoryInfo" />
+      <param name="comparison" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.MatcherContext.Execute">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.CurrentPathSegment">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.CurrentPathSegment.#ctor">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.CurrentPathSegment.Match(System.String)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="value" />
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.CurrentPathSegment.CanProduceStem">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.LiteralPathSegment">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.LiteralPathSegment.#ctor(System.String,System.StringComparison)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="value" />
+      <param name="comparisonType" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.LiteralPathSegment.Equals(System.Object)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="obj" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.LiteralPathSegment.GetHashCode">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.LiteralPathSegment.Match(System.String)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="value" />
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.LiteralPathSegment.CanProduceStem">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.LiteralPathSegment.Value">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.ParentPathSegment">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.ParentPathSegment.#ctor">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.ParentPathSegment.Match(System.String)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="value" />
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.ParentPathSegment.CanProduceStem">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.RecursiveWildcardSegment">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.RecursiveWildcardSegment.#ctor">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.RecursiveWildcardSegment.Match(System.String)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="value" />
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.RecursiveWildcardSegment.CanProduceStem">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.WildcardPathSegment">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="F:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.WildcardPathSegment.MatchAll">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.WildcardPathSegment.#ctor(System.String,System.Collections.Generic.List{System.String},System.String,System.StringComparison)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="beginsWith" />
+      <param name="contains" />
+      <param name="endsWith" />
+      <param name="comparisonType" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.WildcardPathSegment.Match(System.String)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="value" />
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.WildcardPathSegment.BeginsWith">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.WildcardPathSegment.CanProduceStem">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.WildcardPathSegment.Contains">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.WildcardPathSegment.EndsWith">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContext`1">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <typeparam name="TFrame" />
+    </member>
+    <member name="F:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContext`1.Frame">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContext`1.#ctor">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContext`1.Declare(System.Action{Microsoft.Extensions.FileSystemGlobbing.Internal.IPathSegment,System.Boolean})">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="declare" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContext`1.IsStackEmpty">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContext`1.PopDirectory">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContext`1.PushDataFrame(`0)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="frame" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContext`1.PushDirectory(Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="directory" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContext`1.Test(Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="directory" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContext`1.Test(Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoBase)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="file" />
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextLinear">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextLinear.#ctor(Microsoft.Extensions.FileSystemGlobbing.Internal.ILinearPattern)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="pattern" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextLinear.CalculateStem(Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoBase)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="matchedFile" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextLinear.IsLastSegment">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextLinear.PushDirectory(Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="directory" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextLinear.Test(Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoBase)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="file" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextLinear.TestMatchingSegment(System.String)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="value" />
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextLinear.Pattern">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextLinear.FrameData">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="F:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextLinear.FrameData.InStem">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="F:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextLinear.FrameData.IsNotApplicable">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="F:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextLinear.FrameData.SegmentIndex">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextLinear.FrameData.Stem">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextLinear.FrameData.StemItems">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextLinearExclude">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextLinearExclude.#ctor(Microsoft.Extensions.FileSystemGlobbing.Internal.ILinearPattern)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="pattern" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextLinearExclude.Test(Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="directory" />
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextLinearInclude">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextLinearInclude.#ctor(Microsoft.Extensions.FileSystemGlobbing.Internal.ILinearPattern)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="pattern" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextLinearInclude.Declare(System.Action{Microsoft.Extensions.FileSystemGlobbing.Internal.IPathSegment,System.Boolean})">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="onDeclare" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextLinearInclude.Test(Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="directory" />
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRagged">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRagged.#ctor(Microsoft.Extensions.FileSystemGlobbing.Internal.IRaggedPattern)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="pattern" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRagged.CalculateStem(Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoBase)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="matchedFile" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRagged.IsEndingGroup">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRagged.IsStartingGroup">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRagged.PopDirectory">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRagged.PushDirectory(Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="directory" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRagged.Test(Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoBase)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="file" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRagged.TestMatchingGroup(Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileSystemInfoBase)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="value" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRagged.TestMatchingSegment(System.String)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="value" />
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRagged.Pattern">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRagged.FrameData">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="F:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRagged.FrameData.BacktrackAvailable">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="F:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRagged.FrameData.InStem">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="F:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRagged.FrameData.IsNotApplicable">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="F:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRagged.FrameData.SegmentGroup">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="F:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRagged.FrameData.SegmentGroupIndex">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="F:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRagged.FrameData.SegmentIndex">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRagged.FrameData.Stem">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRagged.FrameData.StemItems">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRaggedExclude">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRaggedExclude.#ctor(Microsoft.Extensions.FileSystemGlobbing.Internal.IRaggedPattern)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="pattern" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRaggedExclude.Test(Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="directory" />
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRaggedInclude">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRaggedInclude.#ctor(Microsoft.Extensions.FileSystemGlobbing.Internal.IRaggedPattern)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="pattern" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRaggedInclude.Declare(System.Action{Microsoft.Extensions.FileSystemGlobbing.Internal.IPathSegment,System.Boolean})">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="onDeclare" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRaggedInclude.Test(Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="directory" />
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns.PatternBuilder">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns.PatternBuilder.#ctor">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns.PatternBuilder.#ctor(System.StringComparison)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="comparisonType" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns.PatternBuilder.Build(System.String)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="pattern" />
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns.PatternBuilder.ComparisonType">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternTestResult">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="F:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternTestResult.Failed">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternTestResult.Success(System.String)">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+      <param name="stem" />
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternTestResult.IsSuccessful">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.Internal.PatternTestResult.Stem">
+      <summary>This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.</summary>
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.Matcher">
+      <summary>Searches the file system for files with names that match specified patterns.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Matcher.#ctor">
+      <summary>Initializes an instance of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.Matcher" /> using case-insensitive matching.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Matcher.#ctor(System.StringComparison,System.Boolean)">
+      <param name="comparisonType" />
+      <param name="preserveFilterOrder" />
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Matcher.#ctor(System.StringComparison)">
+      <summary>Initializes an instance of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.Matcher" /> using the specified string comparison method.</summary>
+      <param name="comparisonType">One of the enumeration values that specifies the culture, case, and sort rules to be used.</param>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Matcher.AddExclude(System.String)">
+      <summary>
+        <para>Add a file name pattern for files the matcher should exclude from the results. Patterns are relative to the
+                root directory given when <see cref="M:Microsoft.Extensions.FileSystemGlobbing.Matcher.Execute(Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase)" /> is called.</para>
+        <para>Use the forward slash '/' to represent directory separator. Use '*' to represent wildcards in file and
+                directory names. Use '**' to represent arbitrary directory depth. Use '..' to represent a parent directory.</para>
+      </summary>
+      <param name="pattern">The globbing pattern.</param>
+      <returns>The matcher.</returns>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Matcher.AddInclude(System.String)">
+      <summary>
+        <para>Add a file name pattern that the matcher should use to discover files. Patterns are relative to the root
+                directory given when <see cref="M:Microsoft.Extensions.FileSystemGlobbing.Matcher.Execute(Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase)" /> is called.</para>
+        <para>Use the forward slash '/' to represent directory separator. Use '*' to represent wildcards in file and
+                directory names. Use '**' to represent arbitrary directory depth. Use '..' to represent a parent directory.</para>
+      </summary>
+      <param name="pattern">The globbing pattern.</param>
+      <returns>The matcher.</returns>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.Matcher.Execute(Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase)">
+      <summary>Searches the directory specified for all files matching patterns added to this instance of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.Matcher" />.</summary>
+      <param name="directoryInfo">The root directory for the search.</param>
+      <returns>Always returns an instance of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.PatternMatchingResult" />, even if no files were matched.</returns>
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.MatcherExtensions" />
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.MatcherExtensions.AddExcludePatterns(Microsoft.Extensions.FileSystemGlobbing.Matcher,System.Collections.Generic.IEnumerable{System.String}[])">
+      <summary>Adds multiple exclude patterns to <see cref="T:Microsoft.Extensions.FileSystemGlobbing.Matcher" />.</summary>
+      <param name="matcher">The matcher to which the exclude patterns are added.</param>
+      <param name="excludePatternsGroups">A list of globbing patterns.</param>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.MatcherExtensions.AddIncludePatterns(Microsoft.Extensions.FileSystemGlobbing.Matcher,System.Collections.Generic.IEnumerable{System.String}[])">
+      <summary>Adds multiple patterns to include in <see cref="T:Microsoft.Extensions.FileSystemGlobbing.Matcher" />.</summary>
+      <param name="matcher">The matcher to which the include patterns are added.</param>
+      <param name="includePatternsGroups">A list of globbing patterns.</param>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.MatcherExtensions.GetResultsInFullPath(Microsoft.Extensions.FileSystemGlobbing.Matcher,System.String)">
+      <summary>Searches the specified directory for all files matching patterns added to this instance of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.Matcher" />.</summary>
+      <param name="matcher">The matcher.</param>
+      <param name="directoryPath">The root directory for the search.</param>
+      <returns>Absolute file paths of all files matched. Empty enumerable if no files matched given patterns.</returns>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.MatcherExtensions.Match(Microsoft.Extensions.FileSystemGlobbing.Matcher,System.Collections.Generic.IEnumerable{System.String})">
+      <summary>Matches the files passed in with the patterns in the matcher without going to disk.</summary>
+      <param name="matcher">The matcher that holds the patterns and pattern matching type.</param>
+      <param name="files">The files to run the matcher against.</param>
+      <returns>The match results.</returns>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.MatcherExtensions.Match(Microsoft.Extensions.FileSystemGlobbing.Matcher,System.String,System.Collections.Generic.IEnumerable{System.String})">
+      <summary>Matches the files passed in with the patterns in the matcher without going to disk.</summary>
+      <param name="matcher">The matcher that holds the patterns and pattern matching type.</param>
+      <param name="rootDir">The root directory for the matcher to match the files from.</param>
+      <param name="files">The files to run the matcher against.</param>
+      <returns>The match results.</returns>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.MatcherExtensions.Match(Microsoft.Extensions.FileSystemGlobbing.Matcher,System.String,System.String)">
+      <summary>Matches the file passed in with the patterns in the matcher without going to disk.</summary>
+      <param name="matcher">The matcher that holds the patterns and pattern matching type.</param>
+      <param name="rootDir">The root directory for the matcher to match the file from.</param>
+      <param name="file">The file to run the matcher against.</param>
+      <returns>The match results.</returns>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.MatcherExtensions.Match(Microsoft.Extensions.FileSystemGlobbing.Matcher,System.String)">
+      <summary>Matches the file passed in with the patterns in the matcher without going to disk.</summary>
+      <param name="matcher">The matcher that holds the patterns and pattern matching type.</param>
+      <param name="file">The file to run the matcher against.</param>
+      <returns>The match results.</returns>
+    </member>
+    <member name="T:Microsoft.Extensions.FileSystemGlobbing.PatternMatchingResult">
+      <summary>Represents a collection of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch" />.</summary>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.PatternMatchingResult.#ctor(System.Collections.Generic.IEnumerable{Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch},System.Boolean)">
+      <summary>Initializes the result with a collection of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch" />.</summary>
+      <param name="files">A collection of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch" />.</param>
+      <param name="hasMatches">A value that determines if <see cref="T:Microsoft.Extensions.FileSystemGlobbing.PatternMatchingResult" /> has any matches.</param>
+    </member>
+    <member name="M:Microsoft.Extensions.FileSystemGlobbing.PatternMatchingResult.#ctor(System.Collections.Generic.IEnumerable{Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch})">
+      <summary>Initializes the result with a collection of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch" />.</summary>
+      <param name="files">A collection of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch" />.</param>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.PatternMatchingResult.Files">
+      <summary>A collection of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch" />.</summary>
+    </member>
+    <member name="P:Microsoft.Extensions.FileSystemGlobbing.PatternMatchingResult.HasMatches">
+      <summary>Gets a value that determines if this instance of <see cref="T:Microsoft.Extensions.FileSystemGlobbing.PatternMatchingResult" /> has any matches.</summary>
+    </member>
+  </members>
+</doc>

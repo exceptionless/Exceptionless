@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Nerdbank.Streams</id>
+    <version>2.12.87</version>
+    <authors>Andrew Arnott</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <readme>README.md</readme>
+    <projectUrl>https://github.com/AArnott/Nerdbank.Streams</projectUrl>
+    <description>Streams for full duplex in-proc communication, wrap a WebSocket, split a stream into multiple channels, etc.</description>
+    <releaseNotes>https://github.com/AArnott/Nerdbank.Streams/releases/tag/v2.12.87</releaseNotes>
+    <copyright>© Andrew Arnott. All rights reserved.</copyright>
+    <tags>Stream full-duplex websocket multiplexing</tags>
+    <repository type="git" url="https://github.com/AArnott/Nerdbank.Streams" branch="refs/heads/v2.12" commit="b06fc8f2f4e52da3ca7166b34c297b79fd585abb" />
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="Microsoft.VisualStudio.Threading.Only" version="17.13.61" include="Runtime,Native,ContentFiles,BuildTransitive" />
+        <dependency id="Microsoft.VisualStudio.Validation" version="17.8.8" exclude="Build,Analyzers" />
+        <dependency id="System.IO.Pipelines" version="8.0.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="Microsoft.Bcl.AsyncInterfaces" version="8.0.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.VisualStudio.Threading.Only" version="17.13.61" include="Runtime,Native,ContentFiles,BuildTransitive" />
+        <dependency id="Microsoft.VisualStudio.Validation" version="17.8.8" exclude="Build,Analyzers" />
+        <dependency id="System.IO.Pipelines" version="8.0.0" exclude="Build,Analyzers" />
+        <dependency id="System.Runtime.CompilerServices.Unsafe" version="6.1.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.1">
+        <dependency id="Microsoft.VisualStudio.Threading.Only" version="17.13.61" include="Runtime,Native,ContentFiles,BuildTransitive" />
+        <dependency id="Microsoft.VisualStudio.Validation" version="17.8.8" exclude="Build,Analyzers" />
+        <dependency id="System.IO.Pipelines" version="8.0.0" exclude="Build,Analyzers" />
+        <dependency id="System.Runtime.CompilerServices.Unsafe" version="6.1.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Bcl.AsyncInterfaces" version="8.0.0" exclude="Compile,Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

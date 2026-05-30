@@ -1,0 +1,601 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Aspire.Hosting.Azure.Storage</name>
+    </assembly>
+    <members>
+        <member name="T:Aspire.Hosting.Azure.AzureBlobStorageContainerResource">
+            <summary>
+            A resource that represents an Azure Blob Storage container.
+            </summary>
+            <param name="name">The name of the resource.</param>
+            <param name="blobContainerName">The name of the blob container.</param>
+            <param name="parent">The <see cref="T:Aspire.Hosting.Azure.AzureBlobStorageResource"/> that the resource is stored in.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureBlobStorageContainerResource.#ctor(System.String,System.String,Aspire.Hosting.Azure.AzureBlobStorageResource)">
+            <summary>
+            A resource that represents an Azure Blob Storage container.
+            </summary>
+            <param name="name">The name of the resource.</param>
+            <param name="blobContainerName">The name of the blob container.</param>
+            <param name="parent">The <see cref="T:Aspire.Hosting.Azure.AzureBlobStorageResource"/> that the resource is stored in.</param>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureBlobStorageContainerResource.BlobContainerName">
+            <summary>
+            Gets the blob container name.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureBlobStorageContainerResource.ConnectionStringExpression">
+            <summary>
+            Gets the connection string template for the manifest for the Azure Blob Storage container resource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureBlobStorageContainerResource.Parent">
+            <summary>
+            Gets the parent <see cref="T:Aspire.Hosting.Azure.AzureBlobStorageResource"/> of this <see cref="T:Aspire.Hosting.Azure.AzureBlobStorageContainerResource"/>.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureBlobStorageContainerResource.ToProvisioningEntity">
+            <summary>
+            Converts the current instance to a provisioning entity.
+            </summary>
+            <returns>A <see cref="T:Azure.Provisioning.Storage.BlobContainer"/> instance.</returns>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AzureBlobStorageResource">
+            <summary>
+            A resource that represents an Azure Blob Storage account.
+            </summary>
+            <param name="name">The name of the resource.</param>
+            <param name="storage">The <see cref="T:Aspire.Hosting.Azure.AzureStorageResource"/> that the resource is stored in.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureBlobStorageResource.#ctor(System.String,Aspire.Hosting.Azure.AzureStorageResource)">
+            <summary>
+            A resource that represents an Azure Blob Storage account.
+            </summary>
+            <param name="name">The name of the resource.</param>
+            <param name="storage">The <see cref="T:Aspire.Hosting.Azure.AzureStorageResource"/> that the resource is stored in.</param>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureBlobStorageResource.Parent">
+            <summary>
+            Gets the parent AzureStorageResource of this AzureBlobStorageResource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureBlobStorageResource.UriExpression">
+            <summary>
+            Gets the connection URI expression for the blob storage service.
+            </summary>
+            <remarks>
+            Format: <c>https://{host}:{port}</c> for emulator or <c>{blobEndpoint}</c> for Azure.
+            </remarks>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureBlobStorageResource.ConnectionStringExpression">
+            <summary>
+            Gets the connection string template for the manifest for the Azure Blob Storage resource.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AzureDataLakeStorageFileSystemResource">
+            <summary>
+            A resource that represents an Azure DataLake Storage container.
+            </summary>
+            <param name="name">The name of the resource.</param>
+            <param name="dataLakeFileSystemName">The name of the data lake file system.</param>
+            <param name="parent">The <see cref="T:Aspire.Hosting.Azure.AzureDataLakeStorageResource"/> that the resource is stored in.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureDataLakeStorageFileSystemResource.#ctor(System.String,System.String,Aspire.Hosting.Azure.AzureDataLakeStorageResource)">
+            <summary>
+            A resource that represents an Azure DataLake Storage container.
+            </summary>
+            <param name="name">The name of the resource.</param>
+            <param name="dataLakeFileSystemName">The name of the data lake file system.</param>
+            <param name="parent">The <see cref="T:Aspire.Hosting.Azure.AzureDataLakeStorageResource"/> that the resource is stored in.</param>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureDataLakeStorageFileSystemResource.DataLakeFileSystemName">
+            <summary>
+            Gets the data lake file system name.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureDataLakeStorageFileSystemResource.ConnectionStringExpression">
+            <summary>
+            Gets the connection string template for the manifest for the Azure DataLake Storage file system resource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureDataLakeStorageFileSystemResource.Parent">
+            <summary>
+            Gets the parent <see cref="T:Aspire.Hosting.Azure.AzureDataLakeStorageResource"/> of this <see cref="T:Aspire.Hosting.Azure.AzureDataLakeStorageFileSystemResource"/>.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureDataLakeStorageFileSystemResource.ToProvisioningEntity">
+            <summary>
+            Converts the current instance to a provisioning entity.
+            </summary>
+            <returns>A <see cref="T:Azure.Provisioning.Storage.BlobContainer"/> instance.</returns>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AzureDataLakeStorageResource">
+            <summary>
+            A resource that represents an Azure Data Lake Storage.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureDataLakeStorageResource.#ctor(System.String,Aspire.Hosting.Azure.AzureStorageResource)">
+            <summary>
+            A resource that represents an Azure Data Lake Storage.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureDataLakeStorageResource.Parent">
+            <summary>
+            Gets the parent AzureStorageResource of this AzureDataLakeResource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureDataLakeStorageResource.UriExpression">
+            <summary>
+            Gets the connection URI expression for the data lake storage service.
+            </summary>
+            <remarks>
+            Format: <c>{blobEndpoint}</c> for Azure.
+            </remarks>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureDataLakeStorageResource.ConnectionStringExpression">
+            <summary>
+            Gets the connection string template for the manifest for the Azure DataLake Storage resource.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AzureQueueStorageQueueResource">
+            <summary>
+            A resource that represents an Azure Storage Queue.
+            </summary>
+            <param name="name">The name of the resource.</param>
+            <param name="queueName">The name of the queue.</param>
+            <param name="parent">The <see cref="T:Aspire.Hosting.Azure.AzureQueueStorageResource"/> that the resource is stored in.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureQueueStorageQueueResource.#ctor(System.String,System.String,Aspire.Hosting.Azure.AzureQueueStorageResource)">
+            <summary>
+            A resource that represents an Azure Storage Queue.
+            </summary>
+            <param name="name">The name of the resource.</param>
+            <param name="queueName">The name of the queue.</param>
+            <param name="parent">The <see cref="T:Aspire.Hosting.Azure.AzureQueueStorageResource"/> that the resource is stored in.</param>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureQueueStorageQueueResource.QueueName">
+            <summary>
+            Gets the blob container name.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureQueueStorageQueueResource.ConnectionStringExpression">
+            <summary>
+            Gets the connection string template for the manifest for the Azure Storage Queue resource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureQueueStorageQueueResource.Parent">
+            <summary>
+            Gets the parent <see cref="T:Aspire.Hosting.Azure.AzureQueueStorageResource"/> of this <see cref="T:Aspire.Hosting.Azure.AzureQueueStorageQueueResource"/>.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureQueueStorageQueueResource.ToProvisioningEntity">
+            <summary>
+            Converts the current instance to a provisioning entity.
+            </summary>
+            <returns>A <see cref="T:Azure.Provisioning.Storage.StorageQueue"/> instance.</returns>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AzureQueueStorageResource">
+            <summary>
+            Represents an Azure Queue Storage resource.
+            </summary>
+            <param name="name">The name of the resource.</param>
+            <param name="storage">The <see cref="T:Aspire.Hosting.Azure.AzureStorageResource"/> that the resource is stored in.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureQueueStorageResource.#ctor(System.String,Aspire.Hosting.Azure.AzureStorageResource)">
+            <summary>
+            Represents an Azure Queue Storage resource.
+            </summary>
+            <param name="name">The name of the resource.</param>
+            <param name="storage">The <see cref="T:Aspire.Hosting.Azure.AzureStorageResource"/> that the resource is stored in.</param>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureQueueStorageResource.Parent">
+            <summary>
+            Gets the parent AzureStorageResource of this AzureQueueStorageResource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureQueueStorageResource.UriExpression">
+            <summary>
+            Gets the connection URI expression for the queue storage service.
+            </summary>
+            <remarks>
+            Format: <c>https://{host}:{port}</c> for emulator or <c>{queueEndpoint}</c> for Azure.
+            </remarks>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureQueueStorageResource.ConnectionStringExpression">
+            <summary>
+            Gets the connection string template for the manifest for the Azure Queue Storage resource.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AzureStorageEmulatorResource">
+            <summary>
+            Wraps an <see cref="T:Aspire.Hosting.Azure.AzureStorageResource" /> in a type that exposes container extension methods.
+            </summary>
+            <param name="innerResource">The inner resource used to store annotations.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureStorageEmulatorResource.#ctor(Aspire.Hosting.Azure.AzureStorageResource)">
+            <summary>
+            Wraps an <see cref="T:Aspire.Hosting.Azure.AzureStorageResource" /> in a type that exposes container extension methods.
+            </summary>
+            <param name="innerResource">The inner resource used to store annotations.</param>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureStorageEmulatorResource.Name">
+            <inheritdoc/>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureStorageEmulatorResource.Annotations">
+            <inheritdoc />
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AzureStorageResource">
+            <summary>
+            Represents an Azure Storage resource.
+            </summary>
+            <param name="name">The name of the resource.</param>
+            <param name="configureInfrastructure">Callback to configure the Azure resources.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureStorageResource.#ctor(System.String,System.Action{Aspire.Hosting.Azure.AzureResourceInfrastructure})">
+            <summary>
+            Represents an Azure Storage resource.
+            </summary>
+            <param name="name">The name of the resource.</param>
+            <param name="configureInfrastructure">Callback to configure the Azure resources.</param>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureStorageResource.BlobEndpoint">
+            <summary>
+            Gets the "blobEndpoint" output reference from the bicep template for the Azure Storage resource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureStorageResource.QueueEndpoint">
+            <summary>
+            Gets the "queueEndpoint" output reference from the bicep template for the Azure Storage resource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureStorageResource.TableEndpoint">
+            <summary>
+            Gets the "tableEndpoint" output reference from the bicep template for the Azure Storage resource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureStorageResource.DataLakeEndpoint">
+            <summary>
+            Gets the "dataLakeEndpoint" output reference from the bicep template for the Azure Storage resource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureStorageResource.Id">
+            <summary>
+            Gets the "id" output reference for the resource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureStorageResource.NameOutputReference">
+            <summary>
+            Gets the "name" output reference for the resource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureStorageResource.IsEmulator">
+            <summary>
+            Gets a value indicating whether the Azure Storage resource is running in the local emulator.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureStorageResource.BlobUriExpression">
+            <summary>
+            Gets the connection URI expression for the blob storage service.
+            </summary>
+            <remarks>
+            Format: <c>https://{host}:{port}</c> for emulator or <c>{blobEndpoint}</c> for Azure.
+            </remarks>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureStorageResource.DataLakeUriExpression">
+            <summary>
+            Gets the connection URI expression for the data lake storage service.
+            </summary>
+            <remarks>
+            Format: <c>{blobEndpoint}</c> for Azure.
+            </remarks>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureStorageResource.QueueUriExpression">
+            <summary>
+            Gets the connection URI expression for the queue storage service.
+            </summary>
+            <remarks>
+            Format: <c>https://{host}:{port}</c> for emulator or <c>{queueEndpoint}</c> for Azure.
+            </remarks>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureStorageResource.TableUriExpression">
+            <summary>
+            Gets the connection URI expression for the table storage service.
+            </summary>
+            <remarks>
+            Format: <c>https://{host}:{port}</c> for emulator or <c>{tableEndpoint}</c> for Azure.
+            </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureStorageResource.GetEmulatorConnectionString">
+            <summary>
+            Gets the connection string for the Azure Storage emulator.
+            </summary>
+            <returns>The connection string for the Azure Storage emulator.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureStorageResource.AddAsExistingResource(Aspire.Hosting.Azure.AzureResourceInfrastructure)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AzureTableStorageResource">
+            <summary>
+            Represents an Azure Table Storage resource.
+            </summary>
+            <param name="name">The name of the resource.</param>
+            <param name="storage">The <see cref="T:Aspire.Hosting.Azure.AzureStorageResource"/> that the resource is stored in.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureTableStorageResource.#ctor(System.String,Aspire.Hosting.Azure.AzureStorageResource)">
+            <summary>
+            Represents an Azure Table Storage resource.
+            </summary>
+            <param name="name">The name of the resource.</param>
+            <param name="storage">The <see cref="T:Aspire.Hosting.Azure.AzureStorageResource"/> that the resource is stored in.</param>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureTableStorageResource.Parent">
+            <summary>
+            Gets the parent AzureStorageResource of this AzureTableStorageResource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureTableStorageResource.UriExpression">
+            <summary>
+            Gets the connection URI expression for the table storage service.
+            </summary>
+            <remarks>
+            Format: <c>https://{host}:{port}</c> for emulator or <c>{tableEndpoint}</c> for Azure.
+            </remarks>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureTableStorageResource.ConnectionStringExpression">
+            <summary>
+            Gets the connection string template for the manifest for the Azure Table Storage resource.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureTableStorageResource.ToProvisioningEntity">
+            <summary>
+            Converts the current instance to a provisioning entity.
+            </summary>
+            <returns>A <see cref="T:Azure.Provisioning.Storage.TableService"/> instance.</returns>
+        </member>
+        <member name="F:Aspire.Hosting.Azure.Storage.StorageEmulatorContainerImageTags.Registry">
+            <remarks>mcr.microsoft.com</remarks>
+        </member>
+        <member name="F:Aspire.Hosting.Azure.Storage.StorageEmulatorContainerImageTags.Image">
+            <remarks>azure-storage/azurite</remarks>
+        </member>
+        <member name="F:Aspire.Hosting.Azure.Storage.StorageEmulatorContainerImageTags.Tag">
+            <remarks>3.35.0</remarks>
+        </member>
+        <member name="T:Aspire.Hosting.AzureStorageExtensions">
+            <summary>
+            Extension methods for adding Azure Storage resources to an application model.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.AzureStorageExtensions.AddAzureStorage(Aspire.Hosting.IDistributedApplicationBuilder,System.String)">
+             <summary>
+             Adds an Azure Storage resource to the application model. This resource can be used to create Azure blob, table, and queue resources.
+             </summary>
+             <param name="builder">The builder for the distributed application.</param>
+             <param name="name">The name of the resource.</param>
+             <returns></returns>
+             <remarks>
+             By default references to the Azure Storage resource will be assigned the following roles:
+             
+             - <see cref="P:Azure.Provisioning.Storage.StorageBuiltInRole.StorageBlobDataContributor"/>
+             - <see cref="P:Azure.Provisioning.Storage.StorageBuiltInRole.StorageTableDataContributor"/>
+             - <see cref="P:Azure.Provisioning.Storage.StorageBuiltInRole.StorageQueueDataContributor"/>
+            
+             These can be replaced by calling <see cref="M:Aspire.Hosting.AzureStorageExtensions.WithRoleAssignments``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureStorageResource},Azure.Provisioning.Storage.StorageBuiltInRole[])"/>.
+             </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.AzureStorageExtensions.RunAsEmulator(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureStorageResource},System.Action{Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureStorageEmulatorResource}})">
+            <summary>
+            Configures an Azure Storage resource to be emulated using Azurite. This resource requires an <see cref="T:Aspire.Hosting.Azure.AzureStorageResource"/> to be added to the application model.
+            </summary>
+            <remarks>
+            This version of the package defaults to the <inheritdoc cref="F:Aspire.Hosting.Azure.Storage.StorageEmulatorContainerImageTags.Tag"/> tag of the <inheritdoc cref="F:Aspire.Hosting.Azure.Storage.StorageEmulatorContainerImageTags.Registry"/>/<inheritdoc cref="F:Aspire.Hosting.Azure.Storage.StorageEmulatorContainerImageTags.Image"/> container image.
+            </remarks>
+            <param name="builder">The Azure storage resource builder.</param>
+            <param name="configureContainer">Callback that exposes underlying container used for emulation to allow for customization.</param>
+            <returns>A reference to the <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureStorageExtensions.WithDataBindMount(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureStorageEmulatorResource},System.String,System.Boolean)">
+            <summary>
+            Adds a bind mount for the data folder to an Azure Storage emulator resource.
+            </summary>
+            <param name="builder">The builder for the <see cref="T:Aspire.Hosting.Azure.AzureStorageEmulatorResource"/>.</param>
+            <param name="path">Relative path to the AppHost where emulator storage is persisted between runs. Defaults to the path '.azurite/{builder.Resource.Name}'</param>
+            <param name="isReadOnly">A flag that indicates if this is a read-only mount.</param>
+            <returns>A builder for the <see cref="T:Aspire.Hosting.Azure.AzureStorageEmulatorResource"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureStorageExtensions.WithDataVolume(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureStorageEmulatorResource},System.String,System.Boolean)">
+            <summary>
+            Adds a named volume for the data folder to an Azure Storage emulator resource.
+            </summary>
+            <param name="builder">The builder for the <see cref="T:Aspire.Hosting.Azure.AzureStorageEmulatorResource"/>.</param>
+            <param name="name">The name of the volume. Defaults to an auto-generated name based on the application and resource names.</param>
+            <param name="isReadOnly">A flag that indicates if this is a read-only volume.</param>
+            <returns>A builder for the <see cref="T:Aspire.Hosting.Azure.AzureStorageEmulatorResource"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureStorageExtensions.WithBlobPort(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureStorageEmulatorResource},System.Int32)">
+            <summary>
+            Modifies the host port that the storage emulator listens on for blob requests.
+            </summary>
+            <param name="builder">Storage emulator resource builder.</param>
+            <param name="port">Host port to use.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureStorageExtensions.WithQueuePort(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureStorageEmulatorResource},System.Int32)">
+            <summary>
+            Modifies the host port that the storage emulator listens on for queue requests.
+            </summary>
+            <param name="builder">Storage emulator resource builder.</param>
+            <param name="port">Host port to use.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureStorageExtensions.WithTablePort(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureStorageEmulatorResource},System.Int32)">
+            <summary>
+            Modifies the host port that the storage emulator listens on for table requests.
+            </summary>
+            <param name="builder">Storage emulator resource builder.</param>
+            <param name="port">Host port to use.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for the <see cref="T:Aspire.Hosting.Azure.AzureStorageEmulatorResource"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureStorageExtensions.WithApiVersionCheck(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureStorageEmulatorResource},System.Boolean)">
+            <summary>
+            Ensures the emulator checks that the requested API version is valid.
+            </summary>
+            <param name="builder">Storage emulator resource builder.</param>
+            <param name="enable">Whether to enable API version check or not. Default is <lang>true</lang>.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for the <see cref="T:Aspire.Hosting.Azure.AzureStorageEmulatorResource"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureStorageExtensions.AddBlobs(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureStorageResource},System.String)">
+            <summary>
+            Creates a builder for the <see cref="T:Aspire.Hosting.Azure.AzureBlobStorageResource"/> which can be referenced to get the Azure Storage blob endpoint for the storage account.
+            </summary>
+            <param name="builder">The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for <see cref="T:Aspire.Hosting.Azure.AzureStorageResource"/>.</param>
+            <param name="name">The name of the resource.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for the <see cref="T:Aspire.Hosting.Azure.AzureBlobStorageResource"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureStorageExtensions.AddDataLake(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureStorageResource},System.String)">
+            <summary>
+            Creates a builder for the <see cref="T:Aspire.Hosting.Azure.AzureDataLakeStorageResource"/> which can be referenced to get the Azure Data Lake endpoint for the storage account.
+            </summary>
+            <param name="builder">The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for <see cref="T:Aspire.Hosting.Azure.AzureStorageResource"/>.</param>
+            <param name="name">The name of the resource.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for the <see cref="T:Aspire.Hosting.Azure.AzureDataLakeStorageResource"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureStorageExtensions.GetBlobService(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureStorageResource})">
+             <summary>
+             Creates a builder for the <see cref="T:Aspire.Hosting.Azure.AzureBlobStorageResource"/> which can be referenced to get the Azure Storage blob endpoint for the storage account.
+             </summary>
+             <param name="builder">The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for <see cref="T:Aspire.Hosting.Azure.AzureStorageResource"/>.</param>
+             <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for the <see cref="T:Aspire.Hosting.Azure.AzureBlobStorageResource"/>.</returns>
+             <remarks>
+             The name of the resource will be the default name of the blob service, which is <c>{builder.Resource.Name}-blobs</c>.
+             <para>
+             In order to register this resource using a custom name, use the <code>WithReference</code> method that takes a connection name.
+             </para>
+             <example>
+             <code language="csharp">
+             var builder = DistributedApplication.CreateBuilder(args);
+            
+             var blobs = builder.AddAzureStorage("storage").GetBlobService();
+            
+             var myService = builder.AddProject&lt;Projects.MyService&gt;()
+                                   .WithReference(blobs, "blobs");
+             
+             builder.Build().Run();
+             </code>
+             </example>
+             </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.AzureStorageExtensions.AddBlobContainer(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureStorageResource},System.String,System.String)">
+            <summary>
+            Creates a builder for the <see cref="T:Aspire.Hosting.Azure.AzureBlobStorageContainerResource"/> which can be referenced to get the Azure Storage blob container endpoint for the storage account.
+            </summary>
+            <param name="builder">The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for <see cref="T:Aspire.Hosting.Azure.AzureStorageResource"/>.</param>
+            <param name="name">The name of the resource.</param>
+            <param name="blobContainerName">The name of the blob container.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for the <see cref="T:Aspire.Hosting.Azure.AzureBlobStorageContainerResource"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureStorageExtensions.AddDataLakeFileSystem(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureStorageResource},System.String,System.String)">
+            <summary>
+            Creates a builder for the <see cref="T:Aspire.Hosting.Azure.AzureDataLakeStorageFileSystemResource"/> which can be referenced to get the Azure DataLake file system connection string.
+            </summary>
+            <param name="builder">The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for <see cref="T:Aspire.Hosting.Azure.AzureStorageResource"/>.</param>
+            <param name="name">The name of the resource.</param>
+            <param name="dataLakeFileSystemName">The name of the data lake file system.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for the <see cref="T:Aspire.Hosting.Azure.AzureDataLakeStorageFileSystemResource"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureStorageExtensions.AddBlobContainer(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureBlobStorageResource},System.String,System.String)">
+            <summary>
+            Creates a builder for the <see cref="T:Aspire.Hosting.Azure.AzureBlobStorageContainerResource"/> which can be referenced to get the Azure Storage blob container endpoint for the storage account.
+            </summary>
+            <param name="builder">The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for <see cref="T:Aspire.Hosting.Azure.AzureBlobStorageResource"/>.</param>
+            <param name="name">The name of the resource.</param>
+            <param name="blobContainerName">The name of the blob container.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for the <see cref="T:Aspire.Hosting.Azure.AzureBlobStorageContainerResource"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureStorageExtensions.AddTables(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureStorageResource},System.String)">
+            <summary>
+            Creates a builder for the <see cref="T:Aspire.Hosting.Azure.AzureTableStorageResource"/> which can be referenced to get the Azure Storage tables endpoint for the storage account.
+            </summary>
+            <param name="builder">The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for <see cref="T:Aspire.Hosting.Azure.AzureStorageResource"/>.</param>
+            <param name="name">The name of the resource.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for the <see cref="T:Aspire.Hosting.Azure.AzureTableStorageResource"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureStorageExtensions.AddQueues(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureStorageResource},System.String)">
+            <summary>
+            Creates a builder for the <see cref="T:Aspire.Hosting.Azure.AzureQueueStorageResource"/> which can be referenced to get the Azure Storage queues endpoint for the storage account.
+            </summary>
+            <param name="builder">The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for <see cref="T:Aspire.Hosting.Azure.AzureStorageResource"/>.</param>
+            <param name="name">The name of the resource.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for the <see cref="T:Aspire.Hosting.Azure.AzureQueueStorageResource"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureStorageExtensions.GetQueueService(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureStorageResource})">
+            <summary>
+            Gets a builder for the <see cref="T:Aspire.Hosting.Azure.AzureQueueStorageResource"/> which can be referenced to get the Azure Storage queues endpoint for the storage account.
+            </summary>
+            <param name="builder">The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for <see cref="T:Aspire.Hosting.Azure.AzureStorageResource"/>.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for the <see cref="T:Aspire.Hosting.Azure.AzureQueueStorageResource"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureStorageExtensions.AddQueue(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureStorageResource},System.String,System.String)">
+            <summary>
+            Creates a builder for the <see cref="T:Aspire.Hosting.Azure.AzureQueueStorageQueueResource"/> which can be referenced to get the Azure Storage queue for the storage account.
+            </summary>
+            <param name="builder">The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for <see cref="T:Aspire.Hosting.Azure.AzureStorageResource"/>.</param>
+            <param name="name">The name of the resource.</param>
+            <param name="queueName">The name of the queue.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for the <see cref="T:Aspire.Hosting.Azure.AzureQueueStorageQueueResource"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureStorageExtensions.WithRoleAssignments``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureStorageResource},Azure.Provisioning.Storage.StorageBuiltInRole[])">
+             <summary>
+             Assigns the specified roles to the given resource, granting it the necessary permissions
+             on the target Azure Storage account. This replaces the default role assignments for the resource.
+             </summary>
+             <param name="builder">The resource to which the specified roles will be assigned.</param>
+             <param name="target">The target Azure Storage account.</param>
+             <param name="roles">The built-in storage roles to be assigned.</param>
+             <returns>The updated <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> with the applied role assignments.</returns>
+             <remarks>
+             <example>
+             Assigns the StorageBlobDataContributor role to the 'Projects.Api' project.
+             <code lang="csharp">
+             var builder = DistributedApplication.CreateBuilder(args);
+            
+             var storage = builder.AddAzureStorage("storage");
+             var blobs = storage.AddBlobs("blobs");
+             
+             var api = builder.AddProject&lt;Projects.Api&gt;("api")
+               .WithRoleAssignments(storage, StorageBuiltInRole.StorageBlobDataContributor)
+               .WithReference(blobs);
+             </code>
+             </example>
+             </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.AzureStorageExtensions.WithRoleAssignments``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureStorageResource},Aspire.Hosting.AzureStorageRole[])">
+            <summary>
+            Assigns the specified roles to the given resource, granting it the necessary permissions
+            on the target Azure Storage account. This replaces the default role assignments for the resource.
+            </summary>
+            <param name="builder">The resource to which the specified roles will be assigned.</param>
+            <param name="target">The target Azure Storage account.</param>
+            <param name="roles">The storage roles to be assigned.</param>
+            <returns>The updated <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> with the applied role assignments.</returns>
+            <exception cref="T:System.ArgumentException">Thrown when a role value is not a valid <see cref="T:Aspire.Hosting.AzureStorageRole"/> value.</exception>
+        </member>
+        <member name="T:Aspire.Hosting.AzureStorageRole">
+            <summary>
+            Represents ATS-compatible Azure Storage roles.
+            </summary>
+        </member>
+        <member name="M:Aspire.AzureCredentialHelper.CreateDefaultAzureCredential">
+            <summary>
+            Creates a <see cref="T:Azure.Core.TokenCredential"/> for code that can run in local development or deployed to Azure.
+            </summary>
+        </member>
+        <member name="M:Aspire.AzureCredentialHelper.CreateDevelopmentAzureCredential">
+            <summary>
+            Creates a <see cref="T:Azure.Identity.DefaultAzureCredential"/> optimized for local development by excluding
+            credential types not applicable on developer machines.
+            </summary>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,243 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>AWSSDK.Extensions.CborProtocol</name>
+    </assembly>
+    <members>
+        <member name="M:Amazon.Extensions.CborProtocol.CborWriterExtensions.WriteDateTime(System.Formats.Cbor.CborWriter,System.DateTime)">
+            <summary>
+            Writes the DateTime as UnixEpochSeconds which is the only type we support for CBOR.
+            </summary>
+            <param name="writer">The CBOR writer to use.</param>
+            <param name="value">The DateTime value to write.</param>
+        </member>
+        <member name="M:Amazon.Extensions.CborProtocol.CborWriterExtensions.WriteOptimizedNumber(System.Formats.Cbor.CborWriter,System.Double)">
+            <summary>
+            Writes a double using the smallest CBOR representation that preserves value and precision.
+            </summary>
+            <param name="writer">The CBOR writer to use.</param>
+            <param name="value">The double value to write.</param>
+        </member>
+        <member name="M:Amazon.Extensions.CborProtocol.CborWriterExtensions.WriteOptimizedNumber(System.Formats.Cbor.CborWriter,System.Single)">
+            <summary>
+            Writes a float using the smallest CBOR representation that preserves value and precision.
+            This method uses manual encoding to avoid writing as a half-precision float.
+            </summary>
+            <param name="writer">The CBOR writer to use.</param>
+            <param name="value">The float value to write.</param>
+        </member>
+        <member name="T:Amazon.Extensions.CborProtocol.Internal.CborStreamReader">
+            <summary>
+            A streaming CBOR reader that processes large CBOR data streams in chunks without loading
+            the entire payload into memory at once. This class wraps <see cref="T:System.Formats.Cbor.CborReader"/>
+            to provide streaming capabilities while maintaining the same reading interface.
+            </summary>
+        </member>
+        <member name="T:Amazon.Extensions.CborProtocol.Internal.CborStreamReader.ContainerFrame">
+            <summary>
+            Represents a single container frame (map or array) within the nesting stack
+            of the <see cref="T:Amazon.Extensions.CborProtocol.Internal.CborStreamReader"/>.
+            </summary>
+        </member>
+        <member name="P:Amazon.Extensions.CborProtocol.Internal.CborStreamReader.ContainerFrame.Type">
+            <summary>
+            Gets the type of CBOR container (map or array).
+            </summary>
+        </member>
+        <member name="P:Amazon.Extensions.CborProtocol.Internal.CborStreamReader.ContainerFrame.RemainingItems">
+            <summary>
+            Gets the number of items left to be read in this container.
+            For indefinite-length containers, this value is <c>null</c>.
+            </summary>
+        </member>
+        <member name="M:Amazon.Extensions.CborProtocol.Internal.CborStreamReader.ContainerFrame.#ctor(Amazon.Extensions.CborProtocol.Internal.CborStreamReader.CborContainerType,System.Nullable{System.Int32})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Amazon.Extensions.CborProtocol.Internal.CborStreamReader.ContainerFrame"/> class.
+            </summary>
+            <param name="type">The container type (map or array).</param>
+            <param name="remainingItems">
+            The number of items in the container, or <c>null</c> for indefinite-length containers.
+            </param>
+        </member>
+        <member name="M:Amazon.Extensions.CborProtocol.Internal.CborStreamReader.ContainerFrame.ConsumeItem">
+            <summary>
+            Decrements the <see cref="P:Amazon.Extensions.CborProtocol.Internal.CborStreamReader.ContainerFrame.RemainingItems"/> count when an item is consumed.
+            For indefinite-length containers, this method does nothing.
+            </summary>
+        </member>
+        <member name="P:Amazon.Extensions.CborProtocol.Internal.CborStreamReader.ContainerFrame.IsComplete">
+            <summary>
+            Gets a value indicating whether this container has been fully consumed.
+            </summary>
+        </member>
+        <member name="T:Amazon.Extensions.CborProtocol.Internal.CborStreamReader.CborContainerType">
+            <summary>
+            Enum to track the type of CBOR container (map or array)
+            for state management within the CborStreamReader.
+            </summary>
+        </member>
+        <member name="M:Amazon.Extensions.CborProtocol.Internal.CborStreamReader.#ctor(System.IO.Stream)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Amazon.Extensions.CborProtocol.Internal.CborStreamReader"/> class that reads CBOR data
+            from the specified stream.
+            </summary>
+            <param name="stream">The input stream containing CBOR-formatted data.
+            The stream must be readable and remain open for the lifetime of the reader.</param>
+            <exception cref="T:System.ArgumentNullException">Thrown when the stream parameter is null.</exception>
+            <remarks>
+            The reader uses a configurable initial buffer size (from <see cref="P:Amazon.AWSConfigs.CborReaderInitialBufferSize"/>)
+            and will automatically resize the buffer if needed to handle larger CBOR items.
+            </remarks>
+        </member>
+        <member name="M:Amazon.Extensions.CborProtocol.Internal.CborStreamReader.RefillBuffer(System.Int32)">
+            <summary>
+            This method is called when a read operation fails because it needs more
+            data than is currently available in the buffer. It handles stitching leftover
+            data with a new chunk from the stream and, if necessary, resizing the buffer.
+            </summary>
+            <param name="bytesToSkip">Number of bytes to skip before reading new data (e.g., 1 to skip CBOR break byte 0xFF)</param>
+        </member>
+        <member name="M:Amazon.Extensions.CborProtocol.Internal.CborStreamReader.ExecuteRead``1(System.Func{System.Formats.Cbor.CborReader,``0})">
+            <summary>
+            Executes a CBOR read operation, refilling the buffer and retrying if a CborContentException is thrown.
+            </summary>
+            <typeparam name="T">The return type of the CBOR read operation.</typeparam>
+            <param name="readOperation">A delegate representing the read operation to execute.</param>
+            <returns>The result of the read operation.</returns>
+            <exception cref="T:System.Formats.Cbor.CborContentException">
+            Thrown if too many retries are attempted or if the stream ends unexpectedly.
+            </exception>
+        </member>
+        <member name="M:Amazon.Extensions.CborProtocol.Internal.CborStreamReader.ExecuteValueRead``1(System.Func{System.Formats.Cbor.CborReader,``0})">
+            <summary>
+            Executes the provided CBOR read operation and automatically updates the item count
+            of the current container (if any) to ensure that whenever an item is read, the parent
+            container's RemainingItems count is decremented.
+            </summary>
+        </member>
+        <member name="M:Amazon.Extensions.CborProtocol.Internal.CborStreamReader.ExpandBufferSizeForLargeStrings">
+             <summary>
+             Preemptively expands the buffer if the upcoming CBOR string declares a length
+             larger than the current buffer capacity.
+            
+             This reduces multiple incremental refills when reading large definite-length
+             CBOR strings by allocating enough space for the entire value in one step.
+             </summary>
+        </member>
+        <member name="P:Amazon.Extensions.CborProtocol.Internal.CborWriterPool.MaxPoolSize">
+            <summary>
+            Gets or sets the maximum size of the writer pool.
+            Minimum value is 1.
+            </summary>
+        </member>
+        <member name="M:Amazon.Extensions.CborProtocol.Internal.CborWriterPool.Rent">
+            <summary>
+            Retrieves a CborWriter from the pool, or creates a new one if the pool is empty.
+            </summary>
+        </member>
+        <member name="M:Amazon.Extensions.CborProtocol.Internal.CborWriterPool.Return(System.Formats.Cbor.CborWriter)">
+            <summary>
+            Returns a CborWriter to the pool for reuse.
+            If the pool is already full then the writer will be discard.
+            </summary>
+        </member>
+        <member name="T:Amazon.Extensions.CborProtocol.Internal.EventStreams.CborEventStreamPublisher">
+            <summary>
+            Base class for cbor event stream publishers.
+            </summary>
+        </member>
+        <member name="M:Amazon.Extensions.CborProtocol.Internal.EventStreams.CborEventStreamPublisher.CreateCborMarshallerContext(System.Formats.Cbor.CborWriter)">
+            <summary>
+            Construct a CborMarshallerContext that subclasses can use to run the marshaller for the event type
+            that should be sent.
+            </summary>
+            <param name="writer">The writer that the marshaller will use to write as it is marshalling the user's object into it's CBOR representation.</param>
+            <returns></returns>
+        </member>
+        <member name="T:Amazon.Extensions.CborProtocol.Internal.Transform.CborErrorResponseUnmarshaller">
+            <summary>
+            Class for unmarshalling CBOR service responses.
+            </summary>
+        </member>
+        <member name="M:Amazon.Extensions.CborProtocol.Internal.Transform.CborErrorResponseUnmarshaller.Unmarshall(Amazon.Extensions.CborProtocol.Internal.Transform.CborUnmarshallerContext)">
+            <summary>
+            Build an ErrorResponse from Cbor 
+            </summary>
+            <param name="context">The Cbor parsing context. 
+            Usually an <c>Amazon.Runtime.Internal.CborUnmarshallerContext</c>.</param>
+            <returns>An <c>ErrorResponse</c> object.</returns>
+        </member>
+        <member name="M:Amazon.Extensions.CborProtocol.Internal.Transform.CborErrorResponseUnmarshaller.SanitizeErrorType(System.String)">
+            <summary>
+            Extracts the error type from a Smithy shape identifier string.
+            The input is expected to be in the format "namespace#ErrorType[:additionalInfo]".
+            Returns the error type portion (e.g., "ErrorType").
+            </summary>
+        </member>
+        <member name="M:Amazon.Extensions.CborProtocol.Internal.Transform.CborErrorResponseUnmarshaller.GetInstance">
+            <summary>
+            Return an instance of CborErrorResponseUnmarshaller.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:Amazon.Extensions.CborProtocol.Internal.Transform.CborBoolUnmarshaller">
+            <summary>
+            Unmarshaller for bool fields
+            </summary>
+        </member>
+        <member name="T:Amazon.Extensions.CborProtocol.Internal.Transform.CborNullableBoolUnmarshaller">
+            <summary>
+            Unmarshaller for bool fields
+            </summary>
+        </member>
+        <member name="T:Amazon.Extensions.CborProtocol.Internal.Transform.CborStringUnmarshaller">
+            <summary>
+            Unmarshaller for string fields
+            </summary>
+        </member>
+        <member name="T:Amazon.Extensions.CborProtocol.Internal.Transform.CborResponseMetadataUnmarshaller">
+            <summary>
+            Unmarshaller for ResponseMetadata
+            </summary>
+        </member>
+        <member name="M:Amazon.Extensions.CborProtocol.Internal.Transform.CborUnmarshallerContext.AddPathSegment(System.String)">
+            <summary>
+            Adds a new segment to the current path stack.
+            Typically used when entering a new object property.
+            </summary>
+            <param name="segment">The segment name to add</param>
+        </member>
+        <member name="M:Amazon.Extensions.CborProtocol.Internal.Transform.CborUnmarshallerContext.PopPathSegment">
+            <summary>
+            Removes the most recent segment from the path stack.
+            Typically used when exiting a property.
+            </summary>
+            <returns>The segment that was removed.</returns>
+        </member>
+        <member name="T:Amazon.Extensions.CborProtocol.Internal.Transform.ICborErrorResponseUnmarshaller`2">
+            <summary>
+            The interface for unmarshalling a cbor error response.
+            </summary>
+            <typeparam name="T">The type to unmarshall.</typeparam>
+            <typeparam name="TCborUnmarshallerContext">The cbor unmarshaller context</typeparam>
+        </member>
+        <member name="M:Amazon.Extensions.CborProtocol.Internal.Transform.ICborErrorResponseUnmarshaller`2.Unmarshall(`1,Amazon.Runtime.Internal.ErrorResponse)">
+            <summary>
+            The unmarshall method accepts a context, the error response and returns the modeled exception.
+            </summary>
+            <param name="context">The CBOR Unmarshaller context</param>
+            <param name="errorResponse">The error response</param>
+            <returns>T, the error shape that is unmarshalled from the CBOR context</returns>
+        </member>
+        <member name="T:Amazon.Extensions.CborProtocol.Internal.Transform.ICborUnmarshaller`2">
+            <summary>
+            Interface for unmarshallers which unmarshall objects from response data.
+            The Unmarshallers are stateless, and only encode the rules for what data
+            in the Cbor stream goes into what members of an object.
+            </summary>
+            <typeparam name="T">The type of object the unmarshaller returns</typeparam>
+            <typeparam name="TCborUnmarshallerContext">The type of the Cbor unmashaller context,
+            which contains the state during parsing of the Cbor stream.</typeparam>
+        </member>
+    </members>
+</doc>

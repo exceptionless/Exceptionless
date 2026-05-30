@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>Fractions</id>
+    <version>7.3.0</version>
+    <title>Fraction data type</title>
+    <authors>Daniel Mueller</authors>
+    <license type="file">license.txt</license>
+    <licenseUrl>https://aka.ms/deprecateLicenseUrl</licenseUrl>
+    <icon>Fraction.png</icon>
+    <readme>Readme.md</readme>
+    <projectUrl>https://github.com/danm-de/Fractions</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/danm-de/Fractions/master/src/Fractions/Fraction.ico</iconUrl>
+    <description>The fraction data type consists of two BigInteger values for numerator and denominator. It implements various operations (addition, subtraction, multiplication, division and remainder) with operator overloads.</description>
+    <copyright>Copyright 2013-2023 Daniel Mueller</copyright>
+    <tags>fraction math</tags>
+    <repository type="git" url="https://github.com/danm-de/Fractions.git" commit="364cc7bd8d01a741b641bfeff726371150d1e743" />
+    <dependencies>
+      <group targetFramework=".NETStandard2.0" />
+      <group targetFramework=".NETStandard2.1" />
+    </dependencies>
+  </metadata>
+</package>

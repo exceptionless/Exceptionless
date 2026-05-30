@@ -1,0 +1,2515 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Extensions.Options</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.Extensions.Options.ConfigureNamedOptions`1">
+            <summary>
+            Implementation of <see cref="T:Microsoft.Extensions.Options.IConfigureNamedOptions`1"/>.
+            </summary>
+            <typeparam name="TOptions">Options type being configured.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ConfigureNamedOptions`1.#ctor(System.String,System.Action{`0})">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.Extensions.Options.ConfigureNamedOptions`1"/>.
+            </summary>
+            <param name="name">The name of the options.</param>
+            <param name="action">The action to register.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`1.Name">
+            <summary>
+            Gets the options name.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`1.Action">
+            <summary>
+            Gets the configuration action.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ConfigureNamedOptions`1.Configure(System.String,`0)">
+            <summary>
+            Invokes the registered configure <see cref="P:Microsoft.Extensions.Options.ConfigureNamedOptions`1.Action"/> if the <paramref name="name"/> matches.
+            </summary>
+            <param name="name">The name of the options instance being configured.</param>
+            <param name="options">The options instance to configure.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ConfigureNamedOptions`1.Configure(`0)">
+            <summary>
+            Configures a <typeparamref name="TOptions"/> instance with the <see cref="F:Microsoft.Extensions.Options.Options.DefaultName"/>.
+            </summary>
+            <param name="options">The options instance to configure.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.ConfigureNamedOptions`2">
+            <summary>
+            Implementation of <see cref="T:Microsoft.Extensions.Options.IConfigureNamedOptions`1"/>.
+            </summary>
+            <typeparam name="TOptions">Options type being configured.</typeparam>
+            <typeparam name="TDep">Dependency type.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ConfigureNamedOptions`2.#ctor(System.String,`1,System.Action{`0,`1})">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.Extensions.Options.ConfigureNamedOptions`2"/>.
+            </summary>
+            <param name="name">The name of the options.</param>
+            <param name="dependency">A dependency.</param>
+            <param name="action">The action to register.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`2.Name">
+            <summary>
+            Gets the options name.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`2.Action">
+            <summary>
+            Gets the configuration action.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`2.Dependency">
+            <summary>
+            Gets the dependency.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ConfigureNamedOptions`2.Configure(System.String,`0)">
+            <summary>
+            Invokes the registered configure <see cref="P:Microsoft.Extensions.Options.ConfigureNamedOptions`2.Action"/> if the <paramref name="name"/> matches.
+            </summary>
+            <param name="name">The name of the options instance being configured.</param>
+            <param name="options">The options instance to configure.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ConfigureNamedOptions`2.Configure(`0)">
+            <summary>
+            Configures a <typeparamref name="TOptions"/> instance with the <see cref="F:Microsoft.Extensions.Options.Options.DefaultName"/>.
+            </summary>
+            <param name="options">The options instance to configure.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.ConfigureNamedOptions`3">
+            <summary>
+            Implementation of <see cref="T:Microsoft.Extensions.Options.IConfigureNamedOptions`1"/>.
+            </summary>
+            <typeparam name="TOptions">Options type being configured.</typeparam>
+            <typeparam name="TDep1">First dependency type.</typeparam>
+            <typeparam name="TDep2">Second dependency type.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ConfigureNamedOptions`3.#ctor(System.String,`1,`2,System.Action{`0,`1,`2})">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.Extensions.Options.ConfigureNamedOptions`3"/>.
+            </summary>
+            <param name="name">The name of the options.</param>
+            <param name="dependency">A dependency.</param>
+            <param name="dependency2">A second dependency.</param>
+            <param name="action">The action to register.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`3.Name">
+            <summary>
+            Gets the options name.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`3.Action">
+            <summary>
+            Gets the configuration action.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`3.Dependency1">
+            <summary>
+            Gets the first dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`3.Dependency2">
+            <summary>
+            Gets the second dependency.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ConfigureNamedOptions`3.Configure(System.String,`0)">
+            <summary>
+            Invokes the registered configure <see cref="P:Microsoft.Extensions.Options.ConfigureNamedOptions`3.Action"/> if the <paramref name="name"/> matches.
+            </summary>
+            <param name="name">The name of the options instance being configured.</param>
+            <param name="options">The options instance to configure.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ConfigureNamedOptions`3.Configure(`0)">
+            <summary>
+            Configures a <typeparamref name="TOptions"/> instance with the <see cref="F:Microsoft.Extensions.Options.Options.DefaultName"/>.
+            </summary>
+            <param name="options">The options instance to configure.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.ConfigureNamedOptions`4">
+            <summary>
+            Implementation of <see cref="T:Microsoft.Extensions.Options.IConfigureNamedOptions`1"/>.
+            </summary>
+            <typeparam name="TOptions">Options type being configured.</typeparam>
+            <typeparam name="TDep1">First dependency type.</typeparam>
+            <typeparam name="TDep2">Second dependency type.</typeparam>
+            <typeparam name="TDep3">Third dependency type.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ConfigureNamedOptions`4.#ctor(System.String,`1,`2,`3,System.Action{`0,`1,`2,`3})">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="name">The name of the options.</param>
+            <param name="dependency">A dependency.</param>
+            <param name="dependency2">A second dependency.</param>
+            <param name="dependency3">A third dependency.</param>
+            <param name="action">The action to register.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`4.Name">
+            <summary>
+            Gets the options name.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`4.Action">
+            <summary>
+            Gets the configuration action.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`4.Dependency1">
+            <summary>
+            Gets the first dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`4.Dependency2">
+            <summary>
+            Gets the second dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`4.Dependency3">
+            <summary>
+            Gets the third dependency.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ConfigureNamedOptions`4.Configure(System.String,`0)">
+            <summary>
+            Invokes the registered configure <see cref="P:Microsoft.Extensions.Options.ConfigureNamedOptions`4.Action"/> if the <paramref name="name"/> matches.
+            </summary>
+            <param name="name">The name of the options instance being configured.</param>
+            <param name="options">The options instance to configure.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ConfigureNamedOptions`4.Configure(`0)">
+            <summary>
+            Configures a <typeparamref name="TOptions"/> instance with the <see cref="F:Microsoft.Extensions.Options.Options.DefaultName"/>.
+            </summary>
+            <param name="options">The options instance to configure.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.ConfigureNamedOptions`5">
+            <summary>
+            Implementation of <see cref="T:Microsoft.Extensions.Options.IConfigureNamedOptions`1"/>.
+            </summary>
+            <typeparam name="TOptions">Options type being configured.</typeparam>
+            <typeparam name="TDep1">First dependency type.</typeparam>
+            <typeparam name="TDep2">Second dependency type.</typeparam>
+            <typeparam name="TDep3">Third dependency type.</typeparam>
+            <typeparam name="TDep4">Fourth dependency type.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ConfigureNamedOptions`5.#ctor(System.String,`1,`2,`3,`4,System.Action{`0,`1,`2,`3,`4})">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="name">The name of the options.</param>
+            <param name="dependency1">A dependency.</param>
+            <param name="dependency2">A second dependency.</param>
+            <param name="dependency3">A third dependency.</param>
+            <param name="dependency4">A fourth dependency.</param>
+            <param name="action">The action to register.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`5.Name">
+            <summary>
+            Gets the options name.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`5.Action">
+            <summary>
+            Gets the configuration action.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`5.Dependency1">
+            <summary>
+            Gets the first dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`5.Dependency2">
+            <summary>
+            Gets the second dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`5.Dependency3">
+            <summary>
+            Gets the third dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`5.Dependency4">
+            <summary>
+            Gets the fourth dependency.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ConfigureNamedOptions`5.Configure(System.String,`0)">
+            <summary>
+            Invokes the registered configure <see cref="P:Microsoft.Extensions.Options.ConfigureNamedOptions`5.Action"/> if the <paramref name="name"/> matches.
+            </summary>
+            <param name="name">The name of the options instance being configured.</param>
+            <param name="options">The options instance to configure.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ConfigureNamedOptions`5.Configure(`0)">
+            <summary>
+            Configures a <typeparamref name="TOptions"/> instance with the <see cref="F:Microsoft.Extensions.Options.Options.DefaultName"/>.
+            </summary>
+            <param name="options">The options instance to configure.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.ConfigureNamedOptions`6">
+            <summary>
+            Implementation of <see cref="T:Microsoft.Extensions.Options.IConfigureNamedOptions`1"/>.
+            </summary>
+            <typeparam name="TOptions">Options type being configured.</typeparam>
+            <typeparam name="TDep1">First dependency type.</typeparam>
+            <typeparam name="TDep2">Second dependency type.</typeparam>
+            <typeparam name="TDep3">Third dependency type.</typeparam>
+            <typeparam name="TDep4">Fourth dependency type.</typeparam>
+            <typeparam name="TDep5">Fifth dependency type.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ConfigureNamedOptions`6.#ctor(System.String,`1,`2,`3,`4,`5,System.Action{`0,`1,`2,`3,`4,`5})">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="name">The name of the options.</param>
+            <param name="dependency1">A dependency.</param>
+            <param name="dependency2">A second dependency.</param>
+            <param name="dependency3">A third dependency.</param>
+            <param name="dependency4">A fourth dependency.</param>
+            <param name="dependency5">A fifth dependency.</param>
+            <param name="action">The action to register.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`6.Name">
+            <summary>
+            Gets the options name.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`6.Action">
+            <summary>
+            Gets the configuration action.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`6.Dependency1">
+            <summary>
+            Gets the first dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`6.Dependency2">
+            <summary>
+            Gets the second dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`6.Dependency3">
+            <summary>
+            Gets the third dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`6.Dependency4">
+            <summary>
+            Gets the fourth dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureNamedOptions`6.Dependency5">
+            <summary>
+            Gets the fifth dependency.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ConfigureNamedOptions`6.Configure(System.String,`0)">
+            <summary>
+            Invokes the registered configure <see cref="P:Microsoft.Extensions.Options.ConfigureNamedOptions`6.Action"/> if the <paramref name="name"/> matches.
+            </summary>
+            <param name="name">The name of the options instance being configured.</param>
+            <param name="options">The options instance to configure.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ConfigureNamedOptions`6.Configure(`0)">
+            <summary>
+            Configures a <typeparamref name="TOptions"/> instance with the <see cref="F:Microsoft.Extensions.Options.Options.DefaultName"/>.
+            </summary>
+            <param name="options">The options instance to configure.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.ConfigureOptions`1">
+            <summary>
+            Implementation of <see cref="T:Microsoft.Extensions.Options.IConfigureOptions`1"/>.
+            </summary>
+            <typeparam name="TOptions">Options type being configured.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ConfigureOptions`1.#ctor(System.Action{`0})">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.Extensions.Options.ConfigureOptions`1"/>.
+            </summary>
+            <param name="action">The action to register.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ConfigureOptions`1.Action">
+            <summary>
+            Gets the configuration action.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ConfigureOptions`1.Configure(`0)">
+            <summary>
+            Invokes the registered configure <see cref="P:Microsoft.Extensions.Options.ConfigureOptions`1.Action"/>.
+            </summary>
+            <param name="options">The options instance to configure.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.IConfigureNamedOptions`1">
+            <summary>
+            Represents something that configures the <typeparamref name="TOptions"/> type.
+            </summary>
+            <typeparam name="TOptions">The options type being configured.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.IConfigureNamedOptions`1.Configure(System.String,`0)">
+            <summary>
+            Configures a <typeparamref name="TOptions"/> instance.
+            </summary>
+            <param name="name">The name of the options instance being configured.</param>
+            <param name="options">The options instance to configure.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.IConfigureOptions`1">
+            <summary>
+            Represents something that configures the <typeparamref name="TOptions"/> type.
+            </summary>
+            <typeparam name="TOptions">The options type being configured.</typeparam>
+            <remarks>
+            These are run before all <see cref="T:Microsoft.Extensions.Options.IPostConfigureOptions`1"/>.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.IConfigureOptions`1.Configure(`0)">
+            <summary>
+            Configures a <typeparamref name="TOptions"/> instance.
+            </summary>
+            <param name="options">The options instance to configure.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.IOptions`1">
+            <summary>
+            Retrieves configured <typeparamref name="TOptions"/> instances.
+            </summary>
+            <typeparam name="TOptions">The type of options being requested.</typeparam>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.IOptions`1.Value">
+            <summary>
+            Gets the default configured <typeparamref name="TOptions"/> instance.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.IOptionsChangeTokenSource`1">
+            <summary>
+            Fetches a <see cref="T:Microsoft.Extensions.Primitives.IChangeToken"/> that's used for tracking options changes.
+            </summary>
+            <typeparam name="TOptions">The options type being changed.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.IOptionsChangeTokenSource`1.GetChangeToken">
+            <summary>
+            Returns a <see cref="T:Microsoft.Extensions.Primitives.IChangeToken"/> that can be used to register a change notification callback.
+            </summary>
+            <returns>A change token.</returns>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.IOptionsChangeTokenSource`1.Name">
+            <summary>
+            Gets the name of the option instance being changed.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.IOptionsFactory`1">
+            <summary>
+            Creates <typeparamref name="TOptions"/> instances.
+            </summary>
+            <typeparam name="TOptions">The type of options being requested.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.IOptionsFactory`1.Create(System.String)">
+            <summary>
+            Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
+            </summary>
+            <param name="name">The name of the <typeparamref name="TOptions"/> instance to create.</param>
+            <returns>The created <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.IOptionsMonitor`1">
+            <summary>
+            Monitors changes on a <typeparamref name="TOptions"/> instance.
+            </summary>
+            <typeparam name="TOptions">The options type.</typeparam>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.IOptionsMonitor`1.CurrentValue">
+            <summary>
+            Gets the current <typeparamref name="TOptions"/> instance with the <see cref="F:Microsoft.Extensions.Options.Options.DefaultName"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.IOptionsMonitor`1.Get(System.String)">
+            <summary>
+            Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
+            </summary>
+            <param name="name">The name of the <typeparamref name="TOptions"/> instance. If <see langword="null"/>, <see cref="F:Microsoft.Extensions.Options.Options.DefaultName"/>, which is the empty string, is used.</param>
+            <returns>The <typeparamref name="TOptions"/> instance that matches the given <paramref name="name"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.IOptionsMonitor`1.OnChange(System.Action{`0,System.String})">
+            <summary>
+            Registers a listener to be called whenever a named <typeparamref name="TOptions"/> changes.
+            </summary>
+            <param name="listener">The action to be invoked when <typeparamref name="TOptions"/> has changed.</param>
+            <returns>An <see cref="T:System.IDisposable"/> that should be disposed to stop listening for changes.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.IOptionsMonitorCache`1">
+            <summary>
+            Used by <see cref="T:Microsoft.Extensions.Options.IOptionsMonitor`1"/> to cache <typeparamref name="TOptions"/> instances.
+            </summary>
+            <typeparam name="TOptions">The type of options being requested.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.IOptionsMonitorCache`1.GetOrAdd(System.String,System.Func{`0})">
+            <summary>
+            Gets a named options instance, or adds a new instance created with <paramref name="createOptions"/>.
+            </summary>
+            <param name="name">The name of the options instance.</param>
+            <param name="createOptions">The func used to create the new instance.</param>
+            <returns>The options instance.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.IOptionsMonitorCache`1.TryAdd(System.String,`0)">
+            <summary>
+            Tries to adds a new option to the cache.
+            </summary>
+            <param name="name">The name of the options instance.</param>
+            <param name="options">The options instance.</param>
+            <returns><see langword="true"/> if the options instance was added; <see langword="false"/> if the name already exists.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.IOptionsMonitorCache`1.TryRemove(System.String)">
+            <summary>
+            Tries to remove an options instance.
+            </summary>
+            <param name="name">The name of the options instance.</param>
+            <returns><see langword="true"/> if the options instance was removed; otherwise, <see langword="false"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.IOptionsMonitorCache`1.Clear">
+            <summary>
+            Clears all options instances from the cache.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.IOptionsSnapshot`1">
+            <summary>
+            Used to access the value of <typeparamref name="TOptions"/> for the lifetime of a request.
+            </summary>
+            <typeparam name="TOptions">Options type.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.IOptionsSnapshot`1.Get(System.String)">
+            <summary>
+            Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
+            </summary>
+            <param name="name">The name of the <typeparamref name="TOptions"/> instance. If <see langword="null"/>, <see cref="F:Microsoft.Extensions.Options.Options.DefaultName"/>, which is the empty string, is used.</param>
+            <returns>The <typeparamref name="TOptions"/> instance that matches the given <paramref name="name"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.IPostConfigureOptions`1">
+            <summary>
+            Represents something that configures the <typeparamref name="TOptions"/> type.
+            </summary>
+            <typeparam name="TOptions">Options type being configured.</typeparam>
+            <remarks>
+            These are run after all <see cref="T:Microsoft.Extensions.Options.IConfigureOptions`1"/>.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.IPostConfigureOptions`1.PostConfigure(System.String,`0)">
+            <summary>
+            Configures a <typeparamref name="TOptions"/> instance.
+            </summary>
+            <param name="name">The name of the options instance being configured.</param>
+            <param name="options">The options instance to configured.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.IStartupValidator">
+            <summary>
+            Used by hosts to validate options during startup.
+            </summary>
+            <remarks>
+            Options are enabled to be validated during startup by calling <see cref="M:Microsoft.Extensions.DependencyInjection.OptionsBuilderExtensions.ValidateOnStart``1(Microsoft.Extensions.Options.OptionsBuilder{``0})"/>.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.IStartupValidator.Validate">
+            <summary>
+            Calls the <see cref="T:Microsoft.Extensions.Options.IValidateOptions`1"/> validators.
+            </summary>
+            <exception cref="T:Microsoft.Extensions.Options.OptionsValidationException">One or more <see cref="T:Microsoft.Extensions.Options.IValidateOptions`1"/> return failed <see cref="T:Microsoft.Extensions.Options.ValidateOptionsResult"/> when validating.</exception>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.IValidateOptions`1">
+            <summary>
+            Validates options.
+            </summary>
+            <typeparam name="TOptions">The options type to validate.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.IValidateOptions`1.Validate(System.String,`0)">
+            <summary>
+            Validates a specified named options instance (or all if <paramref name="name"/> is <see langword="null"/>).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Options.ValidateOptionsResult"/> result.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.Options">
+            <summary>
+            Helper class for options.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Options.Options.DefaultName">
+            <summary>
+            The default name used for options instances: "".
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.Options.Create``1(``0)">
+            <summary>
+            Creates a wrapper around an instance of <typeparamref name="TOptions"/> to return itself as an <see cref="T:Microsoft.Extensions.Options.IOptions`1"/>.
+            </summary>
+            <typeparam name="TOptions">Options type.</typeparam>
+            <param name="options">Options object.</param>
+            <returns>Wrapped options object.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.OptionsBuilder`1">
+            <summary>
+            Configures <typeparamref name="TOptions"/> instances.
+            </summary>
+            <typeparam name="TOptions">The type of options being requested.</typeparam>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.OptionsBuilder`1.Name">
+            <summary>
+            Gets the default name of the <typeparamref name="TOptions"/> instance.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.OptionsBuilder`1.Services">
+            <summary>
+            Gets the <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> for the options being configured.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.#ctor(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String)">
+            <summary>
+            Creates a new instance of the <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1" /> class.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> for the options being configured.</param>
+            <param name="name">The default name of the <typeparamref name="TOptions"/> instance; if <see langword="null"/>, <see cref="F:Microsoft.Extensions.Options.Options.DefaultName"/> is used.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.Configure(System.Action{`0})">
+            <summary>
+            Registers an action used to configure a particular type of options.
+            </summary>
+            <param name="configureOptions">The action used to configure the options.</param>
+            <returns>The current <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.</returns>
+            <remarks>
+            These are run before all <see cref="M:Microsoft.Extensions.Options.OptionsBuilder`1.PostConfigure(System.Action{`0})"/>.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.Configure``1(System.Action{`0,``0})">
+            <summary>
+            Registers an action used to configure a particular type of options.
+            </summary>
+            <typeparam name="TDep">A dependency used by the action.</typeparam>
+            <param name="configureOptions">The action used to configure the options.</param>
+            <returns>The current <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.</returns>
+            <remarks>
+            These are run before all <see cref="M:Microsoft.Extensions.Options.OptionsBuilder`1.PostConfigure(System.Action{`0})"/>.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.Configure``2(System.Action{`0,``0,``1})">
+            <summary>
+            Registers an action used to configure a particular type of options.
+            </summary>
+            <typeparam name="TDep1">The first dependency used by the action.</typeparam>
+            <typeparam name="TDep2">The second dependency used by the action.</typeparam>
+            <param name="configureOptions">The action used to configure the options.</param>
+            <returns>The current <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.</returns>
+            <remarks>
+            These are run before all <see cref="M:Microsoft.Extensions.Options.OptionsBuilder`1.PostConfigure(System.Action{`0})"/>.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.Configure``3(System.Action{`0,``0,``1,``2})">
+            <summary>
+            Registers an action used to configure a particular type of options.
+            </summary>
+            <typeparam name="TDep1">The first dependency used by the action.</typeparam>
+            <typeparam name="TDep2">The second dependency used by the action.</typeparam>
+            <typeparam name="TDep3">The third dependency used by the action.</typeparam>
+            <param name="configureOptions">The action used to configure the options.</param>
+            <returns>The current <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.</returns>
+            <remarks>
+            These are run before all <see cref="M:Microsoft.Extensions.Options.OptionsBuilder`1.PostConfigure(System.Action{`0})"/>.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.Configure``4(System.Action{`0,``0,``1,``2,``3})">
+            <summary>
+            Registers an action used to configure a particular type of options.
+            </summary>
+            <typeparam name="TDep1">The first dependency used by the action.</typeparam>
+            <typeparam name="TDep2">The second dependency used by the action.</typeparam>
+            <typeparam name="TDep3">The third dependency used by the action.</typeparam>
+            <typeparam name="TDep4">The fourth dependency used by the action.</typeparam>
+            <param name="configureOptions">The action used to configure the options.</param>
+            <returns>The current <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.</returns>
+            <remarks>
+            These are run before all <see cref="M:Microsoft.Extensions.Options.OptionsBuilder`1.PostConfigure(System.Action{`0})"/>.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.Configure``5(System.Action{`0,``0,``1,``2,``3,``4})">
+            <summary>
+            Registers an action used to configure a particular type of options.
+            </summary>
+            <typeparam name="TDep1">The first dependency used by the action.</typeparam>
+            <typeparam name="TDep2">The second dependency used by the action.</typeparam>
+            <typeparam name="TDep3">The third dependency used by the action.</typeparam>
+            <typeparam name="TDep4">The fourth dependency used by the action.</typeparam>
+            <typeparam name="TDep5">The fifth dependency used by the action.</typeparam>
+            <param name="configureOptions">The action used to configure the options.</param>
+            <returns>The current <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.</returns>
+            <remarks>
+            These are run before all <see cref="M:Microsoft.Extensions.Options.OptionsBuilder`1.PostConfigure(System.Action{`0})"/>.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.PostConfigure(System.Action{`0})">
+            <summary>
+            Registers an action used to configure a particular type of options.
+            </summary>
+            <param name="configureOptions">The action used to configure the options.</param>
+            <returns>The current <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.</returns>
+            <remarks>
+            These are run after all <see cref="M:Microsoft.Extensions.Options.OptionsBuilder`1.Configure(System.Action{`0})"/>.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.PostConfigure``1(System.Action{`0,``0})">
+            <summary>
+            Registers an action used to post configure a particular type of options.
+            </summary>
+            <typeparam name="TDep">The dependency used by the action.</typeparam>
+            <param name="configureOptions">The action used to configure the options.</param>
+            <returns>The current <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.</returns>
+            <remarks>
+            These are run after all <see cref="M:Microsoft.Extensions.Options.OptionsBuilder`1.Configure(System.Action{`0})"/>.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.PostConfigure``2(System.Action{`0,``0,``1})">
+            <summary>
+            Registers an action used to post configure a particular type of options.
+            </summary>
+            <typeparam name="TDep1">The first dependency used by the action.</typeparam>
+            <typeparam name="TDep2">The second dependency used by the action.</typeparam>
+            <param name="configureOptions">The action used to configure the options.</param>
+            <returns>The current <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.</returns>
+            <remarks>
+            These are run after all <see cref="M:Microsoft.Extensions.Options.OptionsBuilder`1.Configure(System.Action{`0})"/>.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.PostConfigure``3(System.Action{`0,``0,``1,``2})">
+            <summary>
+            Registers an action used to post configure a particular type of options.
+            </summary>
+            <typeparam name="TDep1">The first dependency used by the action.</typeparam>
+            <typeparam name="TDep2">The second dependency used by the action.</typeparam>
+            <typeparam name="TDep3">The third dependency used by the action.</typeparam>
+            <param name="configureOptions">The action used to configure the options.</param>
+            <returns>The current <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.</returns>
+            <remarks>
+            These are run after all <see cref="M:Microsoft.Extensions.Options.OptionsBuilder`1.Configure(System.Action{`0})"/>.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.PostConfigure``4(System.Action{`0,``0,``1,``2,``3})">
+            <summary>
+            Registers an action used to post configure a particular type of options.
+            </summary>
+            <typeparam name="TDep1">The first dependency used by the action.</typeparam>
+            <typeparam name="TDep2">The second dependency used by the action.</typeparam>
+            <typeparam name="TDep3">The third dependency used by the action.</typeparam>
+            <typeparam name="TDep4">The fourth dependency used by the action.</typeparam>
+            <param name="configureOptions">The action used to configure the options.</param>
+            <returns>The current <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.</returns>
+            <remarks>
+            These are run after all <see cref="M:Microsoft.Extensions.Options.OptionsBuilder`1.Configure(System.Action{`0})"/>.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.PostConfigure``5(System.Action{`0,``0,``1,``2,``3,``4})">
+            <summary>
+            Registers an action used to post configure a particular type of options.
+            </summary>
+            <typeparam name="TDep1">The first dependency used by the action.</typeparam>
+            <typeparam name="TDep2">The second dependency used by the action.</typeparam>
+            <typeparam name="TDep3">The third dependency used by the action.</typeparam>
+            <typeparam name="TDep4">The fourth dependency used by the action.</typeparam>
+            <typeparam name="TDep5">The fifth dependency used by the action.</typeparam>
+            <param name="configureOptions">The action used to configure the options.</param>
+            <returns>The current <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.</returns>
+            <remarks>
+            These are run after all <see cref="M:Microsoft.Extensions.Options.OptionsBuilder`1.Configure(System.Action{`0})"/>.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.Validate(System.Func{`0,System.Boolean})">
+            <summary>
+            Registers a validation action for an options type using a default failure message.
+            </summary>
+            <param name="validation">The validation function.</param>
+            <returns>The current <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.Validate(System.Func{`0,System.Boolean},System.String)">
+            <summary>
+            Registers a validation action for an options type.
+            </summary>
+            <param name="validation">The validation function.</param>
+            <param name="failureMessage">The failure message to use when validation fails.</param>
+            <returns>The current <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.Validate``1(System.Func{`0,``0,System.Boolean})">
+            <summary>
+            Registers a validation action for an options type using a default failure message.
+            </summary>
+            <typeparam name="TDep">The dependency used by the validation function.</typeparam>
+            <param name="validation">The validation function.</param>
+            <returns>The current <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.Validate``1(System.Func{`0,``0,System.Boolean},System.String)">
+            <summary>
+            Registers a validation action for an options type.
+            </summary>
+            <typeparam name="TDep">The dependency used by the validation function.</typeparam>
+            <param name="validation">The validation function.</param>
+            <param name="failureMessage">The failure message to use when validation fails.</param>
+            <returns>The current <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.Validate``2(System.Func{`0,``0,``1,System.Boolean})">
+            <summary>
+            Registers a validation action for an options type using a default failure message.
+            </summary>
+            <typeparam name="TDep1">The first dependency used by the validation function.</typeparam>
+            <typeparam name="TDep2">The second dependency used by the validation function.</typeparam>
+            <param name="validation">The validation function.</param>
+            <returns>The current <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.Validate``2(System.Func{`0,``0,``1,System.Boolean},System.String)">
+            <summary>
+            Registers a validation action for an options type.
+            </summary>
+            <typeparam name="TDep1">The first dependency used by the validation function.</typeparam>
+            <typeparam name="TDep2">The second dependency used by the validation function.</typeparam>
+            <param name="validation">The validation function.</param>
+            <param name="failureMessage">The failure message to use when validation fails.</param>
+            <returns>The current <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.Validate``3(System.Func{`0,``0,``1,``2,System.Boolean})">
+            <summary>
+            Registers a validation action for an options type using a default failure message.
+            </summary>
+            <typeparam name="TDep1">The first dependency used by the validation function.</typeparam>
+            <typeparam name="TDep2">The second dependency used by the validation function.</typeparam>
+            <typeparam name="TDep3">The third dependency used by the validation function.</typeparam>
+            <param name="validation">The validation function.</param>
+            <returns>The current <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.Validate``3(System.Func{`0,``0,``1,``2,System.Boolean},System.String)">
+            <summary>
+            Registers a validation action for an options type.
+            </summary>
+            <typeparam name="TDep1">The first dependency used by the validation function.</typeparam>
+            <typeparam name="TDep2">The second dependency used by the validation function.</typeparam>
+            <typeparam name="TDep3">The third dependency used by the validation function.</typeparam>
+            <param name="validation">The validation function.</param>
+            <param name="failureMessage">The failure message to use when validation fails.</param>
+            <returns>The current <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.Validate``4(System.Func{`0,``0,``1,``2,``3,System.Boolean})">
+            <summary>
+            Registers a validation action for an options type using a default failure message.
+            </summary>
+            <typeparam name="TDep1">The first dependency used by the validation function.</typeparam>
+            <typeparam name="TDep2">The second dependency used by the validation function.</typeparam>
+            <typeparam name="TDep3">The third dependency used by the validation function.</typeparam>
+            <typeparam name="TDep4">The fourth dependency used by the validation function.</typeparam>
+            <param name="validation">The validation function.</param>
+            <returns>The current <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.Validate``4(System.Func{`0,``0,``1,``2,``3,System.Boolean},System.String)">
+            <summary>
+            Registers a validation action for an options type.
+            </summary>
+            <typeparam name="TDep1">The first dependency used by the validation function.</typeparam>
+            <typeparam name="TDep2">The second dependency used by the validation function.</typeparam>
+            <typeparam name="TDep3">The third dependency used by the validation function.</typeparam>
+            <typeparam name="TDep4">The fourth dependency used by the validation function.</typeparam>
+            <param name="validation">The validation function.</param>
+            <param name="failureMessage">The failure message to use when validation fails.</param>
+            <returns>The current <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.Validate``5(System.Func{`0,``0,``1,``2,``3,``4,System.Boolean})">
+            <summary>
+            Registers a validation action for an options type using a default failure message.
+            </summary>
+            <typeparam name="TDep1">The first dependency used by the validation function.</typeparam>
+            <typeparam name="TDep2">The second dependency used by the validation function.</typeparam>
+            <typeparam name="TDep3">The third dependency used by the validation function.</typeparam>
+            <typeparam name="TDep4">The fourth dependency used by the validation function.</typeparam>
+            <typeparam name="TDep5">The fifth dependency used by the validation function.</typeparam>
+            <param name="validation">The validation function.</param>
+            <returns>The current <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsBuilder`1.Validate``5(System.Func{`0,``0,``1,``2,``3,``4,System.Boolean},System.String)">
+            <summary>
+            Registers a validation action for an options type.
+            </summary>
+            <typeparam name="TDep1">The first dependency used by the validation function.</typeparam>
+            <typeparam name="TDep2">The second dependency used by the validation function.</typeparam>
+            <typeparam name="TDep3">The third dependency used by the validation function.</typeparam>
+            <typeparam name="TDep4">The fourth dependency used by the validation function.</typeparam>
+            <typeparam name="TDep5">The fifth dependency used by the validation function.</typeparam>
+            <param name="validation">The validation function.</param>
+            <param name="failureMessage">The failure message to use when validation fails.</param>
+            <returns>The current <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.OptionsCache`1">
+            <summary>
+            Caches <typeparamref name="TOptions"/> instances.
+            </summary>
+            <typeparam name="TOptions">The type of options being requested.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsCache`1.Clear">
+            <summary>
+            Clears all options instances from the cache.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsCache`1.GetOrAdd(System.String,System.Func{`0})">
+            <summary>
+            Gets a named options instance, or adds a new instance created with <paramref name="createOptions"/>.
+            </summary>
+            <param name="name">The name of the options instance.</param>
+            <param name="createOptions">The function used to create the new instance.</param>
+            <returns>The options instance.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsCache`1.TryGetValue(System.String,`0@)">
+            <summary>
+            Gets a named options instance, if available.
+            </summary>
+            <param name="name">The name of the options instance.</param>
+            <param name="options">The options instance.</param>
+            <returns><see langword="true"/> if the options were retrieved; otherwise, <see langword="false"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsCache`1.TryAdd(System.String,`0)">
+            <summary>
+            Tries to adds a new option to the cache.
+            </summary>
+            <param name="name">The name of the options instance.</param>
+            <param name="options">The options instance.</param>
+            <returns><see langword="true"/> if the option was added; <see langword="false"/> if the name already exists.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsCache`1.TryRemove(System.String)">
+            <summary>
+            Tries to remove an options instance.
+            </summary>
+            <param name="name">The name of the options instance.</param>
+            <returns><see langword="true"/> if anything was removed; otherwise, <see langword="false"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.OptionsFactory`1">
+            <summary>
+            Implementation of <see cref="T:Microsoft.Extensions.Options.IOptionsFactory`1"/>.
+            </summary>
+            <typeparam name="TOptions">The type of options being requested.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsFactory`1.#ctor(System.Collections.Generic.IEnumerable{Microsoft.Extensions.Options.IConfigureOptions{`0}},System.Collections.Generic.IEnumerable{Microsoft.Extensions.Options.IPostConfigureOptions{`0}})">
+            <summary>
+            Initializes a new instance with the specified options configurations.
+            </summary>
+            <param name="setups">The configuration actions to run.</param>
+            <param name="postConfigures">The initialization actions to run.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsFactory`1.#ctor(System.Collections.Generic.IEnumerable{Microsoft.Extensions.Options.IConfigureOptions{`0}},System.Collections.Generic.IEnumerable{Microsoft.Extensions.Options.IPostConfigureOptions{`0}},System.Collections.Generic.IEnumerable{Microsoft.Extensions.Options.IValidateOptions{`0}})">
+            <summary>
+            Initializes a new instance with the specified options configurations.
+            </summary>
+            <param name="setups">The configuration actions to run.</param>
+            <param name="postConfigures">The initialization actions to run.</param>
+            <param name="validations">The validations to run.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsFactory`1.Create(System.String)">
+            <summary>
+            Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
+            </summary>
+            <param name="name">The name of the <typeparamref name="TOptions"/> instance to create.</param>
+            <returns>The created <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.</returns>
+            <exception cref="T:Microsoft.Extensions.Options.OptionsValidationException">One or more <see cref="T:Microsoft.Extensions.Options.IValidateOptions`1"/> return failed <see cref="T:Microsoft.Extensions.Options.ValidateOptionsResult"/> when validating the <typeparamref name="TOptions"/> instance created.</exception>
+            <exception cref="T:System.MissingMethodException">The <typeparamref name="TOptions"/> does not have a public parameterless constructor or <typeparamref name="TOptions"/> is <see langword="abstract"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsFactory`1.CreateInstance(System.String)">
+            <summary>
+            Creates a new instance of type <typeparamref name="TOptions"/>.
+            </summary>
+            <param name="name">The name of the <typeparamref name="TOptions"/> instance to create.</param>
+            <returns>The created <typeparamref name="TOptions"/> instance.</returns>
+            <exception cref="T:System.MissingMethodException">The <typeparamref name="TOptions"/> does not have a public parameterless constructor or <typeparamref name="TOptions"/> is <see langword="abstract"/>.</exception>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.OptionsManager`1">
+            <summary>
+            Implements <see cref="T:Microsoft.Extensions.Options.IOptions`1"/> and <see cref="T:Microsoft.Extensions.Options.IOptionsSnapshot`1"/>.
+            </summary>
+            <typeparam name="TOptions">The options type.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsManager`1.#ctor(Microsoft.Extensions.Options.IOptionsFactory{`0})">
+            <summary>
+            Initializes a new instance with the specified options configurations.
+            </summary>
+            <param name="factory">The factory to use to create options.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.OptionsManager`1.Value">
+            <summary>
+            Gets the default configured <typeparamref name="TOptions"/> instance (equivalent to <c>Get(Options.DefaultName)</c>).
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsManager`1.Get(System.String)">
+            <summary>
+            Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
+            </summary>
+            <param name="name">The name of the <typeparamref name="TOptions"/> instance. If <see langword="null"/>, <see cref="F:Microsoft.Extensions.Options.Options.DefaultName"/>, which is the empty string, is used.</param>
+            <returns>The <typeparamref name="TOptions"/> instance that matches the given <paramref name="name"/>.</returns>
+            <exception cref="T:Microsoft.Extensions.Options.OptionsValidationException">One or more <see cref="T:Microsoft.Extensions.Options.IValidateOptions`1"/> return failed <see cref="T:Microsoft.Extensions.Options.ValidateOptionsResult"/> when validating the <typeparamref name="TOptions"/> instance created.</exception>
+            <exception cref="T:System.MissingMethodException">The <typeparamref name="TOptions"/> does not have a public parameterless constructor or <typeparamref name="TOptions"/> is <see langword="abstract"/>.</exception>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.OptionsMonitor`1">
+            <summary>
+            Implements <see cref="T:Microsoft.Extensions.Options.IOptionsMonitor`1"/>.
+            </summary>
+            <typeparam name="TOptions">The options type.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsMonitor`1.#ctor(Microsoft.Extensions.Options.IOptionsFactory{`0},System.Collections.Generic.IEnumerable{Microsoft.Extensions.Options.IOptionsChangeTokenSource{`0}},Microsoft.Extensions.Options.IOptionsMonitorCache{`0})">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.Extensions.Options.OptionsMonitor`1"/> with the specified factory, sources, and cache.
+            </summary>
+            <param name="factory">The factory to use to create options.</param>
+            <param name="sources">The sources used to listen for changes to the options instance.</param>
+            <param name="cache">The cache used to store options.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.OptionsMonitor`1.CurrentValue">
+            <summary>
+            Gets the present value of the options (equivalent to <c>Get(Options.DefaultName)</c>).
+            </summary>
+            <exception cref="T:Microsoft.Extensions.Options.OptionsValidationException">One or more <see cref="T:Microsoft.Extensions.Options.IValidateOptions`1"/> return failed <see cref="T:Microsoft.Extensions.Options.ValidateOptionsResult"/> when validating the <typeparamref name="TOptions"/> instance created.</exception>
+            <exception cref="T:System.MissingMethodException">The <typeparamref name="TOptions"/> does not have a public parameterless constructor or <typeparamref name="TOptions"/> is <see langword="abstract"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsMonitor`1.Get(System.String)">
+            <summary>
+            Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
+            </summary>
+            <param name="name">The name of the <typeparamref name="TOptions"/> instance. If <see langword="null"/>, <see cref="F:Microsoft.Extensions.Options.Options.DefaultName"/>, which is the empty string, is used.</param>
+            <returns>The <typeparamref name="TOptions"/> instance that matches the given <paramref name="name"/>.</returns>
+            <exception cref="T:Microsoft.Extensions.Options.OptionsValidationException">One or more <see cref="T:Microsoft.Extensions.Options.IValidateOptions`1"/> return failed <see cref="T:Microsoft.Extensions.Options.ValidateOptionsResult"/> when validating the <typeparamref name="TOptions"/> instance created.</exception>
+            <exception cref="T:System.MissingMethodException">The <typeparamref name="TOptions"/> does not have a public parameterless constructor or <typeparamref name="TOptions"/> is <see langword="abstract"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsMonitor`1.OnChange(System.Action{`0,System.String})">
+            <summary>
+            Registers a listener to be called whenever <typeparamref name="TOptions"/> changes.
+            </summary>
+            <param name="listener">The action to be invoked when <typeparamref name="TOptions"/> has changed.</param>
+            <returns>An <see cref="T:System.IDisposable"/> that should be disposed to stop listening for changes.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsMonitor`1.Dispose">
+            <summary>
+            Removes all change registration subscriptions.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.OptionsMonitorExtensions">
+            <summary>
+            Extension methods for <see cref="T:Microsoft.Extensions.Options.IOptionsMonitor`1"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsMonitorExtensions.OnChange``1(Microsoft.Extensions.Options.IOptionsMonitor{``0},System.Action{``0})">
+            <summary>
+            Registers a listener to be called whenever <typeparamref name="TOptions"/> changes.
+            </summary>
+            <typeparam name="TOptions">The type of options instance being monitored.</typeparam>
+            <param name="monitor">The IOptionsMonitor.</param>
+            <param name="listener">The action to be invoked when <typeparamref name="TOptions"/> has changed.</param>
+            <returns>An object that should be disposed to stop listening for changes.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.OptionsValidationException">
+            <summary>
+            Represents the exception that's thrown when options validation fails.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsValidationException.#ctor(System.String,System.Type,System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Creates a new instance of <see cref="T:Microsoft.Extensions.Options.OptionsValidationException"/>.
+            </summary>
+            <param name="optionsName">The name of the options instance that failed.</param>
+            <param name="optionsType">The options type that failed.</param>
+            <param name="failureMessages">The validation failure messages.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.OptionsValidationException.OptionsName">
+            <summary>
+            Gets the name of the options instance that failed.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.OptionsValidationException.OptionsType">
+            <summary>
+            Gets the type of the options that failed.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.OptionsValidationException.Failures">
+            <summary>
+            Gets the validation failures.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.OptionsValidationException.Message">
+            <summary>
+            Gets a semicolon-separated list of the <see cref="P:Microsoft.Extensions.Options.OptionsValidationException.Failures"/>.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.OptionsValidatorAttribute">
+            <summary>
+            Triggers the automatic generation of the implementation of <see cref="T:Microsoft.Extensions.Options.IValidateOptions`1" /> at compile time.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.OptionsWrapper`1">
+            <summary>
+            Wraps the options instance.
+            </summary>
+            <typeparam name="TOptions">The options type.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.OptionsWrapper`1.#ctor(`0)">
+            <summary>
+            Initializes the wrapper with the options instance to return.
+            </summary>
+            <param name="options">The options instance to return.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.OptionsWrapper`1.Value">
+            <summary>
+            Gets the options instance.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.PostConfigureOptions`1">
+            <summary>
+            Implementation of <see cref="T:Microsoft.Extensions.Options.IPostConfigureOptions`1"/>.
+            </summary>
+            <typeparam name="TOptions">The options type being configured.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.PostConfigureOptions`1.#ctor(System.String,System.Action{`0})">
+            <summary>
+            Creates a new instance of <see cref="T:Microsoft.Extensions.Options.PostConfigureOptions`1"/>.
+            </summary>
+            <param name="name">The name of the options.</param>
+            <param name="action">The action to register.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`1.Name">
+            <summary>
+            Gets the options name.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`1.Action">
+            <summary>
+            Gets the initialization action.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.PostConfigureOptions`1.PostConfigure(System.String,`0)">
+            <summary>
+            Invokes the registered initialization <see cref="P:Microsoft.Extensions.Options.PostConfigureOptions`1.Action"/> if the <paramref name="name"/> matches.
+            </summary>
+            <param name="name">The name of the action to invoke.</param>
+            <param name="options">The options to use in initialization.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.PostConfigureOptions`2">
+            <summary>
+            Implementation of <see cref="T:Microsoft.Extensions.Options.IPostConfigureOptions`1"/>.
+            </summary>
+            <typeparam name="TOptions">Options type being configured.</typeparam>
+            <typeparam name="TDep">Dependency type.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.PostConfigureOptions`2.#ctor(System.String,`1,System.Action{`0,`1})">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.Extensions.Options.PostConfigureOptions`2"/>.
+            </summary>
+            <param name="name">The name of the options.</param>
+            <param name="dependency">A dependency.</param>
+            <param name="action">The action to register.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`2.Name">
+            <summary>
+            Gets the options name.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`2.Action">
+            <summary>
+            Gets the configuration action.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`2.Dependency">
+            <summary>
+            The dependency.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.PostConfigureOptions`2.PostConfigure(System.String,`0)">
+            <summary>
+            Invokes the registered initialization <see cref="P:Microsoft.Extensions.Options.PostConfigureOptions`2.Action"/> if the <paramref name="name"/> matches.
+            </summary>
+            <param name="name">The name of the options instance being configured.</param>
+            <param name="options">The options instance to configured.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.PostConfigureOptions`2.PostConfigure(`0)">
+            <summary>
+            Configures a <typeparamref name="TOptions"/> instance using the <see cref="F:Microsoft.Extensions.Options.Options.DefaultName"/>.
+            </summary>
+            <param name="options">The options instance to configured.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.PostConfigureOptions`3">
+            <summary>
+            Implementation of <see cref="T:Microsoft.Extensions.Options.IPostConfigureOptions`1"/>.
+            </summary>
+            <typeparam name="TOptions">Options type being configured.</typeparam>
+            <typeparam name="TDep1">First dependency type.</typeparam>
+            <typeparam name="TDep2">Second dependency type.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.PostConfigureOptions`3.#ctor(System.String,`1,`2,System.Action{`0,`1,`2})">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.Extensions.Options.PostConfigureOptions`3"/>.
+            </summary>
+            <param name="name">The name of the options.</param>
+            <param name="dependency">A dependency.</param>
+            <param name="dependency2">A second dependency.</param>
+            <param name="action">The action to register.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`3.Name">
+            <summary>
+            Gets the options name.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`3.Action">
+            <summary>
+            Gets the configuration action.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`3.Dependency1">
+            <summary>
+            Gets the first dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`3.Dependency2">
+            <summary>
+            Gets the second dependency.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.PostConfigureOptions`3.PostConfigure(System.String,`0)">
+            <summary>
+            Invokes the registered initialization <see cref="P:Microsoft.Extensions.Options.PostConfigureOptions`3.Action"/> if the <paramref name="name"/> matches.
+            </summary>
+            <param name="name">The name of the options instance being configured.</param>
+            <param name="options">The options instance to configured.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.PostConfigureOptions`3.PostConfigure(`0)">
+            <summary>
+            Configures a <typeparamref name="TOptions"/> instance using the <see cref="F:Microsoft.Extensions.Options.Options.DefaultName"/>.
+            </summary>
+            <param name="options">The options instance to configured.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.PostConfigureOptions`4">
+            <summary>
+            Implementation of <see cref="T:Microsoft.Extensions.Options.IPostConfigureOptions`1"/>.
+            </summary>
+            <typeparam name="TOptions">Options type being configured.</typeparam>
+            <typeparam name="TDep1">First dependency type.</typeparam>
+            <typeparam name="TDep2">Second dependency type.</typeparam>
+            <typeparam name="TDep3">Third dependency type.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.PostConfigureOptions`4.#ctor(System.String,`1,`2,`3,System.Action{`0,`1,`2,`3})">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.Extensions.Options.PostConfigureOptions`4"/>.
+            </summary>
+            <param name="name">The name of the options.</param>
+            <param name="dependency">A dependency.</param>
+            <param name="dependency2">A second dependency.</param>
+            <param name="dependency3">A third dependency.</param>
+            <param name="action">The action to register.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`4.Name">
+            <summary>
+            Gets the options name.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`4.Action">
+            <summary>
+            Gets the configuration action.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`4.Dependency1">
+            <summary>
+            Gets the first dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`4.Dependency2">
+            <summary>
+            Gets the second dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`4.Dependency3">
+            <summary>
+            Gets the third dependency.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.PostConfigureOptions`4.PostConfigure(System.String,`0)">
+            <summary>
+            Invokes the registered initialization <see cref="P:Microsoft.Extensions.Options.PostConfigureOptions`4.Action"/> if the <paramref name="name"/> matches.
+            </summary>
+            <param name="name">The name of the options instance being configured.</param>
+            <param name="options">The options instance to configured.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.PostConfigureOptions`4.PostConfigure(`0)">
+            <summary>
+            Configures a <typeparamref name="TOptions"/> instance using the <see cref="F:Microsoft.Extensions.Options.Options.DefaultName"/>.
+            </summary>
+            <param name="options">The options instance to configured.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.PostConfigureOptions`5">
+            <summary>
+            Implementation of <see cref="T:Microsoft.Extensions.Options.IPostConfigureOptions`1"/>.
+            </summary>
+            <typeparam name="TOptions">Options type being configured.</typeparam>
+            <typeparam name="TDep1">First dependency type.</typeparam>
+            <typeparam name="TDep2">Second dependency type.</typeparam>
+            <typeparam name="TDep3">Third dependency type.</typeparam>
+            <typeparam name="TDep4">Fourth dependency type.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.PostConfigureOptions`5.#ctor(System.String,`1,`2,`3,`4,System.Action{`0,`1,`2,`3,`4})">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.Extensions.Options.PostConfigureOptions`5"/>.
+            </summary>
+            <param name="name">The name of the options.</param>
+            <param name="dependency1">A dependency.</param>
+            <param name="dependency2">A second dependency.</param>
+            <param name="dependency3">A third dependency.</param>
+            <param name="dependency4">A fourth dependency.</param>
+            <param name="action">The action to register.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`5.Name">
+            <summary>
+            Gets the options name.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`5.Action">
+            <summary>
+            Gets the configuration action.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`5.Dependency1">
+            <summary>
+            Gets the first dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`5.Dependency2">
+            <summary>
+            Gets the second dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`5.Dependency3">
+            <summary>
+            Gets the third dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`5.Dependency4">
+            <summary>
+            Gets the fourth dependency.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.PostConfigureOptions`5.PostConfigure(System.String,`0)">
+            <summary>
+            Invokes the registered initialization <see cref="P:Microsoft.Extensions.Options.PostConfigureOptions`5.Action"/> if the <paramref name="name"/> matches.
+            </summary>
+            <param name="name">The name of the options instance being configured.</param>
+            <param name="options">The options instance to configured.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.PostConfigureOptions`5.PostConfigure(`0)">
+            <summary>
+            Configures a <typeparamref name="TOptions"/> instance using the <see cref="F:Microsoft.Extensions.Options.Options.DefaultName"/>.
+            </summary>
+            <param name="options">The options instance to configured.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.PostConfigureOptions`6">
+            <summary>
+            Implementation of <see cref="T:Microsoft.Extensions.Options.IPostConfigureOptions`1"/>.
+            </summary>
+            <typeparam name="TOptions">Options type being configured.</typeparam>
+            <typeparam name="TDep1">First dependency type.</typeparam>
+            <typeparam name="TDep2">Second dependency type.</typeparam>
+            <typeparam name="TDep3">Third dependency type.</typeparam>
+            <typeparam name="TDep4">Fourth dependency type.</typeparam>
+            <typeparam name="TDep5">Fifth dependency type.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.PostConfigureOptions`6.#ctor(System.String,`1,`2,`3,`4,`5,System.Action{`0,`1,`2,`3,`4,`5})">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.Extensions.Options.PostConfigureOptions`6"/>.
+            </summary>
+            <param name="name">The name of the options.</param>
+            <param name="dependency1">A dependency.</param>
+            <param name="dependency2">A second dependency.</param>
+            <param name="dependency3">A third dependency.</param>
+            <param name="dependency4">A fourth dependency.</param>
+            <param name="dependency5">A fifth dependency.</param>
+            <param name="action">The action to register.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`6.Name">
+            <summary>
+            Gets the options name.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`6.Action">
+            <summary>
+            Gets the configuration action.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`6.Dependency1">
+            <summary>
+            Gets the first dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`6.Dependency2">
+            <summary>
+            Gets the second dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`6.Dependency3">
+            <summary>
+            Gets the third dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`6.Dependency4">
+            <summary>
+            Gets the fourth dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.PostConfigureOptions`6.Dependency5">
+            <summary>
+            Gets the fifth dependency.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.PostConfigureOptions`6.PostConfigure(System.String,`0)">
+            <summary>
+            Invokes the registered initialization <see cref="P:Microsoft.Extensions.Options.PostConfigureOptions`6.Action"/> if the <paramref name="name"/> matches.
+            </summary>
+            <param name="name">The name of the options instance being configured.</param>
+            <param name="options">The options instance to configured.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.PostConfigureOptions`6.PostConfigure(`0)">
+            <summary>
+            Configures a <typeparamref name="TOptions"/> instance using the <see cref="F:Microsoft.Extensions.Options.Options.DefaultName"/>.
+            </summary>
+            <param name="options">The options instance to configured.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.ValidateEnumeratedItemsAttribute">
+            <summary>
+            Marks a field or property to be enumerated; each enumerated object is validated.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateEnumeratedItemsAttribute.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Options.ValidateEnumeratedItemsAttribute"/> class.
+            </summary>
+            <remarks>
+            Using this constructor for a field or property tells the code generator to
+            generate validation for the individual members of the enumerable's type.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateEnumeratedItemsAttribute.#ctor(System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Options.ValidateEnumeratedItemsAttribute"/> class.
+            </summary>
+            <param name="validator">A type that implements <see cref="T:Microsoft.Extensions.Options.IValidateOptions`1" /> for the enumerable's type.</param>
+            <remarks>
+            Using this constructor for a field or property tells the code generator to use the given type to validate
+            the object held by the enumerable.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateEnumeratedItemsAttribute.Validator">
+            <summary>
+            Gets the type to use to validate the enumerable's objects.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.ValidateObjectMembersAttribute">
+            <summary>
+            Marks a field or property to be validated transitively.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateObjectMembersAttribute.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Options.ValidateObjectMembersAttribute"/> class.
+            </summary>
+            <remarks>
+            Using this constructor for a field or property tells the code generator to
+            generate validation for the individual members of the field/property's type.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateObjectMembersAttribute.#ctor(System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Options.ValidateObjectMembersAttribute"/> class.
+            </summary>
+            <param name="validator">A type that implements <see cref="T:Microsoft.Extensions.Options.IValidateOptions`1" /> for the field/property's type.</param>
+            <remarks>
+            Using this constructor for a field or property tells the code generator to use the given type to validate
+            the object held by the field or property.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateObjectMembersAttribute.Validator">
+            <summary>
+            Gets the type to use to validate a field or property.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.ValidateOptions`1">
+            <summary>
+            Implementation of <see cref="T:Microsoft.Extensions.Options.IValidateOptions`1"/>
+            </summary>
+            <typeparam name="TOptions">The options type to validate.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateOptions`1.#ctor(System.String,System.Func{`0,System.Boolean},System.String)">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.Extensions.Options.ValidateOptions`1"/>.
+            </summary>
+            <param name="name">Options name.</param>
+            <param name="validation">Validation function.</param>
+            <param name="failureMessage">Validation failure message.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`1.Name">
+            <summary>
+            Gets the options name.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`1.Validation">
+            <summary>
+            Gets the validation function.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`1.FailureMessage">
+            <summary>
+            Gets the error to return when validation fails.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateOptions`1.Validate(System.String,`0)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is null).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Options.ValidateOptionsResult"/> result.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.ValidateOptions`2">
+            <summary>
+            Implementation of <see cref="T:Microsoft.Extensions.Options.IValidateOptions`1"/>
+            </summary>
+            <typeparam name="TOptions">The options type to validate.</typeparam>
+            <typeparam name="TDep">Dependency type.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateOptions`2.#ctor(System.String,`1,System.Func{`0,`1,System.Boolean},System.String)">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.Extensions.Options.ValidateOptions`2"/>.
+            </summary>
+            <param name="name">Options name.</param>
+            <param name="dependency">Gets the dependency.</param>
+            <param name="validation">Validation function.</param>
+            <param name="failureMessage">Validation failure message.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`2.Name">
+            <summary>
+            Gets the options name.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`2.Validation">
+            <summary>
+            Gets the validation function.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`2.FailureMessage">
+            <summary>
+            Gets the error to return when validation fails.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`2.Dependency">
+            <summary>
+            Gets the dependency.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateOptions`2.Validate(System.String,`0)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is null).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Options.ValidateOptionsResult"/> result.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.ValidateOptions`3">
+            <summary>
+            Implementation of <see cref="T:Microsoft.Extensions.Options.IValidateOptions`1"/>.
+            </summary>
+            <typeparam name="TOptions">The options type to validate.</typeparam>
+            <typeparam name="TDep1">First dependency type.</typeparam>
+            <typeparam name="TDep2">Second dependency type.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateOptions`3.#ctor(System.String,`1,`2,System.Func{`0,`1,`2,System.Boolean},System.String)">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.Extensions.Options.ValidateOptions`3"/>.
+            </summary>
+            <param name="name">Options name.</param>
+            <param name="dependency1">The first dependency.</param>
+            <param name="dependency2">The second dependency.</param>
+            <param name="validation">Validation function.</param>
+            <param name="failureMessage">Validation failure message.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`3.Name">
+            <summary>
+            Gets the options name.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`3.Validation">
+            <summary>
+            Gets the validation function.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`3.FailureMessage">
+            <summary>
+            Gets the error to return when validation fails.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`3.Dependency1">
+            <summary>
+            Gets the first dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`3.Dependency2">
+            <summary>
+            Gets the second dependency.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateOptions`3.Validate(System.String,`0)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is null).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Options.ValidateOptionsResult"/> result.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.ValidateOptions`4">
+            <summary>
+            Implementation of <see cref="T:Microsoft.Extensions.Options.IValidateOptions`1"/>
+            </summary>
+            <typeparam name="TOptions">The options type to validate.</typeparam>
+            <typeparam name="TDep1">First dependency type.</typeparam>
+            <typeparam name="TDep2">Second dependency type.</typeparam>
+            <typeparam name="TDep3">Third dependency type.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateOptions`4.#ctor(System.String,`1,`2,`3,System.Func{`0,`1,`2,`3,System.Boolean},System.String)">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.Extensions.Options.ValidateOptions`4"/>.
+            </summary>
+            <param name="name">Options name.</param>
+            <param name="dependency1">The first dependency.</param>
+            <param name="dependency2">The second dependency.</param>
+            <param name="dependency3">The third dependency.</param>
+            <param name="validation">Validation function.</param>
+            <param name="failureMessage">Validation failure message.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`4.Name">
+            <summary>
+            Gets the options name.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`4.Validation">
+            <summary>
+            Gets the validation function.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`4.FailureMessage">
+            <summary>
+            Gets the error to return when validation fails.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`4.Dependency1">
+            <summary>
+            Gets the first dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`4.Dependency2">
+            <summary>
+            Gets the second dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`4.Dependency3">
+            <summary>
+            Gets the third dependency.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateOptions`4.Validate(System.String,`0)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is null).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Options.ValidateOptionsResult"/> result.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.ValidateOptions`5">
+            <summary>
+            Implementation of <see cref="T:Microsoft.Extensions.Options.IValidateOptions`1"/>
+            </summary>
+            <typeparam name="TOptions">The options type to validate.</typeparam>
+            <typeparam name="TDep1">First dependency type.</typeparam>
+            <typeparam name="TDep2">Second dependency type.</typeparam>
+            <typeparam name="TDep3">Third dependency type.</typeparam>
+            <typeparam name="TDep4">Fourth dependency type.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateOptions`5.#ctor(System.String,`1,`2,`3,`4,System.Func{`0,`1,`2,`3,`4,System.Boolean},System.String)">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.Extensions.Options.ValidateOptions`5"/>.
+            </summary>
+            <param name="name">Options name.</param>
+            <param name="dependency1">The first dependency.</param>
+            <param name="dependency2">The second dependency.</param>
+            <param name="dependency3">The third dependency.</param>
+            <param name="dependency4">The fourth dependency.</param>
+            <param name="validation">Validation function.</param>
+            <param name="failureMessage">Validation failure message.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`5.Name">
+            <summary>
+            Gets the options name.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`5.Validation">
+            <summary>
+            Gets the validation function.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`5.FailureMessage">
+            <summary>
+            Gets the error to return when validation fails.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`5.Dependency1">
+            <summary>
+            Gets the first dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`5.Dependency2">
+            <summary>
+            Gets the second dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`5.Dependency3">
+            <summary>
+            Gets the third dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`5.Dependency4">
+            <summary>
+            Gets the fourth dependency.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateOptions`5.Validate(System.String,`0)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is null).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Options.ValidateOptionsResult"/> result.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.ValidateOptions`6">
+            <summary>
+            Implementation of <see cref="T:Microsoft.Extensions.Options.IValidateOptions`1"/>
+            </summary>
+            <typeparam name="TOptions">The options type to validate.</typeparam>
+            <typeparam name="TDep1">First dependency type.</typeparam>
+            <typeparam name="TDep2">Second dependency type.</typeparam>
+            <typeparam name="TDep3">Third dependency type.</typeparam>
+            <typeparam name="TDep4">Fourth dependency type.</typeparam>
+            <typeparam name="TDep5">Fifth dependency type.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateOptions`6.#ctor(System.String,`1,`2,`3,`4,`5,System.Func{`0,`1,`2,`3,`4,`5,System.Boolean},System.String)">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.Extensions.Options.ValidateOptions`6"/>.
+            </summary>
+            <param name="name">Options name.</param>
+            <param name="dependency1">The first dependency.</param>
+            <param name="dependency2">The second dependency.</param>
+            <param name="dependency3">The third dependency.</param>
+            <param name="dependency4">The fourth dependency.</param>
+            <param name="dependency5">The fifth dependency.</param>
+            <param name="validation">Validation function.</param>
+            <param name="failureMessage">Validation failure message.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`6.Name">
+            <summary>
+            Gets the options name.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`6.Validation">
+            <summary>
+            Gets the validation function.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`6.FailureMessage">
+            <summary>
+            Gets the error to return when validation fails.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`6.Dependency1">
+            <summary>
+            Gets the first dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`6.Dependency2">
+            <summary>
+            Gets the second dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`6.Dependency3">
+            <summary>
+            Gets the third dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`6.Dependency4">
+            <summary>
+            Gets the fourth dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptions`6.Dependency5">
+            <summary>
+            Gets the fifth dependency.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateOptions`6.Validate(System.String,`0)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is null).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Options.ValidateOptionsResult"/> result.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.ValidateOptionsResult">
+            <summary>
+            Represents the result of an options validation.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Options.ValidateOptionsResult.Skip">
+            <summary>
+            The result when validation was skipped due to name not matching.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Options.ValidateOptionsResult.Success">
+            <summary>
+            The result when validation was successful.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptionsResult.Succeeded">
+            <summary>
+            Gets a value that indicates whether validation was successful.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptionsResult.Skipped">
+            <summary>
+            Gets a value that indicates whether validation was run.
+            </summary>
+            <value>
+            <see langword="true"/> if validation was skipped; <see langword="false"/> if validation was run.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptionsResult.Failed">
+            <summary>
+            Gets a value that indicates whether validation failed.
+            </summary>
+            <value>
+            <see langword="true"/> if validation failed; otherwise, <see langword="false"/>.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptionsResult.FailureMessage">
+            <summary>
+            Gets the description of why validation failed.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Options.ValidateOptionsResult.Failures">
+            <summary>
+            Gets the full list of failures (can be multiple).
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateOptionsResult.Fail(System.String)">
+            <summary>
+            Returns a failure result.
+            </summary>
+            <param name="failureMessage">The reason for the failure.</param>
+            <returns>The failure result.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateOptionsResult.Fail(System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Returns a failure result.
+            </summary>
+            <param name="failures">The reasons for the failure.</param>
+            <returns>The failure result.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Options.ValidateOptionsResultBuilder">
+            <summary>
+            Builds <see cref="T:Microsoft.Extensions.Options.ValidateOptionsResult"/> with support for multiple error messages.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateOptionsResultBuilder.#ctor">
+            <summary>
+            Creates new instance of the <see cref="T:Microsoft.Extensions.Options.ValidateOptionsResultBuilder"/> class.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateOptionsResultBuilder.AddError(System.String,System.String)">
+            <summary>
+            Adds a new validation error to the builder.
+            </summary>
+            <param name="error">The content of the error message.</param>
+            <param name="propertyName">The property in the option object which contains an error.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateOptionsResultBuilder.AddResult(System.ComponentModel.DataAnnotations.ValidationResult)">
+            <summary>
+            Adds any validation error carried by the <see cref="T:System.ComponentModel.DataAnnotations.ValidationResult"/> instance to this instance.
+            </summary>
+            <param name="result">The instance to append the error from.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateOptionsResultBuilder.AddResults(System.Collections.Generic.IEnumerable{System.ComponentModel.DataAnnotations.ValidationResult})">
+            <summary>
+            Adds any validation error carried by the enumeration of <see cref="T:System.ComponentModel.DataAnnotations.ValidationResult"/> instances to this instance.
+            </summary>
+            <param name="results">The enumeration to consume the errors from.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateOptionsResultBuilder.AddResult(Microsoft.Extensions.Options.ValidateOptionsResult)">
+            <summary>
+            Adds any validation errors carried by the <see cref="T:Microsoft.Extensions.Options.ValidateOptionsResult"/> instance to this instance.
+            </summary>
+            <param name="result">The instance to consume the errors from.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateOptionsResultBuilder.Build">
+            <summary>
+            Builds <see cref="T:Microsoft.Extensions.Options.ValidateOptionsResult"/> based on provided data.
+            </summary>
+            <returns>A new instance of <see cref="T:Microsoft.Extensions.Options.ValidateOptionsResult"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Options.ValidateOptionsResultBuilder.Clear">
+            <summary>
+            Reset the builder to the empty state.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.OptionsBuilderExtensions">
+            <summary>
+            Extension methods for adding configuration-related options services to the DI container via <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.OptionsBuilderExtensions.ValidateOnStart``1(Microsoft.Extensions.Options.OptionsBuilder{``0})">
+            <summary>
+            Enforces options validation check on start rather than at run time.
+            </summary>
+            <typeparam name="TOptions">The type of options.</typeparam>
+            <param name="optionsBuilder">The <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/> to configure options instance.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/> so that additional calls can be chained.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions">
+            <summary>
+            Extension methods for adding options services to the DI container.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions.AddOptions(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds services required for using options.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the services to.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> so that additional calls can be chained.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions.AddOptionsWithValidateOnStart``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String)">
+            <summary>
+            Adds services required for using options and enforces options validation check on start rather than at run time.
+            </summary>
+            <remarks>
+            The <see cref="M:Microsoft.Extensions.DependencyInjection.OptionsBuilderExtensions.ValidateOnStart``1(Microsoft.Extensions.Options.OptionsBuilder{``0})"/> extension is called by this method.
+            </remarks>
+            <typeparam name="TOptions">The options type to be configured.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the services to.</param>
+            <param name="name">The name of the options instance.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/> so that configure calls can be chained in it.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions.AddOptionsWithValidateOnStart``2(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String)">
+            <summary>
+            Adds services required for using options and enforces options validation check on start rather than at run time.
+            </summary>
+            <remarks>
+            The <see cref="M:Microsoft.Extensions.DependencyInjection.OptionsBuilderExtensions.ValidateOnStart``1(Microsoft.Extensions.Options.OptionsBuilder{``0})"/> extension is called by this method.
+            </remarks>
+            <typeparam name="TOptions">The options type to be configured.</typeparam>
+            <typeparam name="TValidateOptions">The <see cref="T:Microsoft.Extensions.Options.IValidateOptions`1"/> validator type.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the services to.</param>
+            <param name="name">The name of the options instance.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/> so that configure calls can be chained in it.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions.Configure``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{``0})">
+            <summary>
+            Registers an action used to configure a particular type of options.
+            Note: These are run before all <see cref="M:Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions.PostConfigure``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{``0})"/>.
+            </summary>
+            <typeparam name="TOptions">The options type to be configured.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the services to.</param>
+            <param name="configureOptions">The action used to configure the options.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> so that additional calls can be chained.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions.Configure``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String,System.Action{``0})">
+            <summary>
+            Registers an action used to configure a particular type of options.
+            Note: These are run before all <see cref="M:Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions.PostConfigure``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{``0})"/>.
+            </summary>
+            <typeparam name="TOptions">The options type to be configured.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the services to.</param>
+            <param name="name">The name of the options instance.</param>
+            <param name="configureOptions">The action used to configure the options.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> so that additional calls can be chained.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions.ConfigureAll``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{``0})">
+            <summary>
+            Registers an action used to configure all instances of a particular type of options.
+            </summary>
+            <typeparam name="TOptions">The options type to be configured.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the services to.</param>
+            <param name="configureOptions">The action used to configure the options.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> so that additional calls can be chained.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions.PostConfigure``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{``0})">
+            <summary>
+            Registers an action used to initialize a particular type of options.
+            Note: These are run after all <see cref="M:Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions.Configure``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{``0})"/>.
+            </summary>
+            <typeparam name="TOptions">The options type to be configured.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the services to.</param>
+            <param name="configureOptions">The action used to configure the options.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> so that additional calls can be chained.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions.PostConfigure``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String,System.Action{``0})">
+            <summary>
+            Registers an action used to configure a particular type of options.
+            Note: These are run after all <see cref="M:Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions.Configure``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{``0})"/>.
+            </summary>
+            <typeparam name="TOptions">The options type to be configure.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the services to.</param>
+            <param name="name">The name of the options instance.</param>
+            <param name="configureOptions">The action used to configure the options.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> so that additional calls can be chained.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions.PostConfigureAll``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{``0})">
+            <summary>
+            Registers an action used to post configure all instances of a particular type of options.
+            Note: These are run after all <see cref="M:Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions.Configure``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{``0})"/>.
+            </summary>
+            <typeparam name="TOptions">The options type to be configured.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the services to.</param>
+            <param name="configureOptions">The action used to configure the options.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> so that additional calls can be chained.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions.ConfigureOptions``1(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Registers a type that will have all of its <see cref="T:Microsoft.Extensions.Options.IConfigureOptions`1"/>,
+            <see cref="T:Microsoft.Extensions.Options.IPostConfigureOptions`1"/>, and <see cref="T:Microsoft.Extensions.Options.IValidateOptions`1"/>
+            registered.
+            </summary>
+            <typeparam name="TConfigureOptions">The type that will configure options.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the services to.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> so that additional calls can be chained.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions.ConfigureOptions(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Type)">
+            <summary>
+            Registers a type that will have all of its <see cref="T:Microsoft.Extensions.Options.IConfigureOptions`1"/>,
+            <see cref="T:Microsoft.Extensions.Options.IPostConfigureOptions`1"/>, and <see cref="T:Microsoft.Extensions.Options.IValidateOptions`1"/>
+            registered.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the services to.</param>
+            <param name="configureType">The type that will configure options.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> so that additional calls can be chained.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions.ConfigureOptions(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Object)">
+            <summary>
+            Registers an object that will have all of its <see cref="T:Microsoft.Extensions.Options.IConfigureOptions`1"/>,
+            <see cref="T:Microsoft.Extensions.Options.IPostConfigureOptions`1"/>, and <see cref="T:Microsoft.Extensions.Options.IValidateOptions`1"/>
+            registered.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the services to.</param>
+            <param name="configureInstance">The instance that will configure options.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> so that additional calls can be chained.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions.AddOptions``1(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Gets an options builder that forwards Configure calls for the same <typeparamref name="TOptions"/> to the underlying service collection.
+            </summary>
+            <typeparam name="TOptions">The options type to be configured.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the services to.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/> so that configure calls can be chained in it.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions.AddOptions``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String)">
+            <summary>
+            Gets an options builder that forwards Configure calls for the same named <typeparamref name="TOptions"/> to the underlying service collection.
+            </summary>
+            <typeparam name="TOptions">The options type to be configured.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the services to.</param>
+            <param name="name">The name of the options instance.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Options.OptionsBuilder`1"/> so that configure calls can be chained in it.</returns>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
+             <summary>
+             Indicates that certain members on a specified <see cref="T:System.Type"/> are accessed dynamically,
+             for example through <see cref="N:System.Reflection"/>.
+             </summary>
+             <remarks>
+             This allows tools to understand which members are being accessed during the execution
+             of a program.
+            
+             This attribute is valid on members whose type is <see cref="T:System.Type"/> or <see cref="T:System.String"/>.
+            
+             When this attribute is applied to a location of type <see cref="T:System.String"/>, the assumption is
+             that the string represents a fully qualified type name.
+            
+             When this attribute is applied to a class, interface, or struct, the members specified
+             can be accessed dynamically on <see cref="T:System.Type"/> instances returned from calling
+             <see cref="M:System.Object.GetType"/> on instances of that class, interface, or struct.
+            
+             If the attribute is applied to a method it's treated as a special case and it implies
+             the attribute should be applied to the "this" parameter of the method. As such the attribute
+             should only be used on instance methods of types assignable to System.Type (or string, but no methods
+             will use it there).
+             </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute.#ctor(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute"/> class
+            with the specified member types.
+            </summary>
+            <param name="memberTypes">The types of members dynamically accessed.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute.MemberTypes">
+            <summary>
+            Gets the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes"/> which specifies the type
+            of members dynamically accessed.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">
+             <summary>
+             Specifies the types of members that are dynamically accessed.
+            
+             This enumeration has a <see cref="T:System.FlagsAttribute"/> attribute that allows a
+             bitwise combination of its member values.
+             </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.None">
+            <summary>
+            Specifies no members.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor">
+            <summary>
+            Specifies the default, parameterless public constructor.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors">
+            <summary>
+            Specifies all public constructors.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors">
+            <summary>
+            Specifies all non-public constructors.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods">
+            <summary>
+            Specifies all public methods.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods">
+            <summary>
+            Specifies all non-public methods.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields">
+            <summary>
+            Specifies all public fields.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields">
+            <summary>
+            Specifies all non-public fields.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes">
+            <summary>
+            Specifies all public nested types.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypes">
+            <summary>
+            Specifies all non-public nested types.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties">
+            <summary>
+            Specifies all public properties.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties">
+            <summary>
+            Specifies all non-public properties.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents">
+            <summary>
+            Specifies all public events.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicEvents">
+            <summary>
+            Specifies all non-public events.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces">
+            <summary>
+            Specifies all interfaces implemented by the type.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructorsWithInherited">
+            <summary>
+            Specifies all non-public constructors, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethodsWithInherited">
+            <summary>
+            Specifies all non-public methods, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFieldsWithInherited">
+            <summary>
+            Specifies all non-public fields, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypesWithInherited">
+            <summary>
+            Specifies all non-public nested types, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicPropertiesWithInherited">
+            <summary>
+            Specifies all non-public properties, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicEventsWithInherited">
+            <summary>
+            Specifies all non-public events, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructorsWithInherited">
+            <summary>
+            Specifies all public constructors, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypesWithInherited">
+            <summary>
+            Specifies all public nested types, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllConstructors">
+            <summary>
+            Specifies all constructors, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods">
+            <summary>
+            Specifies all methods, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllFields">
+            <summary>
+            Specifies all fields, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllNestedTypes">
+            <summary>
+            Specifies all nested types, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllProperties">
+            <summary>
+            Specifies all properties, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllEvents">
+            <summary>
+            Specifies all events, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All">
+            <summary>
+            Specifies all members.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+            <summary>
+            Suppresses reporting of a specific rule violation, allowing multiple suppressions on a
+            single code artifact.
+            </summary>
+            <remarks>
+            <see cref="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute"/> is different than
+            <see cref="T:System.Diagnostics.CodeAnalysis.SuppressMessageAttribute"/> in that it doesn't have a
+            <see cref="T:System.Diagnostics.ConditionalAttribute"/>. So it is always preserved in the compiled assembly.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute"/>
+            class, specifying the category of the tool and the identifier for an analysis rule.
+            </summary>
+            <param name="category">The category for the attribute.</param>
+            <param name="checkId">The identifier of the analysis rule the attribute applies to.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Category">
+            <summary>
+            Gets the category identifying the classification of the attribute.
+            </summary>
+            <remarks>
+            The <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Category"/> property describes the tool or tool analysis category
+            for which a message suppression attribute applies.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.CheckId">
+            <summary>
+            Gets the identifier of the analysis tool rule to be suppressed.
+            </summary>
+            <remarks>
+            Concatenated together, the <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Category"/> and <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.CheckId"/>
+            properties form a unique check identifier.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Scope">
+            <summary>
+            Gets or sets the scope of the code that is relevant for the attribute.
+            </summary>
+            <remarks>
+            The Scope property is an optional argument that specifies the metadata scope for which
+            the attribute is relevant.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Target">
+            <summary>
+            Gets or sets a fully qualified path that represents the target of the attribute.
+            </summary>
+            <remarks>
+            The <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Target"/> property is an optional argument identifying the analysis target
+            of the attribute. An example value is "System.IO.Stream.ctor():System.Void".
+            Because it is fully qualified, it can be long, particularly for targets such as parameters.
+            The analysis tool user interface should be capable of automatically formatting the parameter.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.MessageId">
+            <summary>
+            Gets or sets an optional argument expanding on exclusion criteria.
+            </summary>
+            <remarks>
+            The <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.MessageId"/> property is an optional argument that specifies additional
+            exclusion where the literal metadata target is not sufficiently precise. For example,
+            the <see cref="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute"/> cannot be applied within a method,
+            and it may be desirable to suppress a violation against a statement in the method that will
+            give a rule violation, but not against all statements in the method.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Justification">
+            <summary>
+            Gets or sets the justification for suppressing the code analysis message.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.AllowNullAttribute">
+            <summary>Specifies that null is allowed as an input even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DisallowNullAttribute">
+            <summary>Specifies that null is disallowed as an input even if the corresponding type allows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullAttribute">
+            <summary>Specifies that an output may be null even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullAttribute">
+            <summary>Specifies that an output will not be null even if the corresponding type allows it. Specifies that an input argument was not null when the call returns.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute">
+            <summary>Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue"/>, the parameter may be null even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified return value condition.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter may be null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute">
+            <summary>Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue"/>, the parameter will not be null even if the corresponding type allows it.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified return value condition.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter will not be null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute">
+            <summary>Specifies that the output will be non-null if the named parameter is non-null.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.#ctor(System.String)">
+            <summary>Initializes the attribute with the associated parameter name.</summary>
+            <param name="parameterName">
+            The associated parameter name.  The output will be non-null if the argument to the parameter specified is non-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.ParameterName">
+            <summary>Gets the associated parameter name.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute">
+            <summary>Applied to a method that will never return under any circumstance.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute">
+            <summary>Specifies that the method will not return if the associated Boolean parameter is passed the specified value.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified parameter value.</summary>
+            <param name="parameterValue">
+            The condition parameter value. Code after the method will be considered unreachable by diagnostics if the argument to
+            the associated parameter matches this value.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.ParameterValue">
+            <summary>Gets the condition parameter value.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute">
+            <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String)">
+            <summary>Initializes the attribute with a field or property member.</summary>
+            <param name="member">
+            The field or property member that is promised to be not-null.
+            </param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String[])">
+            <summary>Initializes the attribute with the list of field and property members.</summary>
+            <param name="members">
+            The list of field and property members that are promised to be not-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.Members">
+            <summary>Gets field or property member names.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute">
+            <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values when returning with the specified return value condition.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.#ctor(System.Boolean,System.String)">
+            <summary>Initializes the attribute with the specified return value condition and a field or property member.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated field or property member will not be null.
+            </param>
+            <param name="member">
+            The field or property member that is promised to be not-null.
+            </param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.#ctor(System.Boolean,System.String[])">
+            <summary>Initializes the attribute with the specified return value condition and list of field and property members.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated field and property members will not be null.
+            </param>
+            <param name="members">
+            The list of field and property members that are promised to be not-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.Members">
+            <summary>Gets field or property member names.</summary>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.CompilerLoweringPreserveAttribute">
+            <summary>
+            When applied to an attribute class, instructs the compiler to flow applications of that attribute,
+            from source code down to compiler-generated symbols. This can help IL-based analysis tools.
+            </summary>
+            <remarks>
+            One example where this attribute applies is in C# primary constructor parameters. If an attribute
+            marked with <see cref="T:System.Runtime.CompilerServices.CompilerLoweringPreserveAttribute"/> gets applied to a primary constructor
+            parameter, the attribute will also be applied to any compiler-generated fields storing that parameter.
+            </remarks>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.CompilerLoweringPreserveAttribute.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.CompilerServices.CompilerLoweringPreserveAttribute"/> class.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.InteropServices.LibraryImportAttribute">
+            <summary>
+            Attribute used to indicate a source generator should create a function for marshalling
+            arguments instead of relying on the runtime to generate an equivalent marshalling function at run-time.
+            </summary>
+            <remarks>
+            This attribute is meaningless if the source generator associated with it is not enabled.
+            The current built-in source generator only supports C# and only supplies an implementation when
+            applied to static, partial, non-generic methods.
+            </remarks>
+        </member>
+        <member name="M:System.Runtime.InteropServices.LibraryImportAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.InteropServices.LibraryImportAttribute"/>.
+            </summary>
+            <param name="libraryName">Name of the library containing the import.</param>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.LibraryName">
+            <summary>
+            Gets the name of the library containing the import.
+            </summary>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.EntryPoint">
+            <summary>
+            Gets or sets the name of the entry point to be called.
+            </summary>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshalling">
+            <summary>
+            Gets or sets how to marshal string arguments to the method.
+            </summary>
+            <remarks>
+            If this field is set to a value other than <see cref="F:System.Runtime.InteropServices.StringMarshalling.Custom" />,
+            <see cref="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshallingCustomType" /> must not be specified.
+            </remarks>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshallingCustomType">
+            <summary>
+            Gets or sets the <see cref="T:System.Type"/> used to control how string arguments to the method are marshalled.
+            </summary>
+            <remarks>
+            If this field is specified, <see cref="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshalling" /> must not be specified
+            or must be set to <see cref="F:System.Runtime.InteropServices.StringMarshalling.Custom" />.
+            </remarks>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.SetLastError">
+            <summary>
+            Gets or sets whether the callee sets an error (SetLastError on Windows or errno
+            on other platforms) before returning from the attributed method.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.InteropServices.StringMarshalling">
+            <summary>
+            Specifies how strings should be marshalled for generated p/invokes
+            </summary>
+        </member>
+        <member name="F:System.Runtime.InteropServices.StringMarshalling.Custom">
+            <summary>
+            Indicates the user is supplying a specific marshaller in <see cref="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshallingCustomType"/>.
+            </summary>
+        </member>
+        <member name="F:System.Runtime.InteropServices.StringMarshalling.Utf8">
+            <summary>
+            Use the platform-provided UTF-8 marshaller.
+            </summary>
+        </member>
+        <member name="F:System.Runtime.InteropServices.StringMarshalling.Utf16">
+            <summary>
+            Use the platform-provided UTF-16 marshaller.
+            </summary>
+        </member>
+        <member name="P:System.SR.Error_CannotActivateAbstractOrInterface">
+            <summary>Cannot create instance of type '{0}' because it is either abstract or an interface.</summary>
+        </member>
+        <member name="P:System.SR.Error_FailedBinding">
+            <summary>Failed to convert '{0}' to type '{1}'.</summary>
+        </member>
+        <member name="P:System.SR.Error_FailedToActivate">
+            <summary>Failed to create instance of type '{0}'.</summary>
+        </member>
+        <member name="P:System.SR.Error_MissingParameterlessConstructor">
+            <summary>Cannot create instance of type '{0}' because it is missing a public parameterless constructor.</summary>
+        </member>
+        <member name="P:System.SR.Error_NoConfigurationServices">
+            <summary>No IConfigureOptions&lt;&gt;, IPostConfigureOptions&lt;&gt;, or IValidateOptions&lt;&gt; implementations were found.</summary>
+        </member>
+        <member name="P:System.SR.Error_NoConfigurationServicesAndAction">
+            <summary>No IConfigureOptions&lt;&gt;, IPostConfigureOptions&lt;&gt;, or IValidateOptions&lt;&gt; implementations were found, did you mean to call Configure&lt;&gt; or PostConfigure&lt;&gt;?</summary>
+        </member>
+        <member name="T:System.ExceptionPolyfills">
+            <summary>Provides downlevel polyfills for static methods on Exception-derived types.</summary>
+        </member>
+    </members>
+</doc>

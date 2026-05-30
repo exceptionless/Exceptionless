@@ -1,0 +1,194 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Polly.RateLimiting</name>
+    </assembly>
+    <members>
+        <member name="T:Polly.RateLimiting.OnRateLimiterRejectedArguments">
+            <summary>
+            The arguments used by the <see cref="P:Polly.RateLimiting.RateLimiterStrategyOptions.OnRejected"/>.
+            </summary>
+            <remarks>
+            Always use the constructor when creating this struct, otherwise we do not guarantee binary compatibility.
+            </remarks>
+        </member>
+        <member name="M:Polly.RateLimiting.OnRateLimiterRejectedArguments.#ctor(Polly.ResilienceContext,System.Threading.RateLimiting.RateLimitLease)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Polly.RateLimiting.OnRateLimiterRejectedArguments"/> struct.
+            </summary>
+            <param name="context">The context associated with the execution of a user-provided callback.</param>
+            <param name="lease">The lease that has no permits and was rejected by the rate limiter.</param>
+        </member>
+        <member name="P:Polly.RateLimiting.OnRateLimiterRejectedArguments.Context">
+            <summary>
+            Gets the context associated with the execution of a user-provided callback.
+            </summary>
+        </member>
+        <member name="P:Polly.RateLimiting.OnRateLimiterRejectedArguments.Lease">
+            <summary>
+            Gets the lease that has no permits and was rejected by the rate limiter.
+            </summary>
+        </member>
+        <member name="T:Polly.RateLimiting.RateLimiterArguments">
+            <summary>
+            The arguments used by the <see cref="P:Polly.RateLimiting.RateLimiterStrategyOptions.RateLimiter"/> delegate.
+            </summary>
+        </member>
+        <member name="M:Polly.RateLimiting.RateLimiterArguments.#ctor(Polly.ResilienceContext)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Polly.RateLimiting.RateLimiterArguments"/> struct.
+            </summary>
+            <param name="context">Context associated with the execution of a user-provided callback.</param>
+        </member>
+        <member name="P:Polly.RateLimiting.RateLimiterArguments.Context">
+            <summary>
+            Gets the context associated with the execution of a user-provided callback.
+            </summary>
+        </member>
+        <member name="T:Polly.RateLimiting.RateLimiterRejectedException">
+            <summary>
+            Exception thrown when a rate limiter rejects an execution.
+            </summary>
+        </member>
+        <member name="M:Polly.RateLimiting.RateLimiterRejectedException.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Polly.RateLimiting.RateLimiterRejectedException"/> class.
+            </summary>
+        </member>
+        <member name="M:Polly.RateLimiting.RateLimiterRejectedException.#ctor(System.TimeSpan)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Polly.RateLimiting.RateLimiterRejectedException"/> class.
+            </summary>
+            <param name="retryAfter">The retry after value.</param>
+        </member>
+        <member name="M:Polly.RateLimiting.RateLimiterRejectedException.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Polly.RateLimiting.RateLimiterRejectedException"/> class.
+            </summary>
+            <param name="message">The message that describes the error.</param>
+        </member>
+        <member name="M:Polly.RateLimiting.RateLimiterRejectedException.#ctor(System.String,System.TimeSpan)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Polly.RateLimiting.RateLimiterRejectedException"/> class.
+            </summary>
+            <param name="message">The message that describes the error.</param>
+            <param name="retryAfter">The retry after value.</param>
+        </member>
+        <member name="M:Polly.RateLimiting.RateLimiterRejectedException.#ctor(System.String,System.Exception)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Polly.RateLimiting.RateLimiterRejectedException"/> class.
+            </summary>
+            <param name="message">The message that describes the error.</param>
+            <param name="inner">The inner exception.</param>
+        </member>
+        <member name="M:Polly.RateLimiting.RateLimiterRejectedException.#ctor(System.String,System.TimeSpan,System.Exception)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Polly.RateLimiting.RateLimiterRejectedException"/> class.
+            </summary>
+            <param name="message">The message that describes the error.</param>
+            <param name="retryAfter">The retry after value.</param>
+            <param name="inner">The inner exception.</param>
+        </member>
+        <member name="P:Polly.RateLimiting.RateLimiterRejectedException.RetryAfter">
+            <summary>
+            Gets the amount of time to wait before retrying again.
+            </summary>
+            <remarks>
+            This value was retrieved from the <see cref="T:System.Threading.RateLimiting.RateLimitLease"/> by reading the <see cref="P:System.Threading.RateLimiting.MetadataName.RetryAfter"/>.
+            Defaults to <c>null</c>.
+            </remarks>
+        </member>
+        <member name="T:Polly.RateLimiting.RateLimiterStrategyOptions">
+            <summary>
+            Options for the rate limiter strategy.
+            </summary>
+        </member>
+        <member name="M:Polly.RateLimiting.RateLimiterStrategyOptions.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Polly.RateLimiting.RateLimiterStrategyOptions"/> class.
+            </summary>
+        </member>
+        <member name="P:Polly.RateLimiting.RateLimiterStrategyOptions.RateLimiter">
+            <summary>
+             Gets or sets a rate limiter delegate that produces <see cref="T:System.Threading.RateLimiting.RateLimitLease"/>.
+            </summary>
+            <value>
+            The default value is <see langword="null"/>. If this property is <see langword="null"/>, then the strategy
+            will use a <see cref="T:System.Threading.RateLimiting.ConcurrencyLimiter"/> created using <see cref="P:Polly.RateLimiting.RateLimiterStrategyOptions.DefaultRateLimiterOptions"/>.
+            </value>
+        </member>
+        <member name="P:Polly.RateLimiting.RateLimiterStrategyOptions.DefaultRateLimiterOptions">
+            <summary>
+            Gets or sets the default rate limiter options.
+            </summary>
+            <remarks>
+            The options for the default limiter that will be used when <see cref="P:Polly.RateLimiting.RateLimiterStrategyOptions.RateLimiter"/> is <see langword="null"/>.
+            <para>
+            <see cref="P:System.Threading.RateLimiting.ConcurrencyLimiterOptions.PermitLimit"/> defaults to 1000.
+            <see cref="P:System.Threading.RateLimiting.ConcurrencyLimiterOptions.QueueLimit"/> defaults to 0.
+            </para>
+            </remarks>
+        </member>
+        <member name="P:Polly.RateLimiting.RateLimiterStrategyOptions.OnRejected">
+            <summary>
+            Gets or sets an event that is raised when the execution of user-provided callback is rejected by the rate limiter.
+            </summary>
+            <value>
+            The default value is <see langword="null"/>.
+            </value>
+        </member>
+        <member name="T:Polly.RateLimiterResiliencePipelineBuilderExtensions">
+            <summary>
+            Extensions for adding rate limiting to <see cref="T:Polly.ResiliencePipelineBuilder"/>.
+            </summary>
+        </member>
+        <member name="M:Polly.RateLimiterResiliencePipelineBuilderExtensions.AddConcurrencyLimiter``1(``0,System.Int32,System.Int32)">
+            <summary>
+            Adds the concurrency limiter.
+            </summary>
+            <typeparam name="TBuilder">The builder type.</typeparam>
+            <param name="builder">The builder instance.</param>
+            <param name="permitLimit">Maximum number of permits that can be leased concurrently.</param>
+            <param name="queueLimit">Maximum number of permits that can be queued concurrently.</param>
+            <returns>The builder instance with the concurrency limiter added.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="builder"/> is <see langword="null"/>.</exception>
+            <exception cref="T:System.ComponentModel.DataAnnotations.ValidationException">Thrown when the options constructed from the arguments are invalid.</exception>
+            <exception cref="T:System.ArgumentException">Thrown when <paramref name="permitLimit"/> or <paramref name="queueLimit"/> is invalid.</exception>
+        </member>
+        <member name="M:Polly.RateLimiterResiliencePipelineBuilderExtensions.AddConcurrencyLimiter``1(``0,System.Threading.RateLimiting.ConcurrencyLimiterOptions)">
+            <summary>
+            Adds the concurrency limiter.
+            </summary>
+            <typeparam name="TBuilder">The builder type.</typeparam>
+            <param name="builder">The builder instance.</param>
+            <param name="options">The concurrency limiter options.</param>
+            <returns>The builder instance with the concurrency limiter added.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="builder"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
+            <exception cref="T:System.ComponentModel.DataAnnotations.ValidationException">Thrown when the options constructed from the arguments are invalid.</exception>
+            <exception cref="T:System.ArgumentException">Thrown when <paramref name="options"/> are invalid.</exception>
+        </member>
+        <member name="M:Polly.RateLimiterResiliencePipelineBuilderExtensions.AddRateLimiter``1(``0,System.Threading.RateLimiting.RateLimiter)">
+            <summary>
+            Adds the rate limiter.
+            </summary>
+            <typeparam name="TBuilder">The builder type.</typeparam>
+            <param name="builder">The builder instance.</param>
+            <param name="limiter">The rate limiter to use.</param>
+            <returns>The builder instance with the rate limiter added.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="builder"/> or <paramref name="limiter"/> is <see langword="null"/>.</exception>
+            <exception cref="T:System.ComponentModel.DataAnnotations.ValidationException">Thrown when the options constructed from the arguments are invalid.</exception>
+        </member>
+        <member name="M:Polly.RateLimiterResiliencePipelineBuilderExtensions.AddRateLimiter``1(``0,Polly.RateLimiting.RateLimiterStrategyOptions)">
+            <summary>
+            Adds the rate limiter.
+            </summary>
+            <typeparam name="TBuilder">The builder type.</typeparam>
+            <param name="builder">The builder instance.</param>
+            <param name="options">The rate limiter options.</param>
+            <returns>The builder instance with the rate limiter added.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="builder"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
+            <exception cref="T:System.ComponentModel.DataAnnotations.ValidationException">Thrown when <paramref name="options"/> are invalid.</exception>
+            <exception cref="T:System.ArgumentException">Thrown when <see cref="P:Polly.RateLimiting.RateLimiterStrategyOptions.DefaultRateLimiterOptions"/> for <paramref name="options"/> are invalid.</exception>
+        </member>
+    </members>
+</doc>

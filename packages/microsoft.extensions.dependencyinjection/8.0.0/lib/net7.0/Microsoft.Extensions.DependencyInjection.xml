@@ -1,0 +1,258 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Extensions.DependencyInjection</name>
+    </assembly>
+    <members>
+        <member name="M:Microsoft.Extensions.Internal.TypeNameHelper.GetTypeDisplayName(System.Type,System.Boolean,System.Boolean,System.Boolean,System.Char)">
+            <summary>
+            Pretty print a type name.
+            </summary>
+            <param name="type">The <see cref="T:System.Type"/>.</param>
+            <param name="fullName"><c>true</c> to print a fully qualified name.</param>
+            <param name="includeGenericParameterNames"><c>true</c> to include generic parameter names.</param>
+            <param name="includeGenericParameters"><c>true</c> to include generic parameters.</param>
+            <param name="nestedTypeDelimiter">Character to use as a delimiter in nested type names</param>
+            <returns>The pretty printed type name.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.DefaultServiceProviderFactory">
+            <summary>
+            Default implementation of <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceProviderFactory`1"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.DefaultServiceProviderFactory.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.DependencyInjection.DefaultServiceProviderFactory"/> class
+            with default options.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.DefaultServiceProviderFactory.#ctor(Microsoft.Extensions.DependencyInjection.ServiceProviderOptions)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.DependencyInjection.DefaultServiceProviderFactory"/> class
+            with the specified <paramref name="options"/>.
+            </summary>
+            <param name="options">The options to use for this instance.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.DefaultServiceProviderFactory.CreateBuilder(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.DefaultServiceProviderFactory.CreateServiceProvider(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <inheritdoc />
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.ServiceCollectionContainerBuilderExtensions">
+            <summary>
+            Extension methods for building a <see cref="T:Microsoft.Extensions.DependencyInjection.ServiceProvider"/> from an <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ServiceCollectionContainerBuilderExtensions.BuildServiceProvider(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Creates a <see cref="T:Microsoft.Extensions.DependencyInjection.ServiceProvider"/> containing services from the provided <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> containing service descriptors.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.DependencyInjection.ServiceProvider"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ServiceCollectionContainerBuilderExtensions.BuildServiceProvider(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Boolean)">
+            <summary>
+            Creates a <see cref="T:Microsoft.Extensions.DependencyInjection.ServiceProvider"/> containing services from the provided <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>
+            optionally enabling scope validation.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> containing service descriptors.</param>
+            <param name="validateScopes">
+            <c>true</c> to perform check verifying that scoped services never gets resolved from root provider; otherwise <c>false</c>.
+            </param>
+            <returns>The <see cref="T:Microsoft.Extensions.DependencyInjection.ServiceProvider"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ServiceCollectionContainerBuilderExtensions.BuildServiceProvider(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.DependencyInjection.ServiceProviderOptions)">
+            <summary>
+            Creates a <see cref="T:Microsoft.Extensions.DependencyInjection.ServiceProvider"/> containing services from the provided <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>
+            optionally enabling scope validation.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> containing service descriptors.</param>
+            <param name="options">
+            Configures various service provider behaviors.
+            </param>
+            <returns>The <see cref="T:Microsoft.Extensions.DependencyInjection.ServiceProvider"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.ValidateTrimmingAnnotations(System.Type,System.Type[],System.Type,System.Type[])">
+            <summary>
+            Validates that two generic type definitions have compatible trimming annotations on their generic arguments.
+            </summary>
+            <remarks>
+            When open generic types are used in DI, there is an error when the concrete implementation type
+            has [DynamicallyAccessedMembers] attributes on a generic argument type, but the interface/service type
+            doesn't have matching annotations. The problem is that the trimmer doesn't see the members that need to
+            be preserved on the type being passed to the generic argument. But when the interface/service type also has
+            the annotations, the trimmer will see which members need to be preserved on the closed generic argument type.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.CreateArgumentCallSites(Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceIdentifier,System.Type,Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteChain,System.Reflection.ParameterInfo[],System.Boolean)">
+            <returns>Not <b>null</b> if <b>throwIfCallSiteNotFound</b> is true</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.VerifyOpenGenericAotCompatibility(System.Type,System.Type[])">
+            <summary>
+            Verifies none of the generic type arguments are ValueTypes.
+            </summary>
+            <remarks>
+            NativeAOT apps are not guaranteed that the native code for the closed generic of ValueType
+            has been generated. To catch these problems early, this verification is enabled at development-time
+            to inform the developer early that this scenario will not work once AOT'd.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.KeysMatch(System.Object,System.Object)">
+            <summary>
+            Returns true if both keys are null or equals, or if key1 is KeyedService.AnyKey and key2 is not null
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCacheKey.ServiceIdentifier">
+            <summary>
+            Type of service being cached
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCacheKey.Slot">
+            <summary>
+            Reverse index of the service when resolved in <c>IEnumerable&lt;Type&gt;</c> where default instance gets slot 0.
+            For example for service collection
+             IService Impl1
+             IService Impl2
+             IService Impl3
+            We would get the following cache keys:
+             Impl1 2
+             Impl2 1
+             Impl3 0
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCacheKey.Equals(Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCacheKey)">
+            <summary>Indicates whether the current instance is equal to another instance of the same type.</summary>
+            <param name="other">An instance to compare with this instance.</param>
+            <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCallSite">
+            <summary>
+            Summary description for ServiceCallSite
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.ServiceProvider">
+            <summary>
+            The default IServiceProvider.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ServiceProvider.GetService(System.Type)">
+            <summary>
+            Gets the service object of the specified type.
+            </summary>
+            <param name="serviceType">The type of the service to get.</param>
+            <returns>The service that was produced.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ServiceProvider.GetKeyedService(System.Type,System.Object)">
+            <summary>
+            Gets the service object of the specified type with the specified key.
+            </summary>
+            <param name="serviceType">The type of the service to get.</param>
+            <param name="serviceKey">The key of the service to get.</param>
+            <returns>The keyed service.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ServiceProvider.GetRequiredKeyedService(System.Type,System.Object)">
+            <summary>
+            Gets the service object of the specified type. Will throw if the service not found.
+            </summary>
+            <param name="serviceType">The type of the service to get.</param>
+            <param name="serviceKey">The key of the service to get.</param>
+            <returns>The keyed service.</returns>
+            <exception cref="T:System.InvalidOperationException"></exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ServiceProvider.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ServiceProvider.DisposeAsync">
+            <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.ServiceProviderOptions">
+            <summary>
+            Options for configuring various behaviors of the default <see cref="T:System.IServiceProvider"/> implementation.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.DependencyInjection.ServiceProviderOptions.ValidateScopes">
+            <summary>
+            <c>true</c> to perform check verifying that scoped services never gets resolved from root provider; otherwise <c>false</c>. Defaults to <c>false</c>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.DependencyInjection.ServiceProviderOptions.ValidateOnBuild">
+            <summary>
+            <c>true</c> to perform check verifying that all services can be created during <c>BuildServiceProvider</c> call; otherwise <c>false</c>. Defaults to <c>false</c>.
+            NOTE: this check doesn't verify open generics services.
+            </summary>
+        </member>
+        <member name="P:System.SR.AmbiguousConstructorException">
+            <summary>Unable to activate type '{0}'. The following constructors are ambiguous:</summary>
+        </member>
+        <member name="P:System.SR.CannotResolveService">
+            <summary>Unable to resolve service for type '{0}' while attempting to activate '{1}'.</summary>
+        </member>
+        <member name="P:System.SR.CircularDependencyException">
+            <summary>A circular dependency was detected for the service of type '{0}'.</summary>
+        </member>
+        <member name="P:System.SR.UnableToActivateTypeException">
+            <summary>No constructor for type '{0}' can be instantiated using services from the service container and default values.</summary>
+        </member>
+        <member name="P:System.SR.OpenGenericServiceRequiresOpenGenericImplementation">
+            <summary>Open generic service type '{0}' requires registering an open generic implementation type.</summary>
+        </member>
+        <member name="P:System.SR.ArityOfOpenGenericServiceNotEqualArityOfOpenGenericImplementation">
+            <summary>Arity of open generic service type '{0}' does not equal arity of open generic implementation type '{1}'.</summary>
+        </member>
+        <member name="P:System.SR.TypeCannotBeActivated">
+            <summary>Cannot instantiate implementation type '{0}' for service type '{1}'.</summary>
+        </member>
+        <member name="P:System.SR.NoConstructorMatch">
+            <summary>A suitable constructor for type '{0}' could not be located. Ensure the type is concrete and services are registered for all parameters of a public constructor.</summary>
+        </member>
+        <member name="P:System.SR.ScopedInSingletonException">
+            <summary>Cannot consume {2} service '{0}' from {3} '{1}'.</summary>
+        </member>
+        <member name="P:System.SR.ScopedResolvedFromRootException">
+            <summary>Cannot resolve '{0}' from root provider because it requires {2} service '{1}'.</summary>
+        </member>
+        <member name="P:System.SR.DirectScopedResolvedFromRootException">
+            <summary>Cannot resolve {1} service '{0}' from root provider.</summary>
+        </member>
+        <member name="P:System.SR.ConstantCantBeConvertedToServiceType">
+            <summary>Constant value of type '{0}' can't be converted to service type '{1}'</summary>
+        </member>
+        <member name="P:System.SR.ImplementationTypeCantBeConvertedToServiceType">
+            <summary>Implementation type '{0}' can't be converted to service type '{1}'</summary>
+        </member>
+        <member name="P:System.SR.AsyncDisposableServiceDispose">
+            <summary>'{0}' type only implements IAsyncDisposable. Use DisposeAsync to dispose the container.</summary>
+        </member>
+        <member name="P:System.SR.GetCaptureDisposableNotSupported">
+            <summary>GetCaptureDisposable call is supported only for main scope</summary>
+        </member>
+        <member name="P:System.SR.InvalidServiceDescriptor">
+            <summary>Invalid service descriptor</summary>
+        </member>
+        <member name="P:System.SR.ServiceDescriptorNotExist">
+            <summary>Requested service descriptor doesn't exist.</summary>
+        </member>
+        <member name="P:System.SR.CallSiteTypeNotSupported">
+            <summary>Call site type {0} is not supported</summary>
+        </member>
+        <member name="P:System.SR.TrimmingAnnotationsDoNotMatch">
+            <summary>Generic implementation type '{0}' has a DynamicallyAccessedMembers attribute applied to a generic argument type, but the service type '{1}' doesn't have a matching DynamicallyAccessedMembers attribute on its generic argument type.</summary>
+        </member>
+        <member name="P:System.SR.TrimmingAnnotationsDoNotMatch_NewConstraint">
+            <summary>Generic implementation type '{0}' has a DefaultConstructorConstraint ('new()' constraint), but the generic service type '{1}' doesn't.</summary>
+        </member>
+        <member name="P:System.SR.AotCannotCreateEnumerableValueType">
+            <summary>Unable to create an Enumerable service of type '{0}' because it is a ValueType. Native code to support creating Enumerable services might not be available with native AOT.</summary>
+        </member>
+        <member name="P:System.SR.AotCannotCreateGenericValueType">
+            <summary>Unable to create a generic service for type '{0}' because '{1}' is a ValueType. Native code to support creating generic services might not be available with native AOT.</summary>
+        </member>
+        <member name="P:System.SR.NoServiceRegistered">
+            <summary>No service for type '{0}' has been registered.</summary>
+        </member>
+        <member name="P:System.SR.InvalidServiceKeyType">
+            <summary>The type of the key used for lookup doesn't match the type in the constructor parameter with the ServiceKey attribute.</summary>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,1465 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>System.DirectoryServices</name>
+    </assembly>
+    <members>
+        <member name="T:System.DirectoryServices.AuthenticationTypes">
+            <devdoc>
+             Specifies what kind of acknowledgment to get after sending a message.
+            </devdoc>
+        </member>
+        <member name="F:System.DirectoryServices.AuthenticationTypes.Secure">
+            <devdoc>
+                Requests secure authentication. When this flag is set, the WinNT provider uses NT LAN Manager (NTLM)
+                to authenticate the client. Active Directory will use Kerberos, and possibly NTLM, to authenticate the client.
+            </devdoc>
+        </member>
+        <member name="F:System.DirectoryServices.AuthenticationTypes.Encryption">
+            <devdoc>
+                Forces ADSI to use encryption for data exchange over the network.
+            </devdoc>
+        </member>
+        <member name="F:System.DirectoryServices.AuthenticationTypes.SecureSocketsLayer">
+            <devdoc>
+                Encrypts the channel with SSL. Data will be encrypted using SSL. Active Directory requires that the
+                Certificate Server be installed to support SSL encryption.
+            </devdoc>
+        </member>
+        <member name="F:System.DirectoryServices.AuthenticationTypes.ReadonlyServer">
+            <devdoc>
+                For a WinNT provider, ADSI tries to connect to a primary domain controller or a backup domain
+                controller. For Active Directory, this flag indicates that a writeable server is not required for a
+                serverless binding.
+            </devdoc>
+        </member>
+        <member name="F:System.DirectoryServices.AuthenticationTypes.Anonymous">
+            <devdoc>
+                Request no authentication. The providers may attempt to bind client, as an anonymous user, to the targeted
+                object. The WinNT provider does not support this flag. Active Directory establishes a connection between
+                the client and the targeted object, but will not perform any authentication. Setting this flag amounts to
+                requesting an anonymous binding, which means "Everyone" as the security context.
+            </devdoc>
+        </member>
+        <member name="F:System.DirectoryServices.AuthenticationTypes.FastBind">
+            <devdoc>
+                When this flag is set, ADSI will not attempt to query the objectClass property and thus will only expose
+                the base interfaces supported by all ADSI objects instead of the full object support.
+            </devdoc>
+        </member>
+        <member name="F:System.DirectoryServices.AuthenticationTypes.Signing">
+            <devdoc>
+                Verifies data integrity to ensure the data received is the same as the data sent. The Secure flag
+                must be set also in order to use the signing.
+            </devdoc>
+        </member>
+        <member name="F:System.DirectoryServices.AuthenticationTypes.Sealing">
+            <devdoc>
+                Encrypts data using Kerberos. The Secure flag must be set also in order to use the sealing.
+            </devdoc>
+        </member>
+        <member name="F:System.DirectoryServices.AuthenticationTypes.Delegation">
+            <devdoc>
+                Enables ADSI to delegate the user's security context, which is necessary for moving objects across domains.
+            </devdoc>
+        </member>
+        <member name="F:System.DirectoryServices.AuthenticationTypes.ServerBind">
+            <devdoc>
+                Specify this flag when using the LDAP provider if your ADsPath includes a server name. Do not use
+                this flag for paths that include a domain name or for serverless paths.
+            </devdoc>
+        </member>
+        <member name="T:System.DirectoryServices.DereferenceAlias">
+            <devdoc>
+             Specifies the behavior in which aliases are dereferenced.
+            </devdoc>
+        </member>
+        <member name="T:System.DirectoryServices.DirectoryEntries">
+            <devdoc>
+            Contains the children (child entries) of an entry in the Active Directory.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectoryEntries.SchemaFilter">
+            <devdoc>
+            Gets the schemas that specify which children are shown.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntries.Add(System.String,System.String)">
+            <devdoc>
+            Creates a request to create a new entry in the container.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntries.Find(System.String)">
+            <devdoc>
+            Returns the child with the given name.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntries.Find(System.String,System.String)">
+            <devdoc>
+            Returns the child with the given name and of the given type.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntries.Remove(System.DirectoryServices.DirectoryEntry)">
+            <devdoc>
+            Deletes a child <see cref='T:System.DirectoryServices.DirectoryEntry'/> from this collection.
+            </devdoc>
+        </member>
+        <member name="T:System.DirectoryServices.DirectoryEntries.ChildEnumerator">
+            <devdoc>
+            Supports a simple ForEach-style iteration over a collection and defines
+            enumerators, size, and synchronization methods.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectoryEntries.ChildEnumerator.Current">
+            <devdoc>
+            Gets the current element in the collection.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntries.ChildEnumerator.MoveNext">
+            <devdoc>
+            Advances the enumerator to the next element of the collection
+            and returns a Boolean value indicating whether a valid element is available.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntries.ChildEnumerator.Reset">
+            <devdoc>
+            Resets the enumerator back to its initial position before the first element in the collection.
+            </devdoc>
+        </member>
+        <member name="T:System.DirectoryServices.DirectoryEntry">
+            <devdoc>
+            Encapsulates a node or an object in the Active Directory hierarchy.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntry.#ctor">
+            <devdoc>
+            Initializes a new instance of the <see cref='T:System.DirectoryServices.DirectoryEntry'/>class.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntry.#ctor(System.String)">
+            <devdoc>
+            Initializes a new instance of the <see cref='T:System.DirectoryServices.DirectoryEntry'/> class that will bind
+            to the directory entry at <paramref name="path"/>.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntry.#ctor(System.String,System.String,System.String)">
+            <devdoc>
+            Initializes a new instance of the <see cref='T:System.DirectoryServices.DirectoryEntry'/> class.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntry.#ctor(System.String,System.String,System.String,System.DirectoryServices.AuthenticationTypes)">
+            <devdoc>
+            Initializes a new instance of the <see cref='T:System.DirectoryServices.DirectoryEntry'/> class.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntry.#ctor(System.Object)">
+            <devdoc>
+            Initializes a new instance of the <see cref='T:System.DirectoryServices.DirectoryEntry'/> class that will bind
+            to the native Active Directory object which is passed in.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectoryEntry.Children">
+            <devdoc>
+            Gets a <see cref='T:System.DirectoryServices.DirectoryEntries'/>
+            containing the child entries of this node in the Active
+            Directory hierarchy.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectoryEntry.Guid">
+            <devdoc>
+            Gets the globally unique identifier of the <see cref='T:System.DirectoryServices.DirectoryEntry'/>.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectoryEntry.Name">
+            <devdoc>
+            Gets the relative name of the object as named with the underlying directory service.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectoryEntry.NativeObject">
+            <devdoc>
+            Gets the native Active Directory Services Interface (ADSI) object.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectoryEntry.Parent">
+            <devdoc>
+            Gets this entry's parent entry in the Active Directory hierarchy.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectoryEntry.Password">
+            <devdoc>
+            Gets or sets the password to use when authenticating the client.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectoryEntry.Path">
+            <devdoc>
+            Gets or sets the path for this <see cref='T:System.DirectoryServices.DirectoryEntry'/>.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectoryEntry.Properties">
+            <devdoc>
+            Gets a <see cref='T:System.DirectoryServices.PropertyCollection'/> of properties set on this object.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectoryEntry.SchemaClassName">
+            <devdoc>
+            Gets the name of the schema used for this <see cref='T:System.DirectoryServices.DirectoryEntry'/>
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectoryEntry.SchemaEntry">
+            <devdoc>
+            Gets the <see cref='T:System.DirectoryServices.DirectoryEntry'/> that holds schema information for this
+            entry. An entry's <see cref='P:System.DirectoryServices.DirectoryEntry.SchemaClassName'/>
+            determines what properties are valid for it.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectoryEntry.UsePropertyCache">
+            <devdoc>
+            Gets a value indicating whether the cache should be committed after each
+            operation.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectoryEntry.Username">
+            <devdoc>
+            Gets or sets the username to use when authenticating the client.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntry.Bind">
+            <devdoc>
+            Binds to the ADs object (if not already bound).
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntry.Close">
+            <devdoc>
+            Closes the <see cref='T:System.DirectoryServices.DirectoryEntry'/>
+            and releases any system resources associated with this component.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntry.CommitChanges">
+            <devdoc>
+            Saves any changes to the entry in the directory store.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntry.CopyTo(System.DirectoryServices.DirectoryEntry)">
+            <devdoc>
+            Creates a copy of this entry as a child of the given parent.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntry.CopyTo(System.DirectoryServices.DirectoryEntry,System.String)">
+            <devdoc>
+            Creates a copy of this entry as a child of the given parent and gives it a new name.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntry.DeleteTree">
+            <devdoc>
+            Deletes this entry and its entire subtree from the Active Directory hierarchy.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntry.Exists(System.String)">
+            <devdoc>
+            Searches the directory store at the given path to see whether an entry exists.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntry.FillCache(System.String)">
+            <devdoc>
+            If UsePropertyCache is true, calls GetInfo the first time it's necessary.
+            If it's false, calls GetInfoEx on the given property name.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntry.Invoke(System.String,System.Object[])">
+            <devdoc>
+            Calls a method on the native Active Directory.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntry.InvokeGet(System.String)">
+            <devdoc>
+            Reads a property on the native Active Directory object.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntry.InvokeSet(System.String,System.Object[])">
+            <devdoc>
+            Sets a property on the native Active Directory object.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntry.MoveTo(System.DirectoryServices.DirectoryEntry)">
+            <devdoc>
+            Moves this entry to the given parent.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntry.MoveTo(System.DirectoryServices.DirectoryEntry,System.String)">
+            <devdoc>
+            Moves this entry to the given parent, and gives it a new name.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntry.RefreshCache">
+            <devdoc>
+            Loads the property values for this directory entry into the property cache.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntry.RefreshCache(System.String[])">
+            <devdoc>
+            Loads the values of the specified properties into the property cache.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectoryEntry.Rename(System.String)">
+            <devdoc>
+            Changes the name of this entry.
+            </devdoc>
+        </member>
+        <member name="T:System.DirectoryServices.DirectorySearcher">
+            <devdoc>
+            Performs queries against the Active Directory hierarchy.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectorySearcher.#ctor">
+            <devdoc>
+            Initializes a new instance of the <see cref='T:System.DirectoryServices.DirectorySearcher'/> class with <see cref='P:System.DirectoryServices.DirectorySearcher.SearchRoot'/>,
+            <see cref='P:System.DirectoryServices.DirectorySearcher.Filter'/>, <see cref='P:System.DirectoryServices.DirectorySearcher.PropertiesToLoad'/>, and <see cref='P:System.DirectoryServices.DirectorySearcher.SearchScope'/> set to their default values.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectorySearcher.#ctor(System.DirectoryServices.DirectoryEntry)">
+            <devdoc>
+            Initializes a new instance of the <see cref='T:System.DirectoryServices.DirectorySearcher'/> class with
+            <see cref='P:System.DirectoryServices.DirectorySearcher.Filter'/>, <see cref='P:System.DirectoryServices.DirectorySearcher.PropertiesToLoad'/>, and <see cref='P:System.DirectoryServices.DirectorySearcher.SearchScope'/> set to their default
+             values, and <see cref='P:System.DirectoryServices.DirectorySearcher.SearchRoot'/> set to the given value.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectorySearcher.#ctor(System.DirectoryServices.DirectoryEntry,System.String)">
+            <devdoc>
+            Initializes a new instance of the <see cref='T:System.DirectoryServices.DirectorySearcher'/> class with
+            <see cref='P:System.DirectoryServices.DirectorySearcher.PropertiesToLoad'/> and <see cref='P:System.DirectoryServices.DirectorySearcher.SearchScope'/> set to their default
+            values, and <see cref='P:System.DirectoryServices.DirectorySearcher.SearchRoot'/> and <see cref='P:System.DirectoryServices.DirectorySearcher.Filter'/> set to the respective given values.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectorySearcher.#ctor(System.DirectoryServices.DirectoryEntry,System.String,System.String[])">
+            <devdoc>
+            Initializes a new instance of the <see cref='T:System.DirectoryServices.DirectorySearcher'/> class with
+            <see cref='P:System.DirectoryServices.DirectorySearcher.SearchScope'/> set to its default
+            value, and <see cref='P:System.DirectoryServices.DirectorySearcher.SearchRoot'/>, <see cref='P:System.DirectoryServices.DirectorySearcher.Filter'/>, and <see cref='P:System.DirectoryServices.DirectorySearcher.PropertiesToLoad'/> set to the respective given values.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectorySearcher.#ctor(System.String)">
+            <devdoc>
+            Initializes a new instance of the <see cref='T:System.DirectoryServices.DirectorySearcher'/> class with <see cref='P:System.DirectoryServices.DirectorySearcher.SearchRoot'/>,
+            <see cref='P:System.DirectoryServices.DirectorySearcher.PropertiesToLoad'/>, and <see cref='P:System.DirectoryServices.DirectorySearcher.SearchScope'/> set to their default
+               values, and <see cref='P:System.DirectoryServices.DirectorySearcher.Filter'/> set to the given value.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectorySearcher.#ctor(System.String,System.String[])">
+            <devdoc>
+            Initializes a new instance of the <see cref='T:System.DirectoryServices.DirectorySearcher'/> class with <see cref='P:System.DirectoryServices.DirectorySearcher.SearchRoot'/>
+            and <see cref='P:System.DirectoryServices.DirectorySearcher.SearchScope'/> set to their default
+            values, and <see cref='P:System.DirectoryServices.DirectorySearcher.Filter'/> and <see cref='P:System.DirectoryServices.DirectorySearcher.PropertiesToLoad'/> set to the respective given values.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectorySearcher.#ctor(System.String,System.String[],System.DirectoryServices.SearchScope)">
+            <devdoc>
+            Initializes a new instance of the <see cref='T:System.DirectoryServices.DirectorySearcher'/> class with <see cref='P:System.DirectoryServices.DirectorySearcher.SearchRoot'/> set to its default
+            value, and <see cref='P:System.DirectoryServices.DirectorySearcher.Filter'/>, <see cref='P:System.DirectoryServices.DirectorySearcher.PropertiesToLoad'/>, and <see cref='P:System.DirectoryServices.DirectorySearcher.SearchScope'/> set to the respective given values.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectorySearcher.#ctor(System.DirectoryServices.DirectoryEntry,System.String,System.String[],System.DirectoryServices.SearchScope)">
+            <devdoc>
+            Initializes a new instance of the <see cref='T:System.DirectoryServices.DirectorySearcher'/> class with the <see cref='P:System.DirectoryServices.DirectorySearcher.SearchRoot'/>, <see cref='P:System.DirectoryServices.DirectorySearcher.Filter'/>, <see cref='P:System.DirectoryServices.DirectorySearcher.PropertiesToLoad'/>, and <see cref='P:System.DirectoryServices.DirectorySearcher.SearchScope'/> properties set to the given
+            values.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectorySearcher.CacheResults">
+            <devdoc>
+            Gets or sets a value indicating whether the result should be cached on the
+            client machine.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectorySearcher.ClientTimeout">
+            <devdoc>
+             Gets or sets the maximum amount of time that the client waits for
+             the server to return results. If the server does not respond within this time,
+             the search is aborted, and no results are returned.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectorySearcher.PropertyNamesOnly">
+            <devdoc>
+            Gets or sets a value indicating whether the search should retrieve only the names of requested
+            properties or the names and values of requested properties.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectorySearcher.Filter">
+            <devdoc>
+            Gets or sets the Lightweight Directory Access Protocol (LDAP) filter string format.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectorySearcher.PageSize">
+            <devdoc>
+            Gets or sets the page size in a paged search.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectorySearcher.PropertiesToLoad">
+            <devdoc>
+            Gets the set of properties retrieved during the search. By default, the <see cref='P:System.DirectoryServices.DirectoryEntry.Path'/>
+            and <see cref='P:System.DirectoryServices.DirectoryEntry.Name'/> properties are retrieved.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectorySearcher.ReferralChasing">
+            <devdoc>
+            Gets or sets how referrals are chased.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectorySearcher.SearchScope">
+            <devdoc>
+            Gets or sets the scope of the search that should be observed by the server.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectorySearcher.ServerPageTimeLimit">
+            <devdoc>
+            Gets or sets the time limit that the server should observe to search a page of results (as
+            opposed to the time limit for the entire search).
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectorySearcher.ServerTimeLimit">
+            <devdoc>
+            Gets or sets the maximum amount of time the server spends searching. If the
+            time limit is reached, only entries found up to that point will be returned.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectorySearcher.SizeLimit">
+            <devdoc>
+             Gets or sets the maximum number of objects that the
+             server should return in a search.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectorySearcher.SearchRoot">
+            <devdoc>
+            Gets or sets the node in the Active Directory hierarchy
+            at which the search will start.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectorySearcher.Sort">
+            <devdoc>
+            Gets the property on which the results should be sorted.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectorySearcher.Asynchronous">
+            <devdoc>
+            Gets or sets a value indicating whether searches should be carried out in an asynchronous
+            way.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectorySearcher.Tombstone">
+            <devdoc>
+            Gets or sets a value indicating whether the search should also return deleted objects that match the search
+            filter.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectorySearcher.AttributeScopeQuery">
+            <devdoc>
+            Gets or sets an attribute name to indicate that an attribute-scoped query search should be
+            performed.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectorySearcher.DerefAlias">
+            <devdoc>
+            Gets or sets a value to indicate how the aliases of found objects are to be
+            resolved.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectorySearcher.SecurityMasks">
+            <devdoc>
+            Gets or sets a value to indicate the search should return security access information for the specified
+            attributes.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectorySearcher.ExtendedDN">
+            <devdoc>
+            Gets or sets a value to return extended DNs according to the requested
+            format.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectorySearcher.DirectorySynchronization">
+            <devdoc>
+            Gets or sets a value to indicate a directory synchronization search, which returns all changes since a specified
+            state.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.DirectorySearcher.VirtualListView">
+            <devdoc>
+            Gets or sets a value to indicate the search should use the LDAP virtual list view (VLV)
+            control.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectorySearcher.FindOne">
+            <devdoc>
+            Executes the search and returns only the first entry that is found.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.DirectorySearcher.FindAll">
+            <devdoc>
+            Executes the search and returns a collection of the entries that are found.
+            </devdoc>
+        </member>
+        <member name="T:System.DirectoryServices.ExtendedDN">
+            <devdoc>
+            Specifies the possible representations of the distinguished name.
+            </devdoc>
+        </member>
+        <member name="T:System.DirectoryServices.PropertyCollection">
+            <devdoc>
+            Contains the properties on a <see cref='T:System.DirectoryServices.DirectoryEntry'/>.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.PropertyCollection.Item(System.String)">
+            <devdoc>
+            Gets the property with the given name.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.PropertyCollection.Count">
+            <devdoc>
+            Gets the number of properties available on this entry.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.PropertyCollection.CopyTo(System.DirectoryServices.PropertyValueCollection[],System.Int32)">
+            <devdoc>
+            Copies the elements of this instance into an <see cref='T:System.Array'/>, starting at a particular index into the array.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.PropertyCollection.GetEnumerator">
+            <devdoc>
+            Returns an enumerator, which can be used to iterate through the collection.
+            </devdoc>
+        </member>
+        <member name="T:System.DirectoryServices.PropertyValueCollection">
+            <devdoc>
+            Holds a collection of values for a multi-valued property.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.PropertyValueCollection.Add(System.Object)">
+            <devdoc>
+            Appends the value to the set of values for this property.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.PropertyValueCollection.AddRange(System.Object[])">
+            <devdoc>
+            Appends the values to the set of values for this property.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.PropertyValueCollection.AddRange(System.DirectoryServices.PropertyValueCollection)">
+            <devdoc>
+            Appends the values to the set of values for this property.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.PropertyValueCollection.CopyTo(System.Object[],System.Int32)">
+            <devdoc>
+            Copies the elements of this instance into an <see cref='T:System.Array'/>,
+            starting at a particular index into the given <paramref name="array"/>.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.PropertyValueCollection.Remove(System.Object)">
+            <devdoc>
+            Removes the value from the collection.
+            </devdoc>
+        </member>
+        <member name="T:System.DirectoryServices.ReferralChasingOption">
+            <devdoc>
+            Specifies if and how referral chasing is pursued.
+            </devdoc>
+        </member>
+        <member name="F:System.DirectoryServices.ReferralChasingOption.None">
+            <devdoc>
+            Never chase the referred-to server. Setting this option
+            prevents a client from contacting other servers in a referral process.
+            </devdoc>
+        </member>
+        <member name="F:System.DirectoryServices.ReferralChasingOption.Subordinate">
+            <devdoc>
+            Chase only subordinate referrals which are a subordinate naming context in a
+            directory tree. The ADSI LDAP provider always turns off this flag for paged
+            searches.
+            </devdoc>
+        </member>
+        <member name="F:System.DirectoryServices.ReferralChasingOption.External">
+            <devdoc>
+            Chase external referrals.
+            </devdoc>
+        </member>
+        <member name="F:System.DirectoryServices.ReferralChasingOption.All">
+            <devdoc>
+            Chase referrals of either the subordinate or external type.
+            </devdoc>
+        </member>
+        <member name="T:System.DirectoryServices.ResultPropertyCollection">
+            <devdoc>
+            Contains the properties on a <see cref='T:System.DirectoryServices.SearchResult'/>.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.ResultPropertyCollection.Item(System.String)">
+            <devdoc>
+            Gets the property with the given name.
+            </devdoc>
+        </member>
+        <member name="T:System.DirectoryServices.ResultPropertyValueCollection">
+            <devdoc>
+            Specifies a collection of values for a multi-valued property.
+            </devdoc>
+        </member>
+        <member name="T:System.DirectoryServices.SchemaNameCollection">
+            <devdoc>
+            Contains a list of schema names used for the <see cref='P:System.DirectoryServices.DirectoryEntries.SchemaFilter'/> property of a <see cref='T:System.DirectoryServices.DirectoryEntries'/>.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.SchemaNameCollection.Item(System.Int32)">
+            <devdoc>
+             Gets or sets the object at the given index.
+             </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.SchemaNameCollection.Count">
+            <devdoc>
+            Gets the number of objects available on this entry.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.SchemaNameCollection.Add(System.String)">
+            <devdoc>
+            Appends the value to the collection.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.SchemaNameCollection.AddRange(System.String[])">
+            <devdoc>
+            Appends the values to the collection.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.SchemaNameCollection.Clear">
+            <devdoc>
+            Removes all items from the collection.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.SchemaNameCollection.Contains(System.String)">
+            <devdoc>
+            Determines if the collection contains a specific value.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.SchemaNameCollection.IndexOf(System.String)">
+            <devdoc>
+            Determines the index of a specific item in the collection.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.SchemaNameCollection.Insert(System.Int32,System.String)">
+            <devdoc>
+            Inserts an item at the specified position in the collection.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.SchemaNameCollection.Remove(System.String)">
+            <devdoc>
+            Removes an item from the collection.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.SchemaNameCollection.RemoveAt(System.Int32)">
+            <devdoc>
+            Removes the item at the specified index from the collection.
+            </devdoc>
+        </member>
+        <member name="T:System.DirectoryServices.SearchResult">
+            <devdoc>
+            Encapsulates a node in the Active Directory hierarchy
+            that is returned during a search through <see cref='T:System.DirectoryServices.DirectorySearcher'/>.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.SearchResult.GetDirectoryEntry">
+            <devdoc>
+            Retrieves the <see cref='T:System.DirectoryServices.DirectoryEntry'/> that corresponds to the <see cref='T:System.DirectoryServices.SearchResult'/>, from the Active Directory
+               hierarchy.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.SearchResult.Path">
+            <devdoc>
+            Gets the path for this <see cref='T:System.DirectoryServices.SearchResult'/>.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.SearchResult.Properties">
+            <devdoc>
+            Gets a <see cref='T:System.DirectoryServices.ResultPropertyCollection'/>
+            of properties set on this object.
+            </devdoc>
+        </member>
+        <member name="T:System.DirectoryServices.SearchResultCollection">
+            <devdoc>
+            Contains the instances of <see cref='T:System.DirectoryServices.SearchResult'/> returned during a
+            query to the Active Directory hierarchy through <see cref='T:System.DirectoryServices.DirectorySearcher'/>.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.SearchResultCollection.Handle">
+            <devdoc>
+            Gets the handle returned by IDirectorySearch::ExecuteSearch, which was called
+            by the DirectorySearcher that created this object
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.SearchResultCollection.PropertiesLoaded">
+            <devdoc>
+            Gets a read-only collection of the properties  specified on <see cref='T:System.DirectoryServices.DirectorySearcher'/> before the
+            search was executed.
+            </devdoc>
+        </member>
+        <member name="T:System.DirectoryServices.SearchResultCollection.AlreadyReadResultsEnumerator">
+            <summary>Provides an enumerator implementation for the array of <see cref="T:System.DirectoryServices.SearchResult"/>.</summary>
+        </member>
+        <member name="M:System.DirectoryServices.SearchResultCollection.AlreadyReadResultsEnumerator.#ctor(System.Collections.ArrayList)">
+            <summary>Initialize the enumerator.</summary>
+            <param name="innerList">The ArrayList to enumerate.</param>
+        </member>
+        <member name="P:System.DirectoryServices.SearchResultCollection.AlreadyReadResultsEnumerator.Current">
+            <summary>
+            Current <see cref="T:System.DirectoryServices.SearchResult"/> value of the <see cref="T:System.Collections.IEnumerator"/>
+            </summary>
+        </member>
+        <member name="M:System.DirectoryServices.SearchResultCollection.AlreadyReadResultsEnumerator.MoveNext">
+            <summary>
+            Advances the enumerator to the next <see cref="T:System.DirectoryServices.SearchResult"/> element of the arrray.
+            </summary>
+        </member>
+        <member name="M:System.DirectoryServices.SearchResultCollection.AlreadyReadResultsEnumerator.Reset">
+            <summary>
+            Resets the enumerator to the beginning of the array.
+            </summary>
+        </member>
+        <member name="P:System.DirectoryServices.SearchResultCollection.AlreadyReadResultsEnumerator.System#Collections#IEnumerator#Current">
+            <summary>
+            Current <see cref="T:System.Object"/> of the <see cref="T:System.Collections.IEnumerator"/>
+            </summary>
+        </member>
+        <member name="T:System.DirectoryServices.SearchResultCollection.ResultsEnumerator">
+            <devdoc>
+            Supports a simple ForEach-style iteration over a collection.
+            </devdoc>
+        </member>
+        <member name="P:System.DirectoryServices.SearchResultCollection.ResultsEnumerator.Current">
+            <devdoc>
+            Gets the current element in the collection.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.SearchResultCollection.ResultsEnumerator.MoveNext">
+            <devdoc>
+            Advances the enumerator to the next element of the collection
+            and returns a Boolean value indicating whether a valid element is available.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.SearchResultCollection.ResultsEnumerator.Reset">
+            <devdoc>
+            Resets the enumerator back to its initial position before the first element in the collection.
+            </devdoc>
+        </member>
+        <member name="T:System.DirectoryServices.SearchScope">
+            <devdoc>
+            Specifies the scope of a directory search.
+            </devdoc>
+        </member>
+        <member name="F:System.DirectoryServices.SearchScope.Base">
+            <devdoc>
+            Limits the search to the base object. The result contains at most one object.
+            </devdoc>
+        </member>
+        <member name="F:System.DirectoryServices.SearchScope.OneLevel">
+            <devdoc>
+            Searched one level of the immediate children, excluding the base object.
+            </devdoc>
+        </member>
+        <member name="F:System.DirectoryServices.SearchScope.Subtree">
+            <devdoc>
+            Searches the whole subtree, including all the children and the base object itself.
+            </devdoc>
+        </member>
+        <member name="T:System.DirectoryServices.SecurityMasks">
+            <devdoc>
+            Specifies the available options for examining security information of an object.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaProperty.InitializeSearchFlags">
+            
+             <summary>
+             Initializes the search flags attribute value i.e. fetches it from
+             the directory, if this object is bound.
+             </summary>
+            
+        </member>
+        <member name="M:System.DirectoryServices.ActiveDirectory.ConfigurationSet.GetRoleOwner(System.DirectoryServices.ActiveDirectory.AdamRole)">
+            <returns>Returns a DomainController object for the DC that holds the specified FSMO role</returns>
+        </member>
+        <member name="T:System.DirectoryServices.ActiveDirectory.DistinguishedName">
+            <summary>
+            Internal class that is used as a key in the hashtable
+            of directory entries
+            </summary>
+        </member>
+        <member name="T:System.DirectoryServices.ActiveDirectory.DirectoryEntryManager">
+            <summary>
+            This class manages a list of directory entries
+            for an object that needs to bind to several
+            objects in AD. This maintains a cache of directory entries
+            and creates a new directory entry (for a given dn) only if
+            it doesn't already exist
+            </summary>
+        </member>
+        <member name="F:System.DirectoryServices.ActiveDirectory.Domain._crossRefDN">
+            Private Variables
+        </member>
+        <member name="M:System.DirectoryServices.ActiveDirectory.Domain.GetRoleOwner(System.DirectoryServices.ActiveDirectory.ActiveDirectoryRole)">
+            <returns>Returns a DomainController object for the DC that holds the specified FSMO role</returns>
+        </member>
+        <member name="T:System.DirectoryServices.AdsValueHelper">
+            <summary>
+            Helper class for dealing with struct AdsValue.
+            </summary>
+        </member>
+        <member name="M:System.DirectoryServices.SafeNativeMethods.EnumVariant.GetNext">
+            <devdoc>
+            Moves the enumerator to the next value In the list.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.SafeNativeMethods.EnumVariant.GetValue">
+            <devdoc>
+            Returns the current value of the enumerator. If GetNext() has never been called,
+            or if it has been called but it returned false, will throw an exception.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.SafeNativeMethods.EnumVariant.Reset">
+            <devdoc>
+            Returns the enumerator to the start of the sequence.
+            </devdoc>
+        </member>
+        <member name="M:System.DirectoryServices.SafeNativeMethods.EnumVariant.Advance">
+            <devdoc>
+            Moves the pointer to the next value In the contained IEnumVariant, and
+            stores the current value In currentValue.
+            </devdoc>
+        </member>
+        <member name="T:System.DirectoryServices.UnsafeNativeMethods.PropertyValue">
+            <summary>
+            PropertyValue as a co-class that implements the IAdsPropertyValue interface.
+            </summary>
+        </member>
+        <member name="T:System.DirectoryServices.UnsafeNativeMethods.PropertyEntry">
+            <summary>
+             PropertyEntry as a co-class that implements the IAdsPropertyEntry interface.
+            </summary>
+        </member>
+        <member name="T:System.DirectoryServices.UnsafeNativeMethods.IAdsObjectOptions2">
+            <summary>
+            For boolean type, the default marshaller does not work, so need to have specific marshaller. For other types, use the
+            default marshaller which is more efficient. There is no such interface on the type library this is the same as IAdsObjectOptions
+            with a different signature.
+            </summary>
+        </member>
+        <member name="P:System.SR.DSDoesNotImplementIADs">
+            <summary>The value provided for adsObject does not implement IADs.</summary>
+        </member>
+        <member name="P:System.SR.DSNoObject">
+            <summary>There is no such object on the server.</summary>
+        </member>
+        <member name="P:System.SR.DSInvalidPath">
+            <summary>The path is invalid.</summary>
+        </member>
+        <member name="P:System.SR.DSNotAContainer">
+            <summary>The Active Directory object located at the path {0} is not a container.</summary>
+        </member>
+        <member name="P:System.SR.DSCannotDelete">
+            <summary>The object cannot be deleted.</summary>
+        </member>
+        <member name="P:System.SR.DSNoCurrentChild">
+            <summary>There is no current child object.</summary>
+        </member>
+        <member name="P:System.SR.DSCannotCount">
+            <summary>The directory cannot report the number of properties.</summary>
+        </member>
+        <member name="P:System.SR.DSCannotEmunerate">
+            <summary>The entry properties cannot be enumerated. Consider using the entry schema to determine what properties are available.</summary>
+        </member>
+        <member name="P:System.SR.DSNoCurrentProperty">
+            <summary>No current property exists.</summary>
+        </member>
+        <member name="P:System.SR.DSNoCurrentValue">
+            <summary>No current value is available.</summary>
+        </member>
+        <member name="P:System.SR.DSBadPageSize">
+            <summary>The PageSize must be greater than 0 or set to 0 for no paging.</summary>
+        </member>
+        <member name="P:System.SR.DSBadSizeLimit">
+            <summary>SizeLimit must be greater than or equal to 0.</summary>
+        </member>
+        <member name="P:System.SR.DSSearchUnsupported">
+            <summary>The provider does not support searching and cannot search {0}.</summary>
+        </member>
+        <member name="P:System.SR.DSNoCurrentEntry">
+            <summary>No current entry exists.</summary>
+        </member>
+        <member name="P:System.SR.DSInvalidSearchFilter">
+            <summary>The {0} search filter is invalid.</summary>
+        </member>
+        <member name="P:System.SR.DSConvertFailed">
+            <summary>The ADSVALUE with the union value {0} cannot be converted to the ADSTYPEENUM type {1}.</summary>
+        </member>
+        <member name="P:System.SR.DSConvertTypeInvalid">
+            <summary>ADSVALUE type is invalid.</summary>
+        </member>
+        <member name="P:System.SR.DSAdsvalueTypeNYI">
+            <summary>Handling of this ADSVALUE type is not yet implemented (type = {0}).</summary>
+        </member>
+        <member name="P:System.SR.DSAdsiNotInstalled">
+            <summary>Active Directory Client is not installed on this computer.</summary>
+        </member>
+        <member name="P:System.SR.DSNotSet">
+            <summary>[Not Set]</summary>
+        </member>
+        <member name="P:System.SR.DSEnumerator">
+            <summary>Enumerator is positioned before the first item or after the last item.</summary>
+        </member>
+        <member name="P:System.SR.DSPropertySetSupported">
+            <summary>New PropertyValueCollection cannot be set into a DirectoryEntry PropertyCollection.</summary>
+        </member>
+        <member name="P:System.SR.DSAddNotSupported">
+            <summary>New properties cannot be added to a DirectoryEntry PropertyCollection.</summary>
+        </member>
+        <member name="P:System.SR.DSClearNotSupported">
+            <summary>DirectoryEntry PropertyCollection cannot be cleared.</summary>
+        </member>
+        <member name="P:System.SR.DSRemoveNotSupported">
+            <summary>Properties cannot be removed from a DirectoryEntry PropertyCollection.</summary>
+        </member>
+        <member name="P:System.SR.DSSearchPreferencesNotAccepted">
+            <summary>The value for the property {0} cannot be set.</summary>
+        </member>
+        <member name="P:System.SR.DSBadBeforeCount">
+            <summary>BeforeCount must be greater than or equal to 0.</summary>
+        </member>
+        <member name="P:System.SR.DSBadAfterCount">
+            <summary>AfterCount must be greater than or equal to 0.</summary>
+        </member>
+        <member name="P:System.SR.DSBadOffset">
+            <summary>Offset must be greater than or equal to 0.</summary>
+        </member>
+        <member name="P:System.SR.DSBadTargetPercentage">
+            <summary>Target percentage should be in the range of 0 to 100 inclusively.</summary>
+        </member>
+        <member name="P:System.SR.DSBadApproximateTotal">
+            <summary>ApproximateTotal must be greater or equal to 0.</summary>
+        </member>
+        <member name="P:System.SR.DSBadPageSizeDirsync">
+            <summary>DirectorySynchronization cannot be combined with PageSize.</summary>
+        </member>
+        <member name="P:System.SR.DSBadCacheResultsVLV">
+            <summary>VirtualListView cannot be combined with CacheResults.</summary>
+        </member>
+        <member name="P:System.SR.DSBadASQSearchScope">
+            <summary>When AttributeScopeQuery is specified, only SearchScope.Base is supported.</summary>
+        </member>
+        <member name="P:System.SR.DSPropertyValueSupportOneOperation">
+            <summary>Only one type of operation can be performed in a sequence.</summary>
+        </member>
+        <member name="P:System.SR.DSUnknownFailure">
+            <summary>An unknown error occurred.</summary>
+        </member>
+        <member name="P:System.SR.DSNotSupportOnClient">
+            <summary>This property is only supported on computers running Windows XP and later operating systems.</summary>
+        </member>
+        <member name="P:System.SR.DSNotSupportOnDC">
+            <summary>This property is not supported when targeting Windows Server 2000 domain controllers.</summary>
+        </member>
+        <member name="P:System.SR.DirectoryContextNeedHost">
+            <summary>The target of the directory context should be an Active Directory domain controller or ADAM instance.</summary>
+        </member>
+        <member name="P:System.SR.DSSyncAllFailure">
+            <summary>An error occurred when synchronizing the server.</summary>
+        </member>
+        <member name="P:System.SR.UnknownTransport">
+            <summary>"{0}" is an unknown ActiveDirectoryTransportType.</summary>
+        </member>
+        <member name="P:System.SR.NotSupportTransportSMTP">
+            <summary>ActiveDirectoryTransportType.Smtp not supported.</summary>
+        </member>
+        <member name="P:System.SR.CannotDelete">
+            <summary>The newly created object has not been committed to the backend store, so it cannot be deleted.</summary>
+        </member>
+        <member name="P:System.SR.CannotGetObject">
+            <summary>The newly created object has not been committed to the backend store, so GetDirectoryEntry cannot be called.</summary>
+        </member>
+        <member name="P:System.SR.DSNotFound">
+            <summary>The Specified directory object cannot be found.</summary>
+        </member>
+        <member name="P:System.SR.TransportNotFound">
+            <summary>The transport "{0}" cannot be found.</summary>
+        </member>
+        <member name="P:System.SR.SiteNotExist">
+            <summary>The site "{0}" does not exist.</summary>
+        </member>
+        <member name="P:System.SR.SiteNotCommitted">
+            <summary>The site "{0}" is newly created and has not been committed to the backend store.</summary>
+        </member>
+        <member name="P:System.SR.NoCurrentSite">
+            <summary>The computer is not in a site.</summary>
+        </member>
+        <member name="P:System.SR.SubnetNotCommitted">
+            <summary>The subnet "{0}" is newly created and has not been committed to the backend store.</summary>
+        </member>
+        <member name="P:System.SR.SiteLinkNotCommitted">
+            <summary>The site link "{0}" is newly created and has not been committed to the backend store.</summary>
+        </member>
+        <member name="P:System.SR.ConnectionNotCommitted">
+            <summary>The replication connection "{0}" is newly created and has not been committed to the backend store.</summary>
+        </member>
+        <member name="P:System.SR.AlreadyExistingForestTrust">
+            <summary>A forest trust relationship exists between "{0}" and "{1}".</summary>
+        </member>
+        <member name="P:System.SR.AlreadyExistingDomainTrust">
+            <summary>A domain trust relationship exists between "{0}" and "{1}".</summary>
+        </member>
+        <member name="P:System.SR.NotFoundInCollection">
+            <summary>Cannot remove "{0}". It was not found in the specified collection.</summary>
+        </member>
+        <member name="P:System.SR.AlreadyExistingInCollection">
+            <summary>Cannot add "{0}". It currently exists in the specified collection.</summary>
+        </member>
+        <member name="P:System.SR.NTDSSiteSetting">
+            <summary>The site "{0}" does not contain a nTDSSiteSettings object.</summary>
+        </member>
+        <member name="P:System.SR.NotWithinSite">
+            <summary>This directory server is not in the current site.</summary>
+        </member>
+        <member name="P:System.SR.InvalidTime">
+            <summary>The end time must be later than the start time.</summary>
+        </member>
+        <member name="P:System.SR.UnableToRetrieveDomainInfo">
+            <summary>Information about the domain could not be retrieved ({0}).</summary>
+        </member>
+        <member name="P:System.SR.UnableToOpenToken">
+            <summary>The thread or process token could not be accessed ({0}).</summary>
+        </member>
+        <member name="P:System.SR.UnableToRetrieveTokenInfo">
+            <summary>Information from the thread token could not be retrieved ({0}).</summary>
+        </member>
+        <member name="P:System.SR.UnableToRetrievePolicy">
+            <summary>This computer's policy information could not be retrieved ({0}).</summary>
+        </member>
+        <member name="P:System.SR.UpdateAvailableRIDPoolOverflowFailure">
+            <summary>Failure in updating rIDAvailablePool value. New value exceeds the maximum limit.</summary>
+        </member>
+        <member name="P:System.SR.EmptyStringParameter">
+            <summary>The specified string parameter is empty.</summary>
+        </member>
+        <member name="P:System.SR.TargetShouldBeADAMServer">
+            <summary>The name specified in the directory context must be an ADAM instance.</summary>
+        </member>
+        <member name="P:System.SR.TargetShouldBeDC">
+            <summary>The name specified in the directory context must be an Active Directory domain controller.</summary>
+        </member>
+        <member name="P:System.SR.TargetShouldBeAppNCDnsName">
+            <summary>The name specified in the directory context must be the DNS name of the application partition.</summary>
+        </member>
+        <member name="P:System.SR.TargetShouldBeServerORForest">
+            <summary>The name specified in the directory context must be an Active Directory domain controller or a forest.</summary>
+        </member>
+        <member name="P:System.SR.TargetShouldBeServerORDomain">
+            <summary>The name specified in the directory context must be an Active Directory domain controller or a domain.</summary>
+        </member>
+        <member name="P:System.SR.TargetShouldBeDomain">
+            <summary>The name specified in the directory context must be an Active Directory domain.</summary>
+        </member>
+        <member name="P:System.SR.TargetShouldBeForest">
+            <summary>The name specified in the directory context must be an Active Directory forest.</summary>
+        </member>
+        <member name="P:System.SR.TargetShouldBeConfigSet">
+            <summary>The name specified in the directory context must be an ADAM configuration set.</summary>
+        </member>
+        <member name="P:System.SR.TargetShouldBeServerORConfigSet">
+            <summary>The name specified in the directory context must be an ADAM instance or an ADAM configuration set.</summary>
+        </member>
+        <member name="P:System.SR.TargetShouldBeGC">
+            <summary>The name specified in the directory context must be a global catalog.</summary>
+        </member>
+        <member name="P:System.SR.TargetShouldBeServer">
+            <summary>The name specified in the directory context must be an Active Directory domain controller or an ADAM instance.</summary>
+        </member>
+        <member name="P:System.SR.NotADOrADAM">
+            <summary>The specified name is not a forest, Active Directory domain controller, ADAM instance, or ADAM configuration set.</summary>
+        </member>
+        <member name="P:System.SR.ServerNotAReplica">
+            <summary>The directory server does not host the specified application partition.</summary>
+        </member>
+        <member name="P:System.SR.AppNCNotFound">
+            <summary>The specified application partition does not exist.</summary>
+        </member>
+        <member name="P:System.SR.ReplicaNotFound">
+            <summary>A Directory server that hosts the specified application partition not found.</summary>
+        </member>
+        <member name="P:System.SR.GCNotFoundInForest">
+            <summary>Global catalog not found in forest "{0}".</summary>
+        </member>
+        <member name="P:System.SR.DCNotFoundInDomain">
+            <summary>Domain controller not found in the domain "{0}".</summary>
+        </member>
+        <member name="P:System.SR.ADAMInstanceNotFoundInConfigSet">
+            <summary>ADAM instance not found in configuration set "{0}".</summary>
+        </member>
+        <member name="P:System.SR.DCNotFound">
+            <summary>Domain controller "{0}" does not exist or cannot be contacted.</summary>
+        </member>
+        <member name="P:System.SR.GCNotFound">
+            <summary>Global catalog "{0}" does not exist or cannot be contacted.</summary>
+        </member>
+        <member name="P:System.SR.AINotFound">
+            <summary>ADAM instance "{0}" does not exist or cannot be contacted.</summary>
+        </member>
+        <member name="P:System.SR.ServerNotFound">
+            <summary>Directory server "{0}" does not exist or cannot be contacted.</summary>
+        </member>
+        <member name="P:System.SR.DomainNotFound">
+            <summary>The specified domain does not exist or cannot be contacted.</summary>
+        </member>
+        <member name="P:System.SR.ForestNotFound">
+            <summary>The specified forest does not exist or cannot be contacted.</summary>
+        </member>
+        <member name="P:System.SR.ConfigSetNotFound">
+            <summary>The specified ADAM configuration set does not exist or cannot be contacted.</summary>
+        </member>
+        <member name="P:System.SR.NDNCNotFound">
+            <summary>The specified application partition does not exist or cannot be contacted.</summary>
+        </member>
+        <member name="P:System.SR.PropertyNotFoundOnObject">
+            <summary>Property "{0}" on object "{1}" not found.</summary>
+        </member>
+        <member name="P:System.SR.PropertyNotFound">
+            <summary>Property "{0}" not found.</summary>
+        </member>
+        <member name="P:System.SR.ADAMInstanceNotFound">
+            <summary>An ADAM instance could not be found.</summary>
+        </member>
+        <member name="P:System.SR.CannotPerformOperationOnUncommittedObject">
+            <summary>Operation valid only for objects that exist on the backend store.</summary>
+        </member>
+        <member name="P:System.SR.InvalidServerNameFormat">
+            <summary>The server object name has an invalid format.</summary>
+        </member>
+        <member name="P:System.SR.NoObjectClassForADPartition">
+            <summary>Object class must not be specified for Active Directory application partitions.</summary>
+        </member>
+        <member name="P:System.SR.InvalidDNFormat">
+            <summary>The specified distinguished name has an invalid format.</summary>
+        </member>
+        <member name="P:System.SR.ApplicationPartitionTypeUnknown">
+            <summary>Application partition is neither an Active Directory, nor ADAM application partition.</summary>
+        </member>
+        <member name="P:System.SR.UnknownSyntax">
+            <summary>Schema property "{0}" has an unknown syntax.</summary>
+        </member>
+        <member name="P:System.SR.InvalidMode">
+            <summary>The requested mode is invalid.</summary>
+        </member>
+        <member name="P:System.SR.NoW2K3DCs">
+            <summary>No Windows Server 2003 domain controllers exist in the domain.</summary>
+        </member>
+        <member name="P:System.SR.DCInfoNotFound">
+            <summary>Domain controller data not found for the specified Active Directory domain controller.</summary>
+        </member>
+        <member name="P:System.SR.NoW2K3DCsInForest">
+            <summary>No Windows Server 2003 domain controllers exist in the forest.</summary>
+        </member>
+        <member name="P:System.SR.SchemaObjectNotCommitted">
+            <summary>The schema object "{0}" is newly created and has not been committed to the backend store.</summary>
+        </member>
+        <member name="P:System.SR.InvalidFlags">
+            <summary>One or more flags are invalid.</summary>
+        </member>
+        <member name="P:System.SR.CannotPerformOnGCObject">
+            <summary>Cannot perform this operation on a global catalog object.</summary>
+        </member>
+        <member name="P:System.SR.ValueCannotBeModified">
+            <summary>The specified value cannot be removed or overwritten. It is inherited from a super class.</summary>
+        </member>
+        <member name="P:System.SR.ServerShouldBeW2K3">
+            <summary>The Active Directory domain controller must be running Windows Server 2003 operating system or later.</summary>
+        </member>
+        <member name="P:System.SR.LinkedPropertyNotFound">
+            <summary>Schema property with link id "{0}" not found.</summary>
+        </member>
+        <member name="P:System.SR.GCDisabled">
+            <summary>Cannot perform this operation on disabled global catalog object.</summary>
+        </member>
+        <member name="P:System.SR.PropertyInvalidForADAM">
+            <summary>This property is not supported for an ADAM application partition.</summary>
+        </member>
+        <member name="P:System.SR.OperationInvalidForADAM">
+            <summary>This operation is not supported for an ADAM application partition.</summary>
+        </member>
+        <member name="P:System.SR.ContextNotAssociatedWithDomain">
+            <summary>Current security context is not associated with an Active Directory domain or forest.</summary>
+        </member>
+        <member name="P:System.SR.ComputerNotJoinedToDomain">
+            <summary>The local computer is not joined to a domain or the domain cannot be contacted.</summary>
+        </member>
+        <member name="P:System.SR.NoHostName">
+            <summary>Unable to obtain DNS hostname of Active Directory domain controller with ntdsa object name "{0}".</summary>
+        </member>
+        <member name="P:System.SR.NoHostNameOrPortNumber">
+            <summary>Unable to obtain DNS hostname or port number of ADAM instance with ntdsa object name "{0}".</summary>
+        </member>
+        <member name="P:System.SR.Name">
+            <summary>Name: "{0}"</summary>
+        </member>
+        <member name="P:System.SR.OneLevelPartitionNotSupported">
+            <summary>Creation of single level application partition is not supported.</summary>
+        </member>
+        <member name="P:System.SR.SiteNameNotFound">
+            <summary>Unable to obtain the site name of domain controller "{0}".</summary>
+        </member>
+        <member name="P:System.SR.SiteObjectNameNotFound">
+            <summary>Unable to obtain the distinguished name of the site object for domain controller "{0}".</summary>
+        </member>
+        <member name="P:System.SR.ComputerObjectNameNotFound">
+            <summary>Unable to obtain the distinguished name of the computer object of domain controller "{0}".</summary>
+        </member>
+        <member name="P:System.SR.ServerObjectNameNotFound">
+            <summary>Unable to obtain the distinguished name of the server object of domain controller "{0}".</summary>
+        </member>
+        <member name="P:System.SR.NtdsaObjectNameNotFound">
+            <summary>Unable to obtain the distinguished name of the ntds settings object of domain controller "{0}".</summary>
+        </member>
+        <member name="P:System.SR.NtdsaObjectGuidNotFound">
+            <summary>Unable to obtain the guid of the ntds settings object of domain controller "{0}".</summary>
+        </member>
+        <member name="P:System.SR.OnlyDomainOrForest">
+            <summary>DirectoryContextType.Domain and DirectoryContextType.Forest are the only valid values for contextType when the name of the context is not specified.</summary>
+        </member>
+        <member name="P:System.SR.ServerShouldBeDC">
+            <summary>The specified directory server must be an Active Directory domain controller.</summary>
+        </member>
+        <member name="P:System.SR.ServerShouldBeAI">
+            <summary>The specified directory server must be an ADAM instance.</summary>
+        </member>
+        <member name="P:System.SR.CannotModifySacl">
+            <summary>The system acl cannot be modified as it was not retrieved from the backend store.</summary>
+        </member>
+        <member name="P:System.SR.CannotModifyDacl">
+            <summary>The discretionary acl cannot be modified as it was not retrieved from the backend store.</summary>
+        </member>
+        <member name="P:System.SR.ForestTrustCollision">
+            <summary>A collision occurred in the forest trust relationship.</summary>
+        </member>
+        <member name="P:System.SR.ForestTrustDoesNotExist">
+            <summary>A forest trust relationship does not exist between "{0}" and "{1}".</summary>
+        </member>
+        <member name="P:System.SR.DomainTrustDoesNotExist">
+            <summary>A domain trust relationship does not exist between "{0}" and "{1}".</summary>
+        </member>
+        <member name="P:System.SR.WrongForestTrust">
+            <summary>A forest trust relationship should not exist between "{0}" and "{1}".</summary>
+        </member>
+        <member name="P:System.SR.WrongTrustDirection">
+            <summary>The trust relationship between "{0}" and "{1}" is not "{2}".</summary>
+        </member>
+        <member name="P:System.SR.NT4NotSupported">
+            <summary>Trust relationship with Windows NT 4.0 domain not supported.</summary>
+        </member>
+        <member name="P:System.SR.KerberosNotSupported">
+            <summary>Operation for Kerberos type trust not supported.</summary>
+        </member>
+        <member name="P:System.SR.DSPropertyListUnsupported">
+            <summary>The provider does not support retrieval of the security descriptor in binary form.</summary>
+        </member>
+        <member name="P:System.SR.DSMultipleSDNotSupported">
+            <summary>Multiple security descriptors for an object are not supported.</summary>
+        </member>
+        <member name="P:System.SR.DSSDNoValues">
+            <summary>ntSecurityDescriptor property exists in cache, but has no values.</summary>
+        </member>
+        <member name="P:System.SR.ConnectionSourcServerShouldBeDC">
+            <summary>Must be the name of an Active Directory domain controller.</summary>
+        </member>
+        <member name="P:System.SR.ConnectionSourcServerShouldBeADAM">
+            <summary>Must be the name of an ADAM instance.</summary>
+        </member>
+        <member name="P:System.SR.ConnectionSourcServerSameForest">
+            <summary>Must be in the same Active Directory forest as the name specified in the directory context.</summary>
+        </member>
+        <member name="P:System.SR.ConnectionSourcServerSameConfigSet">
+            <summary>Must be in the same ADAM Configuration Set as the name specified in the directory context.</summary>
+        </member>
+        <member name="P:System.SR.TrustVerificationNotSupport">
+            <summary>Trust verification not supported.</summary>
+        </member>
+        <member name="P:System.SR.OnlyAllowSingleDimension">
+            <summary>Only single dimensional arrays are supported for the requested action.</summary>
+        </member>
+        <member name="P:System.SR.LessThanZero">
+            <summary>Number was less than the array's lower bound in the first dimension.</summary>
+        </member>
+        <member name="P:System.SR.DestinationArrayNotLargeEnough">
+            <summary>Destination array was not long enough. Check destIndex and length, and the array's lower bounds.</summary>
+        </member>
+        <member name="P:System.SR.NoNegativeTime">
+            <summary>A negative value is not permitted for the replication interval.</summary>
+        </member>
+        <member name="P:System.SR.ReplicationIntervalExceedMax">
+            <summary>The value exceeds the maximum allowed for replication interval.</summary>
+        </member>
+        <member name="P:System.SR.ReplicationIntervalInMinutes">
+            <summary>The value can not be represented in whole minutes.</summary>
+        </member>
+        <member name="P:System.SR.TimespanExceedMax">
+            <summary>The value exceeds the maximum allowed.</summary>
+        </member>
+        <member name="P:System.SR.DirectoryServices_PlatformNotSupported">
+            <summary>System.DirectoryServices is not supported on this platform.</summary>
+        </member>
+        <member name="T:Interop.BOOL">
+            <summary>
+            Blittable version of Windows BOOL type. It is convenient in situations where
+            manual marshalling is required, or to avoid overhead of regular bool marshalling.
+            </summary>
+            <remarks>
+            Some Windows APIs return arbitrary integer values although the return type is defined
+            as BOOL. It is best to never compare BOOL to TRUE. Always use bResult != BOOL.FALSE
+            or bResult == BOOL.FALSE .
+            </remarks>
+        </member>
+        <member name="T:Interop.BOOLEAN">
+            <summary>
+            Blittable version of Windows BOOLEAN type. It is convenient in situations where
+            manual marshalling is required, or to avoid overhead of regular bool marshalling.
+            </summary>
+            <remarks>
+            Some Windows APIs return arbitrary integer values although the return type is defined
+            as BOOLEAN. It is best to never compare BOOLEAN to TRUE. Always use bResult != BOOLEAN.FALSE
+            or bResult == BOOLEAN.FALSE .
+            </remarks>
+        </member>
+        <member name="T:Interop.OBJECT_ATTRIBUTES">
+            <summary>
+            <a href="https://msdn.microsoft.com/en-us/library/windows/hardware/ff557749.aspx">OBJECT_ATTRIBUTES</a> structure.
+            The OBJECT_ATTRIBUTES structure specifies attributes that can be applied to objects or object handles by routines
+            that create objects and/or return handles to objects.
+            </summary>
+        </member>
+        <member name="F:Interop.OBJECT_ATTRIBUTES.RootDirectory">
+            <summary>
+            Optional handle to root object directory for the given ObjectName.
+            Can be a file system directory or object manager directory.
+            </summary>
+        </member>
+        <member name="F:Interop.OBJECT_ATTRIBUTES.ObjectName">
+            <summary>
+            Name of the object. Must be fully qualified if RootDirectory isn't set.
+            Otherwise is relative to RootDirectory.
+            </summary>
+        </member>
+        <member name="F:Interop.OBJECT_ATTRIBUTES.SecurityDescriptor">
+            <summary>
+            If null, object will receive default security settings.
+            </summary>
+        </member>
+        <member name="F:Interop.OBJECT_ATTRIBUTES.SecurityQualityOfService">
+            <summary>
+            Optional quality of service to be applied to the object. Used to indicate
+            security impersonation level and context tracking mode (dynamic or static).
+            </summary>
+        </member>
+        <member name="M:Interop.OBJECT_ATTRIBUTES.#ctor(Interop.UNICODE_STRING*,Interop.ObjectAttributes,System.IntPtr,Interop.SECURITY_QUALITY_OF_SERVICE*)">
+            <summary>
+            Equivalent of InitializeObjectAttributes macro with the exception that you can directly set SQOS.
+            </summary>
+        </member>
+        <member name="F:Interop.ObjectAttributes.OBJ_INHERIT">
+            <summary>
+            This handle can be inherited by child processes of the current process.
+            </summary>
+        </member>
+        <member name="F:Interop.ObjectAttributes.OBJ_PERMANENT">
+            <summary>
+            This flag only applies to objects that are named within the object manager.
+            By default, such objects are deleted when all open handles to them are closed.
+            If this flag is specified, the object is not deleted when all open handles are closed.
+            </summary>
+        </member>
+        <member name="F:Interop.ObjectAttributes.OBJ_EXCLUSIVE">
+            <summary>
+            Only a single handle can be open for this object.
+            </summary>
+        </member>
+        <member name="F:Interop.ObjectAttributes.OBJ_CASE_INSENSITIVE">
+            <summary>
+            Lookups for this object should be case insensitive.
+            </summary>
+        </member>
+        <member name="F:Interop.ObjectAttributes.OBJ_OPENIF">
+            <summary>
+            Create on existing object should open, not fail with STATUS_OBJECT_NAME_COLLISION.
+            </summary>
+        </member>
+        <member name="F:Interop.ObjectAttributes.OBJ_OPENLINK">
+            <summary>
+            Open the symbolic link, not its target.
+            </summary>
+        </member>
+        <member name="T:Interop.SECURITY_QUALITY_OF_SERVICE">
+            <summary>
+            <a href="https://learn.microsoft.com/windows/win32/api/winnt/ns-winnt-security_quality_of_service">SECURITY_QUALITY_OF_SERVICE</a> structure.
+             Used to support client impersonation. Client specifies this to a server to allow
+             it to impersonate the client.
+            </summary>
+        </member>
+        <member name="T:Interop.ImpersonationLevel">
+            <summary>
+            <a href="https://msdn.microsoft.com/en-us/library/windows/desktop/aa379572.aspx">SECURITY_IMPERSONATION_LEVEL</a> enumeration values.
+             [SECURITY_IMPERSONATION_LEVEL]
+            </summary>
+        </member>
+        <member name="F:Interop.ImpersonationLevel.Anonymous">
+            <summary>
+             The server process cannot obtain identification information about the client and cannot impersonate the client.
+             [SecurityAnonymous]
+            </summary>
+        </member>
+        <member name="F:Interop.ImpersonationLevel.Identification">
+            <summary>
+             The server process can obtain identification information about the client, but cannot impersonate the client.
+             [SecurityIdentification]
+            </summary>
+        </member>
+        <member name="F:Interop.ImpersonationLevel.Impersonation">
+            <summary>
+             The server process can impersonate the client's security context on it's local system.
+             [SecurityImpersonation]
+            </summary>
+        </member>
+        <member name="F:Interop.ImpersonationLevel.Delegation">
+            <summary>
+             The server process can impersonate the client's security context on remote systems.
+             [SecurityDelegation]
+            </summary>
+        </member>
+        <member name="T:Interop.ContextTrackingMode">
+            <summary>
+            <a href="https://msdn.microsoft.com/en-us/library/cc234317.aspx">SECURITY_CONTEXT_TRACKING_MODE</a>
+            </summary>
+        </member>
+        <member name="F:Interop.ContextTrackingMode.Static">
+            <summary>
+             The server is given a snapshot of the client's security context.
+             [SECURITY_STATIC_TRACKING]
+            </summary>
+        </member>
+        <member name="F:Interop.ContextTrackingMode.Dynamic">
+            <summary>
+             The server is continually updated with changes.
+             [SECURITY_DYNAMIC_TRACKING]
+            </summary>
+        </member>
+        <member name="F:Interop.UNICODE_STRING.Length">
+            <summary>
+            Length in bytes, not including the null terminator, if any.
+            </summary>
+        </member>
+        <member name="F:Interop.UNICODE_STRING.MaximumLength">
+            <summary>
+            Max size of the buffer in bytes
+            </summary>
+        </member>
+        <member name="T:Interop.Advapi32.TOKEN_INFORMATION_CLASS">
+            <summary>
+            <a href="https://msdn.microsoft.com/en-us/library/windows/desktop/aa379626.aspx">TOKEN_INFORMATION_CLASS</a> enumeration.
+            </summary>
+        </member>
+    </members>
+</doc>

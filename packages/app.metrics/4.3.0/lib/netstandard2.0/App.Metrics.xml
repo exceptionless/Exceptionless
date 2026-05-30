@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>App.Metrics</name>
+    </assembly>
+    <members>
+        <member name="T:App.Metrics.AppMetrics">
+            <summary>
+            Provides convenience methods for creating instances of <see cref="T:App.Metrics.IMetrics"/> and <see cref="T:App.Metrics.IMetricsBuilder"/> with pre-configured defaults.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.AppMetrics.CreateDefaultBuilder">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.IMetricsBuilder" /> class with pre-configured defaults.
+            </summary>
+            <remarks>
+                The following defaults are applied to the returned <see cref="T:App.Metrics.MetricsBuilder" />:
+                use <see cref="T:App.Metrics.ReservoirSampling.ExponentialDecay.DefaultForwardDecayingReservoir" /> for sampling, JSON and Plain Text metric and environment
+                information formatters are added, the default metrics formatting is set to JSON, the default environment
+                information formatting is set to Plain Text, the default metrics formatting is set to JSON.
+            </remarks>
+            <returns>The initialized <see cref="T:App.Metrics.IMetricsBuilder" />.</returns>
+        </member>
+    </members>
+</doc>

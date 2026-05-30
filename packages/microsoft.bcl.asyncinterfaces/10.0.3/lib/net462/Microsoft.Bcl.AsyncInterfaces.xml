@@ -1,0 +1,420 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Bcl.AsyncInterfaces</name>
+    </assembly>
+    <members>
+        <member name="T:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore`1">
+            <summary>Provides the core logic for implementing a manual-reset <see cref="T:System.Threading.Tasks.Sources.IValueTaskSource"/> or <see cref="T:System.Threading.Tasks.Sources.IValueTaskSource`1"/>.</summary>
+            <typeparam name="TResult"></typeparam>
+        </member>
+        <member name="F:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore`1._continuation">
+            <summary>
+            The callback to invoke when the operation completes if <see cref="M:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore`1.OnCompleted(System.Action{System.Object},System.Object,System.Int16,System.Threading.Tasks.Sources.ValueTaskSourceOnCompletedFlags)"/> was called before the operation completed,
+            or <see cref="F:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCoreShared.s_sentinel"/> if the operation completed before a callback was supplied,
+            or null if a callback hasn't yet been provided and the operation hasn't yet completed.
+            </summary>
+        </member>
+        <member name="F:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore`1._continuationState">
+            <summary>State to pass to <see cref="F:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore`1._continuation"/>.</summary>
+        </member>
+        <member name="F:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore`1._executionContext">
+            <summary><see cref="T:System.Threading.ExecutionContext"/> to flow to the callback, or null if no flowing is required.</summary>
+        </member>
+        <member name="F:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore`1._capturedContext">
+            <summary>
+            A "captured" <see cref="T:System.Threading.SynchronizationContext"/> or <see cref="T:System.Threading.Tasks.TaskScheduler"/> with which to invoke the callback,
+            or null if no special context is required.
+            </summary>
+        </member>
+        <member name="F:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore`1._completed">
+            <summary>Whether the current operation has completed.</summary>
+        </member>
+        <member name="F:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore`1._result">
+            <summary>The result with which the operation succeeded, or the default value if it hasn't yet completed or failed.</summary>
+        </member>
+        <member name="F:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore`1._error">
+            <summary>The exception with which the operation failed, or null if it hasn't yet completed or completed successfully.</summary>
+        </member>
+        <member name="F:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore`1._version">
+            <summary>The current version of this value, used to help prevent misuse.</summary>
+        </member>
+        <member name="P:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore`1.RunContinuationsAsynchronously">
+            <summary>Gets or sets whether to force continuations to run asynchronously.</summary>
+            <remarks>Continuations may run asynchronously if this is false, but they'll never run synchronously if this is true.</remarks>
+        </member>
+        <member name="M:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore`1.Reset">
+            <summary>Resets to prepare for the next operation.</summary>
+        </member>
+        <member name="M:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore`1.SetResult(`0)">
+            <summary>Completes with a successful result.</summary>
+            <param name="result">The result.</param>
+        </member>
+        <member name="M:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore`1.SetException(System.Exception)">
+            <summary>Complets with an error.</summary>
+            <param name="error"></param>
+        </member>
+        <member name="P:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore`1.Version">
+            <summary>Gets the operation version.</summary>
+        </member>
+        <member name="M:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore`1.GetStatus(System.Int16)">
+            <summary>Gets the status of the operation.</summary>
+            <param name="token">Opaque value that was provided to the <see cref="T:System.Threading.Tasks.ValueTask"/>'s constructor.</param>
+        </member>
+        <member name="M:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore`1.GetResult(System.Int16)">
+            <summary>Gets the result of the operation.</summary>
+            <param name="token">Opaque value that was provided to the <see cref="T:System.Threading.Tasks.ValueTask"/>'s constructor.</param>
+        </member>
+        <member name="M:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore`1.OnCompleted(System.Action{System.Object},System.Object,System.Int16,System.Threading.Tasks.Sources.ValueTaskSourceOnCompletedFlags)">
+            <summary>Schedules the continuation action for this operation.</summary>
+            <param name="continuation">The continuation to invoke when the operation has completed.</param>
+            <param name="state">The state object to pass to <paramref name="continuation"/> when it's invoked.</param>
+            <param name="token">Opaque value that was provided to the <see cref="T:System.Threading.Tasks.ValueTask"/>'s constructor.</param>
+            <param name="flags">The flags describing the behavior of the continuation.</param>
+        </member>
+        <member name="M:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore`1.ValidateToken(System.Int16)">
+            <summary>Ensures that the specified token matches the current version.</summary>
+            <param name="token">The token supplied by <see cref="T:System.Threading.Tasks.ValueTask"/>.</param>
+        </member>
+        <member name="M:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore`1.SignalCompletion">
+            <summary>Signals that the operation has completed.  Invoked after the result or error has been set.</summary>
+        </member>
+        <member name="M:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore`1.InvokeContinuation">
+            <summary>
+            Invokes the continuation with the appropriate captured context / scheduler.
+            This assumes that if <see cref="F:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore`1._executionContext"/> is not null we're already
+            running within that <see cref="T:System.Threading.ExecutionContext"/>.
+            </summary>
+        </member>
+        <member name="T:System.Threading.Tasks.TaskAsyncEnumerableExtensions">
+            <summary>Provides a set of static methods for configuring <see cref="T:System.Threading.Tasks.Task"/>-related behaviors on asynchronous enumerables and disposables.</summary>
+        </member>
+        <member name="M:System.Threading.Tasks.TaskAsyncEnumerableExtensions.ConfigureAwait(System.IAsyncDisposable,System.Boolean)">
+            <summary>Configures how awaits on the tasks returned from an async disposable will be performed.</summary>
+            <param name="source">The source async disposable.</param>
+            <param name="continueOnCapturedContext"><see langword="true" /> to capture and marshal back to the current context; otherwise, <see langword="false" />.</param>
+            <returns>The configured async disposable.</returns>
+        </member>
+        <member name="M:System.Threading.Tasks.TaskAsyncEnumerableExtensions.ConfigureAwait``1(System.Collections.Generic.IAsyncEnumerable{``0},System.Boolean)">
+            <summary>Configures how awaits on the tasks returned from an async iteration will be performed.</summary>
+            <typeparam name="T">The type of the objects being iterated.</typeparam>
+            <param name="source">The source enumerable being iterated.</param>
+            <param name="continueOnCapturedContext"><see langword="true" /> to capture and marshal back to the current context; otherwise, <see langword="false" />.</param>
+            <returns>The configured enumerable.</returns>
+        </member>
+        <member name="M:System.Threading.Tasks.TaskAsyncEnumerableExtensions.WithCancellation``1(System.Collections.Generic.IAsyncEnumerable{``0},System.Threading.CancellationToken)">
+            <summary>Sets the <see cref="T:System.Threading.CancellationToken"/> to be passed to <see cref="M:System.Collections.Generic.IAsyncEnumerable`1.GetAsyncEnumerator(System.Threading.CancellationToken)"/> when iterating.</summary>
+            <typeparam name="T">The type of the objects being iterated.</typeparam>
+            <param name="source">The source enumerable being iterated.</param>
+            <param name="cancellationToken">The <see cref="T:System.Threading.CancellationToken"/> to use.</param>
+            <returns>The configured enumerable.</returns>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.AsyncIteratorMethodBuilder">
+            <summary>Represents a builder for asynchronous iterators.</summary>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.AsyncIteratorMethodBuilder.Create">
+            <summary>Creates an instance of the <see cref="T:System.Runtime.CompilerServices.AsyncIteratorMethodBuilder"/> struct.</summary>
+            <returns>The initialized instance.</returns>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.AsyncIteratorMethodBuilder.MoveNext``1(``0@)">
+            <summary>Invokes <see cref="M:System.Runtime.CompilerServices.IAsyncStateMachine.MoveNext"/> on the state machine while guarding the <see cref="T:System.Threading.ExecutionContext"/>.</summary>
+            <typeparam name="TStateMachine">The type of the state machine.</typeparam>
+            <param name="stateMachine">The state machine instance, passed by reference.</param>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.AsyncIteratorMethodBuilder.AwaitOnCompleted``2(``0@,``1@)">
+            <summary>Schedules the state machine to proceed to the next action when the specified awaiter completes.</summary>
+            <typeparam name="TAwaiter">The type of the awaiter.</typeparam>
+            <typeparam name="TStateMachine">The type of the state machine.</typeparam>
+            <param name="awaiter">The awaiter.</param>
+            <param name="stateMachine">The state machine.</param>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.AsyncIteratorMethodBuilder.AwaitUnsafeOnCompleted``2(``0@,``1@)">
+            <summary>Schedules the state machine to proceed to the next action when the specified awaiter completes.</summary>
+            <typeparam name="TAwaiter">The type of the awaiter.</typeparam>
+            <typeparam name="TStateMachine">The type of the state machine.</typeparam>
+            <param name="awaiter">The awaiter.</param>
+            <param name="stateMachine">The state machine.</param>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.AsyncIteratorMethodBuilder.Complete">
+            <summary>Marks iteration as being completed, whether successfully or otherwise.</summary>
+        </member>
+        <member name="P:System.Runtime.CompilerServices.AsyncIteratorMethodBuilder.ObjectIdForDebugger">
+            <summary>Gets an object that may be used to uniquely identify this builder to the debugger.</summary>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.AsyncIteratorStateMachineAttribute">
+            <summary>Indicates whether a method is an asynchronous iterator.</summary>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.AsyncIteratorStateMachineAttribute.#ctor(System.Type)">
+            <summary>Initializes a new instance of the <see cref="T:System.Runtime.CompilerServices.AsyncIteratorStateMachineAttribute"/> class.</summary>
+            <param name="stateMachineType">The type object for the underlying state machine type that's used to implement a state machine method.</param>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.ConfiguredAsyncDisposable">
+            <summary>Provides a type that can be used to configure how awaits on an <see cref="T:System.IAsyncDisposable"/> are performed.</summary>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.ConfiguredAsyncDisposable.DisposeAsync">
+            <summary>Asynchronously releases the unmanaged resources used by the <see cref="T:System.Runtime.CompilerServices.ConfiguredAsyncDisposable" />.</summary>
+            <returns>A task that represents the asynchronous dispose operation.</returns>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable`1">
+            <summary>Provides an awaitable async enumerable that enables cancelable iteration and configured awaits.</summary>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable`1.ConfigureAwait(System.Boolean)">
+            <summary>Configures how awaits on the tasks returned from an async iteration will be performed.</summary>
+            <param name="continueOnCapturedContext"><see langword="true" /> to capture and marshal back to the current context; otherwise, <see langword="false" />.</param>
+            <returns>The configured enumerable.</returns>
+            <remarks>This will replace any previous value set by <see cref="M:System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable`1.ConfigureAwait(System.Boolean)"/> for this iteration.</remarks>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable`1.WithCancellation(System.Threading.CancellationToken)">
+            <summary>Sets the <see cref="T:System.Threading.CancellationToken"/> to be passed to <see cref="M:System.Collections.Generic.IAsyncEnumerable`1.GetAsyncEnumerator(System.Threading.CancellationToken)"/> when iterating.</summary>
+            <param name="cancellationToken">The <see cref="T:System.Threading.CancellationToken"/> to use.</param>
+            <returns>The configured enumerable.</returns>
+            <remarks>This will replace any previous <see cref="T:System.Threading.CancellationToken"/> set by <see cref="M:System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable`1.WithCancellation(System.Threading.CancellationToken)"/> for this iteration.</remarks>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable`1.GetAsyncEnumerator">
+            <summary>Returns an enumerator that iterates asynchronously through collections that enables cancelable iteration and configured awaits.</summary>
+            <returns>An enumerator for the <see cref="T:System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable`1" /> class.</returns>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable`1.Enumerator">
+            <summary>Provides an awaitable async enumerator that enables cancelable iteration and configured awaits.</summary>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable`1.Enumerator.MoveNextAsync">
+            <summary>Advances the enumerator asynchronously to the next element of the collection.</summary>
+            <returns>
+            A <see cref="T:System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable`1"/> that will complete with a result of <c>true</c>
+            if the enumerator was successfully advanced to the next element, or <c>false</c> if the enumerator has
+            passed the end of the collection.
+            </returns>
+        </member>
+        <member name="P:System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable`1.Enumerator.Current">
+            <summary>Gets the element in the collection at the current position of the enumerator.</summary>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable`1.Enumerator.DisposeAsync">
+            <summary>
+            Performs application-defined tasks associated with freeing, releasing, or
+            resetting unmanaged resources asynchronously.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.EnumeratorCancellationAttribute">
+            <summary>Allows users of async-enumerable methods to mark the parameter that should receive the cancellation token value from <see cref="M:System.Collections.Generic.IAsyncEnumerable`1.GetAsyncEnumerator(System.Threading.CancellationToken)" />.</summary>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.EnumeratorCancellationAttribute.#ctor">
+            <summary>Initializes a new instance of the <see cref="T:System.Runtime.CompilerServices.EnumeratorCancellationAttribute" /> class.</summary>
+        </member>
+        <member name="T:System.Runtime.InteropServices.LibraryImportAttribute">
+            <summary>
+            Attribute used to indicate a source generator should create a function for marshalling
+            arguments instead of relying on the runtime to generate an equivalent marshalling function at run-time.
+            </summary>
+            <remarks>
+            This attribute is meaningless if the source generator associated with it is not enabled.
+            The current built-in source generator only supports C# and only supplies an implementation when
+            applied to static, partial, non-generic methods.
+            </remarks>
+        </member>
+        <member name="M:System.Runtime.InteropServices.LibraryImportAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.InteropServices.LibraryImportAttribute"/>.
+            </summary>
+            <param name="libraryName">Name of the library containing the import.</param>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.LibraryName">
+            <summary>
+            Gets the name of the library containing the import.
+            </summary>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.EntryPoint">
+            <summary>
+            Gets or sets the name of the entry point to be called.
+            </summary>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshalling">
+            <summary>
+            Gets or sets how to marshal string arguments to the method.
+            </summary>
+            <remarks>
+            If this field is set to a value other than <see cref="F:System.Runtime.InteropServices.StringMarshalling.Custom" />,
+            <see cref="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshallingCustomType" /> must not be specified.
+            </remarks>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshallingCustomType">
+            <summary>
+            Gets or sets the <see cref="T:System.Type"/> used to control how string arguments to the method are marshalled.
+            </summary>
+            <remarks>
+            If this field is specified, <see cref="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshalling" /> must not be specified
+            or must be set to <see cref="F:System.Runtime.InteropServices.StringMarshalling.Custom" />.
+            </remarks>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.SetLastError">
+            <summary>
+            Gets or sets whether the callee sets an error (SetLastError on Windows or errno
+            on other platforms) before returning from the attributed method.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.InteropServices.StringMarshalling">
+            <summary>
+            Specifies how strings should be marshalled for generated p/invokes
+            </summary>
+        </member>
+        <member name="F:System.Runtime.InteropServices.StringMarshalling.Custom">
+            <summary>
+            Indicates the user is supplying a specific marshaller in <see cref="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshallingCustomType"/>.
+            </summary>
+        </member>
+        <member name="F:System.Runtime.InteropServices.StringMarshalling.Utf8">
+            <summary>
+            Use the platform-provided UTF-8 marshaller.
+            </summary>
+        </member>
+        <member name="F:System.Runtime.InteropServices.StringMarshalling.Utf16">
+            <summary>
+            Use the platform-provided UTF-16 marshaller.
+            </summary>
+        </member>
+        <member name="T:System.Collections.Generic.IAsyncEnumerable`1">
+            <summary>Exposes an enumerator that provides asynchronous iteration over values of a specified type.</summary>
+            <typeparam name="T">The type of values to enumerate.</typeparam>
+        </member>
+        <member name="M:System.Collections.Generic.IAsyncEnumerable`1.GetAsyncEnumerator(System.Threading.CancellationToken)">
+            <summary>Returns an enumerator that iterates asynchronously through the collection.</summary>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken"/> that may be used to cancel the asynchronous iteration.</param>
+            <returns>An enumerator that can be used to iterate asynchronously through the collection.</returns>
+        </member>
+        <member name="T:System.Collections.Generic.IAsyncEnumerator`1">
+            <summary>Supports a simple asynchronous iteration over a generic collection.</summary>
+            <typeparam name="T">The type of objects to enumerate.</typeparam>
+        </member>
+        <member name="M:System.Collections.Generic.IAsyncEnumerator`1.MoveNextAsync">
+            <summary>Advances the enumerator asynchronously to the next element of the collection.</summary>
+            <returns>
+            A <see cref="T:System.Threading.Tasks.ValueTask`1"/> that will complete with a result of <c>true</c> if the enumerator
+            was successfully advanced to the next element, or <c>false</c> if the enumerator has passed the end
+            of the collection.
+            </returns>
+        </member>
+        <member name="P:System.Collections.Generic.IAsyncEnumerator`1.Current">
+            <summary>Gets the element in the collection at the current position of the enumerator.</summary>
+        </member>
+        <member name="T:System.IAsyncDisposable">
+            <summary>Provides a mechanism for releasing unmanaged resources asynchronously.</summary>
+        </member>
+        <member name="M:System.IAsyncDisposable.DisposeAsync">
+            <summary>
+            Performs application-defined tasks associated with freeing, releasing, or
+            resetting unmanaged resources asynchronously.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.AllowNullAttribute">
+            <summary>Specifies that null is allowed as an input even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DisallowNullAttribute">
+            <summary>Specifies that null is disallowed as an input even if the corresponding type allows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullAttribute">
+            <summary>Specifies that an output may be null even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullAttribute">
+            <summary>Specifies that an output will not be null even if the corresponding type allows it. Specifies that an input argument was not null when the call returns.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute">
+            <summary>Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue"/>, the parameter may be null even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified return value condition.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter may be null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute">
+            <summary>Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue"/>, the parameter will not be null even if the corresponding type allows it.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified return value condition.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter will not be null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute">
+            <summary>Specifies that the output will be non-null if the named parameter is non-null.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.#ctor(System.String)">
+            <summary>Initializes the attribute with the associated parameter name.</summary>
+            <param name="parameterName">
+            The associated parameter name.  The output will be non-null if the argument to the parameter specified is non-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.ParameterName">
+            <summary>Gets the associated parameter name.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute">
+            <summary>Applied to a method that will never return under any circumstance.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute">
+            <summary>Specifies that the method will not return if the associated Boolean parameter is passed the specified value.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified parameter value.</summary>
+            <param name="parameterValue">
+            The condition parameter value. Code after the method will be considered unreachable by diagnostics if the argument to
+            the associated parameter matches this value.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.ParameterValue">
+            <summary>Gets the condition parameter value.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute">
+            <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String)">
+            <summary>Initializes the attribute with a field or property member.</summary>
+            <param name="member">
+            The field or property member that is promised to be not-null.
+            </param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String[])">
+            <summary>Initializes the attribute with the list of field and property members.</summary>
+            <param name="members">
+            The list of field and property members that are promised to be not-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.Members">
+            <summary>Gets field or property member names.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute">
+            <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values when returning with the specified return value condition.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.#ctor(System.Boolean,System.String)">
+            <summary>Initializes the attribute with the specified return value condition and a field or property member.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated field or property member will not be null.
+            </param>
+            <param name="member">
+            The field or property member that is promised to be not-null.
+            </param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.#ctor(System.Boolean,System.String[])">
+            <summary>Initializes the attribute with the specified return value condition and list of field and property members.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated field and property members will not be null.
+            </param>
+            <param name="members">
+            The list of field and property members that are promised to be not-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.Members">
+            <summary>Gets field or property member names.</summary>
+        </member>
+        <member name="T:System.ExceptionPolyfills">
+            <summary>Provides downlevel polyfills for static methods on Exception-derived types.</summary>
+        </member>
+    </members>
+</doc>

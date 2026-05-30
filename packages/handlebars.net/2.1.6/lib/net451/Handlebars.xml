@@ -1,0 +1,1685 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Handlebars</name>
+    </assembly>
+    <members>
+        <member name="T:Expressions.Shortcuts.BlockBuilder">
+            <summary>
+            Shortcut for <see cref="T:System.Linq.Expressions.BlockExpression"/>
+            </summary>
+        </member>
+        <member name="P:Expressions.Shortcuts.BlockBuilder.Parameters">
+            <summary>
+            Returns current block parameters
+            </summary>
+        </member>
+        <member name="P:Expressions.Shortcuts.BlockBuilder.Expression">
+            <inheritdoc />
+        </member>
+        <member name="M:Expressions.Shortcuts.BlockBuilder.Parameter(System.Linq.Expressions.Expression)">
+            <summary>
+            Adds parameter to <see cref="T:System.Linq.Expressions.BlockExpression"/>
+            </summary>
+            <exception cref="T:System.ArgumentException"><paramref name="expression"/> is not <see cref="T:System.Linq.Expressions.ParameterExpression"/></exception>
+        </member>
+        <member name="M:Expressions.Shortcuts.BlockBuilder.Parameter``1(Expressions.Shortcuts.ExpressionContainer{``0}@)">
+            <summary>
+            Adds parameter to <see cref="T:System.Linq.Expressions.BlockExpression"/>
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.BlockBuilder.Parameter``1(System.String,Expressions.Shortcuts.ExpressionContainer{``0}@)">
+            <summary>
+            Adds parameter to <see cref="T:System.Linq.Expressions.BlockExpression"/>
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.BlockBuilder.Parameter``1(Expressions.Shortcuts.ExpressionContainer{``0}@,Expressions.Shortcuts.ExpressionContainer{``0})">
+            <summary>
+            Adds parameter to <see cref="T:System.Linq.Expressions.BlockExpression"/>
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.BlockBuilder.Parameter``1(System.String,Expressions.Shortcuts.ExpressionContainer{``0}@,Expressions.Shortcuts.ExpressionContainer{``0})">
+            <summary>
+            Adds parameter to <see cref="T:System.Linq.Expressions.BlockExpression"/>
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.BlockBuilder.Parameter``1(Expressions.Shortcuts.ExpressionContainer{``0}@,``0)">
+            <summary>
+            Adds parameter to <see cref="T:System.Linq.Expressions.BlockExpression"/>
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.BlockBuilder.Parameter``1(System.String,Expressions.Shortcuts.ExpressionContainer{``0}@,``0)">
+            <summary>
+            Adds parameter to <see cref="T:System.Linq.Expressions.BlockExpression"/>
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.BlockBuilder.Parameter``1(Expressions.Shortcuts.ExpressionContainer{``0},Expressions.Shortcuts.ExpressionContainer{``0})">
+            <summary>
+            Adds parameter to <see cref="T:System.Linq.Expressions.BlockExpression"/> with initial assignment
+            </summary>
+            <exception cref="T:System.ArgumentException"><paramref name="expression"/> is not <see cref="T:System.Linq.Expressions.ParameterExpression"/></exception>
+        </member>
+        <member name="M:Expressions.Shortcuts.BlockBuilder.Parameter``1(Expressions.Shortcuts.ExpressionContainer{``0},System.Linq.Expressions.Expression)">
+            <summary>
+            Adds parameter to <see cref="T:System.Linq.Expressions.BlockExpression"/> with initial assignment
+            </summary>
+            <exception cref="T:System.ArgumentException"><paramref name="expression"/> is not <see cref="T:System.Linq.Expressions.ParameterExpression"/></exception>
+        </member>
+        <member name="M:Expressions.Shortcuts.BlockBuilder.Parameter(System.Linq.Expressions.ParameterExpression)">
+            <summary>
+            Adds parameter to <see cref="T:System.Linq.Expressions.BlockExpression"/>
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.BlockBuilder.Line(System.Linq.Expressions.Expression)">
+            <summary>
+            Adds new "line" to <see cref="T:System.Linq.Expressions.BlockExpression"/>
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.BlockBuilder.Line``1(Expressions.Shortcuts.ExpressionContainer{``0})">
+            <summary>
+            Adds new "line" to <see cref="T:System.Linq.Expressions.BlockExpression"/>
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.BlockBuilder.Lines(System.Collections.Generic.IEnumerable{System.Linq.Expressions.Expression})">
+            <summary>
+            Adds multiple new "lines" to <see cref="T:System.Linq.Expressions.BlockExpression"/>
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.BlockBuilder.Lines(System.Linq.Expressions.Expression[])">
+            <summary>
+            Adds multiple new "lines" to <see cref="T:System.Linq.Expressions.BlockExpression"/>
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.BlockBuilder.Invoke``1(Expressions.Shortcuts.ExpressionContainer[])">
+            <summary>
+            Creates <see cref="T:System.Linq.Expressions.InvocationExpression"/> out of current <see cref="T:System.Linq.Expressions.BlockExpression"/>.
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.BlockBuilder.Lambda``1(Expressions.Shortcuts.ExpressionContainer[])">
+            <summary>
+            Creates <see cref="T:System.Linq.Expressions.InvocationExpression"/> out of current <see cref="T:System.Linq.Expressions.BlockExpression"/>.
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.BlockBuilder.Lambda``1(System.Collections.Generic.IEnumerable{System.Linq.Expressions.ParameterExpression})">
+            <summary>
+            Creates <see cref="T:System.Linq.Expressions.InvocationExpression"/> out of current <see cref="T:System.Linq.Expressions.BlockExpression"/>.
+            </summary>
+        </member>
+        <member name="T:Expressions.Shortcuts.ConditionBuilder">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.ConditionBuilder.If(System.Linq.Expressions.Expression)">
+            <summary>
+            Adds <see langword="if"/> block
+            </summary>
+            <param name="condition"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ConditionBuilder.If(Expressions.Shortcuts.ExpressionContainer{System.Boolean})">
+            <summary>
+            Adds <see langword="if"/> block
+            </summary>
+            <param name="condition"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ConditionBuilder.Then(System.Linq.Expressions.Expression)">
+            <summary>
+            Occurs in case <see cref="M:Expressions.Shortcuts.ConditionBuilder.If(System.Linq.Expressions.Expression)"/> condition evaluated to <c>true</c>
+            </summary>
+            <param name="then"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ConditionBuilder.Then(Expressions.Shortcuts.ExpressionContainer)">
+            <summary>
+            Occurs in case <see cref="M:Expressions.Shortcuts.ConditionBuilder.If(System.Linq.Expressions.Expression)"/> condition evaluated to <c>true</c>
+            </summary>
+            <param name="then"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ConditionBuilder.Then``1(Expressions.Shortcuts.ExpressionContainer{``0})">
+            <summary>
+            Occurs in case <see cref="M:Expressions.Shortcuts.ConditionBuilder.If(System.Linq.Expressions.Expression)"/> condition evaluated to <c>true</c>
+            </summary>
+            <param name="then"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ConditionBuilder.Then(System.Action{Expressions.Shortcuts.BlockBuilder})">
+            <summary>
+            Occurs in case <see cref="M:Expressions.Shortcuts.ConditionBuilder.If(System.Linq.Expressions.Expression)"/> condition evaluated to <c>true</c>
+            </summary>
+            <param name="then"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ConditionBuilder.Else(System.Linq.Expressions.Expression)">
+            <summary>
+            Adds <see langword="else"/> block
+            </summary>
+            <param name="then"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ConditionBuilder.Else(Expressions.Shortcuts.ExpressionContainer)">
+            <summary>
+            Adds <see langword="else"/> block
+            </summary>
+            <param name="then"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ConditionBuilder.Else``1(Expressions.Shortcuts.ExpressionContainer{``0})">
+            <summary>
+            Adds <see langword="else"/> block
+            </summary>
+            <param name="then"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ConditionBuilder.Else(System.Action{Expressions.Shortcuts.BlockBuilder})">
+            <summary>
+            Adds <see langword="else"/> block
+            </summary>
+            <param name="then"></param>
+            <returns></returns>
+        </member>
+        <member name="P:Expressions.Shortcuts.ConditionBuilder.Expression">
+            <inheritdoc />
+        </member>
+        <member name="T:Expressions.Shortcuts.ExpressionContainer">
+            <summary>
+            Wrapper around of <see cref="T:System.Linq.Expressions.Expression"/> to provide addition functionality
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionContainer.#ctor(System.Linq.Expressions.Expression)">
+            <summary>
+            
+            </summary>
+            <param name="expression"></param>
+        </member>
+        <member name="P:Expressions.Shortcuts.ExpressionContainer.Expression">
+            <summary>
+            Return the underling <see cref="T:System.Linq.Expressions.Expression"/>
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionContainer.Typed``1">
+            <summary>
+            Creates typed representation <see cref="T:Expressions.Shortcuts.ExpressionContainer`1"/> of current <see cref="T:Expressions.Shortcuts.ExpressionContainer"/>
+            </summary>
+            <typeparam name="T"></typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionContainer.Is``1">
+            <summary>
+            Creates <see cref="T:System.Linq.Expressions.TypeBinaryExpression"/> from current <see cref="P:Expressions.Shortcuts.ExpressionContainer.Expression"/>
+            </summary>
+            <typeparam name="TV"></typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionContainer.Is(System.Type)">
+            <summary>
+            Creates <see cref="T:System.Linq.Expressions.TypeBinaryExpression"/> from current <see cref="P:Expressions.Shortcuts.ExpressionContainer.Expression"/>
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionContainer.As``1">
+            <summary>
+            Creates a <see cref="T:System.Linq.Expressions.UnaryExpression" /> that represents an explicit reference or boxing conversion where <see langword="null" /> is supplied if the conversion fails.
+            </summary>
+            <typeparam name="TV">A <see cref="T:System.Type" /> to set the <see cref="P:System.Linq.Expressions.Expression.Type" /> property equal to.</typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionContainer.As(System.Type)">
+            <summary>
+            Creates a <see cref="T:System.Linq.Expressions.UnaryExpression" /> that represents an explicit reference or boxing conversion where <see langword="null" /> is supplied if the conversion fails.
+            </summary>
+            <param name="type">A <see cref="T:System.Type" /> to set the <see cref="P:System.Linq.Expressions.Expression.Type" /> property equal to.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionContainer.Cast``1">
+            <summary>
+            Creates a <see cref="T:System.Linq.Expressions.UnaryExpression" /> that represents a type conversion operation.
+            </summary>
+            <typeparam name="TV">A <see cref="T:System.Type" /> to set the <see cref="P:System.Linq.Expressions.Expression.Type" /> property equal to.</typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionContainer.Cast(System.Type)">
+            <summary>
+            Creates a <see cref="T:System.Linq.Expressions.UnaryExpression" /> that represents a type conversion operation.
+            </summary>
+            <param name="type">A <see cref="T:System.Type" /> to set the <see cref="P:System.Linq.Expressions.Expression.Type" /> property equal to.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionContainer.op_Implicit(Expressions.Shortcuts.ExpressionContainer)~System.Linq.Expressions.Expression">
+            <summary>
+            
+            </summary>
+            <param name="expressionContainer"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionContainer.op_Implicit(System.Linq.Expressions.Expression)~Expressions.Shortcuts.ExpressionContainer">
+            <summary>
+            
+            </summary>
+            <param name="expression"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Expressions.Shortcuts.ExpressionContainer`1">
+            <summary>
+            Provides strongly typed container for <see cref="T:System.Linq.Expressions.Expression"/>.
+            </summary>
+            <remarks>Used to trick C# compiler in cases like <see cref="M:Expressions.Shortcuts.ExpressionShortcuts.Call(System.Linq.Expressions.Expression{System.Action})"/> in order to pass value to target method.</remarks>
+            <typeparam name="T">Type of expected <see cref="T:System.Linq.Expressions.Expression"/> result value.</typeparam>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionContainer`1.op_Implicit(Expressions.Shortcuts.ExpressionContainer{`0})~`0">
+            <summary>
+            Used to trick C# compiler
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionContainer`1.#ctor(System.Linq.Expressions.Expression)">
+            <summary>
+            
+            </summary>
+            <param name="expression"></param>
+        </member>
+        <member name="T:Expressions.Shortcuts.ExpressionShortcuts">
+            <summary>
+            Stands for <see cref="T:System.Linq.Expressions.Expression"/> shortcuts.
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Property``2(Expressions.Shortcuts.ExpressionContainer{``0},System.Linq.Expressions.Expression{System.Func{``0,``1}})">
+            <summary>
+            Creates strongly typed representation of the <see cref="M:System.Linq.Expressions.Expression.Property(System.Linq.Expressions.Expression,System.String)"/>
+            </summary>
+            <param name="instance"/>
+            <param name="propertyAccessor">Property accessor expression</param>
+            <typeparam name="T">Expected type of resulting target <see cref="T:System.Linq.Expressions.Expression"/></typeparam>
+            <typeparam name="TV">Expected type of resulting <see cref="T:System.Linq.Expressions.MemberExpression"/></typeparam>
+            <returns><see cref="T:Expressions.Shortcuts.ExpressionContainer`1"/></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Field``2(Expressions.Shortcuts.ExpressionContainer{``0},System.Linq.Expressions.Expression{System.Func{``0,``1}})">
+            <summary>
+            Creates strongly typed representation of the <see cref="M:System.Linq.Expressions.Expression.Field(System.Linq.Expressions.Expression,System.String)"/>
+            </summary>
+            <param name="instance"/>
+            <param name="propertyAccessor">Property accessor expression</param>
+            <typeparam name="T">Expected type of resulting target <see cref="T:System.Linq.Expressions.Expression"/></typeparam>
+            <typeparam name="TV">Expected type of resulting <see cref="T:System.Linq.Expressions.MemberExpression"/></typeparam>
+            <returns><see cref="T:Expressions.Shortcuts.ExpressionContainer`1"/></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Member``2(Expressions.Shortcuts.ExpressionContainer{``0},System.Linq.Expressions.Expression{System.Func{``0,``1}})">
+            <summary>
+            Creates strongly typed representation of the <see cref="M:System.Linq.Expressions.Expression.PropertyOrField(System.Linq.Expressions.Expression,System.String)"/>
+            </summary>
+            <param name="instance"/>
+            <param name="propertyAccessor">Property accessor expression</param>
+            <typeparam name="T">Expected type of resulting target <see cref="T:System.Linq.Expressions.Expression"/></typeparam>
+            <typeparam name="TV">Expected type of resulting <see cref="T:System.Linq.Expressions.MemberExpression"/></typeparam>
+            <returns><see cref="T:Expressions.Shortcuts.ExpressionContainer`1"/></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Call``1(Expressions.Shortcuts.ExpressionContainer{``0},System.Linq.Expressions.Expression{System.Action{``0}})">
+            <summary>
+            Creates <see cref="T:System.Linq.Expressions.MethodCallExpression"/> or <see cref="T:System.Linq.Expressions.InvocationExpression"/> based on <paramref name="invocationExpression"/>.
+            Parameters are resolved based on actual passed parameters.
+            </summary>
+            <param name="instance"/>
+            <param name="invocationExpression">Expression used to invoke the method.</param>
+            <returns><see cref="T:System.Void"/></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Call``2(Expressions.Shortcuts.ExpressionContainer{``0},System.Linq.Expressions.Expression{System.Func{``0,``1}})">
+            <summary>
+            Creates <see cref="T:System.Linq.Expressions.MethodCallExpression"/> or <see cref="T:System.Linq.Expressions.InvocationExpression"/> based on <paramref name="invocationExpression"/>.
+            Parameters are resolved based on actual passed parameters.
+            </summary>
+            <param name="instance"/>
+            <param name="invocationExpression">Expression used to invoke the method.</param>
+            <returns><see cref="T:Expressions.Shortcuts.ExpressionContainer`1"/></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Code``2(Expressions.Shortcuts.ExpressionContainer{``0},System.Func{``0,``1})">
+            <summary>
+            Executes code directly by passing <paramref name="code"/> to <see cref="M:Expressions.Shortcuts.ExpressionShortcuts.Call(System.Linq.Expressions.Expression{System.Action})"/>
+            </summary>
+            <param name="instance"></param>
+            <param name="code"></param>
+            <typeparam name="T"></typeparam>
+            <typeparam name="TV"></typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Code``1(Expressions.Shortcuts.ExpressionContainer{``0},System.Action{``0})">
+            <summary>
+            Executes code directly by passing <paramref name="code"/> to <see cref="M:Expressions.Shortcuts.ExpressionShortcuts.Call(System.Linq.Expressions.Expression{System.Action})"/>
+            </summary>
+            <param name="instance"></param>
+            <param name="code"></param>
+            <typeparam name="T"></typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Using``1(Expressions.Shortcuts.ExpressionContainer{``0},System.Action{Expressions.Shortcuts.ExpressionContainer{``0},Expressions.Shortcuts.BlockBuilder})">
+            <summary>
+            Creates <see cref="T:System.Linq.Expressions.TryExpression"/>.
+            Parameters are resolved based on actual passed parameters.
+            </summary>
+            <param name="instance"/>
+            <param name="blockBody">Expressions used inside of <c>try</c> block.</param>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Return``1(Expressions.Shortcuts.ExpressionContainer{``0})">
+            <summary>
+            Created <see langword="return"/> statement
+            </summary>
+            <param name="instance"></param>
+            <typeparam name="T"></typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Assign``1(Expressions.Shortcuts.ExpressionContainer{``0},Expressions.Shortcuts.ExpressionContainer{``0})">
+            <summary>
+            Creates assign <see cref="T:System.Linq.Expressions.BinaryExpression"/>.
+            Parameters are resolved based on actual passed parameters.
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Assign``1(Expressions.Shortcuts.ExpressionContainer{``0},``0)">
+            <summary>
+            Creates assign <see cref="T:System.Linq.Expressions.BinaryExpression"/>.
+            Parameters are resolved based on actual passed parameters.
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Assign``1(Expressions.Shortcuts.ExpressionContainer{``0},System.Linq.Expressions.Expression)">
+            <summary>
+            Creates assign <see cref="T:System.Linq.Expressions.BinaryExpression"/>.
+            Parameters are resolved based on actual passed parameters.
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.TernaryAssign``1(Expressions.Shortcuts.ExpressionContainer{``0},Expressions.Shortcuts.ExpressionContainer{System.Boolean},Expressions.Shortcuts.ExpressionContainer{``0},Expressions.Shortcuts.ExpressionContainer{``0})">
+            <summary>
+            Creates ternary assignment like <code>target = condition ? ifTrue : ifFalse</code>
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Arg``1(System.Linq.Expressions.Expression)">
+            <summary>
+            Creates strongly typed representation of the <paramref name="expression"/>
+            </summary>
+            <remarks>If <paramref name="expression"/> is <c>null</c> returns  result of <see cref="M:Expressions.Shortcuts.ExpressionShortcuts.Null``1"/></remarks>
+            <param name="expression"><see cref="T:System.Linq.Expressions.Expression"/> to wrap</param>
+            <typeparam name="T">Expected type of resulting <see cref="T:System.Linq.Expressions.Expression"/></typeparam>
+            <returns><see cref="T:Expressions.Shortcuts.ExpressionContainer`1"/></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Arg``1(``0)">
+            <summary>
+            Creates strongly typed representation of the <see cref="P:Expressions.Shortcuts.ExpressionContainer.Expression"/>
+            </summary>
+            <remarks>If <paramref name="value"/> is <c>null</c> returns  result of <see cref="M:Expressions.Shortcuts.ExpressionShortcuts.Null``1"/></remarks>
+            <param name="value"><paramref name="value"/> to wrap</param>
+            <typeparam name="T">Expected type of resulting <see cref="T:System.Linq.Expressions.Expression"/></typeparam>
+            <returns><see cref="T:Expressions.Shortcuts.ExpressionContainer`1"/></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Arg``1(System.Linq.Expressions.Expression{``0})">
+            <summary>
+            Creates strongly typed representation of the <paramref name="expression"/>.
+            </summary>
+            <remarks>If <paramref name="expression"/> is <c>null</c> returns  result of <see cref="M:Expressions.Shortcuts.ExpressionShortcuts.Null``1"/></remarks>
+            <param name="expression"><see cref="T:System.Linq.Expressions.Expression"/> to wrap</param>
+            <typeparam name="T">Expected type of resulting <see cref="T:System.Linq.Expressions.Expression"/></typeparam>
+            <returns><see cref="T:Expressions.Shortcuts.ExpressionContainer`1"/></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Cast``1(System.Linq.Expressions.Expression)">
+            <summary>
+            Creates strongly typed representation of the <paramref name="expression"/> and performs <see cref="M:System.Linq.Expressions.Expression.Convert(System.Linq.Expressions.Expression,System.Type)"/> on it.
+            </summary>
+            <remarks>If <paramref name="expression"/> is <c>null</c> returns  result of <see cref="M:Expressions.Shortcuts.ExpressionShortcuts.Null``1"/></remarks>
+            <param name="expression"><see cref="T:System.Linq.Expressions.Expression"/> to wrap</param>
+            <typeparam name="T">Expected type of resulting <see cref="T:System.Linq.Expressions.Expression"/></typeparam>
+            <returns><see cref="T:Expressions.Shortcuts.ExpressionContainer`1"/></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Var``1(System.String)">
+            <summary>
+            Creates strongly typed representation of the <see cref="M:System.Linq.Expressions.Expression.Variable(System.Type,System.String)"/>
+            </summary>
+            <param name="name">Variable name. Corresponds to type name if omitted.</param>
+            <typeparam name="T">Expected type of resulting <see cref="T:System.Linq.Expressions.ParameterExpression"/></typeparam>
+            <returns><see cref="T:Expressions.Shortcuts.ExpressionContainer`1"/></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Parameter``1(System.String)">
+            <summary>
+            Creates strongly typed representation of the <see cref="M:System.Linq.Expressions.Expression.Parameter(System.Type,System.String)"/>
+            </summary>
+            <param name="name">Variable name. Corresponds to type name if omitted.</param>
+            <typeparam name="T">Expected type of resulting <see cref="T:System.Linq.Expressions.ParameterExpression"/></typeparam>
+            <returns><see cref="T:Expressions.Shortcuts.ExpressionContainer`1"/></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Property``2(System.Linq.Expressions.Expression,System.Linq.Expressions.Expression{System.Func{``0,``1}})">
+            <summary>
+            Creates strongly typed representation of the <see cref="M:System.Linq.Expressions.Expression.Property(System.Linq.Expressions.Expression,System.String)"/>
+            </summary>
+            <param name="instance">Variable name. Corresponds to type name if omitted.</param>
+            <param name="propertyLambda">Property accessor expression</param>
+            <typeparam name="T">Expected type of resulting target <see cref="T:System.Linq.Expressions.Expression"/></typeparam>
+            <typeparam name="TV">Expected type of resulting <see cref="T:System.Linq.Expressions.MemberExpression"/></typeparam>
+            <returns><see cref="T:Expressions.Shortcuts.ExpressionContainer`1"/></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Property``1(System.Linq.Expressions.Expression,System.String)">
+            <summary>
+            Creates strongly typed representation of the <see cref="M:System.Linq.Expressions.Expression.Property(System.Linq.Expressions.Expression,System.String)"/>
+            </summary>
+            <param name="instance">Variable name. Corresponds to type name if omitted.</param>
+            <param name="propertyName"/>
+            <typeparam name="TV">Expected type of resulting <see cref="T:System.Linq.Expressions.MemberExpression"/></typeparam>
+            <returns><see cref="T:Expressions.Shortcuts.ExpressionContainer`1"/></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Field``2(System.Linq.Expressions.Expression,System.Linq.Expressions.Expression{System.Func{``0,``1}})">
+            <summary>
+            Creates strongly typed representation of the <see cref="M:System.Linq.Expressions.Expression.Field(System.Linq.Expressions.Expression,System.String)"/>
+            </summary>
+            <param name="instance">Variable name. Corresponds to type name if omitted.</param>
+            <param name="propertyLambda">Property accessor expression</param>
+            <typeparam name="T">Expected type of resulting target <see cref="T:System.Linq.Expressions.Expression"/></typeparam>
+            <typeparam name="TV">Expected type of resulting <see cref="T:System.Linq.Expressions.MemberExpression"/></typeparam>
+            <returns><see cref="T:Expressions.Shortcuts.ExpressionContainer`1"/></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Field``1(System.Linq.Expressions.Expression,System.String)">
+            <summary>
+            Creates strongly typed representation of the <see cref="M:System.Linq.Expressions.Expression.Field(System.Linq.Expressions.Expression,System.String)"/>
+            </summary>
+            <param name="instance">Variable name. Corresponds to type name if omitted.</param>
+            <param name="propertyName"/>
+            <typeparam name="TV">Expected type of resulting <see cref="T:System.Linq.Expressions.MemberExpression"/></typeparam>
+            <returns><see cref="T:Expressions.Shortcuts.ExpressionContainer`1"/></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Member``2(System.Linq.Expressions.Expression,System.Linq.Expressions.Expression{System.Func{``0,``1}})">
+            <summary>
+            Creates strongly typed representation of the <see cref="M:System.Linq.Expressions.Expression.PropertyOrField(System.Linq.Expressions.Expression,System.String)"/>
+            </summary>
+            <param name="instance">Variable name. Corresponds to type name if omitted.</param>
+            <param name="propertyLambda">Property accessor expression</param>
+            <typeparam name="T">Expected type of resulting target <see cref="T:System.Linq.Expressions.Expression"/></typeparam>
+            <typeparam name="TV">Expected type of resulting <see cref="T:System.Linq.Expressions.MemberExpression"/></typeparam>
+            <returns><see cref="T:Expressions.Shortcuts.ExpressionContainer`1"/></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Member``1(System.Linq.Expressions.Expression,System.String)">
+            <summary>
+            Creates strongly typed representation of the <see cref="M:System.Linq.Expressions.Expression.PropertyOrField(System.Linq.Expressions.Expression,System.String)"/>
+            </summary>
+            <param name="instance">Variable name. Corresponds to type name if omitted.</param>
+            <param name="propertyName"/>
+            <typeparam name="TV">Expected type of resulting <see cref="T:System.Linq.Expressions.MemberExpression"/></typeparam>
+            <returns><see cref="T:Expressions.Shortcuts.ExpressionContainer`1"/></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Array``1(System.Collections.Generic.IEnumerable{System.Linq.Expressions.Expression})">
+            <summary>
+            Creates strongly typed representation of the <see cref="M:System.Linq.Expressions.Expression.NewArrayInit(System.Type,System.Collections.Generic.IEnumerable{System.Linq.Expressions.Expression})"/>
+            </summary>
+            <param name="items">Items for the new array</param>
+            <typeparam name="T">Expected type of resulting <see cref="T:System.Linq.Expressions.NewArrayExpression"/></typeparam>
+            <returns><see cref="T:Expressions.Shortcuts.ExpressionContainer`1"/></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Call(System.Linq.Expressions.Expression{System.Action})">
+            <summary>
+            Creates <see cref="T:System.Linq.Expressions.MethodCallExpression"/> or <see cref="T:System.Linq.Expressions.InvocationExpression"/> based on <paramref name="invocationExpression"/>.
+            Parameters are resolved based on actual passed parameters.
+            </summary>
+            <param name="invocationExpression">Expression used to invoke the method.</param>
+            <returns><see cref="T:System.Void"/></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Call``1(System.Linq.Expressions.Expression{System.Func{``0}})">
+            <summary>
+            Creates <see cref="T:System.Linq.Expressions.MethodCallExpression"/> or <see cref="T:System.Linq.Expressions.InvocationExpression"/> based on <paramref name="invocationExpression"/>.
+            Parameters are resolved based on actual passed parameters.
+            </summary>
+            <param name="invocationExpression">Expression used to invoke the method.</param>
+            <returns><see cref="T:Expressions.Shortcuts.ExpressionContainer`1"/></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.New``1(System.Linq.Expressions.Expression{System.Func{``0}})">
+            <summary>
+            Creates <see cref="T:System.Linq.Expressions.NewExpression"/>. Parameters for constructor and constructor itself are resolved based <paramref name="invocationExpression"/>.
+            </summary>
+            <param name="invocationExpression">Expression used to invoke the method.</param>
+            <returns><see cref="T:Expressions.Shortcuts.ExpressionContainer`1"/></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.New``1">
+            <summary>
+            Creates <see cref="T:System.Linq.Expressions.NewExpression"/> using default constructor.
+            </summary>
+            <returns><see cref="T:Expressions.Shortcuts.ExpressionContainer`1"/></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Block(System.Type)">
+            <summary>
+            Provides fluent interface for <see cref="T:System.Linq.Expressions.BlockExpression"/> creation
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Null``1">
+            <summary>
+            Creates strongly typed representation of <c>null</c>.
+            </summary>
+            <typeparam name="T">Expected type of resulting <see cref="T:System.Linq.Expressions.Expression"/></typeparam>
+            <returns><see cref="T:Expressions.Shortcuts.ExpressionContainer`1"/></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Null(System.Type)">
+            <summary>
+            Creates strongly typed representation of <c>null</c>.
+            </summary>
+            <returns><see cref="T:Expressions.Shortcuts.ExpressionContainer`1"/></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Try">
+            <summary>
+            Creates <see cref="T:System.Linq.Expressions.TryExpression"/>.
+            Parameters are resolved based on actual passed parameters.
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Code``1(System.Func{``0})">
+            <summary>
+            Executes code directly by passing <paramref name="code"/> to <see cref="M:Expressions.Shortcuts.ExpressionShortcuts.Call(System.Linq.Expressions.Expression{System.Action})"/>
+            </summary>
+            <param name="code"></param>
+            <typeparam name="T"></typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Code(System.Action)">
+            <summary>
+            Executes code directly by passing <paramref name="code"/> to <see cref="M:Expressions.Shortcuts.ExpressionShortcuts.Call(System.Linq.Expressions.Expression{System.Action})"/>
+            </summary>
+            <param name="code"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Switch``1(Expressions.Shortcuts.ExpressionContainer{``0})">
+            <summary>
+            Creates <see langword="switch"/> expression
+            </summary>
+            <param name="value"></param>
+            <typeparam name="T">Type of variable</typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionShortcuts.Condition(System.Type)">
+            <summary>
+            Creates <see langword="if"/> expression
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:Expressions.Shortcuts.ExpressionUtils">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionUtils.ReplaceParameters(System.Collections.Generic.IEnumerable{System.Linq.Expressions.Expression},System.Collections.Generic.IList{System.Linq.Expressions.Expression})">
+            <summary>
+            Visits <paramref name="expressions"/> and replaces <see cref="T:System.Linq.Expressions.ParameterExpression"/> by <paramref name="newValues"/> performing match by <see cref="P:System.Linq.Expressions.Expression.Type"/>
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.ExpressionUtils.ReplaceParameters(System.Linq.Expressions.Expression,System.Linq.Expressions.Expression[])">
+            <summary>
+            Visits <paramref name="expression"/> and replaces <see cref="T:System.Linq.Expressions.ParameterExpression"/> by <paramref name="newValues"/> performing match by <see cref="P:System.Linq.Expressions.Expression.Type"/>
+            </summary>
+        </member>
+        <member name="T:Expressions.Shortcuts.SwitchBuilder`1">
+            <summary>
+            
+            </summary>
+            <typeparam name="T"></typeparam>
+        </member>
+        <member name="F:Expressions.Shortcuts.SwitchBuilder`1.DefaultCase">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:Expressions.Shortcuts.SwitchBuilder`1.Cases">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:Expressions.Shortcuts.SwitchBuilder`1.Value">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:Expressions.Shortcuts.SwitchBuilder`1.ComparerMethod">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.SwitchBuilder`1.Default``1(Expressions.Shortcuts.ExpressionContainer{``0})">
+            <summary>
+            Creates <see langword="default"/> case
+            </summary>
+            <param name="expression"></param>
+            <typeparam name="TR"></typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.SwitchBuilder`1.Default``1(System.Action{Expressions.Shortcuts.ExpressionContainer{`0},Expressions.Shortcuts.BlockBuilder})">
+            <summary>
+            Creates <see langword="default"/> case
+            </summary>
+            <param name="builder"></param>
+            <typeparam name="TR"></typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.SwitchBuilder`1.Default(Expressions.Shortcuts.ExpressionContainer)">
+            <summary>
+            Creates <see langword="default"/> case
+            </summary>
+            <param name="expression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.SwitchBuilder`1.Default(System.Action{Expressions.Shortcuts.ExpressionContainer{`0},Expressions.Shortcuts.BlockBuilder})">
+            <summary>
+            Creates <see langword="default"/> <see langword="case"/>
+            </summary>
+            <param name="builder"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.SwitchBuilder`1.Case``1(Expressions.Shortcuts.ExpressionContainer{``0},Expressions.Shortcuts.ExpressionContainer{`0}[])">
+            <summary>
+            Creates new <see langword="case"/> expression for values specified in <paramref name="testValues"/>
+            </summary>
+            <param name="expression"></param>
+            <param name="testValues"></param>
+            <typeparam name="TR"></typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.SwitchBuilder`1.Case``1(System.Action{Expressions.Shortcuts.ExpressionContainer{`0},Expressions.Shortcuts.BlockBuilder},Expressions.Shortcuts.ExpressionContainer{`0}[])">
+            <summary>
+            Creates new <see langword="case"/> expression for values specified in <paramref name="testValues"/>
+            </summary>
+            <param name="builder"></param>
+            <param name="testValues"></param>
+            <typeparam name="TR"></typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.SwitchBuilder`1.Case(Expressions.Shortcuts.ExpressionContainer,Expressions.Shortcuts.ExpressionContainer{`0}[])">
+            <summary>
+            Creates new <see langword="case"/> expression for values specified in <paramref name="testValues"/>
+            </summary>
+            <param name="expression"></param>
+            <param name="testValues"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.SwitchBuilder`1.Case(System.Action{Expressions.Shortcuts.ExpressionContainer{`0},Expressions.Shortcuts.BlockBuilder},Expressions.Shortcuts.ExpressionContainer{`0}[])">
+            <summary>
+            Creates new <see langword="case"/> expression for values specified in <paramref name="testValues"/>
+            </summary>
+            <param name="builder"></param>
+            <param name="testValues"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.SwitchBuilder`1.Comparer(System.Reflection.MethodInfo)">
+            <summary>
+            Method used for comparison. <c>Must be <see langword="static"/> and accept 2 arguments of switch variable type</c>
+            </summary>
+            <param name="comparer"></param>
+            <returns></returns>
+        </member>
+        <member name="P:Expressions.Shortcuts.SwitchBuilder`1.Expression">
+            /// <inheritdoc />
+        </member>
+        <member name="T:Expressions.Shortcuts.SwitchBuilder`2">
+            <summary>
+            
+            </summary>
+            <typeparam name="T"></typeparam>
+            <typeparam name="TR"></typeparam>
+        </member>
+        <member name="M:Expressions.Shortcuts.SwitchBuilder`2.Default(Expressions.Shortcuts.ExpressionContainer{`1})">
+            <summary>
+            Creates <see langword="default"/> case
+            </summary>
+            <param name="expression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.SwitchBuilder`2.Default(System.Action{Expressions.Shortcuts.ExpressionContainer{`0},Expressions.Shortcuts.BlockBuilder})">
+            <summary>
+            Creates <see langword="default"/> case
+            </summary>
+            <param name="builder"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.SwitchBuilder`2.Case(Expressions.Shortcuts.ExpressionContainer{`1},Expressions.Shortcuts.ExpressionContainer{`0}[])">
+            <summary>
+            Creates new <see langword="case"/> expression for values specified in <paramref name="testValues"/>
+            </summary>
+            <param name="expression"></param>
+            <param name="testValues"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.SwitchBuilder`2.Case(System.Action{Expressions.Shortcuts.ExpressionContainer{`0},Expressions.Shortcuts.BlockBuilder},Expressions.Shortcuts.ExpressionContainer{`0}[])">
+            <summary>
+            Creates new <see langword="case"/> expression for values specified in <paramref name="testValues"/>
+            </summary>
+            <param name="builder"></param>
+            <param name="testValues"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.SwitchBuilder`2.Comparer(System.Reflection.MethodInfo)">
+            <summary>
+            Method used for comparison. <c>Must be <see langword="static"/> and accept 2 arguments of switch variable type</c>
+            </summary>
+            <param name="comparer"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Expressions.Shortcuts.TryCatchFinallyBuilder">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:Expressions.Shortcuts.TryCatchFinallyBuilder.Body(System.Action{Expressions.Shortcuts.BlockBuilder})">
+            <summary>
+            Code surrounded by try/catch/finally
+            </summary>
+            <param name="body"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.TryCatchFinallyBuilder.Body(System.Linq.Expressions.Expression)">
+            <summary>
+            Code surrounded by try/catch/finally
+            </summary>
+            <param name="body"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.TryCatchFinallyBuilder.Catch``1(System.Action{Expressions.Shortcuts.ExpressionContainer{``0},Expressions.Shortcuts.BlockBuilder})">
+            <summary>
+            Adds <see langword="catch" /> statement catching <see cref="T:System.Exception"/> specified as <typeparamref name="T"/>
+            </summary>
+            <param name="catch"><see langword="catch" /> block body</param>
+            <typeparam name="T"><see cref="T:System.Exception"/> type to catch</typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.TryCatchFinallyBuilder.Catch``1(System.Func{Expressions.Shortcuts.ExpressionContainer{``0},System.Linq.Expressions.Expression})">
+            <summary>
+            Adds <see langword="catch" /> statement catching <see cref="T:System.Exception"/> specified as <typeparamref name="T"/>
+            </summary>
+            <param name="catch"><see langword="catch" /> block body</param>
+            <typeparam name="T"><see cref="T:System.Exception"/> type to catch</typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.TryCatchFinallyBuilder.Catch(System.Linq.Expressions.CatchBlock)">
+            <summary>
+            Adds <see langword="catch" /> statement catching all <see cref="T:System.Exception"/> types
+            </summary>
+            <param name="catch"><see langword="catch" /> block body</param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.TryCatchFinallyBuilder.Finally(System.Action{Expressions.Shortcuts.BlockBuilder})">
+            <summary>
+            Adds <see langword="finally" /> statement
+            </summary>
+            <param name="finally"><see langword="catch" /> block body</param>
+            <returns></returns>
+        </member>
+        <member name="M:Expressions.Shortcuts.TryCatchFinallyBuilder.Finally(System.Linq.Expressions.Expression)">
+            <summary>
+            Adds <see langword="finally" /> statement
+            </summary>
+            <param name="finally"><see langword="catch" /> block body</param>
+            <returns></returns>
+        </member>
+        <member name="P:Expressions.Shortcuts.TryCatchFinallyBuilder.Expression">
+            <inheritdoc cref="P:Expressions.Shortcuts.ExpressionContainer.Expression"/>
+        </member>
+        <member name="T:HandlebarsDotNet.Arguments">
+            <summary>
+            Mimics <see cref="T:System.Array"/> behavior however in most cases does not require memory allocation. 
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.Arguments.#ctor(System.Int32)">
+            <summary>
+            Ctor used to bypass struct limitations
+            </summary>
+            <param name="dummy">Should always by 0</param>
+        </member>
+        <member name="M:HandlebarsDotNet.Arguments.AsEnumerable">
+            <summary>
+            Returns <see cref="!:IEnumerable&lt;object&gt;"/> without boxing 
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="P:HandlebarsDotNet.BindingContext.Extensions">
+            <summary>
+            Used to cary additional data
+            </summary>
+        </member>
+        <member name="T:HandlebarsDotNet.BlockHelperOptions">
+            <summary>
+            Contains properties accessible withing <see cref="T:HandlebarsDotNet.HandlebarsBlockHelper"/> function 
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.BlockHelperOptions.Template">
+            <summary>
+            BlockHelper body
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.BlockHelperOptions.Template(HandlebarsDotNet.EncodedTextWriter@,System.Object)">
+            <summary>
+            BlockHelper body
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.BlockHelperOptions.Template(HandlebarsDotNet.EncodedTextWriter@,HandlebarsDotNet.Context@)">
+            <summary>
+            BlockHelper body
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.BlockHelperOptions.Template(HandlebarsDotNet.EncodedTextWriter@,HandlebarsDotNet.BindingContext)">
+            <summary>
+            BlockHelper body
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.BlockHelperOptions.Inverse">
+            <summary>
+            BlockHelper body
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.BlockHelperOptions.Inverse(HandlebarsDotNet.EncodedTextWriter@,System.Object)">
+            <summary>
+            BlockHelper body
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.BlockHelperOptions.Inverse(HandlebarsDotNet.EncodedTextWriter@,HandlebarsDotNet.Context@)">
+            <summary>
+            BlockHelper body
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.BlockHelperOptions.Inverse(HandlebarsDotNet.EncodedTextWriter@,HandlebarsDotNet.BindingContext)">
+            <summary>
+            BlockHelper body
+            </summary>
+        </member>
+        <member name="T:HandlebarsDotNet.Collections.CascadeIndex`3">
+            <summary>
+            Allows to create chains of <see cref="T:HandlebarsDotNet.Collections.IIndexed`2"/> collections
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <typeparam name="TComparer"></typeparam>
+        </member>
+        <member name="M:HandlebarsDotNet.Collections.DictionarySlim`3.#ctor(`2)">
+            <summary>
+            Construct with default capacity.
+            </summary>
+        </member>
+        <member name="P:HandlebarsDotNet.Collections.DictionarySlim`3.Count">
+            <summary>
+            Count of entries in the dictionary.
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.Collections.DictionarySlim`3.Clear">
+            <summary>
+            Clears the dictionary. Note that this invalidates any active enumerators.
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.Collections.DictionarySlim`3.ContainsKey(`0@)">
+            <summary>
+            Looks for the specified key in the dictionary.
+            </summary>
+            <param name="key">Key to look for</param>
+            <returns>true if the key is present, otherwise false</returns>
+        </member>
+        <member name="M:HandlebarsDotNet.Collections.DictionarySlim`3.TryGetValue(`0@,`1@)">
+            <summary>
+            Gets the value if present for the specified key.
+            </summary>
+            <param name="key">Key to look for</param>
+            <param name="value">Value found, otherwise default(TValue)</param>
+            <returns>true if the key is present, otherwise false</returns>
+        </member>
+        <member name="T:HandlebarsDotNet.Collections.DictionarySlim`3.Enumerator">
+            <summary>
+            Enumerator
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.Collections.DictionarySlim`3.Enumerator.MoveNext">
+            <summary>
+            Move to next
+            </summary>
+        </member>
+        <member name="P:HandlebarsDotNet.Collections.DictionarySlim`3.Enumerator.Current">
+            <summary>
+            Get current value
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.Collections.DictionarySlim`3.Enumerator.Dispose">
+            <summary>
+            Dispose the enumerator
+            </summary>
+        </member>
+        <member name="T:HandlebarsDotNet.Collections.FixedSizeDictionary`3">
+            <summary>
+            Append-only data structure of a fixed size that provides dictionary-like lookup capabilities.
+            <para>Performance of <see cref="M:HandlebarsDotNet.Collections.FixedSizeDictionary`3.AddOrReplace(`0@,`1@,HandlebarsDotNet.Collections.EntryIndex{`0}@)"/>, <see cref="M:HandlebarsDotNet.Collections.FixedSizeDictionary`3.ContainsKey(`0@)"/> and <see cref="M:HandlebarsDotNet.Collections.FixedSizeDictionary`3.TryGetValue(`0@,`1@)"/>
+            starts to degrade as number of items comes closer to <see cref="P:HandlebarsDotNet.Collections.FixedSizeDictionary`3.Capacity"/>.</para>
+            <para><see cref="!:TryGetValue(in EntryIndex(TKey), out TValue)"/> and <see cref="!:ContainsKey(in EntryIndex(TKey)"/> always performs at constant time.</para>
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.Collections.FixedSizeDictionary`3.#ctor(System.Int32,System.Int32,`2)">
+            <summary>
+            
+            </summary>
+            <param name="bucketsCount">Actual number of buckets would be the closest power of 2 and multiplied by itself. Maximum size is <c>1024</c>.</param>
+            <param name="bucketSize">Actual bucket size would be closest prime number. Maximum size is <c>199</c></param>
+            <param name="comparer"></param>
+        </member>
+        <member name="P:HandlebarsDotNet.Collections.FixedSizeDictionary`3.Capacity">
+            <summary>
+            Amount of items can be added to the dictionary
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.Collections.FixedSizeDictionary`3.TryGetIndex(`0,HandlebarsDotNet.Collections.EntryIndex{`0}@)">
+            <summary>
+            Calculates current index for the given key
+            </summary>
+            <param name="key"></param>
+            <param name="index"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HandlebarsDotNet.Collections.FixedSizeDictionary`3.ContainsKey(HandlebarsDotNet.Collections.EntryIndex{`0}@)">
+            <summary>
+            Checks key existence at guarantied O(1) ignoring actual key comparison
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.Collections.FixedSizeDictionary`3.ContainsKey(`0@)">
+            <summary>
+            Checks key existence at best O(1) and worst O(m) where 'm' is number of collisions 
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.Collections.FixedSizeDictionary`3.TryGetValue(HandlebarsDotNet.Collections.EntryIndex{`0}@,`1@)">
+            <summary>
+            Performs lookup at guarantied O(1) ignoring actual key comparison
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.Collections.FixedSizeDictionary`3.TryGetValue(`0@,`1@)">
+            <summary>
+            Performs lookup at best O(1) and worst O(m) where 'm' is number of collisions
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.Collections.FixedSizeDictionary`3.AddOrReplace(`0@,`1@,HandlebarsDotNet.Collections.EntryIndex{`0}@)">
+            <summary>
+            Adds or replaces an item at best O(1) and worst O(m) where 'm' is number of collisions
+            </summary>
+            <exception cref="T:System.InvalidOperationException">Item cannot be added due to capacity constraint.</exception>
+        </member>
+        <member name="P:HandlebarsDotNet.Collections.FixedSizeDictionary`3.Item(HandlebarsDotNet.Collections.EntryIndex{`0}@)">
+            <summary>
+            Gets or replaces item at a given index at O(1)
+            </summary>
+            <param name="entryIndex"></param>
+        </member>
+        <member name="M:HandlebarsDotNet.Collections.FixedSizeDictionary`3.CopyTo(HandlebarsDotNet.Collections.FixedSizeDictionary{`0,`1,`2})">
+            <summary>
+            Copies items from one dictionary to another at O(n)
+            </summary>
+            <param name="destination"></param>
+        </member>
+        <member name="M:HandlebarsDotNet.Collections.FixedSizeDictionary`3.Reset">
+            <summary>
+            Performs fast cleanup without cleaning internal storage (does not make objects available for GC)
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.Collections.FixedSizeDictionary`3.Clear">
+            <summary>
+            Performs full cleanup
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.Collections.FixedSizeDictionary`3.OptionalClear">
+            <summary>
+            Performs full cleanup once in 3 versions
+            </summary>
+        </member>
+        <member name="T:HandlebarsDotNet.Collections.IIndexed`2">
+            <summary>
+            Represents collection of <typeparamref name="TValue"/> indexed by <typeparamref name="TKey"/>
+            <para>Interface is similar to <see cref="!:IDictionary&lt;TKey,TValue&gt;"/> but exposes smaller set of APIs</para>
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+        </member>
+        <member name="T:HandlebarsDotNet.Collections.IReadOnlyIndexed`2">
+            <summary>
+            Represents read-only collection of <typeparamref name="TValue"/> indexed by <typeparamref name="TKey"/>
+            <para>Interface is similar to <see cref="T:System.Collections.Generic.IReadOnlyDictionary`2"/> but exposes smaller set of APIs</para>
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+        </member>
+        <member name="T:HandlebarsDotNet.HandlebarsCompilerException">
+            <summary>
+            Represents exceptions occured at compile time
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.HandlebarsCompilerException.#ctor(System.String)">
+            <summary>
+            
+            </summary>
+            <param name="message"></param>
+        </member>
+        <member name="T:HandlebarsDotNet.IExpressionCompiler">
+            <summary>
+            Executes compilation of lambda <see cref="T:System.Linq.Expressions.Expression`1"/> to actual <see cref="T:System.Delegate"/> 
+            </summary>
+        </member>
+        <member name="T:HandlebarsDotNet.IExpressionMiddleware">
+            <summary>
+            Allows to modify expression before lambda compilation. Should be executed as part of <see cref="T:HandlebarsDotNet.IExpressionCompiler"/>.
+            </summary>
+        </member>
+        <member name="T:HandlebarsDotNet.HandlebarsParserException">
+            <summary>
+            Represents exceptions occured at template parsing stage
+            </summary>
+        </member>
+        <member name="T:HandlebarsDotNet.Compatibility">
+            <summary>
+            Contains feature flags that breaks compatibility with Handlebarsjs.
+            </summary>
+        </member>
+        <member name="P:HandlebarsDotNet.Compatibility.SupportLastInObjectIterations">
+            <summary>
+            If <see langword="true"/> enables support for <c>@last</c> in object properties iterations.
+            </summary>
+        </member>
+        <member name="P:HandlebarsDotNet.Compatibility.RelaxedHelperNaming">
+            <summary>
+            If <see langword="true"/> enables support for Handlebars.Net helper naming rules.
+            <para>This enables helper names to be not-valid Handlebars identifiers (e.g. <code>{{ one.two }}</code>)</para>
+            <para>Such naming is not supported in Handlebarsjs and would break compatibility.</para>
+            </summary>
+        </member>
+        <member name="T:HandlebarsDotNet.CompileTimeConfiguration">
+            <summary>
+            Contains compile-time affective configuration. Changing values after template compilation would take no affect.
+            </summary>
+        </member>
+        <member name="P:HandlebarsDotNet.CompileTimeConfiguration.Features">
+            <inheritdoc cref="T:HandlebarsDotNet.Features.IFeature"/>
+        </member>
+        <member name="P:HandlebarsDotNet.CompileTimeConfiguration.ExpressionCompiler">
+            <summary>
+            The compiler used to compile <see cref="T:System.Linq.Expressions.Expression"/> 
+            </summary>
+        </member>
+        <member name="P:HandlebarsDotNet.HandlebarsConfiguration.HelperResolvers">
+            <inheritdoc cref="T:HandlebarsDotNet.Helpers.IHelperResolver"/>
+        </member>
+        <member name="P:HandlebarsDotNet.HandlebarsConfiguration.FormatProvider">
+            <inheritdoc cref="T:System.IFormatProvider"/>
+        </member>
+        <member name="P:HandlebarsDotNet.HandlebarsConfiguration.PartialTemplateResolver">
+            <summary>
+            The resolver used for unregistered partials. Defaults
+            to the <see cref="T:HandlebarsDotNet.FileSystemPartialTemplateResolver"/>.
+            </summary>
+        </member>
+        <member name="P:HandlebarsDotNet.HandlebarsConfiguration.MissingPartialTemplateHandler">
+            <summary>
+            The handler called when a partial template cannot be found.
+            </summary>
+        </member>
+        <member name="P:HandlebarsDotNet.HandlebarsConfiguration.PartialRecursionDepthLimit">
+            <summary>
+            Maximum depth to recurse into partial templates when evaluating the template. Defaults to 100.
+            </summary>
+        </member>
+        <member name="P:HandlebarsDotNet.HandlebarsConfiguration.AliasProviders">
+            <inheritdoc cref="T:HandlebarsDotNet.IMemberAliasProvider"/>
+        </member>
+        <member name="P:HandlebarsDotNet.HandlebarsConfiguration.Compatibility">
+            <inheritdoc cref="T:HandlebarsDotNet.Compatibility"/>
+        </member>
+        <member name="P:HandlebarsDotNet.HandlebarsConfiguration.CompileTimeConfiguration">
+            <inheritdoc cref="T:HandlebarsDotNet.CompileTimeConfiguration"/>
+        </member>
+        <member name="P:HandlebarsDotNet.HandlebarsConfiguration.ObjectDescriptorProviders">
+            <inheritdoc cref="T:HandlebarsDotNet.ObjectDescriptors.ObjectDescriptor"/>
+        </member>
+        <member name="P:HandlebarsDotNet.ICompiledHandlebarsConfiguration.Compatibility">
+            <inheritdoc cref="P:HandlebarsDotNet.ICompiledHandlebarsConfiguration.Compatibility"/>
+        </member>
+        <member name="P:HandlebarsDotNet.ICompiledHandlebarsConfiguration.ObjectDescriptorProviders">
+            <inheritdoc cref="T:HandlebarsDotNet.ObjectDescriptors.IObjectDescriptorProvider"/>
+        </member>
+        <member name="P:HandlebarsDotNet.ICompiledHandlebarsConfiguration.ExpressionMiddlewares">
+            <inheritdoc cref="T:HandlebarsDotNet.IExpressionMiddleware"/>
+        </member>
+        <member name="P:HandlebarsDotNet.ICompiledHandlebarsConfiguration.AliasProviders">
+            <inheritdoc cref="T:HandlebarsDotNet.IMemberAliasProvider"/>
+        </member>
+        <member name="P:HandlebarsDotNet.ICompiledHandlebarsConfiguration.ExpressionCompiler">
+            <inheritdoc cref="T:HandlebarsDotNet.IExpressionCompiler"/>
+        </member>
+        <member name="P:HandlebarsDotNet.ICompiledHandlebarsConfiguration.Features">
+            <summary>
+            List of associated <see cref="T:HandlebarsDotNet.Features.IFeature"/>s
+            </summary>
+        </member>
+        <member name="T:HandlebarsDotNet.BlockDecoratorOptions">
+            <summary>
+            Contains properties accessible withing <see cref="T:HandlebarsDotNet.HandlebarsBlockDecorator"/> function 
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.BlockDecoratorOptions.Template">
+            <summary>
+            BlockHelper body
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.BlockDecoratorOptions.Template(HandlebarsDotNet.EncodedTextWriter@,System.Object)">
+            <summary>
+            BlockHelper body
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.BlockDecoratorOptions.Template(HandlebarsDotNet.EncodedTextWriter@,HandlebarsDotNet.Context@)">
+            <summary>
+            BlockHelper body
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.BlockDecoratorOptions.Template(HandlebarsDotNet.EncodedTextWriter@,HandlebarsDotNet.BindingContext)">
+            <summary>
+            BlockHelper body
+            </summary>
+        </member>
+        <member name="T:HandlebarsDotNet.PathStructure.ChainSegment">
+            <summary>
+            Represents parts of single <see cref="T:HandlebarsDotNet.PathStructure.PathSegment"/> separated with dots.
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.PathStructure.ChainSegment.#ctor(System.String,HandlebarsDotNet.PathStructure.WellKnownVariable)">
+            <summary>
+             
+            </summary>
+        </member>
+        <member name="F:HandlebarsDotNet.PathStructure.ChainSegment.TrimmedValue">
+            <summary>
+            Value with trimmed '[' and ']'
+            </summary>
+        </member>
+        <member name="F:HandlebarsDotNet.PathStructure.ChainSegment.IsThis">
+            <summary>
+            Indicates whether <see cref="T:HandlebarsDotNet.PathStructure.ChainSegment"/> is <c>this</c> or <c>.</c>
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.PathStructure.ChainSegment.ToString">
+            <summary>
+            Returns string representation of current <see cref="T:HandlebarsDotNet.PathStructure.ChainSegment"/>
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.PathStructure.ChainSegment.Equals(HandlebarsDotNet.PathStructure.ChainSegment)">
+            <inheritdoc />
+        </member>
+        <member name="M:HandlebarsDotNet.PathStructure.ChainSegment.Equals(System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:HandlebarsDotNet.PathStructure.ChainSegment.GetHashCode">
+            <inheritdoc />
+        </member>
+        <member name="M:HandlebarsDotNet.PathStructure.ChainSegment.op_Equality(HandlebarsDotNet.PathStructure.ChainSegment,HandlebarsDotNet.PathStructure.ChainSegment)">
+            <inheritdoc cref="M:HandlebarsDotNet.PathStructure.ChainSegment.Equals(HandlebarsDotNet.PathStructure.ChainSegment)"/>
+        </member>
+        <member name="M:HandlebarsDotNet.PathStructure.ChainSegment.op_Inequality(HandlebarsDotNet.PathStructure.ChainSegment,HandlebarsDotNet.PathStructure.ChainSegment)">
+            <inheritdoc cref="M:HandlebarsDotNet.PathStructure.ChainSegment.Equals(HandlebarsDotNet.PathStructure.ChainSegment)"/>
+        </member>
+        <member name="M:HandlebarsDotNet.PathStructure.ChainSegment.op_Implicit(HandlebarsDotNet.PathStructure.ChainSegment)~System.String">
+            <inheritdoc cref="M:HandlebarsDotNet.PathStructure.ChainSegment.ToString"/>
+        </member>
+        <member name="T:HandlebarsDotNet.PathStructure.PathInfo">
+            <summary>
+            Represents path expression
+            </summary>
+        </member>
+        <member name="F:HandlebarsDotNet.PathStructure.PathInfo.IsVariable">
+            <summary>
+            Indicates whether <see cref="T:HandlebarsDotNet.PathStructure.PathInfo"/> is part of <c>@</c> variable
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.PathStructure.PathInfo.Equals(HandlebarsDotNet.PathStructure.PathInfo)">
+            <inheritdoc />
+        </member>
+        <member name="M:HandlebarsDotNet.PathStructure.PathInfo.Equals(System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:HandlebarsDotNet.PathStructure.PathInfo.GetHashCode">
+            <inheritdoc />
+        </member>
+        <member name="M:HandlebarsDotNet.PathStructure.PathInfo.ToString">
+            <summary>
+            Returns string representation of current <see cref="T:HandlebarsDotNet.PathStructure.PathInfo"/>
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.PathStructure.PathInfo.op_Implicit(HandlebarsDotNet.PathStructure.PathInfo)~System.String">
+            <inheritdoc cref="M:HandlebarsDotNet.PathStructure.PathInfo.ToString"/>
+        </member>
+        <member name="T:HandlebarsDotNet.PathStructure.PathSegment">
+            <summary>
+            Represents parts of single <see cref="T:HandlebarsDotNet.PathStructure.PathInfo"/> separated with '/'.
+            </summary>
+        </member>
+        <member name="F:HandlebarsDotNet.PathStructure.PathSegment.PathChain">
+            <inheritdoc cref="T:HandlebarsDotNet.PathStructure.ChainSegment"/>
+        </member>
+        <member name="M:HandlebarsDotNet.PathInfoLight.TagComparer">
+            <summary>
+            Used for special handling of Relaxed Helper Names
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.Features.CollectionMemberAliasProviderExtensions.UseCollectionMemberAliasProvider(HandlebarsDotNet.HandlebarsConfiguration)">
+            <summary>
+            Adds support for resolving `.length` from `.count` and vice versa
+            </summary>
+            <param name="configuration"></param>
+            <returns></returns>
+        </member>
+        <member name="T:HandlebarsDotNet.Features.IFeature">
+            <summary>
+            Feature allows to attach a behaviour on per-template basis by modifying template bound <see cref="T:HandlebarsDotNet.HandlebarsConfiguration"/>
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.Features.IFeature.OnCompiling(HandlebarsDotNet.ICompiledHandlebarsConfiguration)">
+            <summary>
+            Executes before any template parsing/compiling activity
+            </summary>
+            <param name="configuration"></param>
+        </member>
+        <member name="M:HandlebarsDotNet.Features.IFeature.CompilationCompleted">
+            <summary>
+            Executes after template is compiled
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.Features.IFeatureFactory.CreateFeature">
+            <summary>
+            Creates new <see cref="T:HandlebarsDotNet.Features.IFeature"/> for each template
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:HandlebarsDotNet.Features.MissingHelperFeatureExtension.RegisterMissingHelperHook(HandlebarsDotNet.HandlebarsConfiguration,HandlebarsDotNet.Helpers.IHelperDescriptor{HandlebarsDotNet.HelperOptions},HandlebarsDotNet.Helpers.IHelperDescriptor{HandlebarsDotNet.BlockHelperOptions})">
+            <summary>
+            Allows to intercept calls to missing helpers.
+            <para>For Handlebarsjs docs see: https://handlebarsjs.com/guide/hooks.html#helpermissing</para>
+            </summary>
+            <param name="configuration"></param>
+            <param name="helperMissing">Delegate that returns interceptor for <see cref="T:HandlebarsDotNet.HandlebarsReturnHelper"/> and <see cref="T:HandlebarsDotNet.HandlebarsHelper"/></param>
+            <param name="blockHelperMissing">Delegate that returns interceptor for <see cref="T:HandlebarsDotNet.HandlebarsBlockHelper"/></param>
+            <returns></returns>
+        </member>
+        <member name="M:HandlebarsDotNet.Features.MissingHelperFeatureExtension.RegisterMissingHelperHook(HandlebarsDotNet.HandlebarsConfiguration,HandlebarsDotNet.HandlebarsReturnWithOptionsHelper,HandlebarsDotNet.HandlebarsBlockHelper)">
+            <summary>
+            Allows to intercept calls to missing helpers.
+            <para>For Handlebarsjs docs see: https://handlebarsjs.com/guide/hooks.html#helpermissing</para>
+            </summary>
+            <param name="configuration"></param>
+            <param name="helperMissing">Delegate that returns interceptor for <see cref="T:HandlebarsDotNet.HandlebarsReturnHelper"/> and <see cref="T:HandlebarsDotNet.HandlebarsHelper"/></param>
+            <param name="blockHelperMissing">Delegate that returns interceptor for <see cref="T:HandlebarsDotNet.HandlebarsBlockHelper"/></param>
+            <returns></returns>
+        </member>
+        <member name="M:HandlebarsDotNet.Features.WarmUpFeatureExtensions.UseWarmUp(HandlebarsDotNet.HandlebarsConfiguration,System.Action{System.Collections.Generic.ICollection{System.Type}})">
+            <summary>
+            Allows to warm-up internal caches for specific types
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.Handlebars.Create(HandlebarsDotNet.HandlebarsConfiguration)">
+            <summary>
+            Creates standalone instance of <see cref="T:HandlebarsDotNet.Handlebars"/> environment
+            </summary>
+            <param name="configuration"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HandlebarsDotNet.Handlebars.CreateSharedEnvironment(HandlebarsDotNet.HandlebarsConfiguration)">
+            <summary>
+            Creates shared Handlebars environment that is used to compile templates that share the same configuration
+            <para>Runtime only changes can be applied after object creation!</para>
+            </summary>
+            <param name="configuration"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HandlebarsDotNet.Handlebars.Create(HandlebarsDotNet.ICompiledHandlebarsConfiguration)">
+            <summary>
+            Creates standalone instance of <see cref="T:HandlebarsDotNet.Handlebars"/> environment
+            </summary>
+            <param name="configuration"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HandlebarsDotNet.Handlebars.Compile(System.IO.TextReader)">
+            <summary>
+            
+            </summary>
+            <param name="template"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HandlebarsDotNet.Handlebars.RegisterHelper(System.String,HandlebarsDotNet.HandlebarsHelper)">
+            <summary>
+            Registers new <see cref="T:HandlebarsDotNet.HandlebarsHelper"/>
+            </summary>
+            <param name="helperName"></param>
+            <param name="helperFunction"></param>
+        </member>
+        <member name="M:HandlebarsDotNet.Handlebars.RegisterHelper(System.String,HandlebarsDotNet.HandlebarsHelperWithOptions)">
+            <summary>
+            Registers new <see cref="T:HandlebarsDotNet.HandlebarsHelperWithOptions"/>
+            </summary>
+            <param name="helperName"></param>
+            <param name="helperFunction"></param>
+        </member>
+        <member name="M:HandlebarsDotNet.Handlebars.RegisterHelper(System.String,HandlebarsDotNet.HandlebarsReturnHelper)">
+            <summary>
+            Registers new <see cref="T:HandlebarsDotNet.HandlebarsReturnHelper"/>
+            </summary>
+            <param name="helperName"></param>
+            <param name="helperFunction"></param>
+        </member>
+        <member name="M:HandlebarsDotNet.Handlebars.RegisterHelper(System.String,HandlebarsDotNet.HandlebarsReturnWithOptionsHelper)">
+            <summary>
+            Registers new <see cref="T:HandlebarsDotNet.HandlebarsReturnWithOptionsHelper"/>
+            </summary>
+            <param name="helperName"></param>
+            <param name="helperFunction"></param>
+        </member>
+        <member name="M:HandlebarsDotNet.Handlebars.RegisterHelper(System.String,HandlebarsDotNet.HandlebarsBlockHelper)">
+            <summary>
+            Registers new <see cref="T:HandlebarsDotNet.HandlebarsBlockHelper"/>
+            </summary>
+            <param name="helperName"></param>
+            <param name="helperFunction"></param>
+        </member>
+        <member name="M:HandlebarsDotNet.Handlebars.RegisterHelper(System.String,HandlebarsDotNet.HandlebarsReturnBlockHelper)">
+            <summary>
+            Registers new <see cref="T:HandlebarsDotNet.HandlebarsReturnBlockHelper"/>
+            </summary>
+            <param name="helperName"></param>
+            <param name="helperFunction"></param>
+        </member>
+        <member name="M:HandlebarsDotNet.Handlebars.RegisterHelper(HandlebarsDotNet.Helpers.IHelperDescriptor{HandlebarsDotNet.HelperOptions})">
+            <summary>
+            Registers new <see cref="!:HelperDescriptorBase"/>
+            </summary>
+            <param name="helperObject"></param>
+        </member>
+        <member name="M:HandlebarsDotNet.Handlebars.RegisterHelper(HandlebarsDotNet.Helpers.IHelperDescriptor{HandlebarsDotNet.BlockHelperOptions})">
+            <summary>
+            Registers new <see cref="!:BlockHelperDescriptorBase"/>
+            </summary>
+            <param name="helperObject"></param>
+        </member>
+        <member name="P:HandlebarsDotNet.Handlebars.Configuration">
+            <summary>
+            Expose the configuration in order to have access in all Helpers and Templates.
+            </summary>
+        </member>
+        <member name="T:HandlebarsDotNet.HandlebarsException">
+            <summary>
+            General <c>Handlebars</c> exception
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.HandlebarsExtensions.WriteSafeString(HandlebarsDotNet.EncodedTextWriter@,System.String)">
+            <summary>
+            Writes an encoded string using <see cref="T:HandlebarsDotNet.ITextEncoder"/>
+            </summary>
+            <param name="writer"></param>
+            <param name="value"></param>
+        </member>
+        <member name="M:HandlebarsDotNet.HandlebarsExtensions.WriteSafeString(HandlebarsDotNet.EncodedTextWriter@,System.Object)">
+            <summary>
+            Writes an encoded string using <see cref="T:HandlebarsDotNet.ITextEncoder"/>
+            </summary>
+            <param name="writer"></param>
+            <param name="value"></param>
+        </member>
+        <member name="M:HandlebarsDotNet.HandlebarsExtensions.Configure(HandlebarsDotNet.HandlebarsConfiguration,System.Action{HandlebarsDotNet.HandlebarsConfiguration})">
+            <summary>
+            Allows configuration manipulations
+            </summary>
+            <param name="configuration"></param>
+            <param name="config"></param>
+            <returns></returns>
+        </member>
+        <member name="T:HandlebarsDotNet.HandlebarsRuntimeException">
+            <summary>
+            Represents errors occured in Handlebar's runtime
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.HandlebarsUtils.IsTruthy(System.Object)">
+            <summary>
+            Implementation of JS's `==`
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HandlebarsDotNet.HandlebarsUtils.IsFalsy(System.Object)">
+            <summary>
+            Implementation of JS's `!=`
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="T:HandlebarsDotNet.Helpers.IHelperResolver">
+            <summary>
+            Allows to provide helpers on-demand
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.Helpers.IHelperResolver.TryResolveHelper(HandlebarsDotNet.PathStructure.PathInfo,System.Type,HandlebarsDotNet.Helpers.IHelperDescriptor{HandlebarsDotNet.HelperOptions}@)">
+            <summary>
+            Resolves <see cref="T:HandlebarsDotNet.HandlebarsReturnHelper"/>
+            </summary>
+            <param name="name"></param>
+            <param name="targetType"></param>
+            <param name="helper"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HandlebarsDotNet.Helpers.IHelperResolver.TryResolveBlockHelper(HandlebarsDotNet.PathStructure.PathInfo,HandlebarsDotNet.Helpers.IHelperDescriptor{HandlebarsDotNet.BlockHelperOptions}@)">
+            <summary>
+            Resolves <see cref="T:HandlebarsDotNet.HandlebarsBlockHelper"/>
+            </summary>
+            <param name="name"></param>
+            <param name="helper"></param>
+            <returns></returns>
+        </member>
+        <member name="T:HandlebarsDotNet.IHandlebars">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.IHandlebars.CreateSharedEnvironment">
+            <summary>
+            Creates shared Handlebars environment that is used to compile templates that share the same configuration
+            <para>Runtime only changes can be applied after object creation!</para>
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.IHandlebars.Compile(System.IO.TextReader)">
+            <summary>
+            
+            </summary>
+            <param name="template"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HandlebarsDotNet.IHandlebars.Configure">
+            <summary>
+            Defines current environment configuration scope.
+            <para>It's not required to call this method. However it enables certain optimizations.</para>
+            <para>Example:<code>
+            var env = Handlebars.Create();
+            using(env.Configure())
+            {
+               env.RegisterHelper(...)
+            }
+            </code></para>
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:HandlebarsDotNet.IMissingPartialTemplateHandler">
+            <summary>
+            Handler called when a partial template is missing. This allows silent error handling
+            or direct writing to the output stream.
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.IMissingPartialTemplateHandler.Handle(HandlebarsDotNet.ICompiledHandlebarsConfiguration,System.String,HandlebarsDotNet.EncodedTextWriter@)">
+            <summary>
+            Called when a partial template cannot be loaded.
+            </summary>
+            <param name="configuration">The current environment configuration.</param>
+            <param name="partialName">The name of the partial that was not found.</param>
+            <param name="textWriter">The output writer.</param>
+        </member>
+        <member name="T:HandlebarsDotNet.HtmlEncoder">
+            <summary>
+            <inheritdoc />
+            Produces <c>HTML</c> safe output.
+            </summary>
+        </member>
+        <member name="T:HandlebarsDotNet.HtmlEncoderLegacy">
+            <summary>
+            <inheritdoc />
+            Produces <c>HTML</c> safe output.
+            <para>
+            This will encode non-ascii characters.
+            this will not encode '=', '`' or ''' (single quote).
+            </para>
+            </summary>
+        </member>
+        <member name="T:HandlebarsDotNet.ITextEncoder">
+            <summary>
+            Encoder used for output encoding.
+            </summary>
+        </member>
+        <member name="T:HandlebarsDotNet.IPartialTemplateResolver">
+            <summary>
+            Template resolver that gets called when an unknown partial is requested.
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.IPartialTemplateResolver.TryRegisterPartial(HandlebarsDotNet.IHandlebars,System.String,System.String)">
+            <summary>
+            Attempt to get and register a partial template.
+            </summary>
+            <param name="env"></param>
+            <param name="partialName">The name of the partial to load.</param>
+            <param name="templatePath"></param>
+            <returns>True if the partial was found and loaded successfully. Otherwise false.</returns>
+        </member>
+        <member name="T:HandlebarsDotNet.MemberAccessors.IMemberAccessor">
+            <summary>
+            Describes mechanism to access members of object
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.MemberAccessors.IMemberAccessor.TryGetValue(System.Object,HandlebarsDotNet.PathStructure.ChainSegment,System.Object@)">
+            <summary>
+            Describes mechanism to access members of an object. Returns <see langword="true"/> if operation is successful and <paramref name="value"/> contains data, otherwise returns <see langword="false"/> 
+            </summary>
+            <param name="instance"></param>
+            <param name="memberName"></param>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="T:HandlebarsDotNet.DelegatedMemberAliasProvider">
+            <summary>
+            Provides simple interface for adding member aliases
+            </summary>
+        </member>
+        <member name="T:HandlebarsDotNet.IMemberAliasProvider`1">
+            <summary>
+            Allows to redirect member access to a different member
+            </summary>
+        </member>
+        <member name="T:HandlebarsDotNet.IMemberAliasProvider">
+            <summary>
+            Allows to redirect member access to a different member
+            </summary>
+        </member>
+        <member name="T:HandlebarsDotNet.ObjectDescriptors.IObjectDescriptorProvider">
+            <summary>
+            Facade for <see cref="T:HandlebarsDotNet.ObjectDescriptors.ObjectDescriptor"/>
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.ObjectDescriptors.IObjectDescriptorProvider.TryGetDescriptor(System.Type,HandlebarsDotNet.ObjectDescriptors.ObjectDescriptor@)">
+            <summary>
+            Tries to create <see cref="T:HandlebarsDotNet.ObjectDescriptors.ObjectDescriptor"/> for <paramref name="type"/>. 
+            </summary>
+            <param name="type"></param>
+            <param name="value"></param>
+        </member>
+        <member name="T:HandlebarsDotNet.ObjectDescriptors.ObjectDescriptor">
+            <summary>
+            Provides meta-information about <see cref="T:System.Type"/>
+            </summary>
+        </member>
+        <member name="M:HandlebarsDotNet.ObjectDescriptors.ObjectDescriptor.#ctor(System.Type,HandlebarsDotNet.MemberAccessors.IMemberAccessor,System.Func{HandlebarsDotNet.ObjectDescriptors.ObjectDescriptor,System.Object,System.Collections.IEnumerable},System.Func{HandlebarsDotNet.ObjectDescriptors.ObjectDescriptor,HandlebarsDotNet.Iterators.IIterator},System.Object[])">
+            <summary>
+            
+            </summary>
+            <param name="describedType">Returns type described by this instance of <see cref="T:HandlebarsDotNet.ObjectDescriptors.ObjectDescriptor"/></param>
+            <param name="memberAccessor"><see cref="T:HandlebarsDotNet.MemberAccessors.IMemberAccessor"/> associated with the <see cref="T:HandlebarsDotNet.ObjectDescriptors.ObjectDescriptor"/></param>
+            <param name="getProperties">Factory enabling receiving properties of specific instance</param>
+            <param name="iterator"></param>
+            <param name="dependencies"></param>
+        </member>
+        <member name="F:HandlebarsDotNet.ObjectDescriptors.ObjectDescriptor.Iterator">
+            <summary>
+            Iterator implementation for <see cref="F:HandlebarsDotNet.ObjectDescriptors.ObjectDescriptor.DescribedType"/>
+            </summary>
+        </member>
+        <member name="F:HandlebarsDotNet.ObjectDescriptors.ObjectDescriptor.Dependencies">
+            <summary>
+            Contains dependencies for <see cref="F:HandlebarsDotNet.ObjectDescriptors.ObjectDescriptor.GetProperties"/> delegate
+            </summary>
+        </member>
+        <member name="F:HandlebarsDotNet.ObjectDescriptors.ObjectDescriptor.DescribedType">
+            <summary>
+            Returns type described by this instance of <see cref="T:HandlebarsDotNet.ObjectDescriptors.ObjectDescriptor"/>
+            </summary>
+        </member>
+        <member name="F:HandlebarsDotNet.ObjectDescriptors.ObjectDescriptor.GetProperties">
+            <summary>
+            Factory enabling receiving properties of specific instance   
+            </summary>
+        </member>
+        <member name="F:HandlebarsDotNet.ObjectDescriptors.ObjectDescriptor.MemberAccessor">
+            <summary>
+            <see cref="T:HandlebarsDotNet.MemberAccessors.IMemberAccessor"/> associated with the <see cref="T:HandlebarsDotNet.ObjectDescriptors.ObjectDescriptor"/>
+            </summary>
+        </member>
+        <member name="T:HandlebarsDotNet.Runtime.BoxedValues">
+            <summary>
+            Provides cache for frequently used struct values to avoid unnecessary boxing. 
+            <para>Overuse may lead to memory leaks! Do not store one-time values here!</para>
+            <para>Usage example: indexes in iterators</para>
+            </summary>
+        </member>
+        <member name="T:HandlebarsDotNet.StringUtils.Substring">
+            <summary>
+            Allows to perform substring-related manipulations without memory overhead
+            </summary>
+        </member>
+        <member name="T:HandlebarsDotNet.HandlebarsHelper">
+            <summary>
+            InlineHelper: {{#helper arg1 arg2}}
+            </summary>
+            <param name="output"></param>
+            <param name="context"></param>
+            <param name="arguments"></param>
+        </member>
+        <member name="T:HandlebarsDotNet.HandlebarsHelperWithOptions">
+            <summary>
+            InlineHelper: {{#helper arg1 arg2}}
+            </summary>
+            <param name="output"></param>
+            <param name="options"></param>
+            <param name="context"></param>
+            <param name="arguments"></param>
+        </member>
+        <member name="T:HandlebarsDotNet.HandlebarsReturnHelper">
+            <summary>
+            InlineHelper: {{#helper arg1 arg2}}, supports <see cref="T:System.Object"/> value return
+            </summary>
+            <param name="context"></param>
+            <param name="arguments"></param>
+        </member>
+        <member name="T:HandlebarsDotNet.HandlebarsReturnWithOptionsHelper">
+            <summary>
+            InlineHelper: {{#helper arg1 arg2}}, supports <see cref="T:System.Object"/> value return
+            </summary>
+            <param name="options"></param>
+            <param name="context"></param>
+            <param name="arguments"></param>
+        </member>
+        <member name="T:HandlebarsDotNet.HandlebarsBlockHelper">
+            <summary>
+            BlockHelper: {{#helper}}..{{/helper}}
+            </summary>
+            <param name="output"></param>
+            <param name="options"></param>
+            <param name="context"></param>
+            <param name="arguments"></param>
+        </member>
+        <member name="T:HandlebarsDotNet.HandlebarsReturnBlockHelper">
+            <summary>
+            BlockHelper: {{#helper}}..{{/helper}}
+            </summary>
+            <param name="options"></param>
+            <param name="context"></param>
+            <param name="arguments"></param>
+        </member>
+    </members>
+</doc>

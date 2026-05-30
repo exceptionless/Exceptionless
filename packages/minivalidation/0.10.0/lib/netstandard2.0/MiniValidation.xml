@@ -1,0 +1,195 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MiniValidation</name>
+    </assembly>
+    <members>
+        <member name="T:MiniValidation.IAsyncValidatableObject">
+            <summary>
+            Provides a way for an object to be validated asynchronously.
+            </summary>
+        </member>
+        <member name="M:MiniValidation.IAsyncValidatableObject.ValidateAsync(System.ComponentModel.DataAnnotations.ValidationContext)">
+            <summary>
+            Determines whether the specified object is valid.
+            </summary>
+            <param name="validationContext">The validation context.</param>
+            <returns>A collection that holds failed-validation information.</returns>
+        </member>
+        <member name="T:MiniValidation.MiniValidator">
+            <summary>
+            Contains methods and properties for performing validation operations with <see cref="T:System.ComponentModel.DataAnnotations.Validator"/> on objects whos properties
+            are decorated with <see cref="T:System.ComponentModel.DataAnnotations.ValidationAttribute"/>s.
+            </summary>
+        </member>
+        <member name="P:MiniValidation.MiniValidator.MaxDepth">
+            <summary>
+            Gets or sets the maximum depth allowed when validating an object with recursion enabled.
+            Defaults to 32.
+            </summary>
+        </member>
+        <member name="M:MiniValidation.MiniValidator.RequiresValidation(System.Type,System.Boolean)">
+            <summary>
+            Determines if the specified <see cref="T:System.Type"/> has anything to validate.
+            </summary>
+            <remarks>
+            Objects of types with nothing to validate will always return <c>true</c> when passed to <see cref="M:MiniValidation.MiniValidator.TryValidate``1(``0,System.Boolean,System.Collections.Generic.IDictionary{System.String,System.String[]}@)"/>.
+            </remarks>
+            <param name="targetType">The <see cref="T:System.Type"/>.</param>
+            <param name="recurse"><c>true</c> to recursively check descendant types; if <c>false</c> only simple values directly on the target type are checked.</param>
+            <returns><c>true</c> if <paramref name="targetType"/> has anything to validate, <c>false</c> if not.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="targetType"/> is <c>null</c>.</exception>
+        </member>
+        <member name="M:MiniValidation.MiniValidator.TryValidate``1(``0,System.Collections.Generic.IDictionary{System.String,System.String[]}@)">
+            <summary>
+            Determines whether the specific object is valid. This method recursively validates descendant objects.
+            </summary>
+            <param name="target">The object to validate.</param>
+            <param name="errors">A dictionary that contains details of each failed validation.</param>
+            <returns><c>true</c> if <paramref name="target"/> is valid; otherwise <c>false</c>.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="target"/> is <c>null</c>.</exception>
+        </member>
+        <member name="M:MiniValidation.MiniValidator.TryValidate``1(``0,System.IServiceProvider,System.Collections.Generic.IDictionary{System.String,System.String[]}@)">
+            <summary>
+            Determines whether the specific object is valid. This method recursively validates descendant objects.
+            </summary>
+            <param name="target">The object to validate.</param>
+            <param name="serviceProvider">The service provider to use when creating ValidationContext.</param>
+            <param name="errors">A dictionary that contains details of each failed validation.</param>
+            <returns><c>true</c> if <paramref name="target"/> is valid; otherwise <c>false</c>.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="target"/> is <c>null</c>.</exception>
+        </member>
+        <member name="M:MiniValidation.MiniValidator.TryValidate``1(``0,System.Boolean,System.Collections.Generic.IDictionary{System.String,System.String[]}@)">
+            <summary>
+            Determines whether the specific object is valid.
+            </summary>
+            <typeparam name="TTarget">The type of the target of validation.</typeparam>
+            <param name="target">The object to validate.</param>
+            <param name="recurse"><c>true</c> to recursively validate descendant objects; if <c>false</c> only simple values directly on <paramref name="target"/> are validated.</param>
+            <param name="errors">A dictionary that contains details of each failed validation.</param>
+            <returns><c>true</c> if <paramref name="target"/> is valid; otherwise <c>false</c>.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="target"/> is <c>null</c>.</exception>
+        </member>
+        <member name="M:MiniValidation.MiniValidator.TryValidate``1(``0,System.IServiceProvider,System.Boolean,System.Collections.Generic.IDictionary{System.String,System.String[]}@)">
+            <summary>
+            Determines whether the specific object is valid.
+            </summary>
+            <typeparam name="TTarget">The type of the target of validation.</typeparam>
+            <param name="target">The object to validate.</param>
+            <param name="serviceProvider">The service provider to use when creating ValidationContext.</param>
+            <param name="recurse"><c>true</c> to recursively validate descendant objects; if <c>false</c> only simple values directly on <paramref name="target"/> are validated.</param>
+            <param name="errors">A dictionary that contains details of each failed validation.</param>
+            <returns><c>true</c> if <paramref name="target"/> is valid; otherwise <c>false</c>.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="target"/> is <c>null</c>.</exception>
+        </member>
+        <member name="M:MiniValidation.MiniValidator.TryValidate``1(``0,System.Boolean,System.Boolean,System.Collections.Generic.IDictionary{System.String,System.String[]}@)">
+            <summary>
+            Determines whether the specific object is valid.
+            </summary>
+            <typeparam name="TTarget"></typeparam>
+            <param name="target">The object to validate.</param>
+            <param name="recurse"><c>true</c> to recursively validate descendant objects; if <c>false</c> only simple values directly on <paramref name="target"/> are validated.</param>
+            <param name="allowAsync"><c>true</c> to allow asynchronous validation if an object in the graph requires it.</param>
+            <param name="errors">A dictionary that contains details of each failed validation.</param>
+            <returns><c>true</c> if <paramref name="target"/> is valid; otherwise <c>false</c>.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="target"/> is <c>null</c>.</exception>
+            <exception cref="T:System.ArgumentException">Throw when <paramref name="target"/> requires async validation and <paramref name="allowAsync"/> is <c>false</c>.</exception>
+        </member>
+        <member name="M:MiniValidation.MiniValidator.TryValidate``1(``0,System.IServiceProvider,System.Boolean,System.Boolean,System.Collections.Generic.IDictionary{System.String,System.String[]}@)">
+            <summary>
+            Determines whether the specific object is valid.
+            </summary>
+            <typeparam name="TTarget"></typeparam>
+            <param name="target">The object to validate.</param>
+            <param name="serviceProvider">The service provider to use when creating ValidationContext.</param>
+            <param name="recurse"><c>true</c> to recursively validate descendant objects; if <c>false</c> only simple values directly on <paramref name="target"/> are validated.</param>
+            <param name="allowAsync"><c>true</c> to allow asynchronous validation if an object in the graph requires it.</param>
+            <param name="errors">A dictionary that contains details of each failed validation.</param>
+            <returns><c>true</c> if <paramref name="target"/> is valid; otherwise <c>false</c>.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="target"/> is <c>null</c>.</exception>
+            <exception cref="T:System.ArgumentException">Throw when <paramref name="target"/> requires async validation and <paramref name="allowAsync"/> is <c>false</c>.</exception>
+        </member>
+        <member name="M:MiniValidation.MiniValidator.TryValidateImpl``1(``0,System.IServiceProvider,System.Boolean,System.Boolean,System.Collections.Generic.IDictionary{System.String,System.String[]}@)">
+            <summary>
+            Determines whether the specific object is valid.
+            </summary>
+            <typeparam name="TTarget"></typeparam>
+            <param name="target">The object to validate.</param>
+            <param name="serviceProvider">The service provider to use when creating ValidationContext.</param>
+            <param name="recurse"><c>true</c> to recursively validate descendant objects; if <c>false</c> only simple values directly on <paramref name="target"/> are validated.</param>
+            <param name="allowAsync"><c>true</c> to allow asynchronous validation if an object in the graph requires it.</param>
+            <param name="errors">A dictionary that contains details of each failed validation.</param>
+            <returns><c>true</c> if <paramref name="target"/> is valid; otherwise <c>false</c>.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="target"/> is <c>null</c>.</exception>
+            <exception cref="T:System.ArgumentException">Throw when <paramref name="target"/> requires async validation and <paramref name="allowAsync"/> is <c>false</c>.</exception>
+        </member>
+        <member name="M:MiniValidation.MiniValidator.TryValidateAsync``1(``0)">
+            <summary>
+            Determines whether the specific object is valid.
+            </summary>
+            <param name="target">The object to validate.</param>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="target"/> is <c>null</c>.</exception>
+        </member>
+        <member name="M:MiniValidation.MiniValidator.TryValidateAsync``1(``0,System.IServiceProvider)">
+            <summary>
+            Determines whether the specific object is valid.
+            </summary>
+            <param name="target">The object to validate.</param>
+            <param name="serviceProvider">The service provider to use when creating ValidationContext.</param>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="target"/> is <c>null</c>.</exception>
+        </member>
+        <member name="M:MiniValidation.MiniValidator.TryValidateAsync``1(``0,System.Boolean)">
+            <summary>
+            Determines whether the specific object is valid.
+            </summary>
+            <param name="target">The object to validate.</param>
+            <param name="recurse"><c>true</c> to recursively validate descendant objects; if <c>false</c> only simple values directly on <paramref name="target"/> are validated.</param>
+            <returns><c>true</c> if <paramref name="target"/> is valid; otherwise <c>false</c> and the validation errors.</returns>
+            <exception cref="T:System.ArgumentNullException"></exception>
+        </member>
+        <member name="M:MiniValidation.MiniValidator.TryValidateAsync``1(``0,System.IServiceProvider,System.Boolean)">
+            <summary>
+            Determines whether the specific object is valid.
+            </summary>
+            <param name="target">The object to validate.</param>
+            <param name="serviceProvider">The service provider to use when creating ValidationContext.</param>
+            <param name="recurse"><c>true</c> to recursively validate descendant objects; if <c>false</c> only simple values directly on <paramref name="target"/> are validated.</param>
+            <returns><c>true</c> if <paramref name="target"/> is valid; otherwise <c>false</c> and the validation errors.</returns>
+            <exception cref="T:System.ArgumentNullException"></exception>
+        </member>
+        <member name="M:MiniValidation.MiniValidator.TryValidateImplAsync``1(``0,System.IServiceProvider,System.Boolean)">
+            <summary>
+            Determines whether the specific object is valid.
+            </summary>
+            <param name="target">The object to validate.</param>
+            <param name="serviceProvider">The service provider to use when creating ValidationContext.</param>
+            <param name="recurse"><c>true</c> to recursively validate descendant objects; if <c>false</c> only simple values directly on <paramref name="target"/> are validated.</param>
+            <returns><c>true</c> if <paramref name="target"/> is valid; otherwise <c>false</c> and the validation errors.</returns>
+            <exception cref="T:System.ArgumentNullException"></exception>
+        </member>
+        <member name="T:MiniValidation.SkipRecursionAttribute">
+            <summary>
+            Indicates that a property should be ignored during recursive validation when using
+            <see cref="M:MiniValidation.MiniValidator.TryValidate``1(``0,System.Collections.Generic.IDictionary{System.String,System.String[]}@)"/>.
+            Note that any validation attributes on the property itself will still be validated.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute">
+            <summary>
+            Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue"/>,
+            the parameter will not be null even if the corresponding type allows it.
+            </summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>
+            Initializes the attribute with the specified return value condition.
+            </summary>
+            <param name="returnValue">The return value condition. If the method returns this value, the associated parameter will not be null.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue">
+            <summary>
+            Gets the return value condition.
+            </summary>
+        </member>
+    </members>
+</doc>

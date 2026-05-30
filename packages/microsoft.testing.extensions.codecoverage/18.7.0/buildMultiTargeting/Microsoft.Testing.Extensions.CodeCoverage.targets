@@ -1,0 +1,33 @@
+<!--
+***********************************************************************************************
+Original file taken from coverlet repository: 
+https://github.com/coverlet-coverage/coverlet/blob/master/src/coverlet.collector/build/netstandard2.0/coverlet.collector.targets
+***********************************************************************************************
+-->
+
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(NETCoreSdkVersion)' != ''">
+    <_msCoverageExtensionSdkNETCoreSdkVersion>$(NETCoreSdkVersion)</_msCoverageExtensionSdkNETCoreSdkVersion>
+    <_msCoverageExtensionSdkNETCoreSdkVersion Condition="$(_msCoverageExtensionSdkNETCoreSdkVersion.Contains('-'))">$(_msCoverageExtensionSdkNETCoreSdkVersion.Split('-')[0])</_msCoverageExtensionSdkNETCoreSdkVersion>
+    <_msCoverageExtensionSdkMinVersionWithDependencyTarget>8.0.400</_msCoverageExtensionSdkMinVersionWithDependencyTarget>
+    <_msCoverageExtensionSourceRootTargetName>MsCoverageExtensionGetPathMap</_msCoverageExtensionSourceRootTargetName>
+    <_msCoverageExtensionSourceRootTargetName Condition="'$([System.Version]::Parse($(_msCoverageExtensionSdkNETCoreSdkVersion)).CompareTo($([System.Version]::Parse($(_msCoverageExtensionSdkMinVersionWithDependencyTarget)))))' &gt;= '0' ">InitializeSourceRootMappedPaths</_msCoverageExtensionSourceRootTargetName>
+  </PropertyGroup>
+
+  <Target Condition="'$(DesignTimeBuild)' != 'true' AND '$(NETCoreSdkVersion)' != ''" Name="MsCoverageExtensionReferencedPathMaps" BeforeTargets="BeforeCompile"
+          DependsOnTargets="ResolveProjectReferences;$(_msCoverageExtensionSourceRootTargetName)" >
+    <ItemGroup>
+      <_msCoverageExtensionByProject Include="@(AnnotatedProjects->'%(FullPath)')" OriginalPath="%(SourceRoot.Identity)" MappedPath="%(SourceRoot.MappedPath)" />
+      <_msCoverageExtensionMapping Include="@(_msCoverageExtensionByProject->'%(Identity)|%(OriginalPath)=%(MappedPath)')" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_msCoverageExtensionSourceRootMappingFilePath>$([MSBuild]::EnsureTrailingSlash('$(OutputPath)')).msCoverageExtensionSourceRootsMapping_$(AssemblyName)</_msCoverageExtensionSourceRootMappingFilePath>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_msCoverageExtensionSourceRootMappingFilePath)" Lines="@(_msCoverageExtensionMapping)" 
+                      Overwrite="true" Encoding="Unicode" 
+                      Condition="'@(_msCoverageExtensionMapping)'!=''" />
+    <ItemGroup>
+      <FileWrites Include="$(_msCoverageExtensionSourceRootMappingFilePath)" Condition="'@(_msCoverageExtensionMapping)'!=''" />
+    </ItemGroup>
+  </Target>
+</Project>

@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>McSherry.SemanticVersioning</id>
+    <version>1.4.1</version>
+    <title>Semantic Versioning for .NET</title>
+    <authors>Liam McSherry</authors>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <projectUrl>https://github.com/McSherry/McSherry.SemanticVersioning</projectUrl>
+    <description>A comprehensive library for working with Semantic Versions (2.0.0), version ranges (node-semver v6.0.0), and Monotonic Versions (1.2).</description>
+    <releaseNotes>This patch release adds a .NET 5 build target.</releaseNotes>
+    <copyright>2015-21 © Liam McSherry</copyright>
+    <tags>semantic sem version ver versioning semantic versioning semver 2.0.0 monotonic mo mover monotonic versioning library lib</tags>
+    <repository url="https://github.com/McSherry/McSherry.SemanticVersioning" />
+    <dependencies>
+      <group targetFramework=".NETCoreApp1.0">
+        <dependency id="Microsoft.NETCore.App" version="1.0.5" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETFramework4.5" />
+      <group targetFramework=".NETFramework4.6" />
+      <group targetFramework=".NETStandard1.0">
+        <dependency id="NETStandard.Library" version="1.6.1" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETCoreApp2.1" />
+      <group targetFramework=".NETCoreApp3.1" />
+      <group targetFramework="net5.0" />
+    </dependencies>
+  </metadata>
+</package>

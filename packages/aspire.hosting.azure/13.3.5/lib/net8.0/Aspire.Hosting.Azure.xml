@@ -1,0 +1,2400 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Aspire.Hosting.Azure</name>
+    </assembly>
+    <members>
+        <member name="T:Aspire.Hosting.Azure.AcrLoginService">
+            <summary>
+            Default implementation of <see cref="T:Aspire.Hosting.Azure.IAcrLoginService"/> that handles ACR authentication
+            using Azure credentials and OAuth2 token exchange.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AcrLoginService.#ctor(System.Net.Http.IHttpClientFactory,Aspire.Hosting.Publishing.IContainerRuntimeResolver,Microsoft.Extensions.Logging.ILogger{Aspire.Hosting.Azure.AcrLoginService})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Aspire.Hosting.Azure.AcrLoginService"/> class.
+            </summary>
+            <param name="httpClientFactory">The HTTP client factory for making OAuth2 exchange requests.</param>
+            <param name="containerRuntimeResolver">The container runtime resolver for performing registry login.</param>
+            <param name="logger">The logger for diagnostic output.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AcrLoginService.LoginAsync(System.String,System.String,Azure.Core.TokenCredential,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AppIdentityAnnotation">
+            <summary>
+            An annotation for an application's identity resource.
+            </summary>
+            <remarks>
+            The identity resource represents the Azure managed identity associated with the application.
+            </remarks>
+            <param name="identityResource">The identity resource associated with the application.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AppIdentityAnnotation.#ctor(Aspire.Hosting.Azure.IAppIdentityResource)">
+            <summary>
+            An annotation for an application's identity resource.
+            </summary>
+            <remarks>
+            The identity resource represents the Azure managed identity associated with the application.
+            </remarks>
+            <param name="identityResource">The identity resource associated with the application.</param>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AppIdentityAnnotation.IdentityResource">
+            <summary>
+            Gets the identity resource associated with an application.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AspireV8ResourceNamePropertyResolver">
+            <summary>
+            Uses the Aspire v8.x naming scheme to provide default names for Azure resources.
+            </summary>
+            <remarks>
+            Can be used to keep consistent Azure resource names with Aspire 8.x.
+            </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AspireV8ResourceNamePropertyResolver.ResolveName(Azure.Provisioning.ProvisioningBuildOptions,Azure.Provisioning.Primitives.ProvisionableResource,Azure.Provisioning.Primitives.ResourceNameRequirements)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AspireV8ResourceNamePropertyResolver.GetNamePrefix(Azure.Provisioning.Primitives.ProvisionableResource)">
+            <summary>
+            Use the 'aspire-resource-name' tag to get the prefix for the resource name, if available.
+            </summary>
+            <remarks>
+            The BicepIdentifier has already had any dashes changed to underscores, which we don't want to use since Aspire 8.x used the dashes.
+            </remarks>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AzureBicepResource">
+            <summary>
+            Represents an Azure Bicep resource.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureBicepResource.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/> class.
+            </summary>
+            <param name="name">Name of the resource. This will be the name of the deployment.</param>
+            <param name="templateFile">The path to the bicep file.</param>
+            <param name="templateString">A bicep snippet.</param>
+            <param name="templateResourceName">The name of an embedded resource that represents the bicep file.</param>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureBicepResource.Parameters">
+            <summary>
+            Parameters that will be passed into the bicep template.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureBicepResource.References">
+            <summary>
+            References to other objects that may contain Azure resource references.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureBicepResource.Outputs">
+            <summary>
+            Outputs that will be generated by the bicep template.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureBicepResource.SecretOutputs">
+            <summary>
+            Secret outputs that will be generated by the bicep template.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureBicepResource.ProvisioningTaskCompletionSource">
+            <summary>
+            The task completion source for the provisioning operation.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureBicepResource.Scope">
+            <summary>
+            The scope of the resource that will be configured in the main Bicep file.
+            </summary>
+            <remarks>
+            The property is used to configure the Bicep scope that is emitted
+            in the module definition for a given resource. It is
+            only emitted for schema versions azure.bicep.v1.
+            </remarks>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureBicepResource.TempDirectory">
+            <summary>
+            For testing purposes only.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureBicepResource.GetBicepTemplateFile(System.String,System.Boolean)">
+            <summary>
+            Gets the path to the bicep file. If the template is a string or embedded resource, it will be written to a temporary file.
+            </summary>
+            <param name="directory">The directory where the bicep file will be written to (if it's a temporary file)</param>
+            <param name="deleteTemporaryFileOnDispose">A boolean that determines if the file should be deleted on disposal of the <see cref="T:Aspire.Hosting.Azure.BicepTemplateFile"/>.</param>
+            <returns>A <see cref="T:Aspire.Hosting.Azure.BicepTemplateFile"/> that represents the bicep file.</returns>
+            <exception cref="T:System.InvalidOperationException"></exception>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureBicepResource.GetBicepTemplateString">
+            <summary>
+            Get the bicep template as a string. Does not write to disk.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureBicepResource.WriteToManifest(Aspire.Hosting.Publishing.ManifestPublishingContext)">
+            <summary>
+            Writes the resource to the manifest.
+            </summary>
+            <param name="context">The <see cref="T:Aspire.Hosting.Publishing.ManifestPublishingContext"/>.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureBicepResource.ProvisionAzureBicepResourceAsync(Aspire.Hosting.Pipelines.PipelineStepContext,Aspire.Hosting.Azure.AzureBicepResource)">
+            <summary>
+            Provisions this Azure Bicep resource using the bicep provisioner.
+            </summary>
+            <param name="context">The pipeline step context.</param>
+            <param name="resource">The Azure Bicep resource to provision.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureBicepResource.ExtractDetailedErrorMessage(Azure.RequestFailedException)">
+            <summary>
+            Extracts detailed error information from Azure RequestFailedException responses.
+            Parses the following JSON error structures:
+            1. Standard Azure error format: { "error": { "code": "...", "message": "...", "details": [...] } }
+            2. Deployment-specific error format: { "properties": { "error": { "code": "...", "message": "..." } } }
+            3. Nested error details with recursive parsing for deeply nested error hierarchies
+            </summary>
+            <param name="requestEx">The Azure RequestFailedException containing the error response</param>
+            <returns>The most specific error message found, or the original exception message if parsing fails</returns>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AzureBicepResource.KnownParameters">
+            <summary>
+            Known parameters that will be filled in automatically by the host environment.
+            </summary>
+        </member>
+        <member name="F:Aspire.Hosting.Azure.AzureBicepResource.KnownParameters.PrincipalId">
+            <summary>
+            The principal id of the current user or managed identity.
+            </summary>
+        </member>
+        <member name="F:Aspire.Hosting.Azure.AzureBicepResource.KnownParameters.PrincipalName">
+            <summary>
+            The principal name of the current user or managed identity.
+            </summary>
+        </member>
+        <member name="F:Aspire.Hosting.Azure.AzureBicepResource.KnownParameters.PrincipalType">
+            <summary>
+            The principal type of the current user or managed identity. Either 'User' or 'ServicePrincipal'.
+            </summary>
+        </member>
+        <member name="F:Aspire.Hosting.Azure.AzureBicepResource.KnownParameters.UserPrincipalId">
+            <summary>
+            The principal id of the user doing the deployment.
+            </summary>
+            <remarks>Referred as Deployment principal in ARM documentation.</remarks>
+        </member>
+        <member name="F:Aspire.Hosting.Azure.AzureBicepResource.KnownParameters.KeyVaultName">
+            <summary>
+            The name of the key vault resource used to store secret outputs.
+            </summary>
+        </member>
+        <member name="F:Aspire.Hosting.Azure.AzureBicepResource.KnownParameters.Location">
+            <summary>
+            The location of the resource. This is required for all resources.
+            </summary>
+        </member>
+        <member name="F:Aspire.Hosting.Azure.AzureBicepResource.KnownParameters.LogAnalyticsWorkspaceId">
+            <summary>
+            The resource id of the log analytics workspace.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureBicepResource.ProcessAzureReferences(System.Collections.Generic.HashSet{Aspire.Hosting.ApplicationModel.IAzureResource},System.Object)">
+            <summary>
+            Processes a value to extract Azure resource references and adds them to the collection.
+            Uses IValueWithReferences to recursively walk the reference graph.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.BicepTemplateFile">
+            <summary>
+            Represents a bicep template file.
+            </summary>
+            <param name="path">The path to the bicep file.</param>
+            <param name="deleteFileOnDispose">Determines if the file should be deleted on disposal.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.BicepTemplateFile.#ctor(System.String,System.Boolean)">
+            <summary>
+            Represents a bicep template file.
+            </summary>
+            <param name="path">The path to the bicep file.</param>
+            <param name="deleteFileOnDispose">Determines if the file should be deleted on disposal.</param>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.BicepTemplateFile.Path">
+            <summary>
+            The path to the bicep file.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.BicepTemplateFile.Dispose">
+            <summary>
+            Releases the resources used by the current instance of <see cref="T:Aspire.Hosting.Azure.BicepTemplateFile" />.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.BicepSecretOutputReference">
+            <summary>
+            A reference to a KeyVault secret from a bicep template.
+            </summary>
+            <param name="name">The name of the KeyVault secret.</param>
+            <param name="resource">The <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/>.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.BicepSecretOutputReference.#ctor(System.String,Aspire.Hosting.Azure.AzureBicepResource)">
+            <summary>
+            A reference to a KeyVault secret from a bicep template.
+            </summary>
+            <param name="name">The name of the KeyVault secret.</param>
+            <param name="resource">The <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/>.</param>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.BicepSecretOutputReference.Name">
+            <summary>
+            Name of the KeyVault secret.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.BicepSecretOutputReference.Resource">
+            <summary>
+            The instance of the bicep resource.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.BicepSecretOutputReference.GetValueAsync(System.Threading.CancellationToken)">
+            <summary>
+            The value of the output.
+            </summary>
+            <param name="cancellationToken"> A <see cref="T:System.Threading.CancellationToken"/> to observe while waiting for the task to complete.</param>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.BicepSecretOutputReference.Value">
+            <summary>
+            The value of the output.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.BicepSecretOutputReference.ValueExpression">
+            <summary>
+            The expression used in the manifest to reference the value of the secret output.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.BicepOutputReference">
+            <summary>
+            A reference to an output from a bicep template.
+            </summary>
+            <param name="name">The name of the output</param>
+            <param name="resource">The <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/>.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.BicepOutputReference.#ctor(System.String,Aspire.Hosting.Azure.AzureBicepResource)">
+            <summary>
+            A reference to an output from a bicep template.
+            </summary>
+            <param name="name">The name of the output</param>
+            <param name="resource">The <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/>.</param>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.BicepOutputReference.Name">
+            <summary>
+            Name of the output.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.BicepOutputReference.Resource">
+            <summary>
+            The instance of the bicep resource.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.BicepOutputReference.GetValueAsync(System.Threading.CancellationToken)">
+            <summary>
+            The value of the output.
+            </summary>
+            <param name="cancellationToken"> A <see cref="T:System.Threading.CancellationToken"/> to observe while waiting for the task to complete.</param>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.BicepOutputReference.Value">
+            <summary>
+            The value of the output.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.BicepOutputReference.ValueExpression">
+            <summary>
+            The expression used in the manifest to reference the value of the output.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.BicepOutputReference.GetHashCode">
+            <inheritdoc/>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AzureBicepResourceScope">
+            <summary>
+            Represents the scope associated with the resource.
+            </summary>
+            <param name="resourceGroup">The name of the existing resource group.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureBicepResourceScope.#ctor(System.Object)">
+            <summary>
+            Represents the scope associated with the resource.
+            </summary>
+            <param name="resourceGroup">The name of the existing resource group.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureBicepResourceScope.#ctor(System.Object,System.Object)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Aspire.Hosting.Azure.AzureBicepResourceScope"/> class.
+            </summary>
+            <param name="resourceGroup">The name of the existing resource group.</param>
+            <param name="subscription">The subscription identifier associated with the resource group.</param>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureBicepResourceScope.ResourceGroup">
+            <summary>
+            Represents the resource group to encode in the scope.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureBicepResourceScope.Subscription">
+            <summary>
+            Represents the subscription to encode in the scope.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AzureEnvironmentResource">
+            <summary>
+            Represents the root Azure deployment target for an Aspire application.
+            Manages deployment parameters and context for Azure resources.
+            </summary>
+        </member>
+        <member name="F:Aspire.Hosting.Azure.AzureEnvironmentResource.CreateProvisioningContextStepName">
+            <summary>
+            The name of the step that creates the provisioning context.
+            </summary>
+        </member>
+        <member name="F:Aspire.Hosting.Azure.AzureEnvironmentResource.PrepareResourcesStepName">
+            <summary>
+            The name of the step that prepares Azure resources (e.g. materializes role-assignment
+            resources) so that downstream steps can reference them.
+            </summary>
+        </member>
+        <member name="F:Aspire.Hosting.Azure.AzureEnvironmentResource.ProvisionInfrastructureStepName">
+            <summary>
+            The name of the step that provisions Azure infrastructure resources.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureEnvironmentResource.Location">
+            <summary>
+            Gets or sets the Azure location that the resources will be deployed to.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureEnvironmentResource.ResourceGroupName">
+            <summary>
+            Gets or sets the Azure resource group name that the resources will be deployed to.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureEnvironmentResource.PrincipalId">
+            <summary>
+            Gets or sets the Azure principal ID that will be used to deploy the resources.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureEnvironmentResource.ProvisioningContextTask">
+            <summary>
+            Gets the task completion source for the provisioning context.
+            Consumers should await ProvisioningContextTask.Task to get the provisioning context.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureEnvironmentResource.#ctor(System.String,Aspire.Hosting.ApplicationModel.ParameterResource,Aspire.Hosting.ApplicationModel.ParameterResource,Aspire.Hosting.ApplicationModel.ParameterResource)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Aspire.Hosting.Azure.AzureEnvironmentResource"/> class.
+            </summary>
+            <param name="name">The name of the Azure environment resource.</param>
+            <param name="location">The Azure location that the resources will be deployed to.</param>
+            <param name="resourceGroupName">The Azure resource group name that the resources will be deployed to.</param>
+            <param name="principalId">The Azure principal ID that will be used to deploy the resources.</param>
+            <exception cref="T:System.ArgumentNullException">Thrown when the name is null or empty.</exception>
+            <exception cref="T:System.ArgumentException">Thrown when the name is invalid.</exception>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureEnvironmentResource.AddToPipelineSummary(Aspire.Hosting.Pipelines.PipelineStepContext,Aspire.Hosting.Azure.Provisioning.ProvisioningContext)">
+            <summary>
+            Adds Azure deployment information to the pipeline summary.
+            </summary>
+            <param name="ctx">The pipeline step context.</param>
+            <param name="provisioningContext">The Azure provisioning context.</param>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AzureEnvironmentResourceExtensions">
+            <summary>
+            Provides extension methods for adding Azure environment resources to the application model.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureEnvironmentResourceExtensions.AddAzureEnvironment(Aspire.Hosting.IDistributedApplicationBuilder)">
+            <summary>
+            Adds an Azure environment resource to the application model.
+            </summary>
+            <param name="builder">The <see cref="T:Aspire.Hosting.IDistributedApplicationBuilder"/>.</param>
+            <returns>The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureEnvironmentResourceExtensions.WithLocation(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureEnvironmentResource},Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.ParameterResource})">
+            <summary>
+            Sets the location of the Azure environment resource.
+            </summary>
+            <param name="builder">The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</param>
+            <param name="location">The Azure location.</param>
+            <returns>The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+            <remarks>
+            This method is used to set the location of the Azure environment resource.
+            The location is used to determine where the resources will be deployed.
+            </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureEnvironmentResourceExtensions.WithResourceGroup(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureEnvironmentResource},Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.ParameterResource})">
+            <summary>
+            Sets the resource group name of the Azure environment resource.
+            </summary>
+            <param name="builder">The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</param>
+            <param name="resourceGroup">The Azure resource group name.</param>
+            <returns>The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+            <remarks>
+            This method is used to set the resource group name of the Azure environment resource.
+            The resource group name is used to determine where the resources will be deployed.
+            </remarks>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AzureFunctionsAnnotation">
+            <summary>
+            Used to annotate resources as Azure Functions.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AzureProvisioningOptions">
+            <summary>
+            Options to configure the behavior of Azure resources.
+            </summary>
+            <remarks>
+            These options can be configured using https://learn.microsoft.com/dotnet/core/extensions/options#use-di-services-to-configure-options
+            to customize how Azure resources are provisioned.
+            </remarks>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureProvisioningOptions.ProvisioningBuildOptions">
+            <summary>
+            Gets the <see cref="T:Azure.Provisioning.ProvisioningBuildOptions"/> which contains common settings and
+            functionality for building Azure resources.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureProvisioningOptions.SupportsTargetedRoleAssignments">
+            <summary>
+            Gets or sets a value indicating whether the Azure compute infrastructure supports specific role assignments
+            from an application to an Azure resource.
+            </summary>
+            <remarks>
+            Setting this to true will disable the Azure resources from generating default role assignments
+            in their bicep templates.
+            </remarks>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AzureProvisioningResource">
+            <summary>
+            An Aspire resource that supports use of Azure Provisioning APIs to create Azure resources.
+            </summary>
+            <param name="name">The name of the resource in the Aspire application model.</param>
+            <param name="configureInfrastructure">Callback to configure the Azure resources.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureProvisioningResource.#ctor(System.String,System.Action{Aspire.Hosting.Azure.AzureResourceInfrastructure})">
+            <summary>
+            An Aspire resource that supports use of Azure Provisioning APIs to create Azure resources.
+            </summary>
+            <param name="name">The name of the resource in the Aspire application model.</param>
+            <param name="configureInfrastructure">Callback to configure the Azure resources.</param>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureProvisioningResource.ConfigureInfrastructure">
+            <summary>
+            Callback for configuring the Azure resources.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureProvisioningResource.ProvisioningBuildOptions">
+            <summary>
+            Gets or sets the <see cref="T:Azure.Provisioning.ProvisioningBuildOptions"/> which contains common settings and
+            functionality for building Azure resources.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureProvisioningResource.AddAsExistingResource(Aspire.Hosting.Azure.AzureResourceInfrastructure)">
+            <summary>
+            Adds a new <see cref="T:Azure.Provisioning.Primitives.ProvisionableResource"/> into <paramref name="infra"/>. The new resource
+            represents a reference to the current <see cref="T:Aspire.Hosting.Azure.AzureProvisioningResource"/> via https://learn.microsoft.com/azure/azure-resource-manager/bicep/existing-resource.
+            </summary>
+            <param name="infra">The <see cref="T:Aspire.Hosting.Azure.AzureResourceInfrastructure"/> to add the existing resource into.</param>
+            <returns>A new <see cref="T:Azure.Provisioning.Primitives.ProvisionableResource"/>, typically using the FromExisting method on the derived <see cref="T:Azure.Provisioning.Primitives.ProvisionableResource"/> class.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureProvisioningResource.AddRoleAssignments(Aspire.Hosting.Azure.IAddRoleAssignmentsContext)">
+            <summary>
+            Adds role assignments to this Azure resource.
+            </summary>
+            <param name="roleAssignmentContext">The context containing information about the role assignments and what principal to use.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureProvisioningResource.GetBicepTemplateFile(System.String,System.Boolean)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureProvisioningResource.GetBicepTemplateString">
+            <inheritdoc />
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureProvisioningResource.CreateExistingOrNewProvisionableResource``1(Aspire.Hosting.Azure.AzureResourceInfrastructure,System.Func{System.String,Azure.Provisioning.BicepValue{System.String},``0},System.Func{Aspire.Hosting.Azure.AzureResourceInfrastructure,``0})">
+            <summary>
+            Encapsulates the logic for creating an existing or new <see cref="T:Azure.Provisioning.Primitives.ProvisionableResource"/>
+            based on whether or not the <see cref="T:Aspire.Hosting.Azure.ExistingAzureResourceAnnotation" /> exists on the resource.
+            </summary>
+            <typeparam name="T">The type of <see cref="T:Azure.Provisioning.Primitives.ProvisionableResource"/> to produce.</typeparam>
+            <param name="infrastructure">The <see cref="T:Aspire.Hosting.Azure.AzureResourceInfrastructure"/> that will contain the <see cref="T:Azure.Provisioning.Primitives.ProvisionableResource"/>.</param>
+            <param name="createExisting">A callback to create the existing resource.</param>
+            <param name="createNew">A callback to create the new resource.</param>
+            <returns>The provisioned resource.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureProvisioningResource.TryApplyExistingResourceAnnotation(Aspire.Hosting.ApplicationModel.IAzureResource,Aspire.Hosting.Azure.AzureResourceInfrastructure,Azure.Provisioning.Primitives.ProvisionableResource)">
+            <summary>
+            Attempts to apply the name and (optionally) the resource group scope for the <see cref="T:Azure.Provisioning.Primitives.ProvisionableResource"/>
+            from an <see cref="T:Aspire.Hosting.Azure.ExistingAzureResourceAnnotation"/> attached to <paramref name="aspireResource"/>.
+            </summary>
+            <param name="aspireResource">The Aspire resource that may have an <see cref="T:Aspire.Hosting.Azure.ExistingAzureResourceAnnotation"/>.</param>
+            <param name="infra">The infrastructure used for converting parameters into provisioning expressions.</param>
+            <param name="provisionableResource">The <see cref="T:Azure.Provisioning.Primitives.ProvisionableResource"/> resource to configure.</param>
+            <returns><see langword="true"/> if an <see cref="T:Aspire.Hosting.Azure.ExistingAzureResourceAnnotation"/> was present and applied; otherwise <see langword="false"/>.</returns>
+            <remarks>
+            When the annotation includes a resource group, a synthetic <c>scope</c> property is added to the resource's
+            provisionable properties to correctly scope the existing resource in the generated Bicep.
+            The caller is responsible for setting a generated name when the method returns <see langword="false"/>.
+            </remarks>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AzurePublishingContext">
+            <summary>
+            Represents a context for publishing Azure bicep templates for a distributed application.
+            </summary>
+            <remarks>
+            This context facilitates the generation of bicep templates using the provided application model,
+            publisher options, and execution context. It handles resource configuration and ensures
+            that the bicep template is created in the specified output path.
+            </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzurePublishingContext.#ctor(System.String,Aspire.Hosting.Azure.AzureProvisioningOptions,System.IServiceProvider,Microsoft.Extensions.Logging.ILogger,Aspire.Hosting.Pipelines.IReportingStep)">
+            <summary>
+            Represents a context for publishing Azure bicep templates for a distributed application.
+            </summary>
+            <remarks>
+            This context facilitates the generation of bicep templates using the provided application model,
+            publisher options, and execution context. It handles resource configuration and ensures
+            that the bicep template is created in the specified output path.
+            </remarks>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzurePublishingContext.MainInfrastructure">
+            <summary>
+            Gets the main.bicep infrastructure for the distributed application.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzurePublishingContext.ParameterLookup">
+            <summary>
+            Gets a dictionary that maps parameter resources to provisioning parameters.
+            </summary>
+            <remarks>
+            The value is the <see cref="T:Azure.Provisioning.ProvisioningParameter"/> of the <see cref="P:Aspire.Hosting.Azure.AzurePublishingContext.MainInfrastructure"/>
+            that was created to be filled with the value of the Aspire <see cref="T:Aspire.Hosting.ApplicationModel.ParameterResource"/>.
+            </remarks>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzurePublishingContext.OutputLookup">
+            <summary>
+            Gets a dictionary that maps output references to provisioning outputs.
+            </summary>
+            <remarks>
+            The value is the <see cref="T:Azure.Provisioning.ProvisioningOutput"/> of the <see cref="P:Aspire.Hosting.Azure.AzurePublishingContext.MainInfrastructure"/>
+            that was created with the value of the output referenced by the Aspire <see cref="T:Aspire.Hosting.Azure.BicepOutputReference"/>.
+            </remarks>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzurePublishingContext.ReverseOutputLookup">
+            <summary>
+            Gets a dictionary that provides direct lookup of output references based on bicep identifier.
+            </summary>
+            <remarks>
+            This reverse lookup map allows efficient retrieval of <see cref="T:Aspire.Hosting.Azure.BicepOutputReference"/>
+            instances using their corresponding bicep identifier strings.
+            </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzurePublishingContext.WriteModelAsync(Aspire.Hosting.ApplicationModel.DistributedApplicationModel,Aspire.Hosting.Azure.AzureEnvironmentResource,System.Threading.CancellationToken)">
+            <summary>
+            Writes the specified distributed application model to the output path using Bicep templates.
+            </summary>
+            <param name="model">The distributed application model to write to the output path.</param>
+            <param name="environment">The Azure environment resource.</param>
+            <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+            <returns>A task that represents the async operation.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzurePublishingContext.SaveToDiskAsync(System.String)">
+            <summary>
+            Saves the compiled Bicep template to disk.
+            </summary>
+            <param name="outputDirectoryPath">The path to the output directory where the Bicep template will be saved.</param>
+            <returns>A task that represents the asynchronous save operation.</returns>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AzureResourceInfrastructure">
+            <summary>
+            An Azure Provisioning <see cref="T:Azure.Provisioning.Infrastructure" /> which represents the root Bicep module that is generated for an Azure resource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureResourceInfrastructure.AspireResource">
+            <summary>
+            The Aspire <see cref="T:Aspire.Hosting.Azure.AzureProvisioningResource"/> resource that this <see cref="T:Aspire.Hosting.Azure.AzureResourceInfrastructure"/> represents.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AzureResourcePreparer">
+             <summary>
+             Prepares Azure resources for provisioning and publish.
+            
+             This includes preparing role assignment annotations for Azure resources.
+             </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureResourcePreparer.#ctor(Microsoft.Extensions.Options.IOptions{Aspire.Hosting.Azure.AzureProvisioningOptions},Aspire.Hosting.DistributedApplicationExecutionContext)">
+             <summary>
+             Prepares Azure resources for provisioning and publish.
+            
+             This includes preparing role assignment annotations for Azure resources.
+             </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AzureResourcePreparer.AddRoleAssignmentsContext">
+            <summary>
+            Context for adding role assignments to an Azure resource.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureResourcePreparer.AddRoleAssignmentsContext.#ctor(Aspire.Hosting.Azure.AzureResourceInfrastructure,Aspire.Hosting.DistributedApplicationExecutionContext,System.Collections.Generic.IEnumerable{Aspire.Hosting.Azure.RoleDefinition},System.Lazy{Azure.Provisioning.BicepValue{Azure.Provisioning.Authorization.RoleManagementPrincipalType}},System.Lazy{Azure.Provisioning.BicepValue{System.Guid}},System.Lazy{Azure.Provisioning.BicepValue{System.String}})">
+            <summary>
+            Context for adding role assignments to an Azure resource.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AzureUserAssignedIdentityExtensions">
+            <summary>
+            Provides extension methods for working with Azure user‑assigned identities.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureUserAssignedIdentityExtensions.AddAzureUserAssignedIdentity(Aspire.Hosting.IDistributedApplicationBuilder,System.String)">
+            <summary>
+            Adds an Azure user‑assigned identity resource to the application model.
+            </summary>
+            <param name="builder">The builder for the distributed application.</param>
+            <param name="name">The name of the resource.</param>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="builder"/> is null.</exception>
+            <exception cref="T:System.ArgumentException">Thrown when <paramref name="name"/> is null or empty.</exception>
+            <remarks>
+            This method adds an Azure user‑assigned identity resource to the application model. It configures the
+            infrastructure for the resource and returns a builder for the resource.
+            The resource is added to the infrastructure only if the application is not in run mode.
+            </remarks>
+            <returns>A reference to the <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> builder.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureUserAssignedIdentityExtensions.WithAzureUserAssignedIdentity``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureUserAssignedIdentityResource})">
+            <summary>
+            Attaches an existing <see cref="T:Aspire.Hosting.Azure.AzureUserAssignedIdentityResource"/> to a compute resource, 
+            setting it as the target identity for the builder.
+            </summary>
+            <param name="builder">The builder for the <see cref="T:Aspire.Hosting.ApplicationModel.IComputeResource"/> the identity will be associated with.</param>
+            <param name="identityResourceBuilder">The builder for the <see cref="T:Aspire.Hosting.Azure.AzureUserAssignedIdentityResource"/>.</param>
+            <returns>A reference to the <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> builder.</returns>
+            <example>
+            <code>
+            var identity = builder.AddAzureUserAssignedIdentity("myIdentity");
+            var app = builder.AddProject("myApp")
+                .WithAzureUserAssignedIdentity(identity);
+            </code>
+            </example>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AzureUserAssignedIdentityResource">
+            <summary>
+            An Azure Provisioning resource that represents an Azure user assigned managed identity.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureUserAssignedIdentityResource.#ctor(System.String)">
+            <summary>
+            An Azure Provisioning resource that represents an Azure user assigned managed identity.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureUserAssignedIdentityResource.Id">
+            <summary>
+            The identifier associated with the user assigned identity.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureUserAssignedIdentityResource.ClientId">
+            <summary>
+            The client ID of the user assigned identity.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureUserAssignedIdentityResource.PrincipalId">
+            <summary>
+            The principal ID of the user assigned identity.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureUserAssignedIdentityResource.PrincipalName">
+            <summary>
+            The principal name of the user assigned identity.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureUserAssignedIdentityResource.NameOutputReference">
+            <summary>
+            The name of the user assigned identity.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureUserAssignedIdentityResource.AddAsExistingResource(Aspire.Hosting.Azure.AzureResourceInfrastructure)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AzureBicepResourceAnnotation">
+            <summary>
+            Used to annotate resources as being potentially deployable by the <see cref="T:Aspire.Hosting.Azure.AzureProvisioner"/>.
+            </summary>
+            <param name="resource">The <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/> which should be used by the <see cref="T:Aspire.Hosting.Azure.AzureProvisioner"/>.</param>
+            <remarks>
+                <para>
+                    The <see cref="T:Aspire.Hosting.Azure.AzureProvisioner"/> is only capable of deploying resources that implement <see cref="T:Aspire.Hosting.ApplicationModel.IAzureResource"/>
+                    and only has built-in deployment logic for resources that derive from <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/>. This annotation
+                    that can be added to any <see cref="T:Aspire.Hosting.ApplicationModel.IResource"/> will be detected by the <see cref="T:Aspire.Hosting.Azure.AzureProvisioner"/> and used to
+                    provision an Azure resource for an Aspire resource type that does not itself derive from <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/>.
+                </para>
+                <para>
+                    For example, the following code adds a <see href="https://learn.microsoft.com/dotnet/api/aspire.hosting.applicationmodel.sqlserverserverresource"/>
+                    resource to the application model. This type does not derive from <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/> but can be annotated with
+                    <see cref="T:Aspire.Hosting.Azure.AzureBicepResourceAnnotation"/> by using the AzureSqlExtensions.AsAzureSqlDatabase() extension method.
+                </para>
+                <code lang="csharp">
+                    var builder = DistributedApplication.CreateBuilder();
+                    builder.AddAzureProvisioning();
+                    var sql = builder.AddSqlServerServer("sql"); // This resource would not be deployable via Azure Provisioner.
+                    sql.AsAzureSqlDatabase(); // ... but it now is because this adds the AzureBicepResourceAnnotation annotation.
+                </code>
+            </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzureBicepResourceAnnotation.#ctor(Aspire.Hosting.Azure.AzureBicepResource)">
+            <summary>
+            Used to annotate resources as being potentially deployable by the <see cref="T:Aspire.Hosting.Azure.AzureProvisioner"/>.
+            </summary>
+            <param name="resource">The <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/> which should be used by the <see cref="T:Aspire.Hosting.Azure.AzureProvisioner"/>.</param>
+            <remarks>
+                <para>
+                    The <see cref="T:Aspire.Hosting.Azure.AzureProvisioner"/> is only capable of deploying resources that implement <see cref="T:Aspire.Hosting.ApplicationModel.IAzureResource"/>
+                    and only has built-in deployment logic for resources that derive from <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/>. This annotation
+                    that can be added to any <see cref="T:Aspire.Hosting.ApplicationModel.IResource"/> will be detected by the <see cref="T:Aspire.Hosting.Azure.AzureProvisioner"/> and used to
+                    provision an Azure resource for an Aspire resource type that does not itself derive from <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/>.
+                </para>
+                <para>
+                    For example, the following code adds a <see href="https://learn.microsoft.com/dotnet/api/aspire.hosting.applicationmodel.sqlserverserverresource"/>
+                    resource to the application model. This type does not derive from <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/> but can be annotated with
+                    <see cref="T:Aspire.Hosting.Azure.AzureBicepResourceAnnotation"/> by using the AzureSqlExtensions.AsAzureSqlDatabase() extension method.
+                </para>
+                <code lang="csharp">
+                    var builder = DistributedApplication.CreateBuilder();
+                    builder.AddAzureProvisioning();
+                    var sql = builder.AddSqlServerServer("sql"); // This resource would not be deployable via Azure Provisioner.
+                    sql.AsAzureSqlDatabase(); // ... but it now is because this adds the AzureBicepResourceAnnotation annotation.
+                </code>
+            </remarks>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.AzureBicepResourceAnnotation.Resource">
+            <summary>
+            The <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/> derived resource.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.DefaultRoleAssignmentsAnnotation">
+            <summary>
+            Specifies the default role assignments to be applied to an Azure resource
+            when no specific role assignments (i.e., <see cref="T:Aspire.Hosting.Azure.RoleAssignmentAnnotation"/>) are provided.
+            </summary>
+            <param name="roles">The default set of roles for an Azure resource.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.DefaultRoleAssignmentsAnnotation.#ctor(System.Collections.Generic.IReadOnlySet{Aspire.Hosting.Azure.RoleDefinition})">
+            <summary>
+            Specifies the default role assignments to be applied to an Azure resource
+            when no specific role assignments (i.e., <see cref="T:Aspire.Hosting.Azure.RoleAssignmentAnnotation"/>) are provided.
+            </summary>
+            <param name="roles">The default set of roles for an Azure resource.</param>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.DefaultRoleAssignmentsAnnotation.Roles">
+            <summary>
+            Gets the set of roles to use by default for an Azure resource.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.DelegatedSubnetAnnotation">
+            <summary>
+            Annotation that stores a reference to a subnet for an Azure resource that implements <see cref="T:Aspire.Hosting.Azure.IAzureDelegatedSubnetResource"/>.
+            </summary>
+            <param name="subnetId">The subnet ID reference expression.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.DelegatedSubnetAnnotation.#ctor(Aspire.Hosting.ApplicationModel.ReferenceExpression)">
+            <summary>
+            Annotation that stores a reference to a subnet for an Azure resource that implements <see cref="T:Aspire.Hosting.Azure.IAzureDelegatedSubnetResource"/>.
+            </summary>
+            <param name="subnetId">The subnet ID reference expression.</param>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.DelegatedSubnetAnnotation.SubnetId">
+            <summary>
+            Gets the subnet ID reference expression.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.DeploymentPrerequisitesAnnotation">
+            <summary>
+            An annotation that tracks Azure resources (such as role assignments and private endpoints) that must be
+            provisioned before a compute resource can be deployed.
+            </summary>
+            <param name="resources">The Azure resources that must be provisioned before the annotated resource is deployed.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.DeploymentPrerequisitesAnnotation.#ctor(System.Collections.Generic.IReadOnlySet{Aspire.Hosting.Azure.AzureBicepResource})">
+            <summary>
+            An annotation that tracks Azure resources (such as role assignments and private endpoints) that must be
+            provisioned before a compute resource can be deployed.
+            </summary>
+            <param name="resources">The Azure resources that must be provisioned before the annotated resource is deployed.</param>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.DeploymentPrerequisitesAnnotation.Resources">
+            <summary>
+            Gets the Azure resources that must be provisioned before the annotated resource is deployed.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.ExistingAzureResourceAnnotation">
+            <summary>
+            Represents a resource that is not managed by Aspire's provisioning or
+            container management layer.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.ExistingAzureResourceAnnotation.#ctor(System.Object,System.Object)">
+            <summary>
+            Represents a resource that is not managed by Aspire's provisioning or
+            container management layer.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.ExistingAzureResourceAnnotation.Name">
+            <summary>
+            Gets the name of the existing resource.
+            </summary>
+            <remarks>
+            Supports a <see cref="T:System.String"/>, <see cref="T:Aspire.Hosting.ApplicationModel.ParameterResource"/>, or a <see cref="T:Aspire.Hosting.Azure.BicepOutputReference"/> via runtime validation.
+            </remarks>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.ExistingAzureResourceAnnotation.ResourceGroup">
+            <summary>
+            Gets the name of the existing resource group. If <see langword="null"/>, use the current resource group.
+            </summary>
+            <remarks>
+            Supports a <see cref="T:System.String"/> or a <see cref="T:Aspire.Hosting.ApplicationModel.ParameterResource"/> via runtime validation.
+            </remarks>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.IAcrLoginService">
+            <summary>
+            Service for handling Azure Container Registry (ACR) authentication.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.IAcrLoginService.LoginAsync(System.String,System.String,Azure.Core.TokenCredential,System.Threading.CancellationToken)">
+            <summary>
+            Logs into an Azure Container Registry using Azure credentials.
+            </summary>
+            <param name="registryEndpoint">The ACR endpoint (e.g., "myregistry.azurecr.io").</param>
+            <param name="tenantId">The Azure tenant ID.</param>
+            <param name="credential">The Azure credential to use for authentication.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>A task that completes when login succeeds.</returns>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.IAddRoleAssignmentsContext">
+            <summary>
+            Context for adding role assignments to an Azure resource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.IAddRoleAssignmentsContext.Infrastructure">
+            <summary>
+            Gets the Azure resource infrastructure to add the role assignments into.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.IAddRoleAssignmentsContext.Roles">
+            <summary>
+            Gets the roles to be assigned.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.IAddRoleAssignmentsContext.PrincipalType">
+            <summary>
+            Gets the principal type to use in the role assignment.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.IAddRoleAssignmentsContext.PrincipalId">
+            <summary>
+            Gets the principal ID to use in the role assignment.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.IAddRoleAssignmentsContext.PrincipalName">
+            <summary>
+            Gets the principal name to use in the role assignment.
+            </summary>
+            <remarks>
+            Not all role assignments require/use a principal name.
+            </remarks>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.IAddRoleAssignmentsContext.ExecutionContext">
+            <summary>
+            Gets the execution context for distributed application.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.IAppIdentityResource">
+            <summary>
+            An Azure resource that represents an application's managed identity.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.IAppIdentityResource.Id">
+            <summary>
+            Gets the unique identifier for the managed identity resource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.IAppIdentityResource.ClientId">
+            <summary>
+            Gets the unique identifier for the application client associated with the managed identity.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.IAppIdentityResource.PrincipalId">
+            <summary>
+            Gets the unique identifier for the security principal associated with the managed identity.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.IAppIdentityResource.PrincipalName">
+            <summary>
+            Gets the name of the security principal associated with the managed identity.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.IAzureComputeEnvironmentResource">
+            <summary>
+            Represents an Azure compute environment resource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.IAzureComputeEnvironmentResource.ContainerRegistry">
+            <summary>
+            Gets the Azure Container Registry resource used by this compute environment.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.IAzureContainerRegistry">
+            <summary>
+            Represents Azure Container Registry information for deployment targets.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.IAzureContainerRegistry.ManagedIdentityId">
+            <summary>
+            Gets the managed identity ID associated with the container registry.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.IAzureContainerRegistryResource">
+            <summary>
+            Represents an Azure Container Registry resource.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.IAzureDelegatedSubnetResource">
+            <summary>
+            Represents an Azure resource that supports subnet delegation.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.IAzureDelegatedSubnetResource.DelegatedSubnetServiceName">
+            <summary>
+            Gets the service delegation service name (e.g., "Microsoft.App/environments").
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.IAzureKeyVaultResource">
+            <summary>
+            Represents a resource that represents an Azure Key Vault.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.IAzureKeyVaultResource.VaultUriOutputReference">
+            <summary>
+            Gets the output reference that represents the vault uri for the Azure Key Vault resource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.IAzureKeyVaultResource.NameOutputReference">
+            <summary>
+            Gets the output reference that represents the name of Azure Key Vault resource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.IAzureKeyVaultResource.SecretResolver">
+            <summary>
+            Gets or sets the secret resolver function used to resolve secrets at runtime.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.IAzureKeyVaultResource.GetSecret(System.String)">
+            <summary>
+            Gets a secret reference for the specified secret name.
+            </summary>
+            <param name="secretName">The name of the secret.</param>
+            <returns>A reference to the secret.</returns>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.IAzureKeyVaultSecretReference">
+            <summary>
+            Represents a reference to a secret in an Azure Key Vault resource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.IAzureKeyVaultSecretReference.SecretName">
+            <summary>
+            Gets the name of the secret.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.IAzureKeyVaultSecretReference.Resource">
+            <summary>
+            Gets the Azure Key Vault resource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.IAzureKeyVaultSecretReference.SecretOwner">
+            <summary>
+            Gets or sets the resource that writes this secret to the Key Vault.
+            </summary>
+            <value>
+            The <see cref="T:Aspire.Hosting.ApplicationModel.IResource"/> that is responsible for writing this secret to the Key Vault, or <c>null</c> if not set.
+            </value>
+            <remarks>
+            Implementers must provide both a getter and setter for this property. If not implemented, attempts to set <see cref="P:Aspire.Hosting.Azure.IAzureKeyVaultSecretReference.SecretOwner"/> will throw an exception.
+            </remarks>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.IAzureNspAssociationTarget">
+            <summary>
+            Represents an Azure resource that can be associated with a Network Security Perimeter.
+            </summary>
+            <remarks>
+            Implement this interface on PaaS resources (such as Storage, Key Vault, Cosmos DB, SQL)
+            that support Network Security Perimeter association via the
+            <c>Microsoft.Network/networkSecurityPerimeters/resourceAssociations</c> resource type.
+            </remarks>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.IAzureNspAssociationTarget.Id">
+            <summary>
+            Gets the "id" output reference from the Azure resource.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.IAzurePrivateEndpointTarget">
+            <summary>
+            Represents an Azure resource that can be connected to via a private endpoint.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.IAzurePrivateEndpointTarget.Id">
+            <summary>
+            Gets the "id" output reference from the Azure resource.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.IAzurePrivateEndpointTarget.GetPrivateLinkGroupIds">
+            <summary>
+            Gets the group IDs for the private link service connection (e.g., "blob", "file" for storage).
+            </summary>
+            <returns>A collection of group IDs for the private link service connection.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.IAzurePrivateEndpointTarget.GetPrivateDnsZoneNames">
+            <summary>
+            Gets the private DNS zone names for this resource type (e.g., "privatelink.blob.core.windows.net" for blob storage).
+            </summary>
+            <returns>A collection of private DNS zone names for the private endpoint.</returns>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.IProcessRunner">
+            <summary>
+            Interface for running external processes, abstracting ProcessUtil.Run to support testing.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.IProcessRunner.Run(Aspire.Hosting.Dcp.Process.ProcessSpec)">
+            <summary>
+            Runs a process with the specified configuration.
+            </summary>
+            <param name="processSpec">The process specification.</param>
+            <returns>A tuple containing the task representing the process result and an async disposable for cleanup.</returns>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.DefaultProcessRunner">
+            <summary>
+            Default implementation of IProcessRunner that delegates to ProcessUtil.Run.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.IResourceWithAzureFunctionsConfig">
+            <summary>
+            Represents an resource that can provide configuration for Azure Functions.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.IResourceWithAzureFunctionsConfig.ApplyAzureFunctionsConfiguration(System.Collections.Generic.IDictionary{System.String,System.Object},System.String)">
+            <summary>
+            Applies the Azure Functions configuration to the target dictionary.
+            </summary>
+            <param name="target">The dictionary to which the Azure Functions configuration will be applied.</param>
+            <param name="connectionName">The name of the connection key to be used for the given configuration.</param>
+            <remarks>
+            <para>
+            Implementations should populate the <paramref name="target"/> dictionary with keys that match
+            the format expected by the Azure Functions runtime, and values that are valid connection strings
+            or service URIs.
+            </para>
+            <para>
+            For Azure Functions listener initialization, use keys like:
+            <list type="bullet">
+            <item><c>{connectionName}</c> for connection strings (typically used with emulators)</item>
+            <item><c>{connectionName}__fullyQualifiedNamespace</c> for Azure Event Hubs and Azure Service Bus endpoints</item>
+            <item><c>{connectionName}__blobServiceUri</c> and <c>{connectionName}__queueServiceUri</c> for Azure Blob Storage and Azure Queue Storage</item>
+            <item><c>{connectionName}__accountEndpoint</c> for Azure Cosmos DB account endpoints</item>
+            </list>
+            </para>
+            <para>
+            For Aspire client integration support, use keys following the pattern:
+            <c>Aspire__{ServiceType}__{connectionName}__{Property}</c> where <c>{ServiceType}</c> is the
+            service namespace (e.g., <c>Azure__Messaging__EventHubs</c>, <c>Azure__Messaging__ServiceBus</c>,
+            <c>Azure__Storage__Blobs</c>, <c>Microsoft__Azure__Cosmos</c>) and <c>{Property}</c> is typically
+            <c>ConnectionString</c>, <c>ServiceUri</c>, <c>FullyQualifiedNamespace</c>, or <c>AccountEndpoint</c>.
+            </para>
+            </remarks>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.PrivateEndpointTargetAnnotation">
+            <summary>
+            An annotation that indicates a resource is the target of a private endpoint.
+            </summary>
+            <remarks>
+            When this annotation is present, the annotated resource should be configured to deny public network access.
+            </remarks>
+            <param name="privateEndpointResource">The private endpoint resource associated with the annotated Azure resource.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.PrivateEndpointTargetAnnotation.#ctor(Aspire.Hosting.Azure.AzureProvisioningResource)">
+            <summary>
+            An annotation that indicates a resource is the target of a private endpoint.
+            </summary>
+            <remarks>
+            When this annotation is present, the annotated resource should be configured to deny public network access.
+            </remarks>
+            <param name="privateEndpointResource">The private endpoint resource associated with the annotated Azure resource.</param>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.PrivateEndpointTargetAnnotation.PrivateEndpointResource">
+            <summary>
+            Gets the private endpoint resource associated with the annotated Azure resource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Provisioning.AzureProvisionerOptions.ResourceGroupPrefix">
+            <summary>
+            Gets or sets a prefix used in resource groups names created.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Provisioning.AzureProvisionerOptions.CredentialProcessTimeoutSeconds">
+            <summary>
+            Gets or sets the timeout in seconds for credential process operations (e.g., az CLI, PowerShell).
+            Increase this value if credential validation times out on machines where the Azure CLI is slow to respond.
+            When not set, the Azure SDK's default timeout is used.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Provisioning.BicepUtilities">
+            <summary>
+            Utility methods for working with Bicep resources.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.BicepUtilities.SetParametersAsync(System.Text.Json.Nodes.JsonObject,Aspire.Hosting.Azure.AzureBicepResource,System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Converts the parameters to a JSON object compatible with the ARM template.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.BicepUtilities.SetScopeAsync(System.Text.Json.Nodes.JsonObject,Aspire.Hosting.Azure.AzureBicepResource,System.Threading.CancellationToken)">
+            <summary>
+            Sets the scope information for a Bicep resource.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.BicepUtilities.GetChecksum(Aspire.Hosting.Azure.AzureBicepResource,System.Text.Json.Nodes.JsonObject,System.Text.Json.Nodes.JsonObject)">
+            <summary>
+            Gets the checksum for a Bicep resource configuration.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.BicepUtilities.GetCurrentChecksumAsync(Aspire.Hosting.Azure.AzureBicepResource,Microsoft.Extensions.Configuration.IConfiguration,System.Threading.CancellationToken)">
+            <summary>
+            Gets the current checksum for a Bicep resource from configuration.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Provisioning.Internal.BaseProvisioningContextProvider">
+            <summary>
+            Base implementation for <see cref="T:Aspire.Hosting.Azure.Provisioning.Internal.IProvisioningContextProvider"/> that provides common functionality.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.BaseProvisioningContextProvider.#ctor(Aspire.Hosting.IInteractionService,Microsoft.Extensions.Options.IOptions{Aspire.Hosting.Azure.Provisioning.AzureProvisionerOptions},Microsoft.Extensions.Hosting.IHostEnvironment,Microsoft.Extensions.Logging.ILogger,Aspire.Hosting.Azure.Provisioning.Internal.IArmClientProvider,Aspire.Hosting.Azure.Provisioning.Internal.IUserPrincipalProvider,Aspire.Hosting.Azure.Provisioning.Internal.ITokenCredentialProvider,Aspire.Hosting.Pipelines.IDeploymentStateManager,Aspire.Hosting.DistributedApplicationExecutionContext)">
+            <summary>
+            Base implementation for <see cref="T:Aspire.Hosting.Azure.Provisioning.Internal.IProvisioningContextProvider"/> that provides common functionality.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.BaseProvisioningContextProvider.ResourceGroupValidCharacters">
+            <remarks>
+            Pattern:<br/>
+            <code>^[a-zA-Z0-9_\\-\\.\\(\\)]+$</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match if at the beginning of the string.<br/>
+            ○ Match a character in the set [()-.0-9A-Z_a-z] atomically at least once.<br/>
+            ○ Match if at the end of the string or if before an ending newline.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.BaseProvisioningContextProvider.GetStaticAzureLocations">
+            <summary>
+            Gets static Azure locations as fallback when dynamic loading fails.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Provisioning.Internal.BicepCliCompiler">
+            <summary>
+            Default implementation of <see cref="T:Aspire.Hosting.Azure.Provisioning.Internal.IBicepCompiler"/>.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Provisioning.Internal.DefaultArmClientProvider">
+            <summary>
+            Default implementation of <see cref="T:Aspire.Hosting.Azure.Provisioning.Internal.IArmClientProvider"/>.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Provisioning.Internal.DefaultArmOperation`1">
+            <summary>
+            Wrapper for ArmOperation that exposes wrapped values.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.DefaultArmOperation`1.#ctor(Azure.ResourceManager.ArmOperation{Azure.ResourceManager.Resources.ResourceGroupResource},`0)">
+            <summary>
+            Wrapper for ArmOperation that exposes wrapped values.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Provisioning.Internal.DefaultResourceGroupResource">
+            <summary>
+            Default implementation of <see cref="T:Aspire.Hosting.Azure.Provisioning.Internal.IResourceGroupResource"/>.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.DefaultResourceGroupResource.#ctor(Azure.ResourceManager.Resources.ResourceGroupResource)">
+            <summary>
+            Default implementation of <see cref="T:Aspire.Hosting.Azure.Provisioning.Internal.IResourceGroupResource"/>.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Provisioning.Internal.DefaultSecretClientProvider">
+            <summary>
+            Default implementation of <see cref="T:Aspire.Hosting.Azure.Provisioning.Internal.ISecretClientProvider"/>.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.DefaultSecretClientProvider.#ctor(Aspire.Hosting.Azure.Provisioning.Internal.ITokenCredentialProvider)">
+            <summary>
+            Default implementation of <see cref="T:Aspire.Hosting.Azure.Provisioning.Internal.ISecretClientProvider"/>.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Provisioning.Internal.DefaultSubscriptionResource">
+            <summary>
+            Default implementation of <see cref="T:Aspire.Hosting.Azure.Provisioning.Internal.ISubscriptionResource"/>.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.DefaultSubscriptionResource.#ctor(Azure.ResourceManager.Resources.SubscriptionResource)">
+            <summary>
+            Default implementation of <see cref="T:Aspire.Hosting.Azure.Provisioning.Internal.ISubscriptionResource"/>.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Provisioning.Internal.DefaultUserPrincipalProvider">
+            <summary>
+            Default implementation of <see cref="T:Aspire.Hosting.Azure.Provisioning.Internal.IUserPrincipalProvider"/>.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.DefaultUserPrincipalProvider.#ctor(Aspire.Hosting.Azure.Provisioning.Internal.ITokenCredentialProvider)">
+            <summary>
+            Default implementation of <see cref="T:Aspire.Hosting.Azure.Provisioning.Internal.IUserPrincipalProvider"/>.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Provisioning.Internal.IArmClientProvider">
+            <summary>
+            Provides access to Azure ARM client functionality.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.IArmClientProvider.GetArmClient(Azure.Core.TokenCredential,System.String)">
+            <summary>
+            Gets the ARM client for Azure resource management.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.IArmClientProvider.GetArmClient(Azure.Core.TokenCredential)">
+            <summary>
+            Gets the ARM client for Azure resource management without a specific subscription.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Provisioning.Internal.ISecretClientProvider">
+            <summary>
+            Provides access to Azure Key Vault secret client functionality.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.ISecretClientProvider.GetSecretClient(System.Uri)">
+            <summary>
+            Gets a secret client for the specified vault URI.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Provisioning.Internal.IBicepCompiler">
+            <summary>
+            Provides bicep CLI execution functionality.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.IBicepCompiler.CompileBicepToArmAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Compiles a bicep file to ARM template JSON.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Provisioning.Internal.IProvisioningContextProvider">
+            <summary>
+            Provides provisioning context creation functionality.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.IProvisioningContextProvider.CreateProvisioningContextAsync(System.Threading.CancellationToken)">
+            <summary>
+            Creates a provisioning context for Azure resource operations.
+            </summary>
+            <param name="cancellationToken">The cancellation token.</param>
+            <returns>A provisioning context.</returns>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Provisioning.Internal.IArmClient">
+            <summary>
+            Abstraction for Azure ArmClient.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.IArmClient.GetSubscriptionAndTenantAsync(System.Threading.CancellationToken)">
+            <summary>
+            Gets the default subscription and its matching tenant.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.IArmClient.GetAvailableTenantsAsync(System.Threading.CancellationToken)">
+            <summary>
+            Gets all tenants accessible to the current user.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.IArmClient.GetAvailableSubscriptionsAsync(System.Threading.CancellationToken)">
+            <summary>
+            Gets all subscriptions accessible to the current user.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.IArmClient.GetAvailableSubscriptionsAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Gets all subscriptions accessible to the current user filtered by tenant ID.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.IArmClient.GetAvailableLocationsAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Gets all available locations for the specified subscription.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.IArmClient.GetAvailableResourceGroupsWithLocationAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Gets detailed information about available resource groups including their locations.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Provisioning.Internal.ISubscriptionResource">
+            <summary>
+            Abstraction for Azure SubscriptionResource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Provisioning.Internal.ISubscriptionResource.Id">
+            <summary>
+            Gets the subscription resource identifier.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Provisioning.Internal.ISubscriptionResource.DisplayName">
+            <summary>
+            Gets the subscription display name.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Provisioning.Internal.ISubscriptionResource.TenantId">
+            <summary>
+            Gets the tenant ID.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.ISubscriptionResource.GetResourceGroups">
+            <summary>
+            Gets resource groups collection.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.ISubscriptionResource.GetArmDeployments">
+            <summary>
+            Gets ARM deployments collection.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Provisioning.Internal.IResourceGroupCollection">
+            <summary>
+            Abstraction for Azure ResourceGroupCollection.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.IResourceGroupCollection.GetAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Gets a resource group.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.IResourceGroupCollection.CreateOrUpdateAsync(Azure.WaitUntil,System.String,Azure.ResourceManager.Resources.ResourceGroupData,System.Threading.CancellationToken)">
+            <summary>
+            Creates or updates a resource group.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Provisioning.Internal.IResourceGroupResource">
+            <summary>
+            Abstraction for Azure ResourceGroupResource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Provisioning.Internal.IResourceGroupResource.Id">
+            <summary>
+            Gets the resource group resource identifier.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Provisioning.Internal.IResourceGroupResource.Name">
+            <summary>
+            Gets the resource group name.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.IResourceGroupResource.GetArmDeployments">
+            <summary>
+            Gets ARM deployments collection.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.IResourceGroupResource.DeleteAsync(Azure.WaitUntil,System.Threading.CancellationToken)">
+            <summary>
+            Deletes the resource group.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.IResourceGroupResource.GetResourcesAsync(System.Threading.CancellationToken)">
+            <summary>
+            Lists all resources in the resource group.
+            </summary>
+            <returns>A list of resources with their name and type.</returns>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Provisioning.Internal.IArmDeploymentCollection">
+            <summary>
+            Abstraction for Azure ArmDeploymentCollection.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.IArmDeploymentCollection.CreateOrUpdateAsync(Azure.WaitUntil,System.String,Azure.ResourceManager.Resources.Models.ArmDeploymentContent,System.Threading.CancellationToken)">
+            <summary>
+            Creates or updates a deployment.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Provisioning.Internal.ITenantResource">
+            <summary>
+            Abstraction for Azure TenantResource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Provisioning.Internal.ITenantResource.TenantId">
+            <summary>
+            Gets the tenant ID.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Provisioning.Internal.ITenantResource.DisplayName">
+            <summary>
+            Gets the display name.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Provisioning.Internal.ITenantResource.DefaultDomain">
+            <summary>
+            Gets the default domain.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Provisioning.Internal.IUserPrincipalProvider">
+            <summary>
+            Provides user principal retrieval functionality.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.IUserPrincipalProvider.GetUserPrincipalAsync(System.Threading.CancellationToken)">
+            <summary>
+            Gets the user principal.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Provisioning.Internal.ITokenCredentialProvider">
+            <summary>
+            Provides access to Azure token credentials.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Provisioning.Internal.ITokenCredentialProvider.TokenCredential">
+            <summary>
+            Gets the token credential for Azure authentication.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Provisioning.Internal.PublishModeProvisioningContextProvider">
+            <summary>
+            Publish mode implementation of <see cref="T:Aspire.Hosting.Azure.Provisioning.Internal.IProvisioningContextProvider"/>.
+            Uses enhanced prompting logic with dynamic subscription and location fetching.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.PublishModeProvisioningContextProvider.#ctor(Aspire.Hosting.IInteractionService,Microsoft.Extensions.Options.IOptions{Aspire.Hosting.Azure.Provisioning.AzureProvisionerOptions},Microsoft.Extensions.Hosting.IHostEnvironment,Microsoft.Extensions.Logging.ILogger{Aspire.Hosting.Azure.Provisioning.Internal.PublishModeProvisioningContextProvider},Aspire.Hosting.Azure.Provisioning.Internal.IArmClientProvider,Aspire.Hosting.Azure.Provisioning.Internal.IUserPrincipalProvider,Aspire.Hosting.Azure.Provisioning.Internal.ITokenCredentialProvider,Aspire.Hosting.Pipelines.IDeploymentStateManager,Aspire.Hosting.DistributedApplicationExecutionContext,Aspire.Hosting.Pipelines.IPipelineActivityReporter)">
+            <summary>
+            Publish mode implementation of <see cref="T:Aspire.Hosting.Azure.Provisioning.Internal.IProvisioningContextProvider"/>.
+            Uses enhanced prompting logic with dynamic subscription and location fetching.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Provisioning.Internal.RunModeProvisioningContextProvider">
+            <summary>
+            Run mode implementation of <see cref="T:Aspire.Hosting.Azure.Provisioning.Internal.IProvisioningContextProvider"/>.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.Internal.RunModeProvisioningContextProvider.#ctor(Aspire.Hosting.IInteractionService,Microsoft.Extensions.Options.IOptions{Aspire.Hosting.Azure.Provisioning.AzureProvisionerOptions},Microsoft.Extensions.Hosting.IHostEnvironment,Microsoft.Extensions.Logging.ILogger{Aspire.Hosting.Azure.Provisioning.Internal.RunModeProvisioningContextProvider},Aspire.Hosting.Azure.Provisioning.Internal.IArmClientProvider,Aspire.Hosting.Azure.Provisioning.Internal.IUserPrincipalProvider,Aspire.Hosting.Azure.Provisioning.Internal.ITokenCredentialProvider,Aspire.Hosting.Pipelines.IDeploymentStateManager,Aspire.Hosting.DistributedApplicationExecutionContext)">
+            <summary>
+            Run mode implementation of <see cref="T:Aspire.Hosting.Azure.Provisioning.Internal.IProvisioningContextProvider"/>.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.BicepProvisioner.ConfigureResourceAsync(Microsoft.Extensions.Configuration.IConfiguration,Aspire.Hosting.Azure.AzureBicepResource,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.BicepProvisioner.GetOrCreateResourceAsync(Aspire.Hosting.Azure.AzureBicepResource,Aspire.Hosting.Azure.Provisioning.ProvisioningContext,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Provisioning.IBicepProvisioner">
+            <summary>
+            Provides functionality for provisioning Azure Bicep resources.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.IBicepProvisioner.ConfigureResourceAsync(Microsoft.Extensions.Configuration.IConfiguration,Aspire.Hosting.Azure.AzureBicepResource,System.Threading.CancellationToken)">
+            <summary>
+            Configures an Azure Bicep resource from configuration settings.
+            </summary>
+            <param name="configuration">The configuration containing Azure deployment settings.</param>
+            <param name="resource">The Azure Bicep resource to configure.</param>
+            <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+            <returns>A task that represents the asynchronous operation. The task result contains a value indicating whether the resource was successfully configured.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Provisioning.IBicepProvisioner.GetOrCreateResourceAsync(Aspire.Hosting.Azure.AzureBicepResource,Aspire.Hosting.Azure.Provisioning.ProvisioningContext,System.Threading.CancellationToken)">
+            <summary>
+            Gets an existing resource or creates a new Azure Bicep resource.
+            </summary>
+            <param name="resource">The Azure Bicep resource to get or create.</param>
+            <param name="context">The provisioning context containing Azure subscription, resource group, and other deployment details.</param>
+            <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+            <returns>A task that represents the asynchronous operation.</returns>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.InputsMessage">
+             <summary>
+               Looks up a localized string similar to The model contains Azure resources that require an Azure Subscription.
+            
+            To learn more, see the [Azure provisioning docs](https://aka.ms/aspire/azure/provisioning)..
+             </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.InputsTitle">
+            <summary>
+              Looks up a localized string similar to Azure provisioning.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.LocationLabel">
+            <summary>
+              Looks up a localized string similar to Location.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.LocationPlaceholder">
+            <summary>
+              Looks up a localized string similar to Select location.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.NotificationMessage">
+            <summary>
+              Looks up a localized string similar to The model contains Azure resources that require an Azure Subscription..
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.NotificationPrimaryButtonText">
+            <summary>
+              Looks up a localized string similar to Enter values.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.NotificationTitle">
+            <summary>
+              Looks up a localized string similar to Azure provisioning.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.ResourceGroupLabel">
+            <summary>
+              Looks up a localized string similar to Resource group.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.SubscriptionIdLabel">
+            <summary>
+              Looks up a localized string similar to Subscription ID.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.SubscriptionIdPlaceholder">
+            <summary>
+              Looks up a localized string similar to Select subscription ID.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.ValidationResourceGroupNameInvalid">
+            <summary>
+              Looks up a localized string similar to Resource group name must be a valid Azure resource group name..
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.ValidationSubscriptionIdInvalid">
+            <summary>
+              Looks up a localized string similar to Subscription ID must be a valid GUID..
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.SubscriptionDialogTitle">
+            <summary>
+              Looks up a localized string similar to Azure subscription.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.SubscriptionSelectionMessage">
+            <summary>
+              Looks up a localized string similar to Select your Azure subscription:.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.SubscriptionManualEntryMessage">
+            <summary>
+              Looks up a localized string similar to Enter your Azure subscription ID:.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.LocationDialogTitle">
+            <summary>
+              Looks up a localized string similar to Azure location and resource group.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.LocationSelectionMessage">
+            <summary>
+              Looks up a localized string similar to Select your Azure location and specify resource group:.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.TenantDialogTitle">
+            <summary>
+              Looks up a localized string similar to Azure tenant.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.TenantSelectionMessage">
+            <summary>
+              Looks up a localized string similar to Select your Azure tenant:.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.TenantManualEntryMessage">
+            <summary>
+              Looks up a localized string similar to Enter your Azure tenant ID:.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.TenantLabel">
+            <summary>
+              Looks up a localized string similar to Tenant ID.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.TenantPlaceholder">
+            <summary>
+              Looks up a localized string similar to Select tenant ID.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.ValidationTenantIdInvalid">
+            <summary>
+              Looks up a localized string similar to Tenant ID must be a valid GUID.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.ResourceGroupPlaceholder">
+            <summary>
+              Looks up a localized string similar to Select or enter resource group.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.ResourceGroupDialogTitle">
+            <summary>
+              Looks up a localized string similar to Azure resource group.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.Resources.AzureProvisioningStrings.ResourceGroupSelectionMessage">
+            <summary>
+              Looks up a localized string similar to Select your Azure resource group or enter a new name:.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.RoleAssignmentAnnotation">
+            <summary>
+            Specifies the roles that the current resource should be assigned to the target Azure resource.
+            </summary>
+            <param name="target">The Azure resource that the current resource will interact with.</param>
+            <param name="roles">The roles that the current resource should be assigned to <paramref name="target"/>.</param>
+            <remarks>
+            This annotation is applied to compute resources (e.g., Projects or Containers) that need to interact with Azure resources.
+            </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.RoleAssignmentAnnotation.#ctor(Aspire.Hosting.Azure.AzureProvisioningResource,System.Collections.Generic.IReadOnlySet{Aspire.Hosting.Azure.RoleDefinition})">
+            <summary>
+            Specifies the roles that the current resource should be assigned to the target Azure resource.
+            </summary>
+            <param name="target">The Azure resource that the current resource will interact with.</param>
+            <param name="roles">The roles that the current resource should be assigned to <paramref name="target"/>.</param>
+            <remarks>
+            This annotation is applied to compute resources (e.g., Projects or Containers) that need to interact with Azure resources.
+            </remarks>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.RoleAssignmentAnnotation.Target">
+            <summary>
+            The Azure resource that the current resource will interact with.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.RoleAssignmentAnnotation.Roles">
+            <summary>
+            Gets the set of roles the current resource should be assigned to the target Azure resource.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.RoleAssignmentResourceAnnotation">
+            <summary>
+            An annotation that points to the AzureProvisioningResource that contains the role assignments for an Azure resource.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.RoleAssignmentResourceAnnotation.#ctor(Aspire.Hosting.Azure.AzureProvisioningResource)">
+            <summary>
+            An annotation that points to the AzureProvisioningResource that contains the role assignments for an Azure resource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.RoleAssignmentResourceAnnotation.RolesResource">
+            <summary>
+            The AzureProvisioningResource that contains the role assignments for the Azure resource.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.RoleDefinition">
+            <summary>
+            Represents a role definition within an Azure resource.
+            </summary>
+            <param name="Id">The unique identifier for the role definition.</param>
+            <param name="Name">The name of the role definition.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.RoleDefinition.#ctor(System.String,System.String)">
+            <summary>
+            Represents a role definition within an Azure resource.
+            </summary>
+            <param name="Id">The unique identifier for the role definition.</param>
+            <param name="Name">The name of the role definition.</param>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.RoleDefinition.Id">
+            <summary>The unique identifier for the role definition.</summary>
+        </member>
+        <member name="P:Aspire.Hosting.Azure.RoleDefinition.Name">
+            <summary>The name of the role definition.</summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.Utils.ResourceGroupNameHelpers.NormalizeResourceGroupName(System.String)">
+            <summary>
+            Converts or excludes any characters which are not valid resource group name components.
+            </summary>
+            <param name="resourceGroupName">The text to normalize.</param>
+            <returns>The normalized resource group name or an empty string if no characters were valid.</returns>
+        </member>
+        <member name="T:Aspire.Hosting.Azure.AzurePortalUrls">
+            <summary>
+            Helpers for generating Azure portal URLs.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzurePortalUrls.GetResourceGroupUrl(System.String,System.String,System.Nullable{System.Guid})">
+            <summary>
+            Gets the Azure portal URL for a resource group overview page.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzurePortalUrls.GetResourceGroupLink(System.String,System.String,System.Nullable{System.Guid})">
+            <summary>
+            Gets a markdown link to a resource group overview page in the Azure portal.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzurePortalUrls.GetResourceGroupDeploymentsUrl(System.String,System.String,System.Nullable{System.Guid})">
+            <summary>
+            Gets the Azure portal URL for a resource group's deployments page.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzurePortalUrls.GetResourceGroupDeploymentsLink(System.String,System.String,System.Nullable{System.Guid})">
+            <summary>
+            Gets a markdown link to a resource group's deployments page in the Azure portal.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzurePortalUrls.GetResourceGroupResourceId(System.String,System.String)">
+            <summary>
+            Gets the ARM resource ID for a resource group.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzurePortalUrls.GetResourceUrl(System.String,System.Nullable{System.Guid})">
+            <summary>
+            Gets the Azure portal URL for a resource overview page.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzurePortalUrls.GetResourceUrl(Azure.Core.ResourceIdentifier,System.Nullable{System.Guid})">
+            <summary>
+            Gets the Azure portal URL for a resource overview page using a full resource ID.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzurePortalUrls.GetResourceLink(System.String,System.String,System.Nullable{System.Guid})">
+            <summary>
+            Gets a markdown link to a resource overview page in the Azure portal.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzurePortalUrls.GetResourceLink(Azure.Core.ResourceIdentifier,System.String,System.Nullable{System.Guid})">
+            <summary>
+            Gets a markdown link to a resource overview page in the Azure portal using a full resource ID.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzurePortalUrls.GetDeploymentUrl(System.String,System.String,System.String)">
+            <summary>
+            Gets the Azure portal URL for a deployment details page.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Azure.AzurePortalUrls.GetDeploymentUrl(Azure.Core.ResourceIdentifier)">
+            <summary>
+            Gets the Azure portal URL for a deployment details page using a full deployment resource ID.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.AzureBicepResourceExtensions">
+            <summary>
+            Extension methods for adding Azure Bicep resources to the application model.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.AzureBicepResourceExtensions.AddBicepTemplate(Aspire.Hosting.IDistributedApplicationBuilder,System.String,System.String)">
+            <summary>
+            Adds an Azure Bicep resource to the application model.
+            </summary>
+            <param name="builder">The <see cref="T:Aspire.Hosting.IDistributedApplicationBuilder"/>.</param>
+            <param name="name">The name of the resource. This name will be used as the deployment name.</param>
+            <param name="bicepFile">The path to the bicep file on disk. This path is relative to the apphost's project directory.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureBicepResourceExtensions.AddBicepTemplateString(Aspire.Hosting.IDistributedApplicationBuilder,System.String,System.String)">
+            <summary>
+            Adds an Azure Bicep resource to the application model.
+            </summary>
+            <param name="builder">The <see cref="T:Aspire.Hosting.IDistributedApplicationBuilder"/>.</param>
+            <param name="name">The name of the resource. This name will be used as the deployment name.</param>
+            <param name="bicepContent">A string that represents a snippet of bicep.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureBicepResourceExtensions.GetOutput(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureBicepResource},System.String)">
+            <summary>
+            Gets a reference to an output from a bicep template.
+            </summary>
+            <param name="builder">The resource builder.</param>
+            <param name="name">Name of the output.</param>
+            <returns>A <see cref="T:Aspire.Hosting.Azure.BicepOutputReference"/> that represents the output.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureBicepResourceExtensions.GetSecretOutput(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.Azure.AzureBicepResource},System.String)">
+            <summary>
+            Gets a reference to a secret output from a bicep template. This is an output that is written to a keyvault using the "keyVaultName" convention.
+            </summary>
+            <param name="builder">The resource builder.</param>
+            <param name="name">The name of the secret output.</param>
+            <returns>A <see cref="T:Aspire.Hosting.Azure.BicepSecretOutputReference"/> that represents the output.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureBicepResourceExtensions.WithEnvironment``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,Aspire.Hosting.Azure.BicepOutputReference)">
+            <summary>
+            Adds an environment variable to the resource with the value of the output from the bicep template.
+            </summary>
+            <typeparam name="T">The resource type.</typeparam>
+            <param name="builder">The resource builder.</param>
+            <param name="name">The name of the environment variable.</param>
+            <param name="bicepOutputReference">The reference to the bicep output.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureBicepResourceExtensions.WithEnvironment``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,Aspire.Hosting.Azure.BicepSecretOutputReference)">
+            <summary>
+            Adds an environment variable to the resource with the value of the secret output from the bicep template.
+            </summary>
+            <typeparam name="T">The resource type.</typeparam>
+            <param name="builder">The resource builder.</param>
+            <param name="name">The name of the environment variable.</param>
+            <param name="bicepOutputReference">The reference to the bicep output.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureBicepResourceExtensions.WithEnvironment``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,Aspire.Hosting.Azure.IAzureKeyVaultSecretReference)">
+            <summary>
+            Adds an environment variable to the resource with the value of the key vault secret.
+            </summary>
+            <typeparam name="T">The resource type.</typeparam>
+            <param name="builder">The resource builder.</param>
+            <param name="name">The name of the environment variable.</param>
+            <param name="secretReference">The reference to the key vault secret.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureBicepResourceExtensions.WithParameter``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String)">
+            <summary>
+            Adds a parameter to the bicep template.
+            </summary>
+            <typeparam name="T">The <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/>.</typeparam>
+            <param name="builder">The resource builder.</param>
+            <param name="name">The name of the input.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureBicepResourceExtensions.WithParameter``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,System.String)">
+            <summary>
+            Adds a parameter to the bicep template.
+            </summary>
+            <typeparam name="T">The <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/></typeparam>
+            <param name="builder">The resource builder.</param>
+            <param name="name">The name of the input.</param>
+            <param name="value">The value of the parameter.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureBicepResourceExtensions.WithParameter``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Adds a parameter to the bicep template.
+            </summary>
+            <typeparam name="T">The <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/></typeparam>
+            <param name="builder">The resource builder.</param>
+            <param name="name">The name of the input.</param>
+            <param name="value">The value of the parameter.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureBicepResourceExtensions.WithParameter``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,System.Text.Json.Nodes.JsonNode)">
+            <summary>
+            Adds a parameter to the bicep template.
+            </summary>
+            <typeparam name="T">The <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/></typeparam>
+            <param name="builder">The resource builder.</param>
+            <param name="name">The name of the input.</param>
+            <param name="value">The value of the parameter.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+            <remarks>This method is not available in polyglot app hosts.</remarks>
+        </member>
+        <member name="M:Aspire.Hosting.AzureBicepResourceExtensions.WithParameter``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,System.Func{System.Object})">
+            <summary>
+            Adds a parameter to the bicep template.
+            </summary>
+            <typeparam name="T">The <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/></typeparam>
+            <param name="builder">The resource builder.</param>
+            <param name="name">The name of the input.</param>
+            <param name="valueCallback">The value of the parameter.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+            <remarks>This method is not available in polyglot app hosts.</remarks>
+        </member>
+        <member name="M:Aspire.Hosting.AzureBicepResourceExtensions.WithParameter``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.ParameterResource})">
+            <summary>
+            Adds a parameter to the bicep template.
+            </summary>
+            <typeparam name="T">The <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/></typeparam>
+            <param name="builder">The resource builder.</param>
+            <param name="name">The name of the input.</param>
+            <param name="value">The value of the parameter.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureBicepResourceExtensions.WithParameter``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,Aspire.Hosting.ApplicationModel.ParameterResource)">
+            <summary>
+            Adds a parameter to the bicep template.
+            </summary>
+            <typeparam name="T">The <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/></typeparam>
+            <param name="builder">The resource builder.</param>
+            <param name="name">The name of the input.</param>
+            <param name="value">The value of the parameter.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+            <remarks>This overload is not available in polyglot app hosts. Use the <see cref="M:Aspire.Hosting.AzureBicepResourceExtensions.WithParameter``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.ParameterResource})"/> overload instead.</remarks>
+        </member>
+        <member name="M:Aspire.Hosting.AzureBicepResourceExtensions.WithParameter``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.IResourceWithConnectionString})">
+            <summary>
+            Adds a parameter to the bicep template.
+            </summary>
+            <typeparam name="T">The <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/></typeparam>
+            <param name="builder">The resource builder.</param>
+            <param name="name">The name of the input.</param>
+            <param name="value">The value of the parameter.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureBicepResourceExtensions.WithParameter``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,Aspire.Hosting.Azure.BicepOutputReference)">
+            <summary>
+            Adds a parameter to the bicep template.
+            </summary>
+            <typeparam name="T">The <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/></typeparam>
+            <param name="builder">The resource builder.</param>
+            <param name="name">The name of the input.</param>
+            <param name="value">The value of the parameter.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureBicepResourceExtensions.WithParameter``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,Aspire.Hosting.ApplicationModel.ReferenceExpression)">
+            <summary>
+            Adds a parameter to the bicep template.
+            </summary>
+            <typeparam name="T">The <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/></typeparam>
+            <param name="builder">The resource builder.</param>
+            <param name="name">The name of the input.</param>
+            <param name="value">The value of the parameter.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureBicepResourceExtensions.WithParameter``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,Aspire.Hosting.ApplicationModel.EndpointReference)">
+            <summary>
+            Adds a parameter to the bicep template.
+            </summary>
+            <typeparam name="T">The <see cref="T:Aspire.Hosting.Azure.AzureBicepResource"/></typeparam>
+            <param name="builder">The resource builder.</param>
+            <param name="name">The name of the input.</param>
+            <param name="value">The value of the parameter.</param>
+            <returns>An <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="T:Aspire.Hosting.AzureProvisioningResourceExtensions">
+            <summary>
+            Extensions for working with <see cref="T:Aspire.Hosting.Azure.AzureProvisioningResource"/> and related types.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.AzureProvisioningResourceExtensions.AddAzureInfrastructure(Aspire.Hosting.IDistributedApplicationBuilder,System.String,System.Action{Aspire.Hosting.Azure.AzureResourceInfrastructure})">
+            <summary>
+            Adds an Azure provisioning resource to the application model.
+            </summary>
+            <param name="builder">The distributed application builder.</param>
+            <param name="name">The name of the resource being added.</param>
+            <param name="configureInfrastructure">A callback used to configure the infrastructure resource.</param>
+            <returns>A resource builder for the <see cref="T:Aspire.Hosting.Azure.AzureProvisioningResource"/> that can be used for further configuration.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureProvisioningResourceExtensions.ConfigureInfrastructure``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.Action{Aspire.Hosting.Azure.AzureResourceInfrastructure})">
+            <summary>
+            Configures the Azure provisioning resource <see cref="T:Azure.Provisioning.Infrastructure"/>.
+            </summary>
+            <typeparam name="T">Type of the <see cref="T:Aspire.Hosting.Azure.AzureProvisioningResource"/> resource.</typeparam>
+            <param name="builder">The resource builder.</param>
+            <param name="configure">The configuration callback.</param>
+            <returns>The resource builder.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureProvisioningResourceExtensions.AsKeyVaultSecret(Aspire.Hosting.Azure.IAzureKeyVaultSecretReference,Aspire.Hosting.Azure.AzureResourceInfrastructure)">
+            <summary>
+            Gets or creates a <see cref="T:Azure.Provisioning.KeyVault.KeyVaultSecret"/> resource in the specified <see cref="T:Aspire.Hosting.Azure.AzureResourceInfrastructure"/>
+            for the given <see cref="T:Aspire.Hosting.Azure.IAzureKeyVaultSecretReference"/>.
+            <para>
+            If the referenced Key Vault or secret does not already exist in the infrastructure, they will be created and added.
+            This allows referencing secrets that are provisioned outside of the current deployment.
+            </para>
+            </summary>
+            <param name="secretReference">The <see cref="T:Aspire.Hosting.Azure.IAzureKeyVaultSecretReference"/> representing the Key Vault secret to reference.</param>
+            <param name="infrastructure">The <see cref="T:Aspire.Hosting.Azure.AzureResourceInfrastructure"/> in which to locate or add the <see cref="T:Azure.Provisioning.KeyVault.KeyVaultSecret"/>.</param>
+            <returns>
+            The <see cref="T:Azure.Provisioning.KeyVault.KeyVaultSecret"/> instance corresponding to the given secret reference.
+            </returns>
+            <remarks>This method is not available in polyglot app hosts.</remarks>
+        </member>
+        <member name="M:Aspire.Hosting.AzureProvisioningResourceExtensions.AsProvisioningParameter(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.ParameterResource},Aspire.Hosting.Azure.AzureResourceInfrastructure,System.String)">
+            <summary>
+            Creates a new <see cref="T:Azure.Provisioning.ProvisioningParameter"/> in <paramref name="infrastructure"/>, or reuses an existing bicep parameter if one with
+            the same name already exists, that corresponds to <paramref name="parameterResourceBuilder"/>.
+            </summary>
+            <param name="parameterResourceBuilder">
+            The <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> that represents a parameter in the <see cref="N:Aspire.Hosting.ApplicationModel" />
+            to get or create a corresponding <see cref="T:Azure.Provisioning.ProvisioningParameter"/>.
+            </param>
+            <param name="infrastructure">The <see cref="T:Aspire.Hosting.Azure.AzureResourceInfrastructure"/> that contains the <see cref="T:Azure.Provisioning.ProvisioningParameter"/>.</param>
+            <param name="parameterName">The name of the parameter to be assigned.</param>
+            <returns>
+            The corresponding <see cref="T:Azure.Provisioning.ProvisioningParameter"/> that was found or newly created.
+            </returns>
+            <remarks>
+            This method is not available in polyglot app hosts.
+            </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.AzureProvisioningResourceExtensions.AsProvisioningParameter(Aspire.Hosting.ApplicationModel.IManifestExpressionProvider,Aspire.Hosting.Azure.AzureResourceInfrastructure,System.String,System.Nullable{System.Boolean})">
+            <summary>
+            Creates a new <see cref="T:Azure.Provisioning.ProvisioningParameter"/> in <paramref name="infrastructure"/>, or reuses an existing bicep parameter if one with
+            the same name already exists, that corresponds to the given <paramref name="manifestExpressionProvider"/>.
+            </summary>
+            <param name="manifestExpressionProvider">The <see cref="T:Aspire.Hosting.ApplicationModel.IManifestExpressionProvider"/> that represents the value to use for the <see cref="T:Azure.Provisioning.ProvisioningParameter"/>. </param>
+            <param name="infrastructure">The <see cref="T:Aspire.Hosting.Azure.AzureResourceInfrastructure"/> that contains the <see cref="T:Azure.Provisioning.ProvisioningParameter"/>.</param>
+            <param name="parameterName">The name of the parameter to be assigned.</param>
+            <param name="isSecure">Indicates whether the parameter is secure.</param>
+            <returns>
+            The corresponding <see cref="T:Azure.Provisioning.ProvisioningParameter"/> that was found or newly created.
+            </returns>
+            <remarks>This method is not available in polyglot app hosts.</remarks>
+        </member>
+        <member name="M:Aspire.Hosting.AzureProvisioningResourceExtensions.AsProvisioningParameter(Aspire.Hosting.ApplicationModel.ParameterResource,Aspire.Hosting.Azure.AzureResourceInfrastructure,System.String)">
+            <summary>
+            Creates a new <see cref="T:Azure.Provisioning.ProvisioningParameter"/> in <paramref name="infrastructure"/>, or reuses an existing bicep parameter if one with
+            the same name already exists, that corresponds to <paramref name="parameterResource"/>.
+            </summary>
+            <param name="parameterResource">
+            The <see cref="T:Aspire.Hosting.ApplicationModel.ParameterResource"/> that represents a parameter in the <see cref="N:Aspire.Hosting.ApplicationModel" />
+            to get or create a corresponding <see cref="T:Azure.Provisioning.ProvisioningParameter"/>.
+            </param>
+            <param name="infrastructure">The <see cref="T:Aspire.Hosting.Azure.AzureResourceInfrastructure"/> that contains the <see cref="T:Azure.Provisioning.ProvisioningParameter"/>.</param>
+            <param name="parameterName">The name of the parameter to be assigned.</param>
+            <returns>
+            The corresponding <see cref="T:Azure.Provisioning.ProvisioningParameter"/> that was found or newly created.
+            </returns>
+            <remarks>
+            This method is not available in polyglot app hosts.
+            </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.AzureProvisioningResourceExtensions.AsProvisioningParameter(Aspire.Hosting.Azure.BicepOutputReference,Aspire.Hosting.Azure.AzureResourceInfrastructure,System.String)">
+            <summary>
+            Creates a new <see cref="T:Azure.Provisioning.ProvisioningParameter"/> in <paramref name="infrastructure"/>, or reuses an existing bicep parameter if one with
+            the same name already exists, that corresponds to <paramref name="outputReference"/>.
+            </summary>
+            <param name="outputReference">
+            The <see cref="T:Aspire.Hosting.Azure.BicepOutputReference"/> that contains the value to use for the <see cref="T:Azure.Provisioning.ProvisioningParameter"/>.
+            </param>
+            <param name="infrastructure">The <see cref="T:Aspire.Hosting.Azure.AzureResourceInfrastructure"/> that contains the <see cref="T:Azure.Provisioning.ProvisioningParameter"/>.</param>
+            <param name="parameterName">The name of the parameter to be assigned.</param>
+            <returns>
+            The corresponding <see cref="T:Azure.Provisioning.ProvisioningParameter"/> that was found or newly created.
+            </returns>
+            <remarks>
+            This method is not available in polyglot app hosts.
+            </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.AzureProvisioningResourceExtensions.AsProvisioningParameter(Aspire.Hosting.ApplicationModel.EndpointReference,Aspire.Hosting.Azure.AzureResourceInfrastructure,System.String)">
+            <summary>
+            Creates a new <see cref="T:Azure.Provisioning.ProvisioningParameter"/> in <paramref name="infrastructure"/>, or reuses an existing bicep parameter if one with
+            the same name already exists, that corresponds to <paramref name="endpointReference"/>.
+            </summary>
+            <param name="endpointReference">
+            The <see cref="T:Aspire.Hosting.ApplicationModel.EndpointReference"/> to use for the value of the <see cref="T:Azure.Provisioning.ProvisioningParameter"/>.
+            </param>
+            <param name="infrastructure">The <see cref="T:Aspire.Hosting.Azure.AzureResourceInfrastructure"/> that contains the <see cref="T:Azure.Provisioning.ProvisioningParameter"/>.</param>
+            <param name="parameterName">The name of the parameter to be assigned.</param>
+            <returns>
+            The corresponding <see cref="T:Azure.Provisioning.ProvisioningParameter"/> that was found or newly created.
+            </returns>
+            <remarks>
+            This method is not available in polyglot app hosts.
+            </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.AzureProvisioningResourceExtensions.AsProvisioningParameter(Aspire.Hosting.ApplicationModel.ReferenceExpression,Aspire.Hosting.Azure.AzureResourceInfrastructure,System.String)">
+            <summary>
+            Creates a new <see cref="T:Azure.Provisioning.ProvisioningParameter"/> in <paramref name="infrastructure"/>, or reuses an existing bicep parameter if one with
+            the same name already exists, that corresponds to <paramref name="expression"/>.
+            </summary>
+            <param name="expression">
+            The <see cref="T:Aspire.Hosting.ApplicationModel.ReferenceExpression"/> that represents the value to use for the <see cref="T:Azure.Provisioning.ProvisioningParameter"/>.
+            </param>
+            <param name="infrastructure">The <see cref="T:Aspire.Hosting.Azure.AzureResourceInfrastructure"/> that contains the <see cref="T:Azure.Provisioning.ProvisioningParameter"/>.</param>
+            <param name="parameterName">The name of the parameter to be assigned.</param>
+            <returns>
+            The corresponding <see cref="T:Azure.Provisioning.ProvisioningParameter"/> that was found or newly created.
+            </returns>
+            <remarks>
+            This method is not available in polyglot app hosts.
+            </remarks>
+        </member>
+        <member name="T:Aspire.Hosting.AzureResourceExtensions">
+            <summary>
+            Provides extension methods for adding Azure resources to the application model.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.AzureResourceExtensions.PublishAsConnectionString``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0})">
+            <summary>
+            Changes the resource to be published as a connection string reference in the manifest.
+            </summary>
+            <typeparam name="T">The resource type.</typeparam>
+            <param name="builder">The resource builder.</param>
+            <returns>The configured <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureResourceExtensions.GetBicepIdentifier(Aspire.Hosting.ApplicationModel.IAzureResource)">
+            <summary>
+            Gets the Bicep identifier for the Azure resource.
+            </summary>
+            <param name="resource">The Azure resource.</param>
+            <returns>A valid Bicep identifier.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.AzureResourceExtensions.ClearDefaultRoleAssignments``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0})">
+             <summary>
+             Clears all default role assignments for the specified Azure resource.
+             </summary>
+             <typeparam name="T">The resource type.</typeparam>
+             <param name="builder">The resource builder.</param>
+             <returns>The configured <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+             <remarks>
+             This method removes all default role assignments from the Azure resource. This can be useful when 
+             role assignments can't be created, for example on existing resources where you don't have permission
+             to create the assignments.
+             </remarks>
+             <example>
+             Clear default role assignments for an Azure Key Vault resource:
+             <code lang="csharp">
+             var builder = DistributedApplication.CreateBuilder(args);
+            
+             var keyVault = builder.AddAzureKeyVault("keyvault")
+                 .RunAsExisting("kv-dev-secrets", "rg-keyvault")
+                 .ClearDefaultRoleAssignments();
+            
+             var api = builder.AddProject&lt;Projects.Api&gt;("api")
+                 .WithReference(keyVault);
+             </code>
+             </example>
+        </member>
+        <member name="T:Aspire.Hosting.ExistingAzureResourceExtensions">
+            <summary>
+            Extension methods for interacting with resources that are not managed by Aspire's provisioning or
+            container management layer.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.ExistingAzureResourceExtensions.IsExisting(Aspire.Hosting.ApplicationModel.IResource)">
+            <summary>
+            Determines if the resource is an existing resource.
+            </summary>
+            <param name="resource">The resource to check.</param>
+            <returns>True if the resource is an existing resource, otherwise false.</returns>
+            <remarks>This method is not available in polyglot app hosts. Use the Azure resource-specific polyglot surface instead.</remarks>
+        </member>
+        <member name="M:Aspire.Hosting.ExistingAzureResourceExtensions.IsExistingForPolyglot(Aspire.Hosting.ApplicationModel.IAzureResource)">
+            <summary>
+            Determines whether the Azure resource is marked as existing.
+            </summary>
+            <param name="resource">The Azure resource to check.</param>
+            <returns><see langword="true"/> if the resource is marked as existing; otherwise, <see langword="false"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.ExistingAzureResourceExtensions.RunAsExisting``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.ParameterResource},Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.ParameterResource})">
+            <summary>
+            Marks the resource as an existing resource when the application is running.
+            </summary>
+            <typeparam name="T">The type of the resource.</typeparam>
+            <param name="builder">The resource builder.</param>
+            <param name="nameParameter">The name of the existing resource.</param>
+            <param name="resourceGroupParameter">The name of the existing resource group, or <see langword="null"/> to use the current resource group.</param>
+            <returns>The resource builder with the existing resource annotation added.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.ExistingAzureResourceExtensions.RunAsExisting``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,System.String)">
+            <summary>
+            Marks the resource as an existing resource when the application is running.
+            </summary>
+            <typeparam name="T">The type of the resource.</typeparam>
+            <param name="builder">The resource builder.</param>
+            <param name="name">The name of the existing resource.</param>
+            <param name="resourceGroup">The name of the existing resource group, or <see langword="null"/> to use the current resource group.</param>
+            <returns>The resource builder with the existing resource annotation added.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.ExistingAzureResourceExtensions.RunAsExistingForPolyglot``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.Object,System.Object)">
+            <summary>
+            Marks the resource as an existing resource when the application is running.
+            </summary>
+            <typeparam name="T">The type of the resource.</typeparam>
+            <param name="builder">The resource builder.</param>
+            <param name="name">The name of the existing resource as a string or parameter resource.</param>
+            <param name="resourceGroup">The name of the existing resource group as a string or parameter resource.</param>
+            <returns>The resource builder with the existing resource annotation added.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.ExistingAzureResourceExtensions.PublishAsExisting``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.ParameterResource},Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.ParameterResource})">
+            <summary>
+            Marks the resource as an existing resource when the application is deployed.
+            </summary>
+            <typeparam name="T">The type of the resource.</typeparam>
+            <param name="builder">The resource builder.</param>
+            <param name="nameParameter">The name of the existing resource.</param>
+            <param name="resourceGroupParameter">The name of the existing resource group, or <see langword="null"/> to use the current resource group.</param>
+            <returns>The resource builder with the existing resource annotation added.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.ExistingAzureResourceExtensions.PublishAsExisting``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,System.String)">
+            <summary>
+            Marks the resource as an existing resource when the application is deployed.
+            </summary>
+            <typeparam name="T">The type of the resource.</typeparam>
+            <param name="builder">The resource builder.</param>
+            <param name="name">The name of the existing resource.</param>
+            <param name="resourceGroup">The name of the existing resource group, or <see langword="null"/> to use the current resource group.</param>
+            <returns>The resource builder with the existing resource annotation added.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.ExistingAzureResourceExtensions.PublishAsExistingForPolyglot``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.Object,System.Object)">
+            <summary>
+            Marks the resource as an existing resource when the application is deployed.
+            </summary>
+            <typeparam name="T">The type of the resource.</typeparam>
+            <param name="builder">The resource builder.</param>
+            <param name="name">The name of the existing resource as a string or parameter resource.</param>
+            <param name="resourceGroup">The name of the existing resource group as a string or parameter resource.</param>
+            <returns>The resource builder with the existing resource annotation added.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.ExistingAzureResourceExtensions.AsExisting``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.ParameterResource},Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.ApplicationModel.ParameterResource})">
+            <summary>
+            Marks the resource as an existing resource in both run and publish modes.
+            </summary>
+            <typeparam name="T">The type of the resource.</typeparam>
+            <param name="builder">The resource builder.</param>
+            <param name="nameParameter">The name of the existing resource.</param>
+            <param name="resourceGroupParameter">The name of the existing resource group, or <see langword="null"/> to use the current resource group.</param>
+            <returns>The resource builder with the existing resource annotation added.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.ExistingAzureResourceExtensions.AsExistingForPolyglot``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.Object,System.Object)">
+            <summary>
+            Marks the resource as an existing resource in both run and publish modes.
+            </summary>
+            <typeparam name="T">The type of the resource.</typeparam>
+            <param name="builder">The resource builder.</param>
+            <param name="name">The name of the existing resource as a string or parameter resource.</param>
+            <param name="resourceGroup">The name of the existing resource group as a string or parameter resource.</param>
+            <returns>The resource builder with the existing resource annotation added.</returns>
+        </member>
+        <member name="T:Aspire.Hosting.ApplicationModel.IAzureResource">
+            <summary>
+            Represents an Azure resource, as a marker interface for <see cref="T:Aspire.Hosting.ApplicationModel.IResource"/>'s
+            that can be deployed to an Azure resource group.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.ApplicationModel.IAzureResource.ProvisioningTaskCompletionSource">
+            <summary>
+            Set by the AzureProvisioner to indicate the task that is provisioning the resource.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.AzureProvisionerExtensions">
+            <summary>
+            Provides extension methods for adding support for generating Azure resources dynamically during application startup.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.AzureProvisionerExtensions.AddAzureProvisioning(Aspire.Hosting.IDistributedApplicationBuilder)">
+            <summary>
+            Adds support for generating Azure resources dynamically during application startup.
+            The application must configure the appropriate Azure subscription and location before resources can be provisioned.
+            </summary>
+            <param name="builder">The distributed application builder.</param>
+            <returns>The distributed application builder.</returns>
+        </member>
+        <member name="T:Aspire.Hosting.Utils.ProcessOutputCapture">
+            <summary>
+            Retains a bounded tail of process output while tracking the total number of lines observed.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Utils.ProcessOutputCapture.#ctor(System.Int32)">
+            <summary>
+            Retains a bounded tail of process output while tracking the total number of lines observed.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.Utils.ProcessOutputCapture.TotalLineCount">
+            <summary>
+            Gets the total number of stdout and stderr lines observed.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.Utils.ProcessOutputCapture.Add(System.String)">
+            <summary>
+            Adds a line of process output to the retained tail.
+            </summary>
+            <param name="line">The output line.</param>
+        </member>
+        <member name="M:Aspire.Hosting.Utils.ProcessOutputCapture.ToArray">
+            <summary>
+            Returns the retained output lines in order.
+            </summary>
+            <returns>The retained output lines.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.Utils.ProcessOutputCapture.GetFormattedOutput(System.Int32,System.String)">
+            <summary>
+            Returns the last <paramref name="maxLines"/> lines of output formatted for display.
+            </summary>
+            <param name="maxLines">The maximum number of lines to include.</param>
+            <param name="outputDescription">The label used when the output is truncated.</param>
+            <returns>The formatted output.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.Utils.ProcessOutputCapture.FormatOutput(System.Collections.Generic.IReadOnlyList{System.String},System.Int32,System.Int32,System.String)">
+            <summary>
+            Formats retained output lines for display.
+            </summary>
+            <param name="output">The retained output lines.</param>
+            <param name="totalLineCount">The total number of lines observed.</param>
+            <param name="maxLines">The maximum number of lines to include.</param>
+            <param name="outputDescription">The label used when the output is truncated.</param>
+            <returns>The formatted output.</returns>
+        </member>
+        <member name="T:PathLookupHelper">
+            <summary>
+            Provides helper methods for looking up executables on the system PATH.
+            </summary>
+        </member>
+        <member name="M:PathLookupHelper.FindFullPathFromPath(System.String)">
+            <summary>
+            Finds the full path of a command by searching the system PATH.
+            On Windows, this also searches for executables with common extensions (.exe, .cmd, .bat, etc.).
+            </summary>
+            <param name="command">The command name to search for.</param>
+            <returns>The full path to the executable if found; otherwise, <c>null</c>.</returns>
+        </member>
+        <member name="M:PathLookupHelper.FindFullPathFromPath(System.String,System.String,System.Char,System.Func{System.String,System.Boolean},System.String[])">
+            <summary>
+            Finds the full path of a command by searching the specified PATH variable.
+            </summary>
+            <param name="command">The command name to search for.</param>
+            <param name="pathVariable">The PATH environment variable value to search.</param>
+            <param name="pathSeparator">The character used to separate paths in the PATH variable.</param>
+            <param name="fileExists">A function to check if a file exists at a given path.</param>
+            <param name="pathExtensions">Optional array of executable extensions to try (e.g., .exe, .cmd). When provided, these extensions will be appended to the command if not already present.</param>
+            <returns>The full path to the executable if found; otherwise, <c>null</c>.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.ResourceGroupValidCharacters_0">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the ResourceGroupValidCharacters method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.ResourceGroupValidCharacters_0.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.ResourceGroupValidCharacters_0.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.ResourceGroupValidCharacters_0.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.ResourceGroupValidCharacters_0.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.ResourceGroupValidCharacters_0.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.ResourceGroupValidCharacters_0.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.ResourceGroupValidCharacters_0.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.ResourceGroupValidCharacters_0.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.Utilities">
+            <summary>Helper methods used by generated <see cref="T:System.Text.RegularExpressions.Regex"/>-derived implementations.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_defaultTimeout">
+            <summary>Default timeout value set in <see cref="T:System.AppContext"/>, or <see cref="F:System.Text.RegularExpressions.Regex.InfiniteMatchTimeout"/> if none was set.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_hasTimeout">
+            <summary>Whether <see cref="F:System.Text.RegularExpressions.Generated.Utilities.s_defaultTimeout"/> is non-infinite.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_ascii_63FF03FEFFFF87FEFFFF07">
+            <summary>Supports searching for characters in or not in "()-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".</summary>
+        </member>
+    </members>
+</doc>

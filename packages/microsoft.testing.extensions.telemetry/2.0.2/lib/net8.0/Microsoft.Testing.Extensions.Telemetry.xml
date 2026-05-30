@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Testing.Extensions.Telemetry</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.Testing.Extensions.Telemetry.AppInsightsProvider">
+            <summary>
+            Allows to log telemetry events via AppInsights.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Testing.Extensions.Telemetry.TestingPlatformBuilderHook">
+            <summary>
+            This class is used by Microsoft.Testing.Platform.MSBuild to hook into the Testing Platform Builder to add AppInsights support.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Testing.Extensions.Telemetry.TestingPlatformBuilderHook.AddExtensions(Microsoft.Testing.Platform.Builder.ITestApplicationBuilder,System.String[])">
+            <summary>
+            Adds AppInsights support to the Testing Platform Builder.
+            </summary>
+            <param name="testApplicationBuilder">The test application builder.</param>
+            <param name="_">The command line arguments.</param>
+        </member>
+        <member name="P:Microsoft.Testing.Extensions.Telemetry.Resources.ExtensionResources.AddAppInsightsTelemetryProviderInvalidBuilder">
+            <summary>AppInsights telemetry provider can only be registered onto Microsoft.Testing.Platform.Builder.TestApplicationBuilder builders</summary>
+        </member>
+        <member name="T:Microsoft.Testing.Extensions.AppInsightsTelemetryProviderExtensions">
+            <summary>
+            Extensions for adding AppInsights telemetry provider.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Testing.Extensions.AppInsightsTelemetryProviderExtensions.AddAppInsightsTelemetryProvider(Microsoft.Testing.Platform.Builder.ITestApplicationBuilder)">
+            <summary>
+            Adds the AppInsights telemetry provider to the test application.
+            </summary>
+            <param name="builder">The test application builder.</param>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>OpenTelemetry.Exporter.OpenTelemetryProtocol</id>
+    <version>1.15.3</version>
+    <authors>OpenTelemetry Authors</authors>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <license type="expression">Apache-2.0</license>
+    <licenseUrl>https://licenses.nuget.org/Apache-2.0</licenseUrl>
+    <icon>opentelemetry-icon-color.png</icon>
+    <readme>README.md</readme>
+    <projectUrl>https://opentelemetry.io/</projectUrl>
+    <description>OpenTelemetry protocol exporter for OpenTelemetry .NET</description>
+    <releaseNotes>For highlights and announcements see: https://github.com/open-telemetry/opentelemetry-dotnet/blob/core-1.15.3/RELEASENOTES.md.
+
+        For detailed changes see: https://github.com/open-telemetry/opentelemetry-dotnet/blob/core-1.15.3/src/OpenTelemetry.Exporter.OpenTelemetryProtocol/CHANGELOG.md.</releaseNotes>
+    <copyright>Copyright The OpenTelemetry Authors</copyright>
+    <tags>Observability OpenTelemetry Monitoring Telemetry Tracing Metrics Logging OTLP</tags>
+    <repository type="git" url="https://github.com/open-telemetry/opentelemetry-dotnet" commit="d622e6c7c899527638b53a6b06919859f5752add" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.6.2">
+        <dependency id="OpenTelemetry" version="1.15.3" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net8.0">
+        <dependency id="OpenTelemetry" version="1.15.3" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Configuration.Binder" version="8.0.2" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net9.0">
+        <dependency id="OpenTelemetry" version="1.15.3" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net10.0">
+        <dependency id="OpenTelemetry" version="1.15.3" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="OpenTelemetry" version="1.15.3" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.1">
+        <dependency id="OpenTelemetry" version="1.15.3" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="System.Net.Http" targetFramework=".NETFramework4.6.2" />
+    </frameworkAssemblies>
+  </metadata>
+</package>

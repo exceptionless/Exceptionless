@@ -1,0 +1,657 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Aspire.Hosting.JavaScript</name>
+    </assembly>
+    <members>
+        <member name="T:Aspire.Hosting.JavaScript.CopyFilePattern">
+            <summary>
+            Represents a file pattern for copying dependency files in a Dockerfile.
+            </summary>
+            <param name="Source">The source pattern for files to copy (e.g., "package*.json").</param>
+            <param name="Destination">The destination path where files should be copied (e.g., "./").</param>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScript.CopyFilePattern.#ctor(System.String,System.String)">
+            <summary>
+            Represents a file pattern for copying dependency files in a Dockerfile.
+            </summary>
+            <param name="Source">The source pattern for files to copy (e.g., "package*.json").</param>
+            <param name="Destination">The destination path where files should be copied (e.g., "./").</param>
+        </member>
+        <member name="P:Aspire.Hosting.JavaScript.CopyFilePattern.Source">
+            <summary>The source pattern for files to copy (e.g., "package*.json").</summary>
+        </member>
+        <member name="P:Aspire.Hosting.JavaScript.CopyFilePattern.Destination">
+            <summary>The destination path where files should be copied (e.g., "./").</summary>
+        </member>
+        <member name="T:Aspire.Hosting.JavaScript.JavaScriptAppResource">
+            <summary>
+            A resource that represents a JavaScript application.
+            </summary>
+            <param name="name">The name of the resource.</param>
+            <param name="command">The command to execute.</param>
+            <param name="workingDirectory">The working directory to use for the command.</param>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScript.JavaScriptAppResource.#ctor(System.String,System.String,System.String)">
+            <summary>
+            A resource that represents a JavaScript application.
+            </summary>
+            <param name="name">The name of the resource.</param>
+            <param name="command">The command to execute.</param>
+            <param name="workingDirectory">The working directory to use for the command.</param>
+        </member>
+        <member name="T:Aspire.Hosting.JavaScript.JavaScriptBuildScriptAnnotation">
+            <summary>
+            Represents the annotation for the JavaScript package manager's build script.
+            </summary>
+            <param name="scriptName">The name of the JavaScript package manager's build script.</param>
+            <param name="args">The command line arguments for the JavaScript package manager's build script.</param>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScript.JavaScriptBuildScriptAnnotation.#ctor(System.String,System.String[])">
+            <summary>
+            Represents the annotation for the JavaScript package manager's build script.
+            </summary>
+            <param name="scriptName">The name of the JavaScript package manager's build script.</param>
+            <param name="args">The command line arguments for the JavaScript package manager's build script.</param>
+        </member>
+        <member name="P:Aspire.Hosting.JavaScript.JavaScriptBuildScriptAnnotation.ScriptName">
+            <summary>
+            Gets the name of the script used to build.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.JavaScript.JavaScriptBuildScriptAnnotation.Args">
+            <summary>
+            Gets the command-line arguments supplied to the build script.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.JavaScript.JavaScriptInstallCommandAnnotation">
+            <summary>
+            Represents the annotation for the JavaScript package manager's install command.
+            </summary>
+            <param name="args">
+            The command line arguments for the JavaScript package manager's install command.
+            This includes the command itself (i.e. "install").
+            </param>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScript.JavaScriptInstallCommandAnnotation.#ctor(System.String[])">
+            <summary>
+            Represents the annotation for the JavaScript package manager's install command.
+            </summary>
+            <param name="args">
+            The command line arguments for the JavaScript package manager's install command.
+            This includes the command itself (i.e. "install").
+            </param>
+        </member>
+        <member name="P:Aspire.Hosting.JavaScript.JavaScriptInstallCommandAnnotation.Args">
+            <summary>
+            Gets the command-line arguments supplied to the JavaScript package manager.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.JavaScript.JavaScriptInstallCommandAnnotation.ProductionInstallArgs">
+            <summary>
+            Gets or sets the additional arguments for installing production-only dependencies (excluding devDependencies).
+            This flag is appended to the base install command (from <see cref="P:Aspire.Hosting.JavaScript.JavaScriptInstallCommandAnnotation.Args"/>) when generating the
+            production dependencies stage in the Dockerfile. Each package manager sets its own flag
+            (e.g. npm uses <c>--omit=dev</c>, yarn uses <c>--production</c>, pnpm uses <c>--prod</c>).
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.JavaScript.JavaScriptInstallerResource">
+            <summary>
+            A resource that represents a package installer for a JavaScript app.
+            </summary>
+            <param name="name">The name of the resource.</param>
+            <param name="workingDirectory">The working directory to use for the command.</param>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScript.JavaScriptInstallerResource.#ctor(System.String,System.String)">
+            <summary>
+            A resource that represents a package installer for a JavaScript app.
+            </summary>
+            <param name="name">The name of the resource.</param>
+            <param name="workingDirectory">The working directory to use for the command.</param>
+        </member>
+        <member name="T:Aspire.Hosting.JavaScript.JavaScriptPackageInstallerAnnotation">
+            <summary>
+            Represents an annotation for a JavaScript installer resource.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScript.JavaScriptPackageInstallerAnnotation.#ctor(Aspire.Hosting.ApplicationModel.ExecutableResource)">
+            <summary>
+            Represents an annotation for a JavaScript installer resource.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.JavaScript.JavaScriptPackageInstallerAnnotation.Resource">
+            <summary>
+            The instance of the Installer resource used.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.JavaScript.JavaScriptPackageManagerAnnotation">
+            <summary>
+            Represents the annotation for the JavaScript package manager used in a resource.
+            </summary>
+            <param name="executableName">The name of the executable used to run the package manager.</param>
+            <param name="runScriptCommand">The command used to run a script with the JavaScript package manager.</param>
+            <param name="cacheMount">The BuildKit cache mount path for the package manager, or null if not supported.</param>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScript.JavaScriptPackageManagerAnnotation.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Represents the annotation for the JavaScript package manager used in a resource.
+            </summary>
+            <param name="executableName">The name of the executable used to run the package manager.</param>
+            <param name="runScriptCommand">The command used to run a script with the JavaScript package manager.</param>
+            <param name="cacheMount">The BuildKit cache mount path for the package manager, or null if not supported.</param>
+        </member>
+        <member name="P:Aspire.Hosting.JavaScript.JavaScriptPackageManagerAnnotation.ExecutableName">
+            <summary>
+            Gets the executable used to run the JavaScript package manager.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.JavaScript.JavaScriptPackageManagerAnnotation.ScriptCommand">
+            <summary>
+            Gets the command used to run a script with the JavaScript package manager.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.JavaScript.JavaScriptPackageManagerAnnotation.CommandSeparator">
+            <summary>
+            Gets the string used to separate individual commands in a command sequence, or <see langword="null"/> if one shouldn't be used.
+            Defaults to "--".
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.JavaScript.JavaScriptPackageManagerAnnotation.CacheMount">
+            <summary>
+            Gets the BuildKit cache mount path for the package manager, or null if not supported.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.JavaScript.JavaScriptPackageManagerAnnotation.PackageFilesPatterns">
+            <summary>
+            Gets the file patterns for package dependency files.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.JavaScript.JavaScriptPackageManagerAnnotation.InitializeDockerBuildStage">
+            <summary>
+            Gets or sets a callback to initialize the Docker build stage before installing packages.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.JavaScript.JavaScriptRunScriptAnnotation">
+            <summary>
+            Represents the annotation for the script used during run mode in a JavaScript resource.
+            </summary>
+            <param name="scriptName">The name of the JavaScript package manager's run script.</param>
+            <param name="args">The command line arguments for the JavaScript package manager's run script.</param>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScript.JavaScriptRunScriptAnnotation.#ctor(System.String,System.String[])">
+            <summary>
+            Represents the annotation for the script used during run mode in a JavaScript resource.
+            </summary>
+            <param name="scriptName">The name of the JavaScript package manager's run script.</param>
+            <param name="args">The command line arguments for the JavaScript package manager's run script.</param>
+        </member>
+        <member name="P:Aspire.Hosting.JavaScript.JavaScriptRunScriptAnnotation.ScriptName">
+            <summary>
+            Gets the name of the script to run.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.JavaScript.JavaScriptRunScriptAnnotation.Args">
+            <summary>
+            Gets the command-line arguments for the script.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.JavaScript.NextJsAppResource">
+            <summary>
+            Represents a Next.js application resource.
+            </summary>
+            <param name="name">The unique name used to identify the Next.js application resource.</param>
+            <param name="command">The command to execute the application.</param>
+            <param name="workingDirectory">The working directory from which the application command is executed.</param>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScript.NextJsAppResource.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Represents a Next.js application resource.
+            </summary>
+            <param name="name">The unique name used to identify the Next.js application resource.</param>
+            <param name="command">The command to execute the application.</param>
+            <param name="workingDirectory">The working directory from which the application command is executed.</param>
+        </member>
+        <member name="T:Aspire.Hosting.JavaScript.NodeAppResource">
+            <summary>
+            A resource that represents a node application.
+            </summary>
+            <param name="name">The name of the resource.</param>
+            <param name="command">The command to execute.</param>
+            <param name="workingDirectory">The working directory to use for the command.</param>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScript.NodeAppResource.#ctor(System.String,System.String,System.String)">
+            <summary>
+            A resource that represents a node application.
+            </summary>
+            <param name="name">The name of the resource.</param>
+            <param name="command">The command to execute.</param>
+            <param name="workingDirectory">The working directory to use for the command.</param>
+        </member>
+        <member name="T:Aspire.Hosting.JavaScript.PublishAsStaticWebsiteOptions">
+            <summary>
+            Options for configuring the static website publish mode.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.JavaScript.PublishAsStaticWebsiteOptions.OutputPath">
+            <summary>
+            Gets or sets the relative path to the directory containing the built static files.
+            Defaults to <c>dist</c>. Some frameworks use a different output directory,
+            for example Angular uses <c>dist/browser</c>.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.JavaScript.PublishAsStaticWebsiteOptions.StripPrefix">
+            <summary>
+            Gets or sets whether to remove the API path prefix before forwarding to the backend.
+            For example, with <c>apiPath="/api"</c> and <c>StripPrefix=true</c>, a request to
+            <c>/api/weatherforecast</c> is forwarded as <c>/weatherforecast</c>.
+            Defaults to <see langword="true"/>.
+            </summary>
+        </member>
+        <member name="P:Aspire.Hosting.JavaScript.PublishAsStaticWebsiteOptions.TargetEndpointName">
+            <summary>
+            Gets or sets the name of a specific endpoint on the API target resource to proxy to.
+            When <see langword="null"/>, YARP uses service discovery to resolve the appropriate endpoint,
+            preferring HTTPS when available.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.JavaScript.ViteAppResource">
+            <summary>
+            Represents a Vite application resource that can be managed and executed within a Node.js environment.
+            </summary>
+            <param name="name">The unique name used to identify the Vite application resource.</param>
+            <param name="command">The command to execute the Vite application, such as the script or entry point.</param>
+            <param name="workingDirectory">The working directory from which the Vite application command is executed.</param>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScript.ViteAppResource.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Represents a Vite application resource that can be managed and executed within a Node.js environment.
+            </summary>
+            <param name="name">The unique name used to identify the Vite application resource.</param>
+            <param name="command">The command to execute the Vite application, such as the script or entry point.</param>
+            <param name="workingDirectory">The working directory from which the Vite application command is executed.</param>
+        </member>
+        <member name="P:Aspire.Hosting.JavaScript.ViteAppResource.ViteConfigPath">
+            <summary>
+            Gets or sets the path to the Vite configuration file.
+            </summary>
+        </member>
+        <member name="T:Aspire.Hosting.JavaScriptHostingExtensions">
+            <summary>
+            Provides extension methods for adding JavaScript applications to an <see cref="T:Aspire.Hosting.IDistributedApplicationBuilder"/>.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScriptHostingExtensions.AddNodeApp(Aspire.Hosting.IDistributedApplicationBuilder,System.String,System.String,System.String)">
+             <summary>
+             Adds a node application to the application model. Node should be available on the PATH.
+             </summary>
+             <param name="builder">The <see cref="T:Aspire.Hosting.IDistributedApplicationBuilder"/> to add the resource to.</param>
+             <param name="name">The name of the resource.</param>
+             <param name="appDirectory">The path to the directory containing the node application.</param>
+             <param name="scriptPath">The path to the script relative to the app directory to run.</param>
+             <returns>A reference to the <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+             <remarks>
+             This method executes a Node script directly using <c>node script.js</c>. If you want to use a package manager
+             you can add one and configure the install and run scripts using the provided extension methods.
+            
+             If the application directory contains a <c>package.json</c> file, npm will be added as the default package manager.
+             </remarks>
+             <example>
+             Add a Node app to the application model using yarn and 'yarn run dev' for running during development:
+             <code lang="csharp">
+             var builder = DistributedApplication.CreateBuilder(args);
+            
+             builder.AddNodeApp("frontend", "../frontend", "app.js")
+                    .WithYarn()
+                    .WithRunScript("dev");
+            
+             builder.Build().Run();
+             </code>
+             </example>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScriptHostingExtensions.AddJavaScriptApp(Aspire.Hosting.IDistributedApplicationBuilder,System.String,System.String,System.String)">
+            <summary>
+            Adds a JavaScript application resource to the distributed application using the specified app directory and
+            run script.
+            </summary>
+            <param name="builder">The distributed application builder to which the JavaScript application resource will be added.</param>
+            <param name="name">The unique name of the JavaScript application resource. Cannot be null or empty.</param>
+            <param name="appDirectory">The path to the directory containing the JavaScript application.</param>
+            <param name="runScriptName">The name of the npm script to run when starting the application. Defaults to "dev". Cannot be null or empty.</param>
+            <returns>A resource builder for the newly added JavaScript application resource.</returns>
+            <remarks>
+            If a Dockerfile does not exist in the application's directory, one will be generated
+            automatically when publishing. The method configures the resource with Node.js defaults and sets up npm
+            integration.
+            </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScriptHostingExtensions.PublishAsStaticWebsite``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.Action{Aspire.Hosting.JavaScript.PublishAsStaticWebsiteOptions})">
+            <summary>
+            Configures the JavaScript application to publish as a standalone static website served by YARP.
+            </summary>
+            <typeparam name="TResource">The JavaScript resource type.</typeparam>
+            <param name="builder">The JavaScript resource builder.</param>
+            <param name="configure">Optional callback to configure <see cref="T:Aspire.Hosting.JavaScript.PublishAsStaticWebsiteOptions"/>.</param>
+            <returns>The updated resource builder.</returns>
+            <remarks>
+            <para>
+            The published container uses a YARP reverse proxy image for static file serving.
+            To add an API reverse-proxy, use the overload that accepts an <c>apiPath</c> and <c>apiTarget</c>.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScriptHostingExtensions.PublishAsStaticWebsite``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.IResourceWithServiceDiscovery},System.Action{Aspire.Hosting.JavaScript.PublishAsStaticWebsiteOptions})">
+            <summary>
+            Configures the JavaScript application to publish as a standalone static website served by YARP,
+            with an API reverse-proxy to the specified resource.
+            </summary>
+            <typeparam name="TResource">The JavaScript resource type.</typeparam>
+            <param name="builder">The JavaScript resource builder.</param>
+            <param name="apiPath">
+            A path prefix to reverse-proxy to a backend API. For example, <c>/api</c> proxies all requests
+            matching <c>/api/{"{**catch-all}"}</c> to the backend resource.
+            </param>
+            <param name="apiTarget">
+            The backend resource to proxy API requests to. YARP uses service discovery to resolve the
+            appropriate endpoint, preferring HTTPS when available.
+            </param>
+            <param name="configure">Optional callback to configure <see cref="T:Aspire.Hosting.JavaScript.PublishAsStaticWebsiteOptions"/>.</param>
+            <returns>The updated resource builder.</returns>
+            <remarks>
+            <para>
+            The published container uses a YARP reverse proxy image for static file serving and API
+            reverse-proxy. YARP natively supports HTTPS backends and service discovery, so API proxy requests
+            work correctly across all deployment targets (Docker Compose, Azure App Service, etc.).
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScriptHostingExtensions.PublishAsStaticWebsitePolyglot``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.IResourceWithServiceDiscovery},System.String,System.Boolean,System.String)">
+            <summary>
+            Polyglot-compatible overload. All parameters are optional so the TS codegen wraps them
+            in a single options object rather than positional args.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScriptHostingExtensions.PublishAsNodeServer``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,System.String)">
+            <summary>
+            Configures the JavaScript application to publish as a standalone Node.js server that runs a built artifact directly.
+            </summary>
+            <typeparam name="TResource">The JavaScript resource type.</typeparam>
+            <param name="builder">The JavaScript resource builder.</param>
+            <param name="entryPoint">
+            The relative path to the Node.js entry point to execute in the published container after the build completes,
+            such as <c>.output/server/index.mjs</c> or <c>build/index.js</c>.
+            </param>
+            <param name="outputPath">
+            The relative path containing the built runtime files to copy into the published container. Defaults to the application root.
+            </param>
+            <returns>The updated resource builder.</returns>
+            <remarks>
+            <para>
+            Use this method for frameworks that produce a Node.js server artifact during the build and recommend
+            running that artifact directly in production rather than invoking a package manager script at runtime.
+            The application source is still built using the configured package manager and build script; this method
+            only changes the publish-time runtime container shape.
+            </para>
+            <para>
+            The container files source path is automatically set to <paramref name="outputPath"/> so that only
+            the built output directory is copied into the runtime container, not the full application source.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScriptHostingExtensions.PublishAsNpmScript``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,System.String)">
+            <summary>
+            Configures the JavaScript application to publish as a Node.js server that uses a package manager script at runtime.
+            </summary>
+            <typeparam name="TResource">The JavaScript resource type.</typeparam>
+            <param name="builder">The JavaScript resource builder.</param>
+            <param name="startScriptName">
+            The name of the package manager script to run in the published container.
+            For example, <c>start</c> runs <c>npm run start</c>.
+            </param>
+            <param name="runScriptArguments">
+            Optional arguments appended after the script name at runtime,
+            such as <c>-- --port "$PORT"</c>.
+            </param>
+            <returns>The updated resource builder.</returns>
+            <remarks>
+            <para>
+            Use this method for frameworks where the production server depends on packages in <c>node_modules</c> at runtime.
+            The resulting container includes the full application with production dependencies installed.
+            </para>
+            <para>
+            This method is appropriate for frameworks like Nuxt (where <c>useAsyncData</c>/<c>useFetch</c> requires the
+            full Nitro environment), Remix (where <c>react-router-serve</c> is an npm dependency), and Astro SSR
+            (where the built entry point imports unbundled <c>@astrojs/*</c> packages).
+            </para>
+            <para>
+            For frameworks that produce a self-contained server artifact that does not require <c>node_modules</c>,
+            use <see cref="M:Aspire.Hosting.JavaScriptHostingExtensions.PublishAsNodeServer``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,System.String)"/> instead for a smaller runtime image.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScriptHostingExtensions.AddViteApp(Aspire.Hosting.IDistributedApplicationBuilder,System.String,System.String,System.String)">
+             <summary>
+             Adds a Vite app to the distributed application builder.
+             </summary>
+             <param name="builder">The <see cref="T:Aspire.Hosting.IDistributedApplicationBuilder"/> to add the resource to.</param>
+             <param name="name">The name of the Vite app.</param>
+             <param name="appDirectory">The path to the directory containing the Vite app.</param>
+             <param name="runScriptName">The name of the script that runs the Vite app. Defaults to "dev".</param>
+             <returns>A reference to the <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+             <remarks>
+             <example>
+             The following example creates a Vite app using npm as the package manager.
+             <code lang="csharp">
+             var builder = DistributedApplication.CreateBuilder(args);
+            
+             builder.AddViteApp("frontend", "./frontend");
+            
+             builder.Build().Run();
+             </code>
+             </example>
+             </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScriptHostingExtensions.AddNextJsApp(Aspire.Hosting.IDistributedApplicationBuilder,System.String,System.String,System.String)">
+             <summary>
+             Adds a Next.js app to the distributed application builder.
+             </summary>
+             <param name="builder">The <see cref="T:Aspire.Hosting.IDistributedApplicationBuilder"/> to add the resource to.</param>
+             <param name="name">The name of the Next.js app.</param>
+             <param name="appDirectory">The path to the directory containing the Next.js app.</param>
+             <param name="runScriptName">The name of the script that runs the Next.js dev server. Defaults to "dev".</param>
+             <returns>A reference to the <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+             <remarks>
+             <para>
+             This method configures the Next.js application for both local development and publishing.
+             In run mode, it starts the Next.js dev server with the correct port binding.
+             In publish mode, it generates a multi-stage Dockerfile using Next.js standalone output mode,
+             which copies <c>public/</c>, <c>.next/standalone/</c>, and <c>.next/static/</c> into a
+             Node.js runtime container.
+             </para>
+             <para>
+             The Next.js application must have <c>output: "standalone"</c> configured in <c>next.config.ts</c>
+             and a <c>public/</c> directory (even if empty) for the published container to build correctly.
+             </para>
+             <example>
+             The following example creates a Next.js app.
+             <code lang="csharp">
+             var builder = DistributedApplication.CreateBuilder(args);
+            
+             builder.AddNextJsApp("frontend", "./frontend");
+            
+             builder.Build().Run();
+             </code>
+             </example>
+             </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScriptHostingExtensions.DisableBuildValidation(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.JavaScript.NextJsAppResource})">
+            <summary>
+            Disables deploy-time build validation checks for the Next.js application.
+            </summary>
+            <param name="builder">The resource builder.</param>
+            <returns>The resource builder for chaining.</returns>
+            <remarks>
+            By default, <see cref="M:Aspire.Hosting.JavaScriptHostingExtensions.AddNextJsApp(Aspire.Hosting.IDistributedApplicationBuilder,System.String,System.String,System.String)"/> adds publish prerequisite steps that verify
+            the Next.js configuration (e.g. that <c>output: "standalone"</c> is set). Use this method
+            to suppress those checks when the configuration is set dynamically or via an external
+            mechanism that cannot be detected by static file inspection.
+            </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScriptHostingExtensions.WithViteConfig(Aspire.Hosting.ApplicationModel.IResourceBuilder{Aspire.Hosting.JavaScript.ViteAppResource},System.String)">
+            <summary>
+            Configures the Vite app to use the specified Vite configuration file instead of the default resolution behavior.
+            </summary>
+            <param name="builder">The resource builder.</param>
+            <param name="configPath">The path to the Vite configuration file. Relative to the Vite service project root.</param>
+            <returns>The resource builder.</returns>
+            <remarks>
+            Use this method to specify a specific Vite configuration file if you need to override the default Vite configuration resolution behavior.
+            </remarks>
+            <example>
+            Use a custom Vite configuration file:
+            <code>
+            var builder = DistributedApplication.CreateBuilder(args);
+            var viteApp = builder.AddViteApp("frontend", "./frontend")
+                .WithViteConfig("./vite.production.config.js");
+            </code>
+            </example>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScriptHostingExtensions.WithNpm``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.Boolean,System.String,System.String[])">
+            <summary>
+            Configures the Node.js resource to use npm as the package manager and optionally installs packages before the application starts.
+            </summary>
+            <param name="resource">The NodeAppResource.</param>
+            <param name="install">When true (default), automatically installs packages before the application starts. When false, only sets the package manager annotation without creating an installer resource.</param>
+            <param name="installCommand">The install command itself passed to npm to install dependencies.</param>
+            <param name="installArgs">The command-line arguments passed to npm to install dependencies.</param>
+            <returns>A reference to the <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScriptHostingExtensions.WithBun``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.Boolean,System.String[])">
+             <summary>
+             Configures the JavaScript resource to use Bun as the package manager and optionally installs packages before the application starts.
+             </summary>
+             <param name="resource">The JavaScript application resource builder.</param>
+             <param name="install">When true (default), automatically installs packages before the application starts. When false, only sets the package manager annotation without creating an installer resource.</param>
+             <param name="installArgs">Additional command-line arguments passed to "bun install". When null, defaults are applied based on publish mode and lockfile presence.</param>
+             <returns>A reference to the <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+             <remarks>
+             Bun forwards script arguments without requiring the <c>--</c> command separator, so this method configures the resource to omit it.
+             When publishing and a bun lockfile (<c>bun.lock</c> or <c>bun.lockb</c>) is present, <c>--frozen-lockfile</c> is used by default.
+             Publishing to a container requires Bun to be present in the build image. This method configures a Bun build image when one is not already specified.
+             To use a specific Bun version, configure a custom build image (for example, <c>oven/bun:&lt;tag&gt;</c>) using <see cref="M:Aspire.Hosting.ContainerResourceBuilderExtensions.WithDockerfileBaseImage``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,System.String)"/>.
+             </remarks>
+             <example>
+             Run a Vite app using Bun as the package manager:
+             <code lang="csharp">
+             var builder = DistributedApplication.CreateBuilder(args);
+            
+             builder.AddViteApp("frontend", "./frontend")
+                    .WithBun()
+                    .WithDockerfileBaseImage(buildImage: "oven/bun:latest"); // To use a specific Bun image
+            
+             builder.Build().Run();
+             </code>
+             </example>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScriptHostingExtensions.WithYarn``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.Boolean,System.String[])">
+            <summary>
+            Configures the Node.js resource to use yarn as the package manager and optionally installs packages before the application starts.
+            </summary>
+            <param name="resource">The NodeAppResource.</param>
+            <param name="install">When true (default), automatically installs packages before the application starts. When false, only sets the package manager annotation without creating an installer resource.</param>
+            <param name="installArgs">The command-line arguments passed to "yarn install".</param>
+            <returns>A reference to the <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScriptHostingExtensions.WithPnpm``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.Boolean,System.String[])">
+            <summary>
+            Configures the Node.js resource to use pnpm as the package manager and optionally installs packages before the application starts.
+            </summary>
+            <param name="resource">The NodeAppResource.</param>
+            <param name="install">When true (default), automatically installs packages before the application starts. When false, only sets the package manager annotation without creating an installer resource.</param>
+            <param name="installArgs">The command-line arguments passed to "pnpm install".</param>
+            <returns>A reference to the <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/>.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScriptHostingExtensions.WithBuildScript``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,System.String[])">
+            <summary>
+            Adds a build script annotation to the resource builder using the specified command-line arguments.
+            </summary>
+            <typeparam name="TResource">The type of JavaScript application resource being configured.</typeparam>
+            <param name="resource">The resource builder to which the build script annotation will be added.</param>
+            <param name="scriptName">The name of the script to be executed when the resource is built.</param>
+            <param name="args">An array of command-line arguments to use for the build script.</param>
+            <returns>The same resource builder instance with the build script annotation applied.</returns>
+            <remarks>
+            Use this method to specify custom build scripts for JavaScript application resources during
+            deployment.
+            </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScriptHostingExtensions.WithRunScript``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String,System.String[])">
+            <summary>
+            Adds a run script annotation to the specified JavaScript application resource builder, specifying the script to
+            execute and its arguments during run mode.
+            </summary>
+            <typeparam name="TResource">The type of the JavaScript application resource being configured. Must inherit from JavaScriptAppResource.</typeparam>
+            <param name="resource">The resource builder to which the run script annotation will be added.</param>
+            <param name="scriptName">The name of the script to be executed when the resource is run.</param>
+            <param name="args">An array of arguments to pass to the script.</param>
+            <returns>The same resource builder instance with the run script annotation applied, enabling further configuration.</returns>
+            <remarks>
+            Use this method to specify a custom script and its arguments that should be executed when the resource is executed
+            in RunMode.
+            </remarks>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScriptHostingExtensions.WithBrowserDebugger``1(Aspire.Hosting.ApplicationModel.IResourceBuilder{``0},System.String)">
+            <summary>
+            Configures a browser debugger for the JavaScript application resource, enabling browser-based debugging
+            through a child resource that launches when the parent application is ready.
+            </summary>
+            <typeparam name="T">The type of the JavaScript application resource.</typeparam>
+            <param name="builder">The resource builder for the JavaScript application.</param>
+            <param name="browser">The browser to use for debugging. Defaults to <c>"msedge"</c>. Supported values include <c>"msedge"</c> and <c>"chrome"</c>.</param>
+            <returns>A reference to the <see cref="T:Aspire.Hosting.ApplicationModel.IResourceBuilder`1"/> for chaining additional configuration.</returns>
+            <remarks>
+            This method creates a child <see cref="T:Aspire.Hosting.JavaScript.BrowserDebuggerResource"/> that waits for the parent JavaScript
+            application to start, then launches a browser debug session targeting the parent's HTTP or HTTPS endpoint.
+            The parent resource must have at least one HTTP or HTTPS endpoint configured.
+            </remarks>
+            <exception cref="T:System.InvalidOperationException">
+            Thrown when the parent resource does not have an HTTP or HTTPS endpoint, or when the IDE extension
+            does not support browser debugging.
+            </exception>
+            <example>
+            Add browser debugging to a JavaScript application:
+            <code>
+            var builder = DistributedApplication.CreateBuilder(args);
+            builder.AddViteApp("frontend", "./frontend")
+                .WithBrowserDebugger();
+            </code>
+            </example>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScriptHostingExtensions.BuildServiceDiscoveryUrl(Aspire.Hosting.IResourceWithServiceDiscovery)">
+            <summary>
+            Builds a service discovery URL for the given resource, preferring HTTPS when available.
+            Mirrors the logic in <c>YarpCluster.BuildEndpointUri</c>.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScriptHostingExtensions.ValidateNextJsStandaloneOutput(System.String)">
+            <summary>
+            Validates that the Next.js config file contains <c>output: "standalone"</c>.
+            </summary>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScriptHostingExtensions.ResolveNodeVersion(System.String,Microsoft.Extensions.Logging.ILogger)">
+            <summary>
+            Resolves the Node.js version to use for a project by checking common configuration files.
+            </summary>
+            <param name="workingDirectory">The working directory of the Node.js project.</param>
+            <param name="logger">The logger for diagnostic messages.</param>
+            <returns>The resolved Node.js major version number as a string.</returns>
+        </member>
+        <member name="M:Aspire.Hosting.JavaScriptHostingExtensions.TryParseNodeVersion(System.String,System.String@)">
+            <summary>
+            Attempts to parse a Node.js version string and extract the major version number.
+            </summary>
+            <param name="versionString">The version string to parse (e.g., "22", "v22.1.0", ">=20.12", "^18.0.0").</param>
+            <param name="majorVersion">The extracted major version number as a string.</param>
+            <returns>True if the version was successfully parsed, false otherwise.</returns>
+        </member>
+    </members>
+</doc>

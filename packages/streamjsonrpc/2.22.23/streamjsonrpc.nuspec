@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>StreamJsonRpc</id>
+    <version>2.22.23</version>
+    <authors>Microsoft</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>PackageIcon.png</icon>
+    <readme>README.md</readme>
+    <projectUrl>https://github.com/Microsoft/vs-streamjsonrpc</projectUrl>
+    <description>A cross-platform .NETStandard library that implements the JSON-RPC wire protocol and can use System.IO.Stream, System.IO.Pipelines or WebSocket so you can use it with any transport.</description>
+    <releaseNotes>https://github.com/microsoft/vs-streamjsonrpc/releases/tag/v2.22.23</releaseNotes>
+    <copyright>© Microsoft Corporation. All rights reserved.</copyright>
+    <tags>visualstudio stream json rpc jsonrpc</tags>
+    <repository type="git" url="https://github.com/microsoft/vs-streamjsonrpc" commit="df6b38877cb9289abbd789a6e9a8c146bddf9804" />
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="MessagePack" version="2.5.192" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.VisualStudio.Threading.Only" version="17.13.61" exclude="Build,Analyzers" />
+        <dependency id="Nerdbank.Streams" version="2.12.87" exclude="Build,Analyzers" />
+        <dependency id="Newtonsoft.Json" version="13.0.3" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.VisualStudio.Validation" version="17.8.8" exclude="Build,Analyzers" />
+        <dependency id="System.IO.Pipelines" version="8.0.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="MessagePack" version="2.5.192" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Bcl.AsyncInterfaces" version="8.0.0" include="Runtime,Build,Native,ContentFiles,Analyzers,BuildTransitive" />
+        <dependency id="Microsoft.VisualStudio.Threading.Only" version="17.13.61" exclude="Build,Analyzers" />
+        <dependency id="Nerdbank.Streams" version="2.12.87" exclude="Build,Analyzers" />
+        <dependency id="Newtonsoft.Json" version="13.0.3" exclude="Build,Analyzers" />
+        <dependency id="System.Collections.Immutable" version="8.0.0" exclude="Build,Analyzers" />
+        <dependency id="System.Diagnostics.DiagnosticSource" version="8.0.1" exclude="Build,Analyzers" />
+        <dependency id="System.IO.Pipelines" version="8.0.0" exclude="Build,Analyzers" />
+        <dependency id="System.Text.Json" version="8.0.5" exclude="Build,Analyzers" />
+        <dependency id="System.Threading.Tasks.Dataflow" version="8.0.1" include="Runtime,Build,Native,ContentFiles,Analyzers,BuildTransitive" />
+        <dependency id="Microsoft.VisualStudio.Validation" version="17.8.8" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.1">
+        <dependency id="MessagePack" version="2.5.192" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.VisualStudio.Threading.Only" version="17.13.61" exclude="Build,Analyzers" />
+        <dependency id="Nerdbank.Streams" version="2.12.87" exclude="Build,Analyzers" />
+        <dependency id="Newtonsoft.Json" version="13.0.3" exclude="Build,Analyzers" />
+        <dependency id="System.Collections.Immutable" version="8.0.0" exclude="Build,Analyzers" />
+        <dependency id="System.Diagnostics.DiagnosticSource" version="8.0.1" exclude="Build,Analyzers" />
+        <dependency id="System.IO.Pipelines" version="8.0.0" exclude="Build,Analyzers" />
+        <dependency id="System.Text.Json" version="8.0.5" exclude="Build,Analyzers" />
+        <dependency id="System.Threading.Tasks.Dataflow" version="8.0.1" include="Runtime,Build,Native,ContentFiles,Analyzers,BuildTransitive" />
+        <dependency id="Microsoft.Bcl.AsyncInterfaces" version="8.0.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.VisualStudio.Validation" version="17.8.8" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

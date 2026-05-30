@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Polly.RateLimiting</id>
+    <version>8.4.2</version>
+    <authors>Michael Wolfenden, App vNext</authors>
+    <license type="expression">BSD-3-Clause</license>
+    <licenseUrl>https://licenses.nuget.org/BSD-3-Clause</licenseUrl>
+    <icon>package-icon.png</icon>
+    <readme>package-readme.md</readme>
+    <projectUrl>https://github.com/App-vNext/Polly</projectUrl>
+    <description>Polly.RateLimiting is a .NET resilience and transient-fault-handling library that allows developers to express resilience strategies using a Rate Limiter in a fluent and thread-safe manner.</description>
+    <releaseNotes>See https://github.com/App-vNext/Polly/blob/main/CHANGELOG.md for details</releaseNotes>
+    <copyright>Copyright (c) 2024, App vNext</copyright>
+    <tags>Polly Exception Handling Resilience Transient Fault Policy Wait Bulkhead Rate-limit Throttle Hedging</tags>
+    <repository type="git" url="https://github.com/App-vNext/Polly" commit="077cf388fc5a85a7f6cd0fdcb2b68d17a898019e" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.6.2">
+        <dependency id="Polly.Core" version="8.4.2" exclude="Build,Analyzers" />
+        <dependency id="System.Threading.RateLimiting" version="8.0.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETFramework4.7.2">
+        <dependency id="Polly.Core" version="8.4.2" exclude="Build,Analyzers" />
+        <dependency id="System.Threading.RateLimiting" version="8.0.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net6.0">
+        <dependency id="Polly.Core" version="8.4.2" exclude="Build,Analyzers" />
+        <dependency id="System.Threading.RateLimiting" version="8.0.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net8.0">
+        <dependency id="Polly.Core" version="8.4.2" exclude="Build,Analyzers" />
+        <dependency id="System.Threading.RateLimiting" version="8.0.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="Polly.Core" version="8.4.2" exclude="Build,Analyzers" />
+        <dependency id="System.Threading.RateLimiting" version="8.0.0" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

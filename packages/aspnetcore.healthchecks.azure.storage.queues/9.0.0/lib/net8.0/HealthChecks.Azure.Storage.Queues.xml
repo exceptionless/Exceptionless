@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>HealthChecks.Azure.Storage.Queues</name>
+    </assembly>
+    <members>
+        <member name="T:HealthChecks.Azure.Storage.Queues.AzureQueueStorageHealthCheck">
+            <summary>
+            Azure Queue Storage health check.
+            </summary>
+        </member>
+        <member name="M:HealthChecks.Azure.Storage.Queues.AzureQueueStorageHealthCheck.#ctor(Azure.Storage.Queues.QueueServiceClient,HealthChecks.Azure.Storage.Queues.AzureQueueStorageHealthCheckOptions)">
+            <summary>
+            Creates new instance of Azure Queue Storage health check.
+            </summary>
+            <param name="queueServiceClient">
+            The <see cref="T:Azure.Storage.Queues.QueueServiceClient"/> used to perform Azure Queue Storage operations.
+            Azure SDK recommends treating clients as singletons <see href="https://devblogs.microsoft.com/azure-sdk/lifetime-management-and-thread-safety-guarantees-of-azure-sdk-net-clients/"/>,
+            so this should be the exact same instance used by other parts of the application.
+            </param>
+            <param name="options">Optional settings used by the health check.</param>
+        </member>
+        <member name="M:HealthChecks.Azure.Storage.Queues.AzureQueueStorageHealthCheck.CheckHealthAsync(Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckContext,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:HealthChecks.Azure.Storage.Queues.AzureQueueStorageHealthCheckOptions">
+            <summary>
+            Represents a collection of settings that configure an
+            <see cref="T:HealthChecks.Azure.Storage.Queues.AzureQueueStorageHealthCheck">Azure Storage Queue Service health check</see>.
+            </summary>
+        </member>
+        <member name="P:HealthChecks.Azure.Storage.Queues.AzureQueueStorageHealthCheckOptions.QueueName">
+            <summary>
+            Gets or sets the name of the Azure Queue whose health should be checked.
+            </summary>
+            <remarks>
+            If the value is <see langword="null"/>, then no health check is performed for a specific queue.
+            </remarks>
+            <value>An optional Azure Queue name.</value>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.AzureQueueStorageHealthChecksBuilderExtensions">
+            <summary>
+            Extension methods to configure <see cref="T:HealthChecks.Azure.Storage.Queues.AzureQueueStorageHealthCheck"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.AzureQueueStorageHealthChecksBuilderExtensions.AddAzureQueueStorage(Microsoft.Extensions.DependencyInjection.IHealthChecksBuilder,System.Func{System.IServiceProvider,Azure.Storage.Queues.QueueServiceClient},System.Func{System.IServiceProvider,HealthChecks.Azure.Storage.Queues.AzureQueueStorageHealthCheckOptions},System.String,System.Nullable{Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus},System.Collections.Generic.IEnumerable{System.String},System.Nullable{System.TimeSpan})">
+            <summary>
+            Add a health check for Azure Queue Storage by registering <see cref="T:HealthChecks.Azure.Storage.Queues.AzureQueueStorageHealthCheck"/> for given <paramref name="builder"/>.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.DependencyInjection.IHealthChecksBuilder"/> to add <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration"/> to.</param>
+            <param name="clientFactory">
+            An optional factory to obtain <see cref="T:Azure.Storage.Queues.QueueServiceClient" /> instance.
+            When not provided, <see cref="T:Azure.Storage.Queues.QueueServiceClient" /> is simply resolved from <see cref="T:System.IServiceProvider"/>.
+            </param>
+            <param name="optionsFactory">
+            An optional factory to obtain <see cref="T:HealthChecks.Azure.Storage.Queues.AzureQueueStorageHealthCheckOptions"/> used by the health check.
+            When not provided, defaults are used.
+            </param>
+            <param name="name">The health check name. Optional. If <c>null</c> the name 'azure_queue_storage' will be used.</param>
+            <param name="failureStatus">
+            The <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus"/> that should be reported when the health check fails. Optional. If <c>null</c> then
+            the default status of <see cref="F:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy"/> will be reported.
+            </param>
+            <param name="tags">A list of tags that can be used to filter sets of health checks. Optional.</param>
+            <param name="timeout">An optional <see cref="T:System.TimeSpan"/> representing the timeout of the check.</param>
+            <returns>The specified <paramref name="builder"/>.</returns>
+        </member>
+        <member name="T:ApiMarker">
+            <summary>
+            Used for test purposes only.
+            </summary>
+        </member>
+        <member name="M:Guard.ThrowIfNull``1(``0,System.Boolean,System.String)">
+            <summary>Throws an <see cref="T:System.ArgumentNullException"/> if <paramref name="argument"/> is null.</summary>
+            <param name="argument">The reference type argument to validate as non-null.</param>
+            <param name="throwOnEmptyString">Only applicable to strings.</param>
+            <param name="paramName">The name of the parameter with which <paramref name="argument"/> corresponds.</param>
+        </member>
+    </members>
+</doc>

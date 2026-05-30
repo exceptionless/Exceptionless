@@ -1,0 +1,1053 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>System.Threading.RateLimiting</name>
+    </assembly>
+    <members>
+        <member name="T:System.Threading.RateLimiting.ChainedPartitionedRateLimiter`1">
+            <summary>
+            Acquires leases from rate limiters in the order given. If a lease fails to be acquired (throwing or IsAcquired == false)
+            then the already acquired leases are disposed in reverse order and the failing lease is returned or the exception is thrown to user code.
+            </summary>
+        </member>
+        <member name="T:System.Threading.RateLimiting.ConcurrencyLimiter">
+            <summary>
+            <see cref="T:System.Threading.RateLimiting.RateLimiter"/> implementation that helps manage concurrent access to a resource.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.ConcurrencyLimiter.IdleDuration">
+            <inheritdoc />
+        </member>
+        <member name="M:System.Threading.RateLimiting.ConcurrencyLimiter.#ctor(System.Threading.RateLimiting.ConcurrencyLimiterOptions)">
+            <summary>
+            Initializes the <see cref="T:System.Threading.RateLimiting.ConcurrencyLimiter"/>.
+            </summary>
+            <param name="options">Options to specify the behavior of the <see cref="T:System.Threading.RateLimiting.ConcurrencyLimiter"/>.</param>
+        </member>
+        <member name="M:System.Threading.RateLimiting.ConcurrencyLimiter.GetStatistics">
+            <inheritdoc/>
+        </member>
+        <member name="M:System.Threading.RateLimiting.ConcurrencyLimiter.AttemptAcquireCore(System.Int32)">
+            <inheritdoc/>
+        </member>
+        <member name="M:System.Threading.RateLimiting.ConcurrencyLimiter.AcquireAsyncCore(System.Int32,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:System.Threading.RateLimiting.ConcurrencyLimiter.Dispose(System.Boolean)">
+            <inheritdoc/>
+        </member>
+        <member name="M:System.Threading.RateLimiting.ConcurrencyLimiter.DisposeAsyncCore">
+            <inheritdoc/>
+        </member>
+        <member name="T:System.Threading.RateLimiting.ConcurrencyLimiter.RequestRegistration.Disposer">
+            <summary>
+            Collects registrations to dispose outside the limiter lock to avoid deadlock.
+            </summary>
+        </member>
+        <member name="T:System.Threading.RateLimiting.ConcurrencyLimiterOptions">
+            <summary>
+            Options to specify the behavior of a <see cref="T:System.Threading.RateLimiting.ConcurrencyLimiter"/>.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.ConcurrencyLimiterOptions.PermitLimit">
+            <summary>
+            Maximum number of permits that can be leased concurrently.
+            Must be set to a value > 0 by the time these options are passed to the constructor of <see cref="T:System.Threading.RateLimiting.ConcurrencyLimiter"/>.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.ConcurrencyLimiterOptions.QueueProcessingOrder">
+            <summary>
+            Determines the behaviour of <see cref="M:System.Threading.RateLimiting.RateLimiter.AcquireAsync(System.Int32,System.Threading.CancellationToken)"/> when not enough resources can be leased.
+            </summary>
+            <value>
+            <see cref="F:System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst"/> by default.
+            </value>
+        </member>
+        <member name="P:System.Threading.RateLimiting.ConcurrencyLimiterOptions.QueueLimit">
+            <summary>
+            Maximum number of permits that can be queued concurrently.
+            Must be set to a value >= 0 by the time these options are passed to the constructor of <see cref="T:System.Threading.RateLimiting.ConcurrencyLimiter"/>.
+            </summary>
+        </member>
+        <member name="T:System.Threading.RateLimiting.FixedWindowRateLimiter">
+            <summary>
+            <see cref="T:System.Threading.RateLimiting.RateLimiter"/> implementation that refreshes allowed permits in a window periodically.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.FixedWindowRateLimiter.IdleDuration">
+            <inheritdoc />
+        </member>
+        <member name="P:System.Threading.RateLimiting.FixedWindowRateLimiter.IsAutoReplenishing">
+            <inheritdoc />
+        </member>
+        <member name="P:System.Threading.RateLimiting.FixedWindowRateLimiter.ReplenishmentPeriod">
+            <inheritdoc />
+        </member>
+        <member name="M:System.Threading.RateLimiting.FixedWindowRateLimiter.#ctor(System.Threading.RateLimiting.FixedWindowRateLimiterOptions)">
+            <summary>
+            Initializes the <see cref="T:System.Threading.RateLimiting.FixedWindowRateLimiter"/>.
+            </summary>
+            <param name="options">Options to specify the behavior of the <see cref="T:System.Threading.RateLimiting.FixedWindowRateLimiter"/>.</param>
+        </member>
+        <member name="M:System.Threading.RateLimiting.FixedWindowRateLimiter.GetStatistics">
+            <inheritdoc/>
+        </member>
+        <member name="M:System.Threading.RateLimiting.FixedWindowRateLimiter.AttemptAcquireCore(System.Int32)">
+            <inheritdoc/>
+        </member>
+        <member name="M:System.Threading.RateLimiting.FixedWindowRateLimiter.AcquireAsyncCore(System.Int32,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:System.Threading.RateLimiting.FixedWindowRateLimiter.TryReplenish">
+            <summary>
+            Attempts to replenish request counters in the window.
+            </summary>
+            <returns>
+            False if <see cref="P:System.Threading.RateLimiting.FixedWindowRateLimiterOptions.AutoReplenishment"/> is enabled, otherwise true.
+            Does not reflect if counters were replenished.
+            </returns>
+        </member>
+        <member name="M:System.Threading.RateLimiting.FixedWindowRateLimiter.Dispose(System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:System.Threading.RateLimiting.FixedWindowRateLimiter.DisposeAsyncCore">
+            <inheritdoc />
+        </member>
+        <member name="T:System.Threading.RateLimiting.FixedWindowRateLimiter.RequestRegistration.Disposer">
+            <summary>
+            Collects registrations to dispose outside the limiter lock to avoid deadlock.
+            </summary>
+        </member>
+        <member name="T:System.Threading.RateLimiting.FixedWindowRateLimiterOptions">
+            <summary>
+            Options to specify the behavior of a <see cref="T:System.Threading.RateLimiting.FixedWindowRateLimiter"/>.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.FixedWindowRateLimiterOptions.Window">
+            <summary>
+            Specifies the time window that takes in the requests.
+            Must be set to a value greater than <see cref="F:System.TimeSpan.Zero" /> by the time these options are passed to the constructor of <see cref="T:System.Threading.RateLimiting.FixedWindowRateLimiter"/>.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.FixedWindowRateLimiterOptions.AutoReplenishment">
+            <summary>
+            Specified whether the <see cref="T:System.Threading.RateLimiting.FixedWindowRateLimiter"/> is automatically refresh counters or if someone else
+            will be calling <see cref="M:System.Threading.RateLimiting.FixedWindowRateLimiter.TryReplenish"/> to refresh counters.
+            </summary>
+            <value>
+            <see langword="true" /> by default.
+            </value>
+        </member>
+        <member name="P:System.Threading.RateLimiting.FixedWindowRateLimiterOptions.PermitLimit">
+            <summary>
+            Maximum number of permit counters that can be allowed in a window.
+            Must be set to a value > 0 by the time these options are passed to the constructor of <see cref="T:System.Threading.RateLimiting.FixedWindowRateLimiter"/>.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.FixedWindowRateLimiterOptions.QueueProcessingOrder">
+            <summary>
+            Determines the behaviour of <see cref="M:System.Threading.RateLimiting.RateLimiter.AcquireAsync(System.Int32,System.Threading.CancellationToken)"/> when not enough resources can be leased.
+            </summary>
+            <value>
+            <see cref="F:System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst"/> by default.
+            </value>
+        </member>
+        <member name="P:System.Threading.RateLimiting.FixedWindowRateLimiterOptions.QueueLimit">
+            <summary>
+            Maximum cumulative permit count of queued acquisition requests.
+            Must be set to a value >= 0 by the time these options are passed to the constructor of <see cref="T:System.Threading.RateLimiting.FixedWindowRateLimiter"/>.
+            </summary>
+        </member>
+        <member name="T:System.Threading.RateLimiting.MetadataName">
+            <summary>
+            Contains some common metadata name-type pairs and helper method to create a metadata name.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.MetadataName.RetryAfter">
+            <summary>
+            Metadata put on a failed lease acquisition to specify when to retry acquiring a lease.
+            For example, used in <see cref="T:System.Threading.RateLimiting.TokenBucketRateLimiter"/> which periodically replenishes leases.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.MetadataName.ReasonPhrase">
+            <summary>
+            Metadata put on a failed lease acquisition to specify the reason the lease failed.
+            </summary>
+        </member>
+        <member name="M:System.Threading.RateLimiting.MetadataName.Create``1(System.String)">
+            <summary>
+            Create a strongly-typed metadata name.
+            </summary>
+            <typeparam name="T">Type that the metadata will contain.</typeparam>
+            <param name="name">Name of the metadata.</param>
+            <returns></returns>
+        </member>
+        <member name="T:System.Threading.RateLimiting.MetadataName`1">
+            <summary>
+            A strongly-typed name of metadata that can be stored in a <see cref="T:System.Threading.RateLimiting.RateLimitLease"/>.
+            </summary>
+            <typeparam name="T">The type the metadata will be.</typeparam>
+        </member>
+        <member name="M:System.Threading.RateLimiting.MetadataName`1.#ctor(System.String)">
+            <summary>
+            Constructs a <see cref="T:System.Threading.RateLimiting.MetadataName`1"/> object with the given name.
+            </summary>
+            <param name="name">The name of the <see cref="T:System.Threading.RateLimiting.MetadataName"/> object.</param>
+        </member>
+        <member name="P:System.Threading.RateLimiting.MetadataName`1.Name">
+            <summary>
+            Gets the name of the metadata.
+            </summary>
+        </member>
+        <member name="M:System.Threading.RateLimiting.MetadataName`1.ToString">
+            <inheritdoc/>
+        </member>
+        <member name="M:System.Threading.RateLimiting.MetadataName`1.GetHashCode">
+            <inheritdoc/>
+        </member>
+        <member name="M:System.Threading.RateLimiting.MetadataName`1.Equals(System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:System.Threading.RateLimiting.MetadataName`1.Equals(System.Threading.RateLimiting.MetadataName{`0})">
+            <inheritdoc/>
+        </member>
+        <member name="M:System.Threading.RateLimiting.MetadataName`1.op_Equality(System.Threading.RateLimiting.MetadataName{`0},System.Threading.RateLimiting.MetadataName{`0})">
+            <summary>
+            Determines whether two <see cref="T:System.Threading.RateLimiting.MetadataName`1"/> are equal to each other.
+            </summary>
+            <param name="left"></param>
+            <param name="right"></param>
+            <returns></returns>
+        </member>
+        <member name="M:System.Threading.RateLimiting.MetadataName`1.op_Inequality(System.Threading.RateLimiting.MetadataName{`0},System.Threading.RateLimiting.MetadataName{`0})">
+            <summary>
+            Determines whether two <see cref="T:System.Threading.RateLimiting.MetadataName`1"/> are not equal to each other.
+            </summary>
+            <param name="left"></param>
+            <param name="right"></param>
+            <returns></returns>
+        </member>
+        <member name="T:System.Threading.RateLimiting.PartitionedRateLimiter">
+            <summary>
+            Contains methods to assist with creating a <see cref="T:System.Threading.RateLimiting.PartitionedRateLimiter`1"/>.
+            </summary>
+        </member>
+        <member name="M:System.Threading.RateLimiting.PartitionedRateLimiter.Create``2(System.Func{``0,System.Threading.RateLimiting.RateLimitPartition{``1}},System.Collections.Generic.IEqualityComparer{``1})">
+            <summary>
+            Method used to create a default implementation of <see cref="T:System.Threading.RateLimiting.PartitionedRateLimiter`1"/>.
+            </summary>
+            <typeparam name="TResource">The resource type that is being rate limited.</typeparam>
+            <typeparam name="TPartitionKey">The type to distinguish partitions with.</typeparam>
+            <param name="partitioner">Method called every time an Acquire or WaitAsync call is made to figure out what rate limiter to apply to the request.
+            If the <see cref="P:System.Threading.RateLimiting.RateLimitPartition`1.PartitionKey"/> matches a cached entry then the rate limiter previously used for that key is used. Otherwise, the factory is called to get a new rate limiter.</param>
+            <param name="equalityComparer">Optional <see cref="T:System.Collections.Generic.IEqualityComparer`1"/> to customize the comparison logic for <typeparamref name="TPartitionKey"/>.</param>
+            <returns></returns>
+        </member>
+        <member name="M:System.Threading.RateLimiting.PartitionedRateLimiter.CreateChained``1(System.Threading.RateLimiting.PartitionedRateLimiter{``0}[])">
+            <summary>
+            Creates a single <see cref="T:System.Threading.RateLimiting.PartitionedRateLimiter`1"/> that wraps the passed in <see cref="T:System.Threading.RateLimiting.PartitionedRateLimiter`1"/>s.
+            </summary>
+            <remarks>
+            <para>
+            Methods on the returned <see cref="T:System.Threading.RateLimiting.PartitionedRateLimiter`1"/> will iterate over the passed in <paramref name="limiters"/> in the order given.
+            </para>
+            <para>
+            <see cref="M:System.Threading.RateLimiting.PartitionedRateLimiter`1.GetStatistics(`0)"/> will return the lowest value for <see cref="P:System.Threading.RateLimiting.RateLimiterStatistics.CurrentAvailablePermits"/>,
+            the inner-most limiter's <see cref="P:System.Threading.RateLimiting.RateLimiterStatistics.TotalSuccessfulLeases"/>,
+            and the aggregate values for the rest of the properties from the <paramref name="limiters"/>.
+            </para>
+            <para>
+            <see cref="T:System.Threading.RateLimiting.RateLimitLease"/>s returned will aggregate metadata and for duplicates use the value of the first lease with the same metadata name.
+            </para>
+            </remarks>
+            <typeparam name="TResource">The resource type that is being rate limited.</typeparam>
+            <param name="limiters">The <see cref="T:System.Threading.RateLimiting.PartitionedRateLimiter`1"/>s that will be called in order when acquiring resources.</param>
+            <returns></returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="limiters"/> is a null parameter.</exception>
+            <exception cref="T:System.ArgumentException"><paramref name="limiters"/> is an empty array.</exception>
+        </member>
+        <member name="T:System.Threading.RateLimiting.PartitionedRateLimiter`1">
+            <summary>
+            Represents a limiter type that users interact with to determine if an operation can proceed given a specific <typeparamref name="TResource"/>.
+            </summary>
+            <typeparam name="TResource">The resource type that is being limited.</typeparam>
+        </member>
+        <member name="M:System.Threading.RateLimiting.PartitionedRateLimiter`1.GetStatistics(`0)">
+            <summary>
+            Gets a snapshot of the statistics for the <paramref name="resource"/> if available.
+            </summary>
+            <returns>An instance of <see cref="T:System.Threading.RateLimiting.RateLimiterStatistics"/> containing a snapshot of the statistics for a <paramref name="resource"/>.</returns>
+        </member>
+        <member name="M:System.Threading.RateLimiting.PartitionedRateLimiter`1.AttemptAcquire(`0,System.Int32)">
+            <summary>
+            Fast synchronous attempt to acquire permits.
+            </summary>
+            <remarks>
+            Set <paramref name="permitCount"/> to 0 to get whether permits are exhausted.
+            </remarks>
+            <param name="resource">The resource to limit.</param>
+            <param name="permitCount">Number of permits to try and acquire.</param>
+            <returns>A successful or failed lease.</returns>
+            <exception cref="T:System.ArgumentOutOfRangeException"></exception>
+        </member>
+        <member name="M:System.Threading.RateLimiting.PartitionedRateLimiter`1.AttemptAcquireCore(`0,System.Int32)">
+            <summary>
+            Method that <see cref="T:System.Threading.RateLimiting.PartitionedRateLimiter`1"/> implementations implement for <see cref="M:System.Threading.RateLimiting.PartitionedRateLimiter`1.AttemptAcquire(`0,System.Int32)"/>.
+            </summary>
+            <param name="resource">The resource to limit.</param>
+            <param name="permitCount">Number of permits to try and acquire.</param>
+            <returns></returns>
+        </member>
+        <member name="M:System.Threading.RateLimiting.PartitionedRateLimiter`1.AcquireAsync(`0,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Wait until the requested permits are available or permits can no longer be acquired.
+            </summary>
+            <remarks>
+            Set <paramref name="permitCount"/> to 0 to wait until permits are replenished.
+            </remarks>
+            <param name="resource">The resource to limit.</param>
+            <param name="permitCount">Number of permits to try and acquire.</param>
+            <param name="cancellationToken">Optional token to allow canceling a queued request for permits.</param>
+            <returns>A task that completes when the requested permits are acquired or when the requested permits are denied.</returns>
+            <exception cref="T:System.ArgumentOutOfRangeException"></exception>
+        </member>
+        <member name="M:System.Threading.RateLimiting.PartitionedRateLimiter`1.AcquireAsyncCore(`0,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Method that <see cref="T:System.Threading.RateLimiting.PartitionedRateLimiter`1"/> implementations implement for <see cref="M:System.Threading.RateLimiting.PartitionedRateLimiter`1.AcquireAsync(`0,System.Int32,System.Threading.CancellationToken)"/>.
+            </summary>
+            <param name="resource">The resource to limit.</param>
+            <param name="permitCount">Number of permits to try and acquire.</param>
+            <param name="cancellationToken">Optional token to allow canceling a queued request for permits.</param>
+            <returns>A task that completes when the requested permits are acquired or when the requested permits are denied.</returns>
+        </member>
+        <member name="M:System.Threading.RateLimiting.PartitionedRateLimiter`1.Dispose(System.Boolean)">
+            <summary>
+            Dispose method for implementations to write.
+            </summary>
+            <param name="disposing"></param>
+        </member>
+        <member name="M:System.Threading.RateLimiting.PartitionedRateLimiter`1.Dispose">
+            <summary>
+            Disposes the RateLimiter. This completes any queued acquires with a failed lease.
+            </summary>
+        </member>
+        <member name="M:System.Threading.RateLimiting.PartitionedRateLimiter`1.DisposeAsyncCore">
+            <summary>
+            DisposeAsync method for implementations to write.
+            </summary>
+        </member>
+        <member name="M:System.Threading.RateLimiting.PartitionedRateLimiter`1.DisposeAsync">
+            <summary>
+            Disposes the RateLimiter asynchronously.
+            </summary>
+            <returns>ValueTask representing the completion of the disposal.</returns>
+        </member>
+        <member name="M:System.Threading.RateLimiting.PartitionedRateLimiter`1.WithTranslatedKey``1(System.Func{``0,`0},System.Boolean)">
+            <summary>
+            Translates PartitionedRateLimiter&lt;TOuter&gt; into the current <see cref="T:System.Threading.RateLimiting.PartitionedRateLimiter`1"/>
+            using the <paramref name="keyAdapter"/> to translate <typeparamref name="TOuter"/> to <typeparamref name="TResource"/>.
+            </summary>
+            <typeparam name="TOuter">The type to translate into <typeparamref name="TResource"/>.</typeparam>
+            <param name="keyAdapter">The function to be called every time a <typeparamref name="TOuter"/> is passed to
+            PartitionedRateLimiter&lt;TOuter&gt;.Acquire(TOuter, int) or PartitionedRateLimiter&lt;TOuter&gt;.WaitAsync(TOuter, int, CancellationToken).
+            <para />
+            <remarks><paramref name="keyAdapter"/> should be implemented in a thread-safe way.</remarks></param>
+            <param name="leaveOpen">Specifies whether the returned <see cref="T:System.Threading.RateLimiting.PartitionedRateLimiter`1"/> will dispose the wrapped <see cref="T:System.Threading.RateLimiting.PartitionedRateLimiter`1"/>.</param>
+            <returns>A new PartitionedRateLimiter&lt;TOuter&gt; that translates <typeparamref name="TOuter"/>
+            to <typeparamref name="TResource"/> and calls the inner <see cref="T:System.Threading.RateLimiting.PartitionedRateLimiter`1"/>.</returns>
+        </member>
+        <member name="T:System.Threading.RateLimiting.QueueProcessingOrder">
+            <summary>
+            Controls the behavior of <see cref="M:System.Threading.RateLimiting.RateLimiter.AcquireAsync(System.Int32,System.Threading.CancellationToken)"/> when not enough resources can be leased.
+            </summary>
+        </member>
+        <member name="F:System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst">
+            <summary>
+            Lease the oldest queued <see cref="M:System.Threading.RateLimiting.RateLimiter.AcquireAsync(System.Int32,System.Threading.CancellationToken)"/> call.
+            </summary>
+        </member>
+        <member name="F:System.Threading.RateLimiting.QueueProcessingOrder.NewestFirst">
+            <summary>
+            Lease the newest queued <see cref="M:System.Threading.RateLimiting.RateLimiter.AcquireAsync(System.Int32,System.Threading.CancellationToken)"/> call.
+            </summary>
+        </member>
+        <member name="T:System.Threading.RateLimiting.RateLimiter">
+            <summary>
+            Represents a limiter type that users interact with to determine if an operation can proceed.
+            </summary>
+        </member>
+        <member name="M:System.Threading.RateLimiting.RateLimiter.GetStatistics">
+            <summary>
+            Gets a snapshot of the <see cref="T:System.Threading.RateLimiting.RateLimiter"/> statistics if available.
+            </summary>
+            <returns>An instance of <see cref="T:System.Threading.RateLimiting.RateLimiterStatistics"/> containing a snapshot of the <see cref="T:System.Threading.RateLimiting.RateLimiter"/> statistics.</returns>
+        </member>
+        <member name="P:System.Threading.RateLimiting.RateLimiter.IdleDuration">
+            <summary>
+            Specifies how long the <see cref="T:System.Threading.RateLimiting.RateLimiter"/> has had all permits available. Used by RateLimiter managers that may want to
+            clean up unused RateLimiters.
+            </summary>
+            <remarks>
+            Returns <see langword="null"/> when the <see cref="T:System.Threading.RateLimiting.RateLimiter"/> is in use or is not ready to be idle.
+            </remarks>
+        </member>
+        <member name="M:System.Threading.RateLimiting.RateLimiter.AttemptAcquire(System.Int32)">
+            <summary>
+            Fast synchronous attempt to acquire permits.
+            </summary>
+            <remarks>
+            Set <paramref name="permitCount"/> to 0 to get whether permits are exhausted.
+            </remarks>
+            <param name="permitCount">Number of permits to try and acquire.</param>
+            <returns>A successful or failed lease.</returns>
+            <exception cref="T:System.ArgumentOutOfRangeException"></exception>
+        </member>
+        <member name="M:System.Threading.RateLimiting.RateLimiter.AttemptAcquireCore(System.Int32)">
+            <summary>
+            Method that <see cref="T:System.Threading.RateLimiting.RateLimiter"/> implementations implement for <see cref="M:System.Threading.RateLimiting.RateLimiter.AttemptAcquire(System.Int32)"/>.
+            </summary>
+            <param name="permitCount">Number of permits to try and acquire.</param>
+            <returns></returns>
+        </member>
+        <member name="M:System.Threading.RateLimiting.RateLimiter.AcquireAsync(System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Wait until the requested permits are available or permits can no longer be acquired.
+            </summary>
+            <remarks>
+            Set <paramref name="permitCount"/> to 0 to wait until permits are replenished.
+            </remarks>
+            <param name="permitCount">Number of permits to try and acquire.</param>
+            <param name="cancellationToken">Optional token to allow canceling a queued request for permits.</param>
+            <returns>A task that completes when the requested permits are acquired or when the requested permits are denied.</returns>
+            <exception cref="T:System.ArgumentOutOfRangeException"></exception>
+        </member>
+        <member name="M:System.Threading.RateLimiting.RateLimiter.AcquireAsyncCore(System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Method that <see cref="T:System.Threading.RateLimiting.RateLimiter"/> implementations implement for <see cref="M:System.Threading.RateLimiting.RateLimiter.AcquireAsync(System.Int32,System.Threading.CancellationToken)"/>.
+            </summary>
+            <param name="permitCount">Number of permits to try and acquire.</param>
+            <param name="cancellationToken">Optional token to allow canceling a queued request for permits.</param>
+            <returns>A task that completes when the requested permits are acquired or when the requested permits are denied.</returns>
+        </member>
+        <member name="M:System.Threading.RateLimiting.RateLimiter.Dispose(System.Boolean)">
+            <summary>
+            Dispose method for implementations to write.
+            </summary>
+            <param name="disposing"></param>
+        </member>
+        <member name="M:System.Threading.RateLimiting.RateLimiter.Dispose">
+            <summary>
+            Disposes the RateLimiter. This completes any queued acquires with a failed lease.
+            </summary>
+        </member>
+        <member name="M:System.Threading.RateLimiting.RateLimiter.DisposeAsyncCore">
+            <summary>
+            DisposeAsync method for implementations to write.
+            </summary>
+        </member>
+        <member name="M:System.Threading.RateLimiting.RateLimiter.DisposeAsync">
+            <summary>
+            Disposes the RateLimiter asynchronously.
+            </summary>
+            <returns>ValueTask representing the completion of the disposal.</returns>
+        </member>
+        <member name="T:System.Threading.RateLimiting.RateLimiterStatistics">
+            <summary>
+            Snapshot of statistics for a <see cref="T:System.Threading.RateLimiting.RateLimiter"/>.
+            </summary>
+        </member>
+        <member name="M:System.Threading.RateLimiting.RateLimiterStatistics.#ctor">
+            <summary>
+            Initializes an instance of <see cref="T:System.Threading.RateLimiting.RateLimiterStatistics"/>.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.RateLimiterStatistics.CurrentAvailablePermits">
+            <summary>
+            Gets the number of permits currently available for the <see cref="T:System.Threading.RateLimiting.RateLimiter"/>.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.RateLimiterStatistics.CurrentQueuedCount">
+            <summary>
+            Gets the number of queued permits for the <see cref="T:System.Threading.RateLimiting.RateLimiter"/>.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.RateLimiterStatistics.TotalFailedLeases">
+            <summary>
+            Gets the total number of failed <see cref="T:System.Threading.RateLimiting.RateLimitLease"/>s returned.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.RateLimiterStatistics.TotalSuccessfulLeases">
+            <summary>
+            Gets the total number of successful <see cref="T:System.Threading.RateLimiting.RateLimitLease"/>s returned.
+            </summary>
+        </member>
+        <member name="T:System.Threading.RateLimiting.RateLimitLease">
+            <summary>
+            Abstraction for leases returned by <see cref="T:System.Threading.RateLimiting.RateLimiter"/> implementations.
+            A lease represents the success or failure to acquire a resource and contains potential metadata that is relevant to the acquisition operation.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.RateLimitLease.IsAcquired">
+            <summary>
+            Represents whether lease acquisition was successful.
+            </summary>
+        </member>
+        <member name="M:System.Threading.RateLimiting.RateLimitLease.TryGetMetadata(System.String,System.Object@)">
+            <summary>
+            Attempt to extract metadata for the lease.
+            </summary>
+            <param name="metadataName">The name of the metadata. Some common ones can be found in <see cref="T:System.Threading.RateLimiting.MetadataName"/>.</param>
+            <param name="metadata">The metadata object if it exists.</param>
+            <returns>True if the metadata exists, otherwise false.</returns>
+        </member>
+        <member name="M:System.Threading.RateLimiting.RateLimitLease.TryGetMetadata``1(System.Threading.RateLimiting.MetadataName{``0},``0@)">
+            <summary>
+            Attempt to extract a strongly-typed metadata for the lease.
+            </summary>
+            <typeparam name="T">Type of the expected metadata.</typeparam>
+            <param name="metadataName">The name of the strongly-typed metadata. Some common ones can be found in <see cref="T:System.Threading.RateLimiting.MetadataName"/>.</param>
+            <param name="metadata">The strongly-typed metadata object if it exists.</param>
+            <returns>True if the metadata exists, otherwise false.</returns>
+        </member>
+        <member name="P:System.Threading.RateLimiting.RateLimitLease.MetadataNames">
+            <summary>
+            Gets a list of the metadata names that are available on the lease.
+            </summary>
+        </member>
+        <member name="M:System.Threading.RateLimiting.RateLimitLease.GetAllMetadata">
+            <summary>
+            Gets a list of all the metadata that is available on the lease.
+            </summary>
+            <returns>List of key-value pairs of metadata name and metadata object.</returns>
+        </member>
+        <member name="M:System.Threading.RateLimiting.RateLimitLease.Dispose">
+            <summary>
+            Dispose the lease. This may free up space on the limiter implementation the lease came from.
+            </summary>
+        </member>
+        <member name="M:System.Threading.RateLimiting.RateLimitLease.Dispose(System.Boolean)">
+            <summary>
+            Dispose method for implementations to write.
+            </summary>
+            <param name="disposing"></param>
+        </member>
+        <member name="T:System.Threading.RateLimiting.RateLimitPartition">
+            <summary>
+            Contains methods used in <see cref="M:System.Threading.RateLimiting.PartitionedRateLimiter.Create``2(System.Func{``0,System.Threading.RateLimiting.RateLimitPartition{``1}},System.Collections.Generic.IEqualityComparer{``1})"/> to assist in the creation of partitions for your rate limiter.
+            </summary>
+        </member>
+        <member name="M:System.Threading.RateLimiting.RateLimitPartition.Get``1(``0,System.Func{``0,System.Threading.RateLimiting.RateLimiter})">
+            <summary>
+            Defines a partition with the given rate limiter factory.
+            </summary>
+            <typeparam name="TKey">The type to distinguish partitions with.</typeparam>
+            <remarks>
+            The <paramref name="factory"/> should return a new instance of a rate limiter every time it is called.
+            </remarks>
+            <param name="partitionKey">The specific key for this partition. This will be used to check for an existing cached limiter before calling the <paramref name="factory"/>.</param>
+            <param name="factory">The function called when a rate limiter for the given <paramref name="partitionKey"/> is needed. This should be a new instance of a rate limiter every time it is called.</param>
+            <returns></returns>
+        </member>
+        <member name="M:System.Threading.RateLimiting.RateLimitPartition.GetConcurrencyLimiter``1(``0,System.Func{``0,System.Threading.RateLimiting.ConcurrencyLimiterOptions})">
+            <summary>
+            Defines a partition with a <see cref="T:System.Threading.RateLimiting.ConcurrencyLimiter"/> with the given <see cref="T:System.Threading.RateLimiting.ConcurrencyLimiterOptions"/>.
+            </summary>
+            <typeparam name="TKey">The type to distinguish partitions with.</typeparam>
+            <param name="partitionKey">The specific key for this partition. This will be used to check for an existing cached limiter before calling the <paramref name="factory"/>.</param>
+            <param name="factory">The function called when a rate limiter for the given <paramref name="partitionKey"/> is needed. This can return the same instance of <see cref="T:System.Threading.RateLimiting.ConcurrencyLimiterOptions"/> across different calls.</param>
+            <returns></returns>
+        </member>
+        <member name="M:System.Threading.RateLimiting.RateLimitPartition.GetNoLimiter``1(``0)">
+            <summary>
+            Defines a partition that will not have a rate limiter.
+            This means any calls to <see cref="M:System.Threading.RateLimiting.PartitionedRateLimiter`1.AttemptAcquire(`0,System.Int32)"/> or <see cref="M:System.Threading.RateLimiting.PartitionedRateLimiter`1.AcquireAsync(`0,System.Int32,System.Threading.CancellationToken)"/> will always succeed for the given <paramref name="partitionKey"/>.
+            </summary>
+            <typeparam name="TKey">The type to distinguish partitions with.</typeparam>
+            <param name="partitionKey">The specific key for this partition.</param>
+            <returns></returns>
+        </member>
+        <member name="M:System.Threading.RateLimiting.RateLimitPartition.GetTokenBucketLimiter``1(``0,System.Func{``0,System.Threading.RateLimiting.TokenBucketRateLimiterOptions})">
+            <summary>
+            Defines a partition with a <see cref="T:System.Threading.RateLimiting.TokenBucketRateLimiter"/> with the given <see cref="T:System.Threading.RateLimiting.TokenBucketRateLimiterOptions"/>.
+            </summary>
+            <remarks>
+            Set <see cref="P:System.Threading.RateLimiting.TokenBucketRateLimiterOptions.AutoReplenishment"/> to <see langword="false"/> to save an allocation. This method will create a new options type and set <see cref="P:System.Threading.RateLimiting.TokenBucketRateLimiterOptions.AutoReplenishment"/> to <see langword="false"/> otherwise.
+            </remarks>
+            <typeparam name="TKey">The type to distinguish partitions with.</typeparam>
+            <param name="partitionKey">The specific key for this partition.</param>
+            <param name="factory">The function called when a rate limiter for the given <paramref name="partitionKey"/> is needed. This can return the same instance of <see cref="T:System.Threading.RateLimiting.TokenBucketRateLimiterOptions"/> across different calls.</param>
+            <returns></returns>
+        </member>
+        <member name="M:System.Threading.RateLimiting.RateLimitPartition.GetSlidingWindowLimiter``1(``0,System.Func{``0,System.Threading.RateLimiting.SlidingWindowRateLimiterOptions})">
+            <summary>
+            Defines a partition with a <see cref="T:System.Threading.RateLimiting.SlidingWindowRateLimiter"/> with the given <see cref="T:System.Threading.RateLimiting.SlidingWindowRateLimiterOptions"/>.
+            </summary>
+            <remarks>
+            Set <see cref="P:System.Threading.RateLimiting.SlidingWindowRateLimiterOptions.AutoReplenishment"/> to <see langword="false"/> to save an allocation. This method will create a new options type and set <see cref="P:System.Threading.RateLimiting.SlidingWindowRateLimiterOptions.AutoReplenishment"/> to <see langword="false"/> otherwise.
+            </remarks>
+            <typeparam name="TKey">The type to distinguish partitions with.</typeparam>
+            <param name="partitionKey">The specific key for this partition.</param>
+            <param name="factory">The function called when a rate limiter for the given <paramref name="partitionKey"/> is needed. This can return the same instance of <see cref="T:System.Threading.RateLimiting.SlidingWindowRateLimiterOptions"/> across different calls.</param>
+            <returns></returns>
+        </member>
+        <member name="M:System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter``1(``0,System.Func{``0,System.Threading.RateLimiting.FixedWindowRateLimiterOptions})">
+            <summary>
+            Defines a partition with a <see cref="T:System.Threading.RateLimiting.FixedWindowRateLimiter"/> with the given <see cref="T:System.Threading.RateLimiting.FixedWindowRateLimiterOptions"/>.
+            </summary>
+            <remarks>
+            Set <see cref="P:System.Threading.RateLimiting.FixedWindowRateLimiterOptions.AutoReplenishment"/> to <see langword="false"/> to save an allocation. This method will create a new options type and set <see cref="P:System.Threading.RateLimiting.FixedWindowRateLimiterOptions.AutoReplenishment"/> to <see langword="false"/> otherwise.
+            </remarks>
+            <typeparam name="TKey">The type to distinguish partitions with.</typeparam>
+            <param name="partitionKey">The specific key for this partition.</param>
+            <param name="factory">The function called when a rate limiter for the given <paramref name="partitionKey"/> is needed. This can return the same instance of <see cref="T:System.Threading.RateLimiting.FixedWindowRateLimiterOptions"/> across different calls.</param>
+            <returns></returns>
+        </member>
+        <member name="T:System.Threading.RateLimiting.RateLimitPartition`1">
+            <summary>
+            Type returned by <see cref="M:System.Threading.RateLimiting.RateLimitPartition.Get``1(``0,System.Func{``0,System.Threading.RateLimiting.RateLimiter})"/> methods to be used by <see cref="M:System.Threading.RateLimiting.PartitionedRateLimiter.Create``2(System.Func{``0,System.Threading.RateLimiting.RateLimitPartition{``1}},System.Collections.Generic.IEqualityComparer{``1})"/> to know what partitions are configured.
+            </summary>
+            <typeparam name="TKey">The type to distinguish partitions with.</typeparam>
+        </member>
+        <member name="M:System.Threading.RateLimiting.RateLimitPartition`1.#ctor(`0,System.Func{`0,System.Threading.RateLimiting.RateLimiter})">
+            <summary>
+            Constructs the <see cref="T:System.Threading.RateLimiting.RateLimitPartition`1"/> for use in <see cref="M:System.Threading.RateLimiting.PartitionedRateLimiter.Create``2(System.Func{``0,System.Threading.RateLimiting.RateLimitPartition{``1}},System.Collections.Generic.IEqualityComparer{``1})"/>.
+            </summary>
+            <param name="partitionKey">The specific key for this partition.</param>
+            <param name="factory">The function called when a rate limiter for the given <paramref name="partitionKey"/> is needed.</param>
+        </member>
+        <member name="P:System.Threading.RateLimiting.RateLimitPartition`1.PartitionKey">
+            <summary>
+            The specific key for this partition.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.RateLimitPartition`1.Factory">
+            <summary>
+            The function called when a rate limiter for the given partitionKey is needed.
+            </summary>
+        </member>
+        <member name="T:System.Threading.RateLimiting.ReplenishingRateLimiter">
+            <summary>
+            Abstraction that specifies that the <see cref="T:System.Threading.RateLimiting.RateLimiter"/> implementation is capable of replenishing tokens.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.ReplenishingRateLimiter.ReplenishmentPeriod">
+            <summary>
+            Specifies how often the <see cref="T:System.Threading.RateLimiting.ReplenishingRateLimiter"/> will replenish tokens.
+            If <see cref="P:System.Threading.RateLimiting.ReplenishingRateLimiter.IsAutoReplenishing"/> is <see langword="false"/> then this is how often <see cref="M:System.Threading.RateLimiting.ReplenishingRateLimiter.TryReplenish"/> should be called.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.ReplenishingRateLimiter.IsAutoReplenishing">
+            <summary>
+            Specifies if the <see cref="T:System.Threading.RateLimiting.ReplenishingRateLimiter"/> is automatically replenishing
+            its tokens or if it expects an external source to regularly call <see cref="M:System.Threading.RateLimiting.ReplenishingRateLimiter.TryReplenish"/>.
+            </summary>
+        </member>
+        <member name="M:System.Threading.RateLimiting.ReplenishingRateLimiter.TryReplenish">
+            <summary>
+            Attempts to replenish tokens.
+            </summary>
+            <returns>
+            Generally returns <see langword="false"/> if <see cref="P:System.Threading.RateLimiting.ReplenishingRateLimiter.IsAutoReplenishing"/> is enabled
+            or if no tokens were replenished. Otherwise <see langword="true"/>.
+            </returns>
+        </member>
+        <member name="T:System.Threading.RateLimiting.SlidingWindowRateLimiter">
+            <summary>
+            <see cref="T:System.Threading.RateLimiting.RateLimiter"/> implementation that replenishes permit counters periodically instead of via a release mechanism.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.SlidingWindowRateLimiter.IdleDuration">
+            <inheritdoc />
+        </member>
+        <member name="P:System.Threading.RateLimiting.SlidingWindowRateLimiter.IsAutoReplenishing">
+            <inheritdoc />
+        </member>
+        <member name="P:System.Threading.RateLimiting.SlidingWindowRateLimiter.ReplenishmentPeriod">
+            <inheritdoc />
+        </member>
+        <member name="M:System.Threading.RateLimiting.SlidingWindowRateLimiter.#ctor(System.Threading.RateLimiting.SlidingWindowRateLimiterOptions)">
+            <summary>
+            Initializes the <see cref="T:System.Threading.RateLimiting.SlidingWindowRateLimiter"/>.
+            </summary>
+            <param name="options">Options to specify the behavior of the <see cref="T:System.Threading.RateLimiting.SlidingWindowRateLimiter"/>.</param>
+        </member>
+        <member name="M:System.Threading.RateLimiting.SlidingWindowRateLimiter.GetStatistics">
+            <inheritdoc/>
+        </member>
+        <member name="M:System.Threading.RateLimiting.SlidingWindowRateLimiter.AttemptAcquireCore(System.Int32)">
+            <inheritdoc/>
+        </member>
+        <member name="M:System.Threading.RateLimiting.SlidingWindowRateLimiter.AcquireAsyncCore(System.Int32,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:System.Threading.RateLimiting.SlidingWindowRateLimiter.TryReplenish">
+            <summary>
+            Attempts to replenish request counters in a window.
+            </summary>
+            <returns>
+            False if <see cref="P:System.Threading.RateLimiting.SlidingWindowRateLimiterOptions.AutoReplenishment"/> is enabled, otherwise true.
+            Does not reflect if permits were replenished.
+            </returns>
+        </member>
+        <member name="M:System.Threading.RateLimiting.SlidingWindowRateLimiter.Dispose(System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:System.Threading.RateLimiting.SlidingWindowRateLimiter.DisposeAsyncCore">
+            <inheritdoc />
+        </member>
+        <member name="T:System.Threading.RateLimiting.SlidingWindowRateLimiter.RequestRegistration.Disposer">
+            <summary>
+            Collects registrations to dispose outside the limiter lock to avoid deadlock.
+            </summary>
+        </member>
+        <member name="T:System.Threading.RateLimiting.SlidingWindowRateLimiterOptions">
+            <summary>
+            Options to specify the behavior of a <see cref="T:System.Threading.RateLimiting.SlidingWindowRateLimiter"/>.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.SlidingWindowRateLimiterOptions.Window">
+            <summary>
+            Specifies the minimum period between replenishments.
+            Must be set to a value greater than <see cref="F:System.TimeSpan.Zero" /> by the time these options are passed to the constructor of <see cref="T:System.Threading.RateLimiting.SlidingWindowRateLimiter"/>.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.SlidingWindowRateLimiterOptions.SegmentsPerWindow">
+            <summary>
+            Specifies the maximum number of segments a window is divided into.
+            Must be set to a value > 0 by the time these options are passed to the constructor of <see cref="T:System.Threading.RateLimiting.SlidingWindowRateLimiter"/>.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.SlidingWindowRateLimiterOptions.AutoReplenishment">
+            <summary>
+            Specified whether the <see cref="T:System.Threading.RateLimiting.SlidingWindowRateLimiter"/> is automatically replenishing request counters or if someone else
+            will be calling <see cref="M:System.Threading.RateLimiting.SlidingWindowRateLimiter.TryReplenish"/> to replenish tokens.
+            </summary>
+            <value>
+            <see langword="true" /> by default.
+            </value>
+        </member>
+        <member name="P:System.Threading.RateLimiting.SlidingWindowRateLimiterOptions.PermitLimit">
+            <summary>
+            Maximum number of requests that can be served in a window.
+            Must be set to a value > 0 by the time these options are passed to the constructor of <see cref="T:System.Threading.RateLimiting.SlidingWindowRateLimiter"/>.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.SlidingWindowRateLimiterOptions.QueueProcessingOrder">
+            <summary>
+            Determines the behaviour of <see cref="M:System.Threading.RateLimiting.RateLimiter.AcquireAsync(System.Int32,System.Threading.CancellationToken)"/> when not enough resources can be leased.
+            </summary>
+            <value>
+            <see cref="F:System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst"/> by default.
+            </value>
+        </member>
+        <member name="P:System.Threading.RateLimiting.SlidingWindowRateLimiterOptions.QueueLimit">
+            <summary>
+            Maximum cumulative permit count of queued acquisition requests.
+            Must be set to a value >= 0 by the time these options are passed to the constructor of <see cref="T:System.Threading.RateLimiting.SlidingWindowRateLimiter"/>.
+            </summary>
+        </member>
+        <member name="T:System.Threading.RateLimiting.TokenBucketRateLimiter">
+            <summary>
+            <see cref="T:System.Threading.RateLimiting.RateLimiter"/> implementation that replenishes tokens periodically instead of via a release mechanism.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.TokenBucketRateLimiter.IdleDuration">
+            <inheritdoc />
+        </member>
+        <member name="P:System.Threading.RateLimiting.TokenBucketRateLimiter.IsAutoReplenishing">
+            <inheritdoc />
+        </member>
+        <member name="P:System.Threading.RateLimiting.TokenBucketRateLimiter.ReplenishmentPeriod">
+            <inheritdoc />
+        </member>
+        <member name="M:System.Threading.RateLimiting.TokenBucketRateLimiter.#ctor(System.Threading.RateLimiting.TokenBucketRateLimiterOptions)">
+            <summary>
+            Initializes the <see cref="T:System.Threading.RateLimiting.TokenBucketRateLimiter"/>.
+            </summary>
+            <param name="options">Options to specify the behavior of the <see cref="T:System.Threading.RateLimiting.TokenBucketRateLimiter"/>.</param>
+        </member>
+        <member name="M:System.Threading.RateLimiting.TokenBucketRateLimiter.GetStatistics">
+            <inheritdoc/>
+        </member>
+        <member name="M:System.Threading.RateLimiting.TokenBucketRateLimiter.AttemptAcquireCore(System.Int32)">
+            <inheritdoc/>
+        </member>
+        <member name="M:System.Threading.RateLimiting.TokenBucketRateLimiter.AcquireAsyncCore(System.Int32,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:System.Threading.RateLimiting.TokenBucketRateLimiter.TryReplenish">
+            <summary>
+            Attempts to replenish the bucket.
+            </summary>
+            <returns>
+            <see langword="false"/> if <see cref="P:System.Threading.RateLimiting.TokenBucketRateLimiterOptions.AutoReplenishment"/> is enabled, otherwise <see langword="true"/>.
+            Does not reflect if tokens were replenished.
+            </returns>
+        </member>
+        <member name="M:System.Threading.RateLimiting.TokenBucketRateLimiter.Dispose(System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:System.Threading.RateLimiting.TokenBucketRateLimiter.DisposeAsyncCore">
+            <inheritdoc />
+        </member>
+        <member name="T:System.Threading.RateLimiting.TokenBucketRateLimiter.RequestRegistration.Disposer">
+            <summary>
+            Collects registrations to dispose outside the limiter lock to avoid deadlock.
+            </summary>
+        </member>
+        <member name="T:System.Threading.RateLimiting.TokenBucketRateLimiterOptions">
+            <summary>
+            Options to control the behavior of a <see cref="T:System.Threading.RateLimiting.TokenBucketRateLimiter"/>.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.TokenBucketRateLimiterOptions.ReplenishmentPeriod">
+            <summary>
+            Specifies the minimum period between replenishments.
+            Must be set to a value greater than <see cref="F:System.TimeSpan.Zero" /> by the time these options are passed to the constructor of <see cref="T:System.Threading.RateLimiting.TokenBucketRateLimiter"/>.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.TokenBucketRateLimiterOptions.TokensPerPeriod">
+            <summary>
+            Specifies the maximum number of tokens to restore each replenishment.
+            Must be set to a value > 0 by the time these options are passed to the constructor of <see cref="T:System.Threading.RateLimiting.TokenBucketRateLimiter"/>.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.TokenBucketRateLimiterOptions.AutoReplenishment">
+            <summary>
+            Specified whether the <see cref="T:System.Threading.RateLimiting.TokenBucketRateLimiter"/> is automatically replenishing tokens or if someone else
+            will be calling <see cref="M:System.Threading.RateLimiting.TokenBucketRateLimiter.TryReplenish"/> to replenish tokens.
+            </summary>
+            <value>
+            <see langword="true" /> by default.
+            </value>
+        </member>
+        <member name="P:System.Threading.RateLimiting.TokenBucketRateLimiterOptions.TokenLimit">
+            <summary>
+            Maximum number of tokens that can be in the bucket at any time.
+            Must be set to a value > 0 by the time these options are passed to the constructor of <see cref="T:System.Threading.RateLimiting.TokenBucketRateLimiter"/>.
+            </summary>
+        </member>
+        <member name="P:System.Threading.RateLimiting.TokenBucketRateLimiterOptions.QueueProcessingOrder">
+            <summary>
+            Determines the behaviour of <see cref="M:System.Threading.RateLimiting.RateLimiter.AcquireAsync(System.Int32,System.Threading.CancellationToken)"/> when not enough resources can be leased.
+            </summary>
+            <value>
+            <see cref="F:System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst"/> by default.
+            </value>
+        </member>
+        <member name="P:System.Threading.RateLimiting.TokenBucketRateLimiterOptions.QueueLimit">
+            <summary>
+            Maximum cumulative token count of queued acquisition requests.
+            Must be set to a value >= 0 by the time these options are passed to the constructor of <see cref="T:System.Threading.RateLimiting.TokenBucketRateLimiter"/>.
+            </summary>
+        </member>
+        <member name="T:System.Collections.Generic.Deque`1">
+            <summary>Provides a double-ended queue data structure.</summary>
+            <typeparam name="T">Type of the data stored in the dequeue.</typeparam>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.IsExternalInit">
+            <summary>
+            Reserved to be used by the compiler for tracking metadata.
+            This class should not be used by developers in source code.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.InteropServices.LibraryImportAttribute">
+            <summary>
+            Attribute used to indicate a source generator should create a function for marshalling
+            arguments instead of relying on the runtime to generate an equivalent marshalling function at run-time.
+            </summary>
+            <remarks>
+            This attribute is meaningless if the source generator associated with it is not enabled.
+            The current built-in source generator only supports C# and only supplies an implementation when
+            applied to static, partial, non-generic methods.
+            </remarks>
+        </member>
+        <member name="M:System.Runtime.InteropServices.LibraryImportAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.InteropServices.LibraryImportAttribute"/>.
+            </summary>
+            <param name="libraryName">Name of the library containing the import.</param>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.LibraryName">
+            <summary>
+            Gets the name of the library containing the import.
+            </summary>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.EntryPoint">
+            <summary>
+            Gets or sets the name of the entry point to be called.
+            </summary>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshalling">
+            <summary>
+            Gets or sets how to marshal string arguments to the method.
+            </summary>
+            <remarks>
+            If this field is set to a value other than <see cref="F:System.Runtime.InteropServices.StringMarshalling.Custom" />,
+            <see cref="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshallingCustomType" /> must not be specified.
+            </remarks>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshallingCustomType">
+            <summary>
+            Gets or sets the <see cref="T:System.Type"/> used to control how string arguments to the method are marshalled.
+            </summary>
+            <remarks>
+            If this field is specified, <see cref="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshalling" /> must not be specified
+            or must be set to <see cref="F:System.Runtime.InteropServices.StringMarshalling.Custom" />.
+            </remarks>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.SetLastError">
+            <summary>
+            Gets or sets whether the callee sets an error (SetLastError on Windows or errno
+            on other platforms) before returning from the attributed method.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.InteropServices.StringMarshalling">
+            <summary>
+            Specifies how strings should be marshalled for generated p/invokes
+            </summary>
+        </member>
+        <member name="F:System.Runtime.InteropServices.StringMarshalling.Custom">
+            <summary>
+            Indicates the user is suppling a specific marshaller in <see cref="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshallingCustomType"/>.
+            </summary>
+        </member>
+        <member name="F:System.Runtime.InteropServices.StringMarshalling.Utf8">
+            <summary>
+            Use the platform-provided UTF-8 marshaller.
+            </summary>
+        </member>
+        <member name="F:System.Runtime.InteropServices.StringMarshalling.Utf16">
+            <summary>
+            Use the platform-provided UTF-16 marshaller.
+            </summary>
+        </member>
+        <member name="P:System.SR.TokenLimitExceeded">
+            <summary>{0} token(s) exceeds the token limit of {1}.</summary>
+        </member>
+        <member name="P:System.SR.PermitLimitExceeded">
+            <summary>{0} permit(s) exceeds the permit limit of {1}.</summary>
+        </member>
+        <member name="P:System.SR.ReplenishmentLimitTooHigh">
+            <summary>Over 49 days is not supported.</summary>
+        </member>
+        <member name="P:System.SR.ShouldBeGreaterThan0">
+            <summary>{0} must be set to a value greater than 0.</summary>
+        </member>
+        <member name="P:System.SR.ShouldBeGreaterThanOrEqual0">
+            <summary>{0} must be set to a value greater than or equal to 0.</summary>
+        </member>
+        <member name="P:System.SR.ShouldBeGreaterThanTimeSpan0">
+            <summary>{0} must be set to a value greater than TimeSpan.Zero.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.AllowNullAttribute">
+            <summary>Specifies that null is allowed as an input even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DisallowNullAttribute">
+            <summary>Specifies that null is disallowed as an input even if the corresponding type allows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullAttribute">
+            <summary>Specifies that an output may be null even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullAttribute">
+            <summary>Specifies that an output will not be null even if the corresponding type allows it. Specifies that an input argument was not null when the call returns.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute">
+            <summary>Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue"/>, the parameter may be null even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified return value condition.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter may be null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute">
+            <summary>Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue"/>, the parameter will not be null even if the corresponding type allows it.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified return value condition.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter will not be null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute">
+            <summary>Specifies that the output will be non-null if the named parameter is non-null.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.#ctor(System.String)">
+            <summary>Initializes the attribute with the associated parameter name.</summary>
+            <param name="parameterName">
+            The associated parameter name.  The output will be non-null if the argument to the parameter specified is non-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.ParameterName">
+            <summary>Gets the associated parameter name.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute">
+            <summary>Applied to a method that will never return under any circumstance.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute">
+            <summary>Specifies that the method will not return if the associated Boolean parameter is passed the specified value.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified parameter value.</summary>
+            <param name="parameterValue">
+            The condition parameter value. Code after the method will be considered unreachable by diagnostics if the argument to
+            the associated parameter matches this value.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.ParameterValue">
+            <summary>Gets the condition parameter value.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute">
+            <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String)">
+            <summary>Initializes the attribute with a field or property member.</summary>
+            <param name="member">
+            The field or property member that is promised to be not-null.
+            </param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String[])">
+            <summary>Initializes the attribute with the list of field and property members.</summary>
+            <param name="members">
+            The list of field and property members that are promised to be not-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.Members">
+            <summary>Gets field or property member names.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute">
+            <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values when returning with the specified return value condition.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.#ctor(System.Boolean,System.String)">
+            <summary>Initializes the attribute with the specified return value condition and a field or property member.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter will not be null.
+            </param>
+            <param name="member">
+            The field or property member that is promised to be not-null.
+            </param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.#ctor(System.Boolean,System.String[])">
+            <summary>Initializes the attribute with the specified return value condition and list of field and property members.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter will not be null.
+            </param>
+            <param name="members">
+            The list of field and property members that are promised to be not-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.Members">
+            <summary>Gets field or property member names.</summary>
+        </member>
+    </members>
+</doc>

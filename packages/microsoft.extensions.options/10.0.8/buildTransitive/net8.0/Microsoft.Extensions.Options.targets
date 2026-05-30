@@ -1,0 +1,31 @@
+<Project>
+  <Target Name="_Microsoft_Extensions_OptionsGatherAnalyzers">
+
+    <ItemGroup>
+      <_Microsoft_Extensions_OptionsAnalyzer Include="@(Analyzer)" Condition="'%(Analyzer.NuGetPackageId)' == 'Microsoft.Extensions.Options'" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_Microsoft_Extensions_OptionsAnalyzerMultiTargeting" 
+          Condition="'$(SupportsRoslynComponentVersioning)' != 'true'" 
+          AfterTargets="ResolvePackageDependenciesForBuild;ResolveNuGetPackageAssets"
+          DependsOnTargets="_Microsoft_Extensions_OptionsGatherAnalyzers">
+
+    <ItemGroup>
+      <!-- Remove our analyzers targeting roslyn4.x -->
+      <Analyzer Remove="@(_Microsoft_Extensions_OptionsAnalyzer)"
+                Condition="$([System.String]::Copy('%(_Microsoft_Extensions_OptionsAnalyzer.Identity)').IndexOf('roslyn4')) &gt;= 0"/>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_Microsoft_Extensions_OptionsRemoveAnalyzers" 
+          Condition="'$(DisableMicrosoftExtensionsOptionsSourceGenerator)' == 'true'"
+          AfterTargets="ResolvePackageDependenciesForBuild;ResolveNuGetPackageAssets"
+          DependsOnTargets="_Microsoft_Extensions_OptionsGatherAnalyzers">
+
+    <!-- Remove all our analyzers -->
+    <ItemGroup>
+      <Analyzer Remove="@(_Microsoft_Extensions_OptionsAnalyzer)" />
+    </ItemGroup>
+  </Target>
+</Project>

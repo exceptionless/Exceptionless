@@ -1,0 +1,496 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>OpenTelemetry.Instrumentation.StackExchangeRedis</name>
+    </assembly>
+    <members>
+        <member name="M:OpenTelemetry.Instrumentation.StackExchangeRedis.Implementation.RedisProfilerEntryToActivityConverter.CreateFieldGetter``1(System.Type,System.String,System.Reflection.BindingFlags)">
+            <summary>
+            Creates getter for a field defined in private or internal type
+            represented with classType variable.
+            </summary>
+        </member>
+        <member name="T:OpenTelemetry.Instrumentation.StackExchangeRedis.RedisInstrumentationContext">
+            <summary>
+            Represents contextual information about a profiled Redis command off of which an <see cref="T:System.Diagnostics.Activity"/> can be created.
+            </summary>
+            <param name="ParentActivity">
+            The parent activity associated with the profiled command.
+            <see cref="P:System.Diagnostics.Activity.Current"/> is not guaranteed to be the parent activity since commands are profiled asynchronously.
+            </param>
+            <param name="ProfiledCommand">
+            The profiled Redis command.
+            </param>
+        </member>
+        <member name="M:OpenTelemetry.Instrumentation.StackExchangeRedis.RedisInstrumentationContext.#ctor(System.Diagnostics.Activity,StackExchange.Redis.Profiling.IProfiledCommand)">
+            <summary>
+            Represents contextual information about a profiled Redis command off of which an <see cref="T:System.Diagnostics.Activity"/> can be created.
+            </summary>
+            <param name="ParentActivity">
+            The parent activity associated with the profiled command.
+            <see cref="P:System.Diagnostics.Activity.Current"/> is not guaranteed to be the parent activity since commands are profiled asynchronously.
+            </param>
+            <param name="ProfiledCommand">
+            The profiled Redis command.
+            </param>
+        </member>
+        <member name="P:OpenTelemetry.Instrumentation.StackExchangeRedis.RedisInstrumentationContext.ParentActivity">
+            <summary>
+            The parent activity associated with the profiled command.
+            <see cref="P:System.Diagnostics.Activity.Current"/> is not guaranteed to be the parent activity since commands are profiled asynchronously.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Instrumentation.StackExchangeRedis.RedisInstrumentationContext.ProfiledCommand">
+            <summary>
+            The profiled Redis command.
+            </summary>
+        </member>
+        <member name="T:OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisConnectionInstrumentation">
+            <summary>
+            StackExchange.Redis <see cref="T:StackExchange.Redis.IConnectionMultiplexer"/> instrumentation.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisConnectionInstrumentation.#ctor(StackExchange.Redis.IConnectionMultiplexer,System.String,OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisInstrumentationOptions)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisConnectionInstrumentation"/> class.
+            </summary>
+            <param name="connection"><see cref="T:StackExchange.Redis.IConnectionMultiplexer"/> to instrument.</param>
+            <param name="name">Optional name for the connection.</param>
+            <param name="options">Configuration options for redis instrumentation.</param>
+        </member>
+        <member name="M:OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisConnectionInstrumentation.GetProfilerSessionsFactory">
+            <summary>
+            Returns session for the Redis calls recording.
+            </summary>
+            <returns>Session associated with the current span context to record Redis calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisConnectionInstrumentation.Dispose">
+            <inheritdoc/>
+        </member>
+        <member name="T:OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisInstrumentation">
+            <summary>
+            StackExchange.Redis instrumentation.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisInstrumentation.AddConnection(StackExchange.Redis.IConnectionMultiplexer)">
+            <summary>
+            Adds an <see cref="T:StackExchange.Redis.IConnectionMultiplexer"/> to the instrumentation.
+            </summary>
+            <param name="connection"><see cref="T:StackExchange.Redis.IConnectionMultiplexer"/>.</param>
+            <returns><see cref="T:System.IDisposable"/> to cancel the registration.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisInstrumentation.AddConnection(System.String,StackExchange.Redis.IConnectionMultiplexer)">
+            <summary>
+            Adds an <see cref="T:StackExchange.Redis.IConnectionMultiplexer"/> to the instrumentation.
+            </summary>
+            <param name="name">Name to use when retrieving options.</param>
+            <param name="connection"><see cref="T:StackExchange.Redis.IConnectionMultiplexer"/>.</param>
+            <returns><see cref="T:System.IDisposable"/> to cancel the registration.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisInstrumentation.Dispose">
+            <inheritdoc/>
+        </member>
+        <member name="T:OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisInstrumentationOptions">
+            <summary>
+            Options for StackExchange.Redis instrumentation.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisInstrumentationOptions.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisInstrumentationOptions"/> class.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisInstrumentationOptions.FlushInterval">
+            <summary>
+            Gets or sets the maximum time that should elapse between flushing the internal buffer of Redis profiling sessions and creating <see cref="T:System.Diagnostics.Activity"/> objects. Default value: 00:00:10.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisInstrumentationOptions.SetVerboseDatabaseStatements">
+            <summary>
+            Gets or sets a value indicating whether the <see cref="T:OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisConnectionInstrumentation"/> should use reflection to get more detailed <see cref="F:OpenTelemetry.Trace.SemanticConventions.AttributeDbStatement"/> tag values. Default value: <see langword="false"/>.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisInstrumentationOptions.Filter">
+            <summary>
+            Gets or sets a callback method allowing to filter out particular <see cref="T:OpenTelemetry.Instrumentation.StackExchangeRedis.RedisInstrumentationContext"/> instances.
+            </summary>
+            <remarks>
+            The filter callback receives the <see cref="T:OpenTelemetry.Instrumentation.StackExchangeRedis.RedisInstrumentationContext"/> for the
+            processed profiled command and returns a boolean indicating whether it should be filtered out.
+            <list type="bullet">
+            <item>If filter returns <see langword="true"/> the event is collected.</item>
+            <item>If filter returns <see langword="false"/> or throws an exception the event is filtered out (NOT collected).</item>
+            </list>
+            </remarks>
+        </member>
+        <member name="P:OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisInstrumentationOptions.Enrich">
+            <summary>
+            Gets or sets an action to enrich an Activity.
+            </summary>
+            <remarks>
+            <para><see cref="T:System.Diagnostics.Activity"/>: the activity being enriched.</para>
+            <para><see cref="T:OpenTelemetry.Instrumentation.StackExchangeRedis.RedisInstrumentationContext"/>: the profiled redis command from which additional information can be extracted to enrich the activity.</para>
+            </remarks>
+        </member>
+        <member name="P:OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisInstrumentationOptions.EnrichActivityWithTimingEvents">
+            <summary>
+            Gets or sets a value indicating whether the <see cref="T:OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisConnectionInstrumentation"/> should enrich Activity with <see cref="T:System.Diagnostics.ActivityEvent"/> entries about the Redis command processing/lifetime. Defaults to <see langword="true"/>.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisInstrumentationOptions.EmitOldAttributes">
+            <summary>
+            Gets or sets a value indicating whether the old database attributes should be emitted.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisInstrumentationOptions.EmitNewAttributes">
+            <summary>
+            Gets or sets a value indicating whether the new database attributes should be emitted.
+            </summary>
+        </member>
+        <member name="T:OpenTelemetry.Instrumentation.PropertyFetcher`1">
+            <summary>
+            PropertyFetcher fetches a property from an object.
+            </summary>
+            <typeparam name="T">The type of the property being fetched.</typeparam>
+        </member>
+        <member name="M:OpenTelemetry.Instrumentation.PropertyFetcher`1.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Instrumentation.PropertyFetcher`1"/> class.
+            </summary>
+            <param name="propertyName">Property name to fetch.</param>
+        </member>
+        <member name="M:OpenTelemetry.Instrumentation.PropertyFetcher`1.Fetch(System.Object)">
+            <summary>
+            Fetch the property from the object.
+            </summary>
+            <param name="obj">Object to be fetched.</param>
+            <returns>Fetched value.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Instrumentation.PropertyFetcher`1.TryFetch(System.Object,`0@)">
+            <summary>
+            Try to fetch the property from the object.
+            </summary>
+            <param name="obj">Object to be fetched.</param>
+            <param name="value">Fetched value.</param>
+            <returns><see langword= "true"/> if the property was fetched.</returns>
+        </member>
+        <member name="T:OpenTelemetry.Trace.TracerProviderBuilderExtensions">
+            <summary>
+            Extension methods to simplify registering of dependency instrumentation.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TracerProviderBuilderExtensions.AddRedisInstrumentation(OpenTelemetry.Trace.TracerProviderBuilder)">
+            <summary>
+            Enables automatic data collection of outgoing requests to Redis.
+            </summary>
+            <remarks>
+            Note: A <see cref="T:StackExchange.Redis.IConnectionMultiplexer"/> will be resolved using the
+            application <see cref="T:System.IServiceProvider"/>.
+            </remarks>
+            <param name="builder"><see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> being configured.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TracerProviderBuilderExtensions.AddRedisInstrumentation(OpenTelemetry.Trace.TracerProviderBuilder,StackExchange.Redis.IConnectionMultiplexer)">
+            <summary>
+            Enables automatic data collection of outgoing requests to Redis.
+            </summary>
+            <param name="builder"><see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> being configured.</param>
+            <param name="connection"><see cref="T:StackExchange.Redis.IConnectionMultiplexer"/> to instrument.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TracerProviderBuilderExtensions.AddRedisInstrumentation(OpenTelemetry.Trace.TracerProviderBuilder,System.Object)">
+            <summary>
+            Enables automatic data collection of outgoing requests to Redis.
+            </summary>
+            <param name="builder"><see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> being configured.</param>
+            <param name="serviceKey">Optional service key used to retrieve the <see cref="T:StackExchange.Redis.IConnectionMultiplexer"/> to instrument from the <see cref="T:System.IServiceProvider" />.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TracerProviderBuilderExtensions.AddRedisInstrumentation(OpenTelemetry.Trace.TracerProviderBuilder,System.String,System.Object,System.Action{OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisInstrumentationOptions})">
+            <summary>
+            Enables automatic data collection of outgoing requests to Redis.
+            </summary>
+            <param name="builder"><see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> being configured.</param>
+            <param name="name">Optional name which is used when retrieving options.</param>
+            <param name="serviceKey">Optional service key used to retrieve the <see cref="T:StackExchange.Redis.IConnectionMultiplexer"/> to instrument from the <see cref="T:System.IServiceProvider" />.</param>
+            <param name="configure">Callback to configure options.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TracerProviderBuilderExtensions.AddRedisInstrumentation(OpenTelemetry.Trace.TracerProviderBuilder,System.Action{OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisInstrumentationOptions})">
+            <summary>
+            Enables automatic data collection of outgoing requests to Redis.
+            </summary>
+            <remarks>
+            Note: A <see cref="T:StackExchange.Redis.IConnectionMultiplexer"/> will be resolved using the
+            application <see cref="T:System.IServiceProvider"/>.
+            </remarks>
+            <param name="builder"><see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> being configured.</param>
+            <param name="configure">Callback to configure options.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TracerProviderBuilderExtensions.AddRedisInstrumentation(OpenTelemetry.Trace.TracerProviderBuilder,StackExchange.Redis.IConnectionMultiplexer,System.Action{OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisInstrumentationOptions})">
+            <summary>
+            Enables automatic data collection of outgoing requests to Redis.
+            </summary>
+            <param name="builder"><see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> being configured.</param>
+            <param name="connection"><see cref="T:StackExchange.Redis.IConnectionMultiplexer"/> to instrument.</param>
+            <param name="configure">Callback to configure options.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TracerProviderBuilderExtensions.AddRedisInstrumentation(OpenTelemetry.Trace.TracerProviderBuilder,System.String,StackExchange.Redis.IConnectionMultiplexer,System.Object,System.Action{OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisInstrumentationOptions})">
+            <summary>
+            Enables automatic data collection of outgoing requests to Redis.
+            </summary>
+            <remarks>
+            Note: If an <see cref="T:StackExchange.Redis.IConnectionMultiplexer"/> is not supplied
+            using the <paramref name="connection"/> parameter it will be
+            resolved using the application <see cref="T:System.IServiceProvider"/>.
+            </remarks>
+            <param name="builder"><see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> being configured.</param>
+            <param name="name">Optional name which is used when retrieving options.</param>
+            <param name="connection">Optional <see cref="T:StackExchange.Redis.IConnectionMultiplexer"/> to instrument.</param>
+            <param name="serviceKey">Optional service key used to retrieve the <see cref="T:StackExchange.Redis.IConnectionMultiplexer"/> to instrument from the <see cref="T:System.IServiceProvider" />.</param>
+            <param name="configure">Optional callback to configure options.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TracerProviderBuilderExtensions.ConfigureRedisInstrumentation(OpenTelemetry.Trace.TracerProviderBuilder,System.Action{OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisInstrumentation})">
+            <summary>
+            Registers a callback for configuring Redis instrumentation.
+            </summary>
+            <param name="builder"><see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> being configured.</param>
+            <param name="configure">Callback to configure instrumentation.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TracerProviderBuilderExtensions.ConfigureRedisInstrumentation(OpenTelemetry.Trace.TracerProviderBuilder,System.Action{System.IServiceProvider,OpenTelemetry.Instrumentation.StackExchangeRedis.StackExchangeRedisInstrumentation})">
+            <summary>
+            Registers a callback for configuring Redis instrumentation.
+            </summary>
+            <param name="builder"><see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> being configured.</param>
+            <param name="configure">Callback to configure instrumentation.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> to chain the calls.</returns>
+        </member>
+        <member name="T:OpenTelemetry.Trace.SemanticConventions">
+            <summary>
+            Constants for semantic attribute names outlined by the OpenTelemetry specifications.
+            <see href="https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/README.md"/>.
+            </summary>
+        </member>
+        <member name="T:OpenTelemetry.Internal.DatabaseSemanticConventionHelper">
+            <summary>
+            Helper class for Database Semantic Conventions.
+            </summary>
+            <remarks>
+            Due to a breaking change in the semantic convention, affected instrumentation libraries
+            must inspect an environment variable to determine which attributes to emit.
+            This is expected to be removed when the instrumentation libraries reach Stable.
+            <see href="https://github.com/open-telemetry/semantic-conventions/blob/v1.28.0/docs/database/database-spans.md"/>.
+            </remarks>
+        </member>
+        <member name="F:OpenTelemetry.Internal.DatabaseSemanticConventionHelper.DatabaseSemanticConvention.Old">
+            <summary>
+            Instructs an instrumentation library to emit the old experimental Database attributes.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Internal.DatabaseSemanticConventionHelper.DatabaseSemanticConvention.New">
+            <summary>
+            Instructs an instrumentation library to emit the new, v1.28.0 Database attributes.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Internal.DatabaseSemanticConventionHelper.DatabaseSemanticConvention.Dupe">
+            <summary>
+            Instructs an instrumentation library to emit both the old and new attributes.
+            </summary>
+        </member>
+        <member name="T:OpenTelemetry.Internal.Guard">
+            <summary>
+            Methods for guarding against exception throwing values.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Internal.Guard.ThrowIfNull(System.Object,System.String)">
+            <summary>
+            Throw an exception if the value is null.
+            </summary>
+            <param name="value">The value to check.</param>
+            <param name="paramName">The parameter name to use in the thrown exception.</param>
+        </member>
+        <member name="M:OpenTelemetry.Internal.Guard.ThrowIfNullOrEmpty(System.String,System.String)">
+            <summary>
+            Throw an exception if the value is null or empty.
+            </summary>
+            <param name="value">The value to check.</param>
+            <param name="paramName">The parameter name to use in the thrown exception.</param>
+        </member>
+        <member name="M:OpenTelemetry.Internal.Guard.ThrowIfNullOrWhitespace(System.String,System.String)">
+            <summary>
+            Throw an exception if the value is null or whitespace.
+            </summary>
+            <param name="value">The value to check.</param>
+            <param name="paramName">The parameter name to use in the thrown exception.</param>
+        </member>
+        <member name="M:OpenTelemetry.Internal.Guard.ThrowIfZero(System.Int32,System.String,System.String)">
+            <summary>
+            Throw an exception if the value is zero.
+            </summary>
+            <param name="value">The value to check.</param>
+            <param name="message">The message to use in the thrown exception.</param>
+            <param name="paramName">The parameter name to use in the thrown exception.</param>
+        </member>
+        <member name="M:OpenTelemetry.Internal.Guard.ThrowIfInvalidTimeout(System.Int32,System.String)">
+            <summary>
+            Throw an exception if the value is not considered a valid timeout.
+            </summary>
+            <param name="value">The value to check.</param>
+            <param name="paramName">The parameter name to use in the thrown exception.</param>
+        </member>
+        <member name="M:OpenTelemetry.Internal.Guard.ThrowIfOutOfRange(System.Int32,System.String,System.Int32,System.Int32,System.String,System.String,System.String)">
+            <summary>
+            Throw an exception if the value is not within the given range.
+            </summary>
+            <param name="value">The value to check.</param>
+            <param name="paramName">The parameter name to use in the thrown exception.</param>
+            <param name="min">The inclusive lower bound.</param>
+            <param name="max">The inclusive upper bound.</param>
+            <param name="minName">The name of the lower bound.</param>
+            <param name="maxName">The name of the upper bound.</param>
+            <param name="message">An optional custom message to use in the thrown exception.</param>
+        </member>
+        <member name="M:OpenTelemetry.Internal.Guard.ThrowIfOutOfRange(System.Double,System.String,System.Double,System.Double,System.String,System.String,System.String)">
+            <summary>
+            Throw an exception if the value is not within the given range.
+            </summary>
+            <param name="value">The value to check.</param>
+            <param name="paramName">The parameter name to use in the thrown exception.</param>
+            <param name="min">The inclusive lower bound.</param>
+            <param name="max">The inclusive upper bound.</param>
+            <param name="minName">The name of the lower bound.</param>
+            <param name="maxName">The name of the upper bound.</param>
+            <param name="message">An optional custom message to use in the thrown exception.</param>
+        </member>
+        <member name="M:OpenTelemetry.Internal.Guard.ThrowIfNotOfType``1(System.Object,System.String)">
+            <summary>
+            Throw an exception if the value is not of the expected type.
+            </summary>
+            <param name="value">The value to check.</param>
+            <param name="paramName">The parameter name to use in the thrown exception.</param>
+            <typeparam name="T">The type attempted to convert to.</typeparam>
+            <returns>The value casted to the specified type.</returns>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.CallerArgumentExpressionAttribute">
+            <summary>Allows capturing of the expressions passed to a method.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullAttribute">
+            <summary>Specifies that an output is not <see langword="null"/> even if
+            the corresponding type allows it. Specifies that an input argument was
+            not <see langword="null"/> when the call returns.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.AllowNullAttribute">
+            <summary>Specifies that null is allowed as an input even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullAttribute">
+            <summary>Specifies that an output may be null even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute">
+            <summary>Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue"/>, the parameter will not be null even if the corresponding type allows it.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified return value condition.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter will not be null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute">
+            <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String)">
+            <summary>Initializes the attribute with a field or property member.</summary>
+            <param name="member">
+            The field or property member that is promised to be not-null.
+            </param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String[])">
+            <summary>Initializes the attribute with the list of field and property members.</summary>
+            <param name="members">
+            The list of field and property members that are promised to be not-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.Members">
+            <summary>Gets field or property member names.</summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Configuration.EnvironmentVariables.EnvironmentVariablesConfigurationProvider">
+            <summary>
+            An environment variable based <see cref="T:Microsoft.Extensions.Configuration.ConfigurationProvider"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.EnvironmentVariables.EnvironmentVariablesConfigurationProvider.#ctor">
+            <summary>
+            Initializes a new instance.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.EnvironmentVariables.EnvironmentVariablesConfigurationProvider.#ctor(System.String)">
+            <summary>
+            Initializes a new instance with the specified prefix.
+            </summary>
+            <param name="prefix">A prefix used to filter the environment variables.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.EnvironmentVariables.EnvironmentVariablesConfigurationProvider.Load">
+            <summary>
+            Loads the environment variables.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.EnvironmentVariables.EnvironmentVariablesConfigurationProvider.ToString">
+            <summary>
+            Generates a string representing this provider name and relevant details.
+            </summary>
+            <returns> The configuration name. </returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Configuration.EnvironmentVariables.EnvironmentVariablesConfigurationSource">
+            <summary>
+            Represents environment variables as an <see cref="T:Microsoft.Extensions.Configuration.IConfigurationSource"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Configuration.EnvironmentVariables.EnvironmentVariablesConfigurationSource.Prefix">
+            <summary>
+            A prefix used to filter environment variables.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.EnvironmentVariables.EnvironmentVariablesConfigurationSource.Build(Microsoft.Extensions.Configuration.IConfigurationBuilder)">
+            <summary>
+            Builds the <see cref="T:Microsoft.Extensions.Configuration.EnvironmentVariables.EnvironmentVariablesConfigurationProvider"/> for this source.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/>.</param>
+            <returns>A <see cref="T:Microsoft.Extensions.Configuration.EnvironmentVariables.EnvironmentVariablesConfigurationProvider"/></returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Configuration.EnvironmentVariablesExtensions">
+            <summary>
+            Extension methods for registering <see cref="T:Microsoft.Extensions.Configuration.EnvironmentVariables.EnvironmentVariablesConfigurationProvider"/> with <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.EnvironmentVariablesExtensions.AddEnvironmentVariables(Microsoft.Extensions.Configuration.IConfigurationBuilder)">
+            <summary>
+            Adds an <see cref="T:Microsoft.Extensions.Configuration.IConfigurationProvider"/> that reads configuration values from environment variables.
+            </summary>
+            <param name="configurationBuilder">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/> to add to.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.EnvironmentVariablesExtensions.AddEnvironmentVariables(Microsoft.Extensions.Configuration.IConfigurationBuilder,System.String)">
+            <summary>
+            Adds an <see cref="T:Microsoft.Extensions.Configuration.IConfigurationProvider"/> that reads configuration values from environment variables
+            with a specified prefix.
+            </summary>
+            <param name="configurationBuilder">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/> to add to.</param>
+            <param name="prefix">The prefix that environment variable names must start with. The prefix will be removed from the environment variable names.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.EnvironmentVariablesExtensions.AddEnvironmentVariables(Microsoft.Extensions.Configuration.IConfigurationBuilder,System.Action{Microsoft.Extensions.Configuration.EnvironmentVariables.EnvironmentVariablesConfigurationSource})">
+            <summary>
+            Adds an <see cref="T:Microsoft.Extensions.Configuration.IConfigurationProvider"/> that reads configuration values from environment variables.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/> to add to.</param>
+            <param name="configureSource">Configures the source.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/>.</returns>
+        </member>
+    </members>
+</doc>

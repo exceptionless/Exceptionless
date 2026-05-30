@@ -1,0 +1,114 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>App.Metrics.Formatters.Ascii</name>
+    </assembly>
+    <members>
+        <member name="T:App.Metrics.EnvTextOutputFormatterBuilder">
+            <summary>
+                Builder for configuring environment information plain text output formatting using an
+                <see cref="T:App.Metrics.IMetricsBuilder" />.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.EnvTextOutputFormatterBuilder.AsPlainText(App.Metrics.IEnvOutputFormattingBuilder,System.Action{App.Metrics.Formatters.Ascii.MetricsTextOptions})">
+            <summary>
+                Add the <see cref="T:App.Metrics.Formatters.Ascii.EnvInfoTextOutputFormatter" /> allowing environment information to optionally be reported as plain text.
+            </summary>
+            <param name="envFormattingBuilder">
+                The <see cref="T:App.Metrics.IEnvOutputFormattingBuilder" /> used to configure formatting
+                options.
+            </param>
+            <param name="setupAction">The plain text formatting options to use.</param>
+            <returns>
+                An <see cref="T:App.Metrics.IMetricsBuilder" /> that can be used to further configure App Metrics.
+            </returns>
+        </member>
+        <member name="T:App.Metrics.MetricsTextOutputFormatterBuilder">
+            <summary>
+                Builder for configuring metric plain text output formatting using an
+                <see cref="T:App.Metrics.IMetricsBuilder" />.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.MetricsTextOutputFormatterBuilder.AsPlainText(App.Metrics.IMetricsOutputFormattingBuilder,System.Action{App.Metrics.Formatters.Ascii.MetricsTextOptions},App.Metrics.MetricFields)">
+            <summary>
+                Add the <see cref="T:App.Metrics.Formatters.Ascii.MetricsTextOutputFormatter" /> allowing metrics to optionally be reported as plain text.
+            </summary>
+            <param name="metricFormattingBuilder">
+                The <see cref="T:App.Metrics.IMetricsOutputFormattingBuilder" /> used to configure formatting
+                options.
+            </param>
+            <param name="setupAction">The plain text formatting options to use.</param>
+            <param name="metricFields">The metric fields to output as well as their names. This will override the globally configured metric fields.</param>
+            <returns>
+                An <see cref="T:App.Metrics.IMetricsBuilder" /> that can be used to further configure App Metrics.
+            </returns>
+        </member>
+        <member name="M:App.Metrics.MetricsTextOutputFormatterBuilder.AsPlainText(App.Metrics.IMetricsOutputFormattingBuilder,App.Metrics.MetricFields)">
+            <summary>
+                Add the <see cref="T:App.Metrics.Formatters.Ascii.MetricsTextOutputFormatter" /> allowing metrics to optionally be reported as plain text.
+            </summary>
+            <param name="metricFormattingBuilder">
+                The <see cref="T:App.Metrics.IMetricsOutputFormattingBuilder" /> used to configure formatting
+                options.
+            </param>
+            <param name="metricFields">The metric fields to output as well as their names. This will override the globally configured metric fields.</param>
+            <returns>
+                An <see cref="T:App.Metrics.IMetricsBuilder" /> that can be used to further configure App Metrics.
+            </returns>
+        </member>
+        <member name="P:App.Metrics.Formatters.Ascii.EnvInfoTextOutputFormatter.MediaType">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Formatters.Ascii.EnvInfoTextOutputFormatter.WriteAsync(System.IO.Stream,App.Metrics.Infrastructure.EnvironmentInfo,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Formatters.Ascii.EnvInfoTextWriter.Write(App.Metrics.Infrastructure.EnvironmentInfo)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Formatters.Ascii.MetricSnapshotTextWriter.Write(System.String,System.String,System.String,System.Object,App.Metrics.MetricTags,System.DateTime)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Formatters.Ascii.MetricSnapshotTextWriter.Write(System.String,System.String,System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.IEnumerable{System.Object},App.Metrics.MetricTags,System.DateTime)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Formatters.Ascii.MetricSnapshotTextWriter.DisposeAsync">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Formatters.Ascii.MetricSnapshotTextWriter.DisposeAsync(System.Boolean)">
+            <summary>
+            Releases unmanaged and - optionally - managed resources.
+            </summary>
+            <param name="disposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+        </member>
+        <member name="T:App.Metrics.Formatters.Ascii.MetricsTextOptions">
+            <summary>
+                Provides programmatic configuration for ASCII formatting the App Metrics framework.
+            </summary>
+        </member>
+        <member name="P:App.Metrics.Formatters.Ascii.MetricsTextOptions.Padding">
+            <summary>
+                Gets or sets the padding to apply on health check labels and messages
+            </summary>
+            <value>
+                The padding to apply on health check labels and messages
+            </value>
+        </member>
+        <member name="P:App.Metrics.Formatters.Ascii.MetricsTextOptions.Separator">
+            <summary>
+                Gets or sets the separator to use between on health check labels and messages/status
+            </summary>
+            <value>
+                The separator to apply between on health check labels and messages/status
+            </value>
+        </member>
+        <member name="P:App.Metrics.Formatters.Ascii.MetricsTextOutputFormatter.MediaType">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Formatters.Ascii.MetricsTextOutputFormatter.MetricFields">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Formatters.Ascii.MetricsTextOutputFormatter.WriteAsync(System.IO.Stream,App.Metrics.MetricsDataValueSource,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+    </members>
+</doc>

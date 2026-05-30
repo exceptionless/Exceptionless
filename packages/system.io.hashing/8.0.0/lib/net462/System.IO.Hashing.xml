@@ -1,0 +1,456 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<doc>
+  <assembly>
+    <name>System.IO.Hashing</name>
+  </assembly>
+  <members>
+    <member name="T:System.IO.Hashing.Crc32">
+      <summary>Provides an implementation of the CRC-32 algorithm, as used in ITU-T V.42 and IEEE 802.3.</summary>
+    </member>
+    <member name="M:System.IO.Hashing.Crc32.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.IO.Hashing.Crc32" /> class.</summary>
+    </member>
+    <member name="M:System.IO.Hashing.Crc32.Append(System.ReadOnlySpan{System.Byte})">
+      <summary>Appends the contents of <paramref name="source" /> to the data already processed for the current hash computation.</summary>
+      <param name="source">The data to process.</param>
+    </member>
+    <member name="M:System.IO.Hashing.Crc32.GetCurrentHashAsUInt32">
+      <summary>Gets the current computed hash value without modifying accumulated state.</summary>
+      <returns>The hash value for the data already provided.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.Crc32.Hash(System.Byte[])">
+      <summary>Computes the CRC-32 hash of the provided data.</summary>
+      <param name="source">The data to hash.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="source" /> is <see langword="null" />.</exception>
+      <returns>The CRC-32 hash of the provided data.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.Crc32.Hash(System.ReadOnlySpan{System.Byte})">
+      <summary>Computes the CRC-32 hash of the provided data.</summary>
+      <param name="source">The data to hash.</param>
+      <returns>The CRC-32 hash of the provided data.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.Crc32.Hash(System.ReadOnlySpan{System.Byte},System.Span{System.Byte})">
+      <summary>Computes the CRC-32 hash of the provided data into the provided destination.</summary>
+      <param name="source">The data to hash.</param>
+      <param name="destination">The buffer that receives the computed hash value.</param>
+      <returns>The number of bytes written to <paramref name="destination" />.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.Crc32.HashToUInt32(System.ReadOnlySpan{System.Byte})">
+      <summary>Computes the CRC-32 hash of the provided data.</summary>
+      <param name="source">The data to hash.</param>
+      <returns>The computed CRC-32 hash.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.Crc32.Reset">
+      <summary>Resets the hash computation to the initial state.</summary>
+    </member>
+    <member name="M:System.IO.Hashing.Crc32.TryHash(System.ReadOnlySpan{System.Byte},System.Span{System.Byte},System.Int32@)">
+      <summary>Attempts to compute the CRC-32 hash of the provided data into the provided destination.</summary>
+      <param name="source">The data to hash.</param>
+      <param name="destination">The buffer that receives the computed hash value.</param>
+      <param name="bytesWritten">When this method returns, contains the number of bytes written to <paramref name="destination" />.</param>
+      <returns>
+        <see langword="true" /> if <paramref name="destination" /> is long enough to receive the computed hash value (4 bytes); otherwise, <see langword="false" />.</returns>
+    </member>
+    <member name="T:System.IO.Hashing.Crc64">
+      <summary>Provides an implementation of the CRC-64 algorithm as described in ECMA-182, Annex B.</summary>
+    </member>
+    <member name="M:System.IO.Hashing.Crc64.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.IO.Hashing.Crc64" /> class.</summary>
+    </member>
+    <member name="M:System.IO.Hashing.Crc64.Append(System.ReadOnlySpan{System.Byte})">
+      <summary>Appends the contents of <paramref name="source" /> to the data already processed for the current hash computation.</summary>
+      <param name="source">The data to process.</param>
+    </member>
+    <member name="M:System.IO.Hashing.Crc64.GetCurrentHashAsUInt64">
+      <summary>Gets the current computed hash value without modifying accumulated state.</summary>
+      <returns>The hash value for the data already provided.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.Crc64.Hash(System.Byte[])">
+      <summary>Computes the CRC-64 hash of the provided data.</summary>
+      <param name="source">The data to hash.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="source" /> is <see langword="null" />.</exception>
+      <returns>The CRC-64 hash of the provided data.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.Crc64.Hash(System.ReadOnlySpan{System.Byte})">
+      <summary>Computes the CRC-64 hash of the provided data.</summary>
+      <param name="source">The data to hash.</param>
+      <returns>The CRC-64 hash of the provided data.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.Crc64.Hash(System.ReadOnlySpan{System.Byte},System.Span{System.Byte})">
+      <summary>Computes the CRC-64 hash of the provided data into the provided destination.</summary>
+      <param name="source">The data to hash.</param>
+      <param name="destination">The buffer that receives the computed hash value.</param>
+      <returns>The number of bytes written to <paramref name="destination" />.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.Crc64.HashToUInt64(System.ReadOnlySpan{System.Byte})">
+      <summary>Computes the CRC-64 hash of the provided data.</summary>
+      <param name="source">The data to hash.</param>
+      <returns>The computed CRC-64 hash.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.Crc64.Reset">
+      <summary>Resets the hash computation to the initial state.</summary>
+    </member>
+    <member name="M:System.IO.Hashing.Crc64.TryHash(System.ReadOnlySpan{System.Byte},System.Span{System.Byte},System.Int32@)">
+      <summary>Attempts to compute the CRC-64 hash of the provided data into the provided destination.</summary>
+      <param name="source">The data to hash.</param>
+      <param name="destination">The buffer that receives the computed hash value.</param>
+      <param name="bytesWritten">When this method returns, contains the number of bytes written to <paramref name="destination" />.</param>
+      <returns>
+        <see langword="true" /> if <paramref name="destination" /> is long enough to receive the computed hash value (8 bytes); otherwise, <see langword="false" />.</returns>
+    </member>
+    <member name="T:System.IO.Hashing.NonCryptographicHashAlgorithm">
+      <summary>Represents a non-cryptographic hash algorithm.</summary>
+    </member>
+    <member name="M:System.IO.Hashing.NonCryptographicHashAlgorithm.#ctor(System.Int32)">
+      <summary>Called from constructors in derived classes to initialize the <see cref="T:System.IO.Hashing.NonCryptographicHashAlgorithm" /> class.</summary>
+      <param name="hashLengthInBytes">The number of bytes produced from this hash algorithm.</param>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="hashLengthInBytes" /> is less than 1.</exception>
+    </member>
+    <member name="M:System.IO.Hashing.NonCryptographicHashAlgorithm.Append(System.Byte[])">
+      <summary>Appends the contents of <paramref name="source" /> to the data already processed for the current hash computation.</summary>
+      <param name="source">The data to process.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="source" /> is <see langword="null" />.</exception>
+    </member>
+    <member name="M:System.IO.Hashing.NonCryptographicHashAlgorithm.Append(System.IO.Stream)">
+      <summary>Appends the contents of <paramref name="stream" /> to the data already processed for the current hash computation.</summary>
+      <param name="stream">The data to process.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="stream" /> is <see langword="null" />.</exception>
+    </member>
+    <member name="M:System.IO.Hashing.NonCryptographicHashAlgorithm.Append(System.ReadOnlySpan{System.Byte})">
+      <summary>When overridden in a derived class, appends the contents of <paramref name="source" /> to the data already processed for the current hash computation.</summary>
+      <param name="source">The data to process.</param>
+    </member>
+    <member name="M:System.IO.Hashing.NonCryptographicHashAlgorithm.AppendAsync(System.IO.Stream,System.Threading.CancellationToken)">
+      <summary>Asychronously reads the contents of <paramref name="stream" /> and appends them to the data already processed for the current hash computation.</summary>
+      <param name="stream">The data to process.</param>
+      <param name="cancellationToken">The token to monitor for cancellation requests.
+              The default value is <see cref="P:System.Threading.CancellationToken.None" />.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="stream" /> is <see langword="null" />.</exception>
+      <returns>A task that represents the asynchronous append operation.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.NonCryptographicHashAlgorithm.GetCurrentHash">
+      <summary>Gets the current computed hash value without modifying accumulated state.</summary>
+      <returns>The hash value for the data already provided.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.NonCryptographicHashAlgorithm.GetCurrentHash(System.Span{System.Byte})">
+      <summary>Writes the computed hash value to <paramref name="destination" /> without modifying accumulated state.</summary>
+      <param name="destination">The buffer that receives the computed hash value.</param>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="destination" /> is shorter than <see cref="P:System.IO.Hashing.NonCryptographicHashAlgorithm.HashLengthInBytes" />.</exception>
+      <returns>The number of bytes written to <paramref name="destination" />, which is always <see cref="P:System.IO.Hashing.NonCryptographicHashAlgorithm.HashLengthInBytes" />.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.NonCryptographicHashAlgorithm.GetCurrentHashCore(System.Span{System.Byte})">
+      <summary>When overridden in a derived class, writes the computed hash value to <paramref name="destination" /> without modifying accumulated state.</summary>
+      <param name="destination">The buffer that receives the computed hash value.</param>
+    </member>
+    <member name="M:System.IO.Hashing.NonCryptographicHashAlgorithm.GetHashAndReset">
+      <summary>Gets the current computed hash value and clears the accumulated state.</summary>
+      <returns>The hash value for the data already provided.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.NonCryptographicHashAlgorithm.GetHashAndReset(System.Span{System.Byte})">
+      <summary>Writes the computed hash value to <paramref name="destination" /> then clears the accumulated state.</summary>
+      <param name="destination">The buffer that receives the computed hash value.</param>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="destination" /> is shorter than <see cref="P:System.IO.Hashing.NonCryptographicHashAlgorithm.HashLengthInBytes" />.</exception>
+      <returns>The number of bytes written to <paramref name="destination" />, which is always <see cref="P:System.IO.Hashing.NonCryptographicHashAlgorithm.HashLengthInBytes" />.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.NonCryptographicHashAlgorithm.GetHashAndResetCore(System.Span{System.Byte})">
+      <summary>Writes the computed hash value to <paramref name="destination" /> then clears the accumulated state.</summary>
+      <param name="destination">The buffer that receives the computed hash value.</param>
+    </member>
+    <member name="M:System.IO.Hashing.NonCryptographicHashAlgorithm.GetHashCode">
+      <summary>This method is not supported and should not be called.
+              Call <see cref="M:System.IO.Hashing.NonCryptographicHashAlgorithm.GetCurrentHash" /> or <see cref="M:System.IO.Hashing.NonCryptographicHashAlgorithm.GetHashAndReset" /> instead.</summary>
+      <exception cref="T:System.NotSupportedException">In all cases.</exception>
+      <returns>This method will always throw a <see cref="T:System.NotSupportedException" />.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.NonCryptographicHashAlgorithm.Reset">
+      <summary>When overridden in a derived class, resets the hash computation to the initial state.</summary>
+    </member>
+    <member name="M:System.IO.Hashing.NonCryptographicHashAlgorithm.TryGetCurrentHash(System.Span{System.Byte},System.Int32@)">
+      <summary>Attempts to write the computed hash value to <paramref name="destination" /> without modifying accumulated state.</summary>
+      <param name="destination">The buffer that receives the computed hash value.</param>
+      <param name="bytesWritten">When this method returns, contains the number of bytes written to <paramref name="destination" />.</param>
+      <returns>
+        <see langword="true" /> if <paramref name="destination" /> is long enough to receive the computed hash value; otherwise, <see langword="false" />.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.NonCryptographicHashAlgorithm.TryGetHashAndReset(System.Span{System.Byte},System.Int32@)">
+      <summary>Attempts to write the computed hash value to <paramref name="destination" />.
+              If successful, clears the accumulated state.</summary>
+      <param name="destination">The buffer that receives the computed hash value.</param>
+      <param name="bytesWritten">When this method returns, contains the number of bytes written to <paramref name="destination" />.</param>
+      <returns>
+        <see langword="true" /> and clears the accumulated state if <paramref name="destination" /> is long enough to receive the computed hash value; otherwise, <see langword="false" />.</returns>
+    </member>
+    <member name="P:System.IO.Hashing.NonCryptographicHashAlgorithm.HashLengthInBytes">
+      <summary>Gets the number of bytes produced from this hash algorithm.</summary>
+      <returns>The number of bytes produced from this hash algorithm.</returns>
+    </member>
+    <member name="T:System.IO.Hashing.XxHash128">
+      <summary>Provides an implementation of the XXH128 hash algorithm for generating a 128-bit hash.</summary>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash128.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.IO.Hashing.XxHash128" /> class using the default seed value 0.</summary>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash128.#ctor(System.Int64)">
+      <summary>Initializes a new instance of the <see cref="T:System.IO.Hashing.XxHash128" /> class using the specified seed.</summary>
+      <param name="seed">The seed value for the hash computation.</param>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash128.Append(System.ReadOnlySpan{System.Byte})">
+      <summary>Appends the contents of <paramref name="source" /> to the data already processed for the current hash computation.</summary>
+      <param name="source">The data to process.</param>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash128.GetCurrentHashAsUInt128">
+      <summary>Gets the current computed hash value without modifying accumulated state.</summary>
+      <returns>The hash value for the data already provided.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash128.Hash(System.Byte[])">
+      <summary>Computes the XXH128 hash of the provided <paramref name="source" /> data.</summary>
+      <param name="source">The data to hash.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="source" /> is <see langword="null" />.</exception>
+      <returns>The XXH128 128-bit hash code of the provided data.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash128.Hash(System.Byte[],System.Int64)">
+      <summary>Computes the XXH128 hash of the provided data using the provided seed.</summary>
+      <param name="source">The data to hash.</param>
+      <param name="seed">The seed value for this hash computation.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="source" /> is <see langword="null" />.</exception>
+      <returns>The XXH128 128-bit hash code of the provided data.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash128.Hash(System.ReadOnlySpan{System.Byte},System.Int64)">
+      <summary>Computes the XXH128 hash of the provided <paramref name="source" /> data using the optionally provided <paramref name="seed" />.</summary>
+      <param name="source">The data to hash.</param>
+      <param name="seed">The seed value for this hash computation. The default is zero.</param>
+      <returns>The XXH128 128-bit hash code of the provided data.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash128.Hash(System.ReadOnlySpan{System.Byte},System.Span{System.Byte},System.Int64)">
+      <summary>Computes the XXH128 hash of the provided <paramref name="source" /> data into the provided <paramref name="destination" /> using the optionally provided <paramref name="seed" />.</summary>
+      <param name="source">The data to hash.</param>
+      <param name="destination">The buffer that receives the computed 128-bit hash code.</param>
+      <param name="seed">The seed value for this hash computation. The default is zero.</param>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="destination" /> is shorter than the number of bytes produced from this hash algorithm (16 bytes).</exception>
+      <returns>The number of bytes written to <paramref name="destination" />.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash128.HashToUInt128(System.ReadOnlySpan{System.Byte},System.Int64)">
+      <summary>Computes the XXH128 hash of the provided data.</summary>
+      <param name="source">The data to hash.</param>
+      <param name="seed">The seed value for this hash computation. The default is zero.</param>
+      <returns>The computed XXH128 hash.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash128.Reset">
+      <summary>Resets the hash computation to the initial state.</summary>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash128.TryHash(System.ReadOnlySpan{System.Byte},System.Span{System.Byte},System.Int32@,System.Int64)">
+      <summary>Attempts to compute the XXH128 hash of the provided <paramref name="source" /> data into the provided <paramref name="destination" /> using the optionally provided <paramref name="seed" />.</summary>
+      <param name="source">The data to hash.</param>
+      <param name="destination">The buffer that receives the computed 128-bit hash code.</param>
+      <param name="bytesWritten">When this method returns, contains the number of bytes written to <paramref name="destination" />.</param>
+      <param name="seed">The seed value for this hash computation. The default is zero.</param>
+      <returns>
+        <see langword="true" /> if <paramref name="destination" /> is long enough to receive the computed hash value (8 bytes); otherwise, <see langword="false" />.</returns>
+    </member>
+    <member name="T:System.IO.Hashing.XxHash3">
+      <summary>Provides an implementation of the XXH3 hash algorithm for generating a 64-bit hash.</summary>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash3.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.IO.Hashing.XxHash3" /> class using the default seed value 0.</summary>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash3.#ctor(System.Int64)">
+      <summary>Initializes a new instance of the <see cref="T:System.IO.Hashing.XxHash3" /> class using the specified seed.</summary>
+      <param name="seed">The seed value for the hash computation.</param>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash3.Append(System.ReadOnlySpan{System.Byte})">
+      <summary>Appends the contents of <paramref name="source" /> to the data already processed for the current hash computation.</summary>
+      <param name="source">The data to process.</param>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash3.GetCurrentHashAsUInt64">
+      <summary>Gets the current computed hash value without modifying accumulated state.</summary>
+      <returns>The hash value for the data already provided.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash3.Hash(System.Byte[])">
+      <summary>Computes the XXH3 hash of the provided <paramref name="source" /> data.</summary>
+      <param name="source">The data to hash.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="source" /> is <see langword="null" />.</exception>
+      <returns>The XXH3 64-bit hash code of the provided data.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash3.Hash(System.Byte[],System.Int64)">
+      <summary>Computes the XXH3 hash of the provided data using the provided seed.</summary>
+      <param name="source">The data to hash.</param>
+      <param name="seed">The seed value for this hash computation.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="source" /> is <see langword="null" />.</exception>
+      <returns>The XXH3 64-bit hash code of the provided data.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash3.Hash(System.ReadOnlySpan{System.Byte},System.Int64)">
+      <summary>Computes the XXH3 hash of the provided <paramref name="source" /> data using the optionally provided <paramref name="seed" />.</summary>
+      <param name="source">The data to hash.</param>
+      <param name="seed">The seed value for this hash computation. The default is zero.</param>
+      <returns>The XXH3 64-bit hash code of the provided data.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash3.Hash(System.ReadOnlySpan{System.Byte},System.Span{System.Byte},System.Int64)">
+      <summary>Computes the XXH3 hash of the provided <paramref name="source" /> data into the provided <paramref name="destination" /> using the optionally provided <paramref name="seed" />.</summary>
+      <param name="source">The data to hash.</param>
+      <param name="destination">The buffer that receives the computed 64-bit hash code.</param>
+      <param name="seed">The seed value for this hash computation. The default is zero.</param>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="destination" /> is shorter than the number of bytes produced from this hash algorithm (8 bytes).</exception>
+      <returns>The number of bytes written to <paramref name="destination" />.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash3.HashToUInt64(System.ReadOnlySpan{System.Byte},System.Int64)">
+      <summary>Computes the XXH3 hash of the provided data.</summary>
+      <param name="source">The data to hash.</param>
+      <param name="seed">The seed value for this hash computation.</param>
+      <returns>The computed XXH3 hash.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash3.Reset">
+      <summary>Resets the hash computation to the initial state.</summary>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash3.TryHash(System.ReadOnlySpan{System.Byte},System.Span{System.Byte},System.Int32@,System.Int64)">
+      <summary>Attempts to compute the XXH3 hash of the provided <paramref name="source" /> data into the provided <paramref name="destination" /> using the optionally provided <paramref name="seed" />.</summary>
+      <param name="source">The data to hash.</param>
+      <param name="destination">The buffer that receives the computed 64-bit hash code.</param>
+      <param name="bytesWritten">When this method returns, contains the number of bytes written to <paramref name="destination" />.</param>
+      <param name="seed">The seed value for this hash computation. The default is zero.</param>
+      <returns>
+        <see langword="true" /> if <paramref name="destination" /> is long enough to receive the computed hash value (8 bytes); otherwise, <see langword="false" />.</returns>
+    </member>
+    <member name="T:System.IO.Hashing.XxHash32">
+      <summary>Provides an implementation of the XxHash32 algorithm.</summary>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash32.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.IO.Hashing.XxHash32" /> class.</summary>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash32.#ctor(System.Int32)">
+      <summary>Initializes a new instance of the <see cref="T:System.IO.Hashing.XxHash32" /> class with a specified seed.</summary>
+      <param name="seed">The hash seed value for computations from this instance.</param>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash32.Append(System.ReadOnlySpan{System.Byte})">
+      <summary>Appends the contents of <paramref name="source" /> to the data already processed for the current hash computation.</summary>
+      <param name="source">The data to process.</param>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash32.GetCurrentHashAsUInt32">
+      <summary>Gets the current computed hash value without modifying accumulated state.</summary>
+      <returns>The hash value for the data already provided.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash32.Hash(System.Byte[])">
+      <summary>Computes the XxHash32 hash of the provided data.</summary>
+      <param name="source">The data to hash.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="source" /> is <see langword="null" />.</exception>
+      <returns>The XxHash32 hash of the provided data.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash32.Hash(System.Byte[],System.Int32)">
+      <summary>Computes the XxHash32 hash of the provided data using the provided seed.</summary>
+      <param name="source">The data to hash.</param>
+      <param name="seed">The seed value for this hash computation.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="source" /> is <see langword="null" />.</exception>
+      <returns>The XxHash32 hash of the provided data.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash32.Hash(System.ReadOnlySpan{System.Byte},System.Int32)">
+      <summary>Computes the XxHash32 hash of the provided data.</summary>
+      <param name="source">The data to hash.</param>
+      <param name="seed">The seed value for this hash computation. The default is zero.</param>
+      <returns>The XxHash32 hash of the provided data.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash32.Hash(System.ReadOnlySpan{System.Byte},System.Span{System.Byte},System.Int32)">
+      <summary>Computes the XxHash32 hash of the provided data into the provided destination.</summary>
+      <param name="source">The data to hash.</param>
+      <param name="destination">The buffer that receives the computed hash value.</param>
+      <param name="seed">The seed value for this hash computation. The default is zero.</param>
+      <returns>The number of bytes written to <paramref name="destination" />.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash32.HashToUInt32(System.ReadOnlySpan{System.Byte},System.Int32)">
+      <summary>Computes the XxHash32 hash of the provided data.</summary>
+      <param name="source">The data to hash.</param>
+      <param name="seed">The seed value for this hash computation. The default is zero.</param>
+      <returns>The computed XxHash32 hash.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash32.Reset">
+      <summary>Resets the hash computation to the initial state.</summary>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash32.TryHash(System.ReadOnlySpan{System.Byte},System.Span{System.Byte},System.Int32@,System.Int32)">
+      <summary>Attempts to compute the XxHash32 hash of the provided data into the provided destination.</summary>
+      <param name="source">The data to hash.</param>
+      <param name="destination">The buffer that receives the computed hash value.</param>
+      <param name="bytesWritten">When this method returns, contains the number of bytes written to <paramref name="destination" />.</param>
+      <param name="seed">The seed value for this hash computation. The default is zero.</param>
+      <returns>
+        <see langword="true" /> if <paramref name="destination" /> is long enough to receive the computed hash value (4 bytes); otherwise, <see langword="false" />.</returns>
+    </member>
+    <member name="T:System.IO.Hashing.XxHash64">
+      <summary>Provides an implementation of the XxHash64 algorithm.</summary>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash64.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.IO.Hashing.XxHash64" /> class.</summary>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash64.#ctor(System.Int64)">
+      <summary>Initializes a new instance of the <see cref="T:System.IO.Hashing.XxHash64" /> class with a specified seed.</summary>
+      <param name="seed">The hash seed value for computations from this instance.</param>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash64.Append(System.ReadOnlySpan{System.Byte})">
+      <summary>Appends the contents of <paramref name="source" /> to the data already processed for the current hash computation.</summary>
+      <param name="source">The data to process.</param>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash64.GetCurrentHashAsUInt64">
+      <summary>Gets the current computed hash value without modifying accumulated state.</summary>
+      <returns>The hash value for the data already provided.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash64.Hash(System.Byte[])">
+      <summary>Computes the XxHash64 hash of the provided data.</summary>
+      <param name="source">The data to hash.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="source" /> is <see langword="null" />.</exception>
+      <returns>The XxHash64 hash of the provided data.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash64.Hash(System.Byte[],System.Int64)">
+      <summary>Computes the XxHash64 hash of the provided data using the provided seed.</summary>
+      <param name="source">The data to hash.</param>
+      <param name="seed">The seed value for this hash computation.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="source" /> is <see langword="null" />.</exception>
+      <returns>The XxHash64 hash of the provided data.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash64.Hash(System.ReadOnlySpan{System.Byte},System.Int64)">
+      <summary>Computes the XxHash64 hash of the provided data.</summary>
+      <param name="source">The data to hash.</param>
+      <param name="seed">The seed value for this hash computation. The default is zero.</param>
+      <returns>The XxHash64 hash of the provided data.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash64.Hash(System.ReadOnlySpan{System.Byte},System.Span{System.Byte},System.Int64)">
+      <summary>Computes the XxHash64 hash of the provided data into the provided destination.</summary>
+      <param name="source">The data to hash.</param>
+      <param name="destination">The buffer that receives the computed hash value.</param>
+      <param name="seed">The seed value for this hash computation. The default is zero.</param>
+      <returns>The number of bytes written to <paramref name="destination" />.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash64.HashToUInt64(System.ReadOnlySpan{System.Byte},System.Int64)">
+      <summary>Computes the XxHash64 hash of the provided data.</summary>
+      <param name="source">The data to hash.</param>
+      <param name="seed">The seed value for this hash computation.</param>
+      <returns>The computed XxHash64 hash.</returns>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash64.Reset">
+      <summary>Resets the hash computation to the initial state.</summary>
+    </member>
+    <member name="M:System.IO.Hashing.XxHash64.TryHash(System.ReadOnlySpan{System.Byte},System.Span{System.Byte},System.Int32@,System.Int64)">
+      <summary>Attempts to compute the XxHash64 hash of the provided data into the provided destination.</summary>
+      <param name="source">The data to hash.</param>
+      <param name="destination">The buffer that receives the computed hash value.</param>
+      <param name="bytesWritten">When this method returns, contains the number of bytes written to <paramref name="destination" />.</param>
+      <param name="seed">The seed value for this hash computation. The default is zero.</param>
+      <returns>
+        <see langword="true" /> if <paramref name="destination" /> is long enough to receive the computed hash value (4 bytes); otherwise, <see langword="false" />.</returns>
+    </member>
+  </members>
+</doc>

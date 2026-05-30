@@ -1,0 +1,1913 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>OpenTelemetry.Api</name>
+    </assembly>
+    <members>
+        <member name="T:OpenTelemetry.ActivityContextExtensions">
+            <summary>
+            Extension methods on ActivityContext.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.ActivityContextExtensions.IsValid(System.Diagnostics.ActivityContext)">
+            <summary>
+            Returns a bool indicating if a ActivityContext is valid or not.
+            </summary>
+            <param name="ctx">ActivityContext.</param>
+            <returns>whether the context is a valid one or not.</returns>
+        </member>
+        <member name="T:OpenTelemetry.Baggage">
+            <summary>
+            Baggage implementation.
+            </summary>
+            <remarks>
+            Spec reference: <a href="https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/baggage/api.md">Baggage API</a>.
+            </remarks>
+        </member>
+        <member name="M:OpenTelemetry.Baggage.#ctor(System.Collections.Generic.Dictionary{System.String,System.String})">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Baggage"/> struct.
+            </summary>
+            <param name="baggage">Baggage key/value pairs.</param>
+        </member>
+        <member name="P:OpenTelemetry.Baggage.Current">
+            <summary>
+            Gets or sets the current <see cref="T:OpenTelemetry.Baggage"/>.
+            </summary>
+            <remarks>
+            Note: <see cref="P:OpenTelemetry.Baggage.Current"/> returns a forked version of the current
+            Baggage. Changes to the forked version will not automatically be
+            reflected back on <see cref="P:OpenTelemetry.Baggage.Current"/>. To update <see
+            cref="P:OpenTelemetry.Baggage.Current"/> either use one of the static methods that target
+            <see cref="P:OpenTelemetry.Baggage.Current"/> as the default source or set <see
+            cref="P:OpenTelemetry.Baggage.Current"/> to a new instance of <see cref="T:OpenTelemetry.Baggage"/>.
+            Examples:
+            <code>
+            Baggage.SetBaggage("newKey1", "newValue1"); // Updates Baggage.Current with 'newKey1'
+            Baggage.SetBaggage("newKey2", "newValue2"); // Updates Baggage.Current with 'newKey2'
+            </code>
+            Or:
+            <code>
+            var baggageCopy = Baggage.Current;
+            Baggage.SetBaggage("newKey1", "newValue1"); // Updates Baggage.Current with 'newKey1'
+            var newBaggage = baggageCopy
+                .SetBaggage("newKey2", "newValue2");
+                .SetBaggage("newKey3", "newValue3");
+            // Sets Baggage.Current to 'newBaggage' which will override any
+            // changes made to Baggage.Current after the copy was made. For example
+            // the 'newKey1' change is lost.
+            Baggage.Current = newBaggage;
+            </code>
+            </remarks>
+        </member>
+        <member name="P:OpenTelemetry.Baggage.Count">
+            <summary>
+            Gets the number of key/value pairs in the baggage.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Baggage.op_Equality(OpenTelemetry.Baggage,OpenTelemetry.Baggage)">
+            <summary>
+            Compare two entries of <see cref="T:OpenTelemetry.Baggage"/> for equality.
+            </summary>
+            <param name="left">First Entry to compare.</param>
+            <param name="right">Second Entry to compare.</param>
+        </member>
+        <member name="M:OpenTelemetry.Baggage.op_Inequality(OpenTelemetry.Baggage,OpenTelemetry.Baggage)">
+            <summary>
+            Compare two entries of <see cref="T:OpenTelemetry.Baggage"/> for not equality.
+            </summary>
+            <param name="left">First Entry to compare.</param>
+            <param name="right">Second Entry to compare.</param>
+        </member>
+        <member name="M:OpenTelemetry.Baggage.Create(System.Collections.Generic.Dictionary{System.String,System.String})">
+            <summary>
+            Create a <see cref="T:OpenTelemetry.Baggage"/> instance from dictionary of baggage key/value pairs.
+            </summary>
+            <param name="baggageItems">Baggage key/value pairs.</param>
+            <returns><see cref="T:OpenTelemetry.Baggage"/>.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Baggage.GetBaggage(OpenTelemetry.Baggage)">
+            <summary>
+            Returns the name/value pairs in the <see cref="T:OpenTelemetry.Baggage"/>.
+            </summary>
+            <param name="baggage">Optional <see cref="T:OpenTelemetry.Baggage"/>. <see cref="P:OpenTelemetry.Baggage.Current"/> is used if not specified.</param>
+            <returns>Baggage key/value pairs.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Baggage.GetEnumerator(OpenTelemetry.Baggage)">
+            <summary>
+            Returns an enumerator that iterates through the <see cref="T:OpenTelemetry.Baggage"/>.
+            </summary>
+            <param name="baggage">Optional <see cref="T:OpenTelemetry.Baggage"/>. <see cref="P:OpenTelemetry.Baggage.Current"/> is used if not specified.</param>
+            <returns><see cref="T:System.Collections.Generic.Dictionary`2.Enumerator"/>.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Baggage.GetBaggage(System.String,OpenTelemetry.Baggage)">
+            <summary>
+            Returns the value associated with the given name, or <see langword="null"/> if the given name is not present.
+            </summary>
+            <param name="name">Baggage item name.</param>
+            <param name="baggage">Optional <see cref="T:OpenTelemetry.Baggage"/>. <see cref="P:OpenTelemetry.Baggage.Current"/> is used if not specified.</param>
+            <returns>Baggage item or <see langword="null"/> if nothing was found.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Baggage.SetBaggage(System.String,System.String,OpenTelemetry.Baggage)">
+            <summary>
+            Returns a new <see cref="T:OpenTelemetry.Baggage"/> which contains the new key/value pair.
+            </summary>
+            <param name="name">Baggage item name.</param>
+            <param name="value">Baggage item value.</param>
+            <param name="baggage">Optional <see cref="T:OpenTelemetry.Baggage"/>. <see cref="P:OpenTelemetry.Baggage.Current"/> is used if not specified.</param>
+            <returns>New <see cref="T:OpenTelemetry.Baggage"/> containing the key/value pair.</returns>
+            <remarks>Note: The <see cref="T:OpenTelemetry.Baggage"/> returned will be set as the new <see cref="P:OpenTelemetry.Baggage.Current"/> instance.</remarks>
+        </member>
+        <member name="M:OpenTelemetry.Baggage.SetBaggage(System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,System.String}},OpenTelemetry.Baggage)">
+            <summary>
+            Returns a new <see cref="T:OpenTelemetry.Baggage"/> which contains the new key/value pairs.
+            </summary>
+            <param name="baggageItems">Baggage key/value pairs.</param>
+            <param name="baggage">Optional <see cref="T:OpenTelemetry.Baggage"/>. <see cref="P:OpenTelemetry.Baggage.Current"/> is used if not specified.</param>
+            <returns>New <see cref="T:OpenTelemetry.Baggage"/> containing the new key/value pairs.</returns>
+            <remarks>Note: The <see cref="T:OpenTelemetry.Baggage"/> returned will be set as the new <see cref="P:OpenTelemetry.Baggage.Current"/> instance.</remarks>
+        </member>
+        <member name="M:OpenTelemetry.Baggage.RemoveBaggage(System.String,OpenTelemetry.Baggage)">
+            <summary>
+            Returns a new <see cref="T:OpenTelemetry.Baggage"/> with the key/value pair removed.
+            </summary>
+            <param name="name">Baggage item name.</param>
+            <param name="baggage">Optional <see cref="T:OpenTelemetry.Baggage"/>. <see cref="P:OpenTelemetry.Baggage.Current"/> is used if not specified.</param>
+            <returns>New <see cref="T:OpenTelemetry.Baggage"/> with the key/value pair removed.</returns>
+            <remarks>Note: The <see cref="T:OpenTelemetry.Baggage"/> returned will be set as the new <see cref="P:OpenTelemetry.Baggage.Current"/> instance.</remarks>
+        </member>
+        <member name="M:OpenTelemetry.Baggage.ClearBaggage(OpenTelemetry.Baggage)">
+            <summary>
+            Returns a new <see cref="T:OpenTelemetry.Baggage"/> with all the key/value pairs removed.
+            </summary>
+            <param name="baggage">Optional <see cref="T:OpenTelemetry.Baggage"/>. <see cref="P:OpenTelemetry.Baggage.Current"/> is used if not specified.</param>
+            <returns>New <see cref="T:OpenTelemetry.Baggage"/> with all the key/value pairs removed.</returns>
+            <remarks>Note: The <see cref="T:OpenTelemetry.Baggage"/> returned will be set as the new <see cref="P:OpenTelemetry.Baggage.Current"/> instance.</remarks>
+        </member>
+        <member name="M:OpenTelemetry.Baggage.GetBaggage">
+            <summary>
+            Returns the name/value pairs in the <see cref="T:OpenTelemetry.Baggage"/>.
+            </summary>
+            <returns>Baggage key/value pairs.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Baggage.GetBaggage(System.String)">
+            <summary>
+            Returns the value associated with the given name, or <see langword="null"/> if the given name is not present.
+            </summary>
+            <param name="name">Baggage item name.</param>
+            <returns>Baggage item or <see langword="null"/> if nothing was found.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Baggage.SetBaggage(System.String,System.String)">
+            <summary>
+            Returns a new <see cref="T:OpenTelemetry.Baggage"/> which contains the new key/value pair.
+            </summary>
+            <param name="name">Baggage item name.</param>
+            <param name="value">Baggage item value.</param>
+            <returns>New <see cref="T:OpenTelemetry.Baggage"/> containing the key/value pair.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Baggage.SetBaggage(System.Collections.Generic.KeyValuePair{System.String,System.String}[])">
+            <summary>
+            Returns a new <see cref="T:OpenTelemetry.Baggage"/> which contains the new key/value pairs.
+            </summary>
+            <param name="baggageItems">Baggage key/value pairs.</param>
+            <returns>New <see cref="T:OpenTelemetry.Baggage"/> containing the key/value pairs.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Baggage.SetBaggage(System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,System.String}})">
+            <summary>
+            Returns a new <see cref="T:OpenTelemetry.Baggage"/> which contains the new key/value pairs.
+            </summary>
+            <param name="baggageItems">Baggage key/value pairs.</param>
+            <returns>New <see cref="T:OpenTelemetry.Baggage"/> containing the key/value pairs.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Baggage.RemoveBaggage(System.String)">
+            <summary>
+            Returns a new <see cref="T:OpenTelemetry.Baggage"/> with the key/value pair removed.
+            </summary>
+            <param name="name">Baggage item name.</param>
+            <returns>New <see cref="T:OpenTelemetry.Baggage"/> with the key/value pair removed.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Baggage.ClearBaggage">
+            <summary>
+            Returns a new <see cref="T:OpenTelemetry.Baggage"/> with all the key/value pairs removed.
+            </summary>
+            <returns>New <see cref="T:OpenTelemetry.Baggage"/> with all the key/value pairs removed.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Baggage.GetEnumerator">
+            <summary>
+            Returns an enumerator that iterates through the <see cref="T:OpenTelemetry.Baggage"/>.
+            </summary>
+            <returns><see cref="T:System.Collections.Generic.Dictionary`2.Enumerator"/>.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Baggage.Equals(OpenTelemetry.Baggage)">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Baggage.Equals(System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Baggage.GetHashCode">
+            <inheritdoc/>
+        </member>
+        <member name="T:OpenTelemetry.BaseProvider">
+            <summary>
+            Contains logic shared by all OpenTelemetry providers.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.BaseProvider.Finalize">
+            <summary>
+            Finalizes an instance of the <see cref="T:OpenTelemetry.BaseProvider"/> class.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.BaseProvider.Dispose">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.BaseProvider.Dispose(System.Boolean)">
+            <summary>
+            Releases the unmanaged resources used by this class and optionally releases the managed resources.
+            </summary>
+            <param name="disposing"><see langword="true"/> to release both managed and unmanaged resources; <see langword="false"/> to release only unmanaged resources.</param>
+        </member>
+        <member name="T:OpenTelemetry.Context.AsyncLocalRuntimeContextSlot`1">
+            <summary>
+            The async local implementation of context slot.
+            </summary>
+            <typeparam name="T">The type of the underlying value.</typeparam>
+        </member>
+        <member name="M:OpenTelemetry.Context.AsyncLocalRuntimeContextSlot`1.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Context.AsyncLocalRuntimeContextSlot`1"/> class.
+            </summary>
+            <param name="name">The name of the context slot.</param>
+        </member>
+        <member name="P:OpenTelemetry.Context.AsyncLocalRuntimeContextSlot`1.Value">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Context.AsyncLocalRuntimeContextSlot`1.Get">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Context.AsyncLocalRuntimeContextSlot`1.Set(`0)">
+            <inheritdoc/>
+        </member>
+        <member name="T:OpenTelemetry.Context.IRuntimeContextSlotValueAccessor">
+            <summary>
+            Describes a type of <see cref="T:OpenTelemetry.Context.RuntimeContextSlot`1"/> which can expose its value as an <see cref="T:System.Object"/>.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Context.IRuntimeContextSlotValueAccessor.Value">
+            <summary>
+            Gets or sets the value of the slot as an <see cref="T:System.Object"/>.
+            </summary>
+        </member>
+        <member name="T:OpenTelemetry.Context.Propagation.B3Propagator">
+            <summary>
+            A text map propagator for B3. See https://github.com/openzipkin/b3-propagation.
+            This class has been deprecated in favour of OpenTelemetry.Extensions.Propagators package.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Context.Propagation.B3Propagator.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Context.Propagation.B3Propagator"/> class.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Context.Propagation.B3Propagator.#ctor(System.Boolean)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Context.Propagation.B3Propagator"/> class.
+            </summary>
+            <param name="singleHeader">Determines whether to use single or multiple headers when extracting or injecting span context.</param>
+        </member>
+        <member name="P:OpenTelemetry.Context.Propagation.B3Propagator.Fields">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Context.Propagation.B3Propagator.Extract``1(OpenTelemetry.Context.Propagation.PropagationContext,``0,System.Func{``0,System.String,System.Collections.Generic.IEnumerable{System.String}})">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Context.Propagation.B3Propagator.Inject``1(OpenTelemetry.Context.Propagation.PropagationContext,``0,System.Action{``0,System.String,System.String})">
+            <inheritdoc/>
+        </member>
+        <member name="T:OpenTelemetry.Context.Propagation.BaggagePropagator">
+            <summary>
+            A text map propagator for W3C Baggage. See https://w3c.github.io/baggage/.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Context.Propagation.BaggagePropagator.Fields">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Context.Propagation.BaggagePropagator.Extract``1(OpenTelemetry.Context.Propagation.PropagationContext,``0,System.Func{``0,System.String,System.Collections.Generic.IEnumerable{System.String}})">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Context.Propagation.BaggagePropagator.Inject``1(OpenTelemetry.Context.Propagation.PropagationContext,``0,System.Action{``0,System.String,System.String})">
+            <inheritdoc/>
+        </member>
+        <member name="T:OpenTelemetry.Context.Propagation.CompositeTextMapPropagator">
+            <summary>
+            CompositeTextMapPropagator provides a mechanism for combining multiple
+            textmap propagators into a single one.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Context.Propagation.CompositeTextMapPropagator.#ctor(System.Collections.Generic.IEnumerable{OpenTelemetry.Context.Propagation.TextMapPropagator})">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Context.Propagation.CompositeTextMapPropagator"/> class.
+            </summary>
+            <param name="propagators">List of <see cref="T:OpenTelemetry.Context.Propagation.TextMapPropagator"/> wire context propagator.</param>
+        </member>
+        <member name="P:OpenTelemetry.Context.Propagation.CompositeTextMapPropagator.Fields">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Context.Propagation.CompositeTextMapPropagator.Extract``1(OpenTelemetry.Context.Propagation.PropagationContext,``0,System.Func{``0,System.String,System.Collections.Generic.IEnumerable{System.String}})">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Context.Propagation.CompositeTextMapPropagator.Inject``1(OpenTelemetry.Context.Propagation.PropagationContext,``0,System.Action{``0,System.String,System.String})">
+            <inheritdoc/>
+        </member>
+        <member name="T:OpenTelemetry.Context.Propagation.PropagationContext">
+            <summary>
+            Stores propagation data.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Context.Propagation.PropagationContext.#ctor(System.Diagnostics.ActivityContext,OpenTelemetry.Baggage)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Context.Propagation.PropagationContext"/> struct.
+            </summary>
+            <param name="activityContext"><see cref="T:System.Diagnostics.ActivityContext"/>.</param>
+            <param name="baggage"><see cref="P:OpenTelemetry.Context.Propagation.PropagationContext.Baggage"/>.</param>
+        </member>
+        <member name="P:OpenTelemetry.Context.Propagation.PropagationContext.ActivityContext">
+            <summary>
+            Gets <see cref="T:System.Diagnostics.ActivityContext"/>.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Context.Propagation.PropagationContext.Baggage">
+            <summary>
+            Gets <see cref="P:OpenTelemetry.Context.Propagation.PropagationContext.Baggage"/>.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Context.Propagation.PropagationContext.op_Equality(OpenTelemetry.Context.Propagation.PropagationContext,OpenTelemetry.Context.Propagation.PropagationContext)">
+            <summary>
+            Compare two entries of <see cref="T:OpenTelemetry.Context.Propagation.PropagationContext"/> for equality.
+            </summary>
+            <param name="left">First Entry to compare.</param>
+            <param name="right">Second Entry to compare.</param>
+        </member>
+        <member name="M:OpenTelemetry.Context.Propagation.PropagationContext.op_Inequality(OpenTelemetry.Context.Propagation.PropagationContext,OpenTelemetry.Context.Propagation.PropagationContext)">
+            <summary>
+            Compare two entries of <see cref="T:OpenTelemetry.Context.Propagation.PropagationContext"/> for not equality.
+            </summary>
+            <param name="left">First Entry to compare.</param>
+            <param name="right">Second Entry to compare.</param>
+        </member>
+        <member name="M:OpenTelemetry.Context.Propagation.PropagationContext.Equals(OpenTelemetry.Context.Propagation.PropagationContext)">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Context.Propagation.PropagationContext.Equals(System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Context.Propagation.PropagationContext.GetHashCode">
+            <inheritdoc/>
+        </member>
+        <member name="T:OpenTelemetry.Context.Propagation.Propagators">
+            <summary>
+            Propagators allow setting the global default Propagators.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Context.Propagation.Propagators.DefaultTextMapPropagator">
+            <summary>
+            Gets the Default TextMapPropagator to be used.
+            </summary>
+            <remarks>
+            Setting this can be done only from Sdk.
+            </remarks>
+        </member>
+        <member name="T:OpenTelemetry.Context.Propagation.TextMapPropagator">
+            <summary>
+            Defines an interface for a Propagator of TextMap type,
+            which uses string key/value pairs to inject and extract
+            propagation data.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Context.Propagation.TextMapPropagator.Fields">
+            <summary>
+            Gets the list of headers used by propagator. The use cases of this are:
+              * allow pre-allocation of fields, especially in systems like gRPC Metadata
+              * allow a single-pass over an iterator (ex OpenTracing has no getter in TextMap).
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Context.Propagation.TextMapPropagator.Inject``1(OpenTelemetry.Context.Propagation.PropagationContext,``0,System.Action{``0,System.String,System.String})">
+            <summary>
+            Injects the context into a carrier.
+            </summary>
+            <typeparam name="T">Type of object to set context on. Typically,HttpRequest or similar.</typeparam>
+            <param name="context">The default context to transmit over the wire.</param>
+            <param name="carrier">Object to set context on. Instance of this object will be passed to setter.</param>
+            <param name="setter">Action that will set name and value pair on the object.</param>
+        </member>
+        <member name="M:OpenTelemetry.Context.Propagation.TextMapPropagator.Extract``1(OpenTelemetry.Context.Propagation.PropagationContext,``0,System.Func{``0,System.String,System.Collections.Generic.IEnumerable{System.String}})">
+            <summary>
+            Extracts the context from a carrier.
+            </summary>
+            <typeparam name="T">Type of object to extract context from. Typically, HttpRequest or similar.</typeparam>
+            <param name="context">The default context to be used if Extract fails.</param>
+            <param name="carrier">Object to extract context from. Instance of this object will be passed to the getter.</param>
+            <param name="getter">Function that will return string value of a key with the specified name.</param>
+            <returns>Context from its text representation.</returns>
+        </member>
+        <member name="T:OpenTelemetry.Context.Propagation.TraceContextPropagator">
+            <summary>
+            A text map propagator for W3C trace context. See https://w3c.github.io/trace-context/.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Context.Propagation.TraceContextPropagator.Fields">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Context.Propagation.TraceContextPropagator.Extract``1(OpenTelemetry.Context.Propagation.PropagationContext,``0,System.Func{``0,System.String,System.Collections.Generic.IEnumerable{System.String}})">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Context.Propagation.TraceContextPropagator.Inject``1(OpenTelemetry.Context.Propagation.PropagationContext,``0,System.Action{``0,System.String,System.String})">
+            <inheritdoc/>
+        </member>
+        <member name="T:OpenTelemetry.Context.Propagation.TraceStateUtils">
+            <summary>
+            Extension methods to extract TraceState from string.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Context.Propagation.TraceStateUtils.AppendTraceState(System.String,System.Collections.Generic.List{System.Collections.Generic.KeyValuePair{System.String,System.String}})">
+            <summary>
+            Extracts tracestate pairs from the given string and appends it to provided tracestate list.
+            </summary>
+            <param name="traceStateString">String with comma separated tracestate key value pairs.</param>
+            <param name="tracestate"><see cref="T:System.Collections.Generic.List`1"/> to set tracestate pairs on.</param>
+            <returns>True if string was parsed successfully and tracestate was recognized, false otherwise.</returns>
+        </member>
+        <member name="T:OpenTelemetry.Context.RemotingRuntimeContextSlot`1">
+            <summary>
+            The .NET Remoting implementation of context slot.
+            </summary>
+            <typeparam name="T">The type of the underlying value.</typeparam>
+        </member>
+        <member name="M:OpenTelemetry.Context.RemotingRuntimeContextSlot`1.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Context.RemotingRuntimeContextSlot`1"/> class.
+            </summary>
+            <param name="name">The name of the context slot.</param>
+        </member>
+        <member name="P:OpenTelemetry.Context.RemotingRuntimeContextSlot`1.Value">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Context.RemotingRuntimeContextSlot`1.Get">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Context.RemotingRuntimeContextSlot`1.Set(`0)">
+            <inheritdoc/>
+        </member>
+        <member name="T:OpenTelemetry.Context.RuntimeContext">
+            <summary>
+            Generic runtime context management API.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Context.RuntimeContext.ContextSlotType">
+            <summary>
+            Gets or sets the actual context carrier implementation.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Context.RuntimeContext.RegisterSlot``1(System.String)">
+            <summary>
+            Register a named context slot.
+            </summary>
+            <param name="slotName">The name of the context slot.</param>
+            <typeparam name="T">The type of the underlying value.</typeparam>
+            <returns>The slot registered.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Context.RuntimeContext.GetSlot``1(System.String)">
+            <summary>
+            Get a registered slot from a given name.
+            </summary>
+            <param name="slotName">The name of the context slot.</param>
+            <typeparam name="T">The type of the underlying value.</typeparam>
+            <returns>The slot previously registered.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Context.RuntimeContext.SetValue``1(System.String,``0)">
+            <summary>
+            Sets the value to a registered slot.
+            </summary>
+            <param name="slotName">The name of the context slot.</param>
+            <param name="value">The value to be set.</param>
+            <typeparam name="T">The type of the value.</typeparam>
+        </member>
+        <member name="M:OpenTelemetry.Context.RuntimeContext.GetValue``1(System.String)">
+            <summary>
+            Gets the value from a registered slot.
+            </summary>
+            <param name="slotName">The name of the context slot.</param>
+            <typeparam name="T">The type of the value.</typeparam>
+            <returns>The value retrieved from the context slot.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Context.RuntimeContext.SetValue(System.String,System.Object)">
+            <summary>
+            Sets the value to a registered slot.
+            </summary>
+            <param name="slotName">The name of the context slot.</param>
+            <param name="value">The value to be set.</param>
+        </member>
+        <member name="M:OpenTelemetry.Context.RuntimeContext.GetValue(System.String)">
+            <summary>
+            Gets the value from a registered slot.
+            </summary>
+            <param name="slotName">The name of the context slot.</param>
+            <returns>The value retrieved from the context slot.</returns>
+        </member>
+        <member name="T:OpenTelemetry.Context.RuntimeContextSlot`1">
+            <summary>
+            The abstract context slot.
+            </summary>
+            <typeparam name="T">The type of the underlying value.</typeparam>
+        </member>
+        <member name="M:OpenTelemetry.Context.RuntimeContextSlot`1.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Context.RuntimeContextSlot`1"/> class.
+            </summary>
+            <param name="name">The name of the context slot.</param>
+        </member>
+        <member name="P:OpenTelemetry.Context.RuntimeContextSlot`1.Name">
+            <summary>
+            Gets the name of the context slot.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Context.RuntimeContextSlot`1.Get">
+            <summary>
+            Get the value from the context slot.
+            </summary>
+            <returns>The value retrieved from the context slot.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Context.RuntimeContextSlot`1.Set(`0)">
+            <summary>
+            Set the value to the context slot.
+            </summary>
+            <param name="value">The value to be set.</param>
+        </member>
+        <member name="M:OpenTelemetry.Context.RuntimeContextSlot`1.Dispose">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Context.RuntimeContextSlot`1.Dispose(System.Boolean)">
+            <summary>
+            Releases the unmanaged resources used by this class and optionally releases the managed resources.
+            </summary>
+            <param name="disposing"><see langword="true"/> to release both managed and unmanaged resources; <see langword="false"/> to release only unmanaged resources.</param>
+        </member>
+        <member name="T:OpenTelemetry.Context.ThreadLocalRuntimeContextSlot`1">
+            <summary>
+            The thread local (TLS) implementation of context slot.
+            </summary>
+            <typeparam name="T">The type of the underlying value.</typeparam>
+        </member>
+        <member name="M:OpenTelemetry.Context.ThreadLocalRuntimeContextSlot`1.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Context.ThreadLocalRuntimeContextSlot`1"/> class.
+            </summary>
+            <param name="name">The name of the context slot.</param>
+        </member>
+        <member name="P:OpenTelemetry.Context.ThreadLocalRuntimeContextSlot`1.Value">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Context.ThreadLocalRuntimeContextSlot`1.Get">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Context.ThreadLocalRuntimeContextSlot`1.Set(`0)">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Context.ThreadLocalRuntimeContextSlot`1.Dispose(System.Boolean)">
+            <inheritdoc/>
+        </member>
+        <member name="T:OpenTelemetry.Internal.OpenTelemetryApiEventSource">
+            <summary>
+            EventSource implementation for OpenTelemetry API.
+            This is used for internal logging of this library.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Internal.ExceptionExtensions.ToInvariantString(System.Exception)">
+            <summary>
+            Returns a culture-independent string representation of the given <paramref name="exception"/> object,
+            appropriate for diagnostics tracing.
+            </summary>
+            <param name="exception">Exception to convert to string.</param>
+            <returns>Exception as string with no culture.</returns>
+        </member>
+        <member name="T:OpenTelemetry.Internal.Guard">
+            <summary>
+            Methods for guarding against exception throwing values.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Internal.Guard.ThrowIfNull(System.Object,System.String)">
+            <summary>
+            Throw an exception if the value is null.
+            </summary>
+            <param name="value">The value to check.</param>
+            <param name="paramName">The parameter name to use in the thrown exception.</param>
+        </member>
+        <member name="M:OpenTelemetry.Internal.Guard.ThrowIfNullOrEmpty(System.String,System.String)">
+            <summary>
+            Throw an exception if the value is null or empty.
+            </summary>
+            <param name="value">The value to check.</param>
+            <param name="paramName">The parameter name to use in the thrown exception.</param>
+        </member>
+        <member name="M:OpenTelemetry.Internal.Guard.ThrowIfNullOrWhitespace(System.String,System.String)">
+            <summary>
+            Throw an exception if the value is null or whitespace.
+            </summary>
+            <param name="value">The value to check.</param>
+            <param name="paramName">The parameter name to use in the thrown exception.</param>
+        </member>
+        <member name="M:OpenTelemetry.Internal.Guard.ThrowIfZero(System.Int32,System.String,System.String)">
+            <summary>
+            Throw an exception if the value is zero.
+            </summary>
+            <param name="value">The value to check.</param>
+            <param name="message">The message to use in the thrown exception.</param>
+            <param name="paramName">The parameter name to use in the thrown exception.</param>
+        </member>
+        <member name="M:OpenTelemetry.Internal.Guard.ThrowIfInvalidTimeout(System.Int32,System.String)">
+            <summary>
+            Throw an exception if the value is not considered a valid timeout.
+            </summary>
+            <param name="value">The value to check.</param>
+            <param name="paramName">The parameter name to use in the thrown exception.</param>
+        </member>
+        <member name="M:OpenTelemetry.Internal.Guard.ThrowIfOutOfRange(System.Int32,System.String,System.Int32,System.Int32,System.String,System.String,System.String)">
+            <summary>
+            Throw an exception if the value is not within the given range.
+            </summary>
+            <param name="value">The value to check.</param>
+            <param name="paramName">The parameter name to use in the thrown exception.</param>
+            <param name="min">The inclusive lower bound.</param>
+            <param name="max">The inclusive upper bound.</param>
+            <param name="minName">The name of the lower bound.</param>
+            <param name="maxName">The name of the upper bound.</param>
+            <param name="message">An optional custom message to use in the thrown exception.</param>
+        </member>
+        <member name="M:OpenTelemetry.Internal.Guard.ThrowIfOutOfRange(System.Double,System.String,System.Double,System.Double,System.String,System.String,System.String)">
+            <summary>
+            Throw an exception if the value is not within the given range.
+            </summary>
+            <param name="value">The value to check.</param>
+            <param name="paramName">The parameter name to use in the thrown exception.</param>
+            <param name="min">The inclusive lower bound.</param>
+            <param name="max">The inclusive upper bound.</param>
+            <param name="minName">The name of the lower bound.</param>
+            <param name="maxName">The name of the upper bound.</param>
+            <param name="message">An optional custom message to use in the thrown exception.</param>
+        </member>
+        <member name="M:OpenTelemetry.Internal.Guard.ThrowIfNotOfType``1(System.Object,System.String)">
+            <summary>
+            Throw an exception if the value is not of the expected type.
+            </summary>
+            <param name="value">The value to check.</param>
+            <param name="paramName">The parameter name to use in the thrown exception.</param>
+            <typeparam name="T">The type attempted to convert to.</typeparam>
+            <returns>The value casted to the specified type.</returns>
+        </member>
+        <member name="T:OpenTelemetry.Logs.IDeferredLoggerProviderBuilder">
+            <summary>
+            Describes a logger provider builder that supports deferred
+            initialization using an <see cref="T:System.IServiceProvider"/> to perform
+            dependency injection.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Logs.IDeferredLoggerProviderBuilder.Configure(System.Action{System.IServiceProvider,OpenTelemetry.Logs.LoggerProviderBuilder})">
+            <summary>
+            Register a callback action to configure the <see
+            cref="T:OpenTelemetry.Logs.LoggerProviderBuilder"/> once the application <see
+            cref="T:System.IServiceProvider"/> is available.
+            </summary>
+            <param name="configure">Configuration callback.</param>
+            <returns>The supplied <see cref="T:OpenTelemetry.Logs.LoggerProviderBuilder"/> for chaining.</returns>
+        </member>
+        <member name="T:OpenTelemetry.Logs.Logger">
+            <summary>
+            Logger is the class responsible for creating log records.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Logs.Logger.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Logs.Logger"/> class.
+            </summary>
+            <param name="name">Optional name identifying the instrumentation library.</param>
+        </member>
+        <member name="P:OpenTelemetry.Logs.Logger.Name">
+            <summary>
+            Gets the name identifying the instrumentation library.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Logs.Logger.Version">
+            <summary>
+            Gets the version of the instrumentation library.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Logs.Logger.EmitLog(OpenTelemetry.Logs.LogRecordData@)">
+            <summary>
+            Emit a log.
+            </summary>
+            <param name="data"><see cref="T:OpenTelemetry.Logs.LogRecordData"/>.</param>
+        </member>
+        <member name="M:OpenTelemetry.Logs.Logger.EmitLog(OpenTelemetry.Logs.LogRecordData@,OpenTelemetry.Logs.LogRecordAttributeList@)">
+            <summary>
+            Emit a log.
+            </summary>
+            <param name="data"><see cref="T:OpenTelemetry.Logs.LogRecordData"/>.</param>
+            <param name="attributes"><see cref="T:OpenTelemetry.Logs.LogRecordAttributeList"/>.</param>
+        </member>
+        <member name="T:OpenTelemetry.Logs.LoggerProvider">
+            <summary>
+            LoggerProvider is the entry point of the OpenTelemetry API. It provides access to <see cref="T:OpenTelemetry.Logs.Logger"/>.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Logs.LoggerProvider.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Logs.LoggerProvider"/> class.
+            </summary>
+        </member>
+        <member name="T:OpenTelemetry.Logs.LoggerProviderBuilder">
+            <summary>
+            LoggerProviderBuilder base class.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Logs.LoggerProviderBuilder.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Logs.LoggerProviderBuilder"/> class.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Logs.LoggerProviderBuilder.AddInstrumentation``1(System.Func{``0})">
+            <summary>
+            Adds instrumentation to the provider.
+            </summary>
+            <typeparam name="TInstrumentation">Type of instrumentation class.</typeparam>
+            <param name="instrumentationFactory">Function that builds instrumentation.</param>
+            <returns>Returns <see cref="T:OpenTelemetry.Logs.LoggerProviderBuilder"/> for chaining.</returns>
+        </member>
+        <member name="T:OpenTelemetry.Logs.LogRecordAttributeList">
+            <summary>
+            Stores attributes to be added to a log message.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Logs.LogRecordAttributeList.Count">
+            <inheritdoc/>
+        </member>
+        <member name="P:OpenTelemetry.Logs.LogRecordAttributeList.Item(System.Int32)">
+            <inheritdoc/>
+        </member>
+        <member name="P:OpenTelemetry.Logs.LogRecordAttributeList.Item(System.String)">
+            <summary>
+            Add an attribute.
+            </summary>
+            <param name="key">Attribute name.</param>
+            <returns>Attribute value.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Logs.LogRecordAttributeList.CreateFromEnumerable(System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,System.Object}})">
+            <summary>
+            Create a <see cref="T:OpenTelemetry.Logs.LogRecordAttributeList"/> collection from an enumerable.
+            </summary>
+            <param name="attributes">Source attributes.</param>
+            <returns><see cref="T:OpenTelemetry.Logs.LogRecordAttributeList"/>.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Logs.LogRecordAttributeList.Add(System.String,System.Object)">
+            <summary>
+            Add an attribute.
+            </summary>
+            <param name="key">Attribute name.</param>
+            <param name="value">Attribute value.</param>
+        </member>
+        <member name="M:OpenTelemetry.Logs.LogRecordAttributeList.Add(System.Collections.Generic.KeyValuePair{System.String,System.Object})">
+            <summary>
+            Add an attribute.
+            </summary>
+            <param name="attribute">Attribute.</param>
+        </member>
+        <member name="M:OpenTelemetry.Logs.LogRecordAttributeList.Clear">
+            <summary>
+            Removes all elements from the <see cref="T:OpenTelemetry.Logs.LogRecordAttributeList"/>.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Logs.LogRecordAttributeList.RecordException(System.Exception)">
+            <summary>
+            Adds attributes representing an <see cref="T:System.Exception"/> to the list.
+            </summary>
+            <param name="exception"><see cref="T:System.Exception"/>.</param>
+        </member>
+        <member name="M:OpenTelemetry.Logs.LogRecordAttributeList.GetEnumerator">
+            <summary>
+            Returns an enumerator that iterates through the <see cref="T:OpenTelemetry.Logs.LogRecordAttributeList"/>.
+            </summary>
+            <returns><see cref="T:OpenTelemetry.Logs.LogRecordAttributeList.Enumerator"/>.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Logs.LogRecordAttributeList.System#Collections#Generic#IEnumerable{System#Collections#Generic#KeyValuePair{System#String,System#Object}}#GetEnumerator">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Logs.LogRecordAttributeList.System#Collections#IEnumerable#GetEnumerator">
+            <inheritdoc/>
+        </member>
+        <member name="T:OpenTelemetry.Logs.LogRecordAttributeList.Enumerator">
+            <summary>
+            Enumerates the elements of a <see cref="T:OpenTelemetry.Logs.LogRecordAttributeList"/>.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Logs.LogRecordAttributeList.Enumerator.Current">
+            <inheritdoc/>
+        </member>
+        <member name="P:OpenTelemetry.Logs.LogRecordAttributeList.Enumerator.System#Collections#IEnumerator#Current">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Logs.LogRecordAttributeList.Enumerator.MoveNext">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Logs.LogRecordAttributeList.Enumerator.Dispose">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Logs.LogRecordAttributeList.Enumerator.System#Collections#IEnumerator#Reset">
+            <inheritdoc/>
+        </member>
+        <member name="T:OpenTelemetry.Logs.LogRecordData">
+            <summary>
+            Stores details about a log message.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Logs.LogRecordData.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Logs.LogRecordData"/> struct.
+            </summary>
+            <remarks>
+            Notes:
+            <list type="bullet">
+            <item>The <see cref="P:OpenTelemetry.Logs.LogRecordData.Timestamp"/> property is initialized to <see
+            cref="P:System.DateTime.UtcNow"/> automatically.</item>
+            <item>The <see cref="P:OpenTelemetry.Logs.LogRecordData.TraceId"/>, <see cref="P:OpenTelemetry.Logs.LogRecordData.SpanId"/>, and <see
+            cref="P:OpenTelemetry.Logs.LogRecordData.TraceFlags"/> properties will be set using the <see
+            cref="P:System.Diagnostics.Activity.Current"/> instance.</item>
+            </list>
+            </remarks>
+        </member>
+        <member name="M:OpenTelemetry.Logs.LogRecordData.#ctor(System.Diagnostics.Activity)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Logs.LogRecordData"/> struct.
+            </summary>
+            <remarks>
+            Note: The <see cref="P:OpenTelemetry.Logs.LogRecordData.Timestamp"/> property is initialized to <see
+            cref="P:System.DateTime.UtcNow"/> automatically.
+            </remarks>
+            <param name="activity">Optional <see cref="T:System.Diagnostics.Activity"/> used to populate
+            trace context properties (<see cref="P:OpenTelemetry.Logs.LogRecordData.TraceId"/>, <see cref="P:OpenTelemetry.Logs.LogRecordData.SpanId"/>,
+            and <see cref="P:OpenTelemetry.Logs.LogRecordData.TraceFlags"/>).</param>
+        </member>
+        <member name="M:OpenTelemetry.Logs.LogRecordData.#ctor(System.Diagnostics.ActivityContext@)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Logs.LogRecordData"/> struct.
+            </summary>
+            <remarks>
+            Note: The <see cref="P:OpenTelemetry.Logs.LogRecordData.Timestamp"/> property is initialized to <see
+            cref="P:System.DateTime.UtcNow"/> automatically.
+            </remarks>
+            <param name="activityContext"><see cref="T:System.Diagnostics.ActivityContext"/> used to
+            populate trace context properties (<see cref="P:OpenTelemetry.Logs.LogRecordData.TraceId"/>, <see
+            cref="P:OpenTelemetry.Logs.LogRecordData.SpanId"/>, and <see cref="P:OpenTelemetry.Logs.LogRecordData.TraceFlags"/>).</param>
+        </member>
+        <member name="P:OpenTelemetry.Logs.LogRecordData.Timestamp">
+            <summary>
+            Gets or sets the log timestamp.
+            </summary>
+            <remarks>
+            Note: If <see cref="P:OpenTelemetry.Logs.LogRecordData.Timestamp"/> is set to a value with <see
+            cref="F:System.DateTimeKind.Local"/> it will be automatically converted to
+            UTC using <see cref="M:System.DateTime.ToUniversalTime"/>.
+            </remarks>
+        </member>
+        <member name="P:OpenTelemetry.Logs.LogRecordData.TraceId">
+            <summary>
+            Gets or sets the log <see cref="T:System.Diagnostics.ActivityTraceId"/>.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Logs.LogRecordData.SpanId">
+            <summary>
+            Gets or sets the log <see cref="T:System.Diagnostics.ActivitySpanId"/>.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Logs.LogRecordData.TraceFlags">
+            <summary>
+            Gets or sets the log <see cref="T:System.Diagnostics.ActivityTraceFlags"/>.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Logs.LogRecordData.SeverityText">
+            <summary>
+            Gets or sets the original string representation of the severity as it is
+            known at the source.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Logs.LogRecordData.Severity">
+            <summary>
+            Gets or sets the log severity.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Logs.LogRecordData.Body">
+            <summary>
+            Gets or sets the log body.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Logs.LogRecordData.EventName">
+            <summary>
+            Gets or sets the name of the event associated with the log.
+            </summary>
+        </member>
+        <member name="T:OpenTelemetry.Logs.LogRecordSeverity">
+            <summary>
+            Describes the severity level of a log record.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Unspecified">
+            <summary>Unspecified severity (0).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Trace">
+            <summary>Trace severity (1).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Trace2">
+            <summary>Trace1 severity (2).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Trace3">
+            <summary>Trace3 severity (3).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Trace4">
+            <summary>Trace4 severity (4).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Debug">
+            <summary>Debug severity (5).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Debug2">
+            <summary>Debug2 severity (6).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Debug3">
+            <summary>Debug3 severity (7).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Debug4">
+            <summary>Debug4 severity (8).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Info">
+            <summary>Info severity (9).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Info2">
+            <summary>Info2 severity (11).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Info3">
+            <summary>Info3 severity (12).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Info4">
+            <summary>Info4 severity (13).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Warn">
+            <summary>Warn severity (13).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Warn2">
+            <summary>Warn2 severity (14).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Warn3">
+            <summary>Warn3 severity (15).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Warn4">
+            <summary>Warn severity (16).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Error">
+            <summary>Error severity (17).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Error2">
+            <summary>Error2 severity (18).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Error3">
+            <summary>Error3 severity (19).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Error4">
+            <summary>Error4 severity (20).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Fatal">
+            <summary>Fatal severity (21).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Fatal2">
+            <summary>Fatal2 severity (22).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Fatal3">
+            <summary>Fatal3 severity (23).</summary>
+        </member>
+        <member name="F:OpenTelemetry.Logs.LogRecordSeverity.Fatal4">
+            <summary>Fatal4 severity (24).</summary>
+        </member>
+        <member name="T:OpenTelemetry.Logs.LogRecordSeverityExtensions">
+            <summary>
+            Contains extension methods for the <see cref="T:OpenTelemetry.Logs.LogRecordSeverity"/> enum.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Logs.LogRecordSeverityExtensions.ToShortName(OpenTelemetry.Logs.LogRecordSeverity)">
+            <summary>
+            Returns the OpenTelemetry Specification short name for the <see
+            cref="T:OpenTelemetry.Logs.LogRecordSeverity"/> suitable for display.
+            </summary>
+            <remarks>
+            See: <see
+            href="https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#displaying-severity"/>.
+            </remarks>
+            <param name="logRecordSeverity"><see cref="T:OpenTelemetry.Logs.LogRecordSeverity"/>.</param>
+            <returns>OpenTelemetry Specification short name for the supplied <see
+            cref="T:OpenTelemetry.Logs.LogRecordSeverity"/>.</returns>
+        </member>
+        <member name="T:OpenTelemetry.Metrics.IDeferredMeterProviderBuilder">
+            <summary>
+            Describes a meter provider builder that supports deferred initialization
+            using an <see cref="T:System.IServiceProvider"/> to perform dependency injection.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Metrics.IDeferredMeterProviderBuilder.Configure(System.Action{System.IServiceProvider,OpenTelemetry.Metrics.MeterProviderBuilder})">
+            <summary>
+            Register a callback action to configure the <see
+            cref="T:OpenTelemetry.Metrics.MeterProviderBuilder"/> once the application <see
+            cref="T:System.IServiceProvider"/> is available.
+            </summary>
+            <param name="configure">Configuration callback.</param>
+            <returns>The supplied <see cref="T:OpenTelemetry.Metrics.MeterProviderBuilder"/> for chaining.</returns>
+        </member>
+        <member name="T:OpenTelemetry.Metrics.MeterProvider">
+            <summary>
+            MeterProvider base class.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Metrics.MeterProvider.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Metrics.MeterProvider"/> class.
+            </summary>
+        </member>
+        <member name="T:OpenTelemetry.Metrics.MeterProviderBuilder">
+            <summary>
+            MeterProviderBuilder base class.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Metrics.MeterProviderBuilder.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Metrics.MeterProviderBuilder"/> class.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Metrics.MeterProviderBuilder.AddInstrumentation``1(System.Func{``0})">
+            <summary>
+            Adds instrumentation to the provider.
+            </summary>
+            <typeparam name="TInstrumentation">Type of instrumentation class.</typeparam>
+            <param name="instrumentationFactory">Function that builds instrumentation.</param>
+            <returns>Returns <see cref="T:OpenTelemetry.Metrics.MeterProviderBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Metrics.MeterProviderBuilder.AddMeter(System.String[])">
+            <summary>
+            Adds given Meter names to the list of subscribed meters.
+            </summary>
+            <param name="names">Meter names.</param>
+            <returns>Returns <see cref="T:OpenTelemetry.Metrics.MeterProviderBuilder"/> for chaining.</returns>
+        </member>
+        <member name="T:OpenTelemetry.Trace.ActivityExtensions">
+            <summary>
+            Extension methods on Activity.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Trace.ActivityExtensions.SetStatus(System.Diagnostics.Activity,OpenTelemetry.Trace.Status)">
+            <summary>
+            Sets the status of activity execution.
+            </summary>
+            <remarks>
+            Note: This method is obsolete. Call the <see cref="M:System.Diagnostics.Activity.SetStatus(System.Diagnostics.ActivityStatusCode,System.String)"/>
+            method instead. For more details see: <see
+            href="https://github.com/open-telemetry/opentelemetry-dotnet/tree/main/src/OpenTelemetry.Api#setting-status"
+            />.
+            </remarks>
+            <param name="activity">Activity instance.</param>
+            <param name="status">Activity execution status.</param>
+        </member>
+        <member name="M:OpenTelemetry.Trace.ActivityExtensions.GetStatus(System.Diagnostics.Activity)">
+            <summary>
+            Gets the status of activity execution.
+            </summary>
+            <remarks>
+            Note: This method is obsolete. Use the <see cref="P:System.Diagnostics.Activity.Status"/> and
+            <see cref="P:System.Diagnostics.Activity.StatusDescription"/> properties instead. For more
+            details see: <see
+            href="https://github.com/open-telemetry/opentelemetry-dotnet/tree/main/src/OpenTelemetry.Api#setting-status"
+            />.
+            </remarks>
+            <param name="activity">Activity instance.</param>
+            <returns>Activity execution status.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.ActivityExtensions.RecordException(System.Diagnostics.Activity,System.Exception)">
+            <summary>
+            Adds an <see cref="T:System.Diagnostics.ActivityEvent"/>  containing information from the specified exception.
+            </summary>
+            <param name="activity">Activity instance.</param>
+            <param name="ex">Exception to be recorded.</param>
+            <remarks>
+            <para>Note: This method is obsolete. Please use <see cref="M:System.Diagnostics.Activity.AddException(System.Exception,System.Diagnostics.TagList@,System.DateTimeOffset)"/> instead.</para>
+            The exception is recorded as per <a href="https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/exceptions.md">specification</a>.
+            "exception.stacktrace" is represented using the value of <a href="https://learn.microsoft.com/dotnet/api/system.exception.tostring">Exception.ToString</a>.
+            </remarks>
+        </member>
+        <member name="M:OpenTelemetry.Trace.ActivityExtensions.RecordException(System.Diagnostics.Activity,System.Exception,System.Diagnostics.TagList@)">
+            <summary>
+            Adds an <see cref="T:System.Diagnostics.ActivityEvent"/> containing information from the specified exception and additional tags.
+            </summary>
+            <param name="activity">Activity instance.</param>
+            <param name="ex">Exception to be recorded.</param>
+            <param name="tags">Additional tags to record on the event.</param>
+            <remarks>
+            <para>Note: This method is obsolete. Please use <see cref="M:System.Diagnostics.Activity.AddException(System.Exception,System.Diagnostics.TagList@,System.DateTimeOffset)"/> instead.</para>
+            The exception is recorded as per <a href="https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/exceptions.md">specification</a>.
+            "exception.stacktrace" is represented using the value of <a href="https://learn.microsoft.com/dotnet/api/system.exception.tostring">Exception.ToString</a>.
+            </remarks>
+        </member>
+        <member name="T:OpenTelemetry.Trace.IDeferredTracerProviderBuilder">
+            <summary>
+            Describes a tracer provider builder that supports deferred
+            initialization using an <see cref="T:System.IServiceProvider"/> to perform
+            dependency injection.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Trace.IDeferredTracerProviderBuilder.Configure(System.Action{System.IServiceProvider,OpenTelemetry.Trace.TracerProviderBuilder})">
+            <summary>
+            Register a callback action to configure the <see
+            cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> once the application <see
+            cref="T:System.IServiceProvider"/> is available.
+            </summary>
+            <param name="configure">Configuration callback.</param>
+            <returns>The supplied <see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> for chaining.</returns>
+        </member>
+        <member name="T:OpenTelemetry.Trace.Link">
+            <summary>
+            Link associated with the span.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Trace.Link.#ctor(OpenTelemetry.Trace.SpanContext@)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Trace.Link"/> struct.
+            </summary>
+            <param name="spanContext">Span context of a linked span.</param>
+        </member>
+        <member name="M:OpenTelemetry.Trace.Link.#ctor(OpenTelemetry.Trace.SpanContext@,OpenTelemetry.Trace.SpanAttributes)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Trace.Link"/> struct.
+            </summary>
+            <param name="spanContext">Span context of a linked span.</param>
+            <param name="attributes">Link attributes.</param>
+        </member>
+        <member name="P:OpenTelemetry.Trace.Link.Context">
+            <summary>
+            Gets the span context of a linked span.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Trace.Link.Attributes">
+            <summary>
+            Gets the collection of attributes associated with the link.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Trace.Link.op_Equality(OpenTelemetry.Trace.Link,OpenTelemetry.Trace.Link)">
+            <summary>
+            Compare two <see cref="T:OpenTelemetry.Trace.Link"/> for equality.
+            </summary>
+            <param name="link1">First link to compare.</param>
+            <param name="link2">Second link to compare.</param>
+        </member>
+        <member name="M:OpenTelemetry.Trace.Link.op_Inequality(OpenTelemetry.Trace.Link,OpenTelemetry.Trace.Link)">
+            <summary>
+            Compare two <see cref="T:OpenTelemetry.Trace.Link"/> for not equality.
+            </summary>
+            <param name="link1">First link to compare.</param>
+            <param name="link2">Second link to compare.</param>
+        </member>
+        <member name="M:OpenTelemetry.Trace.Link.Equals(System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:OpenTelemetry.Trace.Link.GetHashCode">
+            <inheritdoc />
+        </member>
+        <member name="M:OpenTelemetry.Trace.Link.Equals(OpenTelemetry.Trace.Link)">
+            <inheritdoc/>
+        </member>
+        <member name="T:OpenTelemetry.Trace.SpanAttributes">
+            <summary>
+            A class that represents the span attributes. Read more here https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/common/README.md#attribute.
+            </summary>
+            <remarks>SpanAttributes is a wrapper around <see cref="T:System.Diagnostics.ActivityTagsCollection"/> class.</remarks>
+        </member>
+        <member name="M:OpenTelemetry.Trace.SpanAttributes.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Trace.SpanAttributes"/> class.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Trace.SpanAttributes.#ctor(System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,System.Object}})">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Trace.SpanAttributes"/> class.
+            </summary>
+            <param name="attributes">Initial attributes to store in the collection.</param>
+        </member>
+        <member name="M:OpenTelemetry.Trace.SpanAttributes.Add(System.String,System.Int64)">
+            <summary>
+            Add entry to the attributes.
+            </summary>
+            <param name="key">Entry key.</param>
+            <param name="value">Entry value.</param>
+        </member>
+        <member name="M:OpenTelemetry.Trace.SpanAttributes.Add(System.String,System.String)">
+            <summary>
+            Add entry to the attributes.
+            </summary>
+            <param name="key">Entry key.</param>
+            <param name="value">Entry value.</param>
+        </member>
+        <member name="M:OpenTelemetry.Trace.SpanAttributes.Add(System.String,System.Boolean)">
+            <summary>
+            Add entry to the attributes.
+            </summary>
+            <param name="key">Entry key.</param>
+            <param name="value">Entry value.</param>
+        </member>
+        <member name="M:OpenTelemetry.Trace.SpanAttributes.Add(System.String,System.Double)">
+            <summary>
+            Add entry to the attributes.
+            </summary>
+            <param name="key">Entry key.</param>
+            <param name="value">Entry value.</param>
+        </member>
+        <member name="M:OpenTelemetry.Trace.SpanAttributes.Add(System.String,System.Int64[])">
+            <summary>
+            Add entry to the attributes.
+            </summary>
+            <param name="key">Entry key.</param>
+            <param name="values">Entry value.</param>
+        </member>
+        <member name="M:OpenTelemetry.Trace.SpanAttributes.Add(System.String,System.String[])">
+            <summary>
+            Add entry to the attributes.
+            </summary>
+            <param name="key">Entry key.</param>
+            <param name="values">Entry value.</param>
+        </member>
+        <member name="M:OpenTelemetry.Trace.SpanAttributes.Add(System.String,System.Boolean[])">
+            <summary>
+            Add entry to the attributes.
+            </summary>
+            <param name="key">Entry key.</param>
+            <param name="values">Entry value.</param>
+        </member>
+        <member name="M:OpenTelemetry.Trace.SpanAttributes.Add(System.String,System.Double[])">
+            <summary>
+            Add entry to the attributes.
+            </summary>
+            <param name="key">Entry key.</param>
+            <param name="values">Entry value.</param>
+        </member>
+        <member name="T:OpenTelemetry.Trace.SpanContext">
+            <summary>
+            A struct that represents a span context. A span context contains the portion of a span
+            that must propagate to child <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/> and across process boundaries.
+            It contains the identifiers <see cref="T:System.Diagnostics.ActivityTraceId"/>and <see cref="T:System.Diagnostics.ActivitySpanId"/>
+            associated with the <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/> along with a set of
+            common <see cref="P:OpenTelemetry.Trace.SpanContext.TraceFlags"/> and system-specific <see cref="P:OpenTelemetry.Trace.SpanContext.TraceState"/> values>.
+            </summary>
+            <remarks>SpanContext is a wrapper around <see cref="F:OpenTelemetry.Trace.SpanContext.ActivityContext"/>.</remarks>
+        </member>
+        <member name="M:OpenTelemetry.Trace.SpanContext.#ctor(System.Diagnostics.ActivityTraceId@,System.Diagnostics.ActivitySpanId@,System.Diagnostics.ActivityTraceFlags,System.Boolean,System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,System.String}})">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Trace.SpanContext"/> struct with the given identifiers and options.
+            </summary>
+            <param name="traceId">The <see cref="T:System.Diagnostics.ActivityTraceId"/> to associate with the <see cref="T:OpenTelemetry.Trace.SpanContext"/>.</param>
+            <param name="spanId">The <see cref="T:System.Diagnostics.ActivitySpanId"/> to associate with the <see cref="T:OpenTelemetry.Trace.SpanContext"/>.</param>
+            <param name="traceFlags">The <see cref="P:OpenTelemetry.Trace.SpanContext.TraceFlags"/> to
+            associate with the <see cref="T:OpenTelemetry.Trace.SpanContext"/>.</param>
+            <param name="isRemote">The value indicating whether this <see cref="T:OpenTelemetry.Trace.SpanContext"/> was propagated from the remote parent.</param>
+            <param name="traceState">The traceState to associate with the <see cref="T:OpenTelemetry.Trace.SpanContext"/>.</param>
+        </member>
+        <member name="M:OpenTelemetry.Trace.SpanContext.#ctor(System.Diagnostics.ActivityContext@)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Trace.SpanContext"/> struct with the given identifiers and options.
+            </summary>
+            <param name="activityContext">The activity context.</param>
+        </member>
+        <member name="P:OpenTelemetry.Trace.SpanContext.TraceId">
+            <summary>
+            Gets the <see cref="T:System.Diagnostics.ActivityTraceId"/> associated with this <see cref="T:OpenTelemetry.Trace.SpanContext"/>.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Trace.SpanContext.SpanId">
+            <summary>
+            Gets the <see cref="T:System.Diagnostics.ActivitySpanId"/> associated with this <see cref="T:OpenTelemetry.Trace.SpanContext"/>.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Trace.SpanContext.TraceFlags">
+            <summary>
+            Gets the <see cref="T:System.Diagnostics.ActivityTraceFlags"/> associated with this <see cref="T:OpenTelemetry.Trace.SpanContext"/>.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Trace.SpanContext.IsRemote">
+            <summary>
+            Gets a value indicating whether this <see cref="T:OpenTelemetry.Trace.SpanContext" />
+            was propagated from a remote parent.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Trace.SpanContext.IsValid">
+            <summary>
+            Gets a value indicating whether this <see cref="T:OpenTelemetry.Trace.SpanContext"/> is valid.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Trace.SpanContext.TraceState">
+            <summary>
+            Gets the <see cref="P:OpenTelemetry.Trace.SpanContext.TraceState"/> associated with this <see cref="T:OpenTelemetry.Trace.SpanContext"/>.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Trace.SpanContext.op_Implicit(OpenTelemetry.Trace.SpanContext)~System.Diagnostics.ActivityContext">
+            <summary>
+            Converts a <see cref="T:OpenTelemetry.Trace.SpanContext"/> into an <see cref="F:OpenTelemetry.Trace.SpanContext.ActivityContext"/>.
+            </summary>
+            <param name="spanContext"><see cref="T:OpenTelemetry.Trace.SpanContext"/> source.</param>
+        </member>
+        <member name="M:OpenTelemetry.Trace.SpanContext.op_Equality(OpenTelemetry.Trace.SpanContext,OpenTelemetry.Trace.SpanContext)">
+            <summary>
+            Compare two <see cref="T:OpenTelemetry.Trace.SpanContext"/> for equality.
+            </summary>
+            <param name="spanContext1">First SpanContext to compare.</param>
+            <param name="spanContext2">Second SpanContext to compare.</param>
+        </member>
+        <member name="M:OpenTelemetry.Trace.SpanContext.op_Inequality(OpenTelemetry.Trace.SpanContext,OpenTelemetry.Trace.SpanContext)">
+            <summary>
+            Compare two <see cref="T:OpenTelemetry.Trace.SpanContext"/> for not equality.
+            </summary>
+            <param name="spanContext1">First SpanContext to compare.</param>
+            <param name="spanContext2">Second SpanContext to compare.</param>
+        </member>
+        <member name="M:OpenTelemetry.Trace.SpanContext.GetHashCode">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Trace.SpanContext.Equals(System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Trace.SpanContext.Equals(OpenTelemetry.Trace.SpanContext)">
+            <inheritdoc/>
+        </member>
+        <member name="T:OpenTelemetry.Trace.SpanKind">
+            <summary>
+            Span kind.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Trace.SpanKind.Internal">
+            <summary>
+            Span kind was not specified.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Trace.SpanKind.Server">
+            <summary>
+            Server span represents request incoming from external component.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Trace.SpanKind.Client">
+            <summary>
+            Client span represents outgoing request to the external component.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Trace.SpanKind.Producer">
+            <summary>
+            Producer span represents output provided to external components. Unlike client and
+            server, there is no direct critical path latency relationship between producer and consumer
+            spans.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Trace.SpanKind.Consumer">
+            <summary>
+            Consumer span represents output received from an external component. Unlike client and
+            server, there is no direct critical path latency relationship between producer and consumer
+            spans.
+            </summary>
+        </member>
+        <member name="T:OpenTelemetry.Trace.Status">
+            <summary>
+            Span execution status.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Trace.Status.Ok">
+            <summary>
+            The operation completed successfully.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Trace.Status.Unset">
+            <summary>
+            The default status.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Trace.Status.Error">
+            <summary>
+            The operation contains an error.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Trace.Status.StatusCode">
+            <summary>
+            Gets the canonical code from this status.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Trace.Status.Description">
+            <summary>
+            Gets the status description.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Trace.Status.op_Equality(OpenTelemetry.Trace.Status,OpenTelemetry.Trace.Status)">
+            <summary>
+            Compare two <see cref="T:OpenTelemetry.Trace.Status"/> for equality.
+            </summary>
+            <param name="status1">First Status to compare.</param>
+            <param name="status2">Second Status to compare.</param>
+        </member>
+        <member name="M:OpenTelemetry.Trace.Status.op_Inequality(OpenTelemetry.Trace.Status,OpenTelemetry.Trace.Status)">
+            <summary>
+            Compare two <see cref="T:OpenTelemetry.Trace.Status"/> for not equality.
+            </summary>
+            <param name="status1">First Status to compare.</param>
+            <param name="status2">Second Status to compare.</param>
+        </member>
+        <member name="M:OpenTelemetry.Trace.Status.WithDescription(System.String)">
+            <summary>
+            Returns a new instance of a status with the description populated.
+            </summary>
+            <remarks>
+            Note: Status Description is only valid for <see
+            cref="F:OpenTelemetry.Trace.StatusCode.Error"/> Status and will be ignored for all other
+            <see cref="T:OpenTelemetry.Trace.StatusCode"/> values. See the <a
+            href="https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status">Status
+            API</a> for details.
+            </remarks>
+            <param name="description">Description of the status.</param>
+            <returns>New instance of the status class with the description populated.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.Status.Equals(System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Trace.Status.GetHashCode">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Trace.Status.ToString">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Trace.Status.Equals(OpenTelemetry.Trace.Status)">
+            <inheritdoc/>
+        </member>
+        <member name="T:OpenTelemetry.Trace.StatusCode">
+            <summary>
+            Canonical result code of span execution.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Trace.StatusCode.Unset">
+            <summary>
+            The default status.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Trace.StatusCode.Ok">
+            <summary>
+            The operation completed successfully.
+            </summary>
+        </member>
+        <member name="F:OpenTelemetry.Trace.StatusCode.Error">
+            <summary>
+            The operation contains an error.
+            </summary>
+        </member>
+        <member name="T:OpenTelemetry.Trace.TelemetrySpan">
+            <summary>
+            Span represents a single operation within a trace.
+            </summary>
+            <remarks>TelemetrySpan is a wrapper around <see cref="T:System.Diagnostics.Activity"/> class.</remarks>
+        </member>
+        <member name="P:OpenTelemetry.Trace.TelemetrySpan.Context">
+            <summary>
+            Gets the span context.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Trace.TelemetrySpan.IsRecording">
+            <summary>
+            Gets a value indicating whether this span will be recorded.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Trace.TelemetrySpan.ParentSpanId">
+            <summary>
+            Gets the identity of the parent span id, if any.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TelemetrySpan.SetStatus(OpenTelemetry.Trace.Status)">
+            <summary>
+            Sets the status of the span execution.
+            </summary>
+            <param name="value">Status to be set.</param>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TelemetrySpan.UpdateName(System.String)">
+             <summary>
+             Updates the <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/> name.
+            
+             If used, this will override the name provided via StartSpan method overload.
+             Upon this update, any sampling behavior based on <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/> name will depend on the
+             implementation.
+             </summary>
+             <param name="name">Name of the span.</param>
+             <returns>The <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/> instance for chaining.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TelemetrySpan.SetAttribute(System.String,System.String)">
+            <summary>
+            Sets a new attribute on the span.
+            </summary>
+            <param name="key">Attribute key.</param>
+            <param name="value">Attribute value.</param>
+            <returns>The <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/> instance for chaining.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TelemetrySpan.SetAttribute(System.String,System.Int32)">
+            <summary>
+            Sets a new attribute on the span.
+            </summary>
+            <param name="key">Attribute key.</param>
+            <param name="value">Attribute value.</param>
+            <returns>The <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/> instance for chaining.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TelemetrySpan.SetAttribute(System.String,System.Boolean)">
+            <summary>
+            Sets a new attribute on the span.
+            </summary>
+            <param name="key">Attribute key.</param>
+            <param name="value">Attribute value.</param>
+            <returns>The <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/> instance for chaining.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TelemetrySpan.SetAttribute(System.String,System.Double)">
+            <summary>
+            Sets a new attribute on the span.
+            </summary>
+            <param name="key">Attribute key.</param>
+            <param name="value">Attribute value.</param>
+            <returns>The <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/> instance for chaining.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TelemetrySpan.SetAttribute(System.String,System.String[])">
+            <summary>
+            Sets a new attribute on the span.
+            </summary>
+            <param name="key">Attribute key.</param>
+            <param name="values">Attribute values.</param>
+            <returns>The <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/> instance for chaining.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TelemetrySpan.SetAttribute(System.String,System.Int32[])">
+            <summary>
+            Sets a new attribute on the span.
+            </summary>
+            <param name="key">Attribute key.</param>
+            <param name="values">Attribute values.</param>
+            <returns>The <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/> instance for chaining.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TelemetrySpan.SetAttribute(System.String,System.Boolean[])">
+            <summary>
+            Sets a new attribute on the span.
+            </summary>
+            <param name="key">Attribute key.</param>
+            <param name="values">Attribute values.</param>
+            <returns>The <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/> instance for chaining.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TelemetrySpan.SetAttribute(System.String,System.Double[])">
+            <summary>
+            Sets a new attribute on the span.
+            </summary>
+            <param name="key">Attribute key.</param>
+            <param name="values">Attribute values.</param>
+            <returns>The <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/> instance for chaining.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TelemetrySpan.AddEvent(System.String)">
+            <summary>
+            Adds a single Event to the <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/>.
+            </summary>
+            <param name="name">Name of the event.</param>
+            <returns>The <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/> instance for chaining.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TelemetrySpan.AddEvent(System.String,System.DateTimeOffset)">
+            <summary>
+            Adds a single Event to the <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/>.
+            </summary>
+            <param name="name">Name of the event.</param>
+            <param name="timestamp">Timestamp of the event.</param>
+            <returns>The <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/> instance for chaining.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TelemetrySpan.AddEvent(System.String,OpenTelemetry.Trace.SpanAttributes)">
+            <summary>
+            Adds a single Event to the <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/>.
+            </summary>
+            <param name="name">Name of the event.</param>
+            <param name="attributes">Attributes for the event.</param>
+            <returns>The <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/> instance for chaining.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TelemetrySpan.AddEvent(System.String,System.DateTimeOffset,OpenTelemetry.Trace.SpanAttributes)">
+            <summary>
+            Adds a single Event to the <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/>.
+            </summary>
+            <param name="name">Name of the event.</param>
+            <param name="timestamp">Timestamp of the event.</param>
+            <param name="attributes">Attributes for the event.</param>
+            <returns>The <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/> instance for chaining.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TelemetrySpan.AddLink(OpenTelemetry.Trace.SpanContext)">
+            <summary>
+            Adds a link to another span.
+            </summary>
+            <param name="spanContext">Span context to be linked.</param>
+            <returns>The <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/> instance for chaining.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TelemetrySpan.AddLink(OpenTelemetry.Trace.SpanContext,OpenTelemetry.Trace.SpanAttributes)">
+            <summary>
+            Adds a link to another span.
+            </summary>
+            <param name="spanContext">Span context to be linked.</param>
+            <param name="attributes">Attributes for the link.</param>
+            <returns>The <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/> instance for chaining.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TelemetrySpan.End">
+            <summary>
+            End the span.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TelemetrySpan.End(System.DateTimeOffset)">
+            <summary>
+            End the span.
+            </summary>
+            <param name="endTimestamp">End timestamp.</param>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TelemetrySpan.RecordException(System.Exception)">
+            <summary>
+            Record Exception.
+            </summary>
+            <param name="ex">Exception to be recorded.</param>
+            <returns>The <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/> instance for chaining.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TelemetrySpan.RecordException(System.String,System.String,System.String)">
+            <summary>
+            Record Exception.
+            </summary>
+            <param name="type">Type of the exception to be recorded.</param>
+            <param name="message">Message of the exception to be recorded.</param>
+            <param name="stacktrace">Stacktrace of the exception to be recorded.</param>
+            <returns>The <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/> instance for chaining.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TelemetrySpan.Dispose">
+            <inheritdoc/>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TelemetrySpan.Activate">
+            <summary>
+            Marks the span as current.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TelemetrySpan.Dispose(System.Boolean)">
+            <summary>
+            Releases the unmanaged resources used by this class and optionally releases the managed resources.
+            </summary>
+            <param name="disposing"><see langword="true"/> to release both managed and unmanaged resources; <see langword="false"/> to release only unmanaged resources.</param>
+        </member>
+        <member name="T:OpenTelemetry.Trace.Tracer">
+            <summary>
+            Tracer is the class responsible for creating <see cref="T:OpenTelemetry.Trace.TelemetrySpan"/>.
+            </summary>
+            <remarks>Tracer is a wrapper around <see cref="T:System.Diagnostics.ActivitySource"/> class.</remarks>
+        </member>
+        <member name="P:OpenTelemetry.Trace.Tracer.CurrentSpan">
+            <summary>
+            Gets the current span from the context.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Trace.Tracer.WithSpan(OpenTelemetry.Trace.TelemetrySpan)">
+            <summary>
+            Sets the given span as the current one in the context.
+            </summary>
+            <param name="span">The span to be made current.</param>
+            <returns>The supplied span for call chaining.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.Tracer.StartRootSpan(System.String,OpenTelemetry.Trace.SpanKind,OpenTelemetry.Trace.SpanAttributes,System.Collections.Generic.IEnumerable{OpenTelemetry.Trace.Link},System.DateTimeOffset)">
+            <summary>
+            Starts root span.
+            </summary>
+            <param name="name">Span name.</param>
+            <param name="kind">Kind.</param>
+            <param name="initialAttributes">Initial attributes for the span.</param>
+            <param name="links"> <see cref="T:OpenTelemetry.Trace.Link"/> for the span.</param>
+            <param name="startTime"> Start time for the span.</param>
+            <returns>Span instance.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.Tracer.StartSpan(System.String,OpenTelemetry.Trace.SpanKind,OpenTelemetry.Trace.TelemetrySpan@,OpenTelemetry.Trace.SpanAttributes,System.Collections.Generic.IEnumerable{OpenTelemetry.Trace.Link},System.DateTimeOffset)">
+            <summary>
+            Starts a span and does not make it as current span.
+            </summary>
+            <param name="name">Span name.</param>
+            <param name="kind">Kind.</param>
+            <param name="parentSpan">Parent for new span.</param>
+            <param name="initialAttributes">Initial attributes for the span.</param>
+            <param name="links"> <see cref="T:OpenTelemetry.Trace.Link"/> for the span.</param>
+            <param name="startTime"> Start time for the span.</param>
+            <returns>Span instance.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.Tracer.StartSpan(System.String,OpenTelemetry.Trace.SpanKind,OpenTelemetry.Trace.SpanContext@,OpenTelemetry.Trace.SpanAttributes,System.Collections.Generic.IEnumerable{OpenTelemetry.Trace.Link},System.DateTimeOffset)">
+            <summary>
+            Starts a span and does not make it as current span.
+            </summary>
+            <param name="name">Span name.</param>
+            <param name="kind">Kind.</param>
+            <param name="parentContext">Parent Context for new span.</param>
+            <param name="initialAttributes">Initial attributes for the span.</param>
+            <param name="links"> <see cref="T:OpenTelemetry.Trace.Link"/> for the span.</param>
+            <param name="startTime"> Start time for the span.</param>
+            <returns>Span instance.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.Tracer.StartActiveSpan(System.String,OpenTelemetry.Trace.SpanKind,OpenTelemetry.Trace.TelemetrySpan@,OpenTelemetry.Trace.SpanAttributes,System.Collections.Generic.IEnumerable{OpenTelemetry.Trace.Link},System.DateTimeOffset)">
+            <summary>
+            Starts a span and make it the current active span.
+            </summary>
+            <param name="name">Span name.</param>
+            <param name="kind">Kind.</param>
+            <param name="parentSpan">Parent for new span.</param>
+            <param name="initialAttributes">Initial attributes for the span.</param>
+            <param name="links"> <see cref="T:OpenTelemetry.Trace.Link"/> for the span.</param>
+            <param name="startTime"> Start time for the span.</param>
+            <returns>Span instance.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.Tracer.StartActiveSpan(System.String,OpenTelemetry.Trace.SpanKind,OpenTelemetry.Trace.SpanContext@,OpenTelemetry.Trace.SpanAttributes,System.Collections.Generic.IEnumerable{OpenTelemetry.Trace.Link},System.DateTimeOffset)">
+            <summary>
+            Starts a span and make it the current active span.
+            </summary>
+            <param name="name">Span name.</param>
+            <param name="kind">Kind.</param>
+            <param name="parentContext">Parent Context for new span.</param>
+            <param name="initialAttributes">Initial attributes for the span.</param>
+            <param name="links"> <see cref="T:OpenTelemetry.Trace.Link"/> for the span.</param>
+            <param name="startTime"> Start time for the span.</param>
+            <returns>Span instance.</returns>
+        </member>
+        <member name="T:OpenTelemetry.Trace.TracerProvider">
+            <summary>
+            TracerProvider is the entry point of the OpenTelemetry API. It provides access to <see cref="T:OpenTelemetry.Trace.Tracer"/>.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TracerProvider.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Trace.TracerProvider"/> class.
+            </summary>
+        </member>
+        <member name="P:OpenTelemetry.Trace.TracerProvider.Default">
+            <summary>
+            Gets the default <see cref="T:OpenTelemetry.Trace.TracerProvider"/>.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TracerProvider.GetTracer(System.String,System.String)">
+            <summary>
+            Gets a tracer with given name and version.
+            </summary>
+            <param name="name">Name identifying the instrumentation library.</param>
+            <param name="version">Version of the instrumentation library.</param>
+            <returns>Tracer instance.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TracerProvider.GetTracer(System.String,System.String,System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,System.Object}})">
+            <summary>
+            Gets a tracer with given name, version and tags.
+            </summary>
+            <param name="name">Name identifying the instrumentation library.</param>
+            <param name="version">Version of the instrumentation library.</param>
+            <param name="tags">Tags associated with the tracer.</param>
+            <returns>Tracer instance.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TracerProvider.GetTracer(System.String,System.String,System.String,System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,System.Object}})">
+            <summary>
+            Gets a tracer with given name, version and tags.
+            </summary>
+            <param name="name">Name identifying the instrumentation library.</param>
+            <param name="version">Version of the instrumentation library.</param>
+            <param name="schemaUrl">Schema URL associated with the tracer.</param>
+            <param name="tags">Tags associated with the tracer.</param>
+            <returns>Tracer instance.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TracerProvider.Dispose(System.Boolean)">
+            <inheritdoc/>
+        </member>
+        <member name="T:OpenTelemetry.Trace.TracerProviderBuilder">
+            <summary>
+            TracerProviderBuilder base class.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TracerProviderBuilder.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> class.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TracerProviderBuilder.AddInstrumentation``1(System.Func{``0})">
+            <summary>
+            Adds instrumentation to the provider.
+            </summary>
+            <typeparam name="TInstrumentation">Type of instrumentation class.</typeparam>
+            <param name="instrumentationFactory">Function that builds instrumentation.</param>
+            <returns>Returns <see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TracerProviderBuilder.AddSource(System.String[])">
+            <summary>
+            Adds the given <see cref="T:System.Diagnostics.ActivitySource"/> names to the list of subscribed sources.
+            </summary>
+            <param name="names">Activity source names.</param>
+            <returns>Returns <see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.TracerProviderBuilder.AddLegacySource(System.String)">
+            <summary>
+            Adds a listener for <see cref="T:System.Diagnostics.Activity"/> objects created with the given operation name to the <see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/>.
+            </summary>
+            <remarks>
+            This is provided to capture legacy <see cref="T:System.Diagnostics.Activity"/> objects created without using the <see cref="T:System.Diagnostics.ActivitySource"/> API.
+            </remarks>
+            <param name="operationName">Operation name of the <see cref="T:System.Diagnostics.Activity"/> objects to capture.</param>
+            <returns>Returns <see cref="T:OpenTelemetry.Trace.TracerProviderBuilder"/> for chaining.</returns>
+        </member>
+        <member name="T:OpenTelemetry.Trace.ActivityHelperExtensions">
+            <summary>
+            Extension methods on Activity.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Trace.ActivityHelperExtensions.TryGetStatus(System.Diagnostics.Activity,OpenTelemetry.Trace.StatusCode@,System.String@)">
+            <summary>
+            Gets the status of activity execution.
+            Activity class in .NET does not support 'Status'.
+            This extension provides a workaround to retrieve Status from special tags with key name otel.status_code and otel.status_description.
+            </summary>
+            <param name="activity">Activity instance.</param>
+            <param name="statusCode"><see cref="T:OpenTelemetry.Trace.StatusCode"/>.</param>
+            <param name="statusDescription">Status description.</param>
+            <returns><see langword="true"/> if <see cref="T:OpenTelemetry.Trace.Status"/> was found on the supplied Activity.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.ActivityHelperExtensions.GetTagValue(System.Diagnostics.Activity,System.String)">
+            <summary>
+            Gets the value of a specific tag on an <see cref="T:System.Diagnostics.Activity"/>.
+            </summary>
+            <param name="activity">Activity instance.</param>
+            <param name="tagName">Case-sensitive tag name to retrieve.</param>
+            <returns>Tag value or null if a match was not found.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Trace.ActivityHelperExtensions.TryCheckFirstTag(System.Diagnostics.Activity,System.String,System.Object@)">
+            <summary>
+            Checks if the user provided tag name is the first tag of the <see cref="T:System.Diagnostics.Activity"/> and retrieves the tag value.
+            </summary>
+            <param name="activity">Activity instance.</param>
+            <param name="tagName">Tag name.</param>
+            <param name="tagValue">Tag value.</param>
+            <returns><see langword="true"/> if the first tag of the supplied Activity matches the user provide tag name.</returns>
+        </member>
+        <member name="T:OpenTelemetry.Trace.SemanticConventions">
+            <summary>
+            Constants for semantic attribute names outlined by the OpenTelemetry specifications.
+            </summary>
+        </member>
+        <member name="T:OpenTelemetry.Trace.SpanAttributeConstants">
+            <summary>
+            Defines well-known span attribute keys.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.CallerArgumentExpressionAttribute">
+            <summary>Allows capturing of the expressions passed to a method.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullAttribute">
+            <summary>Specifies that an output is not <see langword="null"/> even if
+            the corresponding type allows it. Specifies that an input argument was
+            not <see langword="null"/> when the call returns.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute">
+            <summary>
+             Indicates that an API is experimental and it may change in the future.
+            </summary>
+            <remarks>
+              This attribute allows call sites to be flagged with a diagnostic that indicates that an experimental
+              feature is used. Authors can use this attribute to ship preview features in their assemblies.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.ExperimentalAttribute.#ctor(System.String)">
+            <summary>
+             Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute"/> class, specifying the ID that the compiler will use
+             when reporting a use of the API the attribute applies to.
+            </summary>
+            <param name="diagnosticId">The ID that the compiler will use when reporting a use of the API the attribute applies to.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.ExperimentalAttribute.DiagnosticId">
+            <summary>
+             Gets the ID that the compiler will use when reporting a use of the API the attribute applies to.
+            </summary>
+            <value>The unique diagnostic ID.</value>
+            <remarks>
+             The diagnostic ID is shown in build output for warnings and errors.
+             <para>This property represents the unique ID that can be used to suppress the warnings or errors, if needed.</para>
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.ExperimentalAttribute.Message">
+            <summary>
+             Gets or sets an optional message associated with the experimental attribute.
+            </summary>
+            <value>The message that provides additional information about the experimental feature.</value>
+            <remarks>
+             This message can be used to provide more context or guidance about the experimental feature.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.ExperimentalAttribute.UrlFormat">
+            <summary>
+             Gets or sets the URL for corresponding documentation.
+             The API accepts a format string instead of an actual URL, creating a generic URL that includes the diagnostic ID.
+            </summary>
+            <value>The format string that represents a URL to corresponding documentation.</value>
+            <remarks>An example format string is <c>https://contoso.com/obsoletion-warnings/{0}</c>.</remarks>
+        </member>
+    </members>
+</doc>

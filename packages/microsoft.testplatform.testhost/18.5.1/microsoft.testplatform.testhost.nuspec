@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Microsoft.TestPlatform.TestHost</id>
+    <version>18.5.1</version>
+    <authors>Microsoft</authors>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>Icon.png</icon>
+    <projectUrl>https://github.com/microsoft/vstest</projectUrl>
+    <description>Testplatform host executes the test using specified adapter.</description>
+    <copyright>© Microsoft Corporation. All rights reserved.</copyright>
+    <tags>vstest visual-studio unittest testplatform mstest microsoft test testing</tags>
+    <serviceable>true</serviceable>
+    <repository type="git" url="https://github.com/microsoft/vstest" commit="895d0f16b1a65c8a1d060ff4083d76b7518c581f" />
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="Microsoft.TestPlatform.ObjectModel" version="18.5.1" />
+        <dependency id="Newtonsoft.Json" version="13.0.3" />
+      </group>
+      <group targetFramework=".NETFramework4.6.2" />
+    </dependencies>
+  </metadata>
+</package>

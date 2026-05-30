@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Json.More.Net</id>
+    <version>2.1.0</version>
+    <authors>Greg Dennis</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>json-logo-256.png</icon>
+    <readme>README.md</readme>
+    <projectUrl>https://github.com/json-everything/json-everything</projectUrl>
+    <description>Provides extended functionality for the System.Text.Json namespace.</description>
+    <releaseNotes>Release notes can be found at https://docs.json-everything.net/rn-json-more/</releaseNotes>
+    <tags>json system.text.json json.more</tags>
+    <repository type="git" url="https://github.com/json-everything/json-everything" branch="refs/heads/master" commit="eadd99cb759b9b0b16452bed9a0df97b770f754d" />
+    <dependencies>
+      <group targetFramework="net8.0" />
+      <group targetFramework="net9.0" />
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="System.Text.Json" version="9.0.0" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

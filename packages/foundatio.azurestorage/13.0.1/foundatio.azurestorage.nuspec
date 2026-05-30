@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Foundatio.AzureStorage</id>
+    <version>13.0.1</version>
+    <authors>FoundatioFx</authors>
+    <license type="expression">Apache-2.0</license>
+    <licenseUrl>https://licenses.nuget.org/Apache-2.0</licenseUrl>
+    <icon>foundatio-icon.png</icon>
+    <readme>README.md</readme>
+    <projectUrl>https://github.com/FoundatioFx/Foundatio.AzureStorage</projectUrl>
+    <description>Pluggable foundation blocks for building distributed apps.</description>
+    <releaseNotes>https://github.com/FoundatioFx/Foundatio.AzureStorage/releases</releaseNotes>
+    <copyright>Copyright © 2026 Foundatio.  All rights reserved.</copyright>
+    <tags>Queue Messaging Message File Distributed Storage Blob Azure</tags>
+    <repository type="git" url="https://github.com/FoundatioFx/Foundatio.AzureStorage" commit="4a53bb3079a15648c7a7745bafcb622451a7e483" />
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="Azure.Storage.Blobs" version="12.27.0" exclude="Build,Analyzers" />
+        <dependency id="Azure.Storage.Queues" version="12.25.0" exclude="Build,Analyzers" />
+        <dependency id="Foundatio" version="13.0.1" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net10.0">
+        <dependency id="Azure.Storage.Blobs" version="12.27.0" exclude="Build,Analyzers" />
+        <dependency id="Azure.Storage.Queues" version="12.25.0" exclude="Build,Analyzers" />
+        <dependency id="Foundatio" version="13.0.1" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

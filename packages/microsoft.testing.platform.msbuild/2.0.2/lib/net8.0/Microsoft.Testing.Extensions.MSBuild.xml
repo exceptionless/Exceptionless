@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Testing.Extensions.MSBuild</name>
+    </assembly>
+    <members>
+        <member name="P:Microsoft.Testing.Extensions.MSBuild.Resources.ExtensionResources.MSBuildExtensionsDescription">
+            <summary>Extension used to pass parameters from MSBuild node and the hosts</summary>
+        </member>
+        <member name="T:Microsoft.Testing.Platform.MSBuild.MSBuildExtensions">
+            <summary>
+            Extension methods for adding MSBuild support to the test application builder.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Testing.Platform.MSBuild.MSBuildExtensions.AddMSBuild(Microsoft.Testing.Platform.Builder.ITestApplicationBuilder)">
+            <summary>
+            Adds MSBuild support to the test application builder.
+            </summary>
+            <param name="builder">The test application builder.</param>
+        </member>
+        <member name="T:Microsoft.Testing.Platform.MSBuild.TestingPlatformBuilderHook">
+            <summary>
+            This class is used by Microsoft.Testing.Platform.MSBuild to hook into the Testing Platform Builder to add MSBuild support.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Testing.Platform.MSBuild.TestingPlatformBuilderHook.AddExtensions(Microsoft.Testing.Platform.Builder.ITestApplicationBuilder,System.String[])">
+            <summary>
+            Adds MSBuild support to the Testing Platform Builder.
+            </summary>
+            <param name="testApplicationBuilder">The test application builder.</param>
+            <param name="_">The command line arguments.</param>
+        </member>
+    </members>
+</doc>

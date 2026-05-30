@@ -1,0 +1,2351 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Extensions.Http.Resilience</name>
+    </assembly>
+    <members>
+        <member name="T:System.Diagnostics.CodeAnalysis.AllowNullAttribute">
+            <summary>Specifies that null is allowed as an input even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DisallowNullAttribute">
+            <summary>Specifies that null is disallowed as an input even if the corresponding type allows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullAttribute">
+            <summary>Specifies that an output may be null even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullAttribute">
+            <summary>Specifies that an output will not be null even if the corresponding type allows it. Specifies that an input argument was not null when the call returns.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute">
+            <summary>Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue"/>, the parameter may be null even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified return value condition.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter may be <see langword="null" />.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute">
+            <summary>Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue"/>, the parameter will not be null even if the corresponding type allows it.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified return value condition.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter will not be <see langword="null" />.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute">
+            <summary>Specifies that the output will be non-null if the named parameter is non-null.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.#ctor(System.String)">
+            <summary>Initializes the attribute with the associated parameter name.</summary>
+            <param name="parameterName">
+            The associated parameter name.  The output will be non-null if the argument to the parameter specified is non-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.ParameterName">
+            <summary>Gets the associated parameter name.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute">
+            <summary>Applied to a method that will never return under any circumstance.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute">
+            <summary>Specifies that the method will not return if the associated Boolean parameter is passed the specified value.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified parameter value.</summary>
+            <param name="parameterValue">
+            The condition parameter value. Code after the method will be considered unreachable by diagnostics if the argument to
+            the associated parameter matches this value.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.ParameterValue">
+            <summary>Gets the condition parameter value.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute">
+            <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String)">
+            <summary>Initializes the attribute with a field or property member.</summary>
+            <param name="member">
+            The field or property member that is promised to be not-null.
+            </param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String[])">
+            <summary>Initializes the attribute with the list of field and property members.</summary>
+            <param name="members">
+            The list of field and property members that are promised to be not-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.Members">
+            <summary>Gets field or property member names.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute">
+            <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values when returning with the specified return value condition.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.#ctor(System.Boolean,System.String)">
+            <summary>Initializes the attribute with the specified return value condition and a field or property member.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter will not be <see langword="null" />.
+            </param>
+            <param name="member">
+            The field or property member that is promised to be not-null.
+            </param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.#ctor(System.Boolean,System.String[])">
+            <summary>Initializes the attribute with the specified return value condition and list of field and property members.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter will not be <see langword="null" />.
+            </param>
+            <param name="members">
+            The list of field and property members that are promised to be not-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.Members">
+            <summary>Gets field or property member names.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
+             <summary>
+             Indicates that certain members on a specified <see cref="T:System.Type"/> are accessed dynamically,
+             for example through <see cref="N:System.Reflection"/>.
+             </summary>
+             <remarks>
+             This allows tools to understand which members are being accessed during the execution
+             of a program.
+            
+             This attribute is valid on members whose type is <see cref="T:System.Type"/> or <see cref="T:System.String"/>.
+            
+             When this attribute is applied to a location of type <see cref="T:System.String"/>, the assumption is
+             that the string represents a fully qualified type name.
+            
+             When this attribute is applied to a class, interface, or struct, the members specified
+             can be accessed dynamically on <see cref="T:System.Type"/> instances returned from calling
+             <see cref="M:System.Object.GetType"/> on instances of that class, interface, or struct.
+            
+             If the attribute is applied to a method it's treated as a special case and it implies
+             the attribute should be applied to the "this" parameter of the method. As such the attribute
+             should only be used on instance methods of types assignable to System.Type (or string, but no methods
+             will use it there).
+             </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute.#ctor(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute"/> class
+            with the specified member types.
+            </summary>
+            <param name="memberTypes">The types of members dynamically accessed.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute.MemberTypes">
+            <summary>
+            Gets the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes"/> which specifies the type
+            of members dynamically accessed.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">
+             <summary>
+             Specifies the types of members that are dynamically accessed.
+            
+             This enumeration has a <see cref="T:System.FlagsAttribute"/> attribute that allows a
+             bitwise combination of its member values.
+             </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.None">
+            <summary>
+            Specifies no members.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor">
+            <summary>
+            Specifies the default, parameterless public constructor.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors">
+            <summary>
+            Specifies all public constructors.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors">
+            <summary>
+            Specifies all non-public constructors.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods">
+            <summary>
+            Specifies all public methods.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods">
+            <summary>
+            Specifies all non-public methods.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields">
+            <summary>
+            Specifies all public fields.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields">
+            <summary>
+            Specifies all non-public fields.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes">
+            <summary>
+            Specifies all public nested types.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypes">
+            <summary>
+            Specifies all non-public nested types.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties">
+            <summary>
+            Specifies all public properties.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties">
+            <summary>
+            Specifies all non-public properties.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents">
+            <summary>
+            Specifies all public events.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicEvents">
+            <summary>
+            Specifies all non-public events.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces">
+            <summary>
+            Specifies all interfaces implemented by the type.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All">
+            <summary>
+            Specifies all members.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute">
+            <summary>
+            States a dependency that one member has on another.
+            </summary>
+            <remarks>
+            This can be used to inform tooling of a dependency that is otherwise not evident purely from
+            metadata and IL, for example a member relied on via reflection.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute"/> class
+            with the specified signature of a member on the same type as the consumer.
+            </summary>
+            <param name="memberSignature">The signature of the member depended on.</param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.String,System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute"/> class
+            with the specified signature of a member on a <see cref="T:System.Type"/>.
+            </summary>
+            <param name="memberSignature">The signature of the member depended on.</param>
+            <param name="type">The <see cref="T:System.Type"/> containing <paramref name="memberSignature"/>.</param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute"/> class
+            with the specified signature of a member on a type in an assembly.
+            </summary>
+            <param name="memberSignature">The signature of the member depended on.</param>
+            <param name="typeName">The full name of the type containing the specified member.</param>
+            <param name="assemblyName">The assembly name of the type containing the specified member.</param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes,System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute"/> class
+            with the specified types of members on a <see cref="T:System.Type"/>.
+            </summary>
+            <param name="memberTypes">The types of members depended on.</param>
+            <param name="type">The <see cref="T:System.Type"/> containing the specified members.</param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute"/> class
+            with the specified types of members on a type in an assembly.
+            </summary>
+            <param name="memberTypes">The types of members depended on.</param>
+            <param name="typeName">The full name of the type containing the specified members.</param>
+            <param name="assemblyName">The assembly name of the type containing the specified members.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberSignature">
+            <summary>
+            Gets the signature of the member depended on.
+            </summary>
+            <remarks>
+            Either <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberSignature"/> must be a valid string or <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberTypes"/>
+            must not equal <see cref="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.None"/>, but not both.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberTypes">
+            <summary>
+            Gets the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes"/> which specifies the type
+            of members depended on.
+            </summary>
+            <remarks>
+            Either <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberSignature"/> must be a valid string or <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberTypes"/>
+            must not equal <see cref="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.None"/>, but not both.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.Type">
+            <summary>
+            Gets the <see cref="T:System.Type"/> containing the specified member.
+            </summary>
+            <remarks>
+            If neither <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.Type"/> nor <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.TypeName"/> are specified,
+            the type of the consumer is assumed.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.TypeName">
+            <summary>
+            Gets the full name of the type containing the specified member.
+            </summary>
+            <remarks>
+            If neither <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.Type"/> nor <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.TypeName"/> are specified,
+            the type of the consumer is assumed.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.AssemblyName">
+            <summary>
+            Gets the assembly name of the specified type.
+            </summary>
+            <remarks>
+            <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.AssemblyName"/> is only valid when <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.TypeName"/> is specified.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.Condition">
+            <summary>
+            Gets or sets the condition in which the dependency is applicable, e.g. "DEBUG".
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute">
+            <summary>
+            /// Indicates that the specified member requires assembly files to be on disk.
+            </summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute"/> class.
+            </summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute"/> class.
+            </summary>
+            <param name="message">
+            A message that contains information about the need for assembly files to be on disk.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute.Message">
+            <summary>
+            Gets an optional message that contains information about the need for
+            assembly files to be on disk.
+            </summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute.Url">
+            <summary>
+            Gets or sets an optional URL that contains more information about the member,
+            why it requires assembly files to be on disk, and what options a consumer has
+            to deal with it.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute">
+            <summary>
+            Indicates that the specified method requires the ability to generate new code at runtime,
+            for example through <see cref="N:System.Reflection"/>.
+            </summary>
+            <remarks>
+            This allows tools to understand which methods are unsafe to call when compiling ahead of time.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute"/> class
+            with the specified message.
+            </summary>
+            <param name="message">
+            A message that contains information about the usage of dynamic code.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute.Message">
+            <summary>
+            Gets a message that contains information about the usage of dynamic code.
+            </summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute.Url">
+            <summary>
+            Gets or sets an optional URL that contains more information about the method,
+            why it requires dynamic code, and what options a consumer has to deal with it.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute">
+            <summary>
+            /// Indicates that the specified method requires dynamic access to code that is not referenced
+            statically, for example through <see cref="N:System.Reflection"/>.
+            </summary>
+            <remarks>
+            This allows tools to understand which methods are unsafe to call when removing unreferenced
+            code from an application.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute"/> class
+            with the specified message.
+            </summary>
+            <param name="message">
+            A message that contains information about the usage of unreferenced code.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.Message">
+            <summary>
+            Gets a message that contains information about the usage of unreferenced code.
+            </summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.Url">
+            <summary>
+            Gets or sets an optional URL that contains more information about the method,
+            why it requires unreferenced code, and what options a consumer has to deal with it.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+            <summary>
+            /// Suppresses reporting of a specific rule violation, allowing multiple suppressions on a
+            single code artifact.
+            </summary>
+            <remarks>
+            <see cref="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute"/> is different than
+            <see cref="T:System.Diagnostics.CodeAnalysis.SuppressMessageAttribute"/> in that it doesn't have a
+            <see cref="T:System.Diagnostics.ConditionalAttribute"/>. So it is always preserved in the compiled assembly.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute"/>
+            class, specifying the category of the tool and the identifier for an analysis rule.
+            </summary>
+            <param name="category">The category for the attribute.</param>
+            <param name="checkId">The identifier of the analysis rule the attribute applies to.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Category">
+            <summary>
+            Gets the category identifying the classification of the attribute.
+            </summary>
+            <remarks>
+            The <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Category"/> property describes the tool or tool analysis category
+            for which a message suppression attribute applies.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.CheckId">
+            <summary>
+            Gets the identifier of the analysis tool rule to be suppressed.
+            </summary>
+            <remarks>
+            Concatenated together, the <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Category"/> and <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.CheckId"/>
+            properties form a unique check identifier.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Scope">
+            <summary>
+            Gets or sets the scope of the code that is relevant for the attribute.
+            </summary>
+            <remarks>
+            The Scope property is an optional argument that specifies the metadata scope for which
+            the attribute is relevant.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Target">
+            <summary>
+            Gets or sets a fully qualified path that represents the target of the attribute.
+            </summary>
+            <remarks>
+            The <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Target"/> property is an optional argument identifying the analysis target
+            of the attribute. An example value is "System.IO.Stream.ctor():System.Void".
+            Because it is fully qualified, it can be long, particularly for targets such as parameters.
+            The analysis tool user interface should be capable of automatically formatting the parameter.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.MessageId">
+            <summary>
+            Gets or sets an optional argument expanding on exclusion criteria.
+            </summary>
+            <remarks>
+            The <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.MessageId"/> property is an optional argument that specifies additional
+            exclusion where the literal metadata target is not sufficiently precise. For example,
+            the <see cref="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute"/> cannot be applied within a method,
+            and it may be desirable to suppress a violation against a statement in the method that will
+            give a rule violation, but not against all statements in the method.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Justification">
+            <summary>
+            Gets or sets the justification for suppressing the code analysis message.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute">
+            <summary>
+            Indicates that an API element is experimental and subject to change without notice.
+            </summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.ExperimentalAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute"/> class.
+            </summary>
+            <param name="diagnosticId">Human readable explanation for marking experimental API.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.ExperimentalAttribute.DiagnosticId">
+            <summary>
+             Gets the ID that the compiler will use when reporting a use of the API the attribute applies to.
+            </summary>
+            <value>The unique diagnostic ID.</value>
+            <remarks>
+             The diagnostic ID is shown in build output for warnings and errors.
+             <para>This property represents the unique ID that can be used to suppress the warnings or errors, if needed.</para>
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.ExperimentalAttribute.UrlFormat">
+            <summary>
+             Gets or sets the URL for corresponding documentation.
+             The API accepts a format string instead of an actual URL, creating a generic URL that includes the diagnostic ID.
+            </summary>
+            <value>The format string that represents a URL to corresponding documentation.</value>
+            <remarks>An example format string is <c>https://contoso.com/obsoletion-warnings/{0}</c>.</remarks>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.CallerArgumentExpressionAttribute">
+            <summary>
+            Tags parameter that should be filled with specific caller name.
+            </summary>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.CallerArgumentExpressionAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.CompilerServices.CallerArgumentExpressionAttribute"/> class.
+            </summary>
+            <param name="parameterName">Function parameter to take the name from.</param>
+        </member>
+        <member name="P:System.Runtime.CompilerServices.CallerArgumentExpressionAttribute.ParameterName">
+            <summary>
+            Gets name of the function parameter that name should be taken from.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.SkipLocalsInitAttribute">
+            <summary>
+            Used to indicate to the compiler that the <c>.locals init</c>
+            flag should not be set in method headers.
+            </summary>
+            <remarks>
+            This attribute is unsafe because it may reveal uninitialized memory to
+            the application in certain instances (e.g., reading from uninitialized
+            stackalloc'd memory). If applied to a method directly, the attribute
+            applies to that method and all nested functions (lambdas, local
+            functions) below it. If applied to a type or module, it applies to all
+            methods nested inside. This attribute is intentionally not permitted on
+            assemblies. Use at the module level instead to apply to multiple type
+            declarations.
+            </remarks>
+        </member>
+        <member name="T:System.Net.Http.HttpResilienceHttpRequestMessageExtensions">
+            <summary>
+            The resilience extensions for <see cref="T:System.Net.Http.HttpRequestMessage"/>.
+            </summary>
+        </member>
+        <member name="M:System.Net.Http.HttpResilienceHttpRequestMessageExtensions.GetResilienceContext(System.Net.Http.HttpRequestMessage)">
+            <summary>
+            Gets the <see cref="T:Polly.ResilienceContext"/> from the request message.
+            </summary>
+            <param name="requestMessage">The request.</param>
+            <returns>An instance of <see cref="T:Polly.ResilienceContext"/> or <see langword="null"/>.</returns>
+        </member>
+        <member name="M:System.Net.Http.HttpResilienceHttpRequestMessageExtensions.SetResilienceContext(System.Net.Http.HttpRequestMessage,Polly.ResilienceContext)">
+            <summary>
+            Sets the <see cref="T:Polly.ResilienceContext"/> on the request message.
+            </summary>
+            <param name="requestMessage">The request.</param>
+            <param name="resilienceContext">An instance of <see cref="T:Polly.ResilienceContext"/>.</param>
+        </member>
+        <member name="T:Microsoft.Shared.DiagnosticIds.DiagnosticIds">
+            <summary>
+             Various diagnostic IDs reported by this repo.
+            </summary>
+            <remarks>
+             When adding a new diagnostic ID, add a corresponding suppression to the root <c>Directory.Build.targets</c> file,
+             and add a documentation entry to <c>docs/list-of-diagnostics.md</c>.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Shared.DiagnosticIds.DiagnosticIds.Experiments">
+            <summary>
+             Experiments supported by this repo.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Diagnostics.Throw">
+            <summary>
+            Defines static methods used to throw exceptions.
+            </summary>
+            <remarks>
+            The main purpose is to reduce code size, improve performance, and standardize exception
+            messages.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfNull``1(``0,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentNullException"/> if the specified argument is <see langword="null"/>.
+            </summary>
+            <typeparam name="T">Argument type to be checked for <see langword="null"/>.</typeparam>
+            <param name="argument">Object to be checked for <see langword="null"/>.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfNullOrMemberNull``2(``0,``1,System.String,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentNullException"/> if the specified argument is <see langword="null"/>,
+            or <see cref="T:System.ArgumentException" /> if the specified member is <see langword="null"/>.
+            </summary>
+            <typeparam name="TParameter">Argument type to be checked for <see langword="null"/>.</typeparam>
+            <typeparam name="TMember">Member type to be checked for <see langword="null"/>.</typeparam>
+            <param name="argument">Argument to be checked for <see langword="null"/>.</param>
+            <param name="member">Object member to be checked for <see langword="null"/>.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <param name="memberName">The name of the member.</param>
+            <returns>The original value of <paramref name="member"/>.</returns>
+            <example>
+            <code language="csharp">
+            Throws.IfNullOrMemberNull(myObject, myObject?.MyProperty)
+            </code>
+            </example>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfMemberNull``2(``0,``1,System.String,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentException" /> if the specified member is <see langword="null"/>.
+            </summary>
+            <typeparam name="TParameter">Argument type.</typeparam>
+            <typeparam name="TMember">Member type to be checked for <see langword="null"/>.</typeparam>
+            <param name="argument">Argument to which member belongs.</param>
+            <param name="member">Object member to be checked for <see langword="null"/>.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <param name="memberName">The name of the member.</param>
+            <returns>The original value of <paramref name="member"/>.</returns>
+            <example>
+            <code language="csharp">
+            Throws.IfMemberNull(myObject, myObject.MyProperty)
+            </code>
+            </example>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfNullOrWhitespace(System.String,System.String)">
+            <summary>
+            Throws either an <see cref="T:System.ArgumentNullException"/> or an <see cref="T:System.ArgumentException"/>
+            if the specified string is <see langword="null"/> or whitespace respectively.
+            </summary>
+            <param name="argument">String to be checked for <see langword="null"/> or whitespace.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfNullOrEmpty(System.String,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentNullException"/> if the string is <see langword="null"/>,
+            or <see cref="T:System.ArgumentException"/> if it is empty.
+            </summary>
+            <param name="argument">String to be checked for <see langword="null"/> or empty.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfBufferTooSmall(System.Int32,System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentException"/> if the argument's buffer size is less than the required buffer size.
+            </summary>
+            <param name="bufferSize">The actual buffer size.</param>
+            <param name="requiredSize">The required buffer size.</param>
+            <param name="paramName">The name of the parameter to be checked.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfOutOfRange``1(``0,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the enum value is not valid.
+            </summary>
+            <param name="argument">The argument to evaluate.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <typeparam name="T">The type of the enumeration.</typeparam>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfNullOrEmpty``1(System.Collections.Generic.IEnumerable{``0},System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentNullException"/> if the collection is <see langword="null"/>,
+            or <see cref="T:System.ArgumentException"/> if it is empty.
+            </summary>
+            <param name="argument">The collection to evaluate.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <typeparam name="T">The type of objects in the collection.</typeparam>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentNullException(System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentNullException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentNullException(System.String,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentNullException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+            <param name="message">A message that describes the error.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentOutOfRangeException(System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentOutOfRangeException(System.String,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+            <param name="message">A message that describes the error.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentOutOfRangeException(System.String,System.Object,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+            <param name="actualValue">The value of the argument that caused this exception.</param>
+            <param name="message">A message that describes the error.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentException(System.String,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+            <param name="message">A message that describes the error.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentException(System.String,System.String,System.Exception)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+            <param name="message">A message that describes the error.</param>
+            <param name="innerException">The exception that is the cause of the current exception.</param>
+            <remarks>
+            If the <paramref name="innerException"/> is not a <see langword="null"/>, the current exception is raised in a catch
+            block that handles the inner exception.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.InvalidOperationException(System.String)">
+            <summary>
+            Throws an <see cref="T:System.InvalidOperationException"/>.
+            </summary>
+            <param name="message">A message that describes the error.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.InvalidOperationException(System.String,System.Exception)">
+            <summary>
+            Throws an <see cref="T:System.InvalidOperationException"/>.
+            </summary>
+            <param name="message">A message that describes the error.</param>
+            <param name="innerException">The exception that is the cause of the current exception.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThan(System.Int32,System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>  if the specified number is less than min.
+            </summary>
+            <param name="argument">Number to be expected being less than min.</param>
+            <param name="min">The number that must be less than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThan(System.Int32,System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater than max.
+            </summary>
+            <param name="argument">Number to be expected being greater than max.</param>
+            <param name="max">The number that must be greater than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThanOrEqual(System.Int32,System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is less or equal than min.
+            </summary>
+            <param name="argument">Number to be expected being less or equal than min.</param>
+            <param name="min">The number that must be less or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThanOrEqual(System.Int32,System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater or equal than max.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="max">The number that must be greater or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfOutOfRange(System.Int32,System.Int32,System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is not in the specified range.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="min">The lower bound of the allowed range of argument values.</param>
+            <param name="max">The upper bound of the allowed range of argument values.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfZero(System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is equal to 0.
+            </summary>
+            <param name="argument">Number to be expected being not equal to zero.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThan(System.UInt32,System.UInt32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>  if the specified number is less than min.
+            </summary>
+            <param name="argument">Number to be expected being less than min.</param>
+            <param name="min">The number that must be less than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThan(System.UInt32,System.UInt32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater than max.
+            </summary>
+            <param name="argument">Number to be expected being greater than max.</param>
+            <param name="max">The number that must be greater than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThanOrEqual(System.UInt32,System.UInt32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is less or equal than min.
+            </summary>
+            <param name="argument">Number to be expected being less or equal than min.</param>
+            <param name="min">The number that must be less or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThanOrEqual(System.UInt32,System.UInt32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater or equal than max.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="max">The number that must be greater or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfOutOfRange(System.UInt32,System.UInt32,System.UInt32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is not in the specified range.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="min">The lower bound of the allowed range of argument values.</param>
+            <param name="max">The upper bound of the allowed range of argument values.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfZero(System.UInt32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is equal to 0.
+            </summary>
+            <param name="argument">Number to be expected being not equal to zero.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThan(System.Int64,System.Int64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>  if the specified number is less than min.
+            </summary>
+            <param name="argument">Number to be expected being less than min.</param>
+            <param name="min">The number that must be less than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThan(System.Int64,System.Int64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater than max.
+            </summary>
+            <param name="argument">Number to be expected being greater than max.</param>
+            <param name="max">The number that must be greater than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThanOrEqual(System.Int64,System.Int64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is less or equal than min.
+            </summary>
+            <param name="argument">Number to be expected being less or equal than min.</param>
+            <param name="min">The number that must be less or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThanOrEqual(System.Int64,System.Int64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater or equal than max.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="max">The number that must be greater or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfOutOfRange(System.Int64,System.Int64,System.Int64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is not in the specified range.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="min">The lower bound of the allowed range of argument values.</param>
+            <param name="max">The upper bound of the allowed range of argument values.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfZero(System.Int64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is equal to 0.
+            </summary>
+            <param name="argument">Number to be expected being not equal to zero.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThan(System.UInt64,System.UInt64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>  if the specified number is less than min.
+            </summary>
+            <param name="argument">Number to be expected being less than min.</param>
+            <param name="min">The number that must be less than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThan(System.UInt64,System.UInt64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater than max.
+            </summary>
+            <param name="argument">Number to be expected being greater than max.</param>
+            <param name="max">The number that must be greater than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThanOrEqual(System.UInt64,System.UInt64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is less or equal than min.
+            </summary>
+            <param name="argument">Number to be expected being less or equal than min.</param>
+            <param name="min">The number that must be less or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThanOrEqual(System.UInt64,System.UInt64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater or equal than max.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="max">The number that must be greater or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfOutOfRange(System.UInt64,System.UInt64,System.UInt64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is not in the specified range.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="min">The lower bound of the allowed range of argument values.</param>
+            <param name="max">The upper bound of the allowed range of argument values.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfZero(System.UInt64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is equal to 0.
+            </summary>
+            <param name="argument">Number to be expected being not equal to zero.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThan(System.Double,System.Double,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is less than min.
+            </summary>
+            <param name="argument">Number to be expected being less than min.</param>
+            <param name="min">The number that must be less than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThan(System.Double,System.Double,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater than max.
+            </summary>
+            <param name="argument">Number to be expected being greater than max.</param>
+            <param name="max">The number that must be greater than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThanOrEqual(System.Double,System.Double,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is less or equal than min.
+            </summary>
+            <param name="argument">Number to be expected being less or equal than min.</param>
+            <param name="min">The number that must be less or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThanOrEqual(System.Double,System.Double,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater or equal than max.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="max">The number that must be greater or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfOutOfRange(System.Double,System.Double,System.Double,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is not in the specified range.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="min">The lower bound of the allowed range of argument values.</param>
+            <param name="max">The upper bound of the allowed range of argument values.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfZero(System.Double,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is equal to 0.
+            </summary>
+            <param name="argument">Number to be expected being not equal to zero.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Shared.Text.NumericExtensions">
+            <summary>
+            Utilities to augment the basic numeric types.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Shared.Text.NumericExtensions.ToInvariantString(System.Int32)">
+            <summary>
+            Formats an integer as an invariant string.
+            </summary>
+            <param name="value">The value to format as a string.</param>
+            <returns>The string representation of the integer value.</returns>
+            <remarks>
+            This works identically to <c>value.ToString(CultureInfo.InvariantCulture)</c> except that it is faster as it maintains
+            preformatted strings for common integer values.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Text.NumericExtensions.ToInvariantString(System.Int64)">
+            <summary>
+            Formats a 64-bit integer as an invariant string.
+            </summary>
+            <param name="value">The value to format as a string.</param>
+            <returns>The string representation of the integer value.</returns>
+            <remarks>
+            This works identically to <c>value.ToString(CultureInfo.InvariantCulture)</c> except that it is faster as it maintains
+            preformatted strings for common integer values.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Shared.Data.Validation.LengthAttribute">
+            <summary>
+            Specifies the minimum length of any <see cref="T:System.Collections.IEnumerable"/> or <see cref="T:System.String"/> objects.
+            </summary>
+            <remarks>
+            The standard <see cref="T:System.ComponentModel.DataAnnotations.MinLengthAttribute" /> supports only non generic <see cref="T:System.Array"/> or <see cref="T:System.String"/> typed objects
+            on .NET Framework, while <see cref="T:System.Collections.Generic.ICollection`1"/> type is supported only on .NET Core.
+            See issue here <see href="https://github.com/dotnet/runtime/issues/23288"/>.
+            This attribute aims to allow validation of all these objects in a consistent manner across target frameworks.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Shared.Data.Validation.LengthAttribute.MinimumLength">
+            <summary>
+            Gets the minimum allowed length of the collection or string.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Shared.Data.Validation.LengthAttribute.MaximumLength">
+            <summary>
+            Gets the maximum allowed length of the collection or string.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Shared.Data.Validation.LengthAttribute.Exclusive">
+            <summary>
+            Gets or sets a value indicating whether the length validation should exclude the <see cref="P:Microsoft.Shared.Data.Validation.LengthAttribute.MinimumLength"/> and <see cref="P:Microsoft.Shared.Data.Validation.LengthAttribute.MaximumLength"/> values.
+            </summary>
+            <value>
+            The default value is <c>false</c>.
+            </value>
+        </member>
+        <member name="M:Microsoft.Shared.Data.Validation.LengthAttribute.#ctor(System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Shared.Data.Validation.LengthAttribute"/> class.
+            </summary>
+            <param name="minimumLength">
+            The minimum allowable length of array/string data.
+            Value must be greater than or equal to zero.
+            </param>
+        </member>
+        <member name="M:Microsoft.Shared.Data.Validation.LengthAttribute.#ctor(System.Int32,System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Shared.Data.Validation.LengthAttribute"/> class.
+            </summary>
+            <param name="minimumLength">
+            The minimum allowable length of array/string data.
+            Value must be greater than or equal to zero.
+            </param>
+            <param name="maximumLength">
+            The maximum allowable length of array/string data.
+            Value must be greater than or equal to zero.
+            </param>
+        </member>
+        <member name="M:Microsoft.Shared.Data.Validation.LengthAttribute.IsValid(System.Object,System.ComponentModel.DataAnnotations.ValidationContext)">
+            <summary>
+            Validates that a given value is in range.
+            </summary>
+            <remarks>
+            This method returns <c>true</c> if the <paramref name = "value" /> is <see langword="null"/>.
+            It is assumed the <see cref = "T:System.ComponentModel.DataAnnotations.RequiredAttribute" /> is used if the value may not be <see langword="null"/>.
+            </remarks>
+            <param name="value">The value to validate.</param>
+            <param name="validationContext">Additional context for this validation.</param>
+            <returns>A value indicating success or failure.</returns>
+            <exception cref="T:System.ArgumentOutOfRangeException"><see cref="P:Microsoft.Shared.Data.Validation.LengthAttribute.MinimumLength"/> is less than zero or if it is greater than <see cref="P:Microsoft.Shared.Data.Validation.LengthAttribute.MaximumLength"/>.</exception>
+            <exception cref="T:System.InvalidOperationException">The validated type is not supported.</exception>
+        </member>
+        <member name="T:Microsoft.Shared.Data.Validation.TimeSpanAttribute">
+            <summary>
+            Provides boundary validation for <see cref="T:System.TimeSpan"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Shared.Data.Validation.TimeSpanAttribute.Minimum">
+            <summary>
+            Gets the lower bound for time span.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Shared.Data.Validation.TimeSpanAttribute.Maximum">
+            <summary>
+            Gets the upper bound for time span.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Shared.Data.Validation.TimeSpanAttribute.Exclusive">
+            <summary>
+            Gets or sets a value indicating whether the time span validation should exclude the minimum and maximum values.
+            </summary>
+            <value>
+            The default value is <c>false</c>.
+            </value>
+        </member>
+        <member name="M:Microsoft.Shared.Data.Validation.TimeSpanAttribute.#ctor(System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Shared.Data.Validation.TimeSpanAttribute"/> class.
+            </summary>
+            <param name="minMs">Minimum in milliseconds.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Data.Validation.TimeSpanAttribute.#ctor(System.Int32,System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Shared.Data.Validation.TimeSpanAttribute"/> class.
+            </summary>
+            <param name="minMs">Minimum in milliseconds.</param>
+            <param name="maxMs">Maximum in milliseconds.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Data.Validation.TimeSpanAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Shared.Data.Validation.TimeSpanAttribute"/> class.
+            </summary>
+            <param name="min">Minimum represented as time span string.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Data.Validation.TimeSpanAttribute.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Shared.Data.Validation.TimeSpanAttribute"/> class.
+            </summary>
+            <param name="min">Minimum represented as time span string.</param>
+            <param name="max">Maximum represented as time span string.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Data.Validation.TimeSpanAttribute.IsValid(System.Object,System.ComponentModel.DataAnnotations.ValidationContext)">
+            <summary>
+            Validates that a given value represents an in-range TimeSpan value.
+            </summary>
+            <param name="value">The value to validate.</param>
+            <param name="validationContext">Additional context for this validation.</param>
+            <returns>A value indicating success or failure.</returns>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.NoopPooledObjectPolicy`1">
+            <summary>
+            An object pool policy that does nothing.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.PooledCancellationTokenSourcePolicy">
+            <summary>
+            An object pool policy for cancellation token sources.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.PooledDictionaryPolicy`2">
+            <summary>
+            An object pool policy for dictionaries.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.PooledListPolicy`1">
+            <summary>
+            An object pool policy for lists.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.PooledListWithCapacityPolicy`1">
+            <summary>
+            An object pool policy for lists with capacity.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.PooledSetPolicy`1">
+            <summary>
+            An object pool policy for sets.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.PoolFactory">
+            <summary>
+            A factory of object pools.
+            </summary>
+            <remarks>
+            This class makes it easy to create efficient object pools used to improve performance by reducing
+            strain on the garbage collector.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreatePool``1(System.Int32)">
+            <summary>
+            Creates an object pool.
+            </summary>
+            <typeparam name="T">The type of object to keep in the pool.</typeparam>
+            <param name="maxCapacity">The maximum number of items to keep in the pool. This defaults to 1024. This value is a recommendation, the pool may keep more objects than this.</param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreatePool``1(Microsoft.Extensions.ObjectPool.IPooledObjectPolicy{``0},System.Int32)">
+            <summary>
+            Creates an object pool with a custom policy.
+            </summary>
+            <typeparam name="T">The type of object to keep in the pool.</typeparam>
+            <param name="policy">The custom policy that is responsible for creating new objects and preparing objects to be added to the pool.</param>
+            <param name="maxCapacity">The maximum number of items to keep in the pool. This defaults to 1024. This value is a recommendation, the pool may keep more objects than this.</param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateResettingPool``1(System.Int32)">
+            <summary>
+            Creates an object pool for resettable objects.
+            </summary>
+            <typeparam name="T">The type of object to keep in the pool.</typeparam>
+            <param name="maxCapacity">The maximum number of items to keep in the pool. This defaults to 1024. This value is a recommendation, the pool may keep more objects than this.</param>
+            <returns>The pool.</returns>
+            <remarks>
+            Objects are systematically reset before being added to the pool.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateStringBuilderPool(System.Int32,System.Int32)">
+            <summary>
+            Creates a pool of <see cref="T:System.Text.StringBuilder"/> instances.
+            </summary>
+            <param name="maxCapacity">The maximum number of items to keep in the pool. This defaults to 1024. This value is a recommendation, the pool may keep more objects than this.</param>
+            <param name="maxStringBuilderCapacity">The maximum capacity of the string builders to keep in the pool. This defaults to 64K.</param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateListPool``1(System.Int32)">
+            <summary>
+            Creates an object pool of <see cref="T:System.Collections.Generic.List`1"/> instances.
+            </summary>
+            <typeparam name="T">The type of object held by the lists.</typeparam>
+            <param name="maxCapacity">
+            The maximum number of items to keep in the pool.
+            This defaults to 1024.
+            This value is a recommendation, the pool may keep more objects than this.
+            </param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateListPoolWithCapacity``1(System.Int32,System.Int32)">
+            <summary>
+            Creates an object pool of <see cref="T:System.Collections.Generic.List`1"/> instances, each with provided  <paramref name="listCapacity"/>.
+            </summary>
+            <typeparam name="T">The type of object held by the lists.</typeparam>
+            <param name="listCapacity">The capacity of each created <see cref="T:System.Collections.Generic.List`1"/> instance.</param>
+            <param name="maxCapacity">
+            The maximum number of items to keep in the pool.
+            This defaults to 1024.
+            This value is a recommendation, the pool may keep more objects than this.
+            </param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateDictionaryPool``2(System.Collections.Generic.IEqualityComparer{``0},System.Int32)">
+            <summary>
+            Creates an object pool of <see cref="T:System.Collections.Generic.Dictionary`2"/> instances.
+            </summary>
+            <typeparam name="TKey">The type of the dictionary keys.</typeparam>
+            <typeparam name="TValue">The type of the dictionary values.</typeparam>
+            <param name="comparer">Optional key comparer used by the dictionaries.</param>
+            <param name="maxCapacity">
+            The maximum number of items to keep in the pool.
+            This defaults to 1024.
+            This value is a recommendation, the pool may keep more objects than this.
+            </param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateHashSetPool``1(System.Collections.Generic.IEqualityComparer{``0},System.Int32)">
+            <summary>
+            Creates an object pool of <see cref="T:System.Collections.Generic.HashSet`1"/> instances.
+            </summary>
+            <typeparam name="T">The type of objects held in the sets.</typeparam>
+            <param name="comparer">Optional key comparer used by the sets.</param>
+            <param name="maxCapacity">
+            The maximum number of items to keep in the pool.
+            This defaults to 1024.
+            This value is a recommendation, the pool may keep more objects than this.
+            </param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateCancellationTokenSourcePool(System.Int32)">
+            <summary>
+            Creates an object pool of <see cref="T:System.Threading.CancellationTokenSource" /> instances.
+            </summary>
+            <param name="maxCapacity">
+            The maximum number of items to keep in the pool.
+            This defaults to 1024.
+            This value is a recommendation, the pool may keep more objects than this.
+            </param>
+            <returns>The pool.</returns>
+            <remarks>
+            On .NET 6 and above, cancellation token sources are reusable and this pool leverages this feature.
+            When running on older frameworks, this pool is actually a no-op, every time a source is fetched
+            from the pool, it is always a new instance. In that case, returning an object to the pool merely
+            disposes it.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Shared.Pools.PoolFactory.SharedStringBuilderPool">
+            <summary>
+            Gets the shared pool of <see cref="T:System.Text.StringBuilder"/> instances.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.HedgingEndpointOptions">
+            <summary>
+            Options for the pipeline of resilience strategies assigned to a particular endpoint.
+            </summary>
+            <remarks>
+            It is using three chained layers in this order (from the outermost to the innermost): Bulkhead -> Circuit Breaker -> Attempt Timeout.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.HedgingEndpointOptions.RateLimiter">
+            <summary>
+            Gets or sets the bulkhead options for the endpoint.
+            </summary>
+            <remarks>
+            By default it is initialized with a unique instance of <see cref="T:Microsoft.Extensions.Http.Resilience.HttpRateLimiterStrategyOptions"/> using default properties values.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.HedgingEndpointOptions.CircuitBreaker">
+            <summary>
+            Gets or sets the circuit breaker options for the endpoint.
+            </summary>
+            <remarks>
+            By default it is initialized with a unique instance of <see cref="T:Microsoft.Extensions.Http.Resilience.HttpCircuitBreakerStrategyOptions"/> using default properties values.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.HedgingEndpointOptions.Timeout">
+            <summary>
+            Gets or sets the options for the timeout resilience strategy applied per each request attempt.
+            </summary>
+            <remarks>
+            By default it is initialized with a unique instance of <see cref="T:Microsoft.Extensions.Http.Resilience.HttpTimeoutStrategyOptions"/>
+            using a custom <see cref="P:Polly.Timeout.TimeoutStrategyOptions.Timeout"/> of 10 seconds.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.HttpClientHedgingResiliencePredicates">
+            <summary>
+            Static predicates used within the current package.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.HttpClientHedgingResiliencePredicates.IsTransient(Polly.Outcome{System.Net.Http.HttpResponseMessage})">
+            <summary>
+            Determines whether an outcome should be treated by hedging as a transient failure.
+            </summary>
+            <param name="outcome">The outcome of the user-specified callback.</param>
+            <returns><see langword="true"/> if outcome is transient, <see langword="false"/> if not.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.HttpClientHedgingResiliencePredicates.IsTransient(Polly.Outcome{System.Net.Http.HttpResponseMessage},System.Threading.CancellationToken)">
+            <summary>
+            Determines whether an <see cref="T:System.Net.Http.HttpResponseMessage"/> should be treated by hedging as a transient failure.
+            </summary>
+            <param name="outcome">The outcome of the user-specified callback.</param>
+            <param name="cancellationToken">The <see cref="T:System.Threading.CancellationToken"/> associated with the execution.</param>
+            <returns><see langword="true"/> if outcome is transient, <see langword="false"/> if not.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.HttpClientHedgingResiliencePredicates.IsTransientHttpException(System.Exception)">
+            <summary>
+            Determines whether an exception should be treated by hedging as a transient failure.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.HttpHedgingStrategyOptions">
+            <summary>
+            Implementation of the <see cref="T:Polly.Hedging.HedgingStrategyOptions`1"/> class for <see cref="T:System.Net.Http.HttpResponseMessage"/> results.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.HttpHedgingStrategyOptions.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Http.Resilience.HttpHedgingStrategyOptions"/> class.
+            </summary>
+            <remarks>
+            By default, the options are configured to handle only transient failures.
+            Specifically, this includes HTTP status codes 408, 429, 500 and above, 
+            as well as <see cref="T:System.Net.Http.HttpRequestException"/>, <see cref="T:Polly.CircuitBreaker.BrokenCircuitException"/>, and <see cref="T:Polly.Timeout.TimeoutRejectedException"/> exceptions.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.HttpStandardHedgingResilienceOptions">
+            <summary>
+            Options for the pipeline of resilience strategies for usage in hedging HTTP scenarios.
+            </summary>
+            /// <remarks>
+            These options represents configuration for 5 chained layers in this order (from the outermost to the innermost):
+            <para>
+            Total Request Timeout -> Hedging -> Bulkhead (per endpoint) -> Circuit Breaker (per endpoint) -> Attempt Timeout (per endpoint).
+            </para>
+            The configuration of each resilience strategy is initialized with the default options per type. The request goes through these resilience strategies:
+            <para>
+            <list type="number">
+            <item><description>Total request timeout strategy applies an overall timeout to the execution,
+            ensuring that the request including hedging attempts does not exceed the configured limit.</description></item>
+            <item><description>The hedging strategy executes the requests against multiple endpoints in case the dependency is slow or returns a transient error.</description></item>
+            <item><description>The rate limiter pipeline limits the maximum number of requests being send to the dependency.</description></item>
+            <item><description>The circuit breaker blocks the execution if too many direct failures or timeouts are detected.</description></item>
+            <item><description>The attempt timeout strategy limits each request attempt duration and throws if its exceeded.</description></item>
+            </list>
+            </para>
+            The last three strategies are assigned to each individual endpoint. The selection of endpoint can be customized by
+            <see cref="M:Microsoft.Extensions.Http.Resilience.StandardHedgingHandlerBuilderExtensions.SelectPipelineByAuthority(Microsoft.Extensions.Http.Resilience.IStandardHedgingHandlerBuilder)"/> or
+            <see cref="M:Microsoft.Extensions.Http.Resilience.StandardHedgingHandlerBuilderExtensions.SelectPipelineBy(Microsoft.Extensions.Http.Resilience.IStandardHedgingHandlerBuilder,System.Func{System.IServiceProvider,System.Func{System.Net.Http.HttpRequestMessage,System.String}})"/> extensions.
+            <para>
+            By default, the endpoint is selected by authority (scheme + host + port).
+            </para>
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.HttpStandardHedgingResilienceOptions.TotalRequestTimeout">
+            <summary>
+            Gets or sets the timeout strategy options for the total timeout applied on the request execution.
+            </summary>
+            <remarks>
+            By default, this property is initialized with a unique instance of <see cref="T:Microsoft.Extensions.Http.Resilience.HttpTimeoutStrategyOptions"/>
+            using default property values.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.HttpStandardHedgingResilienceOptions.Hedging">
+            <summary>
+            Gets or sets the hedging strategy options.
+            </summary>
+            <remarks>
+            By default, this property is initialized with a unique instance of <see cref="T:Microsoft.Extensions.Http.Resilience.HttpHedgingStrategyOptions"/> using default property values.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.HttpStandardHedgingResilienceOptions.Endpoint">
+            <summary>
+            Gets or sets the hedging endpoint options.
+            </summary>
+            <remarks>
+            By default, this property is initialized with a unique instance of <see cref="T:Microsoft.Extensions.Http.Resilience.HedgingEndpointOptions"/> using default property values.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.Internal.RequestMessageSnapshotStrategy">
+            <summary>
+            This strategy creates a snapshot of <see cref="T:System.Net.Http.HttpRequestMessage"/> before executing the hedging to prevent race conditions when cloning and modifying the message at the same time.
+            This way, all hedged requests will have an unique instance of the message available from snapshot without the need to access the original one for cloning.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.Internal.Validators.HttpStandardHedgingResilienceOptionsValidator.Validate(System.String,Microsoft.Extensions.Http.Resilience.HttpStandardHedgingResilienceOptions)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>Validation result.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.Internal.Validators.HttpStandardResilienceOptionsValidator.Validate(System.String,Microsoft.Extensions.Http.Resilience.HttpStandardResilienceOptions)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>Validation result.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.Internal.NamedOptionsCache`1">
+            <summary>
+            The cache for named options that allows accessing the last valid options instance.
+            </summary>
+            <typeparam name="TOptions">The type of options.</typeparam>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.Internal.RetryAfterHelper.TryParse(System.Net.Http.HttpResponseMessage,System.TimeProvider,System.TimeSpan@)">
+            <summary>
+            Parses Retry-After value from the relevant HTTP response header.
+            If not found then it will return <see cref="F:System.TimeSpan.Zero" />.
+            </summary>
+            <see href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After" />.
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.Internal.UriExtensions">
+            <summary>
+            Extensions for Uri class to replace host.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.Internal.UriExtensions.ReplaceHost(System.Uri,System.Uri)">
+            <summary>
+            Replaces host of <paramref name="currentUri"/> with the host from <paramref name="hostUri"/>.
+            </summary>
+            <param name="currentUri">Uri with old host.</param>
+            <param name="hostUri">Uri with new host.</param>
+            <returns><paramref name="currentUri"/> with host from <paramref name="hostUri"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.Internal.PipelineKeyOptions">
+            <summary>
+            The provider that returns the pipeline key from the request message.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.Internal.Routing.OrderedGroupsRoutingOptionsValidator.Validate(System.String,Microsoft.Extensions.Http.Resilience.OrderedGroupsRoutingOptions)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>Validation result.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.Internal.Routing.WeightedGroupsRoutingOptionsValidator.Validate(System.String,Microsoft.Extensions.Http.Resilience.WeightedGroupsRoutingOptions)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>Validation result.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.IStandardHedgingHandlerBuilder">
+            <summary>
+            Defines the builder used to configure the standard hedging handler.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.IStandardHedgingHandlerBuilder.Name">
+            <summary>
+            Gets the name of standard hedging handler being configured.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.IStandardHedgingHandlerBuilder.Services">
+            <summary>
+            Gets the service collection.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.IStandardHedgingHandlerBuilder.RoutingStrategyBuilder">
+            <summary>
+            Gets the builder for the routing strategy.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.StandardHedgingHandlerBuilderExtensions">
+            <summary>
+            Extensions for <see cref="T:Microsoft.Extensions.Http.Resilience.IStandardHedgingHandlerBuilder"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.StandardHedgingHandlerBuilderExtensions.Configure(Microsoft.Extensions.Http.Resilience.IStandardHedgingHandlerBuilder,Microsoft.Extensions.Configuration.IConfigurationSection)">
+            <summary>
+            Configures the <see cref="T:Microsoft.Extensions.Http.Resilience.HttpStandardHedgingResilienceOptions"/> for the standard hedging pipeline.
+            </summary>
+            <param name="builder">The pipeline builder.</param>
+            <param name="section">The section that the options will bind against.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.StandardHedgingHandlerBuilderExtensions.Configure(Microsoft.Extensions.Http.Resilience.IStandardHedgingHandlerBuilder,System.Action{Microsoft.Extensions.Http.Resilience.HttpStandardHedgingResilienceOptions})">
+            <summary>
+            Configures the <see cref="T:Microsoft.Extensions.Http.Resilience.HttpStandardResilienceOptions"/> for the standard hedging pipeline.
+            </summary>
+            <param name="builder">The pipeline builder.</param>
+            <param name="configure">The configure method.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.StandardHedgingHandlerBuilderExtensions.Configure(Microsoft.Extensions.Http.Resilience.IStandardHedgingHandlerBuilder,System.Action{Microsoft.Extensions.Http.Resilience.HttpStandardHedgingResilienceOptions,System.IServiceProvider})">
+            <summary>
+            Configures the <see cref="T:Microsoft.Extensions.Http.Resilience.HttpStandardResilienceOptions"/> for the standard hedging pipeline.
+            </summary>
+            <param name="builder">The pipeline builder.</param>
+            <param name="configure">The configure method.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.StandardHedgingHandlerBuilderExtensions.SelectPipelineByAuthority(Microsoft.Extensions.Http.Resilience.IStandardHedgingHandlerBuilder)">
+            <summary>
+            Instructs the underlying pipeline builder to select the pipeline instance by redacted authority (scheme + host + port).
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.StandardHedgingHandlerBuilderExtensions.SelectPipelineBy(Microsoft.Extensions.Http.Resilience.IStandardHedgingHandlerBuilder,System.Func{System.IServiceProvider,System.Func{System.Net.Http.HttpRequestMessage,System.String}})">
+            <summary>
+            Instructs the underlying pipeline builder to select the pipeline instance by custom selector.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <param name="selectorFactory">The factory that returns key selector.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+            <remarks>The pipeline key is used in metrics and logs, so don't return any sensitive values.</remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.HttpCircuitBreakerStrategyOptions">
+            <summary>
+            Implementation of the <see cref="T:Polly.CircuitBreaker.CircuitBreakerStrategyOptions`1"/> for <see cref="T:System.Net.Http.HttpResponseMessage"/> results.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.HttpCircuitBreakerStrategyOptions.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Http.Resilience.HttpCircuitBreakerStrategyOptions"/> class.
+            </summary>
+            <remarks>
+            By default the options is set to handle only transient failures,
+            that is, timeouts, 5xx responses, and <see cref="T:System.Net.Http.HttpRequestException"/> exceptions.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.HttpClientResiliencePredicates">
+            <summary>
+            Provides static predicates used within the current package.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.HttpClientResiliencePredicates.IsTransient(Polly.Outcome{System.Net.Http.HttpResponseMessage})">
+            <summary>
+            Determines whether an outcome should be treated by resilience strategies as a transient failure.
+            </summary>
+            <returns><see langword="true"/> if outcome is transient, <see langword="false"/> if not.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.HttpClientResiliencePredicates.IsTransient(Polly.Outcome{System.Net.Http.HttpResponseMessage},System.Threading.CancellationToken)">
+            <summary>
+            Determines whether an <see cref="T:System.Net.Http.HttpResponseMessage"/> should be treated by resilience strategies as a transient failure.
+            </summary>
+            <param name="outcome">The outcome of the user-specified callback.</param>
+            <param name="cancellationToken">The <see cref="T:System.Threading.CancellationToken"/> associated with the execution.</param>
+            <returns><see langword="true"/> if outcome is transient, <see langword="false"/> if not.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.HttpClientResiliencePredicates.IsTransientHttpException(System.Exception)">
+            <summary>
+            Determines whether an exception should be treated by resilience strategies as a transient failure.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.HttpClientResiliencePredicates.IsTransientHttpFailure(System.Net.Http.HttpResponseMessage)">
+            <summary>
+            Determines whether a response contains a transient failure.
+            </summary>
+            <remarks> The current handling implementation uses approach proposed by Polly:
+            <see href="https://github.com/App-vNext/Polly.Extensions.Http/blob/master/src/Polly.Extensions.Http/HttpPolicyExtensions.cs"/>.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.HttpRateLimiterStrategyOptions">
+            <summary>
+            Implementation of the <see cref="T:Polly.RateLimiting.RateLimiterStrategyOptions"/> for HTTP scenarios.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.HttpRetryStrategyOptions">
+            <summary>
+            Implementation of the <see cref="T:Polly.Retry.RetryStrategyOptions`1"/> for <see cref="T:System.Net.Http.HttpResponseMessage"/> results.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.HttpRetryStrategyOptions.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Http.Resilience.HttpRetryStrategyOptions"/> class.
+            </summary>
+            <remarks>
+            By default, the options are configured to handle only transient failures.
+            Specifically, this includes HTTP status codes 408, 429, 500 and above, 
+            as well as <see cref="T:System.Net.Http.HttpRequestException"/> and <see cref="T:Polly.Timeout.TimeoutRejectedException"/> exceptions.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.HttpRetryStrategyOptions.ShouldRetryAfterHeader">
+            <summary>
+            Gets or sets a value indicating whether to use the <c>Retry-After</c> header for the retry delays.
+            </summary>
+            <value>
+            Defaults to <see langword="true"/>.
+            </value>
+            <remarks>
+            If the property is set to <see langword="true"/> then the generator will resolve the delay
+            based on the <c>Retry-After</c> header rules, otherwise it will return <see langword="null"/> and the retry strategy
+            delay will generate the delay based on the configured options.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.HttpRetryStrategyOptionsExtensions">
+            <summary>
+            Extensions for <see cref="T:Microsoft.Extensions.Http.Resilience.HttpRetryStrategyOptions"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.HttpRetryStrategyOptionsExtensions.DisableForUnsafeHttpMethods(Microsoft.Extensions.Http.Resilience.HttpRetryStrategyOptions)">
+            <summary>
+            Disables retry attempts for POST, PATCH, PUT, DELETE, and CONNECT HTTP methods.
+            </summary>
+            <param name="options">The retry strategy options.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.HttpRetryStrategyOptionsExtensions.DisableFor(Microsoft.Extensions.Http.Resilience.HttpRetryStrategyOptions,System.Net.Http.HttpMethod[])">
+            <summary>
+            Disables retry attempts for the given list of HTTP methods.
+            </summary>
+            <param name="options">The retry strategy options.</param>
+            <param name="methods">The list of HTTP methods.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.HttpTimeoutStrategyOptions">
+            <summary>
+            Implementation of the <see cref="T:Polly.Timeout.TimeoutStrategyOptions"/> for HTTP scenarios.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.HttpResiliencePipelineBuilderExtensions">
+            <summary>
+            Extensions for <see cref="T:Microsoft.Extensions.Http.Resilience.IHttpResiliencePipelineBuilder"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.HttpResiliencePipelineBuilderExtensions.SelectPipelineByAuthority(Microsoft.Extensions.Http.Resilience.IHttpResiliencePipelineBuilder)">
+            <summary>
+            Instructs the underlying builder to select the pipeline instance by redacted authority (scheme + host + port).
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.HttpResiliencePipelineBuilderExtensions.SelectPipelineBy(Microsoft.Extensions.Http.Resilience.IHttpResiliencePipelineBuilder,System.Func{System.IServiceProvider,System.Func{System.Net.Http.HttpRequestMessage,System.String}})">
+            <summary>
+            Instructs the underlying builder to select the pipeline instance by custom selector.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <param name="selectorFactory">The factory that returns a key selector.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+            <remarks>The pipeline key is used in metrics and logs, so don't return any sensitive values.</remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.HttpStandardResilienceOptions">
+            <summary>
+            Options for resilience strategies for usage in HTTP scenarios.
+            </summary>
+            <remarks>
+            These options represent configuration for five chained resilience strategies in this order (from the outermost to the innermost):
+            <para>
+            Bulkhead -> Total Request Timeout -> Retry -> Circuit Breaker -> Attempt Timeout.
+            </para>
+            The configuration of each pipeline is initialized with the default options per type. The request goes through these strategies:
+            <list type="number">
+            <item><description>Total request timeout pipeline applies an overall timeout to the execution,
+            ensuring that the request including hedging attempts, does not exceed the configured limit.</description></item>
+            <item><description>The retry pipeline retries the request in case the dependency is slow or returns a transient error.</description></item>
+            <item><description>The bulkhead pipeline limits the maximum number of concurrent requests being send to the dependency.</description></item>
+            <item><description>The circuit breaker blocks the execution if too many direct failures or timeouts are detected.</description></item>
+            <item><description>The attempt timeout pipeline limits each request attempt duration and throws if its exceeded.</description></item>
+            </list>
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.HttpStandardResilienceOptions.RateLimiter">
+            <summary>
+            Gets or sets the bulkhead options.
+            </summary>
+            <remarks>
+            By default, this property is initialized with a unique instance of <see cref="T:Microsoft.Extensions.Http.Resilience.HttpRateLimiterStrategyOptions"/> using default properties values.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.HttpStandardResilienceOptions.TotalRequestTimeout">
+            <summary>
+            Gets or sets the timeout Strategy options for the total timeout applied on the request's execution.
+            </summary>
+            <remarks>
+            By default, this property is initialized with a unique instance of <see cref="T:Microsoft.Extensions.Http.Resilience.HttpTimeoutStrategyOptions"/>.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.HttpStandardResilienceOptions.Retry">
+            <summary>
+            Gets or sets the retry pipeline options.
+            </summary>
+            <remarks>
+            By default, this property is initialized with a unique instance of <see cref="T:Microsoft.Extensions.Http.Resilience.HttpRetryStrategyOptions"/> using default properties values.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.HttpStandardResilienceOptions.CircuitBreaker">
+            <summary>
+            Gets or sets the circuit breaker options.
+            </summary>
+            <remarks>
+            By default, this property is initialized with a unique instance of <see cref="T:Microsoft.Extensions.Http.Resilience.HttpCircuitBreakerStrategyOptions"/> using default properties values.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.HttpStandardResilienceOptions.AttemptTimeout">
+            <summary>
+            Gets or sets the options for the timeout pipeline applied per each request attempt.
+            </summary>
+            <remarks>
+            By default, this property is initialized with a unique instance of <see cref="T:Microsoft.Extensions.Http.Resilience.HttpTimeoutStrategyOptions"/>
+            using custom <see cref="P:Polly.Timeout.TimeoutStrategyOptions.Timeout"/> of 10 seconds.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.HttpStandardResiliencePipelineBuilderExtensions">
+            <summary>
+            Extensions for <see cref="T:Microsoft.Extensions.Http.Resilience.IHttpStandardResiliencePipelineBuilder"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.HttpStandardResiliencePipelineBuilderExtensions.Configure(Microsoft.Extensions.Http.Resilience.IHttpStandardResiliencePipelineBuilder,Microsoft.Extensions.Configuration.IConfigurationSection)">
+            <summary>
+            Configures the <see cref="T:Microsoft.Extensions.Http.Resilience.HttpStandardResilienceOptions"/> for the standard resilience pipeline.
+            </summary>
+            <param name="builder">The pipeline builder.</param>
+            <param name="section">The section that the options will bind against.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.HttpStandardResiliencePipelineBuilderExtensions.Configure(Microsoft.Extensions.Http.Resilience.IHttpStandardResiliencePipelineBuilder,System.Action{Microsoft.Extensions.Http.Resilience.HttpStandardResilienceOptions})">
+            <summary>
+            Configures the <see cref="T:Microsoft.Extensions.Http.Resilience.HttpStandardResilienceOptions"/> for the standard resilience pipeline.
+            </summary>
+            <param name="builder">The pipeline builder.</param>
+            <param name="configure">The configure method.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.HttpStandardResiliencePipelineBuilderExtensions.Configure(Microsoft.Extensions.Http.Resilience.IHttpStandardResiliencePipelineBuilder,System.Action{Microsoft.Extensions.Http.Resilience.HttpStandardResilienceOptions,System.IServiceProvider})">
+            <summary>
+            Configures the <see cref="T:Microsoft.Extensions.Http.Resilience.HttpStandardResilienceOptions"/> for the standard resilience pipeline.
+            </summary>
+            <param name="builder">The pipeline builder.</param>
+            <param name="configure">The configure method.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.HttpStandardResiliencePipelineBuilderExtensions.SelectPipelineByAuthority(Microsoft.Extensions.Http.Resilience.IHttpStandardResiliencePipelineBuilder)">
+            <summary>
+            Instructs the underlying builder to select the pipeline instance by redacted authority (scheme + host + port).
+            </summary>
+            <param name="builder">The pipeline builder.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.HttpStandardResiliencePipelineBuilderExtensions.SelectPipelineBy(Microsoft.Extensions.Http.Resilience.IHttpStandardResiliencePipelineBuilder,System.Func{System.IServiceProvider,System.Func{System.Net.Http.HttpRequestMessage,System.String}})">
+            <summary>
+            Instructs the underlying builder to select the pipeline instance by custom selector.
+            </summary>
+            <param name="builder">The pipeline builder.</param>
+            <param name="selectorFactory">The factory that returns a key selector.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+            <remarks>The pipeline key is used in metrics and logs, so don't return any sensitive values.</remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.IHttpResiliencePipelineBuilder">
+            <summary>
+            The builder for configuring the HTTP client resilience pipeline.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.IHttpResiliencePipelineBuilder.PipelineName">
+            <summary>
+            Gets the name of the resilience pipeline configured by this builder.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.IHttpResiliencePipelineBuilder.Services">
+            <summary>
+            Gets the application service collection.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.IHttpStandardResiliencePipelineBuilder">
+            <summary>
+            The builder for the standard HTTP resilience pipeline.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.IHttpStandardResiliencePipelineBuilder.PipelineName">
+            <summary>
+            Gets the name of the resilience pipeline configured by this builder.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.IHttpStandardResiliencePipelineBuilder.Services">
+            <summary>
+            Gets the application service collection.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.ResilienceHandler">
+            <summary>
+            Base class for resilience handler, i.e. handlers that use resilience strategies to send the requests.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.ResilienceHandler.#ctor(System.Func{System.Net.Http.HttpRequestMessage,Polly.ResiliencePipeline{System.Net.Http.HttpResponseMessage}})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Http.Resilience.ResilienceHandler"/> class.
+            </summary>
+            <param name="pipelineProvider">The pipeline provider that supplies pipelines in response to an http message.</param>
+            <exception cref="T:System.ArgumentNullException">If <paramref name="pipelineProvider"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.ResilienceHandler.#ctor(Polly.ResiliencePipeline{System.Net.Http.HttpResponseMessage})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Http.Resilience.ResilienceHandler"/> class.
+            </summary>
+            <param name="pipeline">The pipeline to use for the message.</param>
+            <exception cref="T:System.ArgumentNullException">If <paramref name="pipeline"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.ResilienceHandler.SendAsync(System.Net.Http.HttpRequestMessage,System.Threading.CancellationToken)">
+            <summary>
+            Sends an HTTP request to the inner handler to send to the server as an asynchronous operation.
+            </summary>
+            <param name="request">The HTTP request message to send to the server.</param>
+            <param name="cancellationToken">A cancellation token to cancel operation.</param>
+            <returns>The task object representing the asynchronous operation.</returns>
+            <exception cref="T:System.ArgumentNullException">If <paramref name="request"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.ResilienceHandlerContext">
+            <summary>
+            The context used when building a resilience pipeline HTTP handler.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.ResilienceHandlerContext.ServiceProvider">
+            <summary>
+            Gets the service provider.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.ResilienceHandlerContext.BuilderName">
+            <summary>
+            Gets the name of the builder being built.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.ResilienceHandlerContext.InstanceName">
+            <summary>
+            Gets the instance name of resilience pipeline being built.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.ResilienceHandlerContext.EnableReloads``1(System.String)">
+            <summary>
+            Enables dynamic reloading of the resilience pipeline whenever the <typeparamref name="TOptions"/> options are changed.
+            </summary>
+            <typeparam name="TOptions">The options type to listen to.</typeparam>
+            <param name="name">The named options, if any.</param>
+            <remarks>
+            You can decide based on the <paramref name="name"/> to listen for changes in global options or named options.
+            If <paramref name="name"/> is <see langword="null"/> then the global options are listened to.
+            By default, the <paramref name="name"/> parameter is <see langword="null"/>.
+            <para>
+            You can listen for changes only for single options. If you call this method multiple times, the preceding calls are ignored and only the last one wins.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.ResilienceHandlerContext.GetOptions``1(System.String)">
+            <summary>
+            Gets the options identified by <paramref name="name"/>.
+            </summary>
+            <typeparam name="TOptions">The options type.</typeparam>
+            <param name="name">The options name, if any.</param>
+            <returns>The options instance.</returns>
+            <remarks>
+            If <paramref name="name"/> is <see langword="null"/> then the global options are returned.
+            By default, the <paramref name="name"/> parameter is <see langword="null"/>.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.ResilienceHandlerContext.OnPipelineDisposed(System.Action)">
+            <summary>
+            Registers a callback that is called when the pipeline instance being configured is disposed.
+            </summary>
+            <param name="callback">The callback delegate.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.Routing.Internal.RequestRoutingStrategy">
+            <summary>
+            Defines a strategy for retrieval of route URLs,
+            used to route one request across a set of different endpoints.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.Routing.Internal.RequestRoutingStrategy.TryGetNextRoute(System.Uri@)">
+            <summary>
+            Gets the next route Uri.
+            </summary>
+            <param name="nextRoute">Holds next route value, or <see langword="null"/>.</param>
+            <returns><see langword="true"/> if next route available, <see langword="false"/> otherwise.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.Routing.Internal.RoutingResilienceStrategy">
+            <summary>
+            Adds routing support to an inner strategy.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.IRoutingStrategyBuilder">
+            <summary>
+            Builder for configuring the routing strategies associated with hedging handler.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.IRoutingStrategyBuilder.Name">
+            <summary>
+            Gets the routing strategy name being configured.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.IRoutingStrategyBuilder.Services">
+            <summary>
+            Gets the service collection.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.OrderedGroupsRoutingOptions">
+            <summary>
+            Represents the options for collection of endpoint groups that have fixed order.
+            </summary>
+            <remarks>
+            This strategy picks the endpoint groups in he same order as they are specified in the <see cref="P:Microsoft.Extensions.Http.Resilience.OrderedGroupsRoutingOptions.Groups"/> collection.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.OrderedGroupsRoutingOptions.Groups">
+            <summary>
+            Gets or sets the collection of ordered endpoints groups.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.RoutingStrategyBuilderExtensions">
+            <summary>
+            Extensions for <see cref="T:Microsoft.Extensions.Http.Resilience.IRoutingStrategyBuilder"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.RoutingStrategyBuilderExtensions.ConfigureOrderedGroups(Microsoft.Extensions.Http.Resilience.IRoutingStrategyBuilder,Microsoft.Extensions.Configuration.IConfigurationSection)">
+            <summary>
+            Configures ordered groups routing using <see cref="T:Microsoft.Extensions.Http.Resilience.OrderedGroupsRoutingOptions"/>.
+            </summary>
+            <param name="builder">The routing builder.</param>
+            <param name="section">The section that the <see cref="T:Microsoft.Extensions.Http.Resilience.OrderedGroupsRoutingOptions"/> will bind against.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.RoutingStrategyBuilderExtensions.ConfigureOrderedGroups(Microsoft.Extensions.Http.Resilience.IRoutingStrategyBuilder,System.Action{Microsoft.Extensions.Http.Resilience.OrderedGroupsRoutingOptions})">
+            <summary>
+            Configures ordered groups routing using <see cref="T:Microsoft.Extensions.Http.Resilience.OrderedGroupsRoutingOptions"/>.
+            </summary>
+            <param name="builder">The routing builder.</param>
+            <param name="configure">The callback that configures <see cref="T:Microsoft.Extensions.Http.Resilience.OrderedGroupsRoutingOptions"/>.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.RoutingStrategyBuilderExtensions.ConfigureOrderedGroups(Microsoft.Extensions.Http.Resilience.IRoutingStrategyBuilder,System.Action{Microsoft.Extensions.Http.Resilience.OrderedGroupsRoutingOptions,System.IServiceProvider})">
+            <summary>
+            Configures ordered groups routing using <see cref="T:Microsoft.Extensions.Http.Resilience.OrderedGroupsRoutingOptions"/>.
+            </summary>
+            <param name="builder">The routing builder.</param>
+            <param name="configure">The callback that configures <see cref="T:Microsoft.Extensions.Http.Resilience.OrderedGroupsRoutingOptions"/>.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.RoutingStrategyBuilderExtensions.ConfigureWeightedGroups(Microsoft.Extensions.Http.Resilience.IRoutingStrategyBuilder,Microsoft.Extensions.Configuration.IConfigurationSection)">
+            <summary>
+            Configures weighted groups routing using <see cref="T:Microsoft.Extensions.Http.Resilience.WeightedGroupsRoutingOptions"/>.
+            </summary>
+            <param name="builder">The routing builder.</param>
+            <param name="section">The section that the <see cref="T:Microsoft.Extensions.Http.Resilience.WeightedGroupsRoutingOptions"/> will bind against.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.RoutingStrategyBuilderExtensions.ConfigureWeightedGroups(Microsoft.Extensions.Http.Resilience.IRoutingStrategyBuilder,System.Action{Microsoft.Extensions.Http.Resilience.WeightedGroupsRoutingOptions})">
+            <summary>
+            Configures weighted groups routing using <see cref="T:Microsoft.Extensions.Http.Resilience.WeightedGroupsRoutingOptions"/>.
+            </summary>
+            <param name="builder">The routing builder.</param>
+            <param name="configure">The callback that configures <see cref="T:Microsoft.Extensions.Http.Resilience.WeightedGroupsRoutingOptions"/>.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.RoutingStrategyBuilderExtensions.ConfigureWeightedGroups(Microsoft.Extensions.Http.Resilience.IRoutingStrategyBuilder,System.Action{Microsoft.Extensions.Http.Resilience.WeightedGroupsRoutingOptions,System.IServiceProvider})">
+            <summary>
+            Configures weighted groups routing using <see cref="T:Microsoft.Extensions.Http.Resilience.WeightedGroupsRoutingOptions"/>.
+            </summary>
+            <param name="builder">The routing builder.</param>
+            <param name="configure">The callback that configures <see cref="T:Microsoft.Extensions.Http.Resilience.WeightedGroupsRoutingOptions"/>.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.UriEndpoint">
+            <summary>
+            Represents a URI-based endpoint.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.UriEndpoint.Uri">
+            <summary>
+            Gets or sets the URL of the endpoint.
+            </summary>
+            <remarks>
+            Only schema, domain name, and port are used. The rest of the URL is constructed from the request URL.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.UriEndpointGroup">
+            <summary>
+            Represents a collection of <see cref="T:Microsoft.Extensions.Http.Resilience.WeightedUriEndpoint"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.UriEndpointGroup.Endpoints">
+            <summary>
+            Gets or sets the endpoints in this endpoint group.
+            </summary>
+            <remarks>
+            By default the endpoints are initialized with an empty list.
+            The client must define the endpoint for each endpoint group.
+            At least one endpoint must be defined on each endpoint group in order to performed hedged requests.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.WeightedGroupSelectionMode">
+            <summary>
+            Represents the selection mode used in <see cref="T:Microsoft.Extensions.Http.Resilience.WeightedGroupsRoutingOptions"/>.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Resilience.WeightedGroupSelectionMode.EveryAttempt">
+            <summary>
+            In this selection mode the weight is used for every pick of <see cref="T:Microsoft.Extensions.Http.Resilience.WeightedUriEndpointGroup"/>.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Resilience.WeightedGroupSelectionMode.InitialAttempt">
+            <summary>
+            In this selection mode the weight is only used to pick initial <see cref="T:Microsoft.Extensions.Http.Resilience.WeightedUriEndpointGroup"/>.
+            Remaining groups are picked in order, starting from the first, finishing with last and skipping already picked group.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.WeightedGroupsRoutingOptions">
+            <summary>
+            Represents the options for collection of endpoint groups that have a weight assigned.
+            </summary>
+            <remarks>
+            This strategy picks the first endpoint group based on its weight and then selects the remaining groups in order,
+            starting from the first one and omitting the one that was already selected.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.WeightedGroupsRoutingOptions.SelectionMode">
+            <summary>
+            Gets or sets the selection mode that determines the behavior of underlying routing strategy.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.WeightedGroupsRoutingOptions.Groups">
+            <summary>
+            Gets or sets the collection of weighted endpoints groups.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.WeightedUriEndpoint">
+            <summary>
+            Represents a URI-based endpoint with a weight assigned.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.WeightedUriEndpoint.Uri">
+            <summary>
+            Gets or sets the URL of the endpoint.
+            </summary>
+            <remarks>
+            Only schema, domain name, and port are used. The rest of the URL is constructed from the request URL.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.WeightedUriEndpoint.Weight">
+            <summary>
+            Gets or sets the weight of the endpoint.
+            </summary>
+            <value>
+            The default is 32000.
+            </value>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Resilience.WeightedUriEndpointGroup">
+            <summary>
+            Represents a collection of <see cref="T:Microsoft.Extensions.Http.Resilience.UriEndpoint"/> with a weight assigned.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Resilience.WeightedUriEndpointGroup.Weight">
+            <summary>
+            Gets or sets the weight of the group.
+            </summary>
+            <value>
+            The default is 32000.
+            </value>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.__HedgingEndpointOptionsValidator__.Validate(System.String,Microsoft.Extensions.Http.Resilience.HedgingEndpointOptions)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>Validation result.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.__HttpCircuitBreakerStrategyOptionsValidator__.Validate(System.String,Microsoft.Extensions.Http.Resilience.HttpCircuitBreakerStrategyOptions)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>Validation result.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.__HttpHedgingStrategyOptionsValidator__.Validate(System.String,Microsoft.Extensions.Http.Resilience.HttpHedgingStrategyOptions)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>Validation result.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.__HttpRateLimiterStrategyOptionsValidator__.Validate(System.String,Microsoft.Extensions.Http.Resilience.HttpRateLimiterStrategyOptions)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>Validation result.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.__HttpRetryStrategyOptionsValidator__.Validate(System.String,Microsoft.Extensions.Http.Resilience.HttpRetryStrategyOptions)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>Validation result.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.__HttpTimeoutStrategyOptionsValidator__.Validate(System.String,Microsoft.Extensions.Http.Resilience.HttpTimeoutStrategyOptions)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>Validation result.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.__UriEndpointGroupValidator__.Validate(System.String,Microsoft.Extensions.Http.Resilience.UriEndpointGroup)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>Validation result.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.__WeightedUriEndpointGroupValidator__.Validate(System.String,Microsoft.Extensions.Http.Resilience.WeightedUriEndpointGroup)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>Validation result.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Resilience.__WeightedUriEndpointValidator__.Validate(System.String,Microsoft.Extensions.Http.Resilience.WeightedUriEndpoint)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>Validation result.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.ResilienceHttpClientBuilderExtensions">
+            <summary>
+            Extensions for <see cref="T:Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"/>.
+            </summary>
+            <summary>
+            Extensions for <see cref="T:Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ResilienceHttpClientBuilderExtensions.AddStandardHedgingHandler(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder,System.Action{Microsoft.Extensions.Http.Resilience.IRoutingStrategyBuilder})">
+            <summary>
+            Adds a standard hedging handler that wraps the execution of the request with a standard hedging mechanism.
+            </summary>
+            <param name="builder">The HTTP client builder.</param>
+            <param name="configure">Configures the routing strategy associated with this handler.</param>
+            <returns>
+            A <see cref="T:Microsoft.Extensions.Http.Resilience.IStandardHedgingHandlerBuilder"/> instance that can be used to configure the standard hedging behavior.
+            </returns>
+            <remarks>
+            The standard hedging uses a pool of circuit breakers to ensure that unhealthy endpoints are not hedged against.
+            By default, the selection from pool is based on the URL Authority (scheme + host + port).
+            It is recommended that you configure the way the strategies are selected by calling
+            <see cref="M:Microsoft.Extensions.Http.Resilience.StandardHedgingHandlerBuilderExtensions.SelectPipelineByAuthority(Microsoft.Extensions.Http.Resilience.IStandardHedgingHandlerBuilder)"/>
+            extensions.
+            <para>
+            See <see cref="T:Microsoft.Extensions.Http.Resilience.HttpStandardHedgingResilienceOptions"/> for more details about the used resilience strategies.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ResilienceHttpClientBuilderExtensions.AddStandardHedgingHandler(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder)">
+            <summary>
+            Adds a standard hedging handler that wraps the execution of the request with a standard hedging mechanism.
+            </summary>
+            <param name="builder">The HTTP client builder.</param>
+            <returns>
+            A <see cref="T:Microsoft.Extensions.Http.Resilience.IStandardHedgingHandlerBuilder"/> instance that can be used to configure the standard hedging behavior.
+            </returns>
+            <remarks>
+            The standard hedging uses a pool of circuit breakers to ensure that unhealthy endpoints are not hedged against.
+            By default, the selection from pool is based on the URL Authority (scheme + host + port).
+            It is recommended that you configure the way the strategies are selected by calling
+            <see cref="M:Microsoft.Extensions.Http.Resilience.StandardHedgingHandlerBuilderExtensions.SelectPipelineByAuthority(Microsoft.Extensions.Http.Resilience.IStandardHedgingHandlerBuilder)"/>
+            extensions.
+            <para>
+            See <see cref="T:Microsoft.Extensions.Http.Resilience.HttpStandardHedgingResilienceOptions"/> for more details about the used resilience strategies.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ResilienceHttpClientBuilderExtensions.AddResilienceHandler(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder,System.String,System.Action{Polly.ResiliencePipelineBuilder{System.Net.Http.HttpResponseMessage}})">
+            <summary>
+            Adds a resilience pipeline handler that uses a named inline resilience pipeline.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <param name="pipelineName">The custom identifier for the resilience pipeline, used in the name of the pipeline.</param>
+            <param name="configure">The callback that configures the pipeline.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+            <remarks>
+            The final pipeline name is combination of <see cref="P:Microsoft.Extensions.DependencyInjection.IHttpClientBuilder.Name"/> and <paramref name="pipelineName"/>.
+            Use pipeline name identifier if your HTTP client contains multiple resilience handlers.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ResilienceHttpClientBuilderExtensions.AddResilienceHandler(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder,System.String,System.Action{Polly.ResiliencePipelineBuilder{System.Net.Http.HttpResponseMessage},Microsoft.Extensions.Http.Resilience.ResilienceHandlerContext})">
+            <summary>
+            Adds a resilience pipeline handler that uses a named inline resilience pipeline.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <param name="pipelineName">The custom identifier for the resilience pipeline, used in the name of the pipeline.</param>
+            <param name="configure">The callback that configures the pipeline.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+            <remarks>
+            The final pipeline name is combination of <see cref="P:Microsoft.Extensions.DependencyInjection.IHttpClientBuilder.Name"/> and <paramref name="pipelineName"/>.
+            Use pipeline name identifier if your HTTP client contains multiple resilience handlers.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ResilienceHttpClientBuilderExtensions.RemoveAllResilienceHandlers(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder)">
+            <summary>
+            Removes all resilience handlers registered earlier.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ResilienceHttpClientBuilderExtensions.AddStandardResilienceHandler(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder,Microsoft.Extensions.Configuration.IConfigurationSection)">
+            <summary>
+            Adds a standard resilience handler that uses multiple resilience strategies with default options to send the requests and handle any transient errors.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <param name="section">The section that the options will bind against.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+            <remarks>
+            The resilience pipeline combines multiple strategies that are configured based on HTTP-specific <see cref="T:Microsoft.Extensions.Http.Resilience.HttpStandardResilienceOptions"/> options with recommended defaults.
+            See <see cref="T:Microsoft.Extensions.Http.Resilience.HttpStandardResilienceOptions"/> for more details about the individual resilience strategies configured by this method.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ResilienceHttpClientBuilderExtensions.AddStandardResilienceHandler(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder,System.Action{Microsoft.Extensions.Http.Resilience.HttpStandardResilienceOptions})">
+            <summary>
+            Adds a standard resilience handler that uses multiple resilience strategies with default options to send the requests and handle any transient errors.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <param name="configure">The callback that configures the options.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+            <remarks>
+            The resilience pipeline combines multiple strategies that are configured based on HTTP-specific <see cref="T:Microsoft.Extensions.Http.Resilience.HttpStandardResilienceOptions"/> options with recommended defaults.
+            See <see cref="T:Microsoft.Extensions.Http.Resilience.HttpStandardResilienceOptions"/> for more details about the individual resilience strategies configured by this method.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.ResilienceHttpClientBuilderExtensions.AddStandardResilienceHandler(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder)">
+            <summary>
+            Adds a standard resilience handler that uses multiple resilience strategies with default options to send the requests and handle any transient errors.
+            </summary>
+            <param name="builder">The builder instance.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+            <remarks>
+            The resilience pipeline combines multiple strategies that are configured based on HTTP-specific <see cref="T:Microsoft.Extensions.Http.Resilience.HttpStandardResilienceOptions"/> options with recommended defaults.
+            See <see cref="T:Microsoft.Extensions.Http.Resilience.HttpStandardResilienceOptions"/> for more details about the individual resilience strategies configured by this method.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.Bind``1(Microsoft.Extensions.Options.OptionsBuilder{``0},Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>Registers a configuration instance which <typeparamref name="TOptions"/> will bind against.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.Bind``1(Microsoft.Extensions.Options.OptionsBuilder{``0},Microsoft.Extensions.Configuration.IConfiguration,System.Action{Microsoft.Extensions.Configuration.BinderOptions})">
+            <summary>Registers a configuration instance which <typeparamref name="TOptions"/> will bind against.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.Configure``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String,Microsoft.Extensions.Configuration.IConfiguration,System.Action{Microsoft.Extensions.Configuration.BinderOptions})">
+            <summary>Registers a configuration instance which TOptions will bind against.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.ValidateConfigurationKeys(System.Type,System.Lazy{System.Collections.Generic.HashSet{System.String}},Microsoft.Extensions.Configuration.IConfiguration,Microsoft.Extensions.Configuration.BinderOptions)">
+            <summary>If required by the binder options, validates that there are no unknown keys in the input configuration object.</summary>
+        </member>
+        <member name="T:Polly.HttpResilienceContextExtensions">
+            <summary>
+            Provides utility methods for working with <see cref="T:Polly.ResilienceContext"/>.
+            </summary>
+        </member>
+        <member name="M:Polly.HttpResilienceContextExtensions.GetRequestMessage(Polly.ResilienceContext)">
+            <summary>
+            Gets the request message from the <see cref="T:Polly.ResilienceContext"/>.
+            </summary>
+            <param name="context">The resilience context.</param>
+            <returns>
+            The request message.
+            If the request message is not present in the <see cref="T:Polly.ResilienceContext"/> the method returns <see langword="null"/>.
+            </returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="context"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Polly.HttpResilienceContextExtensions.SetRequestMessage(Polly.ResilienceContext,System.Net.Http.HttpRequestMessage)">
+            <summary>
+            Sets the request message on the <see cref="T:Polly.ResilienceContext"/>.
+            </summary>
+            <param name="context">The resilience context.</param>
+            <param name="requestMessage">The request message.</param>
+            <exception cref="T:System.ArgumentNullException"><paramref name="context"/> is <see langword="null"/>.</exception>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,895 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Polly.Extensions</name>
+    </assembly>
+    <members>
+        <member name="T:Polly.DependencyInjection.AddResiliencePipelineContext`1">
+            <summary>
+            Represents the context for adding a resilience pipeline with the specified key.
+            </summary>
+            <typeparam name="TKey">The type of the key used to identify the resilience pipeline.</typeparam>
+        </member>
+        <member name="P:Polly.DependencyInjection.AddResiliencePipelineContext`1.PipelineKey">
+            <summary>
+            Gets the pipeline key for the pipeline being created.
+            </summary>
+        </member>
+        <member name="P:Polly.DependencyInjection.AddResiliencePipelineContext`1.ServiceProvider">
+            <summary>
+            Gets the <see cref="T:System.IServiceProvider"/> that provides access to the dependency injection container.
+            </summary>
+        </member>
+        <member name="P:Polly.DependencyInjection.AddResiliencePipelineContext`1.RegistryContext">
+            <summary>
+            Gets the context that is used by the registry.
+            </summary>
+        </member>
+        <member name="M:Polly.DependencyInjection.AddResiliencePipelineContext`1.EnableReloads``1(System.String)">
+            <summary>
+            Enables dynamic reloading of the resilience pipeline whenever the <typeparamref name="TOptions"/> options are changed.
+            </summary>
+            <typeparam name="TOptions">The options type to listen to.</typeparam>
+            <param name="name">The named options, if any.</param>
+            <remarks>
+            You can decide based on the <paramref name="name"/> to listen for changes in global options or named options.
+            If <paramref name="name"/> is <see langword="null"/> then the global options are listened to.
+            <para>
+            You can listen for changes from multiple options by calling this method with different <typeparamref name="TOptions"/> types.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Polly.DependencyInjection.AddResiliencePipelineContext`1.GetOptions``1(System.String)">
+            <summary>
+            Gets the options identified by <paramref name="name"/>.
+            </summary>
+            <typeparam name="TOptions">The options type.</typeparam>
+            <param name="name">The options name, if any.</param>
+            <returns>The options instance.</returns>
+            <remarks>
+            If <paramref name="name"/> is <see langword="null"/> then the global options are returned.
+            </remarks>
+        </member>
+        <member name="M:Polly.DependencyInjection.AddResiliencePipelineContext`1.OnPipelineDisposed(System.Action)">
+            <summary>
+            Registers a callback that is called when the pipeline instance being configured is disposed.
+            </summary>
+            <param name="callback">The callback delegate.</param>
+        </member>
+        <member name="T:Polly.DependencyInjection.AddResiliencePipelinesContext`1">
+            <summary>
+            Represents the context for configuring resilience pipelines with the specified key.
+            </summary>
+            <typeparam name="TKey">The type of the key used to identify the resilience pipeline.</typeparam>
+        </member>
+        <member name="P:Polly.DependencyInjection.AddResiliencePipelinesContext`1.ServiceProvider">
+            <summary>
+            Gets the <see cref="T:System.IServiceProvider"/> that provides access to the dependency injection container.
+            </summary>
+        </member>
+        <member name="M:Polly.DependencyInjection.AddResiliencePipelinesContext`1.AddResiliencePipeline(`0,System.Action{Polly.ResiliencePipelineBuilder,Polly.DependencyInjection.AddResiliencePipelineContext{`0}})">
+            <summary>
+            Adds a resilience pipeline to the registry.
+            </summary>
+            <param name="key">The key used to identify the resilience pipeline.</param>
+            <param name="configure">An action that configures the resilience pipeline.</param>
+            <remarks>
+            You can retrieve the registered pipeline by resolving the <see cref="T:Polly.Registry.ResiliencePipelineProvider`1"/> class from the dependency injection container.
+            <para>
+            This call enables telemetry for the registered resilience pipeline.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Polly.DependencyInjection.AddResiliencePipelinesContext`1.AddResiliencePipeline``1(`0,System.Action{Polly.ResiliencePipelineBuilder{``0},Polly.DependencyInjection.AddResiliencePipelineContext{`0}})">
+            <summary>
+            Adds a resilience pipeline to the registry.
+            </summary>
+            <typeparam name="TResult">The type of result that the resilience pipeline handles.</typeparam>
+            <param name="key">The key used to identify the resilience pipeline.</param>
+            <param name="configure">An action that configures the resilience pipeline.</param>
+            <remarks>
+            You can retrieve the registered pipeline by resolving the <see cref="T:Polly.Registry.ResiliencePipelineProvider`1"/> class from the dependency injection container.
+            <para>
+            This call enables telemetry for the registered resilience pipeline.
+            </para>
+            </remarks>
+        </member>
+        <member name="T:Polly.PollyServiceCollectionExtensions">
+            <summary>
+            Provides extension methods for registering resilience pipelines using the <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.
+            </summary>
+        </member>
+        <member name="M:Polly.PollyServiceCollectionExtensions.AddResiliencePipeline``2(Microsoft.Extensions.DependencyInjection.IServiceCollection,``0,System.Action{Polly.ResiliencePipelineBuilder{``1}})">
+            <summary>
+            Adds a resilience pipeline that handles <typeparamref name="TResult"/> to service collection.
+            </summary>
+            <typeparam name="TKey">The type of the key used to identify the resilience pipeline.</typeparam>
+            <typeparam name="TResult">The type of result that the resilience pipeline handles.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the resilience pipeline to.</param>
+            <param name="key">The key used to identify the resilience pipeline.</param>
+            <param name="configure">An action that configures the resilience pipeline.</param>
+            <returns>The updated <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> with the registered resilience pipeline.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.</exception>
+            <remarks>
+            You can retrieve the registered pipeline by resolving the <see cref="T:Polly.Registry.ResiliencePipelineProvider`1"/> class from the dependency injection container.
+            <para>
+            This call enables telemetry for the registered resilience pipeline.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Polly.PollyServiceCollectionExtensions.AddResiliencePipeline``2(Microsoft.Extensions.DependencyInjection.IServiceCollection,``0,System.Action{Polly.ResiliencePipelineBuilder{``1},Polly.DependencyInjection.AddResiliencePipelineContext{``0}})">
+            <summary>
+            Adds a resilience pipeline that handles <typeparamref name="TResult"/> to service collection.
+            </summary>
+            <typeparam name="TKey">The type of the key used to identify the resilience pipeline.</typeparam>
+            <typeparam name="TResult">The type of result that the resilience pipeline handles.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the resilience pipeline to.</param>
+            <param name="key">The key used to identify the resilience pipeline.</param>
+            <param name="configure">An action that configures the resilience pipeline.</param>
+            <returns>The updated <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> with the registered resilience pipeline.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.</exception>
+            <remarks>
+            You can retrieve the registered pipeline by resolving the <see cref="T:Polly.Registry.ResiliencePipelineProvider`1"/> class from the dependency injection container.
+            <para>
+            This call enables telemetry for the registered resilience pipeline.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Polly.PollyServiceCollectionExtensions.AddResiliencePipeline``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,``0,System.Action{Polly.ResiliencePipelineBuilder})">
+            <summary>
+            Adds a resilience pipeline to service collection.
+            </summary>
+            <typeparam name="TKey">The type of the key used to identify the resilience pipeline.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the resilience pipeline to.</param>
+            <param name="key">The key used to identify the resilience pipeline.</param>
+            <param name="configure">An action that configures the resilience pipeline.</param>
+            <returns>The updated <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> with the registered resilience pipeline.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.</exception>
+            <remarks>
+            You can retrieve the registered pipeline by resolving the <see cref="T:Polly.Registry.ResiliencePipelineProvider`1"/> class from the dependency injection container.
+            <para>
+            This call enables telemetry for the registered resilience pipeline.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Polly.PollyServiceCollectionExtensions.AddResiliencePipeline``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,``0,System.Action{Polly.ResiliencePipelineBuilder,Polly.DependencyInjection.AddResiliencePipelineContext{``0}})">
+            <summary>
+            Adds a resilience pipeline to service collection.
+            </summary>
+            <typeparam name="TKey">The type of the key used to identify the resilience pipeline.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the resilience pipeline to.</param>
+            <param name="key">The key used to identify the resilience pipeline.</param>
+            <param name="configure">An action that configures the resilience pipeline.</param>
+            <returns>The updated <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> with the registered resilience pipeline.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.</exception>
+            <remarks>
+            You can retrieve the registered pipeline by resolving the <see cref="T:Polly.Registry.ResiliencePipelineProvider`1"/> class from the dependency injection container.
+            <para>
+            This call enables telemetry for the registered resilience pipeline.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Polly.PollyServiceCollectionExtensions.AddResiliencePipelines``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Polly.DependencyInjection.AddResiliencePipelinesContext{``0}})">
+            <summary>
+            Allows deferred addition of one or more resilience pipelines to the service collection.
+            </summary>
+            <typeparam name="TKey">The type of the key used to identify the resilience pipelines.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add resilience pipelines to.</param>
+            <param name="configure">An action that allows configuration of resilience pipelines.</param>
+            <returns>The updated <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> with the addition configuration added.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.</exception>
+            <remarks>
+            This method can be useful if you want to add resilience pipelines as late as possible, e.g.
+            to allow other services / configuration to be available before providing the key.
+            <para>
+            You can retrieve the registered pipeline by resolving the <see cref="T:Polly.Registry.ResiliencePipelineProvider`1"/> class from the dependency injection container.
+            </para>
+            <para>
+            This call enables telemetry for the registered resilience pipeline.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Polly.PollyServiceCollectionExtensions.AddResiliencePipelineRegistry``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Polly.Registry.ResiliencePipelineRegistryOptions{``0}})">
+            <summary>
+            Adds <see cref="T:Polly.Registry.ResiliencePipelineRegistry`1"/> and <see cref="T:Polly.Registry.ResiliencePipelineProvider`1"/> to the service collection that allows configuring
+            and retrieving resilience pipelines using the <typeparamref name="TKey"/> key.
+            </summary>
+            <typeparam name="TKey">The type of the key used to identify the resilience pipeline.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the resilience pipeline to.</param>
+            <param name="configure">The action that configures the <see cref="T:Polly.Registry.ResiliencePipelineRegistryOptions`1"/> that are used by the registry.</param>
+            <returns>The updated <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> with additional services added.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="services"/> is <see langword="null"/>.</exception>
+            <remarks>
+            This call enables telemetry for all resilience pipelines created using <see cref="T:Polly.Registry.ResiliencePipelineRegistry`1"/>.
+            </remarks>
+        </member>
+        <member name="M:Polly.PollyServiceCollectionExtensions.AddResiliencePipelineRegistry``1(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds <see cref="T:Polly.Registry.ResiliencePipelineRegistry`1"/> and <see cref="T:Polly.Registry.ResiliencePipelineProvider`1"/> to the service collection that allows configuring
+            and retrieving resilience pipelines using the <typeparamref name="TKey"/> key.
+            </summary>
+            <typeparam name="TKey">The type of the key used to identify the resilience pipeline.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the resilience pipeline to.</param>
+            <returns>The updated <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> with additional services added.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="services"/> is <see langword="null"/>.</exception>
+            <remarks>
+            This call enables telemetry for all resilience pipelines created using <see cref="T:Polly.Registry.ResiliencePipelineRegistry`1"/>.
+            </remarks>
+        </member>
+        <member name="T:Polly.Registry.ConfigureBuilderContextExtensions">
+            <summary>
+            Extensions for <see cref="T:Polly.Registry.ConfigureBuilderContext`1"/>.
+            </summary>
+        </member>
+        <member name="M:Polly.Registry.ConfigureBuilderContextExtensions.EnableReloads``2(Polly.Registry.ConfigureBuilderContext{``0},Microsoft.Extensions.Options.IOptionsMonitor{``1},System.String)">
+            <summary>
+            Enables dynamic reloading of the resilience pipeline whenever the <typeparamref name="TOptions"/> options are changed.
+            </summary>
+            <typeparam name="TKey">The type of the key used to identify the resilience pipeline.</typeparam>
+            <typeparam name="TOptions">The options type to listen to.</typeparam>
+            <param name="context">The builder context.</param>
+            <param name="optionsMonitor">The options monitor.</param>
+            <param name="name">The named options, if any.</param>
+            <remarks>
+            You can decide based on the <paramref name="name"/> to listen for changes in global options or named options.
+            If <paramref name="name"/> is <see langword="null"/> then the global options are listened to.
+            <para>
+            You can listen for changes from multiple options by calling this method with different <typeparamref name="TOptions"/> types.
+            </para>
+            </remarks>
+        </member>
+        <member name="T:Polly.Telemetry.EnrichmentContext`2">
+            <summary>
+            Enrichment context used when reporting resilience events.
+            </summary>
+            <typeparam name="TResult">The type of the result.</typeparam>
+            <typeparam name="TArgs">The type of the arguments attached to the resilience event.</typeparam>
+            <remarks>
+            This context is passed to enrichers in <see cref="P:Polly.Telemetry.TelemetryOptions.MeteringEnrichers"/>.
+            Always use the constructor when creating this struct, otherwise we do not guarantee binary compatibility.
+            </remarks>
+        </member>
+        <member name="M:Polly.Telemetry.EnrichmentContext`2.#ctor(Polly.Telemetry.TelemetryEventArguments{`0,`1}@,System.Collections.Generic.IList{System.Collections.Generic.KeyValuePair{System.String,System.Object}})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Polly.Telemetry.EnrichmentContext`2"/> struct.
+            </summary>
+            <param name="telemetryEvent">The telemetry event info.</param>
+            <param name="tags">Tags associated with the resilience event.</param>
+        </member>
+        <member name="P:Polly.Telemetry.EnrichmentContext`2.TelemetryEvent">
+            <summary>
+            Gets the info about the telemetry event.
+            </summary>
+        </member>
+        <member name="P:Polly.Telemetry.EnrichmentContext`2.Tags">
+            <summary>
+            Gets the tags associated with the resilience event.
+            </summary>
+            <remarks>
+            Custom enricher can add tags to this collection.
+            </remarks>
+        </member>
+        <member name="T:Polly.Telemetry.Log.__ResilienceEventStruct">
+            <summary> This API supports the logging infrastructure and is not intended to be used directly from your code. It is subject to change in the future. </summary>
+        </member>
+        <member name="T:Polly.Telemetry.Log.__PipelineExecutingStruct">
+            <summary> This API supports the logging infrastructure and is not intended to be used directly from your code. It is subject to change in the future. </summary>
+        </member>
+        <member name="T:Polly.Telemetry.Log.__PipelineExecutedStruct">
+            <summary> This API supports the logging infrastructure and is not intended to be used directly from your code. It is subject to change in the future. </summary>
+        </member>
+        <member name="T:Polly.Telemetry.Log.__ExecutionAttemptStruct">
+            <summary> This API supports the logging infrastructure and is not intended to be used directly from your code. It is subject to change in the future. </summary>
+        </member>
+        <member name="T:Polly.Telemetry.MeteringEnricher">
+            <summary>
+            Enricher used to enrich the metrics with additional information.
+            </summary>
+        </member>
+        <member name="M:Polly.Telemetry.MeteringEnricher.Enrich``2(Polly.Telemetry.EnrichmentContext{``0,``1}@)">
+            <summary>
+            Enriches the metrics with additional information.
+            </summary>
+            <typeparam name="TResult">The type of result.</typeparam>
+            <typeparam name="TArgs">The type of arguments.</typeparam>
+            <param name="context">The enrichment context.</param>
+        </member>
+        <member name="T:Polly.Telemetry.SeverityProviderArguments">
+            <summary>
+            Arguments used by <see cref="P:Polly.Telemetry.TelemetryOptions.SeverityProvider"/>.
+            </summary>
+        </member>
+        <member name="M:Polly.Telemetry.SeverityProviderArguments.#ctor(Polly.Telemetry.ResilienceTelemetrySource,Polly.Telemetry.ResilienceEvent,Polly.ResilienceContext)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Polly.Telemetry.SeverityProviderArguments"/> struct.
+            </summary>
+            <param name="source">The source that produced the resilience event.</param>
+            <param name="resilienceEvent">The resilience event.</param>
+            <param name="context">The resilience context.</param>
+        </member>
+        <member name="P:Polly.Telemetry.SeverityProviderArguments.Source">
+            <summary>
+            Gets the source that produced the resilience event.
+            </summary>
+        </member>
+        <member name="P:Polly.Telemetry.SeverityProviderArguments.Event">
+            <summary>
+            Gets the resilience event.
+            </summary>
+        </member>
+        <member name="P:Polly.Telemetry.SeverityProviderArguments.Context">
+            <summary>
+            Gets the resilience context.
+            </summary>
+        </member>
+        <member name="T:Polly.Telemetry.TelemetryOptions">
+            <summary>
+            The options that are used to configure the telemetry that is produced by the resilience strategies.
+            </summary>
+        </member>
+        <member name="M:Polly.Telemetry.TelemetryOptions.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Polly.Telemetry.TelemetryOptions"/> class.
+            </summary>
+        </member>
+        <member name="M:Polly.Telemetry.TelemetryOptions.#ctor(Polly.Telemetry.TelemetryOptions)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Polly.Telemetry.TelemetryOptions"/> class.
+            </summary>
+            <param name="other">The telemetry options instance to copy the data from.</param>
+        </member>
+        <member name="P:Polly.Telemetry.TelemetryOptions.TelemetryListeners">
+            <summary>
+            Gets the collection of telemetry listeners.
+            </summary>
+            <value>
+            The default value is an empty collection.
+            </value>
+        </member>
+        <member name="P:Polly.Telemetry.TelemetryOptions.LoggerFactory">
+            <summary>
+            Gets or sets the logger factory.
+            </summary>
+            <value>
+            The default value is <see cref="F:Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance"/>.
+            </value>
+        </member>
+        <member name="P:Polly.Telemetry.TelemetryOptions.MeteringEnrichers">
+            <summary>
+            Gets the collection of telemetry enrichers.
+            </summary>
+            <value>
+            The default value is an empty collection.
+            </value>
+        </member>
+        <member name="P:Polly.Telemetry.TelemetryOptions.ResultFormatter">
+            <summary>
+            Gets or sets the result formatter.
+            </summary>
+            <value>
+            The default value is a formatter that returns a status code for HTTP based responses and the result as-is for all other result types.
+            This property is required.
+            </value>
+        </member>
+        <member name="P:Polly.Telemetry.TelemetryOptions.SeverityProvider">
+            <summary>
+            Gets or sets the resilience event severity provider that allows customizing the severity of resilience events.
+            </summary>
+            <value>
+            The default value is <see langword="null"/>.
+            </value>
+        </member>
+        <member name="T:Polly.TelemetryResiliencePipelineBuilderExtensions">
+            <summary>
+            The telemetry extensions for the <see cref="T:Polly.ResiliencePipelineBuilder"/>.
+            </summary>
+        </member>
+        <member name="M:Polly.TelemetryResiliencePipelineBuilderExtensions.ConfigureTelemetry``1(``0,Microsoft.Extensions.Logging.ILoggerFactory)">
+            <summary>
+            Enables telemetry for this builder.
+            </summary>
+            <typeparam name="TBuilder">The builder type.</typeparam>
+            <param name="builder">The builder instance.</param>
+            <param name="loggerFactory">The logger factory to be used for logging.</param>
+            <returns>The builder instance with the telemetry enabled.</returns>
+            <remarks>
+            By enabling telemetry, the resilience pipeline will log and meter all resilience events.
+            Additionally, the telemetry strategy that logs and meters the executions is added to the beginning of the composite strategy.
+            </remarks>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="builder"/> or <paramref name="loggerFactory"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Polly.TelemetryResiliencePipelineBuilderExtensions.ConfigureTelemetry``1(``0,Polly.Telemetry.TelemetryOptions)">
+            <summary>
+            Enables telemetry for this builder.
+            </summary>
+            <typeparam name="TBuilder">The builder type.</typeparam>
+            <param name="builder">The builder instance.</param>
+            <param name="options">The resilience telemetry options.</param>
+            <returns>The builder instance with the telemetry enabled.</returns>
+            <remarks>
+            By enabling telemetry, the resilience pipeline will log and meter all resilience events.
+            Additionally, the telemetry strategy that logs and meters the executions is added to the beginning of the composite strategy.
+            </remarks>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="builder"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="T:Polly.ResilienceValidationContext">
+            <summary>
+            The validation context that encapsulates parameters for the validation.
+            </summary>
+        </member>
+        <member name="M:Polly.ResilienceValidationContext.#ctor(System.Object,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Polly.ResilienceValidationContext"/> class.
+            </summary>
+            <param name="instance">The instance being validated.</param>
+            <param name="primaryMessage">The primary validation message.</param>
+        </member>
+        <member name="P:Polly.ResilienceValidationContext.Instance">
+            <summary>
+            Gets the instance being validated.
+            </summary>
+        </member>
+        <member name="P:Polly.ResilienceValidationContext.PrimaryMessage">
+            <summary>
+            Gets the primary validation message.
+            </summary>
+            <remarks>
+            The primary message is displayed first followed by the details about the validation errors.
+            </remarks>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.CallerArgumentExpressionAttribute">
+            <summary>
+            Tags parameter that should be filled with specific caller name.
+            </summary>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.CallerArgumentExpressionAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.CompilerServices.CallerArgumentExpressionAttribute"/> class.
+            </summary>
+            <param name="parameterName">Function parameter to take the name from.</param>
+        </member>
+        <member name="P:System.Runtime.CompilerServices.CallerArgumentExpressionAttribute.ParameterName">
+            <summary>
+            Gets name of the function parameter that name should be taken from.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
+             <summary>
+             Indicates that certain members on a specified <see cref="T:System.Type"/> are accessed dynamically,
+             for example through <see cref="N:System.Reflection"/>.
+             </summary>
+             <remarks>
+             This allows tools to understand which members are being accessed during the execution
+             of a program.
+            
+             This attribute is valid on members whose type is <see cref="T:System.Type"/> or <see cref="T:System.String"/>.
+            
+             When this attribute is applied to a location of type <see cref="T:System.String"/>, the assumption is
+             that the string represents a fully qualified type name.
+            
+             When this attribute is applied to a class, interface, or struct, the members specified
+             can be accessed dynamically on <see cref="T:System.Type"/> instances returned from calling
+             <see cref="M:System.Object.GetType"/> on instances of that class, interface, or struct.
+            
+             If the attribute is applied to a method it's treated as a special case and it implies
+             the attribute should be applied to the "this" parameter of the method. As such the attribute
+             should only be used on instance methods of types assignable to System.Type (or string, but no methods
+             will use it there).
+             </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute.#ctor(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute"/> class
+            with the specified member types.
+            </summary>
+            <param name="memberTypes">The types of members dynamically accessed.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute.MemberTypes">
+            <summary>
+            Gets the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes"/> which specifies the type
+            of members dynamically accessed.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">
+             <summary>
+             Specifies the types of members that are dynamically accessed.
+            
+             This enumeration has a <see cref="T:System.FlagsAttribute"/> attribute that allows a
+             bitwise combination of its member values.
+             </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.None">
+            <summary>
+            Specifies no members.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor">
+            <summary>
+            Specifies the default, parameterless public constructor.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors">
+            <summary>
+            Specifies all public constructors.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors">
+            <summary>
+            Specifies all non-public constructors.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods">
+            <summary>
+            Specifies all public methods.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods">
+            <summary>
+            Specifies all non-public methods.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields">
+            <summary>
+            Specifies all public fields.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields">
+            <summary>
+            Specifies all non-public fields.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes">
+            <summary>
+            Specifies all public nested types.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypes">
+            <summary>
+            Specifies all non-public nested types.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties">
+            <summary>
+            Specifies all public properties.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties">
+            <summary>
+            Specifies all non-public properties.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents">
+            <summary>
+            Specifies all public events.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicEvents">
+            <summary>
+            Specifies all non-public events.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces">
+            <summary>
+            Specifies all interfaces implemented by the type.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All">
+            <summary>
+            Specifies all members.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute">
+            <summary>
+            States a dependency that one member has on another.
+            </summary>
+            <remarks>
+            This can be used to inform tooling of a dependency that is otherwise not evident purely from
+            metadata and IL, for example a member relied on via reflection.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute"/> class
+            with the specified signature of a member on the same type as the consumer.
+            </summary>
+            <param name="memberSignature">The signature of the member depended on.</param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.String,System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute"/> class
+            with the specified signature of a member on a <see cref="T:System.Type"/>.
+            </summary>
+            <param name="memberSignature">The signature of the member depended on.</param>
+            <param name="type">The <see cref="T:System.Type"/> containing <paramref name="memberSignature"/>.</param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute"/> class
+            with the specified signature of a member on a type in an assembly.
+            </summary>
+            <param name="memberSignature">The signature of the member depended on.</param>
+            <param name="typeName">The full name of the type containing the specified member.</param>
+            <param name="assemblyName">The assembly name of the type containing the specified member.</param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes,System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute"/> class
+            with the specified types of members on a <see cref="T:System.Type"/>.
+            </summary>
+            <param name="memberTypes">The types of members depended on.</param>
+            <param name="type">The <see cref="T:System.Type"/> containing the specified members.</param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute"/> class
+            with the specified types of members on a type in an assembly.
+            </summary>
+            <param name="memberTypes">The types of members depended on.</param>
+            <param name="typeName">The full name of the type containing the specified members.</param>
+            <param name="assemblyName">The assembly name of the type containing the specified members.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberSignature">
+            <summary>
+            Gets the signature of the member depended on.
+            </summary>
+            <remarks>
+            Either <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberSignature"/> must be a valid string or <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberTypes"/>
+            must not equal <see cref="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.None"/>, but not both.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberTypes">
+            <summary>
+            Gets the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes"/> which specifies the type
+            of members depended on.
+            </summary>
+            <remarks>
+            Either <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberSignature"/> must be a valid string or <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberTypes"/>
+            must not equal <see cref="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.None"/>, but not both.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.Type">
+            <summary>
+            Gets the <see cref="T:System.Type"/> containing the specified member.
+            </summary>
+            <remarks>
+            If neither <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.Type"/> nor <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.TypeName"/> are specified,
+            the type of the consumer is assumed.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.TypeName">
+            <summary>
+            Gets the full name of the type containing the specified member.
+            </summary>
+            <remarks>
+            If neither <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.Type"/> nor <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.TypeName"/> are specified,
+            the type of the consumer is assumed.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.AssemblyName">
+            <summary>
+            Gets the assembly name of the specified type.
+            </summary>
+            <remarks>
+            <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.AssemblyName"/> is only valid when <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.TypeName"/> is specified.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.Condition">
+            <summary>
+            Gets or sets the condition in which the dependency is applicable, e.g. "DEBUG".
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.AllowNullAttribute">
+            <summary>Specifies that null is allowed as an input even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DisallowNullAttribute">
+            <summary>Specifies that null is disallowed as an input even if the corresponding type allows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullAttribute">
+            <summary>Specifies that an output may be null even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullAttribute">
+            <summary>Specifies that an output will not be null even if the corresponding type allows it. Specifies that an input argument was not null when the call returns.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute">
+            <summary>Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue"/>, the parameter may be null even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified return value condition.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter may be null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute">
+            <summary>Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue"/>, the parameter will not be null even if the corresponding type allows it.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified return value condition.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter will not be null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute">
+            <summary>Specifies that the output will be non-null if the named parameter is non-null.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.#ctor(System.String)">
+            <summary>Initializes the attribute with the associated parameter name.</summary>
+            <param name="parameterName">
+            The associated parameter name.  The output will be non-null if the argument to the parameter specified is non-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.ParameterName">
+            <summary>Gets the associated parameter name.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute">
+            <summary>Applied to a method that will never return under any circumstance.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute">
+            <summary>Specifies that the method will not return if the associated Boolean parameter is passed the specified value.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified parameter value.</summary>
+            <param name="parameterValue">
+            The condition parameter value. Code after the method will be considered unreachable by diagnostics if the argument to
+            the associated parameter matches this value.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.ParameterValue">
+            <summary>Gets the condition parameter value.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute">
+            <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String)">
+            <summary>Initializes the attribute with a field or property member.</summary>
+            <param name="member">
+            The field or property member that is promised to be not-null.
+            </param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String[])">
+            <summary>Initializes the attribute with the list of field and property members.</summary>
+            <param name="members">
+            The list of field and property members that are promised to be not-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.Members">
+            <summary>Gets field or property member names.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute">
+            <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values when returning with the specified return value condition.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.#ctor(System.Boolean,System.String)">
+            <summary>Initializes the attribute with the specified return value condition and a field or property member.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter will not be null.
+            </param>
+            <param name="member">
+            The field or property member that is promised to be not-null.
+            </param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.#ctor(System.Boolean,System.String[])">
+            <summary>Initializes the attribute with the specified return value condition and list of field and property members.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter will not be null.
+            </param>
+            <param name="members">
+            The list of field and property members that are promised to be not-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.Members">
+            <summary>Gets field or property member names.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute">
+            <summary>
+            /// Indicates that the specified method requires dynamic access to code that is not referenced
+            statically, for example through <see cref="N:System.Reflection"/>.
+            </summary>
+            <remarks>
+            This allows tools to understand which methods are unsafe to call when removing unreferenced
+            code from an application.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute"/> class
+            with the specified message.
+            </summary>
+            <param name="message">
+            A message that contains information about the usage of unreferenced code.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.Message">
+            <summary>
+            Gets a message that contains information about the usage of unreferenced code.
+            </summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.Url">
+            <summary>
+            Gets or sets an optional URL that contains more information about the method,
+            why it requires unreferenced code, and what options a consumer has to deal with it.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+            <summary>
+            /// Suppresses reporting of a specific rule violation, allowing multiple suppressions on a
+            single code artifact.
+            </summary>
+            <remarks>
+            <see cref="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute"/> is different than
+            <see cref="T:System.Diagnostics.CodeAnalysis.SuppressMessageAttribute"/> in that it doesn't have a
+            <see cref="T:System.Diagnostics.ConditionalAttribute"/>. So it is always preserved in the compiled assembly.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute"/>
+            class, specifying the category of the tool and the identifier for an analysis rule.
+            </summary>
+            <param name="category">The category for the attribute.</param>
+            <param name="checkId">The identifier of the analysis rule the attribute applies to.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Category">
+            <summary>
+            Gets the category identifying the classification of the attribute.
+            </summary>
+            <remarks>
+            The <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Category"/> property describes the tool or tool analysis category
+            for which a message suppression attribute applies.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.CheckId">
+            <summary>
+            Gets the identifier of the analysis tool rule to be suppressed.
+            </summary>
+            <remarks>
+            Concatenated together, the <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Category"/> and <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.CheckId"/>
+            properties form a unique check identifier.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Scope">
+            <summary>
+            Gets or sets the scope of the code that is relevant for the attribute.
+            </summary>
+            <remarks>
+            The Scope property is an optional argument that specifies the metadata scope for which
+            the attribute is relevant.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Target">
+            <summary>
+            Gets or sets a fully qualified path that represents the target of the attribute.
+            </summary>
+            <remarks>
+            The <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Target"/> property is an optional argument identifying the analysis target
+            of the attribute. An example value is "System.IO.Stream.ctor():System.Void".
+            Because it is fully qualified, it can be long, particularly for targets such as parameters.
+            The analysis tool user interface should be capable of automatically formatting the parameter.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.MessageId">
+            <summary>
+            Gets or sets an optional argument expanding on exclusion criteria.
+            </summary>
+            <remarks>
+            The <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.MessageId"/> property is an optional argument that specifies additional
+            exclusion where the literal metadata target is not sufficiently precise. For example,
+            the <see cref="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute"/> cannot be applied within a method,
+            and it may be desirable to suppress a violation against a statement in the method that will
+            give a rule violation, but not against all statements in the method.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Justification">
+            <summary>
+            Gets or sets the justification for suppressing the code analysis message.
+            </summary>
+        </member>
+    </members>
+</doc>

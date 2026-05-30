@@ -1,0 +1,186 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Serilog.Enrichers.Span</name>
+    </assembly>
+    <members>
+        <member name="T:Serilog.Enrichers.Span.ActivityBaggageEnricher">
+            <summary>
+            A log event enricher which adds baggage from the current <see cref="T:System.Diagnostics.Activity"/>.
+            </summary>
+        </member>
+        <member name="M:Serilog.Enrichers.Span.ActivityBaggageEnricher.Enrich(Serilog.Events.LogEvent,Serilog.Core.ILogEventPropertyFactory)">
+            <summary>
+            Enrich the log event.
+            </summary>
+            <param name="logEvent">The log event to enrich.</param>
+            <param name="propertyFactory">Factory for creating new properties to add to the event.</param>
+        </member>
+        <member name="T:Serilog.Enrichers.Span.ActivityEnricher">
+            <summary>
+            A log event enricher which adds span information from the current <see cref="T:System.Diagnostics.Activity"/>.
+            </summary>
+        </member>
+        <member name="M:Serilog.Enrichers.Span.ActivityEnricher.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Serilog.Enrichers.Span.ActivityEnricher"/> class with default event properties names.
+            </summary>
+        </member>
+        <member name="M:Serilog.Enrichers.Span.ActivityEnricher.#ctor(Serilog.Enrichers.Span.SpanLogEventPropertiesNames)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Serilog.Enrichers.Span.ActivityEnricher"/> class.
+            </summary>
+            <param name="logEventPropertiesNames">Names for log event properties.</param>
+        </member>
+        <member name="M:Serilog.Enrichers.Span.ActivityEnricher.Enrich(Serilog.Events.LogEvent,Serilog.Core.ILogEventPropertyFactory)">
+            <summary>
+            Enrich the log event.
+            </summary>
+            <param name="logEvent">The log event to enrich.</param>
+            <param name="propertyFactory">Factory for creating new properties to add to the event.</param>
+        </member>
+        <member name="T:Serilog.Enrichers.Span.ActivityExtensions">
+            <summary>
+            <see cref="T:System.Diagnostics.Activity"/> extension methods.
+            </summary>
+        </member>
+        <member name="M:Serilog.Enrichers.Span.ActivityExtensions.GetSpanId(System.Diagnostics.Activity)">
+            <summary>
+            Gets the span unique identifier regardless of the activity identifier format.
+            </summary>
+            <param name="activity">The activity.</param>
+            <returns>The span unique identifier.</returns>
+        </member>
+        <member name="M:Serilog.Enrichers.Span.ActivityExtensions.GetTraceId(System.Diagnostics.Activity)">
+            <summary>
+            Gets the span trace unique identifier regardless of the activity identifier format.
+            </summary>
+            <param name="activity">The activity.</param>
+            <returns>The span trace unique identifier.</returns>
+        </member>
+        <member name="M:Serilog.Enrichers.Span.ActivityExtensions.GetParentId(System.Diagnostics.Activity)">
+            <summary>
+            Gets the span parent unique identifier regardless of the activity identifier format.
+            </summary>
+            <param name="activity">The activity.</param>
+            <returns>The span parent unique identifier.</returns>
+        </member>
+        <member name="T:Serilog.Enrichers.Span.ActivityOperationNameEnricher">
+            <summary>
+            A log event enricher which adds baggage from the current <see cref="T:System.Diagnostics.Activity"/>.
+            </summary>
+        </member>
+        <member name="M:Serilog.Enrichers.Span.ActivityOperationNameEnricher.#ctor(Serilog.Enrichers.Span.SpanLogEventPropertiesNames)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Serilog.Enrichers.Span.ActivityOperationNameEnricher"/> class.
+            </summary>
+            <param name="logEventPropertiesNames">Names for log event properties.</param>
+        </member>
+        <member name="M:Serilog.Enrichers.Span.ActivityOperationNameEnricher.Enrich(Serilog.Events.LogEvent,Serilog.Core.ILogEventPropertyFactory)">
+            <summary>
+            Enrich the log event.
+            </summary>
+            <param name="logEvent">The log event to enrich.</param>
+            <param name="propertyFactory">Factory for creating new properties to add to the event.</param>
+        </member>
+        <member name="T:Serilog.Enrichers.Span.ActivityTagEnricher">
+            <summary>
+            A log event enricher which adds tags from the current <see cref="T:System.Diagnostics.Activity"/>.
+            </summary>
+        </member>
+        <member name="M:Serilog.Enrichers.Span.ActivityTagEnricher.Enrich(Serilog.Events.LogEvent,Serilog.Core.ILogEventPropertyFactory)">
+            <summary>
+            Enrich the log event.
+            </summary>
+            <param name="logEvent">The log event to enrich.</param>
+            <param name="propertyFactory">Factory for creating new properties to add to the event.</param>
+        </member>
+        <member name="T:Serilog.Enrichers.Span.ActivityTraceFlagsEnricher">
+            <summary>
+            A log event enricher which adds trace flags from the current <see cref="T:System.Diagnostics.Activity"/>.
+            </summary>
+        </member>
+        <member name="M:Serilog.Enrichers.Span.ActivityTraceFlagsEnricher.Enrich(Serilog.Events.LogEvent,Serilog.Core.ILogEventPropertyFactory)">
+            <summary>
+            Enrich the log event.
+            </summary>
+            <param name="logEvent">The log event to enrich.</param>
+            <param name="propertyFactory">Factory for creating new properties to add to the event.</param>
+        </member>
+        <member name="T:Serilog.Enrichers.Span.LoggerEnrichmentConfigurationExtensions">
+            <summary>
+            <see cref="T:Serilog.Configuration.LoggerEnrichmentConfiguration"/> extension methods.
+            </summary>
+        </member>
+        <member name="M:Serilog.Enrichers.Span.LoggerEnrichmentConfigurationExtensions.WithSpan(Serilog.Configuration.LoggerEnrichmentConfiguration)">
+            <summary>
+            Enrich logger output with span information from the current <see cref="T:System.Diagnostics.Activity"/>.
+            </summary>
+            <param name="loggerEnrichmentConfiguration">The enrichment configuration.</param>
+            <returns>Configuration object allowing method chaining.</returns>
+        </member>
+        <member name="M:Serilog.Enrichers.Span.LoggerEnrichmentConfigurationExtensions.WithSpan(Serilog.Configuration.LoggerEnrichmentConfiguration,Serilog.Enrichers.Span.SpanOptions)">
+            <summary>
+            Enrich logger output with span information from the current <see cref="T:System.Diagnostics.Activity"/>.
+            </summary>
+            <param name="loggerEnrichmentConfiguration">The enrichment configuration.</param>
+            <param name="spanOptions"><see cref="T:Serilog.Enrichers.Span.SpanOptions"/> to use for enriching Activity.</param>
+            <returns>Configuration object allowing method chaining.</returns>
+        </member>
+        <member name="T:Serilog.Enrichers.Span.SpanLogEventPropertiesNames">
+            <summary>
+            Names for log event properties of span.
+            </summary>
+        </member>
+        <member name="P:Serilog.Enrichers.Span.SpanLogEventPropertiesNames.TraceId">
+            <summary>
+            Gets or sets a name for trace id property.
+            </summary>
+        </member>
+        <member name="P:Serilog.Enrichers.Span.SpanLogEventPropertiesNames.ParentId">
+            <summary>
+            Gets or sets a name for parent id property.
+            </summary>
+        </member>
+        <member name="P:Serilog.Enrichers.Span.SpanLogEventPropertiesNames.SpanId">
+            <summary>
+            Gets or sets a name for span id property.
+            </summary>
+        </member>
+        <member name="P:Serilog.Enrichers.Span.SpanLogEventPropertiesNames.OperationName">
+            <summary>
+            Gets or sets a name for operation name property.
+            </summary>
+        </member>
+        <member name="T:Serilog.Enrichers.Span.SpanOptions">
+            <summary>
+            Options.
+            </summary>
+        </member>
+        <member name="P:Serilog.Enrichers.Span.SpanOptions.IncludeTags">
+            <summary>
+            Gets or sets a value indicating whether to include tags in log or not. Default is false.
+            </summary>
+        </member>
+        <member name="P:Serilog.Enrichers.Span.SpanOptions.IncludeBaggage">
+            <summary>
+            Gets or sets a value indicating whether to include baggage in log or not. Default is false.
+            </summary>
+        </member>
+        <member name="P:Serilog.Enrichers.Span.SpanOptions.IncludeOperationName">
+            <summary>
+            Gets or sets a value indicating whether to include operation name in log or not. Default is false.
+            </summary>
+        </member>
+        <member name="P:Serilog.Enrichers.Span.SpanOptions.IncludeTraceFlags">
+            <summary>
+            Gets or sets a value indicating whether to include activity trace flags in log or not. Default is false.
+            </summary>
+        </member>
+        <member name="P:Serilog.Enrichers.Span.SpanOptions.LogEventPropertiesNames">
+            <summary>
+            Gets or sets log properties names for span.
+            </summary>
+        </member>
+    </members>
+</doc>

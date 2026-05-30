@@ -1,0 +1,191 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Extensions.Configuration.FileExtensions</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.Extensions.Configuration.FileConfigurationExtensions">
+            <summary>
+            Provides extension methods for <see cref="T:Microsoft.Extensions.Configuration.FileConfigurationProvider"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.FileConfigurationExtensions.SetFileProvider(Microsoft.Extensions.Configuration.IConfigurationBuilder,Microsoft.Extensions.FileProviders.IFileProvider)">
+            <summary>
+            Sets the default <see cref="T:Microsoft.Extensions.FileProviders.IFileProvider"/> to be used for file-based providers.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/> to add to.</param>
+            <param name="fileProvider">The default file provider instance.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.FileConfigurationExtensions.GetFileProvider(Microsoft.Extensions.Configuration.IConfigurationBuilder)">
+            <summary>
+            Gets the default <see cref="T:Microsoft.Extensions.FileProviders.IFileProvider"/> to be used for file-based providers.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/>.</param>
+            <returns>The default <see cref="T:Microsoft.Extensions.FileProviders.IFileProvider"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.FileConfigurationExtensions.SetBasePath(Microsoft.Extensions.Configuration.IConfigurationBuilder,System.String)">
+            <summary>
+            Sets the FileProvider for file-based providers to a PhysicalFileProvider with the base path.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/> to add to.</param>
+            <param name="basePath">The absolute path of file-based providers.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.FileConfigurationExtensions.SetFileLoadExceptionHandler(Microsoft.Extensions.Configuration.IConfigurationBuilder,System.Action{Microsoft.Extensions.Configuration.FileLoadExceptionContext})">
+            <summary>
+            Sets a default action to be invoked for file-based providers when an error occurs.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/> to add to.</param>
+            <param name="handler">The Action to be invoked on a file load exception.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.FileConfigurationExtensions.GetFileLoadExceptionHandler(Microsoft.Extensions.Configuration.IConfigurationBuilder)">
+            <summary>
+            Gets a default action to be invoked for file-based providers when an error occurs.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/>.</param>
+            <returns>The The Action to be invoked on a file load exception, if set.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Configuration.FileConfigurationProvider">
+            <summary>
+            Provides the base class for file-based <see cref="T:Microsoft.Extensions.Configuration.ConfigurationProvider"/> providers.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.FileConfigurationProvider.#ctor(Microsoft.Extensions.Configuration.FileConfigurationSource)">
+            <summary>
+            Initializes a new instance with the specified source.
+            </summary>
+            <param name="source">The source settings.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Configuration.FileConfigurationProvider.Source">
+            <summary>
+            Gets the source settings for this provider.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.FileConfigurationProvider.ToString">
+            <summary>
+            Generates a string representing this provider name and relevant details.
+            </summary>
+            <returns>The configuration name.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.FileConfigurationProvider.Load">
+            <summary>
+            Loads the contents of the file at <see cref="T:System.IO.Path"/>.
+            </summary>
+            <exception cref="T:System.IO.DirectoryNotFoundException">Optional is <c>false</c> on the source and a
+            directory cannot be found at the specified Path.</exception>
+            <exception cref="T:System.IO.FileNotFoundException">Optional is <c>false</c> on the source and a
+            file does not exist at specified Path.</exception>
+            <exception cref="T:System.IO.InvalidDataException">An exception was thrown by the concrete implementation of the
+            <see cref="M:Microsoft.Extensions.Configuration.FileConfigurationProvider.Load"/> method. Use the source <see cref="P:Microsoft.Extensions.Configuration.FileConfigurationSource.OnLoadException"/> callback
+            if you need more control over the exception.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.FileConfigurationProvider.Load(System.IO.Stream)">
+            <summary>
+            Loads this provider's data from a stream.
+            </summary>
+            <param name="stream">The stream to read.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.FileConfigurationProvider.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.FileConfigurationProvider.Dispose(System.Boolean)">
+            <summary>
+            Disposes the provider.
+            </summary>
+            <param name="disposing"><c>true</c> if invoked from <see cref="M:System.IDisposable.Dispose"/>.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Configuration.FileConfigurationSource">
+            <summary>
+            Provides the base class for file-based <see cref="T:Microsoft.Extensions.Configuration.IConfigurationSource"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Configuration.FileConfigurationSource.FileProvider">
+            <summary>
+            Gets or sets the provider used to access the contents of the file.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Configuration.FileConfigurationSource.Path">
+            <summary>
+            Gets or sets the path to the file.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Configuration.FileConfigurationSource.Optional">
+            <summary>
+            Gets or sets a value that indicates whether loading the file is optional.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Configuration.FileConfigurationSource.ReloadOnChange">
+            <summary>
+            Gets or sets a value that indicates whether the source will be loaded if the underlying file changes.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Configuration.FileConfigurationSource.ReloadDelay">
+            <summary>
+            Gets or sets the number of milliseconds that reload will wait before calling Load.
+            </summary>
+            <value>
+            The number of milliseconds that reload waits before calling Load. The default is 250.
+            </value>
+            <remarks>
+            This delay helps avoid triggering reload before a file is completely written.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Configuration.FileConfigurationSource.OnLoadException">
+            <summary>
+            Gets or sets the action that's called if an uncaught exception occurs in FileConfigurationProvider.Load.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.FileConfigurationSource.Build(Microsoft.Extensions.Configuration.IConfigurationBuilder)">
+            <summary>
+            Builds the <see cref="T:Microsoft.Extensions.Configuration.IConfigurationProvider"/> for this source.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/>.</param>
+            <returns>To be added.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.FileConfigurationSource.EnsureDefaults(Microsoft.Extensions.Configuration.IConfigurationBuilder)">
+            <summary>
+            Called to use any default settings on the builder like the FileProvider or FileLoadExceptionHandler.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/>.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.FileConfigurationSource.ResolveFileProvider">
+            <summary>
+            Creates a physical file provider for the nearest existing directory if no file provider has been set, for absolute Path.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Configuration.FileLoadExceptionContext">
+            <summary>
+            Contains information about a file load exception.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Configuration.FileLoadExceptionContext.Provider">
+            <summary>
+            Gets or sets the <see cref="T:Microsoft.Extensions.Configuration.FileConfigurationProvider"/> that caused the exception.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Configuration.FileLoadExceptionContext.Exception">
+            <summary>
+            Gets or sets the exception that occurred in Load.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Configuration.FileLoadExceptionContext.Ignore">
+            <summary>
+            Gets or sets a value that indicates whether the exception is rethrown.
+            </summary>
+            <value>
+            <see langword="true" /> if the exception isn't rethrown; otherwise, <see langword="false" />.
+            </value>
+        </member>
+        <member name="P:System.SR.Error_ExpectedPhysicalPath">
+            <summary>The expected physical path was '{0}'.</summary>
+        </member>
+        <member name="P:System.SR.Error_FileNotFound">
+            <summary>The configuration file '{0}' was not found and is not optional.</summary>
+        </member>
+        <member name="P:System.SR.Error_FailedToLoad">
+            <summary>Failed to load configuration from file '{0}'.</summary>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,61 @@
+﻿<!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. See the License.txt file in the project root for more information. -->
+<Project>
+  <UsingTask TaskName="Microsoft.Build.Tasks.Git.LocateRepository" AssemblyFile="$(MicrosoftBuildTasksGitAssemblyFile)"/>
+  <UsingTask TaskName="Microsoft.Build.Tasks.Git.GetUntrackedFiles" AssemblyFile="$(MicrosoftBuildTasksGitAssemblyFile)"/>
+
+  <PropertyGroup>
+    <!--
+      Sets the scope of git repository configuration. By default (no scope specified) configuration is read from environment variables
+      and system and global user git/ssh configuration files. 
+      
+      If "local" is specified the configuration is only read from the configuration files local to the repository (or work tree).
+      In addition, any use of home relative paths in these configuration files (paths that start with '~/') is disallowed.
+      
+      By default, the scope is restricted to "local" when building in CI (ContinuousIntegrationBuild is true) to avoid introducing 
+      dependencies on CI machine state into the build.
+    -->
+    <GitRepositoryConfigurationScope Condition="'$(GitRepositoryConfigurationScope)' == '' and '$(ContinuousIntegrationBuild)' == 'true'">local</GitRepositoryConfigurationScope>
+  </PropertyGroup>
+
+  <Target Name="InitializeSourceControlInformationFromSourceControlManager">
+    <!--
+      Reports a warning if the given project doesn't belong to a repository under source control,
+      unless the targets were implicily imported from an SDK without a package reference.
+    -->
+    <Microsoft.Build.Tasks.Git.LocateRepository
+      Path="$(MSBuildProjectDirectory)"
+      RemoteName="$(GitRepositoryRemoteName)"
+      ConfigurationScope="$(GitRepositoryConfigurationScope)"
+      NoWarnOnMissingInfo="$(PkgMicrosoft_Build_Tasks_Git.Equals(''))">
+
+      <Output TaskParameter="RepositoryId" PropertyName="_GitRepositoryId" />
+      <Output TaskParameter="Url" PropertyName="ScmRepositoryUrl" />
+      <Output TaskParameter="Roots" ItemName="SourceRoot" />
+      <Output TaskParameter="RevisionId" PropertyName="SourceRevisionId" Condition="'$(SourceRevisionId)' == ''" />
+      <Output TaskParameter="BranchName" PropertyName="SourceBranchName" />
+    </Microsoft.Build.Tasks.Git.LocateRepository>
+
+    <PropertyGroup>
+      <RepositoryType Condition="'$(RepositoryType)' == ''">git</RepositoryType>
+    </PropertyGroup>
+  </Target>
+
+  <!--
+    Embed files to the PDB that either do not belong to any of the SourceRoot directories
+    or belong to the source repository, but are explicitly ignored (excluded) from source control.
+  -->
+  <Target Name="SetEmbeddedFilesFromSourceControlManagerUntrackedFiles"
+          DependsOnTargets="InitializeSourceControlInformationFromSourceControlManager">
+
+    <Microsoft.Build.Tasks.Git.GetUntrackedFiles
+      RepositoryId="$(_GitRepositoryId)"
+      ConfigurationScope="$(GitRepositoryConfigurationScope)"
+      ProjectDirectory="$(MSBuildProjectDirectory)"
+      Files="@(Compile)"
+      Condition="'$(_GitRepositoryId)' != ''">
+
+      <Output TaskParameter="UntrackedFiles" ItemName="EmbeddedFiles" />
+    </Microsoft.Build.Tasks.Git.GetUntrackedFiles>
+  </Target>
+
+</Project>

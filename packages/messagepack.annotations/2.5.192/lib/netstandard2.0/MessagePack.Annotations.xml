@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MessagePack.Annotations</name>
+    </assembly>
+    <members>
+        <member name="P:MessagePack.UnionAttribute.Key">
+            <summary>
+            Gets the distinguishing value that identifies a particular subtype.
+            </summary>
+        </member>
+        <member name="P:MessagePack.UnionAttribute.SubType">
+            <summary>
+            Gets the derived or implementing type.
+            </summary>
+        </member>
+        <member name="M:MessagePack.UnionAttribute.#ctor(System.Int32,System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:MessagePack.UnionAttribute"/> class.
+            </summary>
+            <param name="key">The distinguishing value that identifies a particular subtype.</param>
+            <param name="subType">The derived or implementing type.</param>
+        </member>
+        <member name="M:MessagePack.UnionAttribute.#ctor(System.Int32,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:MessagePack.UnionAttribute"/> class.
+            </summary>
+            <param name="key">The distinguishing value that identifies a particular subtype.</param>
+            <param name="subType">The full name (should be assembly qualified) of the derived or implementing type.</param>
+        </member>
+    </members>
+</doc>

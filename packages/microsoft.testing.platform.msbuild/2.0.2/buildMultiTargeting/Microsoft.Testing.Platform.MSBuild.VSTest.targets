@@ -1,0 +1,6 @@
+<Project>
+  <!-- Override VSTest target for single tfm -->
+  <Target Name="VSTest">
+    <CallTarget Targets="InvokeTestingPlatform" />
+  </Target>
+</Project>

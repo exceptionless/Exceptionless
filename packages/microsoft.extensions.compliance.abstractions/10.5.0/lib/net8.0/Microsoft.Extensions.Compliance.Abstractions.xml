@@ -1,0 +1,1088 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Extensions.Compliance.Abstractions</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.Shared.DiagnosticIds.DiagnosticIds">
+            <summary>
+             Various diagnostic IDs reported by this repo.
+            </summary>
+            <remarks>
+             When adding a new diagnostic ID, add a corresponding suppression to the root <c>Directory.Build.targets</c> file,
+             and add a documentation entry to <c>docs/list-of-diagnostics.md</c>.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Shared.DiagnosticIds.DiagnosticIds.Experiments">
+            <summary>
+             Experiments supported by this repo.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Diagnostics.Throw">
+            <summary>
+            Defines static methods used to throw exceptions.
+            </summary>
+            <remarks>
+            The main purpose is to reduce code size, improve performance, and standardize exception
+            messages.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfNull``1(``0,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentNullException"/> if the specified argument is <see langword="null"/>.
+            </summary>
+            <typeparam name="T">Argument type to be checked for <see langword="null"/>.</typeparam>
+            <param name="argument">Object to be checked for <see langword="null"/>.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfNullOrMemberNull``2(``0,``1,System.String,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentNullException"/> if the specified argument is <see langword="null"/>,
+            or <see cref="T:System.ArgumentException" /> if the specified member is <see langword="null"/>.
+            </summary>
+            <typeparam name="TParameter">Argument type to be checked for <see langword="null"/>.</typeparam>
+            <typeparam name="TMember">Member type to be checked for <see langword="null"/>.</typeparam>
+            <param name="argument">Argument to be checked for <see langword="null"/>.</param>
+            <param name="member">Object member to be checked for <see langword="null"/>.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <param name="memberName">The name of the member.</param>
+            <returns>The original value of <paramref name="member"/>.</returns>
+            <example>
+            <code language="csharp">
+            Throws.IfNullOrMemberNull(myObject, myObject?.MyProperty)
+            </code>
+            </example>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfMemberNull``2(``0,``1,System.String,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentException" /> if the specified member is <see langword="null"/>.
+            </summary>
+            <typeparam name="TParameter">Argument type.</typeparam>
+            <typeparam name="TMember">Member type to be checked for <see langword="null"/>.</typeparam>
+            <param name="argument">Argument to which member belongs.</param>
+            <param name="member">Object member to be checked for <see langword="null"/>.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <param name="memberName">The name of the member.</param>
+            <returns>The original value of <paramref name="member"/>.</returns>
+            <example>
+            <code language="csharp">
+            Throws.IfMemberNull(myObject, myObject.MyProperty)
+            </code>
+            </example>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfNullOrWhitespace(System.String,System.String)">
+            <summary>
+            Throws either an <see cref="T:System.ArgumentNullException"/> or an <see cref="T:System.ArgumentException"/>
+            if the specified string is <see langword="null"/> or whitespace respectively.
+            </summary>
+            <param name="argument">String to be checked for <see langword="null"/> or whitespace.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfNullOrEmpty(System.String,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentNullException"/> if the string is <see langword="null"/>,
+            or <see cref="T:System.ArgumentException"/> if it is empty.
+            </summary>
+            <param name="argument">String to be checked for <see langword="null"/> or empty.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfBufferTooSmall(System.Int32,System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentException"/> if the argument's buffer size is less than the required buffer size.
+            </summary>
+            <param name="bufferSize">The actual buffer size.</param>
+            <param name="requiredSize">The required buffer size.</param>
+            <param name="paramName">The name of the parameter to be checked.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfOutOfRange``1(``0,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the enum value is not valid.
+            </summary>
+            <param name="argument">The argument to evaluate.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <typeparam name="T">The type of the enumeration.</typeparam>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfNullOrEmpty``1(System.Collections.Generic.IEnumerable{``0},System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentNullException"/> if the collection is <see langword="null"/>,
+            or <see cref="T:System.ArgumentException"/> if it is empty.
+            </summary>
+            <param name="argument">The collection to evaluate.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <typeparam name="T">The type of objects in the collection.</typeparam>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentNullException(System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentNullException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentNullException(System.String,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentNullException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+            <param name="message">A message that describes the error.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentOutOfRangeException(System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentOutOfRangeException(System.String,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+            <param name="message">A message that describes the error.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentOutOfRangeException(System.String,System.Object,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+            <param name="actualValue">The value of the argument that caused this exception.</param>
+            <param name="message">A message that describes the error.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentException(System.String,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+            <param name="message">A message that describes the error.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentException(System.String,System.String,System.Exception)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+            <param name="message">A message that describes the error.</param>
+            <param name="innerException">The exception that is the cause of the current exception.</param>
+            <remarks>
+            If the <paramref name="innerException"/> is not a <see langword="null"/>, the current exception is raised in a catch
+            block that handles the inner exception.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.InvalidOperationException(System.String)">
+            <summary>
+            Throws an <see cref="T:System.InvalidOperationException"/>.
+            </summary>
+            <param name="message">A message that describes the error.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.InvalidOperationException(System.String,System.Exception)">
+            <summary>
+            Throws an <see cref="T:System.InvalidOperationException"/>.
+            </summary>
+            <param name="message">A message that describes the error.</param>
+            <param name="innerException">The exception that is the cause of the current exception.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThan(System.Int32,System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>  if the specified number is less than min.
+            </summary>
+            <param name="argument">Number to be expected being less than min.</param>
+            <param name="min">The number that must be less than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThan(System.Int32,System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater than max.
+            </summary>
+            <param name="argument">Number to be expected being greater than max.</param>
+            <param name="max">The number that must be greater than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThanOrEqual(System.Int32,System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is less or equal than min.
+            </summary>
+            <param name="argument">Number to be expected being less or equal than min.</param>
+            <param name="min">The number that must be less or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThanOrEqual(System.Int32,System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater or equal than max.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="max">The number that must be greater or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfOutOfRange(System.Int32,System.Int32,System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is not in the specified range.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="min">The lower bound of the allowed range of argument values.</param>
+            <param name="max">The upper bound of the allowed range of argument values.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfZero(System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is equal to 0.
+            </summary>
+            <param name="argument">Number to be expected being not equal to zero.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThan(System.UInt32,System.UInt32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>  if the specified number is less than min.
+            </summary>
+            <param name="argument">Number to be expected being less than min.</param>
+            <param name="min">The number that must be less than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThan(System.UInt32,System.UInt32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater than max.
+            </summary>
+            <param name="argument">Number to be expected being greater than max.</param>
+            <param name="max">The number that must be greater than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThanOrEqual(System.UInt32,System.UInt32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is less or equal than min.
+            </summary>
+            <param name="argument">Number to be expected being less or equal than min.</param>
+            <param name="min">The number that must be less or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThanOrEqual(System.UInt32,System.UInt32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater or equal than max.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="max">The number that must be greater or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfOutOfRange(System.UInt32,System.UInt32,System.UInt32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is not in the specified range.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="min">The lower bound of the allowed range of argument values.</param>
+            <param name="max">The upper bound of the allowed range of argument values.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfZero(System.UInt32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is equal to 0.
+            </summary>
+            <param name="argument">Number to be expected being not equal to zero.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThan(System.Int64,System.Int64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>  if the specified number is less than min.
+            </summary>
+            <param name="argument">Number to be expected being less than min.</param>
+            <param name="min">The number that must be less than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThan(System.Int64,System.Int64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater than max.
+            </summary>
+            <param name="argument">Number to be expected being greater than max.</param>
+            <param name="max">The number that must be greater than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThanOrEqual(System.Int64,System.Int64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is less or equal than min.
+            </summary>
+            <param name="argument">Number to be expected being less or equal than min.</param>
+            <param name="min">The number that must be less or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThanOrEqual(System.Int64,System.Int64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater or equal than max.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="max">The number that must be greater or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfOutOfRange(System.Int64,System.Int64,System.Int64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is not in the specified range.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="min">The lower bound of the allowed range of argument values.</param>
+            <param name="max">The upper bound of the allowed range of argument values.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfZero(System.Int64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is equal to 0.
+            </summary>
+            <param name="argument">Number to be expected being not equal to zero.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThan(System.UInt64,System.UInt64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>  if the specified number is less than min.
+            </summary>
+            <param name="argument">Number to be expected being less than min.</param>
+            <param name="min">The number that must be less than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThan(System.UInt64,System.UInt64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater than max.
+            </summary>
+            <param name="argument">Number to be expected being greater than max.</param>
+            <param name="max">The number that must be greater than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThanOrEqual(System.UInt64,System.UInt64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is less or equal than min.
+            </summary>
+            <param name="argument">Number to be expected being less or equal than min.</param>
+            <param name="min">The number that must be less or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThanOrEqual(System.UInt64,System.UInt64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater or equal than max.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="max">The number that must be greater or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfOutOfRange(System.UInt64,System.UInt64,System.UInt64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is not in the specified range.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="min">The lower bound of the allowed range of argument values.</param>
+            <param name="max">The upper bound of the allowed range of argument values.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfZero(System.UInt64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is equal to 0.
+            </summary>
+            <param name="argument">Number to be expected being not equal to zero.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThan(System.Double,System.Double,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is less than min.
+            </summary>
+            <param name="argument">Number to be expected being less than min.</param>
+            <param name="min">The number that must be less than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThan(System.Double,System.Double,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater than max.
+            </summary>
+            <param name="argument">Number to be expected being greater than max.</param>
+            <param name="max">The number that must be greater than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThanOrEqual(System.Double,System.Double,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is less or equal than min.
+            </summary>
+            <param name="argument">Number to be expected being less or equal than min.</param>
+            <param name="min">The number that must be less or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThanOrEqual(System.Double,System.Double,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater or equal than max.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="max">The number that must be greater or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfOutOfRange(System.Double,System.Double,System.Double,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is not in the specified range.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="min">The lower bound of the allowed range of argument values.</param>
+            <param name="max">The upper bound of the allowed range of argument values.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfZero(System.Double,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is equal to 0.
+            </summary>
+            <param name="argument">Number to be expected being not equal to zero.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.RentedSpan`1">
+             <summary>
+             Represents a span that's potentially created over a rented array.
+             </summary>
+             <typeparam name="T">The type of objects held by the span.</typeparam>
+             <remarks>
+             This type is used to implement a common pattern to improve performance
+             when using temporary buffers. The pattern encourages the use of stack-based
+             buffers when possible, which eliminate the overhead of garbage collection of
+             buffers.
+            
+             With this type, you make a speculative call to allocate a buffer. If the buffer
+             is too large to fix on the stack, it is allocated from <see cref="T:System.Buffers.ArrayPool`1"/>.
+             If the buffer could be allocated on the stack, then no buffer is acquired from the
+             array pool, and instead the caller is expected to use <see langword="stackalloc" />
+             to get the buffer.
+             </remarks>
+             <example>
+             <code language="csharp">
+             using var rental = new RentedSpan&lt;char&gt;(length);
+             var span = rental.Rented ? rental.Span : stackalloc char[length];
+             </code>
+             </example>
+        </member>
+        <member name="F:Microsoft.Shared.Pools.RentedSpan`1.MinimumRentalSpace">
+            <summary>
+            The minimum size in bytes that triggers buffer rental.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.RentedSpan`1.#ctor(System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Shared.Pools.RentedSpan`1"/> struct.
+            </summary>
+            <param name="length">The desired length of the span. if this value is %lt;= 0, no buffer is allocated.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.RentedSpan`1.Dispose">
+             <summary>
+             Returns a rented array back to the array pool.
+             </summary>
+             <remarks>
+             If no array was actually allocated from the array pool
+             (when <see cref="P:Microsoft.Shared.Pools.RentedSpan`1.Rented"/> is <see langword="false" />),
+             then this method has no effect.
+            
+             Calling this method multiple times on the same object is not supported, don't do it.
+             </remarks>
+        </member>
+        <member name="P:Microsoft.Shared.Pools.RentedSpan`1.Span">
+            <summary>
+            Gets a span over the rented buffer.
+            </summary>
+            <remarks>
+            If no buffer was rented (because the buffer was deemed too small), then this returns an empty span.
+            When a buffer isn't rented by this type, it's a cue to you to allocate buffer from the stack instead
+            using stackalloc.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Shared.Pools.RentedSpan`1.Rented">
+            <summary>
+            Gets a value indicating whether a buffer has been rented.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.NoopPooledObjectPolicy`1">
+            <summary>
+            An object pool policy that does nothing.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.PooledCancellationTokenSourcePolicy">
+            <summary>
+            An object pool policy for cancellation token sources.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.PooledDictionaryPolicy`2">
+            <summary>
+            An object pool policy for dictionaries.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.PooledListPolicy`1">
+            <summary>
+            An object pool policy for lists.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.PooledListWithCapacityPolicy`1">
+            <summary>
+            An object pool policy for lists with capacity.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.PooledSetPolicy`1">
+            <summary>
+            An object pool policy for sets.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.PoolFactory">
+            <summary>
+            A factory of object pools.
+            </summary>
+            <remarks>
+            This class makes it easy to create efficient object pools used to improve performance by reducing
+            strain on the garbage collector.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreatePool``1(System.Int32)">
+            <summary>
+            Creates an object pool.
+            </summary>
+            <typeparam name="T">The type of object to keep in the pool.</typeparam>
+            <param name="maxCapacity">The maximum number of items to keep in the pool. This defaults to 1024. This value is a recommendation, the pool may keep more objects than this.</param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreatePool``1(Microsoft.Extensions.ObjectPool.IPooledObjectPolicy{``0},System.Int32)">
+            <summary>
+            Creates an object pool with a custom policy.
+            </summary>
+            <typeparam name="T">The type of object to keep in the pool.</typeparam>
+            <param name="policy">The custom policy that is responsible for creating new objects and preparing objects to be added to the pool.</param>
+            <param name="maxCapacity">The maximum number of items to keep in the pool. This defaults to 1024. This value is a recommendation, the pool may keep more objects than this.</param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateResettingPool``1(System.Int32)">
+            <summary>
+            Creates an object pool for resettable objects.
+            </summary>
+            <typeparam name="T">The type of object to keep in the pool.</typeparam>
+            <param name="maxCapacity">The maximum number of items to keep in the pool. This defaults to 1024. This value is a recommendation, the pool may keep more objects than this.</param>
+            <returns>The pool.</returns>
+            <remarks>
+            Objects are systematically reset before being added to the pool.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateStringBuilderPool(System.Int32,System.Int32)">
+            <summary>
+            Creates a pool of <see cref="T:System.Text.StringBuilder"/> instances.
+            </summary>
+            <param name="maxCapacity">The maximum number of items to keep in the pool. This defaults to 1024. This value is a recommendation, the pool may keep more objects than this.</param>
+            <param name="maxStringBuilderCapacity">The maximum capacity of the string builders to keep in the pool. This defaults to 64K.</param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateListPool``1(System.Int32)">
+            <summary>
+            Creates an object pool of <see cref="T:System.Collections.Generic.List`1"/> instances.
+            </summary>
+            <typeparam name="T">The type of object held by the lists.</typeparam>
+            <param name="maxCapacity">
+            The maximum number of items to keep in the pool.
+            This defaults to 1024.
+            This value is a recommendation, the pool may keep more objects than this.
+            </param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateListPoolWithCapacity``1(System.Int32,System.Int32)">
+            <summary>
+            Creates an object pool of <see cref="T:System.Collections.Generic.List`1"/> instances, each with provided  <paramref name="listCapacity"/>.
+            </summary>
+            <typeparam name="T">The type of object held by the lists.</typeparam>
+            <param name="listCapacity">The capacity of each created <see cref="T:System.Collections.Generic.List`1"/> instance.</param>
+            <param name="maxCapacity">
+            The maximum number of items to keep in the pool.
+            This defaults to 1024.
+            This value is a recommendation, the pool may keep more objects than this.
+            </param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateDictionaryPool``2(System.Collections.Generic.IEqualityComparer{``0},System.Int32)">
+            <summary>
+            Creates an object pool of <see cref="T:System.Collections.Generic.Dictionary`2"/> instances.
+            </summary>
+            <typeparam name="TKey">The type of the dictionary keys.</typeparam>
+            <typeparam name="TValue">The type of the dictionary values.</typeparam>
+            <param name="comparer">Optional key comparer used by the dictionaries.</param>
+            <param name="maxCapacity">
+            The maximum number of items to keep in the pool.
+            This defaults to 1024.
+            This value is a recommendation, the pool may keep more objects than this.
+            </param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateHashSetPool``1(System.Collections.Generic.IEqualityComparer{``0},System.Int32)">
+            <summary>
+            Creates an object pool of <see cref="T:System.Collections.Generic.HashSet`1"/> instances.
+            </summary>
+            <typeparam name="T">The type of objects held in the sets.</typeparam>
+            <param name="comparer">Optional key comparer used by the sets.</param>
+            <param name="maxCapacity">
+            The maximum number of items to keep in the pool.
+            This defaults to 1024.
+            This value is a recommendation, the pool may keep more objects than this.
+            </param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateCancellationTokenSourcePool(System.Int32)">
+            <summary>
+            Creates an object pool of <see cref="T:System.Threading.CancellationTokenSource" /> instances.
+            </summary>
+            <param name="maxCapacity">
+            The maximum number of items to keep in the pool.
+            This defaults to 1024.
+            This value is a recommendation, the pool may keep more objects than this.
+            </param>
+            <returns>The pool.</returns>
+            <remarks>
+            On .NET 6 and above, cancellation token sources are reusable and this pool leverages this feature.
+            When running on older frameworks, this pool is actually a no-op, every time a source is fetched
+            from the pool, it is always a new instance. In that case, returning an object to the pool merely
+            disposes it.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Shared.Pools.PoolFactory.SharedStringBuilderPool">
+            <summary>
+            Gets the shared pool of <see cref="T:System.Text.StringBuilder"/> instances.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Compliance.Classification.DataClassification">
+            <summary>
+            Represents a single classification which is part of a data taxonomy.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Compliance.Classification.DataClassification.None">
+            <summary>
+            Gets the value to represent data with no defined classification.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Compliance.Classification.DataClassification.Unknown">
+            <summary>
+            Gets the value to represent data with an unknown classification.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Compliance.Classification.DataClassification.TaxonomyName">
+            <summary>
+            Gets the name of the taxonomy that recognizes this classification.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Compliance.Classification.DataClassification.Value">
+            <summary>
+            Gets the value representing the classification within the taxonomy.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.DataClassification.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Compliance.Classification.DataClassification"/> struct.
+            </summary>
+            <param name="taxonomyName">The name of the data taxonomy this classification belongs to.</param>
+            <param name="value">The taxonomy-specific value representing the classification.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.DataClassification.Equals(System.Object)">
+            <summary>
+            Checks if an object is equal to this instance of <see cref="T:Microsoft.Extensions.Compliance.Classification.DataClassification"/>.
+            </summary>
+            <param name="obj">Object to check for equality.</param>
+            <returns><see langword="true" /> if object instances are equal <see langword="false" /> otherwise.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.DataClassification.Equals(Microsoft.Extensions.Compliance.Classification.DataClassification)">
+            <summary>
+            Checks if an object is equal to this instance of <see cref="T:Microsoft.Extensions.Compliance.Classification.DataClassification"/>.
+            </summary>
+            <param name="other">Instance of <see cref="T:Microsoft.Extensions.Compliance.Classification.DataClassification"/> to check for equality.</param>
+            <returns><see langword="true" /> if object instances are equal <see langword="false" /> otherwise.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.DataClassification.GetHashCode">
+            <summary>
+            Get the hash code for the current instance.
+            </summary>
+            <returns>Hash code.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.DataClassification.op_Equality(Microsoft.Extensions.Compliance.Classification.DataClassification,Microsoft.Extensions.Compliance.Classification.DataClassification)">
+            <summary>
+            Check if two instances are equal.
+            </summary>
+            <param name="left">Left argument of the comparison.</param>
+            <param name="right">Right argument of the comparison.</param>
+            <returns><see langword="true" /> if object instances are equal, or <see langword="false" /> otherwise.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.DataClassification.op_Inequality(Microsoft.Extensions.Compliance.Classification.DataClassification,Microsoft.Extensions.Compliance.Classification.DataClassification)">
+            <summary>
+            Check if two instances are not equal.
+            </summary>
+            <param name="left">Left argument of the comparison.</param>
+            <param name="right">Right argument of the comparison.</param>
+            <returns><see langword="false" /> if object instances are equal, or <see langword="true" /> otherwise.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.DataClassification.ToString">
+            <summary>
+            Gets a string representation of this object.
+            </summary>
+            <returns>A string representing the object.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Compliance.Classification.DataClassificationAttribute">
+            <summary>
+            Base attribute for data classification.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Compliance.Classification.DataClassificationAttribute.Notes">
+            <summary>
+            Gets or sets the notes.
+            </summary>
+            <remarks>Optional free-form text to provide context during a privacy audit.</remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Compliance.Classification.DataClassificationAttribute.Classification">
+            <summary>
+            Gets the classification represented by this attribute.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.DataClassificationAttribute.#ctor(Microsoft.Extensions.Compliance.Classification.DataClassification)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Compliance.Classification.DataClassificationAttribute"/> class.
+            </summary>
+            <param name="classification">The data classification to apply.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Compliance.Classification.DataClassificationSet">
+            <summary>
+            Represents a set of data classifications.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.DataClassificationSet.#ctor(Microsoft.Extensions.Compliance.Classification.DataClassification)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Compliance.Classification.DataClassificationSet"/> class.
+            </summary>
+            <param name="classification">The class to include in the set.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.DataClassificationSet.#ctor(System.Collections.Generic.IEnumerable{Microsoft.Extensions.Compliance.Classification.DataClassification})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Compliance.Classification.DataClassificationSet"/> class.
+            </summary>
+            <param name="classifications">The classes to include in the set.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.DataClassificationSet.#ctor(Microsoft.Extensions.Compliance.Classification.DataClassification[])">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Compliance.Classification.DataClassificationSet"/> class.
+            </summary>
+            <param name="classifications">The classes to include in the set.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.DataClassificationSet.op_Implicit(Microsoft.Extensions.Compliance.Classification.DataClassification)~Microsoft.Extensions.Compliance.Classification.DataClassificationSet">
+            <summary>
+            Converts a single classification to a data classification set.
+            </summary>
+            <param name="classification">The classification to include in the set.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.DataClassificationSet.FromDataClassification(Microsoft.Extensions.Compliance.Classification.DataClassification)">
+            <summary>
+            Converts a single classification to a data classification set.
+            </summary>
+            <param name="classification">The classification to include in the set.</param>
+            <returns>The resulting data classification set.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.DataClassificationSet.Union(Microsoft.Extensions.Compliance.Classification.DataClassificationSet)">
+            <summary>
+            Creates a new data classification set that combines the current classifications with another set.
+            </summary>
+            <param name="other">The other set.</param>
+            <remarks>
+            This method doesn't modify the two input sets, it creates a new set.
+            </remarks>
+            <returns>The resulting set which combines the current instance's classifications and the other ones.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.DataClassificationSet.GetHashCode">
+            <summary>
+            Gets a hash code for the current object instance.
+            </summary>
+            <returns>The hash code value.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.DataClassificationSet.Equals(System.Object)">
+            <summary>
+            Compares an object with the current instance to see if they contain the same classifications.
+            </summary>
+            <param name="obj">The other data classification to compare to.</param>
+            <returns><see langword="true"/> if the two sets contain the same classifications.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.DataClassificationSet.Equals(Microsoft.Extensions.Compliance.Classification.DataClassificationSet)">
+            <summary>
+            Compares an object with the current instance to see if they contain the same classifications.
+            </summary>
+            <param name="other">The other data classification to compare to.</param>
+            <returns><see langword="true"/> if the two sets contain the same classifications.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.DataClassificationSet.ToString">
+            <summary>
+            Returns a string representation of this object.
+            </summary>
+            <returns>The string representation of this object.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.DataClassificationSet.ComputeHashCode">
+            <summary>
+            Computes the hash code for the current object instance.
+            </summary>
+            <returns>The computed hash code.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Compliance.Classification.DataClassificationTypeConverter">
+            <summary>
+            Provides a way to convert a <see cref="T:Microsoft.Extensions.Compliance.Classification.DataClassification"/> to and from a string.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.DataClassificationTypeConverter.CanConvertFrom(System.ComponentModel.ITypeDescriptorContext,System.Type)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.DataClassificationTypeConverter.CanConvertTo(System.ComponentModel.ITypeDescriptorContext,System.Type)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.DataClassificationTypeConverter.ConvertFrom(System.ComponentModel.ITypeDescriptorContext,System.Globalization.CultureInfo,System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.DataClassificationTypeConverter.IsValid(System.ComponentModel.ITypeDescriptorContext,System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.DataClassificationTypeConverter.TryParse(System.String,System.String@,System.String@)">
+            <summary>
+            Attempts to parse a string in the format "TaxonomyName:Value".
+            </summary>
+            <param name="value">The input string to parse.</param>
+            <param name="taxonomyName">When this method returns, contains the parsed taxonomy name if the parsing succeeded, or an empty string if it failed.</param>
+            <param name="taxonomyValue">When this method returns, contains the parsed taxonomy value if the parsing succeeded, or the original input string if it failed.</param>
+            <returns><see langword="true"/> if the string was successfully parsed; otherwise, <see langword="false"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Compliance.Classification.NoDataClassificationAttribute">
+            <summary>
+            Indicates data which is specifically not classified.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.NoDataClassificationAttribute.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Compliance.Classification.NoDataClassificationAttribute"/> class.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Compliance.Classification.UnknownDataClassificationAttribute">
+            <summary>
+            Indicates data whose classification is unknown.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Classification.UnknownDataClassificationAttribute.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Compliance.Classification.UnknownDataClassificationAttribute"/> class.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Compliance.Redaction.IRedactionBuilder">
+            <summary>
+            Adds redactors to the application.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Compliance.Redaction.IRedactionBuilder.Services">
+            <summary>
+            Gets the service collection into which the redactor instances are registered.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Redaction.IRedactionBuilder.SetRedactor``1(Microsoft.Extensions.Compliance.Classification.DataClassificationSet[])">
+            <summary>
+            Sets the redactor to use for a set of data classifications.
+            </summary>
+            <typeparam name="T">Redactor type.</typeparam>
+            <param name="classifications">The data classifications for which the redactor type should be used.</param>
+            <returns>The value of this instance.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="classifications" /> is <see langword="null" />.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Redaction.IRedactionBuilder.SetFallbackRedactor``1">
+            <summary>
+            Sets the redactor to use when processing classified data for which no specific redactor has been registered.
+            </summary>
+            <typeparam name="T">Redactor type.</typeparam>
+            <returns>The value of this instance.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Compliance.Redaction.IRedactorProvider">
+            <summary>
+            Provides redactors for different data classifications.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Redaction.IRedactorProvider.GetRedactor(Microsoft.Extensions.Compliance.Classification.DataClassificationSet)">
+            <summary>
+            Gets the redactor configured to handle the specified data class.
+            </summary>
+            <param name="classifications">Data classifications of the data to redact.</param>
+            <returns>A redactor suitable to redact data of the given class.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Compliance.Redaction.NullRedactor">
+            <summary>
+            Redactor that does nothing to its input and returns it as-is.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Compliance.Redaction.NullRedactor.Instance">
+            <summary>
+            Gets the singleton instance of this class.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Redaction.NullRedactor.GetRedactedLength(System.ReadOnlySpan{System.Char})">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Redaction.NullRedactor.Redact(System.ReadOnlySpan{System.Char},System.Span{System.Char})">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Redaction.NullRedactor.Redact(System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Extensions.Compliance.Redaction.NullRedactorProvider">
+            <summary>
+            A provider that only returns the <see cref="T:Microsoft.Extensions.Compliance.Redaction.NullRedactor"/> redactor used for situations that don't require redaction.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Compliance.Redaction.NullRedactorProvider.Instance">
+            <summary>
+            Gets the singleton instance of this class.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Redaction.NullRedactorProvider.GetRedactor(Microsoft.Extensions.Compliance.Classification.DataClassificationSet)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Extensions.Compliance.Redaction.Redactor">
+            <summary>
+            Enables the redaction of potentially sensitive data.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Redaction.Redactor.Redact(System.ReadOnlySpan{System.Char})">
+            <summary>
+            Redacts potentially sensitive data.
+            </summary>
+            <param name="source">Value to redact.</param>
+            <returns>Redacted value.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Redaction.Redactor.Redact(System.ReadOnlySpan{System.Char},System.Span{System.Char})">
+            <summary>
+            Redacts potentially sensitive data.
+            </summary>
+            <param name="source">Value to redact.</param>
+            <param name="destination">Buffer to store redacted value.</param>
+            <returns>Number of characters produced when redacting the given source input.</returns>
+            <exception cref="T:System.ArgumentException"><paramref name="destination"/> is too small.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Redaction.Redactor.Redact(System.String,System.Span{System.Char})">
+            <summary>
+            Redacts potentially sensitive data.
+            </summary>
+            <param name="source">Value to redact.</param>
+            <param name="destination">Buffer to redact into.</param>
+            <remarks>
+            Returns 0 when <paramref name="source"/> is <see langword="null"/>.
+            </remarks>
+            <returns>Number of characters written to the buffer.</returns>
+            <exception cref="T:System.ArgumentException"><paramref name="destination"/> is too small.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Redaction.Redactor.Redact(System.String)">
+            <summary>
+            Redacts potentially sensitive data.
+            </summary>
+            <param name="source">Value to redact.</param>
+            <returns>Redacted value.</returns>
+            <remarks>
+            Returns an empty string when <paramref name="source"/> is <see langword="null"/>.
+            </remarks>
+            <exception cref="T:System.ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Redaction.Redactor.Redact``1(``0,System.String,System.IFormatProvider)">
+            <summary>
+            Redacts potentially sensitive data.
+            </summary>
+            <typeparam name="T">Type of value to redact.</typeparam>
+            <param name="value">Value to redact.</param>
+            <param name="format">
+            The optional format that selects the specific formatting operation performed. Refer to the
+            documentation of the type being formatted to understand the values you can supply here.
+            </param>
+            <param name="provider">Format provider used to produce a string representing the value.</param>
+            <returns>Redacted value.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Redaction.Redactor.Redact``1(``0,System.Span{System.Char},System.String,System.IFormatProvider)">
+            <summary>
+            Redacts potentially sensitive data.
+            </summary>
+            <typeparam name="T">Type of value to redact.</typeparam>
+            <param name="value">Value to redact.</param>
+            <param name="destination">Buffer to redact into.</param>
+            <param name="format">
+            The optional format string that selects the specific formatting operation performed. Refer to the
+            documentation of the type being formatted to understand the values you can supply here.
+            </param>
+            <param name="provider">Format provider used to produce a string representing the value.</param>
+            <returns>Number of characters written to the buffer.</returns>
+            <exception cref="T:System.ArgumentException"><paramref name="destination"/> is too small.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Redaction.Redactor.TryRedact``1(``0,System.Span{System.Char},System.Int32@,System.ReadOnlySpan{System.Char},System.IFormatProvider)">
+            <summary>
+            Tries to redact potentially sensitive data.
+            </summary>
+            <typeparam name="T">The type of value to redact.</typeparam>
+            <param name="value">The value to redact.</param>
+            <param name="destination">The buffer to redact into.</param>
+            <param name="charsWritten">When this method returns, contains the number of redacted characters that were written to the destination buffer.</param>
+            <param name="format">
+            The format string that selects the specific formatting operation performed. Refer to the
+            documentation of the type being formatted to understand the values you can supply here.
+            </param>
+            <param name="provider">The format provider used to produce a string representing the value.</param>
+            <returns><see langword="true"/> if the destination buffer was large enough, otherwise <see langword="false"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Redaction.Redactor.GetRedactedLength(System.ReadOnlySpan{System.Char})">
+            <summary>
+            Gets the number of characters produced by redacting the input.
+            </summary>
+            <param name="input">Value to be redacted.</param>
+            <returns>The number of characters produced by redacting the input.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Compliance.Redaction.Redactor.GetRedactedLength(System.String)">
+            <summary>
+            Gets the number of characters produced by redacting the input.
+            </summary>
+            <param name="input">Value to be redacted.</param>
+            <returns>Minimum buffer size.</returns>
+        </member>
+        <member name="T:System.Text.RedactionStringBuilderExtensions">
+            <summary>
+            Redaction utility methods.
+            </summary>
+        </member>
+        <member name="M:System.Text.RedactionStringBuilderExtensions.AppendRedacted(System.Text.StringBuilder,Microsoft.Extensions.Compliance.Redaction.Redactor,System.String)">
+            <summary>
+            Redacts potentially sensitive data and appends it to a <see cref="T:System.Text.StringBuilder"/> instance.
+            </summary>
+            <param name="stringBuilder">Instance of <see cref="T:System.Text.StringBuilder"/> to append the redacted value.</param>
+            <param name="redactor">The redactor that will redact the input value.</param>
+            <param name="value">Value to redact.</param>
+            <returns>The value of <paramref name="stringBuilder"/>.</returns>
+            <remarks>
+            When the <paramref name="value"/> is <see langword="null"/> nothing will be appended to the string builder.
+            </remarks>
+            <exception cref="T:System.ArgumentNullException"><paramref name="stringBuilder"/> is <see langword="null"/>.</exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="redactor"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:System.Text.RedactionStringBuilderExtensions.AppendRedacted(System.Text.StringBuilder,Microsoft.Extensions.Compliance.Redaction.Redactor,System.ReadOnlySpan{System.Char})">
+            <summary>
+            Redacts potentially sensitive data and appends it to a <see cref="T:System.Text.StringBuilder"/> instance.
+            </summary>
+            <param name="stringBuilder">Instance of <see cref="T:System.Text.StringBuilder"/> to append the redacted value.</param>
+            <param name="redactor">The redactor that will redact the input value.</param>
+            <param name="value">Value to redact.</param>
+            <returns>The value of <paramref name="stringBuilder"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="stringBuilder"/> is <see langword="null"/>.</exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="redactor"/> is <see langword="null"/>.</exception>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,1317 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>System.Formats.Cbor</name>
+    </assembly>
+    <members>
+        <member name="T:System.Formats.Cbor.CborReaderState">
+            <summary>Specifies the state of a CborReader instance.</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborReaderState.Undefined">
+            <summary>Indicates the undefined state.</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborReaderState.UnsignedInteger">
+            <summary>Indicates that the next CBOR data item is an unsigned integer (major type 0).</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborReaderState.NegativeInteger">
+            <summary>Indicates that the next CBOR data item is a negative integer (major type 1).</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborReaderState.ByteString">
+            <summary>Indicates that the next CBOR data item is a byte string (major type 2).</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborReaderState.StartIndefiniteLengthByteString">
+            <summary>Indicates that the next CBOR data item denotes the start of an indefinite-length byte string (major type 2).</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborReaderState.EndIndefiniteLengthByteString">
+            <summary>Indicates that the reader is at the end of an indefinite-length byte string (major type 2).</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborReaderState.TextString">
+            <summary>Indicates that the next CBOR data item is a UTF-8 string (major type 3).</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborReaderState.StartIndefiniteLengthTextString">
+            <summary>Indicates that the next CBOR data item denotes the start of an indefinite-length UTF-8 text string (major type 3).</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborReaderState.EndIndefiniteLengthTextString">
+            <summary>Indicates that the reader is at the end of an indefinite-length UTF-8 text string (major type 3).</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborReaderState.StartArray">
+            <summary>Indicates that the next CBOR data item denotes the start of an array (major type 4).</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborReaderState.EndArray">
+            <summary>Indicates that the reader is at the end of an array (major type 4).</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborReaderState.StartMap">
+            <summary>Indicates that the next CBOR data item denotes the start of a map (major type 5).</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborReaderState.EndMap">
+            <summary>Indicates that the reader is at the end of a map (major type 5).</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborReaderState.Tag">
+            <summary>Indicates that the next CBOR data item is a semantic tag (major type 6).</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborReaderState.SimpleValue">
+            <summary>Indicates that the next CBOR data item is a simple value (major type 7).</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborReaderState.HalfPrecisionFloat">
+            <summary>Indicates that the next CBOR data item is an IEEE 754 Half-Precision float (major type 7).</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborReaderState.SinglePrecisionFloat">
+            <summary>Indicates that the next CBOR data item is an IEEE 754 Single-Precision float (major type 7).</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborReaderState.DoublePrecisionFloat">
+            <summary>Indicates that the next CBOR data item is an IEEE 754 Double-Precision float (major type 7).</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborReaderState.Null">
+            <summary>Indicates that the next CBOR data item is a <see langword="null" /> literal (major type 7).</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborReaderState.Boolean">
+            <summary>Indicates that the next CBOR data item encodes a <see cref="T:System.Boolean" /> value (major type 7).</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborReaderState.Finished">
+            <summary>
+            <para>Indicates that the reader has completed reading a full CBOR document.</para>
+            <para>If <see cref="P:System.Formats.Cbor.CborReader.AllowMultipleRootLevelValues" /> is set to <see langword="false" />,
+            the reader will report this value even if the buffer contains trailing bytes.</para>
+            </summary>
+        </member>
+        <member name="T:System.Formats.Cbor.CborReader">
+            <summary>A stateful, forward-only reader for Concise Binary Object Representation (CBOR) encoded data.</summary>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.PeekState">
+            <summary>Reads the next CBOR token, without advancing the reader.</summary>
+            <returns>An object that represents the current CBOR reader state.</returns>
+            <exception cref="T:System.Formats.Cbor.CborContentException">The underlying data is not a well-formed CBOR encoding.</exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.SkipValue(System.Boolean)">
+            <summary>Reads the contents of the next value, discarding the result and advancing the reader.</summary>
+            <param name="disableConformanceModeChecks"><see langword="true" /> to disable conformance mode validation for the skipped values, equivalent to using <see cref="F:System.Formats.Cbor.CborConformanceMode.Lax" />; otherwise, <see langword="false" />.</param>
+            <exception cref="T:System.InvalidOperationException">The reader is not at the start of new value.</exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.SkipToParent(System.Boolean)">
+            <summary>Reads the remaining contents of the current value context, discarding results and advancing the reader to the next value in the parent context.</summary>
+            <param name="disableConformanceModeChecks"><see langword="true" /> to disable conformance mode validation for the skipped values, equivalent to using <see cref="F:System.Formats.Cbor.CborConformanceMode.Lax" />; otherwise, <see langword="false" />.</param>
+            <exception cref="T:System.InvalidOperationException">The reader is at the root context</exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadSingle">
+            <summary>Reads the next data item as a single-precision floating point number (major type 7).</summary>
+            <returns>The decoded value.</returns>
+            <exception cref="T:System.InvalidOperationException"><para>The next data item does not have the correct major type.</para>
+            <para>-or-</para>
+            <para>The next simple value is not a floating-point number encoding.</para>
+            <para>-or-</para>
+            <para>The encoded value is a double-precision float.</para></exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadDouble">
+            <summary>Reads the next data item as a double-precision floating point number (major type 7).</summary>
+            <returns>The decoded <see cref="T:System.Double" /> value.</returns>
+            <exception cref="T:System.InvalidOperationException"><para>The next data item does not have the correct major type.</para>
+            <para>-or-</para>
+            <para>The next simple value is not a floating-point number encoding.</para></exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadBoolean">
+            <summary>Reads the next data item as a boolean value (major type 7).</summary>
+            <returns>The decoded value.</returns>
+            <exception cref="T:System.InvalidOperationException"><para>The next data item does not have the correct major type.</para>
+            <para>-or-</para>
+            <para>The next simple value is not a boolean encoding.</para></exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadNull">
+            <summary>Reads the next data item as a <see langword="null" /> value (major type 7).</summary>
+            <exception cref="T:System.InvalidOperationException"><para>The next data item does not have the correct major type.</para>
+            <para>-or-</para>
+            <para>The next simple value is not a <see langword="null" /> value encoding.</para></exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadSimpleValue">
+            <summary>Reads the next data item as a CBOR simple value (major type 7).</summary>
+            <returns>The decoded CBOR simple value.</returns>
+            <exception cref="T:System.InvalidOperationException"><para>The next data item does not have the correct major type.</para>
+            <para>-or-</para>
+            <para>The next simple value is not a simple value encoding.</para></exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadTag">
+            <summary>Reads the next data item as a semantic tag (major type 6).</summary>
+            <returns>The decoded value.</returns>
+            <exception cref="T:System.InvalidOperationException">The next data item does not have the correct major type.</exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.PeekTag">
+            <summary>Reads the next data item as a semantic tag (major type 6), without advancing the reader.</summary>
+            <returns>The decoded value.</returns>
+            <exception cref="T:System.InvalidOperationException">The next data item does not have the correct major type.</exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+            <remarks>Useful in scenarios where the semantic value decoder needs to be determined at run time.</remarks>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadDateTimeOffset">
+            <summary>Reads the next data item as a tagged date/time string, as described in RFC7049 section 2.4.1.</summary>
+            <returns>The decoded value.</returns>
+            <exception cref="T:System.InvalidOperationException"><para>The next data item does not have the correct major type.</para>
+            <para>-or-</para>
+            <para>The next date item does not have the correct semantic tag.</para></exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The semantic date/time encoding is invalid.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadUnixTimeSeconds">
+            <summary>Reads the next data item as a tagged unix time in seconds, as described in RFC7049 section 2.4.1.</summary>
+            <returns>The decoded value.</returns>
+            <exception cref="T:System.InvalidOperationException"><para>The next data item does not have the correct major type.</para>
+            <para>-or-</para>
+            <para>The next date item does not have the correct semantic tag.</para></exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The semantic date/time encoding is invalid.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadBigInteger">
+            <summary>Reads the next data item as a tagged bignum encoding, as described in RFC7049 section 2.4.2.</summary>
+            <returns>The decoded value.</returns>
+            <exception cref="T:System.InvalidOperationException"><para>The next data item does not have the correct major type.</para>
+            <para>-or-</para>
+            <para>The next date item does not have the correct semantic tag.</para></exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The semantic bignum encoding is invalid.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadDecimal">
+            <summary>Reads the next data item as a tagged decimal fraction encoding, as described in RFC7049 section 2.4.3.</summary>
+            <returns>The decoded value.</returns>
+            <exception cref="T:System.InvalidOperationException"><para>The next data item does not have the correct major type.</para>
+            <para>-or-</para>
+            <para>The next date item does not have the correct semantic tag.</para></exception>
+            <exception cref="T:System.OverflowException">The decoded decimal fraction is either too large or too small for a <see cref="T:System.Decimal" /> value.</exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The semantic decimal fraction encoding is invalid.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadStartArray">
+            <summary>Reads the next data item as the start of an array (major type 4).</summary>
+            <returns>The length of the definite-length array, or <see langword="null" /> if the array is indefinite-length.</returns>
+            <exception cref="T:System.InvalidOperationException">The next data item does not have the correct major type.</exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadEndArray">
+            <summary>Reads the end of an array (major type 4).</summary>
+            <exception cref="T:System.InvalidOperationException"><para>The current context is not an array.</para>
+            <para>-or-</para>
+            <para>The reader is not at the end of the array.</para></exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para></exception>
+        </member>
+        <member name="P:System.Formats.Cbor.CborReader.ConformanceMode">
+            <summary>Gets the conformance mode used by this reader.</summary>
+            <value>One of the enumeration values that represents the conformance mode used by this reader.</value>
+        </member>
+        <member name="P:System.Formats.Cbor.CborReader.AllowMultipleRootLevelValues">
+            <summary>Gets a value that indicates whether this reader allows multiple root-level CBOR data items.</summary>
+            <value><see langword="true" /> if this reader allows multiple root-level CBOR data items; <see langword="false" /> otherwise.</value>
+        </member>
+        <member name="P:System.Formats.Cbor.CborReader.CurrentDepth">
+            <summary>Gets the reader's current level of nestedness in the CBOR document.</summary>
+            <value>A number that represents the current level of nestedness in the CBOR document.</value>
+        </member>
+        <member name="P:System.Formats.Cbor.CborReader.BytesRemaining">
+            <summary>Gets the total number of unread bytes in the buffer.</summary>
+            <value>The total number of unread bytes in the buffer.</value>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.#ctor(System.ReadOnlyMemory{System.Byte},System.Formats.Cbor.CborConformanceMode,System.Boolean)">
+            <summary>Initializes a <see cref="T:System.Formats.Cbor.CborReader" /> instance over the specified <paramref name="data" /> with the given configuration.</summary>
+            <param name="data">The CBOR-encoded data to read.</param>
+            <param name="conformanceMode">One of the enumeration values to specify a conformance mode guiding the checks performed on the encoded data.
+            Defaults to <see cref="F:System.Formats.Cbor.CborConformanceMode.Strict" /> conformance mode.</param>
+            <param name="allowMultipleRootLevelValues"><see langword="true" /> to indicate that multiple root-level values are supported by the reader; otherwise, <see langword="false" />.</param>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="conformanceMode" /> is not defined.</exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadEncodedValue(System.Boolean)">
+            <summary>Reads the next CBOR data item, returning a <see cref="T:System.ReadOnlyMemory`1" /> view of the encoded value. For indefinite length encodings this includes the break byte.</summary>
+            <param name="disableConformanceModeChecks"><see langword="true" /> to disable conformance mode validation for the read value, equivalent to using <see cref="F:System.Formats.Cbor.CborConformanceMode.Lax" />; otherwise, <see langword="false" />.</param>
+            <returns>A view of the encoded value as a contiguous region of memory.</returns>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The data item is not a valid CBOR data item encoding.</para>
+            <para>-or-</para>
+            <para>The CBOR encoding is not valid under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.Reset(System.ReadOnlyMemory{System.Byte})">
+            <summary>
+            Resets the <see cref="T:System.Formats.Cbor.CborReader"/> instance over the specified <paramref name="data"/> with unchanged configuration.
+            <see cref="P:System.Formats.Cbor.CborReader.ConformanceMode"/> and <see cref="P:System.Formats.Cbor.CborReader.AllowMultipleRootLevelValues"/> are unchanged.
+            </summary>
+            <param name="data">The CBOR-encoded data to read.</param>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadInt32">
+            <summary>Reads the next data item as a signed integer (major types 0,1)</summary>
+            <returns>The decoded integer value.</returns>
+            <exception cref="T:System.InvalidOperationException">The next data item does not have the correct major type.</exception>
+            <exception cref="T:System.OverflowException">The encoded integer is out of range for <see cref="T:System.Int32" />.</exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadUInt32">
+            <summary>Reads the next data item as an unsigned integer (major type 0).</summary>
+            <returns>The decoded integer value.</returns>
+            <exception cref="T:System.InvalidOperationException">The next data item does not have the correct major type.</exception>
+            <exception cref="T:System.OverflowException">The encoded integer is out of range for <see cref="T:System.UInt32" />.</exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadInt64">
+            <summary>Reads the next data item as a signed integer (major types 0,1)</summary>
+            <returns>The decoded integer value.</returns>
+            <exception cref="T:System.InvalidOperationException">The next data item does not have the correct major type.</exception>
+            <exception cref="T:System.OverflowException">The encoded integer is out of range for <see cref="T:System.Int64" />.</exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadUInt64">
+            <summary>Reads the next data item as an unsigned integer (major type 0).</summary>
+            <returns>The decoded integer value.</returns>
+            <exception cref="T:System.InvalidOperationException">The next data item does not have the correct major type.</exception>
+            <exception cref="T:System.OverflowException">The encoded integer is out of range for <see cref="T:System.UInt64" />.</exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadCborNegativeIntegerRepresentation">
+            <summary>Reads the next data item as a CBOR negative integer representation (major type 1).</summary>
+            <returns>An unsigned integer denoting -1 minus the integer.</returns>
+            <exception cref="T:System.InvalidOperationException">The next data item does not have the correct major type.</exception>
+            <exception cref="T:System.OverflowException">The encoded integer is out of range for <see cref="T:System.UInt32" />.</exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+            <remarks>
+            This method supports decoding integers between -18446744073709551616 and -1.
+            Useful for handling values that do not fit in the <see cref="T:System.Int64" /> type.
+            </remarks>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadStartMap">
+            <summary>Reads the next data item as the start of a map (major type 5).</summary>
+            <returns>The number of key-value pairs in a definite-length map, or <see langword="null" /> if the map is indefinite-length.</returns>
+            <exception cref="T:System.InvalidOperationException">The next data item does not have the correct major type.</exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+            <remarks>
+            Map contents are consumed as if they were arrays twice the length of the map's declared size.
+            For instance, a map of size 1 containing a key of type <see cref="T:System.Int32" /> with a value of type <see cref="T:System.String" />
+            must be consumed by successive calls to <see cref="M:System.Formats.Cbor.CborReader.ReadInt32" /> and <see cref="M:System.Formats.Cbor.CborReader.ReadTextString" />.
+            It is up to the caller to keep track of whether the next value is a key or a value.
+            Fundamentally, this is a technical restriction stemming from the fact that CBOR allows keys of arbitrary type,
+            for instance a map can contain keys that are maps themselves.
+            </remarks>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadEndMap">
+            <summary>Reads the end of a map (major type 5).</summary>
+            <exception cref="T:System.InvalidOperationException"><para>The current context is not a map.</para>
+            <para>-or-</para>
+            <para>The reader is not at the end of the map.</para></exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadByteString">
+            <summary>Reads the next data item as a byte string (major type 2).</summary>
+            <returns>The decoded byte array.</returns>
+            <exception cref="T:System.InvalidOperationException">The next date item does not have the correct major type.</exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+            <remarks>The method accepts indefinite length strings, which it concatenates to a single string.</remarks>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.TryReadByteString(System.Span{System.Byte},System.Int32@)">
+            <summary>Reads the next data item as a byte string (major type 2).</summary>
+            <param name="destination">The buffer in which to write the read bytes.</param>
+            <param name="bytesWritten">On success, receives the number of bytes written to <paramref name="destination" />.</param>
+            <returns><see langword="true" /> if <paramref name="destination" /> had sufficient length to receive the value and the reader advances; otherwise, <see langword="false" />.</returns>
+            <exception cref="T:System.InvalidOperationException">The next data item does not have the correct major type.</exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+            <remarks>The method accepts indefinite length strings, which it will concatenate to a single string.</remarks>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadDefiniteLengthByteString">
+            <summary>Reads the next data item as a definite-length byte string (major type 2).</summary>
+            <returns>A <see cref="T:System.ReadOnlyMemory`1" /> view of the byte string payload.</returns>
+            <exception cref="T:System.InvalidOperationException"><para>The next data item does not have the correct major type.</para>
+            <para>-or-</para>
+            <para>The data item is an indefinite-length byte string.</para></exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadStartIndefiniteLengthByteString">
+            <summary>Reads the next data item as the start of an indefinite-length byte string (major type 2).</summary>
+            <exception cref="T:System.InvalidOperationException"><para>The next data item does not have the correct major type.</para>
+            <para>-or-</para>
+            <para>The next data item is a definite-length encoded string.</para></exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadEndIndefiniteLengthByteString">
+            <summary>Ends reading an indefinite-length byte string (major type 2).</summary>
+            <exception cref="T:System.InvalidOperationException"><para>The current context is not an indefinite-length string.</para>
+            <para>-or-</para>
+            <para>The reader is not at the end of the string.</para></exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException">There was an unexpected end of CBOR encoding data.</exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadTextString">
+            <summary>Reads the next data item as a UTF-8 text string (major type 3).</summary>
+            <returns>The decoded string.</returns>
+            <exception cref="T:System.InvalidOperationException">The next data item does not have the correct major type.</exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+            <remarks>The method accepts indefinite length strings, which it will concatenate to a single string.</remarks>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.TryReadTextString(System.Span{System.Char},System.Int32@)">
+            <summary>Reads the next data item as a UTF-8 text string (major type 3).</summary>
+            <param name="destination">The buffer in which to write.</param>
+            <param name="charsWritten">On success, receives the number of chars written to <paramref name="destination" />.</param>
+            <returns><see langword="true" /> and advances the reader if <paramref name="destination" /> had sufficient length to receive the value, otherwise <see langword="false" /> and the reader does not advance.</returns>
+            <exception cref="T:System.InvalidOperationException">The next data item does not have the correct major type.</exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+            <remarks>The method accepts indefinite length strings, which it will concatenate to a single string.</remarks>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadDefiniteLengthTextStringBytes">
+            <summary>Reads the next data item as a definite-length UTF-8 text string (major type 3).</summary>
+            <returns>A <see cref="T:System.ReadOnlyMemory`1" /> view of the raw UTF-8 payload.</returns>
+            <exception cref="T:System.InvalidOperationException"><para>The next data item does not have the correct major type.</para>
+            <para>-or-</para>
+            <para>The data item is an indefinite-length text string.</para></exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadStartIndefiniteLengthTextString">
+            <summary>Reads the next data item as the start of an indefinite-length UTF-8 text string (major type 3).</summary>
+            <exception cref="T:System.InvalidOperationException"><para>The next data item does not have the correct major type.</para>
+            <para>-or-</para>
+            <para>The next data item is a definite-length encoded string.</para></exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+            <para>-or-</para>
+            <para>There was an unexpected end of CBOR encoding data.</para>
+            <para>-or-</para>
+            <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborReader.ReadEndIndefiniteLengthTextString">
+            <summary>Ends reading an indefinite-length UTF-8 text string (major type 3).</summary>
+            <exception cref="T:System.InvalidOperationException"><para>The current context is not an indefinite-length string.</para>
+            <para>-or-</para>
+            <para>The reader is not at the end of the string.</para></exception>
+            <exception cref="T:System.Formats.Cbor.CborContentException">There was an unexpected end of CBOR encoding data.</exception>
+        </member>
+        <member name="T:System.Formats.Cbor.CborWriter">
+            <summary>A writer for Concise Binary Object Representation (CBOR) encoded data.</summary>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteStartArray(System.Nullable{System.Int32})">
+            <summary>Writes the start of a definite or indefinite-length array (major type 4).</summary>
+            <param name="definiteLength">The length of the definite-length array, or <see langword="null" /> for an indefinite-length array.</param>
+            <exception cref="T:System.ArgumentOutOfRangeException">The <paramref name="definiteLength" /> parameter cannot be negative.</exception>
+            <exception cref="T:System.InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+            <para>-or-</para>
+            <para>The major type of the encoded value is not permitted in the parent data item.</para>
+            <para>-or-</para>
+            <para>The written data is not accepted under the current conformance mode.</para></exception>
+            <remarks>
+            In canonical conformance modes, the writer will reject indefinite-length writes unless
+            the <see cref="P:System.Formats.Cbor.CborWriter.ConvertIndefiniteLengthEncodings" /> flag is enabled.
+            </remarks>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteEndArray">
+            <summary>Writes the end of an array (major type 4).</summary>
+            <exception cref="T:System.InvalidOperationException"><para>The written data is not accepted under the current conformance mode.</para>
+            <para>-or-</para>
+            <para>The definite-length array anticipates more data items.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteStartMap(System.Nullable{System.Int32})">
+            <summary>Writes the start of a definite or indefinite-length map (major type 5).</summary>
+            <param name="definiteLength">The length of the definite-length map, or <see langword="null" /> for an indefinite-length map.</param>
+            <exception cref="T:System.ArgumentOutOfRangeException">The <paramref name="definiteLength" /> parameter cannot be negative.</exception>
+            <exception cref="T:System.InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+            <para>-or-</para>
+            <para>The major type of the encoded value is not permitted in the parent data item.</para>
+            <para>-or-</para>
+            <para>The written data is not accepted under the current conformance mode.</para></exception>
+            <remarks>
+            In canonical conformance modes, the writer will reject indefinite-length writes unless
+            the <see cref="P:System.Formats.Cbor.CborWriter.ConvertIndefiniteLengthEncodings" /> flag is enabled.
+            Map contents are written as if arrays twice the length of the map's declared size.
+            For example, a map of size 1 containing a key of type <see cref="T:System.Int32" /> with a value of type string must be written
+            by successive calls to <see cref="M:System.Formats.Cbor.CborWriter.WriteInt32(System.Int32)" /> and <see cref="M:System.Formats.Cbor.CborWriter.WriteTextString(System.ReadOnlySpan{System.Char})" />.
+            It is up to the caller to keep track of whether the next call is a key or a value.
+            Fundamentally, this is a technical restriction stemming from the fact that CBOR allows keys of any type,
+            for example, a map can contain keys that are maps themselves.
+            </remarks>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteEndMap">
+            <summary>Writes the end of a map (major type 5).</summary>
+            <exception cref="T:System.InvalidOperationException"><para>The written data is not accepted under the current conformance mode.</para>
+            <para>-or-</para>
+            <para>The definite-length map anticipates more data items.</para>
+            <para>-or-</para>
+            <para>The latest key/value pair is lacking a value.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteSingle(System.Single)">
+            <summary>Writes a single-precision floating point number (major type 7).</summary>
+            <param name="value">The value to write.</param>
+            <exception cref="T:System.InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+            <para>-or-</para>
+            <para>The major type of the encoded value is not permitted in the parent data item.</para>
+            <para>-or-</para>
+            <para>The written data is not accepted under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteDouble(System.Double)">
+            <summary>Writes a double-precision floating point number (major type 7).</summary>
+            <param name="value">The value to write.</param>
+            <exception cref="T:System.InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+            <para>-or-</para>
+            <para>The major type of the encoded value is not permitted in the parent data item.</para>
+            <para>-or-</para>
+            <para>The written data is not accepted under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteBoolean(System.Boolean)">
+            <summary>Writes a boolean value (major type 7).</summary>
+            <param name="value">The value to write.</param>
+            <exception cref="T:System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+            -or-
+            The major type of the encoded value is not permitted in the parent data item.
+            -or-
+            The written data is not accepted under the current conformance mode.</exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteNull">
+            <summary>Writes a <see langword="null" /> value (major type 7).</summary>
+            <exception cref="T:System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+            -or-
+            The major type of the encoded value is not permitted in the parent data item.
+            -or-
+            The written data is not accepted under the current conformance mode.</exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteSimpleValue(System.Formats.Cbor.CborSimpleValue)">
+            <summary>Writes a simple value encoding (major type 7).</summary>
+            <param name="value">The value to write.</param>
+            <exception cref="T:System.ArgumentOutOfRangeException">The <paramref name="value" /> parameter is in the invalid 24-31 range.</exception>
+            <exception cref="T:System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+            -or-
+            The major type of the encoded value is not permitted in the parent data item.
+            -or-
+            The written data is not accepted under the current conformance mode.</exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteByteString(System.Byte[])">
+            <summary>Writes a buffer as a byte string encoding (major type 2).</summary>
+            <param name="value">The value to write.</param>
+            <exception cref="T:System.ArgumentNullException">The provided value cannot be <see langword="null" />.</exception>
+            <exception cref="T:System.InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+            <para>-or-</para>
+            <para>The major type of the encoded value is not permitted in the parent data item.</para>
+            <para>-or-</para>
+            <para>The written data is not accepted under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteByteString(System.ReadOnlySpan{System.Byte})">
+            <summary>Writes a buffer as a byte string encoding (major type 2).</summary>
+            <param name="value">The value to write.</param>
+            <exception cref="T:System.InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+            <para>-or-</para>
+            <para>The major type of the encoded value is not permitted in the parent data item.</para>
+            <para>-or-</para>
+            <para>The written data is not accepted under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteStartIndefiniteLengthByteString">
+            <summary>Writes the start of an indefinite-length byte string (major type 2).</summary>
+            <exception cref="T:System.InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+            <para>-or-</para>
+            <para>The major type of the encoded value is not permitted in the parent data item.</para>
+            <para>-or-</para>
+            <para>The written data is not accepted under the current conformance mode.</para></exception>
+            <remarks>
+            Pushes a context where definite-length chunks of the same major type can be written.
+            In canonical conformance modes, the writer will reject indefinite-length writes unless
+            the <see cref="P:System.Formats.Cbor.CborWriter.ConvertIndefiniteLengthEncodings" /> flag is enabled.
+            </remarks>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteEndIndefiniteLengthByteString">
+            <summary>Writes the end of an indefinite-length byte string (major type 2).</summary>
+            <exception cref="T:System.InvalidOperationException">The written data is not accepted under the current conformance mode.</exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteTextString(System.String)">
+            <summary>Writes a buffer as a UTF-8 string encoding (major type 3).</summary>
+            <param name="value">The value to write.</param>
+            <exception cref="T:System.ArgumentNullException">The provided value cannot be <see langword="null" />.</exception>
+            <exception cref="T:System.ArgumentException">The supplied string is not a valid UTF-8 encoding, which is not permitted under the current conformance mode.</exception>
+            <exception cref="T:System.InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+            <para>-or-</para>
+            <para>The major type of the encoded value is not permitted in the parent data item.</para>
+            <para>-or-</para>
+            <para>The written data is not accepted under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteTextString(System.ReadOnlySpan{System.Char})">
+            <summary>Writes a buffer as a UTF-8 string encoding (major type 3).</summary>
+            <param name="value">The value to write.</param>
+            <exception cref="T:System.ArgumentException">The supplied string is not a valid UTF-8 encoding, which is not permitted under the current conformance mode.</exception>
+            <exception cref="T:System.InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+            <para>-or-</para>
+            <para>The major type of the encoded value is not permitted in the parent data item.</para>
+            <para>-or-</para>
+            <para>The written data is not accepted under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteStartIndefiniteLengthTextString">
+            <summary>Writes the start of an indefinite-length UTF-8 string (major type 3).</summary>
+            <exception cref="T:System.InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+            <para>-or-</para>
+            <para>The major type of the encoded value is not permitted in the parent data item.</para>
+            <para>-or-</para>
+            <para>The written data is not accepted under the current conformance mode.</para></exception>
+            <remarks>
+            Pushes a context where definite-length chunks of the same major type can be written.
+            In canonical conformance modes, the writer will reject indefinite-length writes unless
+            the <see cref="P:System.Formats.Cbor.CborWriter.ConvertIndefiniteLengthEncodings" /> flag is enabled.
+            </remarks>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteEndIndefiniteLengthTextString">
+            <summary>Writes the end of an indefinite-length UTF-8 string (major type 3).</summary>
+            <exception cref="T:System.InvalidOperationException">The written data is not accepted under the current conformance mode.</exception>
+        </member>
+        <member name="P:System.Formats.Cbor.CborWriter.ConformanceMode">
+            <summary>Gets the conformance mode used by this writer.</summary>
+            <value>One of the enumeration values that represent the conformance mode used by this writer.</value>
+        </member>
+        <member name="P:System.Formats.Cbor.CborWriter.ConvertIndefiniteLengthEncodings">
+            <summary>Gets a value that indicates whether the writer automatically converts indefinite-length encodings into definite-length equivalents.</summary>
+            <value><see langword="true" /> if the writer automatically converts indefinite-length encodings into definite-length equivalents; otherwise, <see langword="false" />.</value>
+        </member>
+        <member name="P:System.Formats.Cbor.CborWriter.AllowMultipleRootLevelValues">
+            <summary>Gets a value that indicates whether this writer allows multiple root-level CBOR data items.</summary>
+            <value><see langword="true" /> if the writer allows multiple root-level CBOR data items; otherwise, <see langword="false" />.</value>
+        </member>
+        <member name="P:System.Formats.Cbor.CborWriter.CurrentDepth">
+            <summary>Gets the writer's current level of nestedness in the CBOR document.</summary>
+            <value>A number that represents the current level of nestedness in the CBOR document.</value>
+        </member>
+        <member name="P:System.Formats.Cbor.CborWriter.BytesWritten">
+            <summary>Gets the total number of bytes that have been written to the buffer.</summary>
+            <value>The total number of bytes that have been written to the buffer.</value>
+        </member>
+        <member name="P:System.Formats.Cbor.CborWriter.IsWriteCompleted">
+            <summary>Declares whether the writer has completed writing a complete root-level CBOR document, or sequence of root-level CBOR documents.</summary>
+            <value><see langword="true" /> if the writer has completed writing a complete root-level CBOR document, or sequence of root-level CBOR documents; <see langword="false" /> otherwise.</value>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.#ctor(System.Formats.Cbor.CborConformanceMode,System.Boolean,System.Boolean)">
+            <summary>Initializes a new instance of <see cref="T:System.Formats.Cbor.CborWriter" /> class using the specified configuration.</summary>
+            <param name="conformanceMode">One of the enumeration values that specifies the guidance on the conformance checks performed on the encoded data.
+            Defaults to <see cref="F:System.Formats.Cbor.CborConformanceMode.Strict" /> conformance mode.</param>
+            <param name="convertIndefiniteLengthEncodings"><see langword="true" /> to enable automatically converting indefinite-length encodings into definite-length equivalents and allow use of indefinite-length write APIs in conformance modes that otherwise do not permit it; otherwise, <see langword="false" />.</param>
+            <param name="allowMultipleRootLevelValues"><see langword="true" /> to allow multiple root-level values to be written by the writer; otherwise, <see langword="false" />.</param>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="conformanceMode" /> is not a defined <see cref="T:System.Formats.Cbor.CborConformanceMode" />.</exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.#ctor(System.Formats.Cbor.CborConformanceMode,System.Boolean,System.Boolean,System.Int32)">
+            <summary>Initializes a new instance of <see cref="T:System.Formats.Cbor.CborWriter" /> class using the specified configuration.</summary>
+            <param name="conformanceMode">One of the enumeration values that specifies the guidance on the conformance checks performed on the encoded data.
+            Defaults to <see cref="F:System.Formats.Cbor.CborConformanceMode.Strict" /> conformance mode.</param>
+            <param name="convertIndefiniteLengthEncodings"><see langword="true" /> to enable automatically converting indefinite-length encodings into definite-length equivalents and allow use of indefinite-length write APIs in conformance modes that otherwise do not permit it; otherwise, <see langword="false" />.</param>
+            <param name="allowMultipleRootLevelValues"><see langword="true" /> to allow multiple root-level values to be written by the writer; otherwise, <see langword="false" />.</param>
+            <param name="initialCapacity">The initial capacity of the underlying buffer. The value -1 can be used to use the default capacity.</param>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            <para><paramref name="conformanceMode" /> is not a defined <see cref="T:System.Formats.Cbor.CborConformanceMode" />.</para>
+            <para>-or-</para>
+            <para><paramref name="initialCapacity"/> is not zero, positive, or the default value indicator -1.</para>
+            </exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.Reset">
+            <summary>Resets the writer to have no data, without releasing resources.</summary>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteEncodedValue(System.ReadOnlySpan{System.Byte})">
+            <summary>Writes a single CBOR data item which has already been encoded.</summary>
+            <param name="encodedValue">The encoded value to write.</param>
+            <exception cref="T:System.ArgumentException"><para><paramref name="encodedValue" /> is not a well-formed CBOR encoding.</para>
+            <para>-or-</para>
+            <para><paramref name="encodedValue" /> is not valid under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.Encode">
+            <summary>Returns a new array containing the encoded value.</summary>
+            <returns>A precisely-sized array containing the encoded value.</returns>
+            <exception cref="T:System.InvalidOperationException">The writer does not contain a complete CBOR value or sequence of root-level values.</exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.Encode(System.Span{System.Byte})">
+            <summary>Writes the encoded representation of the data to <paramref name="destination" />.</summary>
+            <param name="destination">The buffer in which to write.</param>
+            <returns>The number of bytes written to <paramref name="destination" />.</returns>
+            <exception cref="T:System.InvalidOperationException">The writer does not contain a complete CBOR value or sequence of root-level values.</exception>
+            <exception cref="T:System.ArgumentException">The destination buffer is not large enough to hold the encoded value.</exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.TryEncode(System.Span{System.Byte},System.Int32@)">
+            <summary>Attempts to write the encoded representation of the data to <paramref name="destination" />.</summary>
+            <param name="destination">The buffer in which to write.</param>
+            <param name="bytesWritten">When this method returns, contains the number of bytes written to <paramref name="destination" />.</param>
+            <returns><see langword="true" /> if the encode succeeded, <see langword="false" /> if <paramref name="destination" /> is too small.</returns>
+            <exception cref="T:System.InvalidOperationException">The writer does not contain a complete CBOR value or sequence of root-level values.</exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteInt32(System.Int32)">
+            <summary>Writes a value as a signed integer encoding (major types 0,1)</summary>
+            <param name="value">The value to write</param>
+            <exception cref="T:System.InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+            <para>-or-</para>
+            <para>The major type of the encoded value is not permitted in the parent data item.</para>
+            <para>-or-</para>
+            <para>The written data is not accepted under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteInt64(System.Int64)">
+            <summary>Writes the provided value as a signed integer encoding (major types 0,1)</summary>
+            <param name="value">The value to write</param>
+            <exception cref="T:System.InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+            <para>-or-</para>
+            <para>The major type of the encoded value is not permitted in the parent data item.</para>
+            <para>-or-</para>
+            <para>The written data is not accepted under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteUInt32(System.UInt32)">
+            <summary>Writes a value as an unsigned integer encoding (major type 0).</summary>
+            <param name="value">The value to write</param>
+            <exception cref="T:System.InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+            <para>-or-</para>
+            <para>The major type of the encoded value is not permitted in the parent data item.</para>
+            <para>-or-</para>
+            <para>The written data is not accepted under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteUInt64(System.UInt64)">
+            <summary>Writes a value as an unsigned integer encoding (major type 0).</summary>
+            <param name="value">The value to write</param>
+            <exception cref="T:System.InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+            <para>-or-</para>
+            <para>The major type of the encoded value is not permitted in the parent data item.</para>
+            <para>-or-</para>
+            <para>The written data is not accepted under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteCborNegativeIntegerRepresentation(System.UInt64)">
+            <summary>Writes the provided value as a CBOR negative integer representation (major type 1).</summary>
+            <param name="value">An unsigned integer denoting -1 minus the integer.</param>
+            <exception cref="T:System.InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+            <para>-or-</para>
+            <para>The major type of the encoded value is not permitted in the parent data item.</para>
+            <para>-or-</para>
+            <para>The written data is not accepted under the current conformance mode.</para></exception>
+            <remarks>
+            This method supports encoding integers between -18446744073709551616 and -1.
+            Useful for handling values that do not fit in the <see cref="T:System.Int64" /> type.
+            </remarks>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteTag(System.Formats.Cbor.CborTag)">
+            <summary>Assign a semantic tag (major type 6) to the next data item.</summary>
+            <param name="tag">The value to write.</param>
+            <exception cref="T:System.InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+            <para>-or-</para>
+            <para>The major type of the encoded value is not permitted in the parent data item.</para>
+            <para>-or-</para>
+            <para>The written data is not accepted under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteDateTimeOffset(System.DateTimeOffset)">
+            <summary>Writes the provided value as a tagged date/time string, as described in RFC7049 section 2.4.1.</summary>
+            <param name="value">The value to write.</param>
+            <exception cref="T:System.InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+            <para>-or-</para>
+            <para>The major type of the encoded value is not permitted in the parent data item.</para>
+            <para>-or-</para>
+            <para>The written data is not accepted under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteUnixTimeSeconds(System.Int64)">
+            <summary>Writes a unix time in seconds as a tagged date/time value, as described in RFC7049 section 2.4.1.</summary>
+            <param name="seconds">The value to write.</param>
+            <exception cref="T:System.InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+            <para>-or-</para>
+            <para>The major type of the encoded value is not permitted in the parent data item.</para>
+            <para>-or-</para>
+            <para>The written data is not accepted under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteUnixTimeSeconds(System.Double)">
+            <summary>Writes a unix time in seconds as a tagged date/time value, as described in RFC7049 section 2.4.1.</summary>
+            <param name="seconds">The value to write.</param>
+            <exception cref="T:System.ArgumentException">The <paramref name="seconds" /> parameter cannot be infinite or NaN.</exception>
+            <exception cref="T:System.InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+            <para>-or-</para>
+            <para>The major type of the encoded value is not permitted in the parent data item.</para>
+            <para>-or-</para>
+            <para>The written data is not accepted under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteBigInteger(System.Numerics.BigInteger)">
+            <summary>Writes the provided value as a tagged bignum encoding, as described in RFC7049 section 2.4.2.</summary>
+            <param name="value">The value to write.</param>
+            <exception cref="T:System.InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+            <para>-or-</para>
+            <para>The major type of the encoded value is not permitted in the parent data item.</para>
+            <para>-or-</para>
+            <para>The written data is not accepted under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteDecimal(System.Decimal)">
+            <summary>Writes the provided value value as a tagged decimal fraction encoding, as described in RFC7049 section 2.4.3</summary>
+            <param name="value">The value to write.</param>
+            <exception cref="T:System.InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+            <para>-or-</para>
+            <para>The major type of the encoded value is not permitted in the parent data item.</para>
+            <para>-or-</para>
+            <para>The written data is not accepted under the current conformance mode.</para></exception>
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.DecimalHelpers.Deconstruct(System.Decimal,System.Decimal@,System.Byte@)">
+            deconstructs a decimal value into its signed integral component and negative base-10 exponent
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.DecimalHelpers.ReconstructFromNegativeScale(System.Decimal,System.Byte)">
+            reconstructs a decimal value out of a signed integral component and a negative base-10 exponent
+        </member>
+        <member name="M:System.Formats.Cbor.CborWriter.WriteHalf(System.UInt16)">
+            <summary>Writes a half-precision floating point number (major type 7).</summary>
+            <param name="value">The value to write.</param>
+            <exception cref="T:System.InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+            <para>-or-</para>
+            <para>The major type of the encoded value is not permitted in the parent data item.</para>
+            <para>-or-</para>
+            <para>The written data is not accepted under the current conformance mode.</para></exception>
+        </member>
+        <member name="T:System.Formats.Cbor.CborConformanceMode">
+            <summary>Defines supported conformance modes for encoding and decoding CBOR data.</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborConformanceMode.Lax">
+            <summary>Ensures that the CBOR data is well-formed, as specified in RFC7049.</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborConformanceMode.Strict">
+            <summary>
+            <para>Ensures that the CBOR data adheres to strict mode, as specified in RFC7049 section 3.10.</para>
+            <para>Extends lax conformance with the following requirements:</para>
+            <list type="bullet">
+            <item><description>Maps (major type 5) must not contain duplicate keys.</description></item>
+            <item><description>Simple values (major type 7) must be encoded as small a possible and exclude the reserved values 24-31.</description></item>
+            <item><description>UTF-8 string encodings must be valid.</description></item>
+            </list>
+            </summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborConformanceMode.Canonical">
+            <summary>
+            <para>Ensures that the CBOR data is canonical, as specified in RFC7049 section 3.9.</para>
+            <para>Extends strict conformance with the following requirements:</para>
+            <list type="bullet">
+            <item><description>Integers must be encoded as small as possible.</description></item>
+            <item><description>Maps (major type 5) must contain keys sorted by encoding.</description></item>
+            <item><description>Indefinite-length items must be made into definite-length items.</description></item>
+            </list>
+            </summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborConformanceMode.Ctap2Canonical">
+            <summary>
+            <para>Ensures that the CBOR data is canonical, as specified by the CTAP v2.0 standard, section 6.</para>
+            <para>Extends strict conformance with the following requirements:</para>
+            <list type="bullet">
+            <item><description>Maps (major type 5) must contain keys sorted by encoding.</description></item>
+            <item><description>Indefinite-length items must be made into definite-length items.</description></item>
+            <item><description>Integers must be encoded as small as possible.</description></item>
+            <item><description>The representations of any floating-point values are not changed.</description></item>
+            <item><description>CBOR tags (major type 6) are not permitted.</description></item>
+            </list>
+            </summary>
+        </member>
+        <member name="T:System.Formats.Cbor.CborMajorType">
+            <summary>
+              Represents CBOR Major Types, as defined in RFC7049 section 2.1.
+            </summary>
+        </member>
+        <member name="T:System.Formats.Cbor.CborAdditionalInfo">
+            <summary>
+              Represents the 5-bit additional information included in a CBOR initial byte.
+            </summary>
+        </member>
+        <member name="T:System.Formats.Cbor.CborInitialByte">
+            <summary>
+              Represents a CBOR initial byte
+            </summary>
+        </member>
+        <member name="T:System.Formats.Cbor.CborTag">
+            <summary>Represents a CBOR semantic tag (major type 6).</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborTag.DateTimeString">
+            <summary>Tag value for RFC3339 date/time strings.</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborTag.UnixTimeSeconds">
+            <summary>Tag value for Epoch-based date/time strings.</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborTag.UnsignedBigNum">
+            <summary>Tag value for unsigned bignum encodings.</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborTag.NegativeBigNum">
+            <summary>Tag value for negative bignum encodings.</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborTag.DecimalFraction">
+            <summary>Tag value for decimal fraction encodings.</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborTag.BigFloat">
+            <summary>Tag value for big float encodings.</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborTag.Base64UrlLaterEncoding">
+            <summary>Tag value for byte strings, meant for later encoding to a base64url string representation.</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborTag.Base64StringLaterEncoding">
+            <summary>Tag value for byte strings, meant for later encoding to a base64 string representation.</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborTag.Base16StringLaterEncoding">
+            <summary>Tag value for byte strings, meant for later encoding to a base16 string representation.</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborTag.EncodedCborDataItem">
+            <summary>Tag value for byte strings containing embedded CBOR data item encodings.</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborTag.Uri">
+            <summary>Tag value for Uri strings, as defined in RFC3986.</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborTag.Base64Url">
+            <summary>Tag value for base64url-encoded text strings, as defined in RFC4648.</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborTag.Base64">
+            <summary>Tag value for base64-encoded text strings, as defined in RFC4648.</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborTag.Regex">
+            <summary>Tag value for regular expressions in Perl Compatible Regular Expressions / Javascript syntax.</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborTag.MimeMessage">
+            <summary>Tag value for MIME messages (including all headers), as defined in RFC2045.</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborTag.SelfDescribeCbor">
+            <summary>Tag value for the Self-Describe CBOR header (0xd9d9f7).</summary>
+        </member>
+        <member name="T:System.Formats.Cbor.CborSimpleValue">
+            <summary>Represents a CBOR simple value (major type 7).</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborSimpleValue.False">
+            <summary>Represents the value 'false'.</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborSimpleValue.True">
+            <summary>Represents the value 'true'.</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborSimpleValue.Null">
+            <summary>Represents the value 'null'.</summary>
+        </member>
+        <member name="F:System.Formats.Cbor.CborSimpleValue.Undefined">
+            <summary>Represents an undefined value, to be used by an encoder as a substitute for a data item with an encoding problem.</summary>
+        </member>
+        <member name="T:System.Formats.Cbor.CborContentException">
+            <summary>The exception that's thrown when CBOR data is invalid.</summary>
+        </member>
+        <member name="M:System.Formats.Cbor.CborContentException.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Formats.Cbor.CborContentException" /> class using the provided message.
+            </summary>
+            <param name="message">The error message that explains the reason for the exception.</param>
+        </member>
+        <member name="M:System.Formats.Cbor.CborContentException.#ctor(System.String,System.Exception)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Formats.Cbor.CborContentException" /> class,
+            using the provided message and exception that is the cause of this exception.
+            </summary>
+            <param name="message">The error message that explains the reason for the exception.</param>
+            <param name="inner">The exception that is the cause of the current exception.</param>
+        </member>
+        <member name="M:System.Formats.Cbor.CborContentException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Formats.Cbor.CborContentException" /> class with serialized data.
+            </summary>
+            <param name="info">The object that holds the serialized object data.</param>
+            <param name="context">The contextual information about the source or destination.</param>
+        </member>
+        <member name="P:System.SR.Argument_EncodeDestinationTooSmall">
+            <summary>The destination is too small to hold the encoded value.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_PopMajorTypeMismatch">
+            <summary>Cannot perform the requested operation, the current major type context is '{0}'.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_NotAtEndOfDefiniteLengthDataItem">
+            <summary>Not at end of the definite-length data item.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_NotAtEndOfIndefiniteLengthDataItem">
+            <summary>Not at end of the indefinite-length data item.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported">
+            <summary>CBOR Conformance mode '{0}' does not support indefinite-length data items.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_ConformanceMode_NonCanonicalIntegerRepresentation">
+            <summary>CBOR Conformance mode '{0}' does not support non-canonical integer representations.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_ConformanceMode_RequiresDefiniteLengthItems">
+            <summary>CBOR Conformance mode '{0}' does not support indefinite-length items.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_ConformanceMode_ContainsDuplicateKeys">
+            <summary>CBOR Conformance mode '{0}' does not support duplicate keys.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_ConformanceMode_KeysNotInSortedOrder">
+            <summary>CBOR keys not sorted in accordance with conformance mode '{0}'.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_ConformanceMode_TagsNotSupported">
+            <summary>CBOR Conformance mode '{0}' does not support tagged values.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Reader_DefiniteLengthExceedsBufferSize">
+            <summary>Declared definite length of CBOR data item exceeds available buffer size.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Reader_NoMoreDataItemsToRead">
+            <summary>No more CBOR data items to read in the current context.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer">
+            <summary>Unexpected end of CBOR encoding data.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Reader_InvalidCbor_IndefiniteLengthStringContainsInvalidDataItem">
+            <summary>Indefinite-length CBOR string nests an invalid data item of major type {0}.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Reader_MajorTypeMismatch">
+            <summary>Cannot perform the requested operation, the next CBOR data item is of major type '{0}'.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Reader_IsAtRootContext">
+            <summary>CBOR reader is already at the root data item context.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Reader_InvalidCbor_TagNotFollowedByValue">
+            <summary>A CBOR tag should always be followed by a data item.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Reader_InvalidCbor_InvalidIntegerEncoding">
+            <summary>CBOR initial byte contains invalid integer encoding</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Reader_InvalidCbor_KeyMissingValue">
+            <summary>The current CBOR map contains an incomplete key/value pair.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Reader_NotAFloatEncoding">
+            <summary>Data item does not encode a floating point number.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Reader_ReadingAsLowerPrecision">
+            <summary>Attempting to read floating point encoding as a lower-precision value.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Reader_NotABooleanEncoding">
+            <summary>CBOR simple value does not encode a boolean value.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Reader_NotASimpleValueEncoding">
+            <summary>CBOR data item does not encode a simple value.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Reader_NotANullEncoding">
+            <summary>CBOR simple value does not encode null.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_ConformanceMode_InvalidSimpleValueEncoding">
+            <summary>CBOR Conformance mode '{0}' does not support simple values in the range 24-31 and must be encoded as small as possible.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Reader_InvalidCbor_UnexpectedBreakByte">
+            <summary>CBOR definite-length data items contains unexpected break byte.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Reader_Skip_InvalidState">
+            <summary>Reader state '{0}' is not at the start of a data item.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Reader_InvalidCbor_InvalidUtf8StringEncoding">
+            <summary>CBOR text string payload is not valid a UTF-8 encoding.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Reader_NotIndefiniteLengthString">
+            <summary>CBOR string is not of indefinite length.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Reader_TagMismatch">
+            <summary>CBOR tag does not match expected value.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Reader_InvalidDateTimeEncoding">
+            <summary>Not a valid tagged RFC3339 DateTime encoding.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Reader_InvalidUnixTimeEncoding">
+            <summary>Not a valid tagged unix time encoding.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Reader_InvalidBigNumEncoding">
+            <summary>Not a valid tagged bignum encoding.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Reader_InvalidDecimalEncoding">
+            <summary>Not a valid tagged decimal encoding.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Writer_PayloadIsNotValidCbor">
+            <summary>Not a valid CBOR value encoding.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Writer_IncompleteCborDocument">
+            <summary>Writer contains an incomplete CBOR document.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Writer_DefiniteLengthExceeded">
+            <summary>Adding a CBOR data item to the current context exceeds its definite length.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Writer_CannotNestDataItemsInIndefiniteLengthStrings">
+            <summary>Cannot nest data items in indefinite-length CBOR string contexts.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Writer_MapIncompleteKeyValuePair">
+            <summary>CBOR map incomplete; each key must be followed by a corresponding value.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Writer_InvalidUtf8String">
+            <summary>Not a valid UTF-8 encoding.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Writer_ValueCannotBeInfiniteOrNaN">
+            <summary>Value cannot be infinite or NaN.</summary>
+        </member>
+        <member name="P:System.SR.Cbor_Writer_DecimalOverflow">
+            <summary>Value was either too large or too small for a Decimal.</summary>
+        </member>
+        <member name="P:System.SR.CborContentException_DefaultMessage">
+            <summary>The CBOR encoding is invalid.</summary>
+        </member>
+        <member name="T:System.Runtime.InteropServices.LibraryImportAttribute">
+            <summary>
+            Attribute used to indicate a source generator should create a function for marshalling
+            arguments instead of relying on the runtime to generate an equivalent marshalling function at run-time.
+            </summary>
+            <remarks>
+            This attribute is meaningless if the source generator associated with it is not enabled.
+            The current built-in source generator only supports C# and only supplies an implementation when
+            applied to static, partial, non-generic methods.
+            </remarks>
+        </member>
+        <member name="M:System.Runtime.InteropServices.LibraryImportAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.InteropServices.LibraryImportAttribute"/>.
+            </summary>
+            <param name="libraryName">Name of the library containing the import.</param>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.LibraryName">
+            <summary>
+            Gets the name of the library containing the import.
+            </summary>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.EntryPoint">
+            <summary>
+            Gets or sets the name of the entry point to be called.
+            </summary>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshalling">
+            <summary>
+            Gets or sets how to marshal string arguments to the method.
+            </summary>
+            <remarks>
+            If this field is set to a value other than <see cref="F:System.Runtime.InteropServices.StringMarshalling.Custom" />,
+            <see cref="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshallingCustomType" /> must not be specified.
+            </remarks>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshallingCustomType">
+            <summary>
+            Gets or sets the <see cref="T:System.Type"/> used to control how string arguments to the method are marshalled.
+            </summary>
+            <remarks>
+            If this field is specified, <see cref="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshalling" /> must not be specified
+            or must be set to <see cref="F:System.Runtime.InteropServices.StringMarshalling.Custom" />.
+            </remarks>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.SetLastError">
+            <summary>
+            Gets or sets whether the callee sets an error (SetLastError on Windows or errno
+            on other platforms) before returning from the attributed method.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.InteropServices.StringMarshalling">
+            <summary>
+            Specifies how strings should be marshalled for generated p/invokes
+            </summary>
+        </member>
+        <member name="F:System.Runtime.InteropServices.StringMarshalling.Custom">
+            <summary>
+            Indicates the user is supplying a specific marshaller in <see cref="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshallingCustomType"/>.
+            </summary>
+        </member>
+        <member name="F:System.Runtime.InteropServices.StringMarshalling.Utf8">
+            <summary>
+            Use the platform-provided UTF-8 marshaller.
+            </summary>
+        </member>
+        <member name="F:System.Runtime.InteropServices.StringMarshalling.Utf16">
+            <summary>
+            Use the platform-provided UTF-16 marshaller.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.AllowNullAttribute">
+            <summary>Specifies that null is allowed as an input even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DisallowNullAttribute">
+            <summary>Specifies that null is disallowed as an input even if the corresponding type allows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullAttribute">
+            <summary>Specifies that an output may be null even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullAttribute">
+            <summary>Specifies that an output will not be null even if the corresponding type allows it. Specifies that an input argument was not null when the call returns.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute">
+            <summary>Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue"/>, the parameter may be null even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified return value condition.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter may be null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute">
+            <summary>Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue"/>, the parameter will not be null even if the corresponding type allows it.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified return value condition.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter will not be null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute">
+            <summary>Specifies that the output will be non-null if the named parameter is non-null.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.#ctor(System.String)">
+            <summary>Initializes the attribute with the associated parameter name.</summary>
+            <param name="parameterName">
+            The associated parameter name.  The output will be non-null if the argument to the parameter specified is non-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.ParameterName">
+            <summary>Gets the associated parameter name.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute">
+            <summary>Applied to a method that will never return under any circumstance.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute">
+            <summary>Specifies that the method will not return if the associated Boolean parameter is passed the specified value.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified parameter value.</summary>
+            <param name="parameterValue">
+            The condition parameter value. Code after the method will be considered unreachable by diagnostics if the argument to
+            the associated parameter matches this value.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.ParameterValue">
+            <summary>Gets the condition parameter value.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute">
+            <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String)">
+            <summary>Initializes the attribute with a field or property member.</summary>
+            <param name="member">
+            The field or property member that is promised to be not-null.
+            </param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String[])">
+            <summary>Initializes the attribute with the list of field and property members.</summary>
+            <param name="members">
+            The list of field and property members that are promised to be not-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.Members">
+            <summary>Gets field or property member names.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute">
+            <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values when returning with the specified return value condition.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.#ctor(System.Boolean,System.String)">
+            <summary>Initializes the attribute with the specified return value condition and a field or property member.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated field or property member will not be null.
+            </param>
+            <param name="member">
+            The field or property member that is promised to be not-null.
+            </param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.#ctor(System.Boolean,System.String[])">
+            <summary>Initializes the attribute with the specified return value condition and list of field and property members.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated field and property members will not be null.
+            </param>
+            <param name="members">
+            The list of field and property members that are promised to be not-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.Members">
+            <summary>Gets field or property member names.</summary>
+        </member>
+    </members>
+</doc>

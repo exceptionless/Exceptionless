@@ -1,0 +1,172 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Serilog.Extensions.Logging</name>
+    </assembly>
+    <members>
+        <member name="T:Serilog.Extensions.Logging.LevelConvert">
+            <summary>
+            Converts between Serilog and Microsoft.Extensions.Logging level enum values.
+            </summary>
+        </member>
+        <member name="M:Serilog.Extensions.Logging.LevelConvert.ToSerilogLevel(Microsoft.Extensions.Logging.LogLevel)">
+            <summary>
+            Convert <paramref name="logLevel"/> to the equivalent Serilog <see cref="T:Serilog.Events.LogEventLevel"/>.
+            </summary>
+            <param name="logLevel">A Microsoft.Extensions.Logging <see cref="T:Microsoft.Extensions.Logging.LogLevel"/>.</param>
+            <returns>The Serilog equivalent of <paramref name="logLevel"/>.</returns>
+            <remarks>The <see cref="F:Microsoft.Extensions.Logging.LogLevel.None"/> value has no Serilog equivalent. It is mapped to
+            <see cref="F:Serilog.Events.LogEventLevel.Fatal"/> as the closest approximation, but this has entirely
+            different semantics.</remarks>
+        </member>
+        <member name="M:Serilog.Extensions.Logging.LevelConvert.ToExtensionsLevel(Serilog.Events.LogEventLevel)">
+            <summary>
+            Convert <paramref name="logEventLevel"/> to the equivalent Microsoft.Extensions.Logging <see cref="T:Microsoft.Extensions.Logging.LogLevel"/>.
+            </summary>
+            <param name="logEventLevel">A Serilog <see cref="T:Serilog.Events.LogEventLevel"/>.</param>
+            <returns>The Microsoft.Extensions.Logging equivalent of <paramref name="logEventLevel"/>.</returns>
+        </member>
+        <member name="T:Serilog.Extensions.Logging.LoggerProviderCollection">
+            <summary>
+            A dynamically-modifiable collection of <see cref="T:Microsoft.Extensions.Logging.ILoggerProvider"/>s.
+            </summary>
+        </member>
+        <member name="M:Serilog.Extensions.Logging.LoggerProviderCollection.AddProvider(Microsoft.Extensions.Logging.ILoggerProvider)">
+            <summary>
+            Add <paramref name="provider"/> to the collection.
+            </summary>
+            <param name="provider">A logger provider.</param>
+        </member>
+        <member name="P:Serilog.Extensions.Logging.LoggerProviderCollection.Providers">
+            <summary>
+            Get the currently-active providers.
+            </summary>
+            <remarks>
+            If the collection has been disposed, we'll leave the individual
+            providers with the job of throwing <see cref="T:System.ObjectDisposedException"/>.
+            </remarks>
+        </member>
+        <member name="M:Serilog.Extensions.Logging.LoggerProviderCollection.Dispose">
+            <inheritdoc cref="T:System.IDisposable"/>
+        </member>
+        <member name="T:Serilog.Extensions.Logging.SerilogLoggerFactory">
+            <summary>
+            A complete Serilog-backed implementation of the .NET Core logging infrastructure.
+            </summary>
+        </member>
+        <member name="M:Serilog.Extensions.Logging.SerilogLoggerFactory.#ctor(Serilog.ILogger,System.Boolean,Serilog.Extensions.Logging.LoggerProviderCollection)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Serilog.Extensions.Logging.SerilogLoggerFactory"/> class.
+            </summary>
+            <param name="logger">The Serilog logger; if not supplied, the static <see cref="T:Serilog.Log"/> will be used.</param>
+            <param name="dispose">When true, dispose <paramref name="logger"/> when the framework disposes the provider. If the
+            logger is not specified but <paramref name="dispose"/> is true, the <see cref="M:Serilog.Log.CloseAndFlush"/> method will be
+            called on the static <see cref="T:Serilog.Log"/> class instead.</param>
+            <param name="providerCollection">A <see cref="T:Serilog.Extensions.Logging.LoggerProviderCollection"/>, for use with <c>WriteTo.Providers()</c>.</param>
+        </member>
+        <member name="M:Serilog.Extensions.Logging.SerilogLoggerFactory.Dispose">
+            <summary>
+            Disposes the provider.
+            </summary>
+        </member>
+        <member name="M:Serilog.Extensions.Logging.SerilogLoggerFactory.CreateLogger(System.String)">
+            <summary>
+            Creates a new <see cref="T:Microsoft.Extensions.Logging.ILogger" /> instance.
+            </summary>
+            <param name="categoryName">The category name for messages produced by the logger.</param>
+            <returns>
+            The <see cref="T:Microsoft.Extensions.Logging.ILogger" />.
+            </returns>
+        </member>
+        <member name="M:Serilog.Extensions.Logging.SerilogLoggerFactory.AddProvider(Microsoft.Extensions.Logging.ILoggerProvider)">
+            <summary>
+            Adds an <see cref="T:Microsoft.Extensions.Logging.ILoggerProvider" /> to the logging system.
+            </summary>
+            <param name="provider">The <see cref="T:Microsoft.Extensions.Logging.ILoggerProvider" />.</param>
+        </member>
+        <member name="T:Serilog.Extensions.Logging.SerilogLoggerProvider">
+            <summary>
+            An <see cref="T:Microsoft.Extensions.Logging.ILoggerProvider"/> that pipes events through Serilog.
+            </summary>
+        </member>
+        <member name="M:Serilog.Extensions.Logging.SerilogLoggerProvider.#ctor(Serilog.ILogger,System.Boolean)">
+            <summary>
+            Construct a <see cref="T:Serilog.Extensions.Logging.SerilogLoggerProvider"/>.
+            </summary>
+            <param name="logger">A Serilog logger to pipe events through; if null, the static <see cref="T:Serilog.Log"/> class will be used.</param>
+            <param name="dispose">If true, the provided logger or static log class will be disposed/closed when the provider is disposed.</param>
+        </member>
+        <member name="M:Serilog.Extensions.Logging.SerilogLoggerProvider.CreateLogger(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Serilog.Extensions.Logging.SerilogLoggerProvider.BeginScope``1(``0)">
+            <inheritdoc cref="T:System.IDisposable" />
+        </member>
+        <member name="M:Serilog.Extensions.Logging.SerilogLoggerProvider.Enrich(Serilog.Events.LogEvent,Serilog.Core.ILogEventPropertyFactory)">
+            <inheritdoc />
+        </member>
+        <member name="M:Serilog.Extensions.Logging.SerilogLoggerProvider.SetScopeProvider(Microsoft.Extensions.Logging.IExternalScopeProvider)">
+            <inheritdoc />
+        </member>
+        <member name="M:Serilog.Extensions.Logging.SerilogLoggerProvider.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:Serilog.Extensions.Logging.SerilogLoggerProvider.DisposeAsync">
+            <inheritdoc />
+        </member>
+        <member name="T:Serilog.Extensions.Logging.SerilogLoggerProvider.ScopeCollector">
+            <summary>
+            A wrapper around a list to allow lazy initialization when iterating through scopes.
+            </summary>
+        </member>
+        <member name="T:Serilog.LoggerSinkConfigurationExtensions">
+            <summary>
+            Extensions for <see cref="T:Serilog.Configuration.LoggerSinkConfiguration"/>.
+            </summary>
+        </member>
+        <member name="M:Serilog.LoggerSinkConfigurationExtensions.Providers(Serilog.Configuration.LoggerSinkConfiguration,Serilog.Extensions.Logging.LoggerProviderCollection,Serilog.Events.LogEventLevel,Serilog.Core.LoggingLevelSwitch)">
+            <summary>
+            Write Serilog events to the providers in <paramref name="providers"/>.
+            </summary>
+            <param name="configuration">The `WriteTo` object.</param>
+            <param name="providers">A <see cref="T:Serilog.Extensions.Logging.LoggerProviderCollection"/> to write events to.</param>
+            <param name="restrictedToMinimumLevel">The minimum level for
+            events passed through the sink. Ignored when <paramref name="levelSwitch"/> is specified.</param>
+            <param name="levelSwitch">A switch allowing the pass-through minimum level
+            to be changed at runtime.</param>
+            <returns>A <see cref="T:Serilog.LoggerConfiguration"/> to allow method chaining.</returns>
+        </member>
+        <member name="T:Serilog.SerilogLoggerFactoryExtensions">
+            <summary>
+            Extends <see cref="T:Microsoft.Extensions.Logging.ILoggerFactory"/> with Serilog configuration methods.
+            </summary>
+        </member>
+        <member name="M:Serilog.SerilogLoggerFactoryExtensions.AddSerilog(Microsoft.Extensions.Logging.ILoggerFactory,Serilog.ILogger,System.Boolean)">
+            <summary>
+            Add Serilog to the logging pipeline.
+            </summary>
+            <param name="factory">The logger factory to configure.</param>
+            <param name="logger">The Serilog logger; if not supplied, the static <see cref="T:Serilog.Log"/> will be used.</param>
+            <param name="dispose">When true, dispose <paramref name="logger"/> when the framework disposes the provider. If the
+            logger is not specified but <paramref name="dispose"/> is true, the <see cref="M:Serilog.Log.CloseAndFlush"/> method will be
+            called on the static <see cref="T:Serilog.Log"/> class instead.</param>
+            <returns>Reference to the supplied <paramref name="factory"/>.</returns>
+        </member>
+        <member name="T:Serilog.SerilogLoggingBuilderExtensions">
+            <summary>
+            Extends <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> with Serilog configuration methods.
+            </summary>
+        </member>
+        <member name="M:Serilog.SerilogLoggingBuilderExtensions.AddSerilog(Microsoft.Extensions.Logging.ILoggingBuilder,Serilog.ILogger,System.Boolean)">
+            <summary>
+            Add Serilog to the logging pipeline.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder" /> to add logging provider to.</param>
+            <param name="logger">The Serilog logger; if not supplied, the static <see cref="T:Serilog.Log"/> will be used.</param>
+            <param name="dispose">When true, dispose <paramref name="logger"/> when the framework disposes the provider. If the
+            logger is not specified but <paramref name="dispose"/> is true, the <see cref="M:Serilog.Log.CloseAndFlush"/> method will be
+            called on the static <see cref="T:Serilog.Log"/> class instead.</param>
+            <returns>Reference to the supplied <paramref name="builder"/>.</returns>
+        </member>
+    </members>
+</doc>

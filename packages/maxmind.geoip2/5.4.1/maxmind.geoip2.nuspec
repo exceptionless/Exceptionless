@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>MaxMind.GeoIP2</id>
+    <version>5.4.1</version>
+    <authors>MaxMind.GeoIP2</authors>
+    <license type="expression">Apache-2.0</license>
+    <licenseUrl>https://licenses.nuget.org/Apache-2.0</licenseUrl>
+    <icon>MaxMind-logo.png</icon>
+    <readme>README.md</readme>
+    <projectUrl>https://github.com/maxmind/GeoIP2-dotnet</projectUrl>
+    <description>MaxMind GeoIP2 Database Reader and Web Service Client</description>
+    <tags>maxmind ip geoip geoip2 geolocation ipv4 ipv6</tags>
+    <repository type="git" url="https://github.com/maxmind/GeoIP2-dotnet" commit="c435847ab1916e93aecb3f5f1096e22b5e6588d1" />
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="MaxMind.Db" version="4.3.4" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Options" version="10.0.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net9.0">
+        <dependency id="MaxMind.Db" version="4.3.4" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Options" version="10.0.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net10.0">
+        <dependency id="MaxMind.Db" version="4.3.4" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Options" version="10.0.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="MaxMind.Db" version="4.3.4" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Options" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="System.Text.Json" version="10.0.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.1">
+        <dependency id="MaxMind.Db" version="4.3.4" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Options" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="System.Text.Json" version="10.0.0" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

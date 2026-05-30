@@ -1,0 +1,107 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>HealthChecks.Redis</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.Extensions.DependencyInjection.RedisHealthCheckBuilderExtensions">
+            <summary>
+            Extension methods to configure <see cref="T:HealthChecks.Redis.RedisHealthCheck"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.RedisHealthCheckBuilderExtensions.AddRedis(Microsoft.Extensions.DependencyInjection.IHealthChecksBuilder,System.String,System.String,System.Nullable{Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus},System.Collections.Generic.IEnumerable{System.String},System.Nullable{System.TimeSpan})">
+            <summary>
+            Add a health check for Redis services.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.DependencyInjection.IHealthChecksBuilder"/>.</param>
+            <param name="redisConnectionString">The Redis connection string to be used.</param>
+            <param name="name">The health check name. Optional. If <c>null</c> the type name 'redis' will be used for the name.</param>
+            <param name="failureStatus">
+            The <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus"/> that should be reported when the health check fails. Optional. If <c>null</c> then
+            the default status of <see cref="F:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy"/> will be reported.
+            </param>
+            <param name="tags">A list of tags that can be used to filter sets of health checks. Optional.</param>
+            <param name="timeout">An optional <see cref="T:System.TimeSpan"/> representing the timeout of the check.</param>
+            <returns>The specified <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.RedisHealthCheckBuilderExtensions.AddRedis(Microsoft.Extensions.DependencyInjection.IHealthChecksBuilder,System.Func{System.IServiceProvider,System.String},System.String,System.Nullable{Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus},System.Collections.Generic.IEnumerable{System.String},System.Nullable{System.TimeSpan})">
+            <summary>
+            Add a health check for Redis services.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.DependencyInjection.IHealthChecksBuilder"/>.</param>
+            <param name="connectionStringFactory">A factory to build the Redis connection string to use.</param>
+            <param name="name">The health check name. Optional. If <c>null</c> the type name 'redis' will be used for the name.</param>
+            <param name="failureStatus">
+            The <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus"/> that should be reported when the health check fails. Optional. If <c>null</c> then
+            the default status of <see cref="F:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy"/> will be reported.
+            </param>
+            <param name="tags">A list of tags that can be used to filter sets of health checks. Optional.</param>
+            <param name="timeout">An optional <see cref="T:System.TimeSpan"/> representing the timeout of the check.</param>
+            <returns>The specified <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.RedisHealthCheckBuilderExtensions.AddRedis(Microsoft.Extensions.DependencyInjection.IHealthChecksBuilder,StackExchange.Redis.IConnectionMultiplexer,System.String,System.Nullable{Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus},System.Collections.Generic.IEnumerable{System.String},System.Nullable{System.TimeSpan})">
+            <summary>
+            Add a health check for Redis services.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.DependencyInjection.IHealthChecksBuilder"/>.</param>
+            <param name="connectionMultiplexer">The Redis connection to be used.</param>
+            <param name="name">The health check name. Optional. If <c>null</c> the type name 'redis' will be used for the name.</param>
+            <param name="failureStatus">
+            The <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus"/> that should be reported when the health check fails. Optional. If <c>null</c> then
+            the default status of <see cref="F:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy"/> will be reported.
+            </param>
+            <param name="tags">A list of tags that can be used to filter sets of health checks. Optional.</param>
+            <param name="timeout">An optional <see cref="T:System.TimeSpan"/> representing the timeout of the check.</param>
+            <returns>The specified <paramref name="builder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.RedisHealthCheckBuilderExtensions.AddRedis(Microsoft.Extensions.DependencyInjection.IHealthChecksBuilder,System.Func{System.IServiceProvider,StackExchange.Redis.IConnectionMultiplexer},System.String,System.Nullable{Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus},System.Collections.Generic.IEnumerable{System.String},System.Nullable{System.TimeSpan})">
+            <summary>
+            Add a health check for Redis services.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.DependencyInjection.IHealthChecksBuilder"/>.</param>
+            <param name="connectionMultiplexerFactory">A factory to build the Redis connection to use.</param>
+            <param name="name">The health check name. Optional. If <c>null</c> the type name 'redis' will be used for the name.</param>
+            <param name="failureStatus">
+            The <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus"/> that should be reported when the health check fails. Optional. If <c>null</c> then
+            the default status of <see cref="F:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy"/> will be reported.
+            </param>
+            <param name="tags">A list of tags that can be used to filter sets of health checks. Optional.</param>
+            <param name="timeout">An optional <see cref="T:System.TimeSpan"/> representing the timeout of the check.</param>
+            <returns>The specified <paramref name="builder"/>.</returns>
+        </member>
+        <member name="T:HealthChecks.Redis.RedisHealthCheck">
+            <summary>
+            A health check for Redis services.
+            </summary>
+        </member>
+        <member name="M:HealthChecks.Redis.RedisHealthCheck.#ctor(System.Func{StackExchange.Redis.IConnectionMultiplexer})">
+            <summary>
+            Creates an instance of <seealso cref="T:HealthChecks.Redis.RedisHealthCheck"/> that calls provided factory when needed for the first time.
+            </summary>
+            <param name="connectionMultiplexerFactory">The factory method that connects to Redis.</param>
+            <remarks>
+            A call to <seealso cref="M:StackExchange.Redis.ConnectionMultiplexer.Connect(StackExchange.Redis.ConfigurationOptions,System.IO.TextWriter)"/> throws
+            when it is not possible to connect to the redis server(s). The call should not be invoked when
+            <seealso cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration"/> is created, but when <seealso cref="T:HealthChecks.Redis.RedisHealthCheck"/> needs the
+            <seealso cref="T:StackExchange.Redis.IConnectionMultiplexer"/> for the first time, so exceptions can be handled gracefully.
+            </remarks>
+        </member>
+        <member name="M:HealthChecks.Redis.RedisHealthCheck.CheckHealthAsync(Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckContext,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:ApiMarker">
+            <summary>
+            Used for test purposes only.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullAttribute">
+            <summary>Specifies that an output will not be null even if the corresponding type allows it. Specifies that an input argument was not null when the call returns.</summary>
+        </member>
+        <member name="M:Guard.ThrowIfNull``1(``0,System.Boolean,System.String)">
+            <summary>Throws an <see cref="T:System.ArgumentNullException"/> if <paramref name="argument"/> is null.</summary>
+            <param name="argument">The reference type argument to validate as non-null.</param>
+            <param name="throwOnEmptyString">Only applicable to strings.</param>
+            <param name="paramName">The name of the parameter with which <paramref name="argument"/> corresponds.</param>
+        </member>
+    </members>
+</doc>

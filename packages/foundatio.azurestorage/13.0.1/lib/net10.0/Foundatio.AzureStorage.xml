@@ -1,0 +1,156 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Foundatio.AzureStorage</name>
+    </assembly>
+    <members>
+        <member name="T:Foundatio.Queues.QueueMessageEnvelope`1">
+            <summary>
+            Envelope for wrapping queue data with metadata (correlation id, properties).
+            Azure Storage Queue only supports a message body, so we serialize this entire envelope.
+            </summary>
+        </member>
+        <member name="P:Foundatio.Queues.QueueMessageEnvelope`1.CorrelationId">
+            <summary>
+            Correlation ID for distributed tracing
+            </summary>
+        </member>
+        <member name="P:Foundatio.Queues.QueueMessageEnvelope`1.Properties">
+            <summary>
+            Custom properties/metadata
+            </summary>
+        </member>
+        <member name="P:Foundatio.Queues.QueueMessageEnvelope`1.Data">
+            <summary>
+            The actual message payload
+            </summary>
+        </member>
+        <member name="P:Foundatio.Queues.AzureStorageQueueEntry`1.PopReceipt">
+            <summary>
+            The current pop receipt for this message. This gets updated after each
+            UpdateMessageAsync call (renew lock, abandon with retry delay).
+            </summary>
+        </member>
+        <member name="T:Foundatio.Queues.AzureStorageQueueCompatibilityMode">
+            <summary>
+            Compatibility mode for Azure Storage Queue message format.
+            </summary>
+        </member>
+        <member name="F:Foundatio.Queues.AzureStorageQueueCompatibilityMode.Default">
+            <summary>
+            Default mode: Uses message envelope for full metadata support.
+            Supports CorrelationId and Properties. New installations should use this mode.
+            </summary>
+        </member>
+        <member name="F:Foundatio.Queues.AzureStorageQueueCompatibilityMode.Legacy">
+            <summary>
+            Legacy mode: Raw message body with Base64 encoding for v11 SDK compatibility.
+            Use this for backward compatibility with existing queues that have messages
+            written with the v11 Microsoft.Azure.Storage.Queue SDK.
+            </summary>
+        </member>
+        <member name="P:Foundatio.Queues.AzureStorageQueueOptions`1.DequeueInterval">
+            <summary>
+            The interval to wait between polling for new messages when the queue is empty.
+            </summary>
+        </member>
+        <member name="P:Foundatio.Queues.AzureStorageQueueOptions`1.RetryDelay">
+            <summary>
+            A function that returns the delay before retrying a failed message based on the attempt number.
+            Default is exponential backoff with jitter: 2^attempt seconds + random 0-100ms.
+            </summary>
+        </member>
+        <member name="P:Foundatio.Queues.AzureStorageQueueOptions`1.CompatibilityMode">
+             <summary>
+             Controls message format compatibility.
+             Default mode uses an envelope wrapper that supports CorrelationId and Properties.
+             Legacy mode is provided for backward compatibility with existing queues that have messages
+             written with the v11 Microsoft.Azure.Storage.Queue SDK (uses Base64 encoding and raw payload).
+            
+             <para><b>Default:</b> AzureStorageQueueCompatibilityMode.Default (envelope with metadata)</para>
+            
+             <para><b>Migration from v11 SDK:</b></para>
+             <list type="number">
+               <item><description>Set CompatibilityMode = Legacy to read existing v11 messages</description></item>
+               <item><description>Process all existing messages from the queue</description></item>
+               <item><description>Once queue is empty, switch to CompatibilityMode = Default</description></item>
+               <item><description>All new messages will use envelope format with metadata support</description></item>
+             </list>
+             </summary>
+        </member>
+        <member name="P:Foundatio.Queues.AzureStorageQueueOptions`1.ConfigureRetry">
+            <summary>
+            Optional action to configure Azure SDK retry options.
+            Default Azure SDK retry settings: MaxRetries=3, Delay=0.8s, MaxDelay=1min, Mode=Exponential.
+            </summary>
+            <example>
+            <code>
+            options.ConfigureRetry = retry =>
+            {
+                retry.MaxRetries = 5;
+                retry.Delay = TimeSpan.FromSeconds(1);
+                retry.Mode = RetryMode.Exponential;
+            };
+            </code>
+            </example>
+        </member>
+        <member name="M:Foundatio.Queues.AzureStorageQueueOptionsBuilder`1.RetryDelay(System.Func{System.Int32,System.TimeSpan})">
+            <summary>
+            Sets a custom retry delay function for failed messages.
+            </summary>
+            <param name="retryDelay">A function that takes the attempt number and returns the delay before the next retry.</param>
+        </member>
+        <member name="M:Foundatio.Queues.AzureStorageQueueOptionsBuilder`1.CompatibilityMode(Foundatio.Queues.AzureStorageQueueCompatibilityMode)">
+            <summary>
+            Sets the message format compatibility mode.
+            See <see cref="P:Foundatio.Queues.AzureStorageQueueOptions`1.CompatibilityMode"/> for migration guidance.
+            </summary>
+        </member>
+        <member name="M:Foundatio.Queues.AzureStorageQueueOptionsBuilder`1.ConfigureRetry(System.Action{Azure.Core.RetryOptions})">
+            <summary>
+            Configures Azure SDK retry options for transient failure handling.
+            </summary>
+            <param name="configure">Action to configure retry options.</param>
+            <example>
+            <code>
+            .ConfigureRetry(retry =>
+            {
+                retry.MaxRetries = 5;
+                retry.Delay = TimeSpan.FromSeconds(1);
+            })
+            </code>
+            </example>
+        </member>
+        <member name="P:Foundatio.Storage.AzureFileStorageOptions.ConfigureRetry">
+            <summary>
+            Optional action to configure Azure SDK retry options.
+            Default Azure SDK retry settings: MaxRetries=3, Delay=0.8s, MaxDelay=1min, Mode=Exponential.
+            </summary>
+            <example>
+            <code>
+            options.ConfigureRetry = retry =>
+            {
+                retry.MaxRetries = 5;
+                retry.Delay = TimeSpan.FromSeconds(1);
+                retry.Mode = RetryMode.Exponential;
+            };
+            </code>
+            </example>
+        </member>
+        <member name="M:Foundatio.Storage.AzureFileStorageOptionsBuilder.ConfigureRetry(System.Action{Azure.Core.RetryOptions})">
+            <summary>
+            Configures Azure SDK retry options for transient failure handling.
+            </summary>
+            <param name="configure">Action to configure retry options.</param>
+            <example>
+            <code>
+            .ConfigureRetry(retry =>
+            {
+                retry.MaxRetries = 5;
+                retry.Delay = TimeSpan.FromSeconds(1);
+            })
+            </code>
+            </example>
+        </member>
+    </members>
+</doc>

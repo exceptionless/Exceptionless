@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>StackExchange.Redis</id>
+    <version>2.6.122</version>
+    <authors>Stack Exchange, Inc.,Marc Gravell,Nick Craver</authors>
+    <owners>Stack Exchange, Inc.,Marc Gravell,Nick Craver</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <projectUrl>https://stackexchange.github.io/StackExchange.Redis/</projectUrl>
+    <description>High performance Redis client, incorporating both synchronous and asynchronous usage.</description>
+    <releaseNotes>https://stackexchange.github.io/StackExchange.Redis/ReleaseNotes</releaseNotes>
+    <copyright>2014 - 2023 Stack Exchange, Inc.</copyright>
+    <tags>Async Redis Cache PubSub Messaging</tags>
+    <repository type="git" url="https://github.com/StackExchange/StackExchange.Redis/" commit="ce9506b74774cc083a10373372ad2a1362bd4be5" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.6.1">
+        <dependency id="Microsoft.Bcl.AsyncInterfaces" version="5.0.0" exclude="Build,Analyzers" />
+        <dependency id="Pipelines.Sockets.Unofficial" version="2.2.8" exclude="Build,Analyzers" />
+        <dependency id="System.IO.Compression" version="4.3.0" exclude="Build,Analyzers" />
+        <dependency id="System.Runtime.InteropServices.RuntimeInformation" version="4.3.0" exclude="Build,Analyzers" />
+        <dependency id="System.Threading.Channels" version="5.0.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETFramework4.7.2">
+        <dependency id="Microsoft.Bcl.AsyncInterfaces" version="5.0.0" exclude="Build,Analyzers" />
+        <dependency id="Pipelines.Sockets.Unofficial" version="2.2.8" exclude="Build,Analyzers" />
+        <dependency id="System.IO.Compression" version="4.3.0" exclude="Build,Analyzers" />
+        <dependency id="System.Threading.Channels" version="5.0.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETCoreApp3.1">
+        <dependency id="Pipelines.Sockets.Unofficial" version="2.2.8" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETFramework6.0">
+        <dependency id="Pipelines.Sockets.Unofficial" version="2.2.8" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="Microsoft.Bcl.AsyncInterfaces" version="5.0.0" exclude="Build,Analyzers" />
+        <dependency id="Pipelines.Sockets.Unofficial" version="2.2.8" exclude="Build,Analyzers" />
+        <dependency id="System.Threading.Channels" version="5.0.0" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="System.IO.Compression" targetFramework=".NETFramework4.7.2" />
+    </frameworkAssemblies>
+  </metadata>
+</package>

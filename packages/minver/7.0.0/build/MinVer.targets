@@ -1,0 +1,100 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildAssemblyVersion)' == '' Or '$(MSBuildAssemblyVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <GenerateNuspecDependsOn>$(GenerateNuspecDependsOn);MinVer</GenerateNuspecDependsOn>
+    <GetPackageVersionDependsOn>$(GetPackageVersionDependsOn);MinVer</GetPackageVersionDependsOn>
+    <MinVerMSBuildCachingPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)bin\net8.0\MSBuild.Caching.dll</MinVerMSBuildCachingPath>
+    <MinVerMSBuildCachingPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)bin\net472\MSBuild.Caching.dll</MinVerMSBuildCachingPath>
+  </PropertyGroup>
+
+  <UsingTask TaskName="MSBuild.Caching.CacheGet" AssemblyFile="$(MinVerMSBuildCachingPath)" />
+  <UsingTask TaskName="MSBuild.Caching.CacheSet" AssemblyFile="$(MinVerMSBuildCachingPath)" />
+
+  <PropertyGroup>
+    <MinVerDetailed>low</MinVerDetailed>
+    <MinVerDetailed Condition="'$(MinVerVerbosity)' == 'detailed' Or '$(MinVerVerbosity)' == 'd' Or '$(MinVerVerbosity)' == 'diagnostic' Or '$(MinVerVerbosity)' == 'diag'">high</MinVerDetailed>
+    <MinVerTargetFramework>net8.0</MinVerTargetFramework>
+    <!-- https://learn.microsoft.com/en-us/dotnet/core/porting/versioning-sdk-msbuild-vs#supported-net-versions -->
+    <MinVerTargetFramework Condition="'$(MSBuildAssemblyVersion)' &gt;= '17.12'">net9.0</MinVerTargetFramework>
+    <MinVerTargetFramework Condition="'$(MSBuildAssemblyVersion)' &gt;= '18.0'">net10.0</MinVerTargetFramework>
+    <!-- The version property specified contains SemVer 2.0.0 components or SemVer 1.0.0 components that may not be supported on NuGet clients older than v4.3 -->
+    <NoWarn>$(NoWarn);NU5105</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DotNetPath>$(DOTNET_HOST_PATH)</DotNetPath>
+    <DotNetPath Condition=" '$(DotNetPath)' == '' ">dotnet</DotNetPath>
+  </PropertyGroup>
+
+  <Target Name="_MinVerClean" BeforeTargets="Clean" DependsOnTargets="MinVer" Condition="'$(GeneratePackageOnBuild)' == 'true'" />
+
+  <Target Name="MinVer" BeforeTargets="BeforeCompile;GetAssemblyVersion;CoreCompile" Condition="'$(DesignTimeBuild)' != 'true' AND '$(MinVerSkip)' != 'true'">
+    <Error Condition="'$(UsingMicrosoftNETSdk)' != 'true'" Code="MINVER0001" Text="MinVer only works in SDK-style projects." />
+    <Message Importance="$(MinVerDetailed)" Text="MinVer: [input] MSBuildProjectDirectory=$(MSBuildProjectDirectory)" />
+    <Message Importance="$(MinVerDetailed)" Text="MinVer: [input] MinVerAutoIncrement=$(MinVerAutoIncrement)" />
+    <Message Importance="$(MinVerDetailed)" Text="MinVer: [input] MinVerBuildMetadata=$(MinVerBuildMetadata)" />
+    <Message Importance="$(MinVerDetailed)" Text="MinVer: [input] MinVerDefaultPreReleaseIdentifiers=$(MinVerDefaultPreReleaseIdentifiers)" />
+    <Message Importance="$(MinVerDetailed)" Text="MinVer: [input] MinVerDefaultPreReleasePhase=$(MinVerDefaultPreReleasePhase)" />
+    <Message Importance="$(MinVerDetailed)" Text="MinVer: [input] MinVerIgnoreHeight=$(MinVerIgnoreHeight)" />
+    <Message Importance="$(MinVerDetailed)" Text="MinVer: [input] MinVerMinimumMajorMinor=$(MinVerMinimumMajorMinor)" />
+    <Message Importance="$(MinVerDetailed)" Text="MinVer: [input] MinVerTagPrefix=$(MinVerTagPrefix)" />
+    <Message Importance="$(MinVerDetailed)" Text="MinVer: [input] MinVerVerbosity=$(MinVerVerbosity)" />
+    <Message Importance="$(MinVerDetailed)" Text="MinVer: [input] MinVerVersionOverride=$(MinVerVersionOverride)" />
+    <ItemGroup>
+      <MinVerInputs Remove="@(MinVerInputs)" />
+      <MinVerConsoleOutput Remove="@(MinVerConsoleOutput)" />
+      <MinVerOutputVersion Remove="@(MinVerOutputVersion)" />
+    </ItemGroup>
+    <ItemGroup>
+      <MinVerInputs Include="--auto-increment &quot;$(MinVerAutoIncrement)&quot;" />
+      <MinVerInputs Include="--build-metadata &quot;$(MinVerBuildMetadata)&quot;" />
+      <MinVerInputs Include="--default-pre-release-identifiers &quot;$(MinVerDefaultPreReleaseIdentifiers)&quot;" />
+      <MinVerInputs Include="--default-pre-release-phase &quot;$(MinVerDefaultPreReleasePhase)&quot;" />
+      <MinVerInputs Include="--ignore-height" Condition="'$(MinVerIgnoreHeight)' == 'true'" />
+      <MinVerInputs Include="--minimum-major-minor &quot;$(MinVerMinimumMajorMinor)&quot;" />
+      <MinVerInputs Include="--tag-prefix &quot;$(MinVerTagPrefix)&quot;" />
+      <MinVerInputs Include="--verbosity &quot;$(MinVerVerbosity)&quot;" />
+      <MinVerInputs Include="--version-override &quot;$(MinVerVersionOverride)&quot;" />
+    </ItemGroup>
+    <CacheGet Key="@(MinVerInputs->'%(Identity)', ' ')"><Output TaskParameter="Value" PropertyName="MinVerVersion" /></CacheGet>
+    <Message Condition="'$(MinVerVersion)' != ''" Importance="$(MinVerDetailed)" Text="MinVer: Using cached MinVerVersion $(MinVerVersion)" />
+    <Exec Condition="'$(MinVerVersion)' == ''" Command="&quot;$(DotNetPath)&quot; &quot;$(MSBuildThisFileDirectory)bin/$(MinVerTargetFramework)/MinVer.dll&quot; &quot;$(MSBuildProjectDirectory)&quot; @(MinVerInputs->'%(Identity)', ' ')" ConsoleToMSBuild="true" StandardOutputImportance="Low" >
+      <Output TaskParameter="ConsoleOutput" ItemName="MinVerConsoleOutput" />
+    </Exec>
+    <ItemGroup Condition="'$(MinVerVersion)' == ''" >
+      <MinVerOutputVersion Include="@(MinVerConsoleOutput)" Condition="'$([System.String]::new(`%(Identity)`).StartsWith(`MinVer:`))' != 'true'" />
+    </ItemGroup>
+    <PropertyGroup Condition="'$(MinVerVersion)' == ''" >
+      <MinVerVersion>@(MinVerOutputVersion)</MinVerVersion>
+    </PropertyGroup>
+    <CacheSet Key="@(MinVerInputs->'%(Identity)', ' ')" Value="$(MinVerVersion)" />
+    <PropertyGroup>
+      <MinVerMajor>$(MinVerVersion.Split(`.`)[0])</MinVerMajor>
+      <MinVerMinor>$(MinVerVersion.Split(`.`)[1])</MinVerMinor>
+      <MinVerPatch>$(MinVerVersion.Split(`.`)[2].Split(`-`)[0].Split(`+`)[0])</MinVerPatch>
+      <MinVerPreRelease></MinVerPreRelease>
+      <MinVerPreRelease Condition="$(MinVerVersion.Split(`+`)[0].Contains(`-`))">$(MinVerVersion.Split(`+`)[0].Split(`-`, 2)[1])</MinVerPreRelease>
+      <MinVerBuildMetadata></MinVerBuildMetadata>
+      <MinVerBuildMetadata Condition="$(MinVerVersion.Contains(`+`))">$(MinVerVersion.Split(`+`, 2)[1])</MinVerBuildMetadata>
+      <AssemblyVersion>$(MinVerMajor).0.0.0</AssemblyVersion>
+      <FileVersion>$(MinVerMajor).$(MinVerMinor).$(MinVerPatch).0</FileVersion>
+      <InformationalVersion>$(MinVerVersion)</InformationalVersion>
+      <PackageVersion>$(MinVerMajor).$(MinVerMinor).$(MinVerPatch)</PackageVersion>
+      <PackageVersion Condition="'$(MinVerPreRelease)' != ''">$(PackageVersion)-$(MinVerPreRelease)</PackageVersion>
+      <Version>$(PackageVersion)</Version>
+    </PropertyGroup>
+    <Message Importance="$(MinVerDetailed)" Text="MinVer: [output] MinVerVersion=$(MinVerVersion)" />
+    <Message Importance="$(MinVerDetailed)" Text="MinVer: [output] MinVerMajor=$(MinVerMajor)" />
+    <Message Importance="$(MinVerDetailed)" Text="MinVer: [output] MinVerMinor=$(MinVerMinor)" />
+    <Message Importance="$(MinVerDetailed)" Text="MinVer: [output] MinVerPatch=$(MinVerPatch)" />
+    <Message Importance="$(MinVerDetailed)" Text="MinVer: [output] MinVerPreRelease=$(MinVerPreRelease)" />
+    <Message Importance="$(MinVerDetailed)" Text="MinVer: [output] MinVerBuildMetadata=$(MinVerBuildMetadata)" />
+    <Message Importance="$(MinVerDetailed)" Text="MinVer: [output] AssemblyVersion=$(AssemblyVersion)" />
+    <Message Importance="$(MinVerDetailed)" Text="MinVer: [output] FileVersion=$(FileVersion)" />
+    <Message Importance="$(MinVerDetailed)" Text="MinVer: [output] InformationalVersion=$(InformationalVersion)" />
+    <Message Importance="$(MinVerDetailed)" Text="MinVer: [output] PackageVersion=$(PackageVersion)" />
+    <Message Importance="$(MinVerDetailed)" Text="MinVer: [output] Version=$(Version)" />
+  </Target>
+
+</Project>

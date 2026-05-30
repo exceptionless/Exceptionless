@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>App.Metrics.AspNetCore.Abstractions</name>
+    </assembly>
+    <members>
+        <member name="M:App.Metrics.AspNetCore.IMetricsResponseWriter.WriteAsync(Microsoft.AspNetCore.Http.HttpContext,App.Metrics.MetricsDataValueSource,System.Threading.CancellationToken)">
+            <summary>
+                Writes the specified <see cref="T:App.Metrics.MetricsDataValueSource" /> to the <see cref="T:Microsoft.AspNetCore.Http.HttpContext" /> response.
+            </summary>
+            <param name="context">The <see cref="T:Microsoft.AspNetCore.Http.HttpContext" /> for which the snapshot will be written.</param>
+            <param name="metricsData">The metrics snapshot to write.</param>
+            <param name="token">The <see cref="T:System.Threading.CancellationToken" /></param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task" /> which writes the given <see cref="T:App.Metrics.MetricsDataValueSource" /> to the HTTP reponse.</returns>
+        </member>
+    </members>
+</doc>

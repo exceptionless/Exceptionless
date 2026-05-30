@@ -1,0 +1,2212 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>App.Metrics.Core</name>
+    </assembly>
+    <members>
+        <member name="T:App.Metrics.Apdex.ApdexProvider">
+            <summary>
+                The default <see cref="T:App.Metrics.Apdex.IApdexProvider">IApdexProvider</see> implementation which uses the specified
+                <see cref="T:App.Metrics.ReservoirSampling.IReservoir">reservoir</see> to sample values in order to caclulate an apdex score
+            </summary>
+            <seealso>
+                <cref>App.Metrics.Apdex.Interfaces.IApdexProvider</cref>
+            </seealso>
+        </member>
+        <member name="M:App.Metrics.Apdex.ApdexProvider.#ctor(App.Metrics.ReservoirSampling.IReservoir,System.Double)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Apdex.ApdexProvider" /> class.
+            </summary>
+            <param name="reservoir">The reservoir used to sample values in order to caclulate an apdex score.</param>
+            <param name="apdexTSeconds">The apdex t seconds used to calculate satisfied, tolerating and frustrating counts.</param>
+        </member>
+        <member name="M:App.Metrics.Apdex.DefaultApdexBuilder.Build(System.Double,System.Boolean,App.Metrics.IClock)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Apdex.DefaultApdexBuilder.Build(System.Func{App.Metrics.ReservoirSampling.IReservoir},System.Double,System.Boolean,App.Metrics.IClock)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Apdex.DefaultApdexManager.#ctor(App.Metrics.Apdex.IBuildApdexMetrics,App.Metrics.Registry.IMetricsRegistry,App.Metrics.IClock)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Apdex.DefaultApdexManager" /> class.
+            </summary>
+            <param name="apdexBuilder">The apdex builder.</param>
+            <param name="registry">The registry storing all metric data.</param>
+            <param name="clock">The clock.</param>
+        </member>
+        <member name="M:App.Metrics.Apdex.DefaultApdexManager.Track(App.Metrics.Apdex.ApdexOptions,System.Action)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Apdex.DefaultApdexManager.Track(App.Metrics.Apdex.ApdexOptions,App.Metrics.MetricTags,System.Action)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Apdex.DefaultApdexManager.Track(App.Metrics.Apdex.ApdexOptions,App.Metrics.MetricTags)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Apdex.DefaultApdexManager.Track(App.Metrics.Apdex.ApdexOptions)">
+            <inheritdoc />
+        </member>
+        <member name="T:App.Metrics.Apdex.DefaultApdexMetric">
+            <summary>
+                <see href="https://en.wikipedia.org/wiki/Apdex">Apdex</see> Metric allows us to measure an apdex score which is a
+                ratio of the number of satisfied and tolerating requests to the total requests made. Each satisfied request counts
+                as one request, while each tolerating request counts as half a satisfied request.
+            </summary>
+            <seealso>
+                <cref>App.Metrics.Facts.Metrics.IApdexMetric</cref>
+            </seealso>
+        </member>
+        <member name="M:App.Metrics.Apdex.DefaultApdexMetric.#ctor(App.Metrics.ReservoirSampling.IReservoir,System.Double,App.Metrics.IClock,System.Boolean)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Apdex.DefaultApdexMetric" /> class.
+            </summary>
+            <param name="reservoir">The reservoir to user for sampling.</param>
+            <param name="apdexTSeconds">The apdex t seconds value between 0 and 1.</param>
+            <param name="clock">The clock to use to measure processing duration.</param>
+            <param name="allowWarmup">
+                if set to <c>true</c> allows the service to warmup before starting to calculate the apdex,
+                the score will intitially be 1 until enough samples have been recorded.
+            </param>
+        </member>
+        <member name="M:App.Metrics.Apdex.DefaultApdexMetric.#ctor(App.Metrics.ReservoirSampling.IReservoir,App.Metrics.IClock,System.Boolean)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Apdex.DefaultApdexMetric" /> class.
+            </summary>
+            <param name="reservoir">The reservoir to user for sampling.</param>
+            <param name="clock">The clock to use to measure processing duration.</param>
+            <param name="allowWarmup">
+                if set to <c>true</c> allows the service to warmup before starting to calculate the apdex,
+                the score will intitially be 1 until enough samples have been recorded.
+            </param>
+        </member>
+        <member name="M:App.Metrics.Apdex.DefaultApdexMetric.#ctor(App.Metrics.Apdex.IApdexProvider,App.Metrics.IClock,System.Boolean)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Apdex.DefaultApdexMetric" /> class.
+            </summary>
+            <param name="apdexProvider">The apdexProvider implementation to use for sampling values to generate the apdex score.</param>
+            <param name="clock">The clock to use to measure processing duration.</param>
+            <param name="allowWarmup">
+                if set to <c>true</c> allows the service to warmup before starting to calculate the apdex,
+                the score will intitially be 1 until enough samples have been recorded.
+            </param>
+            <exception cref="T:System.ArgumentNullException">
+                clock and apdexProvider are required.
+            </exception>
+        </member>
+        <member name="P:App.Metrics.Apdex.DefaultApdexMetric.Value">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Apdex.DefaultApdexMetric.CurrentTime">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Apdex.DefaultApdexMetric.EndRecording">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Apdex.DefaultApdexMetric.GetValue(System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Apdex.DefaultApdexMetric.NewContext">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Apdex.DefaultApdexMetric.Reset">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Apdex.DefaultApdexMetric.StartRecording">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Apdex.DefaultApdexMetric.Track(System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Apdex.DefaultApdexMetric.Track(System.Action)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Apdex.DefaultApdexMetricProvider.Instance(App.Metrics.Apdex.ApdexOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Apdex.DefaultApdexMetricProvider.Instance(App.Metrics.Apdex.ApdexOptions,App.Metrics.MetricTags)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Apdex.DefaultApdexMetricProvider.Instance``1(App.Metrics.Apdex.ApdexOptions,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Apdex.DefaultApdexMetricProvider.Instance``1(App.Metrics.Apdex.ApdexOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="T:App.Metrics.Logging.ILog">
+            <summary>
+            Simple interface that represent a logger.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Logging.ILog.Log(App.Metrics.Logging.LogLevel,System.Func{System.String},System.Exception,System.Object[])">
+            <summary>
+            Log a message the specified log level.
+            </summary>
+            <param name="logLevel">The log level.</param>
+            <param name="messageFunc">The message function.</param>
+            <param name="exception">An optional exception.</param>
+            <param name="formatParameters">Optional format parameters for the message generated by the messagefunc. </param>
+            <returns>true if the message was logged. Otherwise false.</returns>
+            <remarks>
+            Note to implementers: the message func should not be called if the loglevel is not enabled
+            so as not to incur performance penalties.
+            
+            To check IsEnabled call Log with only LogLevel and check the return value, no event will be written.
+            </remarks>
+        </member>
+        <member name="T:App.Metrics.Logging.LogLevel">
+            <summary>
+            The log level.
+            </summary>
+        </member>
+        <member name="T:App.Metrics.Logging.ILogProvider">
+            <summary>
+            Represents a way to get a <see cref="T:App.Metrics.Logging.ILog"/>
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Logging.ILogProvider.GetLogger(System.String)">
+            <summary>
+            Gets the specified named logger.
+            </summary>
+            <param name="name">Name of the logger.</param>
+            <returns>The logger reference.</returns>
+        </member>
+        <member name="M:App.Metrics.Logging.ILogProvider.OpenNestedContext(System.String)">
+            <summary>
+            Opens a nested diagnostics context. Not supported in EntLib logging.
+            </summary>
+            <param name="message">The message to add to the diagnostics context.</param>
+            <returns>A disposable that when disposed removes the message from the context.</returns>
+        </member>
+        <member name="M:App.Metrics.Logging.ILogProvider.OpenMappedContext(System.String,System.String)">
+            <summary>
+            Opens a mapped diagnostics context. Not supported in EntLib logging.
+            </summary>
+            <param name="key">A key.</param>
+            <param name="value">A value.</param>
+            <returns>A disposable that when disposed removes the map from the context.</returns>
+        </member>
+        <member name="T:App.Metrics.Logging.LogProvider">
+            <summary>
+            Provides a mechanism to create instances of <see cref="T:App.Metrics.Logging.ILog" /> objects.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Logging.LogProvider.SetCurrentLogProvider(App.Metrics.Logging.ILogProvider)">
+            <summary>
+            Sets the current log provider.
+            </summary>
+            <param name="logProvider">The log provider.</param>
+        </member>
+        <member name="P:App.Metrics.Logging.LogProvider.IsDisabled">
+            <summary>
+            Gets or sets a value indicating whether this is logging is disabled.
+            </summary>
+            <value>
+            <c>true</c> if logging is disabled; otherwise, <c>false</c>.
+            </value>
+        </member>
+        <member name="P:App.Metrics.Logging.LogProvider.OnCurrentLogProviderSet">
+            <summary>
+            Sets an action that is invoked when a consumer of your library has called SetCurrentLogProvider. It is 
+            important that hook into this if you are using child libraries (especially ilmerged ones) that are using
+            LibLog (or other logging abstraction) so you adapt and delegate to them.
+            <see cref="M:App.Metrics.Logging.LogProvider.SetCurrentLogProvider(App.Metrics.Logging.ILogProvider)"/> 
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Logging.LogProvider.For``1">
+            <summary>
+            Gets a logger for the specified type.
+            </summary>
+            <typeparam name="T">The type whose name will be used for the logger.</typeparam>
+            <returns>An instance of <see cref="T:App.Metrics.Logging.ILog"/></returns>
+        </member>
+        <member name="M:App.Metrics.Logging.LogProvider.GetLogger(System.Type,System.String)">
+            <summary>
+            Gets a logger for the specified type.
+            </summary>
+            <param name="type">The type whose name will be used for the logger.</param>
+            <param name="fallbackTypeName">If the type is null then this name will be used as the log name instead</param>
+            <returns>An instance of <see cref="T:App.Metrics.Logging.ILog"/></returns>
+        </member>
+        <member name="M:App.Metrics.Logging.LogProvider.GetLogger(System.String)">
+            <summary>
+            Gets a logger with the specified name.
+            </summary>
+            <param name="name">The name.</param>
+            <returns>An instance of <see cref="T:App.Metrics.Logging.ILog"/></returns>
+        </member>
+        <member name="M:App.Metrics.Logging.LogProvider.OpenNestedContext(System.String)">
+            <summary>
+            Opens a nested diagnostics context.
+            </summary>
+            <param name="message">A message.</param>
+            <returns>An <see cref="T:System.IDisposable"/> that closes context when disposed.</returns>
+        </member>
+        <member name="M:App.Metrics.Logging.LogProvider.OpenMappedContext(System.String,System.String)">
+            <summary>
+            Opens a mapped diagnostics context.
+            </summary>
+            <param name="key">A key.</param>
+            <param name="value">A value.</param>
+            <returns>An <see cref="T:System.IDisposable"/> that closes context when disposed.</returns>
+        </member>
+        <member name="T:App.Metrics.Logging.LogProviders.LoupeLogProvider.WriteDelegate">
+            <summary>
+            The form of the Loupe Log.Write method we're using
+            </summary>
+        </member>
+        <member name="P:App.Metrics.Logging.LogProviders.LoupeLogProvider.ProviderIsAvailableOverride">
+            <summary>
+            Gets or sets a value indicating whether [provider is available override]. Used in tests.
+            </summary>
+            <value>
+            <c>true</c> if [provider is available override]; otherwise, <c>false</c>.
+            </value>
+        </member>
+        <member name="M:App.Metrics.Logging.LogProviders.LogMessageFormatter.SimulateStructuredLogging(System.Func{System.String},System.Object[])">
+            <summary>
+            Some logging frameworks support structured logging, such as serilog. This will allow you to add names to structured data in a format string:
+            For example: Log("Log message to {user}", user). This only works with serilog, but as the user of LibLog, you don't know if serilog is actually 
+            used. So, this class simulates that. it will replace any text in {curly braces} with an index number. 
+            
+            "Log {message} to {user}" would turn into => "Log {0} to {1}". Then the format parameters are handled using regular .net string.Format.
+            </summary>
+            <param name="messageBuilder">The message builder.</param>
+            <param name="formatParameters">The format parameters.</param>
+            <returns></returns>
+        </member>
+        <member name="M:App.Metrics.BucketHistogram.DefaultBucketHistogramBuilder.Build(System.Collections.Generic.IEnumerable{System.Double})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketHistogram.DefaultBucketHistogramManager.#ctor(App.Metrics.BucketHistogram.IBuildBucketHistogramMetrics,App.Metrics.Registry.IMetricsRegistry)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.BucketHistogram.DefaultBucketHistogramManager" /> class.
+            </summary>
+            <param name="registry">The registry storing all metric data.</param>
+            <param name="histogramBuilder">The histogram builder.</param>
+        </member>
+        <member name="M:App.Metrics.BucketHistogram.DefaultBucketHistogramManager.Update(App.Metrics.BucketHistogram.BucketHistogramOptions,System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketHistogram.DefaultBucketHistogramManager.Update(App.Metrics.BucketHistogram.BucketHistogramOptions,App.Metrics.MetricTags,System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketHistogram.DefaultBucketHistogramMetric.#ctor(System.Collections.Generic.IEnumerable{System.Double})">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.BucketHistogram.DefaultBucketHistogramMetric" /> class.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.BucketHistogram.DefaultBucketHistogramMetric.GetValue(System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketHistogram.DefaultBucketHistogramMetric.Reset">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketHistogram.DefaultBucketHistogramMetric.Update(System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketHistogram.DefaultBucketHistogramMetricProvider.#ctor(App.Metrics.BucketHistogram.IBuildBucketHistogramMetrics,App.Metrics.Registry.IMetricsRegistry)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Histogram.DefaultHistogramMetricProvider" /> class.
+            </summary>
+            <param name="histogramBuilder">The histogram builder.</param>
+            <param name="registry">The registry.</param>
+        </member>
+        <member name="M:App.Metrics.BucketHistogram.DefaultBucketHistogramMetricProvider.Instance(App.Metrics.BucketHistogram.BucketHistogramOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketHistogram.DefaultBucketHistogramMetricProvider.Instance``1(App.Metrics.BucketHistogram.BucketHistogramOptions,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketHistogram.DefaultBucketHistogramMetricProvider.Instance(App.Metrics.BucketHistogram.BucketHistogramOptions,App.Metrics.MetricTags)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketHistogram.DefaultBucketHistogramMetricProvider.Instance``1(App.Metrics.BucketHistogram.BucketHistogramOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Histogram.DefaultHistogramBuilder.Build(System.Func{App.Metrics.ReservoirSampling.IReservoir})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Histogram.DefaultHistogramManager.#ctor(App.Metrics.Histogram.IBuildHistogramMetrics,App.Metrics.Registry.IMetricsRegistry)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Histogram.DefaultHistogramManager" /> class.
+            </summary>
+            <param name="registry">The registry storing all metric data.</param>
+            <param name="histogramBuilder">The histogram builder.</param>
+        </member>
+        <member name="M:App.Metrics.Histogram.DefaultHistogramManager.Update(App.Metrics.Histogram.HistogramOptions,System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Histogram.DefaultHistogramManager.Update(App.Metrics.Histogram.HistogramOptions,App.Metrics.MetricTags,System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Histogram.DefaultHistogramManager.Update(App.Metrics.Histogram.HistogramOptions,System.Int64,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Histogram.DefaultHistogramManager.Update(App.Metrics.Histogram.HistogramOptions,App.Metrics.MetricTags,System.Int64,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Histogram.DefaultHistogramMetric.#ctor(App.Metrics.ReservoirSampling.IReservoir)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Histogram.DefaultHistogramMetric" /> class.
+            </summary>
+            <param name="reservoir">The reservoir to use for sampling.</param>
+        </member>
+        <member name="M:App.Metrics.Histogram.DefaultHistogramMetric.GetValue(System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Histogram.DefaultHistogramMetric.Reset">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Histogram.DefaultHistogramMetric.Update(System.Int64,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Histogram.DefaultHistogramMetric.Update(System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Histogram.DefaultHistogramMetricProvider.#ctor(App.Metrics.Histogram.IBuildHistogramMetrics,App.Metrics.Registry.IMetricsRegistry)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Histogram.DefaultHistogramMetricProvider" /> class.
+            </summary>
+            <param name="histogramBuilder">The histogram builder.</param>
+            <param name="registry">The registry.</param>
+        </member>
+        <member name="M:App.Metrics.Histogram.DefaultHistogramMetricProvider.Instance(App.Metrics.Histogram.HistogramOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Histogram.DefaultHistogramMetricProvider.Instance``1(App.Metrics.Histogram.HistogramOptions,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Histogram.DefaultHistogramMetricProvider.Instance(App.Metrics.Histogram.HistogramOptions,App.Metrics.MetricTags)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Histogram.DefaultHistogramMetricProvider.Instance``1(App.Metrics.Histogram.HistogramOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerBuilder.Build(App.Metrics.BucketHistogram.IBucketHistogramMetric,App.Metrics.IClock,App.Metrics.TimeUnit)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerBuilder.Build(System.Collections.Generic.IEnumerable{System.Double},App.Metrics.IClock,App.Metrics.TimeUnit)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerBuilder.Build(App.Metrics.BucketHistogram.IBucketHistogramMetric,App.Metrics.Meter.IMeterMetric,App.Metrics.IClock,App.Metrics.TimeUnit)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerBuilder.Build(System.Collections.Generic.IEnumerable{System.Double},App.Metrics.Meter.IMeterMetric,App.Metrics.IClock,App.Metrics.TimeUnit)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerManager.#ctor(App.Metrics.BucketTimer.IBuildBucketTimerMetrics,App.Metrics.Registry.IMetricsRegistry,App.Metrics.IClock)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.BucketTimer.DefaultBucketTimerManager" /> class.
+            </summary>
+            <param name="registry">The registry storing all metric data.</param>
+            <param name="timerBuilder">The timer builder.</param>
+            <param name="clock">The clock.</param>
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerManager.Time(App.Metrics.BucketTimer.BucketTimerOptions,System.Action)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerManager.Time(App.Metrics.BucketTimer.BucketTimerOptions,App.Metrics.MetricTags,System.Action)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerManager.Time(App.Metrics.BucketTimer.BucketTimerOptions,System.Action,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerManager.Time(App.Metrics.BucketTimer.BucketTimerOptions,App.Metrics.MetricTags,System.Action,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerManager.Time(App.Metrics.BucketTimer.BucketTimerOptions,App.Metrics.MetricTags,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerManager.Time(App.Metrics.BucketTimer.BucketTimerOptions,App.Metrics.MetricTags)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerManager.Time(App.Metrics.BucketTimer.BucketTimerOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerManager.Time(App.Metrics.BucketTimer.BucketTimerOptions,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerMetric.#ctor(App.Metrics.BucketHistogram.IBucketHistogramMetric,App.Metrics.IClock,App.Metrics.TimeUnit)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.BucketTimer.DefaultBucketTimerMetric" /> class.
+            </summary>
+            <param name="histogram">The histogram implementation to use.</param>
+            <param name="clock">The clock to use to measure processing duration.</param>
+            <param name="timeUnit">The time unit for this timer.</param>
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerMetric.#ctor(App.Metrics.BucketHistogram.IBucketHistogramMetric,App.Metrics.Meter.IMeterMetric,App.Metrics.IClock,App.Metrics.TimeUnit)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.BucketTimer.DefaultBucketTimerMetric" /> class.
+            </summary>
+            <param name="histogram">The histogram implementation to use.</param>
+            <param name="meter">The meter implementation to use to genreate the rate of events over time.</param>
+            <param name="clock">The clock to use to measure processing duration.</param>
+            <param name="timeUnit">The time unit for this timer.</param>
+        </member>
+        <member name="P:App.Metrics.BucketTimer.DefaultBucketTimerMetric.Value">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerMetric.CurrentTime">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerMetric.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerMetric.EndRecording">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerMetric.GetValue(System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerMetric.NewContext(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerMetric.NewContext">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerMetric.Record(System.Int64,App.Metrics.TimeUnit,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerMetric.Record(System.Int64,App.Metrics.TimeUnit)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerMetric.Reset">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerMetric.StartRecording">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerMetric.Time(System.Action,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerMetric.Time``1(System.Func{``0},System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerMetric.Time(System.Action)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerMetric.Time``1(System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerMetricProvider.#ctor(App.Metrics.BucketTimer.IBuildBucketTimerMetrics,App.Metrics.Registry.IMetricsRegistry,App.Metrics.IClock)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.BucketTimer.DefaultBucketTimerMetricProvider" /> class.
+            </summary>
+            <param name="timerBuilder">The timer builder.</param>
+            <param name="registry">The metrics registry.</param>
+            <param name="clock">The clock.</param>
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerMetricProvider.Instance(App.Metrics.BucketTimer.BucketTimerOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerMetricProvider.Instance(App.Metrics.BucketTimer.BucketTimerOptions,App.Metrics.MetricTags)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerMetricProvider.Instance``1(App.Metrics.BucketTimer.BucketTimerOptions,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerMetricProvider.WithHistogram``1(App.Metrics.BucketTimer.BucketTimerOptions,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.BucketTimer.DefaultBucketTimerMetricProvider.WithHistogram``1(App.Metrics.BucketTimer.BucketTimerOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerBuilder.Build(App.Metrics.Histogram.IHistogramMetric,App.Metrics.IClock)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerBuilder.Build(System.Func{App.Metrics.ReservoirSampling.IReservoir},App.Metrics.IClock)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerBuilder.Build(App.Metrics.Histogram.IHistogramMetric,App.Metrics.Meter.IMeterMetric,App.Metrics.IClock)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerBuilder.Build(System.Func{App.Metrics.ReservoirSampling.IReservoir},App.Metrics.Meter.IMeterMetric,App.Metrics.IClock)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerManager.#ctor(App.Metrics.Timer.IBuildTimerMetrics,App.Metrics.Registry.IMetricsRegistry,App.Metrics.IClock)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Timer.DefaultTimerManager" /> class.
+            </summary>
+            <param name="registry">The registry storing all metric data.</param>
+            <param name="timerBuilder">The timer builder.</param>
+            <param name="clock">The clock.</param>
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerManager.Time(App.Metrics.Timer.TimerOptions,System.Action)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerManager.Time(App.Metrics.Timer.TimerOptions,App.Metrics.MetricTags,System.Action)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerManager.Time(App.Metrics.Timer.TimerOptions,System.Action,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerManager.Time(App.Metrics.Timer.TimerOptions,App.Metrics.MetricTags,System.Action,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerManager.Time(App.Metrics.Timer.TimerOptions,App.Metrics.MetricTags,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerManager.Time(App.Metrics.Timer.TimerOptions,App.Metrics.MetricTags)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerManager.Time(App.Metrics.Timer.TimerOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerManager.Time(App.Metrics.Timer.TimerOptions,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetric.#ctor(App.Metrics.Histogram.IHistogramMetric,App.Metrics.IClock)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Timer.DefaultTimerMetric" /> class.
+            </summary>
+            <param name="histogram">The histogram implementation to use.</param>
+            <param name="clock">The clock to use to measure processing duration.</param>
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetric.#ctor(App.Metrics.ReservoirSampling.IReservoir,App.Metrics.IClock)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Timer.DefaultTimerMetric" /> class.
+            </summary>
+            <param name="reservoir">The reservoir implementation to use for sampling values to generate the histogram.</param>
+            <param name="clock">The clock to use to measure processing duration.</param>
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetric.#ctor(App.Metrics.ReservoirSampling.IReservoir,App.Metrics.Meter.IMeterMetric,App.Metrics.IClock)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Timer.DefaultTimerMetric" /> class.
+            </summary>
+            <param name="reservoir">The reservoir to use for sampling within the histogram.</param>
+            <param name="meter">The meter implementation to use to genreate the rate of events over time.</param>
+            <param name="clock">The clock to use to measure processing duration.</param>
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetric.#ctor(App.Metrics.Histogram.IHistogramMetric,App.Metrics.Meter.IMeterMetric,App.Metrics.IClock)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Timer.DefaultTimerMetric" /> class.
+            </summary>
+            <param name="histogram">The histogram implementation to use.</param>
+            <param name="meter">The meter implementation to use to genreate the rate of events over time.</param>
+            <param name="clock">The clock to use to measure processing duration.</param>
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetric.#ctor(App.Metrics.ReservoirSampling.IReservoir,App.Metrics.IClock,App.Metrics.Scheduling.IMeterTickerScheduler)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Timer.DefaultTimerMetric" /> class.
+            </summary>
+            <param name="reservoir">The reservoir implementation to use for sampling values to generate the histogram.</param>
+            <param name="clock">The clock to use to measure processing duration.</param>
+            <param name="meterTickScheduler">The scheduler used to tick the associated meter.</param>
+        </member>
+        <member name="P:App.Metrics.Timer.DefaultTimerMetric.Value">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetric.CurrentTime">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetric.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetric.EndRecording">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetric.GetValue(System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetric.NewContext(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetric.NewContext">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetric.Record(System.Int64,App.Metrics.TimeUnit,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetric.Record(System.Int64,App.Metrics.TimeUnit)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetric.Reset">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetric.StartRecording">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetric.Time(System.Action,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetric.Time``1(System.Func{``0},System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetric.Time(System.Action)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetric.Time``1(System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetricProvider.#ctor(App.Metrics.Timer.IBuildTimerMetrics,App.Metrics.Registry.IMetricsRegistry,App.Metrics.IClock)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Timer.DefaultTimerMetricProvider" /> class.
+            </summary>
+            <param name="timerBuilder">The timer builder.</param>
+            <param name="registry">The metrics registry.</param>
+            <param name="clock">The clock.</param>
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetricProvider.Instance(App.Metrics.Timer.TimerOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetricProvider.Instance(App.Metrics.Timer.TimerOptions,App.Metrics.MetricTags)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetricProvider.Instance``1(App.Metrics.Timer.TimerOptions,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetricProvider.WithHistogram``1(App.Metrics.Timer.TimerOptions,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Timer.DefaultTimerMetricProvider.WithHistogram``1(App.Metrics.Timer.TimerOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="T:App.Metrics.EnvOutputFormattingBuilder">
+            <summary>
+                Builder for configuring environment information output formatting using an <see cref="T:App.Metrics.IMetricsBuilder" />.
+            </summary>
+        </member>
+        <member name="P:App.Metrics.EnvOutputFormattingBuilder.Builder">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.EnvOutputFormattingBuilder.Using(App.Metrics.Formatters.IEnvOutputFormatter)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.EnvOutputFormattingBuilder.Using``1">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.MetricFieldsBuilder.Builder">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricFieldsBuilder.Configure(System.Action{App.Metrics.MetricFields})">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.MetricsBuilder.Configuration">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.MetricsBuilder.MetricFields">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.MetricsBuilder.Filter">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.MetricsBuilder.OutputEnvInfo">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.MetricsBuilder.OutputMetrics">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.MetricsBuilder.Report">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.MetricsBuilder.SampleWith">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.MetricsBuilder.TimeWith">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsBuilder.Build">
+            <inheritdoc />
+        </member>
+        <member name="T:App.Metrics.MetricsClockBuilder">
+            <summary>
+                Builder for configuring the <see cref="T:App.Metrics.IClock"/> used for timing when recording specific metrics types e.g. <see cref="F:App.Metrics.MetricType.Timer"/>.
+            </summary>
+        </member>
+        <member name="P:App.Metrics.MetricsClockBuilder.Builder">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsClockBuilder.Clock(App.Metrics.IClock)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsClockBuilder.Clock``1">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsClockBuilder.StopwatchClock">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsClockBuilder.SystemClock">
+            <inheritdoc />
+        </member>
+        <member name="T:App.Metrics.MetricsConfigurationBuilder">
+            <summary>
+                Builder for configuring the <see cref="T:App.Metrics.MetricsOptions" />.
+            </summary>
+        </member>
+        <member name="P:App.Metrics.MetricsConfigurationBuilder.Builder">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsConfigurationBuilder.Configure(App.Metrics.MetricsOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsConfigurationBuilder.Configure(System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,System.String}})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsConfigurationBuilder.Configure(App.Metrics.MetricsOptions,System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,System.String}})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsConfigurationBuilder.Configure(System.Action{App.Metrics.MetricsOptions})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsConfigurationBuilder.Extend(System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,System.String}})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsConfigurationBuilder.Extend(App.Metrics.MetricsOptions)">
+            <inheritdoc />
+        </member>
+        <member name="T:App.Metrics.MetricsFilterBuilder">
+            <summary>
+                Builder for configuring the <see cref="T:App.Metrics.Filters.IFilterMetrics" /> used for filtering metrics when their values are fetched.
+            </summary>
+        </member>
+        <member name="P:App.Metrics.MetricsFilterBuilder.Builder">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsFilterBuilder.ByIncludingOnlyContext(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsFilterBuilder.ByIncludingOnlyTagKeyValues(App.Metrics.Filters.TagKeyValueFilter)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsFilterBuilder.ByIncludingOnlyTags(System.String[])">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsFilterBuilder.ByIncludingOnlyTypes(App.Metrics.MetricType[])">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsFilterBuilder.With(App.Metrics.Filters.IFilterMetrics)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsFilterBuilder.With(System.Action{App.Metrics.Filters.IFilterMetrics})">
+            <inheritdoc />
+        </member>
+        <member name="T:App.Metrics.MetricsOutputFormattingBuilder">
+            <summary>
+                Builder for configuring <see cref="T:App.Metrics.Formatters.IMetricsOutputFormatter" />s used for formatting <see cref="T:App.Metrics.MetricType" />s when
+                they are reported.
+            </summary>
+        </member>
+        <member name="P:App.Metrics.MetricsOutputFormattingBuilder.Builder">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsOutputFormattingBuilder.Using(App.Metrics.Formatters.IMetricsOutputFormatter)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsOutputFormattingBuilder.Using``1(App.Metrics.MetricFields)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsOutputFormattingBuilder.Using(App.Metrics.Formatters.IMetricsOutputFormatter,System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsOutputFormattingBuilder.Using``1(System.Boolean,App.Metrics.MetricFields)">
+            <inheritdoc />
+        </member>
+        <member name="T:App.Metrics.MetricsReportingBuilder">
+            <summary>
+                Builder for configuring <see cref="T:App.Metrics.Reporting.IReportMetrics" />s used for reporting <see cref="T:App.Metrics.IMetrics" />s.
+            </summary>
+        </member>
+        <member name="P:App.Metrics.MetricsReportingBuilder.Builder">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsReportingBuilder.Using(App.Metrics.Reporting.IReportMetrics)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsReportingBuilder.Using``1">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsReportingBuilder.Using``1(App.Metrics.Filters.IFilterMetrics)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsReportingBuilder.Using``1(App.Metrics.Formatters.IMetricsOutputFormatter)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsReportingBuilder.Using``1(App.Metrics.Formatters.IMetricsOutputFormatter,System.TimeSpan)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsReportingBuilder.Using``1(System.TimeSpan)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsReportingBuilder.Using``1(App.Metrics.Filters.IFilterMetrics,System.TimeSpan)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsReportingBuilder.Using``1(App.Metrics.Formatters.IMetricsOutputFormatter,App.Metrics.Filters.IFilterMetrics,System.TimeSpan)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsReportingBuilder.UseUserConfiguredFormatter(App.Metrics.Reporting.IReportMetrics)">
+            <summary>
+            If the user as explictity set a formatter us this as the default formatter to output metrics.
+            </summary>
+            <param name="reporter">The reporter to set the user configured formatter</param>
+        </member>
+        <member name="T:App.Metrics.MetricsReservoirSamplingBuilder">
+            <summary>
+                Builder for configuring <see cref="T:App.Metrics.ReservoirSampling.IReservoir" /> sampling using an <see cref="T:App.Metrics.IMetricsBuilder" />.
+            </summary>
+        </member>
+        <member name="P:App.Metrics.MetricsReservoirSamplingBuilder.Builder">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsReservoirSamplingBuilder.AlgorithmR(System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsReservoirSamplingBuilder.AlgorithmR">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsReservoirSamplingBuilder.ForwardDecaying(System.Int32,System.Double)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsReservoirSamplingBuilder.ForwardDecaying(System.Int32,System.Double,System.Double)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsReservoirSamplingBuilder.ForwardDecaying(System.Int32,System.Double,System.Double,App.Metrics.IClock)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsReservoirSamplingBuilder.ForwardDecaying(System.Int32,System.Double,System.Double,App.Metrics.IClock,App.Metrics.Scheduling.IReservoirRescaleScheduler)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsReservoirSamplingBuilder.ForwardDecaying(System.TimeSpan)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsReservoirSamplingBuilder.ForwardDecaying(System.Double,System.TimeSpan)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsReservoirSamplingBuilder.ForwardDecaying">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsReservoirSamplingBuilder.Reservoir(System.Func{App.Metrics.ReservoirSampling.IReservoir})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsReservoirSamplingBuilder.Reservoir``1">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsReservoirSamplingBuilder.SlidingWindow(System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.MetricsReservoirSamplingBuilder.SlidingWindow">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterBuilder.Build">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterBuilder.Build``1(System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterManager.#ctor(App.Metrics.Counter.IBuildCounterMetrics,App.Metrics.Registry.IMetricsRegistry)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Counter.DefaultCounterManager" /> class.
+            </summary>
+            <param name="counterBuilder">The counter builder.</param>
+            <param name="registry">The registry storing all metric data.</param>
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterManager.Decrement(App.Metrics.Counter.CounterOptions,App.Metrics.MetricTags)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterManager.Decrement(App.Metrics.Counter.CounterOptions,System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterManager.Decrement(App.Metrics.Counter.CounterOptions,App.Metrics.MetricTags,System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterManager.Decrement(App.Metrics.Counter.CounterOptions,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterManager.Decrement(App.Metrics.Counter.CounterOptions,App.Metrics.MetricTags,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterManager.Decrement(App.Metrics.Counter.CounterOptions,System.Int64,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterManager.Decrement(App.Metrics.Counter.CounterOptions,App.Metrics.MetricTags,System.Int64,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterManager.Decrement(App.Metrics.Counter.CounterOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterManager.Decrement(App.Metrics.Counter.CounterOptions,App.Metrics.MetricSetItem)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterManager.Decrement(App.Metrics.Counter.CounterOptions,System.Int64,App.Metrics.MetricSetItem)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterManager.Increment(App.Metrics.Counter.CounterOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterManager.Increment(App.Metrics.Counter.CounterOptions,App.Metrics.MetricTags)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterManager.Increment(App.Metrics.Counter.CounterOptions,System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterManager.Increment(App.Metrics.Counter.CounterOptions,App.Metrics.MetricTags,System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterManager.Increment(App.Metrics.Counter.CounterOptions,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterManager.Increment(App.Metrics.Counter.CounterOptions,App.Metrics.MetricTags,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterManager.Increment(App.Metrics.Counter.CounterOptions,App.Metrics.MetricTags,System.Int64,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterManager.Increment(App.Metrics.Counter.CounterOptions,System.Int64,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterManager.Increment(App.Metrics.Counter.CounterOptions,App.Metrics.MetricSetItem)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterManager.Increment(App.Metrics.Counter.CounterOptions,System.Int64,App.Metrics.MetricSetItem)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterMetric.Decrement">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterMetric.Decrement(System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterMetric.Decrement(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterMetric.Decrement(System.String,System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterMetric.Decrement(App.Metrics.MetricSetItem)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterMetric.Decrement(App.Metrics.MetricSetItem,System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterMetric.GetValue(System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterMetric.Increment">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterMetric.Increment(System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterMetric.Increment(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterMetric.Increment(System.String,System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterMetric.Increment(App.Metrics.MetricSetItem)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterMetric.Increment(App.Metrics.MetricSetItem,System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterMetric.Reset">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterMetricProvider.#ctor(App.Metrics.Counter.IBuildCounterMetrics,App.Metrics.Registry.IMetricsRegistry)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Counter.DefaultCounterMetricProvider" /> class.
+            </summary>
+            <param name="counterBuilder">The counter builder.</param>
+            <param name="registry">The registry.</param>
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterMetricProvider.Instance``1(App.Metrics.Counter.CounterOptions,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterMetricProvider.Instance(App.Metrics.Counter.CounterOptions,App.Metrics.MetricTags)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterMetricProvider.Instance``1(App.Metrics.Counter.CounterOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Counter.DefaultCounterMetricProvider.Instance(App.Metrics.Counter.CounterOptions)">
+            <inheritdoc />
+        </member>
+        <member name="T:App.Metrics.Filtering.MetricsFilter">
+            <summary>
+                Provides the ability to filter metrics by Context, Type, Name etc.
+            </summary>
+            <seealso cref="T:App.Metrics.Filters.IFilterMetrics" />
+        </member>
+        <member name="M:App.Metrics.Filtering.MetricsFilter.IsApdexMatch(App.Metrics.Apdex.ApdexValueSource)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Filtering.MetricsFilter.IsCounterMatch(App.Metrics.Counter.CounterValueSource)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Filtering.MetricsFilter.IsGaugeMatch(App.Metrics.Gauge.GaugeValueSource)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Filtering.MetricsFilter.IsHistogramMatch(App.Metrics.Histogram.HistogramValueSource)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Filtering.MetricsFilter.IsBucketHistogramMatch(App.Metrics.BucketHistogram.BucketHistogramValueSource)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Filtering.MetricsFilter.IsContextMatch(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Filtering.MetricsFilter.IsMeterMatch(App.Metrics.Meter.MeterValueSource)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Filtering.MetricsFilter.IsTimerMatch(App.Metrics.Timer.TimerValueSource)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Filtering.MetricsFilter.IsBucketTimerMatch(App.Metrics.BucketTimer.BucketTimerValueSource)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Filtering.MetricsFilter.WhereContext(System.Predicate{System.String})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Filtering.MetricsFilter.WhereContext(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Filtering.MetricsFilter.WhereName(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Filtering.MetricsFilter.WhereName(System.Predicate{System.String})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Filtering.MetricsFilter.WhereNameStartsWith(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Filtering.MetricsFilter.WhereTaggedWithKey(System.String[])">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Filtering.MetricsFilter.WhereTaggedWithKeyValue(App.Metrics.Filters.TagKeyValueFilter)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Filtering.MetricsFilter.WhereType(App.Metrics.MetricType[])">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Gauge.DefaultGaugeBuilder.Build(System.Func{System.Double})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Gauge.DefaultGaugeManager.#ctor(App.Metrics.Gauge.IBuildGaugeMetrics,App.Metrics.Registry.IMetricsRegistry)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Gauge.DefaultGaugeManager" /> class.
+            </summary>
+            <param name="gaugeBuilder">The gauge builder.</param>
+            <param name="registry">The registry storing all metric data.</param>
+        </member>
+        <member name="M:App.Metrics.Gauge.DefaultGaugeManager.SetValue(App.Metrics.Gauge.GaugeOptions,System.Func{System.Double})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Gauge.DefaultGaugeManager.SetValue(App.Metrics.Gauge.GaugeOptions,System.Double)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Gauge.DefaultGaugeManager.SetValue(App.Metrics.Gauge.GaugeOptions,App.Metrics.MetricTags,System.Double)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Gauge.DefaultGaugeManager.SetValue(App.Metrics.Gauge.GaugeOptions,System.Func{App.Metrics.IMetricValueProvider{System.Double}})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Gauge.DefaultGaugeManager.SetValue(App.Metrics.Gauge.GaugeOptions,App.Metrics.MetricTags,System.Func{App.Metrics.IMetricValueProvider{System.Double}})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Gauge.DefaultGaugeManager.SetValue(App.Metrics.Gauge.GaugeOptions,App.Metrics.MetricTags,System.Func{System.Double})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Gauge.DefaultGaugeMetricProvider.Instance(App.Metrics.Gauge.GaugeOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Gauge.DefaultGaugeMetricProvider.Instance(App.Metrics.Gauge.GaugeOptions,App.Metrics.MetricTags)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Gauge.DefaultGaugeMetricProvider.Instance``1(App.Metrics.Gauge.GaugeOptions,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Gauge.DefaultGaugeMetricProvider.Instance``1(App.Metrics.Gauge.GaugeOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Gauge.DerivedGauge.Value">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Gauge.DerivedGauge.GetValue(System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Gauge.DerivedGauge.Reset">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Gauge.DerivedGauge.SetValue(System.Double)">
+            <inheritdoc />
+        </member>
+        <member name="T:App.Metrics.Gauge.FunctionGauge">
+            <summary>
+                A Gauge metric using a function to provide the instantaneous value to record
+            </summary>
+            <seealso cref="T:App.Metrics.Gauge.IGaugeMetric" />
+        </member>
+        <member name="P:App.Metrics.Gauge.FunctionGauge.Value">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Gauge.FunctionGauge.GetValue(System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Gauge.FunctionGauge.Reset">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Gauge.FunctionGauge.SetValue(System.Double)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Gauge.HitPercentageGauge.#ctor(App.Metrics.Meter.IMeter,App.Metrics.Meter.IMeter)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Gauge.HitPercentageGauge" /> class.
+            </summary>
+            <param name="hitMeter">The hit meter.</param>
+            <param name="totalMeter">The total meter.</param>
+            <remarks>
+                Creates a new HitPercentageGauge with externally tracked Meters, and uses the OneMinuteRate from the MeterValue of
+                the meters.
+            </remarks>
+        </member>
+        <member name="M:App.Metrics.Gauge.HitPercentageGauge.#ctor(App.Metrics.Meter.IMeter,App.Metrics.Meter.IMeter,System.Func{App.Metrics.Meter.MeterValue,System.Double})">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Gauge.HitPercentageGauge" /> class.
+            </summary>
+            <param name="hitMeter">The numerator meter to use.</param>
+            <param name="totalMeter">The denominator meter to use.</param>
+            <param name="meterRateFunc">
+                The function to extract a value from the MeterValue. Will be applied to both the numerator
+                and denominator meters.
+            </param>
+            <remarks>
+                Creates a new HitPercentageGauge with externally tracked Meters, and uses the provided meter rate function to
+                extract the value for the percentage.
+            </remarks>
+        </member>
+        <member name="M:App.Metrics.Gauge.HitPercentageGauge.#ctor(App.Metrics.Meter.IMeter,App.Metrics.Timer.ITimer)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Gauge.HitPercentageGauge" /> class.
+            </summary>
+            <param name="hitMeter">The numerator meter to use.</param>
+            <param name="totalTimer">The denominator meter to use.</param>
+            <remarks>
+                Creates a new HitPercentageGauge with externally tracked Meter and Timer, and uses the OneMinuteRate from the
+                MeterValue of the meters.
+            </remarks>
+        </member>
+        <member name="M:App.Metrics.Gauge.HitPercentageGauge.#ctor(App.Metrics.Meter.IMeter,App.Metrics.Timer.ITimer,System.Func{App.Metrics.Meter.MeterValue,System.Double})">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Gauge.HitPercentageGauge" /> class.
+            </summary>
+            <param name="hitMeter">The numerator meter to use.</param>
+            <param name="totalTimer">The denominator timer to use.</param>
+            <param name="meterRateFunc">
+                The function to extract a value from the MeterValue. Will be applied to both the numerator
+                and denominator meters.
+            </param>
+            <remarks>
+                Creates a new HitPercentageGauge with externally tracked Meter and Timer, and uses the provided meter rate function
+                to extract the value for the percentage.
+            </remarks>
+        </member>
+        <member name="M:App.Metrics.Gauge.HitRatioGauge.#ctor(App.Metrics.Meter.IMeter,App.Metrics.Meter.IMeter)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Gauge.HitRatioGauge" /> class.
+            </summary>
+            <param name="hitMeter">The hit meter.</param>
+            <param name="totalMeter">The total meter.</param>
+            <remarks>
+                Creates a new HitRatioGauge with externally tracked Meters, and uses the OneMinuteRate from the MeterValue of the
+                meters.
+            </remarks>
+        </member>
+        <member name="M:App.Metrics.Gauge.HitRatioGauge.#ctor(App.Metrics.Meter.IMeter,App.Metrics.Meter.IMeter,System.Func{App.Metrics.Meter.MeterValue,System.Double})">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Gauge.HitRatioGauge" /> class.
+            </summary>
+            <param name="hitMeter">The numerator meter to use for the ratio.</param>
+            <param name="totalMeter">The denominator meter to use for the ratio.</param>
+            <param name="meterRateFunc">
+                The function to extract a value from the MeterValue. Will be applied to both the numerator
+                and denominator meters.
+            </param>
+            <remarks>
+                Creates a new HitRatioGauge with externally tracked Meters, and uses the provided meter rate function to extract
+                the value for the ratio.
+            </remarks>
+        </member>
+        <member name="M:App.Metrics.Gauge.HitRatioGauge.#ctor(App.Metrics.Meter.IMeter,App.Metrics.Timer.ITimer)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Gauge.HitRatioGauge" /> class.
+            </summary>
+            <param name="hitMeter">The numerator meter to use for the ratio.</param>
+            <param name="totalTimer">The denominator meter to use for the ratio.</param>
+            <remarks>
+                Creates a new HitRatioGauge with externally tracked Meter and Timer, and uses the OneMinuteRate from the MeterValue
+                of the meters.
+            </remarks>
+        </member>
+        <member name="M:App.Metrics.Gauge.HitRatioGauge.#ctor(App.Metrics.Meter.IMeter,App.Metrics.Timer.ITimer,System.Func{App.Metrics.Meter.MeterValue,System.Double})">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Gauge.HitRatioGauge" /> class.
+            </summary>
+            <param name="hitMeter">The numerator meter to use for the ratio.</param>
+            <param name="totalTimer">The denominator timer to use for the ratio.</param>
+            <param name="meterRateFunc">
+                The function to extract a value from the MeterValue. Will be applied to both the numerator
+                and denominator meters.
+            </param>
+            <remarks>
+                Creates a new HitRatioGauge with externally tracked Meter and Timer, and uses the provided meter rate function to
+                extract the value for the ratio.
+            </remarks>
+        </member>
+        <member name="T:App.Metrics.Gauge.PercentageGauge">
+            <summary>
+                A Gauge metric using two functions to calculate a percentage
+            </summary>
+            <seealso cref="T:App.Metrics.Gauge.IGaugeMetric" />
+        </member>
+        <member name="M:App.Metrics.Gauge.PercentageGauge.#ctor(System.Func{System.Double},System.Func{System.Double})">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Gauge.PercentageGauge" /> class.
+            </summary>
+            <param name="numerator">The numerator.</param>
+            <param name="denominator">The denominator.</param>
+        </member>
+        <member name="T:App.Metrics.Gauge.RatioGauge">
+            <summary>
+                A Gauge metric using two functions to calculate a ratio to record
+            </summary>
+            <seealso cref="T:App.Metrics.Gauge.IGaugeMetric" />
+        </member>
+        <member name="M:App.Metrics.Gauge.RatioGauge.#ctor(System.Func{System.Double},System.Func{System.Double})">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Gauge.RatioGauge" /> class.
+            </summary>
+            <param name="numerator">The numerator.</param>
+            <param name="denominator">The denominator.</param>
+        </member>
+        <member name="P:App.Metrics.Gauge.ValueGauge.Value">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Gauge.ValueGauge.GetValue(System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Gauge.ValueGauge.Reset">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Gauge.ValueGauge.SetValue(System.Double)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMeasureMetricsProvider.#ctor(App.Metrics.Registry.IMetricsRegistry,App.Metrics.IBuildMetrics,App.Metrics.IClock)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Internal.DefaultMeasureMetricsProvider" /> class.
+            </summary>
+            <param name="registry">The metrics registry.</param>
+            <param name="buideFactory">The buide factory.</param>
+            <param name="clock">The clock.</param>
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMeasureMetricsProvider.Apdex">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMeasureMetricsProvider.Counter">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMeasureMetricsProvider.Gauge">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMeasureMetricsProvider.Histogram">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMeasureMetricsProvider.BucketHistogram">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMeasureMetricsProvider.Meter">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMeasureMetricsProvider.Timer">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMeasureMetricsProvider.BucketTimer">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricContextRegistry.Apdex``1(App.Metrics.Apdex.ApdexOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricContextRegistry.Counter``1(App.Metrics.Counter.CounterOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricContextRegistry.Gauge``1(App.Metrics.Gauge.GaugeOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricContextRegistry.Histogram``1(App.Metrics.Histogram.HistogramOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricContextRegistry.BucketHistogram``1(App.Metrics.BucketHistogram.BucketHistogramOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricContextRegistry.Meter``1(App.Metrics.Meter.MeterOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricContextRegistry.Timer``1(App.Metrics.Timer.TimerOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricContextRegistry.BucketTimer``1(App.Metrics.BucketTimer.BucketTimerOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetricRegistryManager.ApdexScores">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetricRegistryManager.Counters">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetricRegistryManager.Gauges">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetricRegistryManager.Histograms">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetricRegistryManager.BucketHistograms">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetricRegistryManager.Meters">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetricRegistryManager.Timers">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetricRegistryManager.BucketTimers">
+            <inheritdoc />
+        </member>
+        <member name="T:App.Metrics.Internal.DefaultMetrics">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetrics.#ctor(App.Metrics.IClock,App.Metrics.Filters.IFilterMetrics,App.Metrics.IMeasureMetrics,App.Metrics.IBuildMetrics,App.Metrics.IProvideMetrics,App.Metrics.IProvideMetricValues,App.Metrics.IManageMetrics)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Internal.DefaultMetrics" /> class.
+            </summary>
+            <param name="clock">The clock.</param>
+            <param name="filter">The metrics filter.</param>
+            <param name="measureMetricsProvider">The factory used to provide access to metric managers.</param>
+            <param name="metricsBuilder">The factory used to provide access to metric builders.</param>
+            <param name="metricsProvider">The metrics advanced manager factory.</param>
+            <param name="dataManager">The data manager.</param>
+            <param name="metricsManager">The metrics manager.</param>
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetrics.Build">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetrics.Clock">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetrics.Filter">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetrics.Manage">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetrics.Measure">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetrics.Provider">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetrics.Snapshot">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetricsBuilderFactory.Apdex">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetricsBuilderFactory.Counter">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetricsBuilderFactory.Gauge">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetricsBuilderFactory.Histogram">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetricsBuilderFactory.BucketHistogram">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetricsBuilderFactory.Meter">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetricsBuilderFactory.Timer">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetricsBuilderFactory.BucketTimer">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricsManager.#ctor(App.Metrics.Registry.IMetricsRegistry)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Internal.DefaultMetricsManager" /> class.
+            </summary>
+            <param name="registry">The registry.</param>
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricsManager.Disable">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricsManager.Reset">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricsManager.ShutdownContext(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricsProvider.#ctor(App.Metrics.Registry.IMetricsRegistry,App.Metrics.IBuildMetrics,App.Metrics.IClock)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Internal.DefaultMetricsProvider" /> class.
+            </summary>
+            <param name="registry">The metrics registry.</param>
+            <param name="builderFactory">The buide factory.</param>
+            <param name="clock">The clock.</param>
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetricsProvider.Apdex">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetricsProvider.Counter">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetricsProvider.Gauge">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetricsProvider.Histogram">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetricsProvider.Meter">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetricsProvider.Timer">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.Internal.DefaultMetricsProvider.BucketTimer">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricsRegistry.Apdex``1(App.Metrics.Apdex.ApdexOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricsRegistry.Counter``1(App.Metrics.Counter.CounterOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricsRegistry.Disable">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricsRegistry.Gauge``1(App.Metrics.Gauge.GaugeOptions,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricsRegistry.Gauge``1(App.Metrics.Gauge.GaugeOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricsRegistry.Histogram``1(App.Metrics.Histogram.HistogramOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricsRegistry.BucketHistogram``1(App.Metrics.BucketHistogram.BucketHistogramOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricsRegistry.Timer``1(App.Metrics.Timer.TimerOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricsRegistry.BucketTimer``1(App.Metrics.BucketTimer.BucketTimerOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricsReportRunner.RunAllAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricsReportRunner.RunAsync``1(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricValuesProvider.#ctor(App.Metrics.Filters.IFilterMetrics,App.Metrics.Registry.IMetricsRegistry)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Internal.DefaultMetricValuesProvider" /> class.
+            </summary>
+            <param name="globalFilter">The global filter.</param>
+            <param name="registry">The registry.</param>
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricValuesProvider.Get">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricValuesProvider.Get(App.Metrics.Filters.IFilterMetrics)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.DefaultMetricValuesProvider.GetForContext(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="T:App.Metrics.Internal.Infrastructure.AppMetricsMarkerService">
+            <summary>
+                This is a Marker class which is used to determine if all the services were added
+                to when App.Metrics is loaded.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NoOpMetricsReportRunner.RunAllAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NoOpMetricsReportRunner.RunAsync``1(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullGauge.Reset">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullGauge.SetValue(System.Double)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsFilter.IsApdexMatch(App.Metrics.Apdex.ApdexValueSource)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsFilter.IsCounterMatch(App.Metrics.Counter.CounterValueSource)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsFilter.IsGaugeMatch(App.Metrics.Gauge.GaugeValueSource)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsFilter.IsHistogramMatch(App.Metrics.Histogram.HistogramValueSource)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsFilter.IsBucketHistogramMatch(App.Metrics.BucketHistogram.BucketHistogramValueSource)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsFilter.IsContextMatch(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsFilter.IsMeterMatch(App.Metrics.Meter.MeterValueSource)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsFilter.IsTimerMatch(App.Metrics.Timer.TimerValueSource)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsFilter.IsBucketTimerMatch(App.Metrics.BucketTimer.BucketTimerValueSource)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsFilter.WhereContext(System.Predicate{System.String})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsFilter.WhereContext(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsFilter.WhereName(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsFilter.WhereName(System.Predicate{System.String})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsFilter.WhereNameStartsWith(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsFilter.WhereTaggedWithKey(System.String[])">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsFilter.WhereTaggedWithKeyValue(App.Metrics.Filters.TagKeyValueFilter)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsFilter.WhereType(App.Metrics.MetricType[])">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsRegistry.Apdex``1(App.Metrics.Apdex.ApdexOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsRegistry.Counter``1(App.Metrics.Counter.CounterOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsRegistry.Disable">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsRegistry.Gauge``1(App.Metrics.Gauge.GaugeOptions,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsRegistry.Gauge``1(App.Metrics.Gauge.GaugeOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsRegistry.Histogram``1(App.Metrics.Histogram.HistogramOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsRegistry.BucketHistogram``1(App.Metrics.BucketHistogram.BucketHistogramOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsRegistry.Meter``1(App.Metrics.Meter.MeterOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsRegistry.Timer``1(App.Metrics.Timer.TimerOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Internal.NoOp.NullMetricsRegistry.BucketTimer``1(App.Metrics.BucketTimer.BucketTimerOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterBuilder.Build(App.Metrics.IClock)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterManager.#ctor(App.Metrics.Meter.IBuildMeterMetrics,App.Metrics.Registry.IMetricsRegistry,App.Metrics.IClock)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Meter.DefaultMeterManager" /> class.
+            </summary>
+            <param name="clock">The clock.</param>
+            <param name="registry">The registry storing all metric data.</param>
+            <param name="meterBuilder">The meter builder.</param>
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterManager.Mark(App.Metrics.Meter.MeterOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterManager.Mark(App.Metrics.Meter.MeterOptions,System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterManager.Mark(App.Metrics.Meter.MeterOptions,App.Metrics.MetricTags,System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterManager.Mark(App.Metrics.Meter.MeterOptions,App.Metrics.MetricTags)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterManager.Mark(App.Metrics.Meter.MeterOptions,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterManager.Mark(App.Metrics.Meter.MeterOptions,App.Metrics.MetricTags,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterManager.Mark(App.Metrics.Meter.MeterOptions,App.Metrics.MetricSetItem)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterManager.Mark(App.Metrics.Meter.MeterOptions,App.Metrics.MetricTags,App.Metrics.MetricSetItem)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterManager.Mark(App.Metrics.Meter.MeterOptions,App.Metrics.MetricTags,System.Int64,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterManager.Mark(App.Metrics.Meter.MeterOptions,System.Int64,App.Metrics.MetricSetItem)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterManager.Mark(App.Metrics.Meter.MeterOptions,App.Metrics.MetricTags,System.Int64,App.Metrics.MetricSetItem)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterManager.Mark(App.Metrics.Meter.MeterOptions,System.Int64,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterMetric.#ctor(App.Metrics.IClock)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Meter.DefaultMeterMetric" /> class.
+            </summary>
+            <param name="clock">The clock.</param>
+        </member>
+        <member name="P:App.Metrics.Meter.DefaultMeterMetric.Value">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterMetric.GetValue(System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterMetric.Mark">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterMetric.Mark(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterMetric.Mark(App.Metrics.MetricSetItem)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterMetric.Mark(App.Metrics.MetricSetItem,System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterMetric.Mark(System.String,System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterMetricProvider.#ctor(App.Metrics.Meter.IBuildMeterMetrics,App.Metrics.Registry.IMetricsRegistry,App.Metrics.IClock)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.Meter.DefaultMeterMetricProvider" /> class.
+            </summary>
+            <param name="meterBuilder">The meter builder.</param>
+            <param name="registry">The metrics registry.</param>
+            <param name="clock">The clock.</param>
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterMetricProvider.Instance(App.Metrics.Meter.MeterOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterMetricProvider.Instance``1(App.Metrics.Meter.MeterOptions,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterMetricProvider.Instance(App.Metrics.Meter.MeterOptions,App.Metrics.MetricTags)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.DefaultMeterMetricProvider.Instance``1(App.Metrics.Meter.MeterOptions,App.Metrics.MetricTags,System.Func{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Meter.SimpleMeter.Mark(System.Int64)">
+            <summary>
+                Marks the specified count.
+            </summary>
+            <param name="count">The count.</param>
+        </member>
+        <member name="M:App.Metrics.Meter.SimpleMeter.Reset">
+            <summary>
+                Resets all the meters values.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Meter.SimpleMeter.GetValue(System.Double)">
+            <summary>
+                Gets the meters current value.
+            </summary>
+            <param name="elapsed">The elapsed time for calculating the mean rate.</param>
+            <returns>The meters current value</returns>
+        </member>
+        <member name="P:App.Metrics.MetricsRoot.Build">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.MetricsRoot.Clock">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.MetricsRoot.Filter">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.MetricsRoot.Manage">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.MetricsRoot.Measure">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.MetricsRoot.Provider">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.MetricsRoot.Snapshot">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.MetricsRoot.OutputMetricsFormatters">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.MetricsRoot.DefaultOutputMetricsFormatter">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.MetricsRoot.DefaultOutputEnvFormatter">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.MetricsRoot.OutputEnvFormatters">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.MetricsRoot.Reporters">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.MetricsRoot.ReportRunner">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.MetricsRoot.Options">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.MetricsRoot.EnvironmentInfo">
+            <inheritdoc />
+        </member>
+        <member name="T:App.Metrics.ReservoirSampling.ExponentialDecay.DefaultForwardDecayingReservoir">
+            <summary>
+                A histogram with an exponentially decaying reservoir produces
+                <see href="https://en.wikipedia.org/wiki/Quantile">quantiles</see> which are representative of (roughly) the last
+                five minutes of data.
+                <p>
+                    The reservoir is produced by using a
+                    <see href="http://dimacs.rutgers.edu/~graham/pubs/papers/fwddecay.pdf">forward-decaying reservoir</see> with an
+                    exponential weighty towards recent data unlike a Uniform Reservoir which does not provide a sense of recency.
+                </p>
+                <p>
+                    This sampling reservoir can be used when you are interested in recent changes to the distribution of data rather
+                    than a median on the lifetime of the histgram.
+                </p>
+            </summary>
+            <seealso cref="T:App.Metrics.ReservoirSampling.IReservoir" />
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.ExponentialDecay.DefaultForwardDecayingReservoir.#ctor">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.ReservoirSampling.ExponentialDecay.DefaultForwardDecayingReservoir" /> class.
+            </summary>
+            <remarks>
+                The default size and alpha values offer a 99.9% confidence level with a 5% margin of error assuming a normal
+                distribution and heavily biases the reservoir to the past 5 minutes of measurements.
+            </remarks>
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.ExponentialDecay.DefaultForwardDecayingReservoir.#ctor(System.Int32,System.Double)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.ReservoirSampling.ExponentialDecay.DefaultForwardDecayingReservoir" /> class.
+            </summary>
+            <remarks>
+                The default size and alpha values offer a 99.9% confidence level with a 5% margin of error assuming a normal
+                distribution and heavily biases the reservoir to the past 5 minutes of measurements.
+            </remarks>
+            <param name="sampleSize">The number of samples to keep in the sampling reservoir.</param>
+            <param name="alpha">
+                The alpha value, e.g 0.015 will heavily biases the reservoir to the past 5 mins of measurements. The higher the
+                value the more biased the reservoir will be towards newer values.
+            </param>
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.ExponentialDecay.DefaultForwardDecayingReservoir.#ctor(System.Int32,System.Double,System.Double)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.ReservoirSampling.ExponentialDecay.DefaultForwardDecayingReservoir" /> class.
+            </summary>
+            <remarks>
+                The default size and alpha values offer a 99.9% confidence level with a 5% margin of error assuming a normal
+                distribution and heavily biases the reservoir to the past 5 minutes of measurements.
+            </remarks>
+            <param name="sampleSize">The number of samples to keep in the sampling reservoir.</param>
+            <param name="alpha">
+                The alpha value, e.g 0.015 will heavily biases the reservoir to the past 5 mins of measurements. The higher the
+                value the more biased the reservoir will be towards newer values.
+            </param>
+            <param name="minimumSampleWeight">
+                Minimum weight required for a sample to be retained during reservoir rescaling. Samples with weights less than this value will be discarded.
+                This behavior is useful if there are longer periods of very low or no activity. Default value is zero, which preserves all samples during rescaling.
+            </param>
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.ExponentialDecay.DefaultForwardDecayingReservoir.#ctor(System.Int32,System.Double,System.Double,App.Metrics.IClock)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.ReservoirSampling.ExponentialDecay.DefaultForwardDecayingReservoir" /> class.
+            </summary>
+            <param name="sampleSize">The number of samples to keep in the sampling reservoir</param>
+            <param name="alpha">
+                The alpha value, e.g 0.015 will heavily biases the reservoir to the past 5 mins of measurements. The higher the
+                value the more biased the reservoir will be towards newer values.
+            </param>
+            <param name="minimumSampleWeight">
+                Minimum weight required for a sample to be retained during reservoir rescaling. Samples with weights less than this value will be discarded.
+                This behavior is useful if there are longer periods of very low or no activity. Default value is zero, which preserves all samples during rescaling.
+            </param>
+            <param name="clock">The <see cref="T:App.Metrics.IClock">clock</see> type to use for calculating processing time.</param>
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.ExponentialDecay.DefaultForwardDecayingReservoir.#ctor(System.Int32,System.Double,System.Double,App.Metrics.IClock,App.Metrics.Scheduling.IReservoirRescaleScheduler)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.ReservoirSampling.ExponentialDecay.DefaultForwardDecayingReservoir" /> class.
+            </summary>
+            <param name="sampleSize">The number of samples to keep in the sampling reservoir</param>
+            <param name="alpha">
+                The alpha value, e.g 0.015 will heavily biases the reservoir to the past 5 mins of measurements. The higher the
+                value the more biased the reservoir will be towards newer values.
+            </param>
+            <param name="minimumSampleWeight">
+                Minimum weight required for a sample to be retained during reservoir rescaling. Samples with weights less than this value will be discarded.
+                This behavior is useful if there are longer periods of very low or no activity. Default value is zero, which preserves all samples during rescaling.
+            </param>
+            <param name="clock">The <see cref="T:App.Metrics.IClock">clock</see> type to use for calculating processing time.</param>
+            <param name="rescaleScheduler">The schedular used to rescale the reservoir.</param>
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.ExponentialDecay.DefaultForwardDecayingReservoir.Size">
+            <summary>
+                Gets the size.
+            </summary>
+            <value>
+                The size.
+            </value>
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.ExponentialDecay.DefaultForwardDecayingReservoir.Dispose">
+            <summary>
+                Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.ExponentialDecay.DefaultForwardDecayingReservoir.Dispose(System.Boolean)">
+            <summary>
+                Releases unmanaged and - optionally - managed resources.
+            </summary>
+            <param name="disposing">
+                <c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only
+                unmanaged resources.
+            </param>
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.ExponentialDecay.DefaultForwardDecayingReservoir.GetSnapshot(System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.ExponentialDecay.DefaultForwardDecayingReservoir.GetSnapshot">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.ExponentialDecay.DefaultForwardDecayingReservoir.Reset">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.ExponentialDecay.DefaultForwardDecayingReservoir.Update(System.Int64,System.String)">
+            <inheritdoc cref="T:App.Metrics.ReservoirSampling.IReservoir" />
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.ExponentialDecay.DefaultForwardDecayingReservoir.Update(System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.ExponentialDecay.DefaultForwardDecayingReservoir.Rescale">
+            <summary>
+                A common feature of the above techniques—indeed, the key technique that
+                allows us to track the decayed weights efficiently—is that they maintain
+                counts and other quantities based on g(ti − L), and only scale by g(t − L)
+                at query time. But while g(ti −L)/g(t−L) is guaranteed to lie between zero
+                and one, the intermediate values of g(ti − L) could become very large. For
+                polynomial functions, these values should not grow too large, and should be
+                effectively represented in practice by floating point values without loss of
+                precision. For exponential functions, these values could grow quite large as
+                new values of (ti − L) become large, and potentially exceed the capacity of
+                common floating point types. However, since the values stored by the
+                algorithms are linear combinations of g values (scaled sums), they can be
+                rescaled relative to a new landmark. That is, by the analysis of exponential
+                decay in Section III-A, the choice of L does not affect the final result. We
+                can therefore multiply each value based on L by a factor of exp(−α(L′ − L)),
+                and obtain the correct value as if we had instead computed relative to a new
+                landmark L′ (and then use this new L′ at query time). This can be done with
+                a linear pass over whatever data structure is being used."
+            </summary>
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.ExponentialDecay.WeightedSnapshot.#ctor(System.Int64,System.Double,System.Collections.Generic.IEnumerable{App.Metrics.ReservoirSampling.ExponentialDecay.WeightedSample})">
+            <summary>
+            Initializes a new instance of the <see cref="T:App.Metrics.ReservoirSampling.ExponentialDecay.WeightedSnapshot" /> class.
+            </summary>
+            <param name="count">The count of all observed values.</param>
+            <param name="sum">The sum of all observed values.</param>
+            <param name="values">The values within the sample set.</param>
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.ExponentialDecay.WeightedSnapshot.Count">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.ExponentialDecay.WeightedSnapshot.Max">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.ExponentialDecay.WeightedSnapshot.MaxUserValue">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.ExponentialDecay.WeightedSnapshot.Mean">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.ExponentialDecay.WeightedSnapshot.Median">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.ExponentialDecay.WeightedSnapshot.Min">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.ExponentialDecay.WeightedSnapshot.MinUserValue">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.ExponentialDecay.WeightedSnapshot.Percentile75">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.ExponentialDecay.WeightedSnapshot.Percentile95">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.ExponentialDecay.WeightedSnapshot.Percentile98">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.ExponentialDecay.WeightedSnapshot.Percentile99">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.ExponentialDecay.WeightedSnapshot.Percentile999">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.ExponentialDecay.WeightedSnapshot.Size">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.ExponentialDecay.WeightedSnapshot.StdDev">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.ExponentialDecay.WeightedSnapshot.Values">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.ExponentialDecay.WeightedSnapshot.GetValue(System.Double)">
+            <inheritdoc />
+        </member>
+        <member name="T:App.Metrics.ReservoirSampling.SlidingWindow.DefaultSlidingWindowReservoir">
+            <summary>
+                A Reservoir implementation backed by a sliding window that stores only the measurements made in the last N seconds
+                (or other time unit).
+            </summary>
+            <seealso cref="T:App.Metrics.ReservoirSampling.IReservoir" />
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.SlidingWindow.DefaultSlidingWindowReservoir.#ctor">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.ReservoirSampling.SlidingWindow.DefaultSlidingWindowReservoir" /> class.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.SlidingWindow.DefaultSlidingWindowReservoir.#ctor(System.Int32)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.ReservoirSampling.SlidingWindow.DefaultSlidingWindowReservoir" /> class.
+            </summary>
+            <param name="sampleSize">The number of samples to keep in the sampling reservoir</param>
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.SlidingWindow.DefaultSlidingWindowReservoir.GetSnapshot(System.Boolean)">
+            <inheritdoc cref="T:App.Metrics.ReservoirSampling.IReservoir" />
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.SlidingWindow.DefaultSlidingWindowReservoir.GetSnapshot">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.SlidingWindow.DefaultSlidingWindowReservoir.Reset">
+            <inheritdoc cref="T:App.Metrics.ReservoirSampling.IReservoir" />
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.SlidingWindow.DefaultSlidingWindowReservoir.Update(System.Int64,System.String)">
+            <inheritdoc cref="T:App.Metrics.ReservoirSampling.IReservoir" />
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.SlidingWindow.DefaultSlidingWindowReservoir.Update(System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="T:App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir">
+            <summary>
+                A histogram with a uniform reservoir produces <see href="https://en.wikipedia.org/wiki/Quantile">quantiles</see>
+                which are valid for the entirely of the histogram’s lifetime.
+                <p>
+                    This sampling reservoir can be used when you are interested in long-term measurements, it does not offer a
+                    sence
+                    of recency.
+                </p>
+                <p>
+                    All samples are equally likely to be evicted when the reservoir is at full capacity.
+                </p>
+            </summary>
+            <remarks>
+                Uses <see href="http://www.cs.umd.edu/~samir/498/vitter.pdf">Vitter's Algorithm R</see> for
+                <see cref="T:App.Metrics.ReservoirSampling.IReservoir">reservoir</see> sampling
+            </remarks>
+            <seealso cref="T:App.Metrics.ReservoirSampling.IReservoir" />
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir.#ctor">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir" /> class.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir.#ctor(System.Int32)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir" /> class.
+            </summary>
+            <param name="sampleSize">The number of samples to keep in the sampling reservoir</param>
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir.Size">
+            <summary>
+                Gets the size.
+            </summary>
+            <value>
+                The size.
+            </value>
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir.GetSnapshot(System.Boolean)">
+            <inheritdoc cref="T:App.Metrics.ReservoirSampling.IReservoir" />
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir.GetSnapshot">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir.Reset">
+            <inheritdoc cref="T:App.Metrics.ReservoirSampling.IReservoir" />
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir.Update(System.Int64,System.String)">
+            <summary>
+                Updates the sample set adding the specified value using
+                <see href="http://www.cs.umd.edu/~samir/498/vitter.pdf">Vitter's Algorithm R</see>.
+            </summary>
+            Algorithm R pseudo code
+            <example>
+                <code>
+                <![CDATA[
+                -- S has items to sample, R will contain the result
+                ReservoirSample(S[1..n], R[1..k])
+                    -- fill the reservoir array
+                    for i = 1 to k
+                        R[i] := S[i]
+                        -- replace elements with gradually decreasing probability
+                    for i = k+1 to n
+                        j := random(1, i)   -- important: inclusive range
+                        if j <= k
+                        R[j] := S[i]
+                ]]>
+            </code>
+            </example>
+            <param name="value">The value to add to the sample set.</param>
+            <param name="userValue">The user value to track, which records the last, min and max user values within the sample.</param>
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir.Update(System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="T:App.Metrics.ReservoirSampling.Uniform.UniformSnapshot">
+            <summary>
+                Represents a statistical snapshot of a sample set when using
+                <see href="http://www.cs.umd.edu/~samir/498/vitter.pdf">Vitter's Algorithm R</see>.
+                This is the snapshot used a histogram with a <see cref="T:App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir">uniform reservoir </see>
+            </summary>
+            <seealso cref="T:App.Metrics.ReservoirSampling.IReservoirSnapshot" />
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.Uniform.UniformSnapshot.#ctor(System.Int64,System.Double,System.Collections.Generic.IEnumerable{System.Int64},System.Boolean,System.String,System.String)">
+            <summary>
+                Initializes a new instance of the <see cref="T:App.Metrics.ReservoirSampling.Uniform.UniformSnapshot" /> class.
+            </summary>
+            <param name="count">The count of all observed values.</param>
+            <param name="sum">The sum of all observed values.</param>
+            <param name="values">The values within the sample set.</param>
+            <param name="valuesAreSorted">if set to <c>true</c> [values are already sorted].</param>
+            <param name="minUserValue">The minimum user value.</param>
+            <param name="maxUserValue">The maximum user value.</param>
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.Uniform.UniformSnapshot.Count">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.Uniform.UniformSnapshot.Max">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.Uniform.UniformSnapshot.MaxUserValue">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.Uniform.UniformSnapshot.Mean">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.Uniform.UniformSnapshot.Median">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.Uniform.UniformSnapshot.Min">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.Uniform.UniformSnapshot.MinUserValue">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.Uniform.UniformSnapshot.Percentile75">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.Uniform.UniformSnapshot.Percentile95">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.Uniform.UniformSnapshot.Percentile98">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.Uniform.UniformSnapshot.Percentile99">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.Uniform.UniformSnapshot.Percentile999">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.Uniform.UniformSnapshot.Size">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.Uniform.UniformSnapshot.StdDev">
+            <inheritdoc />
+        </member>
+        <member name="P:App.Metrics.ReservoirSampling.Uniform.UniformSnapshot.Values">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.ReservoirSampling.Uniform.UniformSnapshot.GetValue(System.Double)">
+            <inheritdoc />
+        </member>
+        <member name="M:App.Metrics.Scheduling.DefaultMeterTickerScheduler.Dispose">
+            <inheritdoc/>
+        </member>
+        <member name="T:App.Metrics.Scheduling.DefaultReservoirRescaleScheduler">
+            <summary>
+            A scheduler for an <see cref="T:App.Metrics.ReservoirSampling.IRescalingReservoir"/> that uses a fixed time period schedule for rescaling.
+            </summary>
+        </member>
+        <member name="F:App.Metrics.Scheduling.DefaultReservoirRescaleScheduler.DefaultRescalePeriod">
+            <summary>
+            Default rescaling period for the <see cref="T:App.Metrics.Scheduling.DefaultReservoirRescaleScheduler"/> (one hour).
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Scheduling.DefaultReservoirRescaleScheduler.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:App.Metrics.Scheduling.DefaultReservoirRescaleScheduler"/> class.
+            <see cref="F:App.Metrics.Scheduling.DefaultReservoirRescaleScheduler.DefaultRescalePeriod"/> is used as the rescaling period.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Scheduling.DefaultReservoirRescaleScheduler.#ctor(System.TimeSpan)">
+            <summary>
+            Initializes a new instance of the <see cref="T:App.Metrics.Scheduling.DefaultReservoirRescaleScheduler"/> class.
+            </summary>
+            <param name="rescalePeriod">Rescaling period.</param>
+        </member>
+        <member name="P:App.Metrics.Scheduling.DefaultReservoirRescaleScheduler.Instance">
+            <summary>
+            Default instance of the <see cref="T:App.Metrics.Scheduling.DefaultReservoirRescaleScheduler"/>, using <see cref="F:App.Metrics.Scheduling.DefaultReservoirRescaleScheduler.DefaultRescalePeriod"/> as rescaling period.
+            </summary>
+        </member>
+        <member name="P:App.Metrics.Scheduling.DefaultReservoirRescaleScheduler.RescalePeriod">
+            <summary>
+            Returns the rescaling period used by the <see cref="T:App.Metrics.Scheduling.DefaultReservoirRescaleScheduler"/>.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Scheduling.DefaultReservoirRescaleScheduler.RemoveSchedule(App.Metrics.ReservoirSampling.IRescalingReservoir)">
+            <summary>
+            Removes given reservoir from the <see cref="T:App.Metrics.Scheduling.DefaultReservoirRescaleScheduler"/>.
+            </summary>
+            <param name="reservoir"><see cref="T:App.Metrics.ReservoirSampling.IRescalingReservoir"/> to remove from the scheduler.</param>
+            <remarks>Removing a reservoir from the scheduler means the scheduler will not initiate any rescaling operations on that reservoir anymore.</remarks>
+        </member>
+        <member name="M:App.Metrics.Scheduling.DefaultReservoirRescaleScheduler.ScheduleReScaling(App.Metrics.ReservoirSampling.IRescalingReservoir)">
+            <summary>
+            Adds given reservoir to the <see cref="T:App.Metrics.Scheduling.DefaultReservoirRescaleScheduler"/>.
+            </summary>
+            <param name="reservoir">Reservoir to add.</param>
+            <remarks>Adding a reservoir to the scheduler causes the scheduler to periodically initiate a rescaling operation on that reservoir.</remarks>
+        </member>
+        <member name="M:App.Metrics.Scheduling.DefaultReservoirRescaleScheduler.Dispose">
+            <inheritdoc/>
+        </member>
+    </members>
+</doc>

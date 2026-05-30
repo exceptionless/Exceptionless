@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Azure.Provisioning.KeyVault</id>
+    <version>1.1.0</version>
+    <authors>Microsoft</authors>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>azureicon.png</icon>
+    <readme>README.md</readme>
+    <projectUrl>https://github.com/Azure/azure-sdk-for-net/blob/Azure.Provisioning.KeyVault_1.1.0/sdk/provisioning/Azure.Provisioning.KeyVault/README.md</projectUrl>
+    <description>Azure.Provisioning.KeyVault simplifies declarative resource provisioning in .NET.</description>
+    <releaseNotes>https://github.com/Azure/azure-sdk-for-net/blob/Azure.Provisioning.KeyVault_1.1.0/sdk/provisioning/Azure.Provisioning.KeyVault/CHANGELOG.md</releaseNotes>
+    <copyright>© Microsoft Corporation. All rights reserved.</copyright>
+    <repository type="git" url="https://github.com/Azure/azure-sdk-for-net" commit="ab408d66d7e4e331fad2a9ac1493959c4e5d745d" />
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="Azure.Core" version="1.46.2" exclude="Build,Analyzers" />
+        <dependency id="Azure.Provisioning" version="1.1.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="Azure.Core" version="1.46.2" exclude="Build,Analyzers" />
+        <dependency id="Azure.Provisioning" version="1.1.0" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

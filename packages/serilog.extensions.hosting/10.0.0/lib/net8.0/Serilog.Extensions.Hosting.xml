@@ -1,0 +1,1079 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Serilog.Extensions.Hosting</name>
+    </assembly>
+    <members>
+        <member name="T:Serilog.Extensions.Hosting.DiagnosticContext">
+            <summary>
+            Implements an ambient diagnostic context using <see cref="T:System.Threading.AsyncLocal`1"/>.
+            </summary>
+            <remarks>Consumers should use <see cref="T:Serilog.IDiagnosticContext"/> to set context properties.</remarks>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.DiagnosticContext.#ctor(Serilog.ILogger)">
+            <summary>
+            Construct a <see cref="T:Serilog.Extensions.Hosting.DiagnosticContext"/>.
+            </summary>
+            <param name="logger">A logger for binding properties in the context, or <c>null</c> to use <see cref="P:Serilog.Log.Logger"/>.</param>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.DiagnosticContext.BeginCollection">
+            <summary>
+            Start collecting properties to associate with the current diagnostic context. This will replace
+            the active collector, if any.
+            </summary>
+            <returns>A collector that will receive properties added in the current diagnostic context.</returns>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.DiagnosticContext.Set(System.String,System.Object,System.Boolean)">
+            <inheritdoc cref="M:Serilog.IDiagnosticContext.Set(System.String,System.Object,System.Boolean)"/>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.DiagnosticContext.SetException(System.Exception)">
+            <inheritdoc cref="M:Serilog.IDiagnosticContext.SetException(System.Exception)"/>
+        </member>
+        <member name="T:Serilog.Extensions.Hosting.DiagnosticContextCollector">
+            <summary>
+            A container that receives properties added to a diagnostic context.
+            </summary>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.DiagnosticContextCollector.#ctor(System.IDisposable)">
+            <summary>
+            Construct a <see cref="T:Serilog.Extensions.Hosting.DiagnosticContextCollector"/>.
+            </summary>
+            <param name="chainedDisposable">An object that will be disposed to signal completion/disposal of
+            the collector.</param>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.DiagnosticContextCollector.AddOrUpdate(Serilog.Events.LogEventProperty)">
+            <summary>
+            Add the property to the context.
+            </summary>
+            <param name="property">The property to add.</param>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.DiagnosticContextCollector.SetException(System.Exception)">
+            <summary>
+            Set the exception associated with the current diagnostic context.
+            </summary>
+            <example>
+            Passing an exception to the diagnostic context is useful when unhandled exceptions are handled before reaching Serilog's
+            RequestLoggingMiddleware. One example is using https://www.nuget.org/packages/Hellang.Middleware.ProblemDetails to transform
+            exceptions to ProblemDetails responses.
+            </example>
+            <remarks>
+            If an unhandled exception reaches Serilog's RequestLoggingMiddleware, then the unhandled exception takes precedence.<br/>
+            If <c>null</c> is given, it clears any previously assigned exception.
+            </remarks>
+            <param name="exception">The exception to log.</param>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.DiagnosticContextCollector.TryComplete(System.Collections.Generic.IEnumerable{Serilog.Events.LogEventProperty}@)">
+            <summary>
+            Complete the context and retrieve the properties added to it, if any. This will
+            stop collection and remove the collector from the original execution context and
+            any of its children.
+            </summary>
+            <param name="properties">The collected properties, or null if no collection is active.</param>
+            <returns>True if properties could be collected.</returns>
+            <seealso cref="M:Serilog.IDiagnosticContext.Set(System.String,System.Object,System.Boolean)"/>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.DiagnosticContextCollector.TryComplete(System.Collections.Generic.IEnumerable{Serilog.Events.LogEventProperty}@,System.Exception@)">
+            <summary>
+            Complete the context and retrieve the properties and exception added to it, if any. This will
+            stop collection and remove the collector from the original execution context and
+            any of its children.
+            </summary>
+            <param name="properties">The collected properties, or null if no collection is active.</param>
+            <param name="exception">The collected exception, or null if none has been collected or if no collection is active.</param>
+            <returns>True if properties could be collected.</returns>
+            <seealso cref="M:Serilog.IDiagnosticContext.Set(System.String,System.Object,System.Boolean)"/>
+            <seealso cref="M:Serilog.IDiagnosticContext.SetException(System.Exception)"/>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.DiagnosticContextCollector.Dispose">
+            <inheritdoc/>
+        </member>
+        <member name="T:Serilog.Extensions.Hosting.LoggerBase">
+            <summary>
+            Implements default <see cref="T:Serilog.ILogger"/> methods for caching/reloadable loggers.
+            </summary>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Write(Serilog.Events.LogEvent)">
+            <summary>
+            Write an event to the log.
+            </summary>
+            <param name="logEvent">The event to write.</param>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Write(Serilog.Events.LogEventLevel,System.String)">
+            <summary>
+            Write a log event with the specified level.
+            </summary>
+            <param name="level">The level of the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Write``1(Serilog.Events.LogEventLevel,System.String,``0)">
+            <summary>
+            Write a log event with the specified level.
+            </summary>
+            <param name="level">The level of the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue">Object positionally formatted into the message template.</param>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Write``2(Serilog.Events.LogEventLevel,System.String,``0,``1)">
+            <summary>
+            Write a log event with the specified level.
+            </summary>
+            <param name="level">The level of the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Write``3(Serilog.Events.LogEventLevel,System.String,``0,``1,``2)">
+            <summary>
+            Write a log event with the specified level.
+            </summary>
+            <param name="level">The level of the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <param name="propertyValue2">Object positionally formatted into the message template.</param>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Write(Serilog.Events.LogEventLevel,System.String,System.Object[])">
+            <summary>
+            Write a log event with the specified level.
+            </summary>
+            <param name="level">The level of the event.</param>
+            <param name="messageTemplate"></param>
+            <param name="propertyValues"></param>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Write(Serilog.Events.LogEventLevel,System.Exception,System.String)">
+            <summary>
+            Write a log event with the specified level and associated exception.
+            </summary>
+            <param name="level">The level of the event.</param>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Write``1(Serilog.Events.LogEventLevel,System.Exception,System.String,``0)">
+            <summary>
+            Write a log event with the specified level and associated exception.
+            </summary>
+            <param name="level">The level of the event.</param>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue">Object positionally formatted into the message template.</param>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Write``2(Serilog.Events.LogEventLevel,System.Exception,System.String,``0,``1)">
+            <summary>
+            Write a log event with the specified level and associated exception.
+            </summary>
+            <param name="level">The level of the event.</param>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Write``3(Serilog.Events.LogEventLevel,System.Exception,System.String,``0,``1,``2)">
+            <summary>
+            Write a log event with the specified level and associated exception.
+            </summary>
+            <param name="level">The level of the event.</param>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <param name="propertyValue2">Object positionally formatted into the message template.</param>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Write(Serilog.Events.LogEventLevel,System.Exception,System.String,System.Object[])">
+            <summary>
+            Write a log event with the specified level and associated exception.
+            </summary>
+            <param name="level">The level of the event.</param>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValues">Objects positionally formatted into the message template.</param>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Verbose(System.String)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Verbose"/> level.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <example><code>
+            Log.Verbose("Staring into space, wondering if we're alone.");
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Verbose``1(System.String,``0)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Verbose"/> level.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Verbose("Staring into space, wondering if we're alone.");
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Verbose``2(System.String,``0,``1)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Verbose"/> level.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Verbose("Staring into space, wondering if we're alone.");
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Verbose``3(System.String,``0,``1,``2)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Verbose"/> level.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <param name="propertyValue2">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Verbose("Staring into space, wondering if we're alone.");
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Verbose(System.String,System.Object[])">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Verbose"/> level and associated exception.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValues">Objects positionally formatted into the message template.</param>
+            <example><code>
+            Log.Verbose("Staring into space, wondering if we're alone.");
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Verbose(System.Exception,System.String)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Verbose"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <example><code>
+            Log.Verbose(ex, "Staring into space, wondering where this comet came from.");
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Verbose``1(System.Exception,System.String,``0)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Verbose"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Verbose(ex, "Staring into space, wondering where this comet came from.");
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Verbose``2(System.Exception,System.String,``0,``1)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Verbose"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Verbose(ex, "Staring into space, wondering where this comet came from.");
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Verbose``3(System.Exception,System.String,``0,``1,``2)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Verbose"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <param name="propertyValue2">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Verbose(ex, "Staring into space, wondering where this comet came from.");
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Verbose(System.Exception,System.String,System.Object[])">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Verbose"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValues">Objects positionally formatted into the message template.</param>
+            <example><code>
+            Log.Verbose(ex, "Staring into space, wondering where this comet came from.");
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Debug(System.String)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Debug"/> level.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <example><code>
+            Log.Debug("Starting up at {StartedAt}.", DateTime.Now);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Debug``1(System.String,``0)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Debug"/> level.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Debug("Starting up at {StartedAt}.", DateTime.Now);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Debug``2(System.String,``0,``1)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Debug"/> level.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Debug("Starting up at {StartedAt}.", DateTime.Now);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Debug``3(System.String,``0,``1,``2)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Debug"/> level.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <param name="propertyValue2">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Debug("Starting up at {StartedAt}.", DateTime.Now);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Debug(System.String,System.Object[])">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Debug"/> level and associated exception.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValues">Objects positionally formatted into the message template.</param>
+            <example><code>
+            Log.Debug("Starting up at {StartedAt}.", DateTime.Now);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Debug(System.Exception,System.String)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Debug"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <example><code>
+            Log.Debug(ex, "Swallowing a mundane exception.");
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Debug``1(System.Exception,System.String,``0)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Debug"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Debug(ex, "Swallowing a mundane exception.");
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Debug``2(System.Exception,System.String,``0,``1)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Debug"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Debug(ex, "Swallowing a mundane exception.");
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Debug``3(System.Exception,System.String,``0,``1,``2)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Debug"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <param name="propertyValue2">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Debug(ex, "Swallowing a mundane exception.");
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Debug(System.Exception,System.String,System.Object[])">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Debug"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValues">Objects positionally formatted into the message template.</param>
+            <example><code>
+            Log.Debug(ex, "Swallowing a mundane exception.");
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Information(System.String)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Information"/> level.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <example><code>
+            Log.Information("Processed {RecordCount} records in {TimeMS}.", records.Length, sw.ElapsedMilliseconds);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Information``1(System.String,``0)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Information"/> level.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Information("Processed {RecordCount} records in {TimeMS}.", records.Length, sw.ElapsedMilliseconds);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Information``2(System.String,``0,``1)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Information"/> level.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Information("Processed {RecordCount} records in {TimeMS}.", records.Length, sw.ElapsedMilliseconds);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Information``3(System.String,``0,``1,``2)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Information"/> level.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <param name="propertyValue2">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Information("Processed {RecordCount} records in {TimeMS}.", records.Length, sw.ElapsedMilliseconds);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Information(System.String,System.Object[])">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Information"/> level and associated exception.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValues">Objects positionally formatted into the message template.</param>
+            <example><code>
+            Log.Information("Processed {RecordCount} records in {TimeMS}.", records.Length, sw.ElapsedMilliseconds);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Information(System.Exception,System.String)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Information"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <example><code>
+            Log.Information(ex, "Processed {RecordCount} records in {TimeMS}.", records.Length, sw.ElapsedMilliseconds);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Information``1(System.Exception,System.String,``0)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Information"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Information(ex, "Processed {RecordCount} records in {TimeMS}.", records.Length, sw.ElapsedMilliseconds);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Information``2(System.Exception,System.String,``0,``1)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Information"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Information(ex, "Processed {RecordCount} records in {TimeMS}.", records.Length, sw.ElapsedMilliseconds);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Information``3(System.Exception,System.String,``0,``1,``2)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Information"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <param name="propertyValue2">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Information(ex, "Processed {RecordCount} records in {TimeMS}.", records.Length, sw.ElapsedMilliseconds);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Information(System.Exception,System.String,System.Object[])">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Information"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValues">Objects positionally formatted into the message template.</param>
+            <example><code>
+            Log.Information(ex, "Processed {RecordCount} records in {TimeMS}.", records.Length, sw.ElapsedMilliseconds);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Warning(System.String)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Warning"/> level.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <example><code>
+            Log.Warning("Skipped {SkipCount} records.", skippedRecords.Length);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Warning``1(System.String,``0)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Warning"/> level.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Warning("Skipped {SkipCount} records.", skippedRecords.Length);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Warning``2(System.String,``0,``1)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Warning"/> level.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Warning("Skipped {SkipCount} records.", skippedRecords.Length);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Warning``3(System.String,``0,``1,``2)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Warning"/> level.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <param name="propertyValue2">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Warning("Skipped {SkipCount} records.", skippedRecords.Length);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Warning(System.String,System.Object[])">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Warning"/> level and associated exception.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValues">Objects positionally formatted into the message template.</param>
+            <example><code>
+            Log.Warning("Skipped {SkipCount} records.", skippedRecords.Length);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Warning(System.Exception,System.String)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Warning"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <example><code>
+            Log.Warning(ex, "Skipped {SkipCount} records.", skippedRecords.Length);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Warning``1(System.Exception,System.String,``0)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Warning"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Warning(ex, "Skipped {SkipCount} records.", skippedRecords.Length);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Warning``2(System.Exception,System.String,``0,``1)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Warning"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Warning(ex, "Skipped {SkipCount} records.", skippedRecords.Length);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Warning``3(System.Exception,System.String,``0,``1,``2)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Warning"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <param name="propertyValue2">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Warning(ex, "Skipped {SkipCount} records.", skippedRecords.Length);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Warning(System.Exception,System.String,System.Object[])">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Warning"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValues">Objects positionally formatted into the message template.</param>
+            <example><code>
+            Log.Warning(ex, "Skipped {SkipCount} records.", skippedRecords.Length);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Error(System.String)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Error"/> level.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <example><code>
+            Log.Error("Failed {ErrorCount} records.", brokenRecords.Length);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Error``1(System.String,``0)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Error"/> level.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Error("Failed {ErrorCount} records.", brokenRecords.Length);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Error``2(System.String,``0,``1)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Error"/> level.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Error("Failed {ErrorCount} records.", brokenRecords.Length);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Error``3(System.String,``0,``1,``2)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Error"/> level.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <param name="propertyValue2">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Error("Failed {ErrorCount} records.", brokenRecords.Length);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Error(System.String,System.Object[])">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Error"/> level and associated exception.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValues">Objects positionally formatted into the message template.</param>
+            <example><code>
+            Log.Error("Failed {ErrorCount} records.", brokenRecords.Length);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Error(System.Exception,System.String)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Error"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <example><code>
+            Log.Error(ex, "Failed {ErrorCount} records.", brokenRecords.Length);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Error``1(System.Exception,System.String,``0)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Error"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Error(ex, "Failed {ErrorCount} records.", brokenRecords.Length);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Error``2(System.Exception,System.String,``0,``1)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Error"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Error(ex, "Failed {ErrorCount} records.", brokenRecords.Length);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Error``3(System.Exception,System.String,``0,``1,``2)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Error"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <param name="propertyValue2">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Error(ex, "Failed {ErrorCount} records.", brokenRecords.Length);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Error(System.Exception,System.String,System.Object[])">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Error"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValues">Objects positionally formatted into the message template.</param>
+            <example><code>
+            Log.Error(ex, "Failed {ErrorCount} records.", brokenRecords.Length);
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Fatal(System.String)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Fatal"/> level.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <example><code>
+            Log.Fatal("Process terminating.");
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Fatal``1(System.String,``0)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Fatal"/> level.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Fatal("Process terminating.");
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Fatal``2(System.String,``0,``1)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Fatal"/> level.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Fatal("Process terminating.");
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Fatal``3(System.String,``0,``1,``2)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Fatal"/> level.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <param name="propertyValue2">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Fatal("Process terminating.");
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Fatal(System.String,System.Object[])">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Fatal"/> level and associated exception.
+            </summary>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValues">Objects positionally formatted into the message template.</param>
+            <example><code>
+            Log.Fatal("Process terminating.");
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Fatal(System.Exception,System.String)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Fatal"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <example><code>
+            Log.Fatal(ex, "Process terminating.");
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Fatal``1(System.Exception,System.String,``0)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Fatal"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Fatal(ex, "Process terminating.");
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Fatal``2(System.Exception,System.String,``0,``1)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Fatal"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Fatal(ex, "Process terminating.");
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Fatal``3(System.Exception,System.String,``0,``1,``2)">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Fatal"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValue0">Object positionally formatted into the message template.</param>
+            <param name="propertyValue1">Object positionally formatted into the message template.</param>
+            <param name="propertyValue2">Object positionally formatted into the message template.</param>
+            <example><code>
+            Log.Fatal(ex, "Process terminating.");
+            </code></example>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.LoggerBase.Fatal(System.Exception,System.String,System.Object[])">
+            <summary>
+            Write a log event with the <see cref="F:Serilog.Events.LogEventLevel.Fatal"/> level and associated exception.
+            </summary>
+            <param name="exception">Exception related to the event.</param>
+            <param name="messageTemplate">Message template describing the event.</param>
+            <param name="propertyValues">Objects positionally formatted into the message template.</param>
+            <example><code>
+            Log.Fatal(ex, "Process terminating.");
+            </code></example>
+        </member>
+        <member name="T:Serilog.Extensions.Hosting.ReloadableLogger">
+            <summary>
+            A Serilog <see cref="T:Serilog.ILogger"/> that can be reconfigured without invalidating existing <see cref="T:Serilog.ILogger"/>
+            instances derived from it.
+            </summary>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.ReloadableLogger.Reload(System.Func{Serilog.LoggerConfiguration,Serilog.LoggerConfiguration})">
+            <summary>
+            Reload the logger using the supplied configuration delegate.
+            </summary>
+            <param name="configure">A callback in which the logger is reconfigured.</param>
+            <exception cref="T:System.ArgumentNullException"><paramref name="configure"/> is null.</exception>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.ReloadableLogger.Freeze">
+            <summary>
+            Freeze the logger, so that no further reconfiguration is possible. Once the logger is frozen, logging through
+            new contextual loggers will have no additional cost, and logging directly through this logger will not require
+            any synchronization.
+            </summary>
+            <returns>The <see cref="T:Serilog.Core.Logger"/> configured with the final settings.</returns>
+            <exception cref="T:System.InvalidOperationException">The logger is already frozen.</exception>
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.ReloadableLogger.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.ReloadableLogger.ForContext(Serilog.Core.ILogEventEnricher)">
+            <inheritdoc />
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.ReloadableLogger.ForContext(System.Collections.Generic.IEnumerable{Serilog.Core.ILogEventEnricher})">
+            <inheritdoc />
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.ReloadableLogger.ForContext(System.String,System.Object,System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.ReloadableLogger.ForContext``1">
+            <inheritdoc />
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.ReloadableLogger.ForContext(System.Type)">
+            <inheritdoc />
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.ReloadableLogger.Write(Serilog.Events.LogEvent)">
+            <inheritdoc cref="M:Serilog.ILogger.Write(Serilog.Events.LogEvent)" />
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.ReloadableLogger.Write(Serilog.Events.LogEventLevel,System.String)">
+            <inheritdoc cref="M:Serilog.ILogger.Write(Serilog.Events.LogEventLevel,System.String)" />
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.ReloadableLogger.Write``1(Serilog.Events.LogEventLevel,System.String,``0)">
+            <inheritdoc cref="M:Serilog.ILogger.Write``1(Serilog.Events.LogEventLevel,System.String,``0)" />
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.ReloadableLogger.Write``2(Serilog.Events.LogEventLevel,System.String,``0,``1)">
+            <inheritdoc cref="M:Serilog.ILogger.Write``2(Serilog.Events.LogEventLevel,System.String,``0,``1)" />
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.ReloadableLogger.Write``3(Serilog.Events.LogEventLevel,System.String,``0,``1,``2)">
+            <inheritdoc cref="M:Serilog.ILogger.Write``3(Serilog.Events.LogEventLevel,System.String,``0,``1,``2)" />
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.ReloadableLogger.Write(Serilog.Events.LogEventLevel,System.String,System.Object[])">
+            <inheritdoc cref="M:Serilog.ILogger.Write(Serilog.Events.LogEventLevel,System.String,System.Object[])" />
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.ReloadableLogger.Write(Serilog.Events.LogEventLevel,System.Exception,System.String)">
+            <inheritdoc cref="M:Serilog.ILogger.Write(Serilog.Events.LogEventLevel,System.Exception,System.String)" />
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.ReloadableLogger.Write``1(Serilog.Events.LogEventLevel,System.Exception,System.String,``0)">
+            <inheritdoc cref="M:Serilog.ILogger.Write``1(Serilog.Events.LogEventLevel,System.Exception,System.String,``0)" />
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.ReloadableLogger.Write``2(Serilog.Events.LogEventLevel,System.Exception,System.String,``0,``1)">
+            <inheritdoc cref="M:Serilog.ILogger.Write``2(Serilog.Events.LogEventLevel,System.Exception,System.String,``0,``1)" />
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.ReloadableLogger.Write``3(Serilog.Events.LogEventLevel,System.Exception,System.String,``0,``1,``2)">
+            <inheritdoc cref="M:Serilog.ILogger.Write``3(Serilog.Events.LogEventLevel,System.Exception,System.String,``0,``1,``2)" />
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.ReloadableLogger.Write(Serilog.Events.LogEventLevel,System.Exception,System.String,System.Object[])">
+            <inheritdoc cref="M:Serilog.ILogger.Write(Serilog.Events.LogEventLevel,System.Exception,System.String,System.Object[])" />
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.ReloadableLogger.IsEnabled(Serilog.Events.LogEventLevel)">
+            <inheritdoc />
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.ReloadableLogger.BindMessageTemplate(System.String,System.Object[],Serilog.Events.MessageTemplate@,System.Collections.Generic.IEnumerable{Serilog.Events.LogEventProperty}@)">
+            <inheritdoc />
+        </member>
+        <member name="M:Serilog.Extensions.Hosting.ReloadableLogger.BindProperty(System.String,System.Object,System.Boolean,Serilog.Events.LogEventProperty@)">
+            <inheritdoc />
+        </member>
+        <member name="T:Serilog.IDiagnosticContext">
+            <summary>
+            Collects diagnostic information for packaging into wide events.
+            </summary>
+        </member>
+        <member name="M:Serilog.IDiagnosticContext.Set(System.String,System.Object,System.Boolean)">
+            <summary>
+            Set the specified property on the current diagnostic context. The property will be collected
+            and attached to the event emitted at the completion of the context.
+            </summary>
+            <param name="propertyName">The name of the property. Must be non-empty.</param>
+            <param name="value">The property value.</param>
+            <param name="destructureObjects">If true, the value will be serialized as structured
+            data if possible; if false, the object will be recorded as a scalar or simple array.</param>
+        </member>
+        <member name="M:Serilog.IDiagnosticContext.SetException(System.Exception)">
+            <summary>
+            Set the specified exception on the current diagnostic context.
+            </summary>
+            <remarks>
+            This method is useful when unhandled exceptions do not reach <c>Serilog.AspNetCore.RequestLoggingMiddleware</c>,
+            such as when using <a href="https://www.nuget.org/packages/Hellang.Middleware.ProblemDetails">Hellang.Middleware.ProblemDetails</a>
+            to transform exceptions to ProblemDetails responses.
+            </remarks>
+            <param name="exception">The exception to log. If <c>null</c> is given, it clears any previously assigned exception.</param>
+        </member>
+        <member name="T:Serilog.LoggerConfigurationExtensions">
+            <summary>
+            Extends <see cref="T:Serilog.LoggerConfiguration"/>.
+            </summary>
+        </member>
+        <member name="M:Serilog.LoggerConfigurationExtensions.CreateBootstrapLogger(Serilog.LoggerConfiguration)">
+            <summary>
+            Create a <see cref="T:Serilog.Extensions.Hosting.ReloadableLogger"/> for use during host bootstrapping. The
+            <see cref="M:Serilog.SerilogHostBuilderExtensions.UseSerilog(Microsoft.Extensions.Hosting.IHostBuilder,System.Action{Microsoft.Extensions.Hosting.HostBuilderContext,System.IServiceProvider,Serilog.LoggerConfiguration},System.Boolean,System.Boolean)"/>
+            configuration overload will detect when <see cref="P:Serilog.Log.Logger"/> is set to a <see cref="T:Serilog.Extensions.Hosting.ReloadableLogger"/> instance, and
+            reconfigure/freeze it so that <see cref="T:Serilog.ILogger"/>s created during host bootstrapping continue to work once
+            logger configuration (with access to host services) is completed.
+            </summary>
+            <param name="loggerConfiguration"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Serilog.LoggerSettingsConfigurationExtensions">
+            <summary>
+            Extends <see cref="T:Serilog.Configuration.LoggerSettingsConfiguration"/> with methods for consuming host services.
+            </summary>
+        </member>
+        <member name="M:Serilog.LoggerSettingsConfigurationExtensions.Services(Serilog.Configuration.LoggerSettingsConfiguration,System.IServiceProvider)">
+            <summary>
+            Configure the logger using components from the <paramref name="services"/>. If present, the logger will
+            receive implementations/instances of <see cref="T:Serilog.Core.LoggingLevelSwitch"/>, <see cref="T:Serilog.Core.IDestructuringPolicy"/>,
+            <see cref="T:Serilog.Core.ILogEventFilter"/>, <see cref="T:Serilog.Core.ILogEventEnricher"/>, <see cref="T:Serilog.Core.ILogEventSink"/>, and
+            <see cref="T:Serilog.Configuration.ILoggerSettings"/>.
+            </summary>
+            <param name="loggerSettingsConfiguration">The `ReadFrom` configuration object.</param>
+            <param name="services">A <see cref="T:System.IServiceProvider"/> from which services will be requested.</param>
+            <returns>A <see cref="T:Serilog.LoggerConfiguration"/> to support method chaining.</returns>
+        </member>
+        <member name="T:Serilog.SerilogHostBuilderExtensions">
+            <summary>
+            Extends <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> with Serilog configuration methods.
+            </summary>
+        </member>
+        <member name="M:Serilog.SerilogHostBuilderExtensions.UseSerilog(Microsoft.Extensions.Hosting.IHostBuilder,Serilog.ILogger,System.Boolean,Serilog.Extensions.Logging.LoggerProviderCollection)">
+            <summary>
+            Sets Serilog as the logging provider.
+            </summary>
+            <param name="builder">The host builder to configure.</param>
+            <param name="logger">The Serilog logger; if not supplied, the static <see cref="T:Serilog.Log"/> will be used.</param>
+            <param name="dispose">When <c>true</c>, dispose <paramref name="logger"/> when the framework disposes the provider. If the
+            logger is not specified but <paramref name="dispose"/> is <c>true</c>, the <see cref="M:Serilog.Log.CloseAndFlush"/> method will be
+            called on the static <see cref="T:Serilog.Log"/> class instead.</param>
+            <param name="providers">A <see cref="T:Serilog.Extensions.Logging.LoggerProviderCollection"/> registered in the Serilog pipeline using the
+            <c>WriteTo.Providers()</c> configuration method, enabling other <see cref="T:Microsoft.Extensions.Logging.ILoggerProvider"/>s to receive events. By
+            default, only Serilog sinks will receive events.</param>
+            <returns>The host builder.</returns>
+        </member>
+        <member name="M:Serilog.SerilogHostBuilderExtensions.UseSerilog(Microsoft.Extensions.Hosting.IHostBuilder,System.Action{Microsoft.Extensions.Hosting.HostBuilderContext,Serilog.LoggerConfiguration},System.Boolean,System.Boolean)">
+            <summary>Sets Serilog as the logging provider.</summary>
+            <remarks>
+            A <see cref="T:Microsoft.Extensions.Hosting.HostBuilderContext"/> is supplied so that configuration and hosting information can be used.
+            The logger will be shut down when application services are disposed.
+            </remarks>
+            <param name="builder">The host builder to configure.</param>
+            <param name="configureLogger">The delegate for configuring the <see cref="T:Serilog.LoggerConfiguration" /> that will be used to construct a <see cref="T:Serilog.Core.Logger" />.</param>
+            <param name="preserveStaticLogger">Indicates whether to preserve the value of <see cref="P:Serilog.Log.Logger"/>.</param>
+            <param name="writeToProviders">By default, Serilog does not write events to <see cref="T:Microsoft.Extensions.Logging.ILoggerProvider"/>s registered through
+            the Microsoft.Extensions.Logging API. Normally, equivalent Serilog sinks are used in place of providers. Specify
+            <c>true</c> to write events to all providers.</param>
+            <returns>The host builder.</returns>
+        </member>
+        <member name="M:Serilog.SerilogHostBuilderExtensions.UseSerilog(Microsoft.Extensions.Hosting.IHostBuilder,System.Action{Microsoft.Extensions.Hosting.HostBuilderContext,System.IServiceProvider,Serilog.LoggerConfiguration},System.Boolean,System.Boolean)">
+            <summary>Sets Serilog as the logging provider.</summary>
+            <remarks>
+            A <see cref="T:Microsoft.Extensions.Hosting.HostBuilderContext"/> is supplied so that configuration and hosting information can be used.
+            The logger will be shut down when application services are disposed.
+            </remarks>
+            <param name="builder">The host builder to configure.</param>
+            <param name="configureLogger">The delegate for configuring the <see cref="T:Serilog.LoggerConfiguration" /> that will be used to construct a <see cref="T:Serilog.Core.Logger" />.</param>
+            <param name="preserveStaticLogger">Indicates whether to preserve the value of <see cref="P:Serilog.Log.Logger"/>.</param>
+            <param name="writeToProviders">By default, Serilog does not write events to <see cref="T:Microsoft.Extensions.Logging.ILoggerProvider"/>s registered through
+            the Microsoft.Extensions.Logging API. Normally, equivalent Serilog sinks are used in place of providers. Specify
+            <c>true</c> to write events to all providers.</param>
+            <remarks>If the static <see cref="P:Serilog.Log.Logger"/> is a bootstrap logger (see
+            <c>LoggerConfigurationExtensions.CreateBootstrapLogger()</c>), and <paramref name="preserveStaticLogger"/> is
+            not specified, the the bootstrap logger will be reconfigured through the supplied delegate, rather than being
+            replaced entirely or ignored.</remarks>
+            <returns>The host builder.</returns>
+        </member>
+        <member name="T:Serilog.SerilogServiceCollectionExtensions">
+            <summary>
+            Extends <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> with Serilog configuration methods.
+            </summary>
+        </member>
+        <member name="M:Serilog.SerilogServiceCollectionExtensions.AddSerilog(Microsoft.Extensions.DependencyInjection.IServiceCollection,Serilog.ILogger,System.Boolean,Serilog.Extensions.Logging.LoggerProviderCollection)">
+            <summary>
+            Sets Serilog as the logging provider.
+            </summary>
+            <param name="collection">The service collection to use.</param>
+            <param name="logger">The Serilog logger; if not supplied, the static <see cref="T:Serilog.Log"/> will be used.</param>
+            <param name="dispose">When <c>true</c>, dispose <paramref name="logger"/> when the framework disposes the provider. If the
+            logger is not specified but <paramref name="dispose"/> is <c>true</c>, the <see cref="M:Serilog.Log.CloseAndFlush"/> method will be
+            called on the static <see cref="T:Serilog.Log"/> class instead.</param>
+            <param name="providers">A <see cref="T:Serilog.Extensions.Logging.LoggerProviderCollection"/> registered in the Serilog pipeline using the
+            <c>WriteTo.Providers()</c> configuration method, enabling other <see cref="T:Microsoft.Extensions.Logging.ILoggerProvider"/>s to receive events. By
+            default, only Serilog sinks will receive events.</param>
+            <returns>The service collection.</returns>
+        </member>
+        <member name="M:Serilog.SerilogServiceCollectionExtensions.AddSerilog(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Serilog.LoggerConfiguration},System.Boolean,System.Boolean)">
+            <summary>Sets Serilog as the logging provider.</summary>
+            <param name="collection">The service collection to use.</param>
+            <param name="configureLogger">The delegate for configuring the <see cref="T:Serilog.LoggerConfiguration" /> that will be used to construct a <see cref="T:Serilog.Core.Logger" />.</param>
+            <param name="preserveStaticLogger">Indicates whether to preserve the value of <see cref="P:Serilog.Log.Logger"/>.</param>
+            <param name="writeToProviders">By default, Serilog does not write events to <see cref="T:Microsoft.Extensions.Logging.ILoggerProvider"/>s registered through
+            the Microsoft.Extensions.Logging API. Normally, equivalent Serilog sinks are used in place of providers. Specify
+            <c>true</c> to write events to all providers.</param>
+            <returns>The service collection.</returns>
+        </member>
+        <member name="M:Serilog.SerilogServiceCollectionExtensions.AddSerilog(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{System.IServiceProvider,Serilog.LoggerConfiguration},System.Boolean,System.Boolean)">
+            <summary>Sets Serilog as the logging provider.</summary>
+            <param name="collection">The service collection to use.</param>
+            <param name="configureLogger">The delegate for configuring the <see cref="T:Serilog.LoggerConfiguration" /> that will be used to construct a <see cref="T:Serilog.Core.Logger" />.</param>
+            <param name="preserveStaticLogger">Indicates whether to preserve the value of <see cref="P:Serilog.Log.Logger"/>.</param>
+            <param name="writeToProviders">By default, Serilog does not write events to <see cref="T:Microsoft.Extensions.Logging.ILoggerProvider"/>s registered through
+            the Microsoft.Extensions.Logging API. Normally, equivalent Serilog sinks are used in place of providers. Specify
+            <c>true</c> to write events to all providers.</param>
+            <remarks>If the static <see cref="P:Serilog.Log.Logger"/> is a bootstrap logger (see
+            <c>LoggerConfigurationExtensions.CreateBootstrapLogger()</c>), and <paramref name="preserveStaticLogger"/> is
+            not specified, the the bootstrap logger will be reconfigured through the supplied delegate, rather than being
+            replaced entirely or ignored.</remarks>
+            <returns>The service collection.</returns>
+        </member>
+    </members>
+</doc>

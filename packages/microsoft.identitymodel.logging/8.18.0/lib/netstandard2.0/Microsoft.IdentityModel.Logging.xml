@@ -1,0 +1,878 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.IdentityModel.Logging</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.IdentityModel.Logging.IdentityModelEventSource">
+            <summary>
+            Event source based logger to log different events.
+            </summary>
+        </member>
+        <member name="P:Microsoft.IdentityModel.Logging.IdentityModelEventSource.Logger">
+            <summary>
+            Static logger that is exposed externally. An external application or framework can hook up a listener to this event source to log data in a custom way.
+            </summary>
+        </member>
+        <member name="P:Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII">
+            <summary>
+            Flag which indicates whether or not PII is shown in logs. False by default.
+            </summary>
+        </member>
+        <member name="P:Microsoft.IdentityModel.Logging.IdentityModelEventSource.LogCompleteSecurityArtifact">
+            <summary>
+            Flag which indicates whether or not complete <see cref="T:Microsoft.IdentityModel.Logging.SecurityArtifact"/> is shown in logs when <see cref="P:Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII"/> is set to true. False by default.
+            </summary>
+        </member>
+        <member name="P:Microsoft.IdentityModel.Logging.IdentityModelEventSource.HiddenPIIString">
+            <summary>
+            String that is used in place of any arguments to log messages if the 'ShowPII' flag is set to false.
+            </summary>
+        </member>
+        <member name="P:Microsoft.IdentityModel.Logging.IdentityModelEventSource.HiddenSecurityArtifactString">
+            <summary>
+            String that is used in place of any arguments to log messages if the 'LogCompleteSecurityArtifact' flag is set to false.
+            </summary>
+        </member>
+        <member name="P:Microsoft.IdentityModel.Logging.IdentityModelEventSource.HeaderWritten">
+            <summary>
+            Indicates whether or the log message header (contains library version, date/time, and PII debugging information) has been written.
+            </summary>
+        </member>
+        <member name="F:Microsoft.IdentityModel.Logging.IdentityModelEventSource._versionLogMessage">
+            <summary>
+            The log message that indicates the current library version.
+            </summary>
+        </member>
+        <member name="F:Microsoft.IdentityModel.Logging.IdentityModelEventSource._dateLogMessage">
+            <summary>
+            The log message that indicates the date.
+            </summary>
+        </member>
+        <member name="F:Microsoft.IdentityModel.Logging.IdentityModelEventSource._piiOffLogMessage">
+            <summary>
+            The log message that is shown when PII is off.
+            </summary>
+        </member>
+        <member name="F:Microsoft.IdentityModel.Logging.IdentityModelEventSource._piiOnLogMessage">
+            <summary>
+            The log message that is shown when PII is off.
+            </summary>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.IdentityModelEventSource.WriteAlways(System.String)">
+            <summary>
+            Writes an event log by using the provided string argument and current UTC time.
+            No level filtering is done on the event.
+            </summary>
+            <param name="message">The log message.</param>
+            <remarks>No level filtering.</remarks>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.IdentityModelEventSource.WriteAlways(System.String,System.Object[])">
+            <summary>
+            Writes an event log by using the provided string argument, current UTC time and the provided arguments list.
+            </summary>
+            <param name="message">The log message.</param>
+            <param name="args">An object array that contains zero or more objects to format.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.IdentityModelEventSource.WriteVerbose(System.String)">
+            <summary>
+            Writes a verbose event log by using the provided string argument and current UTC time.
+            </summary>
+            <param name="message">The log message.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.IdentityModelEventSource.WriteVerbose(System.String,System.Object[])">
+            <summary>
+            Writes a verbose event log by using the provided string argument, current UTC time and the provided arguments list.
+            </summary>
+            <param name="message">The log message.</param>
+            <param name="args">An object array that contains zero or more objects to format.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.IdentityModelEventSource.WriteInformation(System.String)">
+            <summary>
+            Writes an information event log by using the provided string argument and current UTC time.
+            </summary>
+            <param name="message">The log message.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.IdentityModelEventSource.WriteInformation(System.String,System.Object[])">
+            <summary>
+            Writes an information event log by using the provided string argument, current UTC time and the provided arguments list.
+            </summary>
+            <param name="message">The log message.</param>
+            <param name="args">An object array that contains zero or more objects to format.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.IdentityModelEventSource.WriteWarning(System.String)">
+            <summary>
+            Writes a warning event log by using the provided string argument and current UTC time.
+            </summary>
+            <param name="message">The log message.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.IdentityModelEventSource.WriteWarning(System.String,System.Object[])">
+            <summary>
+            Writes a warning event log by using the provided string argument, current UTC time and the provided arguments list.
+            </summary>
+            <param name="message">The log message.</param>
+            <param name="args">An object array that contains zero or more objects to format.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.IdentityModelEventSource.WriteError(System.String)">
+            <summary>
+            Writes an error event log by using the provided string argument and current UTC time.
+            </summary>
+            <param name="message">The log message.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.IdentityModelEventSource.WriteError(System.String,System.Object[])">
+            <summary>
+            Writes an error event log by using the provided string argument, current UTC time and the provided arguments list.
+            </summary>
+            <param name="message">The log message.</param>
+            <param name="args">An object array that contains zero or more objects to format.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.IdentityModelEventSource.WriteCritical(System.String)">
+            <summary>
+            Writes a critical event log by using the provided string argument and current UTC time.
+            </summary>
+            <param name="message">The log message.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.IdentityModelEventSource.WriteCritical(System.String,System.Object[])">
+            <summary>
+            Writes a critical event log by using the provided string argument, current UTC time and the provided arguments list.
+            </summary>
+            <param name="message">The log message.</param>
+            <param name="args">An object array that contains zero or more objects to format.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.IdentityModelEventSource.Write(System.Diagnostics.Tracing.EventLevel,System.Exception,System.String)">
+            <summary>
+            Writes an exception log by using the provided event identifer, exception argument, string argument and current UTC time.
+            </summary>
+            <param name="level"><see cref="T:System.Diagnostics.Tracing.EventLevel"/></param>
+            <param name="innerException"><see cref="T:System.Exception"/></param>
+            <param name="message">The log message.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.IdentityModelEventSource.Write(System.Diagnostics.Tracing.EventLevel,System.Exception,System.String,System.Object[])">
+            <summary>
+            Writes an exception log by using the provided event identifer, exception argument, string argument, arguments list and current UTC time.
+            </summary>
+            <param name="level"><see cref="T:System.Diagnostics.Tracing.EventLevel"/></param>
+            <param name="innerException"><see cref="T:System.Exception"/></param>
+            <param name="message">The log message.</param>
+            <param name="args">An object array that contains zero or more objects to format.</param>
+        </member>
+        <member name="P:Microsoft.IdentityModel.Logging.IdentityModelEventSource.LogLevel">
+            <summary>
+            Minimum log level to log events. Default is Warning.
+            </summary>
+        </member>
+        <member name="T:Microsoft.IdentityModel.Logging.IdentityModelTelemetryUtil">
+            <summary>
+            Provides a way to add and remove telemetry data.
+            </summary>
+        </member>
+        <member name="P:Microsoft.IdentityModel.Logging.IdentityModelTelemetryUtil.ClientSku">
+            <summary>
+            Get the string that represents the client SKU.
+            </summary>
+        </member>
+        <member name="P:Microsoft.IdentityModel.Logging.IdentityModelTelemetryUtil.ClientVer">
+            <summary>
+            Get the string that represents the client version.
+            </summary>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.IdentityModelTelemetryUtil.AddTelemetryData(System.String,System.String)">
+            <summary>
+            Adds a key and its value to the collection of telemetry data.
+            </summary>
+            <param name="key"> The name of the telemetry.</param>
+            <param name="value"> The value of the telemetry.</param>
+            <returns> true if the key is successfully added; otherwise, false.</returns>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.IdentityModelTelemetryUtil.RemoveTelemetryData(System.String)">
+            <summary>
+            Removes a key and its value from the collection of telemetry data.
+            </summary>
+            <param name="key"> The name of the telemetry.</param>
+            <returns> true if the key is successfully removed; otherwise, false.</returns>
+        </member>
+        <member name="T:Microsoft.IdentityModel.Logging.ISafeLogSecurityArtifact">
+            <summary>
+            Interface that provides an unsafe method to log a security artifact.
+            </summary>
+            <remarks>
+            SecurityToken and encoded token are considered as SecurityArtifacts.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.ISafeLogSecurityArtifact.UnsafeToString">
+            <summary>
+            Returns a string that represents the complete security artifact.
+            This may include sensitive information and should only be used for debugging purposes.
+            </summary>
+        </member>
+        <member name="T:Microsoft.IdentityModel.Logging.LoggerContext">
+            <summary>
+            A context class that can be used to store work per request to aid with debugging.
+            </summary>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LoggerContext.#ctor">
+            <summary>
+            Instantiates a new <see cref="T:Microsoft.IdentityModel.Logging.LoggerContext"/> with the default activityId.
+            </summary>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LoggerContext.#ctor(System.Guid)">
+            <summary>
+            Instantiates a new <see cref="T:Microsoft.IdentityModel.Logging.LoggerContext"/> with an activityId.
+            </summary>
+            <param name="activityId"></param>
+        </member>
+        <member name="P:Microsoft.IdentityModel.Logging.LoggerContext.ActivityId">
+            <summary>
+            Gets or set a <see cref="T:System.Guid"/> that will be used in the call to EventSource.SetCurrentThreadActivityId before logging.
+            </summary>
+        </member>
+        <member name="P:Microsoft.IdentityModel.Logging.LoggerContext.CaptureLogs">
+            <summary>
+            Gets or sets a boolean controlling if logs are written into the context.
+            Useful when debugging.
+            </summary>
+        </member>
+        <member name="P:Microsoft.IdentityModel.Logging.LoggerContext.DebugId">
+            <summary>
+            Gets or sets a string that helps with setting breakpoints when debugging.
+            </summary>
+        </member>
+        <member name="P:Microsoft.IdentityModel.Logging.LoggerContext.Logs">
+            <summary>
+            The collection of logs associated with a request. Use <see cref="P:Microsoft.IdentityModel.Logging.LoggerContext.CaptureLogs"/> to control capture.
+            </summary>
+        </member>
+        <member name="P:Microsoft.IdentityModel.Logging.LoggerContext.PropertyBag">
+            <summary>
+            Gets or sets an <see cref="T:System.Collections.Generic.IDictionary`2"/> that enables custom extensibility scenarios.
+            </summary>
+        </member>
+        <member name="T:Microsoft.IdentityModel.Logging.LogHelper">
+            <summary>
+            Helper class for logging.
+            </summary>
+        </member>
+        <member name="P:Microsoft.IdentityModel.Logging.LogHelper.Logger">
+            <summary>
+            Gets or sets a logger to which logs will be written to.
+            </summary>
+        </member>
+        <member name="F:Microsoft.IdentityModel.Logging.LogHelper._isHeaderWritten">
+            <summary>
+            Indicates whether the log message header (contains library version, date/time, and PII debugging information) has been written.
+            </summary>
+        </member>
+        <member name="F:Microsoft.IdentityModel.Logging.LogHelper._piiOffLogMessage">
+            <summary>
+            The log message that is shown when PII is off.
+            </summary>
+        </member>
+        <member name="F:Microsoft.IdentityModel.Logging.LogHelper._piiOnLogMessage">
+            <summary>
+            The log message that is shown when PII is on.
+            </summary>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.IsEnabled(Microsoft.IdentityModel.Abstractions.EventLogLevel)">
+            <summary>
+            Gets whether logging is enabled at the specified <see cref="T:Microsoft.IdentityModel.Abstractions.EventLogLevel"/>."/>
+            </summary>
+            <param name="level">The log level</param>
+            <returns><see langword="true"/> if logging is enabled at the specified level; otherwise, <see langword="false"/>.</returns>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.LogArgumentNullException(System.String)">
+            <summary>
+            Logs an exception using the event source logger and returns new <see cref="T:System.ArgumentNullException"/> exception.
+            </summary>
+            <param name="argument">argument that is null or empty.</param>
+            <remarks>EventLevel is set to Error.</remarks>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.LogException``1(System.String)">
+            <summary>
+            Logs an exception using the event source logger and returns new typed exception.
+            </summary>
+            <param name="message">message to log.</param>
+            <remarks>EventLevel is set to Error.</remarks>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.LogArgumentException``1(System.String,System.String)">
+            <summary>
+            Logs an argument exception using the event source logger and returns new typed exception.
+            </summary>
+            <param name="argumentName">Identifies the argument whose value generated the ArgumentException.</param>
+            <param name="message">message to log.</param>
+            <remarks>EventLevel is set to Error.</remarks>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.LogException``1(System.String,System.Object[])">
+            <summary>
+            Logs an exception using the event source logger and returns new typed exception.
+            </summary>
+            <param name="format">Format string of the log message.</param>
+            <param name="args">An object array that contains zero or more objects to format.</param>
+            <remarks>EventLevel is set to Error.</remarks>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.LogArgumentException``1(System.String,System.String,System.Object[])">
+            <summary>
+            Logs an argument exception using the event source logger and returns new typed exception.
+            </summary>
+            <param name="argumentName">Identifies the argument whose value generated the ArgumentException.</param>
+            <param name="format">Format string of the log message.</param>
+            <param name="args">An object array that contains zero or more objects to format.</param>
+            <remarks>EventLevel is set to Error.</remarks>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.LogException``1(System.Exception,System.String)">
+            <summary>
+            Logs an exception using the event source logger and returns new typed exception.
+            </summary>
+            <param name="innerException">the inner <see cref="T:System.Exception"/> to be added to the outer exception.</param>
+            <param name="message">message to log.</param>
+            <remarks>EventLevel is set to Error.</remarks>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.LogArgumentException``1(System.String,System.Exception,System.String)">
+            <summary>
+            Logs an argument exception using the event source logger and returns new typed exception.
+            </summary>
+            <param name="argumentName">Identifies the argument whose value generated the ArgumentException.</param>
+            <param name="innerException">the inner <see cref="T:System.Exception"/> to be added to the outer exception.</param>
+            <param name="message">message to log.</param>
+            <remarks>EventLevel is set to Error.</remarks>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.LogException``1(System.Exception,System.String,System.Object[])">
+            <summary>
+            Logs an exception using the event source logger and returns new typed exception.
+            </summary>
+            <param name="innerException">the inner <see cref="T:System.Exception"/> to be added to the outer exception.</param>
+            <param name="format">Format string of the log message.</param>
+            <param name="args">An object array that contains zero or more objects to format.</param>
+            <remarks>EventLevel is set to Error.</remarks>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.LogArgumentException``1(System.String,System.Exception,System.String,System.Object[])">
+            <summary>
+            Logs an argument exception using the event source logger and returns new typed exception.
+            </summary>
+            <param name="argumentName">Identifies the argument whose value generated the ArgumentException.</param>
+            <param name="innerException">the inner <see cref="T:System.Exception"/> to be added to the outer exception.</param>
+            <param name="format">Format string of the log message.</param>
+            <param name="args">An object array that contains zero or more objects to format.</param>
+            <remarks>EventLevel is set to Error.</remarks>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.LogException``1(System.Diagnostics.Tracing.EventLevel,System.String)">
+            <summary>
+            Logs an exception using the event source logger and returns new typed exception.
+            </summary>
+            <param name="eventLevel">Identifies the level of an event to be logged.</param>
+            <param name="message">message to log.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.LogArgumentException``1(System.Diagnostics.Tracing.EventLevel,System.String,System.String)">
+            <summary>
+            Logs an argument exception using the event source logger and returns new typed exception.
+            </summary>
+            <param name="eventLevel">Identifies the level of an event to be logged.</param>
+            <param name="argumentName">Identifies the argument whose value generated the ArgumentException.</param>
+            <param name="message">message to log.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.LogException``1(System.Diagnostics.Tracing.EventLevel,System.String,System.Object[])">
+            <summary>
+            Logs an exception using the event source logger and returns new typed exception.
+            </summary>
+            <param name="eventLevel">Identifies the level of an event to be logged.</param>
+            <param name="format">Format string of the log message.</param>
+            <param name="args">An object array that contains zero or more objects to format.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.LogArgumentException``1(System.Diagnostics.Tracing.EventLevel,System.String,System.String,System.Object[])">
+            <summary>
+            Logs an argument exception using the event source logger and returns new typed exception.
+            </summary>
+            <param name="eventLevel">Identifies the level of an event to be logged.</param>
+            <param name="argumentName">Identifies the argument whose value generated the ArgumentException.</param>
+            <param name="format">Format string of the log message.</param>
+            <param name="args">An object array that contains zero or more objects to format.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.LogException``1(System.Diagnostics.Tracing.EventLevel,System.Exception,System.String)">
+            <summary>
+            Logs an exception using the event source logger and returns new typed exception.
+            </summary>
+            <param name="eventLevel">Identifies the level of an event to be logged.</param>
+            <param name="innerException">the inner <see cref="T:System.Exception"/> to be added to the outer exception.</param>
+            <param name="message">message to log.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.LogArgumentException``1(System.Diagnostics.Tracing.EventLevel,System.String,System.Exception,System.String)">
+            <summary>
+            Logs an argument exception using the event source logger and returns new typed exception.
+            </summary>
+            <param name="eventLevel">Identifies the level of an event to be logged.</param>
+            <param name="argumentName">Identifies the argument whose value generated the ArgumentException.</param>
+            <param name="innerException">the inner <see cref="T:System.Exception"/> to be added to the outer exception.</param>
+            <param name="message">message to log.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.LogException``1(System.Diagnostics.Tracing.EventLevel,System.Exception,System.String,System.Object[])">
+            <summary>
+            Logs an exception using the event source logger and returns new typed exception.
+            </summary>
+            <param name="eventLevel">Identifies the level of an event to be logged.</param>
+            <param name="innerException">the inner <see cref="T:System.Exception"/> to be added to the outer exception.</param>
+            <param name="format">Format string of the log message.</param>
+            <param name="args">An object array that contains zero or more objects to format.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.LogArgumentException``1(System.Diagnostics.Tracing.EventLevel,System.String,System.Exception,System.String,System.Object[])">
+            <summary>
+            Logs an argument exception using the event source logger and returns new typed exception.
+            </summary>
+            <param name="eventLevel">Identifies the level of an event to be logged.</param>
+            <param name="argumentName">Identifies the argument whose value generated the ArgumentException.</param>
+            <param name="innerException">the inner <see cref="T:System.Exception"/> to be added to the outer exception.</param>
+            <param name="format">Format string of the log message.</param>
+            <param name="args">An object array that contains zero or more objects to format.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.LogExceptionMessage(System.Exception)">
+            <summary>
+            Logs an exception using the event source logger.
+            </summary>
+            <param name="exception">The exception to log.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.LogExceptionMessage(System.Diagnostics.Tracing.EventLevel,System.Exception)">
+            <summary>
+            Logs an exception using the event source logger.
+            </summary>
+            <param name="eventLevel">Identifies the level of an event to be logged.</param>
+            <param name="exception">The exception to log.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.LogInformation(System.String,System.Object[])">
+            <summary>
+            Logs an information event.
+            </summary>
+            <param name="message">The log message.</param>
+            <param name="args">An object array that contains zero or more objects to format.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.LogVerbose(System.String,System.Object[])">
+            <summary>
+            Logs a verbose event.
+            </summary>
+            <param name="message">The log message.</param>
+            <param name="args">An object array that contains zero or more objects to format.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.LogWarning(System.String,System.Object[])">
+            <summary>
+            Logs a warning event.
+            </summary>
+            <param name="message">The log message.</param>
+            <param name="args">An object array that contains zero or more objects to format.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.LogExceptionImpl``1(System.Diagnostics.Tracing.EventLevel,System.String,System.Exception,System.String,System.Object[])">
+            <summary>
+            Logs an exception using the event source logger and returns new typed exception.
+            </summary>
+            <param name="eventLevel">Identifies the level of an event to be logged.</param>
+            <param name="argumentName">Identifies the argument whose value generated the ArgumentException.</param>
+            <param name="innerException">the inner <see cref="T:System.Exception"/> to be added to the outer exception.</param>
+            <param name="format">Format string of the log message.</param>
+            <param name="args">An object array that contains zero or more objects to format.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.FormatInvariant(System.String,System.Object[])">
+            <summary>
+            Formats the string using InvariantCulture
+            </summary>
+            <param name="format">Format string.</param>
+            <param name="args">Format arguments.</param>
+            <returns>Formatted string.</returns>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.MarkAsNonPII(System.Object)">
+            <summary>
+            Marks a log message argument (<paramref name="arg"/>) as NonPII.
+            </summary>
+            <param name="arg">A log message argument to be marked as NonPII.</param>
+            <returns>An argument marked as NonPII.</returns>
+            <remarks>
+            Marking an argument as NonPII in <see cref="M:Microsoft.IdentityModel.Logging.LogHelper.FormatInvariant(System.String,System.Object[])"/> calls will result in logging
+            that argument in cleartext, regardless of the <see cref="P:Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII"/> flag value.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.MarkAsSecurityArtifact(System.Object,System.Func{System.Object,System.String})">
+            <summary>
+            Marks a log message argument (<paramref name="arg"/>) as SecurityArtifact.
+            </summary>
+            <param name="arg">A log message argument to be marked as SecurityArtifact.</param>
+            <param name="callback">A callback function to log the security artifact safely.</param>
+            <returns>An argument marked as SecurityArtifact.</returns>
+            <remarks>
+            Since even the payload may sometimes contain security artifacts, naïve disarm algorithms such as removing signatures
+            will not work. For now the <paramref name="callback"/> will only be leveraged if
+            <see cref="P:Microsoft.IdentityModel.Logging.IdentityModelEventSource.LogCompleteSecurityArtifact"/> is set and no unsafe callback is provided. Future changes
+            may introduce a support for best effort disarm logging.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.MarkAsSecurityArtifact(System.Object,System.Func{System.Object,System.String},System.Func{System.Object,System.String})">
+            <summary>
+            Marks a log message argument (<paramref name="arg"/>) as SecurityArtifact.
+            </summary>
+            <param name="arg">A log message argument to be marked as SecurityArtifact.</param>
+            <param name="callback">A callback function to log the security artifact safely.</param>
+            <param name="callbackUnsafe">A callback function to log the security artifact without scrubbing.</param>
+            <returns>An argument marked as SecurityArtifact.</returns>
+            <exception cref="T:System.ArgumentNullException">if <paramref name="callback"/> is null.</exception>
+            <exception cref="T:System.ArgumentNullException">if <paramref name="callbackUnsafe"/> is null.</exception>
+            <remarks>
+            Since even the payload may sometimes contain security artifacts, naïve disarm algorithms such as removing signatures
+            will not work. For now the <paramref name="callback"/> is currently unused. Future changes
+            may introduce a support for best effort disarm logging which will leverage <paramref name="callback"/>.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.MarkAsUnsafeSecurityArtifact(System.Object,System.Func{System.Object,System.String})">
+            <summary>
+            Marks a log message argument (<paramref name="arg"/>) as SecurityArtifact.
+            </summary>
+            <param name="arg">A log message argument to be marked as SecurityArtifact.</param>
+            <param name="callbackUnsafe">A callback function to log the security artifact without scrubbing.</param>
+            <returns>An argument marked as SecurityArtifact.</returns>
+            <exception cref="T:System.ArgumentNullException">if <paramref name="callbackUnsafe"/> is null.</exception>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.WriteEntry(Microsoft.IdentityModel.Abstractions.EventLogLevel,System.Exception,System.String,System.Object[])">
+            <summary>
+            Creates a <see cref="T:Microsoft.IdentityModel.Abstractions.LogEntry"/> by using the provided event level, exception argument, string argument and arguments list.
+            </summary>
+            <param name="eventLogLevel"><see cref="T:Microsoft.IdentityModel.Abstractions.EventLogLevel"/></param>
+            <param name="innerException"><see cref="T:System.Exception"/></param>
+            <param name="message">The log message.</param>
+            <param name="args">An object array that contains zero or more objects to format.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.LogHelper.Sanitize(System.String)">
+            <summary>
+            Sanitizes a string by encoding potentially harmful characters.
+            </summary>
+            <param name="input">The input string to sanitize</param>
+            <returns>A sanitized string safe for logging</returns>
+        </member>
+        <member name="T:Microsoft.IdentityModel.Logging.LogMessages">
+            <summary>
+            Log messages and codes for Microsoft.IdentityModel.Logging
+            </summary>
+        </member>
+        <member name="T:Microsoft.IdentityModel.Logging.NonPII">
+            <summary>
+            An internal structure that is used to mark an argument as NonPII.
+            Arguments wrapped with a NonPII structure will be considered as NonPII in the message logging process.
+            </summary>
+        </member>
+        <member name="P:Microsoft.IdentityModel.Logging.NonPII.Argument">
+            <summary>
+            Argument wrapped with a <see cref="T:Microsoft.IdentityModel.Logging.NonPII"/> structure is considered as NonPII in the message logging process.
+            </summary>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.NonPII.#ctor(System.Object)">
+            <summary>
+            Creates an instance of <see cref="T:Microsoft.IdentityModel.Logging.NonPII"/> that wraps the <paramref name="argument"/>.
+            </summary>
+            <param name="argument">An argument that is considered as NonPII.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.NonPII.ToString">
+            <summary>
+            Returns a string that represents the <see cref="P:Microsoft.IdentityModel.Logging.NonPII.Argument"/>.
+            </summary>
+            <returns><c>Null</c> if the <see cref="P:Microsoft.IdentityModel.Logging.NonPII.Argument"/> is <see langword="null"/>, otherwise calls <see cref="M:System.ValueType.ToString"/> method of the <see cref="P:Microsoft.IdentityModel.Logging.NonPII.Argument"/>.</returns>
+        </member>
+        <member name="T:Microsoft.IdentityModel.Logging.SecurityArtifact">
+            <summary>
+            An internal structure that is used to mark an argument as SecurityArtifact.
+            Arguments wrapped with a SecurityArtifact structure will be considered as a SecurityArtifact in the message logging process.
+            </summary>
+            <remarks>
+            SecurityToken and encoded token are considered as SecurityArtifacts.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.IdentityModel.Logging.SecurityArtifact.Argument">
+            <summary>
+            Argument wrapped with a <see cref="T:Microsoft.IdentityModel.Logging.SecurityArtifact"/> structure is considered as SecurityArtifact in the message logging process.
+            </summary>
+        </member>
+        <member name="F:Microsoft.IdentityModel.Logging.SecurityArtifact._disarmCallback">
+            <summary>
+            The ToString callback delegate that returns a disarmed SecurityArtifact.
+            </summary>
+        </member>
+        <member name="F:Microsoft.IdentityModel.Logging.SecurityArtifact._callbackUnsafe">
+            <summary>
+            The ToString callback delegate that returns an unscrubbed SecurityArtifact.
+            </summary>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.SecurityArtifact.#ctor(System.Object,System.Func{System.Object,System.String})">
+            <summary>
+            Creates an instance of <see cref="T:Microsoft.IdentityModel.Logging.SecurityArtifact"/> that wraps the <paramref name="argument"/>.
+            </summary>
+            <param name="argument">An argument that is considered as SecurityArtifact.</param>
+            <param name="toStringCallback">A callback used to disarm the token.</param>
+            <remarks>
+            Since even the payload may sometimes contain security artifacts, naïve disarm algorithms (such as removing signatures
+            in the case of JWTs) will not work. For now the <paramref name="toStringCallback"/> will only be leveraged if
+            <see cref="P:Microsoft.IdentityModel.Logging.IdentityModelEventSource.LogCompleteSecurityArtifact"/> is set and no unsafe callback is provided. Future changes
+            may introduce a support for best effort disarm logging.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.SecurityArtifact.#ctor(System.Object,System.Func{System.Object,System.String},System.Func{System.Object,System.String})">
+            <summary>
+            Creates an instance of <see cref="T:Microsoft.IdentityModel.Logging.SecurityArtifact"/> that wraps the <paramref name="argument"/>.
+            </summary>
+            <param name="argument">An argument that is considered as SecurityArtifact.</param>
+            <param name="toStringCallback">A ToString callback.</param>
+            <param name="toStringCallbackUnsafe">A ToString callback which will return the unscrubbed artifact.</param>
+            <remarks>
+            Since even the payload may sometimes contain security artifacts, naïve disarm algorithms (such as removing signatures
+            in the case of JWTs) will not work. For now the <paramref name="toStringCallback"/> is currently unused. Future changes
+            may introduce a support for best effort disarm logging which will leverage <paramref name="toStringCallback"/>.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.SecurityArtifact.UnknownSafeTokenCallback(System.Object)">
+            <summary>
+            A dummy callback which can be leveraged to return a standard scrubbed token in the case where expected token is unknown.
+            </summary>
+            <param name="_">Ignored token.</param>
+            <returns>The standard scrubbed token string.</returns>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.SecurityArtifact.ToString">
+            <summary>
+            Returns a string that represents the <see cref="P:Microsoft.IdentityModel.Logging.SecurityArtifact.Argument"/>.
+            </summary>
+            <returns><c>Null</c> if the <see cref="P:Microsoft.IdentityModel.Logging.SecurityArtifact.Argument"/> is <see langword="null"/>, otherwise calls the provided safe callback on <see cref="P:Microsoft.IdentityModel.Logging.SecurityArtifact.Argument"/>.</returns>
+        </member>
+        <member name="T:Microsoft.IdentityModel.Logging.TextWriterEventListener">
+            <summary>
+            Event listener that writes logs to a file or a fileStream provided by user.
+            </summary>
+        </member>
+        <member name="F:Microsoft.IdentityModel.Logging.TextWriterEventListener.DefaultLogFileName">
+            <summary>
+            Name of the default log file, excluding its path.
+            </summary>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.TextWriterEventListener.#ctor">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.IdentityModel.Logging.TextWriterEventListener"/> that writes logs to text file.
+            </summary>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.TextWriterEventListener.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.IdentityModel.Logging.TextWriterEventListener"/> that writes logs to text file.
+            </summary>
+            <param name="filePath">location of the file where log messages will be written.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.TextWriterEventListener.#ctor(System.IO.StreamWriter)">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.IdentityModel.Logging.TextWriterEventListener"/> that writes logs to text file.
+            </summary>
+            <param name="streamWriter">StreamWriter where logs will be written.</param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.TextWriterEventListener.OnEventWritten(System.Diagnostics.Tracing.EventWrittenEventArgs)">
+            <summary>
+            Called whenever an event has been written by an event source for which the event listener has enabled events.
+            </summary>
+            <param name="eventData"><see cref="T:System.Diagnostics.Tracing.EventWrittenEventArgs"/></param>
+        </member>
+        <member name="M:Microsoft.IdentityModel.Logging.TextWriterEventListener.Dispose">
+            <summary>
+            Releases all resources used by the current instance of the <see cref="T:Microsoft.IdentityModel.Logging.TextWriterEventListener"/> class.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute">
+            <summary>
+            Indicates that the specified method requires dynamic access to code that is not referenced
+            statically, for example through <see cref="N:System.Reflection"/>.
+            </summary>
+            <remarks>
+            This allows tools to understand which methods are unsafe to call when removing unreferenced
+            code from an application.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute"/> class
+            with the specified message.
+            </summary>
+            <param name="message">
+            A message that contains information about the usage of unreferenced code.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.Message">
+            <summary>
+            Gets a message that contains information about the usage of unreferenced code.
+            </summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.Url">
+            <summary>
+            Gets or sets an optional URL that contains more information about the method,
+            why it requires unreferenced code, and what options a consumer has to deal with it.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+            <summary>
+            Suppresses reporting of a specific rule violation, allowing multiple suppressions on a
+            single code artifact.
+            </summary>
+            <remarks>
+            <see cref="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute"/> is different than
+            <see cref="T:System.Diagnostics.CodeAnalysis.SuppressMessageAttribute"/> in that it doesn't have a
+            <see cref="T:System.Diagnostics.ConditionalAttribute"/>. So it is always preserved in the compiled assembly.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute"/>
+            class, specifying the category of the tool and the identifier for an analysis rule.
+            </summary>
+            <param name="category">The category for the attribute.</param>
+            <param name="checkId">The identifier of the analysis rule the attribute applies to.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Category">
+            <summary>
+            Gets the category identifying the classification of the attribute.
+            </summary>
+            <remarks>
+            The <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Category"/> property describes the tool or tool analysis category
+            for which a message suppression attribute applies.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.CheckId">
+            <summary>
+            Gets the identifier of the analysis tool rule to be suppressed.
+            </summary>
+            <remarks>
+            Concatenated together, the <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Category"/> and <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.CheckId"/>
+            properties form a unique check identifier.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Scope">
+            <summary>
+            Gets or sets the scope of the code that is relevant for the attribute.
+            </summary>
+            <remarks>
+            The Scope property is an optional argument that specifies the metadata scope for which
+            the attribute is relevant.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Target">
+            <summary>
+            Gets or sets a fully qualified path that represents the target of the attribute.
+            </summary>
+            <remarks>
+            The <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Target"/> property is an optional argument identifying the analysis target
+            of the attribute. An example value is "System.IO.Stream.ctor():System.Void".
+            Because it is fully qualified, it can be long, particularly for targets such as parameters.
+            The analysis tool user interface should be capable of automatically formatting the parameter.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.MessageId">
+            <summary>
+            Gets or sets an optional argument expanding on exclusion criteria.
+            </summary>
+            <remarks>
+            The <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.MessageId"/> property is an optional argument that specifies additional
+            exclusion where the literal metadata target is not sufficiently precise. For example,
+            the <see cref="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute"/> cannot be applied within a method,
+            and it may be desirable to suppress a violation against a statement in the method that will
+            give a rule violation, but not against all statements in the method.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Justification">
+            <summary>
+            Gets or sets the justification for suppressing the code analysis message.
+            </summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute.#ctor(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute"/> class
+            with the specified member types.
+            </summary>
+            <param name="memberTypes">The types of members dynamically accessed.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute.MemberTypes">
+            <summary>
+            Gets the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes"/> which specifies the type
+            of members dynamically accessed.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">
+             <summary>
+             Specifies the types of members that are dynamically accessed.
+            
+             This enumeration has a <see cref="T:System.FlagsAttribute"/> attribute that allows a
+             bitwise combination of its member values.
+             </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.None">
+            <summary>
+            Specifies no members.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor">
+            <summary>
+            Specifies the default, parameterless public constructor.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors">
+            <summary>
+            Specifies all public constructors.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors">
+            <summary>
+            Specifies all non-public constructors.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods">
+            <summary>
+            Specifies all public methods.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods">
+            <summary>
+            Specifies all non-public methods.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields">
+            <summary>
+            Specifies all public fields.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields">
+            <summary>
+            Specifies all non-public fields.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes">
+            <summary>
+            Specifies all public nested types.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypes">
+            <summary>
+            Specifies all non-public nested types.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties">
+            <summary>
+            Specifies all public properties.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties">
+            <summary>
+            Specifies all non-public properties.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents">
+            <summary>
+            Specifies all public events.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicEvents">
+            <summary>
+            Specifies all non-public events.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces">
+            <summary>
+            Specifies all interfaces implemented by the type.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All">
+            <summary>
+            Specifies all members.
+            </summary>
+        </member>
+    </members>
+</doc>

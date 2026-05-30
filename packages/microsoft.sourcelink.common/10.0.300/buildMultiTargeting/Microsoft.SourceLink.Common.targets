@@ -1,0 +1,14 @@
+﻿<!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. See the License.txt file in the project root for more information. -->
+<Project>
+  <Import Project="..\build\InitializeSourceControlInformation.targets"/>
+  
+  <!--
+    Workaround for https://github.com/Microsoft/msbuild/issues/3294.
+    Microsoft.Common.CrossTargeting.targets is missing InitializeSourceControlInformation definition.
+  -->
+  <Target Name="InitializeSourceControlInformation" />
+
+  <PropertyGroup>
+    <SourceControlInformationFeatureSupported>true</SourceControlInformationFeatureSupported>
+  </PropertyGroup>
+</Project>

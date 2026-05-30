@@ -1,0 +1,1413 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Extensions.Logging.Console</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.Extensions.Logging.Console.AnsiLogConsole">
+            <summary>
+            For consoles which understand the ANSI escape code sequences to represent color
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.AnsiParser.Parse(System.String)">
+            <summary>
+            Parses a subset of display attributes
+            Set Display Attributes
+            Set Attribute Mode [{attr1};...;{attrn}m
+            Sets multiple display attribute settings. The following lists standard attributes that are getting parsed:
+            1 Bright
+            Foreground Colours
+            30 Black
+            31 Red
+            32 Green
+            33 Yellow
+            34 Blue
+            35 Magenta
+            36 Cyan
+            37 White
+            Background Colours
+            40 Black
+            41 Red
+            42 Green
+            43 Yellow
+            44 Blue
+            45 Magenta
+            46 Cyan
+            47 White
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.ConfigurationConsoleLoggerSettings">
+            <summary>
+            Settings for a <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLogger"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConfigurationConsoleLoggerSettings.#ctor(Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Creates a new instance of <see cref="T:Microsoft.Extensions.Logging.Console.ConfigurationConsoleLoggerSettings"/>.
+            </summary>
+            <param name="configuration">The configuration values.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConfigurationConsoleLoggerSettings.ChangeToken">
+            <summary>
+            Gets the <see cref="T:Microsoft.Extensions.Primitives.IChangeToken"/> that propagates notifications that a change has occurred.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConfigurationConsoleLoggerSettings.IncludeScopes">
+            <summary>
+            Gets a value indicating whether scopes should be included in the message.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConfigurationConsoleLoggerSettings.Reload">
+            <summary>
+            Reload the settings from the configuration.
+            </summary>
+            <returns>The reloaded settings.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConfigurationConsoleLoggerSettings.TryGetSwitch(System.String,Microsoft.Extensions.Logging.LogLevel@)">
+            <summary>
+            Gets the log level for the specified switch.
+            </summary>
+            <param name="name">The name of the switch to look up.</param>
+            <param name="level">When this method returns, contains the value of the switch if it is found. If the switch is not found, the method returns false and sets the value of level to LogLevel.None</param>
+            <returns><see langword="true" /> if the switch was found, otherwise <see langword="false" />.</returns>
+            <exception cref="T:System.InvalidOperationException"></exception>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.ConsoleFormatter">
+            <summary>
+            Allows custom log messages formatting.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleFormatter.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleFormatter"/>.
+            </summary>
+            <param name="name"></param>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleFormatter.Name">
+            <summary>
+            Gets the name associated with the console log formatter.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleFormatter.Write``1(Microsoft.Extensions.Logging.Abstractions.LogEntry{``0}@,Microsoft.Extensions.Logging.IExternalScopeProvider,System.IO.TextWriter)">
+            <summary>
+            Writes the log message to the specified TextWriter.
+            </summary>
+            <remarks>
+            If the formatter wants to write colors to the console, it can do so by embedding ANSI color codes into the string.
+            </remarks>
+            <param name="logEntry">The log entry.</param>
+            <param name="scopeProvider">The provider of scope data.</param>
+            <param name="textWriter">The string writer embedding ansi code for colors.</param>
+            <typeparam name="TState">The type of the object to be written.</typeparam>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.ConsoleFormatterNames">
+            <summary>
+            Reserved formatter names for the built-in console formatters.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Logging.Console.ConsoleFormatterNames.Simple">
+            <summary>
+            Reserved name for simple console formatter.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Logging.Console.ConsoleFormatterNames.Json">
+            <summary>
+            Reserved name for json console formatter.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Logging.Console.ConsoleFormatterNames.Systemd">
+            <summary>
+            Reserved name for systemd console formatter.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions">
+            <summary>
+            Options for the built-in console log formatter.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions"/> class.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions.IncludeScopes">
+            <summary>
+            Gets or sets a value that indicates whether scopes are included.
+            </summary>
+            <value>
+            <see langword="true" /> if scopes are included.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions.TimestampFormat">
+            <summary>
+            Gets or sets the format string used to format timestamp in logging messages.
+            </summary>
+            <value>
+            The default is <see langword="null" />.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions.UseUtcTimestamp">
+            <summary>
+            Gets or sets a value that indicates whether or not UTC timezone should be used to format timestamps in logging messages.
+            </summary>
+            <value>
+            The default is <see langword="false" />.
+            </value>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.ConsoleLogger">
+            <summary>
+            A logger that writes messages in the console.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleLogger.Log``1(Microsoft.Extensions.Logging.LogLevel,Microsoft.Extensions.Logging.EventId,``0,System.Exception,System.Func{``0,System.Exception,System.String})">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleLogger.LogRecords(System.Collections.Generic.IEnumerable{Microsoft.Extensions.Logging.Abstractions.BufferedLogRecord})">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleLogger.IsEnabled(Microsoft.Extensions.Logging.LogLevel)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleLogger.BeginScope``1(``0)">
+            <inheritdoc />
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.ConsoleLoggerFormat">
+            <summary>
+            Describes the format of <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLogger" /> messages.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Logging.Console.ConsoleLoggerFormat.Default">
+            <summary>
+            Produce messages in the default console format.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Logging.Console.ConsoleLoggerFormat.Systemd">
+            <summary>
+            Produce messages in a format suitable for console output to the systemd journal.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions">
+            <summary>
+            Options for a <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLogger"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions.DisableColors">
+            <summary>
+            Gets or sets a value that indicates whether colors are disabled.
+            </summary>
+            <value>
+            <see langword="true" /> if colors are disabled.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions.Format">
+            <summary>
+            Gets or sets the log message format.
+            </summary>
+            <value>
+            The default value is <see cref="F:Microsoft.Extensions.Logging.Console.ConsoleLoggerFormat.Default" />.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions.FormatterName">
+            <summary>
+            Gets or sets the name of the log message formatter to use.
+            </summary>
+            <value>
+            The default value is <see langword="simple" />.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions.IncludeScopes">
+            <summary>
+            Gets or sets a value that indicates whether scopes are included.
+            </summary>
+            <value>
+            <see langword="true" /> if scopes are included.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions.LogToStandardErrorThreshold">
+            <summary>
+            Gets or sets value indicating the minimum level of messages that get written to <c>Console.Error</c>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions.TimestampFormat">
+            <summary>
+            Gets or sets the format string used to format timestamp in logging messages.
+            </summary>
+            <value>
+            The default value is <see langword="null" />.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions.UseUtcTimestamp">
+            <summary>
+            Gets or sets a value that indicates whether UTC timezone should be used to format timestamps in logging messages.
+            </summary>
+            <value>
+            <see langword="true"/> if the UTC timezone should be used to format timestamps. The default value is <see langword="false" />.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions.QueueFullMode">
+            <summary>
+            Gets or sets the desired console logger behavior when the queue becomes full.
+            </summary>
+            <value>
+            The default value is <see langword="wait" />.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions.MaxQueueLength">
+            <summary>
+            Gets or sets the maximum number of enqueued messages.
+            </summary>
+            <value>
+            The default value is 2500.
+            </value>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.ConsoleLoggerProvider">
+            <summary>
+            A provider of <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLogger"/> instances.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleLoggerProvider.#ctor(Microsoft.Extensions.Options.IOptionsMonitor{Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions})">
+            <summary>
+            Creates an instance of <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLoggerProvider"/>.
+            </summary>
+            <param name="options">The options to create <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLogger"/> instances with.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleLoggerProvider.#ctor(Microsoft.Extensions.Options.IOptionsMonitor{Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions},System.Collections.Generic.IEnumerable{Microsoft.Extensions.Logging.Console.ConsoleFormatter})">
+            <summary>
+            Creates an instance of <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLoggerProvider"/>.
+            </summary>
+            <param name="options">The options to create <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLogger"/> instances with.</param>
+            <param name="formatters">Log formatters added for <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLogger"/> instances.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleLoggerProvider.CreateLogger(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleLoggerProvider.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleLoggerProvider.SetScopeProvider(Microsoft.Extensions.Logging.IExternalScopeProvider)">
+            <inheritdoc />
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.ConsoleLoggerQueueFullMode">
+            <summary>
+            Describes the console logger behavior when the queue becomes full.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Logging.Console.ConsoleLoggerQueueFullMode.Wait">
+            <summary>
+            Blocks the logging threads once the queue limit is reached.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Logging.Console.ConsoleLoggerQueueFullMode.DropWrite">
+            <summary>
+            Drops new log messages when the queue is full.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.ConsoleLoggerSettings">
+            <summary>
+            This type is retained only for compatibility. The recommended alternative is ConsoleLoggerOptions.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerSettings.ChangeToken">
+            <inheritdoc/>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerSettings.IncludeScopes">
+            <inheritdoc/>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerSettings.DisableColors">
+            <summary>
+            This property is retained only for compatibility.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerSettings.Switches">
+            <summary>
+            This property is retained only for compatibility.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleLoggerSettings.Reload">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleLoggerSettings.TryGetSwitch(System.String,Microsoft.Extensions.Logging.LogLevel@)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings">
+            <summary>
+            This type is retained only for compatibility. The recommended alternative is ConsoleLoggerOptions.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings.IncludeScopes">
+            <summary>
+            This property is retained only for compatibility.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings.ChangeToken">
+            <summary>
+            This property is retained only for compatibility.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings.TryGetSwitch(System.String,Microsoft.Extensions.Logging.LogLevel@)">
+            <summary>
+            This property is retained only for compatibility.
+            </summary>
+            <param name="name">This property is retained only for compatibility.</param>
+            <param name="level">This property is retained only for compatibility.</param>
+            <returns>This property is retained only for compatibility.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings.Reload">
+            <summary>
+            This method is retained only for compatibility.
+            </summary>
+            <returns>This method is retained only for compatibility.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.JsonConsoleFormatterOptions">
+            <summary>
+            Options for the built-in JSON console log formatter.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.JsonConsoleFormatterOptions.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Logging.Console.JsonConsoleFormatterOptions"/> class.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.JsonConsoleFormatterOptions.JsonWriterOptions">
+            <summary>
+            Gets or sets JsonWriterOptions.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.LoggerColorBehavior">
+            <summary>
+            Describes when to use color when logging messages.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Logging.Console.LoggerColorBehavior.Default">
+            <summary>
+            Use the default color behavior, enabling color except when the console output is redirected.
+            </summary>
+            <remarks>
+            Enables color except when the console output is redirected.
+            </remarks>
+        </member>
+        <member name="F:Microsoft.Extensions.Logging.Console.LoggerColorBehavior.Enabled">
+            <summary>
+            Enable color for logging.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Logging.Console.LoggerColorBehavior.Disabled">
+            <summary>
+            Disable color for logging.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.SimpleConsoleFormatterOptions">
+            <summary>
+            Options for the built-in default console log formatter.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.SimpleConsoleFormatterOptions.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Logging.Console.SimpleConsoleFormatterOptions"/> class.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.SimpleConsoleFormatterOptions.ColorBehavior">
+            <summary>
+            Gets or sets the behavior that describes when to use color when logging messages.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.SimpleConsoleFormatterOptions.SingleLine">
+            <summary>
+            Gets or sets a value that indicates whether the entire message is logged in a single line.
+            </summary>
+            <value>
+            <see langword="true" /> if the entire message is logged in a single line.
+            </value>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.ConsoleFormatterConfigureOptions">
+            <summary>
+            Configures a ConsoleFormatterOptions object from an IConfiguration.
+            </summary>
+            <remarks>
+            Doesn't use ConfigurationBinder in order to allow ConfigurationBinder, and all its dependencies,
+            to be trimmed. This improves app size and startup.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.ConsoleLoggerConfigureOptions">
+            <summary>
+            Configures a ConsoleLoggerOptions object from an IConfiguration.
+            </summary>
+            <remarks>
+            Doesn't use ConfigurationBinder in order to allow ConfigurationBinder, and all its dependencies,
+            to be trimmed. This improves app size and startup.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.ConsoleLoggerExtensions">
+            <summary>
+            Provides extension methods for the <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> and <see cref="T:Microsoft.Extensions.Logging.Configuration.ILoggerProviderConfiguration`1"/> classes.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddConsole(Microsoft.Extensions.Logging.ILoggingBuilder)">
+            <summary>
+            Adds a console logger named 'Console' to the factory.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> to use.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddConsole(Microsoft.Extensions.Logging.ILoggingBuilder,System.Action{Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions})">
+            <summary>
+            Adds a console logger named 'Console' to the factory.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> to use.</param>
+            <param name="configure">A delegate to configure the <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLogger"/>.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddSimpleConsole(Microsoft.Extensions.Logging.ILoggingBuilder)">
+            <summary>
+            Add the default console log formatter named 'simple' to the factory with default properties.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> to use.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddSimpleConsole(Microsoft.Extensions.Logging.ILoggingBuilder,System.Action{Microsoft.Extensions.Logging.Console.SimpleConsoleFormatterOptions})">
+            <summary>
+            Add and configure a console log formatter named 'simple' to the factory.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> to use.</param>
+            <param name="configure">A delegate to configure the <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLogger"/> options for the built-in default log formatter.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddJsonConsole(Microsoft.Extensions.Logging.ILoggingBuilder)">
+            <summary>
+            Add a console log formatter named 'json' to the factory with default properties.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> to use.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddJsonConsole(Microsoft.Extensions.Logging.ILoggingBuilder,System.Action{Microsoft.Extensions.Logging.Console.JsonConsoleFormatterOptions})">
+            <summary>
+            Add and configure a console log formatter named 'json' to the factory.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> to use.</param>
+            <param name="configure">A delegate to configure the <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLogger"/> options for the built-in json log formatter.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddSystemdConsole(Microsoft.Extensions.Logging.ILoggingBuilder,System.Action{Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions})">
+            <summary>
+            Add and configure a console log formatter named 'systemd' to the factory.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> to use.</param>
+            <param name="configure">A delegate to configure the <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLogger"/> options for the built-in systemd log formatter.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddSystemdConsole(Microsoft.Extensions.Logging.ILoggingBuilder)">
+            <summary>
+            Add a console log formatter named 'systemd' to the factory with default properties.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> to use.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddConsoleFormatter``2(Microsoft.Extensions.Logging.ILoggingBuilder)">
+            <summary>
+            Adds a custom console logger formatter 'TFormatter' to be configured with options 'TOptions'.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> to use.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddConsoleFormatter``2(Microsoft.Extensions.Logging.ILoggingBuilder,System.Action{``1})">
+            <summary>
+            Adds a custom console logger formatter 'TFormatter' to be configured with options 'TOptions'.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> to use.</param>
+            <param name="configure">A delegate to configure options 'TOptions' for custom formatter 'TFormatter'.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddConsole(Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            This method is retained only for compatibility.
+            </summary>
+            <param name="factory">This method is retained only for compatibility.</param>
+            <param name="configuration">This method is retained only for compatibility.</param>
+            <returns>This method is retained only for compatibility.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddConsole(Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings)">
+            <summary>
+            This method is retained only for compatibility.
+            </summary>
+            <param name="factory">This method is retained only for compatibility.</param>
+            <param name="settings">This method is retained only for compatibility.</param>
+            <returns>This method is retained only for compatibility.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddConsole(Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Extensions.Logging.LogLevel,System.Boolean)">
+            <summary>
+            This method is retained only for compatibility.
+            </summary>
+            <param name="factory">This method is retained only for compatibility.</param>
+            <param name="minLevel">This method is retained only for compatibility.</param>
+            <param name="includeScopes">This method is retained only for compatibility.</param>
+            <returns>This method is retained only for compatibility.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddConsole(Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Extensions.Logging.LogLevel)">
+            <summary>
+            This method is retained only for compatibility.
+            </summary>
+            <param name="factory">This method is retained only for compatibility.</param>
+            <param name="minLevel">This method is retained only for compatibility.</param>
+            <returns>This method is retained only for compatibility.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddConsole(Microsoft.Extensions.Logging.ILoggerFactory,System.Boolean)">
+            <summary>
+            This method is retained only for compatibility.
+            </summary>
+            <param name="factory">This method is retained only for compatibility.</param>
+            <param name="includeScopes">This method is retained only for compatibility.</param>
+            <returns>This method is retained only for compatibility.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddConsole(Microsoft.Extensions.Logging.ILoggerFactory,System.Func{System.String,Microsoft.Extensions.Logging.LogLevel,System.Boolean},System.Boolean)">
+            <summary>
+            This method is retained only for compatibility.
+            </summary>
+            <param name="factory">This method is retained only for compatibility.</param>
+            <param name="filter">This method is retained only for compatibility.</param>
+            <param name="includeScopes">This method is retained only for compatibility.</param>
+            <returns>This method is retained only for compatibility.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddConsole(Microsoft.Extensions.Logging.ILoggerFactory,System.Func{System.String,Microsoft.Extensions.Logging.LogLevel,System.Boolean})">
+            <summary>
+            This method is retained only for compatibility.
+            </summary>
+            <param name="factory">This method is retained only for compatibility.</param>
+            <param name="filter">This method is retained only for compatibility.</param>
+            <returns>This method is retained only for compatibility.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddConsole(Microsoft.Extensions.Logging.ILoggerFactory)">
+            <summary>
+            This method is retained only for compatibility.
+            </summary>
+            <param name="factory">This method is retained only for compatibility.</param>
+            <returns>This method is retained only for compatibility.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.NullExternalScopeProvider">
+            <summary>
+            Scope provider that does nothing.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.NullExternalScopeProvider.Instance">
+            <summary>
+            Returns a cached instance of <see cref="T:Microsoft.Extensions.Logging.NullExternalScopeProvider"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.NullExternalScopeProvider.Microsoft#Extensions#Logging#IExternalScopeProvider#ForEachScope``1(System.Action{System.Object,``0},``0)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.NullExternalScopeProvider.Microsoft#Extensions#Logging#IExternalScopeProvider#Push(System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.NullScope">
+            <summary>
+            An empty scope without any logic
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.NullScope.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.Bind_ConsoleFormatterOptions(Microsoft.Extensions.Configuration.IConfiguration,System.Object)">
+            <summary>Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.Bind_ConsoleLoggerOptions(Microsoft.Extensions.Configuration.IConfiguration,System.Object)">
+            <summary>Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.Bind_JsonConsoleFormatterOptions(Microsoft.Extensions.Configuration.IConfiguration,System.Object)">
+            <summary>Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.Bind_SimpleConsoleFormatterOptions(Microsoft.Extensions.Configuration.IConfiguration,System.Object)">
+            <summary>Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.TryGetConfigurationValue(Microsoft.Extensions.Configuration.IConfiguration,System.String,System.String@)">
+            <summary>Tries to get the configuration value for the specified key.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.ValidateConfigurationKeys(System.Type,System.Lazy{System.Collections.Generic.HashSet{System.String}},Microsoft.Extensions.Configuration.IConfiguration,Microsoft.Extensions.Configuration.BinderOptions)">
+            <summary>If required by the binder options, validates that there are no unknown keys in the input configuration object.</summary>
+        </member>
+        <member name="F:System.ConsoleUtils.s_emitAnsiColorCodes">
+            <summary>Whether to output ansi color strings.</summary>
+        </member>
+        <member name="P:System.ConsoleUtils.EmitAnsiColorCodes">
+            <summary>Get whether to emit ANSI color codes.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
+             <summary>
+             Indicates that certain members on a specified <see cref="T:System.Type"/> are accessed dynamically,
+             for example through <see cref="N:System.Reflection"/>.
+             </summary>
+             <remarks>
+             This allows tools to understand which members are being accessed during the execution
+             of a program.
+            
+             This attribute is valid on members whose type is <see cref="T:System.Type"/> or <see cref="T:System.String"/>.
+            
+             When this attribute is applied to a location of type <see cref="T:System.String"/>, the assumption is
+             that the string represents a fully qualified type name.
+            
+             When this attribute is applied to a class, interface, or struct, the members specified
+             can be accessed dynamically on <see cref="T:System.Type"/> instances returned from calling
+             <see cref="M:System.Object.GetType"/> on instances of that class, interface, or struct.
+            
+             If the attribute is applied to a method it's treated as a special case and it implies
+             the attribute should be applied to the "this" parameter of the method. As such the attribute
+             should only be used on instance methods of types assignable to System.Type (or string, but no methods
+             will use it there).
+             </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute.#ctor(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute"/> class
+            with the specified member types.
+            </summary>
+            <param name="memberTypes">The types of members dynamically accessed.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute.MemberTypes">
+            <summary>
+            Gets the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes"/> which specifies the type
+            of members dynamically accessed.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">
+             <summary>
+             Specifies the types of members that are dynamically accessed.
+            
+             This enumeration has a <see cref="T:System.FlagsAttribute"/> attribute that allows a
+             bitwise combination of its member values.
+             </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.None">
+            <summary>
+            Specifies no members.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor">
+            <summary>
+            Specifies the default, parameterless public constructor.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors">
+            <summary>
+            Specifies all public constructors.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors">
+            <summary>
+            Specifies all non-public constructors.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods">
+            <summary>
+            Specifies all public methods.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods">
+            <summary>
+            Specifies all non-public methods.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields">
+            <summary>
+            Specifies all public fields.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields">
+            <summary>
+            Specifies all non-public fields.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes">
+            <summary>
+            Specifies all public nested types.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypes">
+            <summary>
+            Specifies all non-public nested types.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties">
+            <summary>
+            Specifies all public properties.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties">
+            <summary>
+            Specifies all non-public properties.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents">
+            <summary>
+            Specifies all public events.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicEvents">
+            <summary>
+            Specifies all non-public events.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces">
+            <summary>
+            Specifies all interfaces implemented by the type.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructorsWithInherited">
+            <summary>
+            Specifies all non-public constructors, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethodsWithInherited">
+            <summary>
+            Specifies all non-public methods, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFieldsWithInherited">
+            <summary>
+            Specifies all non-public fields, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypesWithInherited">
+            <summary>
+            Specifies all non-public nested types, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicPropertiesWithInherited">
+            <summary>
+            Specifies all non-public properties, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicEventsWithInherited">
+            <summary>
+            Specifies all non-public events, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructorsWithInherited">
+            <summary>
+            Specifies all public constructors, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypesWithInherited">
+            <summary>
+            Specifies all public nested types, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllConstructors">
+            <summary>
+            Specifies all constructors, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods">
+            <summary>
+            Specifies all methods, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllFields">
+            <summary>
+            Specifies all fields, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllNestedTypes">
+            <summary>
+            Specifies all nested types, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllProperties">
+            <summary>
+            Specifies all properties, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllEvents">
+            <summary>
+            Specifies all events, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All">
+            <summary>
+            Specifies all members.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute">
+            <summary>
+            States a dependency that one member has on another.
+            </summary>
+            <remarks>
+            This can be used to inform tooling of a dependency that is otherwise not evident purely from
+            metadata and IL, for example a member relied on via reflection.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute"/> class
+            with the specified signature of a member on the same type as the consumer.
+            </summary>
+            <param name="memberSignature">The signature of the member depended on.</param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.String,System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute"/> class
+            with the specified signature of a member on a <see cref="T:System.Type"/>.
+            </summary>
+            <param name="memberSignature">The signature of the member depended on.</param>
+            <param name="type">The <see cref="T:System.Type"/> containing <paramref name="memberSignature"/>.</param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute"/> class
+            with the specified signature of a member on a type in an assembly.
+            </summary>
+            <param name="memberSignature">The signature of the member depended on.</param>
+            <param name="typeName">The full name of the type containing the specified member.</param>
+            <param name="assemblyName">The assembly name of the type containing the specified member.</param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes,System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute"/> class
+            with the specified types of members on a <see cref="T:System.Type"/>.
+            </summary>
+            <param name="memberTypes">The types of members depended on.</param>
+            <param name="type">The <see cref="T:System.Type"/> containing the specified members.</param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute"/> class
+            with the specified types of members on a type in an assembly.
+            </summary>
+            <param name="memberTypes">The types of members depended on.</param>
+            <param name="typeName">The full name of the type containing the specified members.</param>
+            <param name="assemblyName">The assembly name of the type containing the specified members.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberSignature">
+            <summary>
+            Gets the signature of the member depended on.
+            </summary>
+            <remarks>
+            Either <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberSignature"/> must be a valid string or <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberTypes"/>
+            must not equal <see cref="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.None"/>, but not both.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberTypes">
+            <summary>
+            Gets the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes"/> which specifies the type
+            of members depended on.
+            </summary>
+            <remarks>
+            Either <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberSignature"/> must be a valid string or <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberTypes"/>
+            must not equal <see cref="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.None"/>, but not both.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.Type">
+            <summary>
+            Gets the <see cref="T:System.Type"/> containing the specified member.
+            </summary>
+            <remarks>
+            If neither <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.Type"/> nor <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.TypeName"/> are specified,
+            the type of the consumer is assumed.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.TypeName">
+            <summary>
+            Gets the full name of the type containing the specified member.
+            </summary>
+            <remarks>
+            If neither <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.Type"/> nor <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.TypeName"/> are specified,
+            the type of the consumer is assumed.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.AssemblyName">
+            <summary>
+            Gets the assembly name of the specified type.
+            </summary>
+            <remarks>
+            <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.AssemblyName"/> is only valid when <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.TypeName"/> is specified.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.Condition">
+            <summary>
+            Gets or sets the condition in which the dependency is applicable.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute">
+            <summary>
+            Indicates that the specified method requires the ability to generate new code at runtime,
+            for example through <see cref="N:System.Reflection"/>.
+            </summary>
+            <remarks>
+            This allows tools to understand which methods are unsafe to call when compiling ahead of time.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute"/> class
+            with the specified message.
+            </summary>
+            <param name="message">
+            A message that contains information about the usage of dynamic code.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute.ExcludeStatics">
+            <summary>
+            When set to true, indicates that the annotation should not apply to static members.
+            </summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute.Message">
+            <summary>
+            Gets a message that contains information about the usage of dynamic code.
+            </summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute.Url">
+            <summary>
+            Gets or sets an optional URL that contains more information about the method,
+            why it requires dynamic code, and what options a consumer has to deal with it.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute">
+            <summary>
+            Indicates that the specified method requires dynamic access to code that is not referenced
+            statically, for example through <see cref="N:System.Reflection"/>.
+            </summary>
+            <remarks>
+            This allows tools to understand which methods are unsafe to call when removing unreferenced
+            code from an application.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute"/> class
+            with the specified message.
+            </summary>
+            <param name="message">
+            A message that contains information about the usage of unreferenced code.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.ExcludeStatics">
+            <summary>
+            When set to true, indicates that the annotation should not apply to static members.
+            </summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.Message">
+            <summary>
+            Gets a message that contains information about the usage of unreferenced code.
+            </summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.Url">
+            <summary>
+            Gets or sets an optional URL that contains more information about the method,
+            why it requires unreferenced code, and what options a consumer has to deal with it.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute">
+            <summary>Specifies the syntax used in a string.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.#ctor(System.String)">
+            <summary>Initializes the <see cref="T:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute"/> with the identifier of the syntax used.</summary>
+            <param name="syntax">The syntax identifier.</param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.#ctor(System.String,System.Object[])">
+            <summary>Initializes the <see cref="T:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute"/> with the identifier of the syntax used.</summary>
+            <param name="syntax">The syntax identifier.</param>
+            <param name="arguments">Optional arguments associated with the specific syntax employed.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Syntax">
+            <summary>Gets the identifier of the syntax used.</summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Arguments">
+            <summary>Optional arguments associated with the specific syntax employed.</summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.CompositeFormat">
+            <summary>The syntax identifier for strings containing composite formats for string formatting.</summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateOnlyFormat">
+            <summary>The syntax identifier for strings containing date format specifiers.</summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat">
+            <summary>The syntax identifier for strings containing date and time format specifiers.</summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.EnumFormat">
+            <summary>The syntax identifier for strings containing <see cref="T:System.Enum"/> format specifiers.</summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.GuidFormat">
+            <summary>The syntax identifier for strings containing <see cref="T:System.Guid"/> format specifiers.</summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Json">
+            <summary>The syntax identifier for strings containing JavaScript Object Notation (JSON).</summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.NumericFormat">
+            <summary>The syntax identifier for strings containing numeric format specifiers.</summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex">
+            <summary>The syntax identifier for strings containing regular expressions.</summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.TimeOnlyFormat">
+            <summary>The syntax identifier for strings containing time format specifiers.</summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.TimeSpanFormat">
+            <summary>The syntax identifier for strings containing <see cref="T:System.TimeSpan"/> format specifiers.</summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Uri">
+            <summary>The syntax identifier for strings containing URIs.</summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Xml">
+            <summary>The syntax identifier for strings containing XML.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+            <summary>
+            Suppresses reporting of a specific rule violation, allowing multiple suppressions on a
+            single code artifact.
+            </summary>
+            <remarks>
+            <see cref="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute"/> is different than
+            <see cref="T:System.Diagnostics.CodeAnalysis.SuppressMessageAttribute"/> in that it doesn't have a
+            <see cref="T:System.Diagnostics.ConditionalAttribute"/>. So it is always preserved in the compiled assembly.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute"/>
+            class, specifying the category of the tool and the identifier for an analysis rule.
+            </summary>
+            <param name="category">The category for the attribute.</param>
+            <param name="checkId">The identifier of the analysis rule the attribute applies to.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Category">
+            <summary>
+            Gets the category identifying the classification of the attribute.
+            </summary>
+            <remarks>
+            The <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Category"/> property describes the tool or tool analysis category
+            for which a message suppression attribute applies.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.CheckId">
+            <summary>
+            Gets the identifier of the analysis tool rule to be suppressed.
+            </summary>
+            <remarks>
+            Concatenated together, the <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Category"/> and <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.CheckId"/>
+            properties form a unique check identifier.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Scope">
+            <summary>
+            Gets or sets the scope of the code that is relevant for the attribute.
+            </summary>
+            <remarks>
+            The Scope property is an optional argument that specifies the metadata scope for which
+            the attribute is relevant.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Target">
+            <summary>
+            Gets or sets a fully qualified path that represents the target of the attribute.
+            </summary>
+            <remarks>
+            The <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Target"/> property is an optional argument identifying the analysis target
+            of the attribute. An example value is "System.IO.Stream.ctor():System.Void".
+            Because it is fully qualified, it can be long, particularly for targets such as parameters.
+            The analysis tool user interface should be capable of automatically formatting the parameter.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.MessageId">
+            <summary>
+            Gets or sets an optional argument expanding on exclusion criteria.
+            </summary>
+            <remarks>
+            The <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.MessageId"/> property is an optional argument that specifies additional
+            exclusion where the literal metadata target is not sufficiently precise. For example,
+            the <see cref="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute"/> cannot be applied within a method,
+            and it may be desirable to suppress a violation against a statement in the method that will
+            give a rule violation, but not against all statements in the method.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Justification">
+            <summary>
+            Gets or sets the justification for suppressing the code analysis message.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.AllowNullAttribute">
+            <summary>Specifies that null is allowed as an input even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DisallowNullAttribute">
+            <summary>Specifies that null is disallowed as an input even if the corresponding type allows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullAttribute">
+            <summary>Specifies that an output may be null even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullAttribute">
+            <summary>Specifies that an output will not be null even if the corresponding type allows it. Specifies that an input argument was not null when the call returns.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute">
+            <summary>Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue"/>, the parameter may be null even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified return value condition.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter may be null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute">
+            <summary>Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue"/>, the parameter will not be null even if the corresponding type allows it.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified return value condition.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter will not be null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute">
+            <summary>Specifies that the output will be non-null if the named parameter is non-null.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.#ctor(System.String)">
+            <summary>Initializes the attribute with the associated parameter name.</summary>
+            <param name="parameterName">
+            The associated parameter name.  The output will be non-null if the argument to the parameter specified is non-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.ParameterName">
+            <summary>Gets the associated parameter name.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute">
+            <summary>Applied to a method that will never return under any circumstance.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute">
+            <summary>Specifies that the method will not return if the associated Boolean parameter is passed the specified value.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified parameter value.</summary>
+            <param name="parameterValue">
+            The condition parameter value. Code after the method will be considered unreachable by diagnostics if the argument to
+            the associated parameter matches this value.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.ParameterValue">
+            <summary>Gets the condition parameter value.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute">
+            <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String)">
+            <summary>Initializes the attribute with a field or property member.</summary>
+            <param name="member">
+            The field or property member that is promised to be not-null.
+            </param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String[])">
+            <summary>Initializes the attribute with the list of field and property members.</summary>
+            <param name="members">
+            The list of field and property members that are promised to be not-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.Members">
+            <summary>Gets field or property member names.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute">
+            <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values when returning with the specified return value condition.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.#ctor(System.Boolean,System.String)">
+            <summary>Initializes the attribute with the specified return value condition and a field or property member.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated field or property member will not be null.
+            </param>
+            <param name="member">
+            The field or property member that is promised to be not-null.
+            </param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.#ctor(System.Boolean,System.String[])">
+            <summary>Initializes the attribute with the specified return value condition and list of field and property members.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated field and property members will not be null.
+            </param>
+            <param name="members">
+            The list of field and property members that are promised to be not-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.Members">
+            <summary>Gets field or property member names.</summary>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.CompilerLoweringPreserveAttribute">
+            <summary>
+            When applied to an attribute class, instructs the compiler to flow applications of that attribute,
+            from source code down to compiler-generated symbols. This can help IL-based analysis tools.
+            </summary>
+            <remarks>
+            One example where this attribute applies is in C# primary constructor parameters. If an attribute
+            marked with <see cref="T:System.Runtime.CompilerServices.CompilerLoweringPreserveAttribute"/> gets applied to a primary constructor
+            parameter, the attribute will also be applied to any compiler-generated fields storing that parameter.
+            </remarks>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.CompilerLoweringPreserveAttribute.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.CompilerServices.CompilerLoweringPreserveAttribute"/> class.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.InteropServices.LibraryImportAttribute">
+            <summary>
+            Attribute used to indicate a source generator should create a function for marshalling
+            arguments instead of relying on the runtime to generate an equivalent marshalling function at run-time.
+            </summary>
+            <remarks>
+            This attribute is meaningless if the source generator associated with it is not enabled.
+            The current built-in source generator only supports C# and only supplies an implementation when
+            applied to static, partial, non-generic methods.
+            </remarks>
+        </member>
+        <member name="M:System.Runtime.InteropServices.LibraryImportAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.InteropServices.LibraryImportAttribute"/>.
+            </summary>
+            <param name="libraryName">Name of the library containing the import.</param>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.LibraryName">
+            <summary>
+            Gets the name of the library containing the import.
+            </summary>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.EntryPoint">
+            <summary>
+            Gets or sets the name of the entry point to be called.
+            </summary>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshalling">
+            <summary>
+            Gets or sets how to marshal string arguments to the method.
+            </summary>
+            <remarks>
+            If this field is set to a value other than <see cref="F:System.Runtime.InteropServices.StringMarshalling.Custom" />,
+            <see cref="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshallingCustomType" /> must not be specified.
+            </remarks>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshallingCustomType">
+            <summary>
+            Gets or sets the <see cref="T:System.Type"/> used to control how string arguments to the method are marshalled.
+            </summary>
+            <remarks>
+            If this field is specified, <see cref="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshalling" /> must not be specified
+            or must be set to <see cref="F:System.Runtime.InteropServices.StringMarshalling.Custom" />.
+            </remarks>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.SetLastError">
+            <summary>
+            Gets or sets whether the callee sets an error (SetLastError on Windows or errno
+            on other platforms) before returning from the attributed method.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.InteropServices.StringMarshalling">
+            <summary>
+            Specifies how strings should be marshalled for generated p/invokes
+            </summary>
+        </member>
+        <member name="F:System.Runtime.InteropServices.StringMarshalling.Custom">
+            <summary>
+            Indicates the user is supplying a specific marshaller in <see cref="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshallingCustomType"/>.
+            </summary>
+        </member>
+        <member name="F:System.Runtime.InteropServices.StringMarshalling.Utf8">
+            <summary>
+            Use the platform-provided UTF-8 marshaller.
+            </summary>
+        </member>
+        <member name="F:System.Runtime.InteropServices.StringMarshalling.Utf16">
+            <summary>
+            Use the platform-provided UTF-16 marshaller.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.Versioning.OSPlatformAttribute">
+            <summary>
+            Base type for all platform-specific API attributes.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.Versioning.TargetPlatformAttribute">
+            <summary>
+            Records the platform that the project targeted.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.Versioning.SupportedOSPlatformAttribute">
+             <summary>
+             Records the operating system (and minimum version) that supports an API. Multiple attributes can be
+             applied to indicate support on multiple operating systems.
+             </summary>
+             <remarks>
+             Callers can apply a <see cref="T:System.Runtime.Versioning.SupportedOSPlatformAttribute" />
+             or use guards to prevent calls to APIs on unsupported operating systems.
+            
+             A given platform should only be specified once.
+             </remarks>
+        </member>
+        <member name="T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute">
+            <summary>
+            Marks APIs that were removed in a given operating system version.
+            </summary>
+            <remarks>
+            Primarily used by OS bindings to indicate APIs that are only available in
+            earlier versions.
+            </remarks>
+        </member>
+        <member name="T:System.Runtime.Versioning.ObsoletedOSPlatformAttribute">
+            <summary>
+            Marks APIs that were obsoleted in a given operating system version.
+            </summary>
+            <remarks>
+            Primarily used by OS bindings to indicate APIs that should not be used anymore.
+            </remarks>
+        </member>
+        <member name="M:System.Runtime.Versioning.ObsoletedOSPlatformAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.Versioning.ObsoletedOSPlatformAttribute"/> class with the specified platform name.
+            </summary>
+            <param name="platformName">The name of the platform where the API was obsoleted.</param>
+        </member>
+        <member name="M:System.Runtime.Versioning.ObsoletedOSPlatformAttribute.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.Versioning.ObsoletedOSPlatformAttribute"/> class with the specified platform name and message.
+            </summary>
+            <param name="platformName">The name of the platform where the API was obsoleted.</param>
+            <param name="message">The message that explains the obsolescence.</param>
+        </member>
+        <member name="P:System.Runtime.Versioning.ObsoletedOSPlatformAttribute.Message">
+            <summary>
+            Gets the message that explains the obsolescence.
+            </summary>
+        </member>
+        <member name="P:System.Runtime.Versioning.ObsoletedOSPlatformAttribute.Url">
+            <summary>
+            Gets or sets the URL that provides more information about the obsolescence.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.Versioning.SupportedOSPlatformGuardAttribute">
+             <summary>
+             Annotates a custom guard field, property or method with a supported platform name and optional version.
+             Multiple attributes can be applied to indicate guard for multiple supported platforms.
+             </summary>
+             <remarks>
+             Callers can apply a <see cref="T:System.Runtime.Versioning.SupportedOSPlatformGuardAttribute" /> to a field, property or method
+             and use that field, property or method in a conditional or assert statements in order to safely call platform specific APIs.
+            
+             The type of the field or property should be boolean, the method return type should be boolean in order to be used as platform guard.
+             </remarks>
+        </member>
+        <member name="T:System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute">
+             <summary>
+             Annotates the custom guard field, property or method with an unsupported platform name and optional version.
+             Multiple attributes can be applied to indicate guard for multiple unsupported platforms.
+             </summary>
+             <remarks>
+             Callers can apply a <see cref="T:System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute" /> to a field, property or method
+             and use that  field, property or method in a conditional or assert statements as a guard to safely call APIs unsupported on those platforms.
+            
+             The type of the field or property should be boolean, the method return type should be boolean in order to be used as platform guard.
+             </remarks>
+        </member>
+        <member name="P:System.SR.QueueModeNotSupported">
+            <summary>{0} is not a supported queue mode value.</summary>
+        </member>
+        <member name="P:System.SR.MaxQueueLengthBadValue">
+            <summary>{0} must be larger than zero.</summary>
+        </member>
+        <member name="P:System.SR.WarningMessageOnDrop">
+            <summary>{0} message(s) dropped because of queue size limit. Increase the queue size or decrease logging verbosity to avoid this. You may change `ConsoleLoggerQueueFullMode` to stop dropping messages.</summary>
+        </member>
+        <member name="P:System.SR.InvalidConfigurationData">
+            <summary>Failed to convert configuration value at '{0}' to type '{1}'.</summary>
+        </member>
+        <member name="T:System.ExceptionPolyfills">
+            <summary>Provides downlevel polyfills for static methods on Exception-derived types.</summary>
+        </member>
+    </members>
+</doc>

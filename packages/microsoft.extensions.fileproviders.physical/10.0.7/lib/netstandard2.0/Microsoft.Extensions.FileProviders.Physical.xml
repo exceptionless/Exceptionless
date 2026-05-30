@@ -1,0 +1,662 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Extensions.FileProviders.Physical</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.Extensions.FileProviders.Physical.ExclusionFilters">
+            <summary>
+            Specifies filtering behavior for files or directories.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.FileProviders.Physical.ExclusionFilters.Sensitive">
+            <summary>
+            Equivalent to <c>DotPrefixed | Hidden | System</c>. Exclude files and directories when the name begins with a period, or has either <see cref="F:System.IO.FileAttributes.Hidden"/> or <see cref="F:System.IO.FileAttributes.System"/> is set on <see cref="P:System.IO.FileSystemInfo.Attributes"/>.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.FileProviders.Physical.ExclusionFilters.DotPrefixed">
+            <summary>
+            Exclude files and directories when the name begins with period.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.FileProviders.Physical.ExclusionFilters.Hidden">
+            <summary>
+            Exclude files and directories when <see cref="F:System.IO.FileAttributes.Hidden"/> is set on <see cref="P:System.IO.FileSystemInfo.Attributes"/>.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.FileProviders.Physical.ExclusionFilters.System">
+            <summary>
+            Exclude files and directories when <see cref="F:System.IO.FileAttributes.System"/> is set on <see cref="P:System.IO.FileSystemInfo.Attributes"/>.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.FileProviders.Physical.ExclusionFilters.None">
+            <summary>
+            Do not exclude any files.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.FileProviders.Physical.PhysicalDirectoryInfo">
+            <summary>
+            Represents a directory on a physical file system.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.FileProviders.Physical.PhysicalDirectoryInfo.#ctor(System.IO.DirectoryInfo)">
+            <summary>
+            Initializes an instance of <see cref="T:Microsoft.Extensions.FileProviders.Physical.PhysicalDirectoryInfo"/> that wraps an instance of <see cref="T:System.IO.DirectoryInfo"/>.
+            </summary>
+            <param name="info">The directory to represent.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.FileProviders.Physical.PhysicalDirectoryInfo.Exists">
+            <inheritdoc />
+        </member>
+        <member name="P:Microsoft.Extensions.FileProviders.Physical.PhysicalDirectoryInfo.Length">
+            <summary>
+            Gets a value that's always -1.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.FileProviders.Physical.PhysicalDirectoryInfo.PhysicalPath">
+            <inheritdoc />
+        </member>
+        <member name="P:Microsoft.Extensions.FileProviders.Physical.PhysicalDirectoryInfo.Name">
+            <inheritdoc />
+        </member>
+        <member name="P:Microsoft.Extensions.FileProviders.Physical.PhysicalDirectoryInfo.LastModified">
+            <summary>
+            Gets the time when the directory was last written to.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.FileProviders.Physical.PhysicalDirectoryInfo.IsDirectory">
+            <summary>
+            Gets a value that's always <see langword="true"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.FileProviders.Physical.PhysicalDirectoryInfo.CreateReadStream">
+            <summary>
+            Always throws an exception because read streams are not support on directories.
+            </summary>
+            <exception cref="T:System.InvalidOperationException">In all cases.</exception>
+            <returns>Never returns.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.FileProviders.Physical.PhysicalDirectoryInfo.GetEnumerator">
+            <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Extensions.FileProviders.Physical.PhysicalFileInfo">
+            <summary>
+            Represents a file on a physical file system.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.FileProviders.Physical.PhysicalFileInfo.#ctor(System.IO.FileInfo)">
+            <summary>
+            Initializes an instance of <see cref="T:Microsoft.Extensions.FileProviders.Physical.PhysicalFileInfo"/> that wraps an instance of <see cref="T:System.IO.FileInfo"/>.
+            </summary>
+            <param name="info">The <see cref="T:System.IO.FileInfo"/>.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.FileProviders.Physical.PhysicalFileInfo.Exists">
+            <inheritdoc />
+        </member>
+        <member name="P:Microsoft.Extensions.FileProviders.Physical.PhysicalFileInfo.Length">
+            <inheritdoc />
+        </member>
+        <member name="P:Microsoft.Extensions.FileProviders.Physical.PhysicalFileInfo.PhysicalPath">
+            <inheritdoc />
+        </member>
+        <member name="P:Microsoft.Extensions.FileProviders.Physical.PhysicalFileInfo.Name">
+            <inheritdoc />
+        </member>
+        <member name="P:Microsoft.Extensions.FileProviders.Physical.PhysicalFileInfo.LastModified">
+            <inheritdoc />
+        </member>
+        <member name="P:Microsoft.Extensions.FileProviders.Physical.PhysicalFileInfo.IsDirectory">
+            <summary>
+            Gets a value that's always <see langword="false"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.FileProviders.Physical.PhysicalFileInfo.CreateReadStream">
+            <inheritdoc />
+        </member>
+        <member name="T:Microsoft.Extensions.FileProviders.Physical.PhysicalFilesWatcher">
+            <summary>
+            Watches a physical file system for changes and triggers events on
+            <see cref="T:Microsoft.Extensions.Primitives.IChangeToken" /> when files are created, change, renamed, or deleted.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.FileProviders.Physical.PhysicalFilesWatcher.#ctor(System.String,System.IO.FileSystemWatcher,System.Boolean)">
+            <summary>
+            Initializes an instance of <see cref="T:Microsoft.Extensions.FileProviders.Physical.PhysicalFilesWatcher" /> that watches files in <paramref name="root" />.
+            Wraps an instance of <see cref="T:System.IO.FileSystemWatcher" />.
+            </summary>
+            <param name="root">Root directory for the watcher.</param>
+            <param name="fileSystemWatcher">The wrapped watcher that's watching <paramref name="root" />.</param>
+            <param name="pollForChanges">
+            <see langword="true"/> for the poller to use polling to trigger instances of
+            <see cref="T:Microsoft.Extensions.Primitives.IChangeToken" /> created by <see cref="M:Microsoft.Extensions.FileProviders.Physical.PhysicalFilesWatcher.CreateFileChangeToken(System.String)" />.
+            </param>
+        </member>
+        <member name="M:Microsoft.Extensions.FileProviders.Physical.PhysicalFilesWatcher.#ctor(System.String,System.IO.FileSystemWatcher,System.Boolean,Microsoft.Extensions.FileProviders.Physical.ExclusionFilters)">
+            <summary>
+            Initializes an instance of <see cref="T:Microsoft.Extensions.FileProviders.Physical.PhysicalFilesWatcher" /> that watches files in <paramref name="root" />.
+            Wraps an instance of <see cref="T:System.IO.FileSystemWatcher" />.
+            </summary>
+            <param name="root">Root directory for the watcher.</param>
+            <param name="fileSystemWatcher">The wrapped watcher that is watching <paramref name="root" />.</param>
+            <param name="pollForChanges">
+            <see langword="true"/> for the poller to use polling to trigger instances of
+            <see cref="T:Microsoft.Extensions.Primitives.IChangeToken" /> created by <see cref="M:Microsoft.Extensions.FileProviders.Physical.PhysicalFilesWatcher.CreateFileChangeToken(System.String)" />.
+            </param>
+            <param name="filters">Specifies which files or directories are excluded. Notifications of changes to are not raised to these.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.FileProviders.Physical.PhysicalFilesWatcher.CreateFileChangeToken(System.String)">
+            <summary>
+            Creates an instance of <see cref="T:Microsoft.Extensions.Primitives.IChangeToken" /> for all files and directories that match the
+            <paramref name="filter" />.
+            </summary>
+            <param name="filter">A globbing pattern for files and directories to watch.</param>
+            <returns>A change token for all files that match the filter.</returns>
+            <remarks>
+            Globbing patterns are relative to the root directory given in the constructor
+            <see cref="M:Microsoft.Extensions.FileProviders.Physical.PhysicalFilesWatcher.#ctor(System.String,System.IO.FileSystemWatcher,System.Boolean)" />. Globbing patterns
+            are interpreted by <see cref="T:Microsoft.Extensions.FileSystemGlobbing.Matcher" />.
+            </remarks>
+            <exception cref="T:System.ArgumentNullException"><paramref name="filter" /> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.FileProviders.Physical.PhysicalFilesWatcher.Dispose">
+            <summary>
+            Disposes the provider. Change tokens may not trigger after the provider is disposed.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.FileProviders.Physical.PhysicalFilesWatcher.Dispose(System.Boolean)">
+            <summary>
+            Disposes the provider.
+            </summary>
+            <param name="disposing"><c>true</c> is invoked from <see cref="M:System.IDisposable.Dispose"/>.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.FileProviders.Physical.PollingFileChangeToken">
+            <summary>
+            A change token that polls for file system changes.
+            </summary>
+            <remarks>
+            <para>Polling occurs every 4 seconds.</para>
+            <para>This change token does not raise any change callbacks. Callers should watch for <see cref="P:Microsoft.Extensions.FileProviders.Physical.PollingFileChangeToken.HasChanged" /> to turn
+            from <see langword="false"/> to <see langword="true"/> and dispose the token after this happens.</para>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.FileProviders.Physical.PollingFileChangeToken.#ctor(System.IO.FileInfo)">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.Extensions.FileProviders.Physical.PollingFileChangeToken" /> that polls the specified file for changes as
+            determined by <see cref="P:System.IO.FileSystemInfo.LastWriteTimeUtc" />.
+            </summary>
+            <param name="fileInfo">The <see cref="T:System.IO.FileInfo"/> to poll.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.FileProviders.Physical.PollingFileChangeToken.ActiveChangeCallbacks">
+            <summary>
+            Gets a value that's always <see langword="false"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.FileProviders.Physical.PollingFileChangeToken.HasChanged">
+            <summary>
+            Gets a value that indicates whether the file has changed since the change token was created.
+            </summary>
+            <remarks>
+            Once the file changes, this value is always <see langword="true"/>. Change tokens should not reused once expired. The caller should discard this
+            instance once it sees <see cref="P:Microsoft.Extensions.FileProviders.Physical.PollingFileChangeToken.HasChanged" /> is true.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.FileProviders.Physical.PollingFileChangeToken.RegisterChangeCallback(System.Action{System.Object},System.Object)">
+            <summary>
+            Does not actually register callbacks.
+            </summary>
+            <param name="callback">This parameter is ignored.</param>
+            <param name="state">This parameter is ignored.</param>
+            <returns>A disposable object that no-ops when disposed.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.FileProviders.Physical.PollingWildCardChangeToken">
+            <summary>
+            A polling based <see cref="T:Microsoft.Extensions.Primitives.IChangeToken"/> for wildcard patterns.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.FileProviders.Physical.PollingWildCardChangeToken.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.Extensions.FileProviders.Physical.PollingWildCardChangeToken"/>.
+            </summary>
+            <param name="root">The root of the file system.</param>
+            <param name="pattern">The pattern to watch.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.FileProviders.Physical.PollingWildCardChangeToken.ActiveChangeCallbacks">
+            <inheritdoc />
+        </member>
+        <member name="P:Microsoft.Extensions.FileProviders.Physical.PollingWildCardChangeToken.HasChanged">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.FileProviders.Physical.PollingWildCardChangeToken.GetLastWriteUtc(System.String)">
+            <summary>
+            Gets the last write time of the file at the specified <paramref name="path"/>.
+            </summary>
+            <param name="path">The root relative path.</param>
+            <returns>The <see cref="T:System.DateTime"/> that the file was last modified.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.FileProviders.Internal.PhysicalDirectoryContents">
+            <summary>
+            Represents the contents of a physical file directory.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.FileProviders.Internal.PhysicalDirectoryContents.#ctor(System.String)">
+            <summary>
+            Initializes an instance of <see cref="T:Microsoft.Extensions.FileProviders.Internal.PhysicalDirectoryContents"/>.
+            </summary>
+            <param name="directory">The directory to represent.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.FileProviders.Internal.PhysicalDirectoryContents.#ctor(System.String,Microsoft.Extensions.FileProviders.Physical.ExclusionFilters)">
+            <summary>
+            Initializes an instance of <see cref="T:Microsoft.Extensions.FileProviders.Internal.PhysicalDirectoryContents"/>.
+            </summary>
+            <param name="directory">The directory to represent.</param>
+            <param name="filters">Specifies which files or directories are excluded from enumeration.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.FileProviders.Internal.PhysicalDirectoryContents.Exists">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Extensions.FileProviders.Internal.PhysicalDirectoryContents.GetEnumerator">
+            <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Extensions.FileProviders.PhysicalFileProvider">
+            <summary>
+            Looks up files using the on-disk file system.
+            </summary>
+            <remarks>
+            When the environment variable "DOTNET_USE_POLLING_FILE_WATCHER" is set to "1" or "true", calls to
+            <see cref="M:Microsoft.Extensions.FileProviders.PhysicalFileProvider.Watch(System.String)" /> will use <see cref="T:Microsoft.Extensions.FileProviders.Physical.PollingFileChangeToken" />.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.FileProviders.PhysicalFileProvider.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of a PhysicalFileProvider at the given root directory.
+            </summary>
+            <param name="root">The root directory. This should be an absolute path.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.FileProviders.PhysicalFileProvider.#ctor(System.String,Microsoft.Extensions.FileProviders.Physical.ExclusionFilters)">
+            <summary>
+            Initializes a new instance of a PhysicalFileProvider at the given root directory.
+            </summary>
+            <param name="root">The root directory. This should be an absolute path.</param>
+            <param name="filters">Specifies which files or directories are excluded.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.FileProviders.PhysicalFileProvider.UsePollingFileWatcher">
+            <summary>
+            Gets or sets a value that determines if this instance of <see cref="T:Microsoft.Extensions.FileProviders.PhysicalFileProvider"/>
+            uses polling to determine file changes.
+            </summary>
+            <value>
+            The default value of this property is determined by the value of environment variable named <c>DOTNET_USE_POLLING_FILE_WATCHER</c>.
+            When <see langword="true"/> or <c>1</c>, this property defaults to <see langword="true"/>; otherwise <see langword="false"/>.
+            </value>
+            <remarks>
+            By default, <see cref="T:Microsoft.Extensions.FileProviders.PhysicalFileProvider"/>  uses <see cref="T:System.IO.FileSystemWatcher"/> to listen to file change events
+            for <see cref="M:Microsoft.Extensions.FileProviders.PhysicalFileProvider.Watch(System.String)"/>. <see cref="T:System.IO.FileSystemWatcher"/> is ineffective in some scenarios such as mounted drives.
+            Polling is required to effectively watch for file changes.
+            </remarks>
+            <seealso cref="P:Microsoft.Extensions.FileProviders.PhysicalFileProvider.UseActivePolling"/>
+        </member>
+        <member name="P:Microsoft.Extensions.FileProviders.PhysicalFileProvider.UseActivePolling">
+            <summary>
+            Gets or sets a value that determines if this instance of <see cref="T:Microsoft.Extensions.FileProviders.PhysicalFileProvider"/>
+            actively polls for file changes.
+            </summary>
+            <value>
+            <see langword="true"/> if the <see cref="T:Microsoft.Extensions.Primitives.IChangeToken"/> returned by <see cref="M:Microsoft.Extensions.FileProviders.PhysicalFileProvider.Watch(System.String)"/> actively polls for file changes
+            (<see cref="P:Microsoft.Extensions.Primitives.IChangeToken.ActiveChangeCallbacks"/> will be <see langword="true"/>) instead of being passive.
+            The default value of this property is determined by the value of environment variable named <c>DOTNET_USE_POLLING_FILE_WATCHER</c>.
+            When <see langword="true"/> or <c>1</c>, this property defaults to <see langword="true"/>; otherwise <see langword="false"/>.
+            </value>
+            <remarks>
+            <para>
+            This property is only effective when <see cref="P:Microsoft.Extensions.FileProviders.PhysicalFileProvider.UsePollingFileWatcher"/> is set.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.FileProviders.PhysicalFileProvider.Dispose">
+            <summary>
+            Disposes the provider. Change tokens may not trigger after the provider is disposed.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.FileProviders.PhysicalFileProvider.Dispose(System.Boolean)">
+            <summary>
+            Disposes the provider.
+            </summary>
+            <param name="disposing"><c>true</c> is invoked from <see cref="M:System.IDisposable.Dispose"/>.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.FileProviders.PhysicalFileProvider.Root">
+            <summary>
+            Gets the root directory for this instance.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.FileProviders.PhysicalFileProvider.GetFileInfo(System.String)">
+            <summary>
+            Locates a file at the given path by directly mapping path segments to physical directories.
+            </summary>
+            <param name="subpath">A path under the root directory.</param>
+            <returns>The file information. Caller must check the <see cref="P:Microsoft.Extensions.FileProviders.IFileInfo.Exists"/> property.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.FileProviders.PhysicalFileProvider.GetDirectoryContents(System.String)">
+            <summary>
+            Enumerates a directory at the given path, if any.
+            </summary>
+            <param name="subpath">A path under the root directory. Leading slashes are ignored.</param>
+            <returns>
+            The contents of the directory.
+            </returns>
+            <remarks>
+            <para>The caller must check the <see cref="P:Microsoft.Extensions.FileProviders.IDirectoryContents.Exists"/> property.</para>
+            <para>Returns <see cref="T:Microsoft.Extensions.FileProviders.NotFoundDirectoryContents" /> if <paramref name="subpath" /> is absolute,
+            if the directory does not exist, or <paramref name="subpath" /> has invalid characters.</para>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.FileProviders.PhysicalFileProvider.Watch(System.String)">
+            <summary>
+                <para>Creates a <see cref="T:Microsoft.Extensions.Primitives.IChangeToken" /> for the specified <paramref name="filter" />.</para>
+                <para>Globbing patterns are interpreted by <see cref="T:Microsoft.Extensions.FileSystemGlobbing.Matcher" />.</para>
+            </summary>
+            <param name="filter">
+            Filter string used to determine what files or folders to monitor. Example: **/*.cs, *.*,
+            subFolder/**/*.cshtml.
+            </param>
+            <returns>
+            An <see cref="T:Microsoft.Extensions.Primitives.IChangeToken" /> that is notified when a file matching <paramref name="filter" /> is added,
+            modified, or deleted. Returns a <see cref="T:Microsoft.Extensions.FileProviders.NullChangeToken" /> if <paramref name="filter" /> has invalid filter
+            characters or if <paramref name="filter" /> is an absolute path or outside the root directory specified in the
+            constructor <see cref="M:Microsoft.Extensions.FileProviders.PhysicalFileProvider.#ctor(System.String)" />.
+            </returns>
+        </member>
+        <member name="P:System.SR.Argument_InvalidOffLen">
+            <summary>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</summary>
+        </member>
+        <member name="P:System.SR.ArgumentOutOfRange_NeedNonNegNum">
+            <summary>Non-negative number required.</summary>
+        </member>
+        <member name="P:System.SR.Error_FileSystemWatcherRequiredWithoutPolling">
+            <summary>The fileSystemWatcher parameter must be non-null when pollForChanges is false.</summary>
+        </member>
+        <member name="P:System.SR.CannotCreateStream">
+            <summary>Cannot create a stream for a directory.</summary>
+        </member>
+        <member name="P:System.SR.CannotModifyWhenFileWatcherInitialized">
+            <summary>Cannot modify {0} once file watcher has been initialized.</summary>
+        </member>
+        <member name="P:System.SR.Cryptography_HashAlgorithmNameNullOrEmpty">
+            <summary>The hash algorithm name cannot be null or empty.</summary>
+        </member>
+        <member name="P:System.SR.UnexpectedFileSystemInfo">
+            <summary>Unexpected type of FileSystemInfo</summary>
+        </member>
+        <member name="P:System.SR.FileSystemWatcher_PlatformNotSupported">
+            <summary>The type '{0}' is not supported on this platform, use polling instead.</summary>
+        </member>
+        <member name="T:System.Runtime.InteropServices.LibraryImportAttribute">
+            <summary>
+            Attribute used to indicate a source generator should create a function for marshalling
+            arguments instead of relying on the runtime to generate an equivalent marshalling function at run-time.
+            </summary>
+            <remarks>
+            This attribute is meaningless if the source generator associated with it is not enabled.
+            The current built-in source generator only supports C# and only supplies an implementation when
+            applied to static, partial, non-generic methods.
+            </remarks>
+        </member>
+        <member name="M:System.Runtime.InteropServices.LibraryImportAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.InteropServices.LibraryImportAttribute"/>.
+            </summary>
+            <param name="libraryName">Name of the library containing the import.</param>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.LibraryName">
+            <summary>
+            Gets the name of the library containing the import.
+            </summary>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.EntryPoint">
+            <summary>
+            Gets or sets the name of the entry point to be called.
+            </summary>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshalling">
+            <summary>
+            Gets or sets how to marshal string arguments to the method.
+            </summary>
+            <remarks>
+            If this field is set to a value other than <see cref="F:System.Runtime.InteropServices.StringMarshalling.Custom" />,
+            <see cref="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshallingCustomType" /> must not be specified.
+            </remarks>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshallingCustomType">
+            <summary>
+            Gets or sets the <see cref="T:System.Type"/> used to control how string arguments to the method are marshalled.
+            </summary>
+            <remarks>
+            If this field is specified, <see cref="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshalling" /> must not be specified
+            or must be set to <see cref="F:System.Runtime.InteropServices.StringMarshalling.Custom" />.
+            </remarks>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.SetLastError">
+            <summary>
+            Gets or sets whether the callee sets an error (SetLastError on Windows or errno
+            on other platforms) before returning from the attributed method.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.InteropServices.StringMarshalling">
+            <summary>
+            Specifies how strings should be marshalled for generated p/invokes
+            </summary>
+        </member>
+        <member name="F:System.Runtime.InteropServices.StringMarshalling.Custom">
+            <summary>
+            Indicates the user is supplying a specific marshaller in <see cref="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshallingCustomType"/>.
+            </summary>
+        </member>
+        <member name="F:System.Runtime.InteropServices.StringMarshalling.Utf8">
+            <summary>
+            Use the platform-provided UTF-8 marshaller.
+            </summary>
+        </member>
+        <member name="F:System.Runtime.InteropServices.StringMarshalling.Utf16">
+            <summary>
+            Use the platform-provided UTF-16 marshaller.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.Versioning.OSPlatformAttribute">
+            <summary>
+            Base type for all platform-specific API attributes.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.Versioning.TargetPlatformAttribute">
+            <summary>
+            Records the platform that the project targeted.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.Versioning.SupportedOSPlatformAttribute">
+             <summary>
+             Records the operating system (and minimum version) that supports an API. Multiple attributes can be
+             applied to indicate support on multiple operating systems.
+             </summary>
+             <remarks>
+             Callers can apply a <see cref="T:System.Runtime.Versioning.SupportedOSPlatformAttribute" />
+             or use guards to prevent calls to APIs on unsupported operating systems.
+            
+             A given platform should only be specified once.
+             </remarks>
+        </member>
+        <member name="T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute">
+            <summary>
+            Marks APIs that were removed in a given operating system version.
+            </summary>
+            <remarks>
+            Primarily used by OS bindings to indicate APIs that are only available in
+            earlier versions.
+            </remarks>
+        </member>
+        <member name="T:System.Runtime.Versioning.ObsoletedOSPlatformAttribute">
+            <summary>
+            Marks APIs that were obsoleted in a given operating system version.
+            </summary>
+            <remarks>
+            Primarily used by OS bindings to indicate APIs that should not be used anymore.
+            </remarks>
+        </member>
+        <member name="M:System.Runtime.Versioning.ObsoletedOSPlatformAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.Versioning.ObsoletedOSPlatformAttribute"/> class with the specified platform name.
+            </summary>
+            <param name="platformName">The name of the platform where the API was obsoleted.</param>
+        </member>
+        <member name="M:System.Runtime.Versioning.ObsoletedOSPlatformAttribute.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.Versioning.ObsoletedOSPlatformAttribute"/> class with the specified platform name and message.
+            </summary>
+            <param name="platformName">The name of the platform where the API was obsoleted.</param>
+            <param name="message">The message that explains the obsolescence.</param>
+        </member>
+        <member name="P:System.Runtime.Versioning.ObsoletedOSPlatformAttribute.Message">
+            <summary>
+            Gets the message that explains the obsolescence.
+            </summary>
+        </member>
+        <member name="P:System.Runtime.Versioning.ObsoletedOSPlatformAttribute.Url">
+            <summary>
+            Gets or sets the URL that provides more information about the obsolescence.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.Versioning.SupportedOSPlatformGuardAttribute">
+             <summary>
+             Annotates a custom guard field, property or method with a supported platform name and optional version.
+             Multiple attributes can be applied to indicate guard for multiple supported platforms.
+             </summary>
+             <remarks>
+             Callers can apply a <see cref="T:System.Runtime.Versioning.SupportedOSPlatformGuardAttribute" /> to a field, property or method
+             and use that field, property or method in a conditional or assert statements in order to safely call platform specific APIs.
+            
+             The type of the field or property should be boolean, the method return type should be boolean in order to be used as platform guard.
+             </remarks>
+        </member>
+        <member name="T:System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute">
+             <summary>
+             Annotates the custom guard field, property or method with an unsupported platform name and optional version.
+             Multiple attributes can be applied to indicate guard for multiple unsupported platforms.
+             </summary>
+             <remarks>
+             Callers can apply a <see cref="T:System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute" /> to a field, property or method
+             and use that  field, property or method in a conditional or assert statements as a guard to safely call APIs unsupported on those platforms.
+            
+             The type of the field or property should be boolean, the method return type should be boolean in order to be used as platform guard.
+             </remarks>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.AllowNullAttribute">
+            <summary>Specifies that null is allowed as an input even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DisallowNullAttribute">
+            <summary>Specifies that null is disallowed as an input even if the corresponding type allows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullAttribute">
+            <summary>Specifies that an output may be null even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullAttribute">
+            <summary>Specifies that an output will not be null even if the corresponding type allows it. Specifies that an input argument was not null when the call returns.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute">
+            <summary>Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue"/>, the parameter may be null even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified return value condition.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter may be null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute">
+            <summary>Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue"/>, the parameter will not be null even if the corresponding type allows it.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified return value condition.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter will not be null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute">
+            <summary>Specifies that the output will be non-null if the named parameter is non-null.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.#ctor(System.String)">
+            <summary>Initializes the attribute with the associated parameter name.</summary>
+            <param name="parameterName">
+            The associated parameter name.  The output will be non-null if the argument to the parameter specified is non-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.ParameterName">
+            <summary>Gets the associated parameter name.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute">
+            <summary>Applied to a method that will never return under any circumstance.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute">
+            <summary>Specifies that the method will not return if the associated Boolean parameter is passed the specified value.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified parameter value.</summary>
+            <param name="parameterValue">
+            The condition parameter value. Code after the method will be considered unreachable by diagnostics if the argument to
+            the associated parameter matches this value.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.ParameterValue">
+            <summary>Gets the condition parameter value.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute">
+            <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String)">
+            <summary>Initializes the attribute with a field or property member.</summary>
+            <param name="member">
+            The field or property member that is promised to be not-null.
+            </param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String[])">
+            <summary>Initializes the attribute with the list of field and property members.</summary>
+            <param name="members">
+            The list of field and property members that are promised to be not-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.Members">
+            <summary>Gets field or property member names.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute">
+            <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values when returning with the specified return value condition.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.#ctor(System.Boolean,System.String)">
+            <summary>Initializes the attribute with the specified return value condition and a field or property member.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated field or property member will not be null.
+            </param>
+            <param name="member">
+            The field or property member that is promised to be not-null.
+            </param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.#ctor(System.Boolean,System.String[])">
+            <summary>Initializes the attribute with the specified return value condition and list of field and property members.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated field and property members will not be null.
+            </param>
+            <param name="members">
+            The list of field and property members that are promised to be not-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.Members">
+            <summary>Gets field or property member names.</summary>
+        </member>
+        <member name="T:System.ExceptionPolyfills">
+            <summary>Provides downlevel polyfills for static methods on Exception-derived types.</summary>
+        </member>
+    </members>
+</doc>

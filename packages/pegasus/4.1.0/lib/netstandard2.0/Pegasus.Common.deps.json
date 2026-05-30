@@ -1,0 +1,122 @@
+{
+  "runtimeTarget": {
+    "name": ".NETStandard,Version=v2.0/",
+    "signature": "ac2e17f0f9a9cddff72d19aeab4c6e901e6f752a"
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETStandard,Version=v2.0": {},
+    ".NETStandard,Version=v2.0/": {
+      "Pegasus.Common/4.1.0": {
+        "dependencies": {
+          "FixMe": "1.0.0",
+          "GitVersionTask": "4.0.0-beta0012",
+          "Microsoft.CodeAnalysis.FxCopAnalyzers": "2.6.0",
+          "NETStandard.Library": "2.0.3",
+          "StyleCop.Analyzers": "1.1.0-beta006"
+        },
+        "runtime": {
+          "Pegasus.Common.dll": {}
+        }
+      },
+      "FixMe/1.0.0": {},
+      "GitVersionTask/4.0.0-beta0012": {},
+      "Microsoft.CodeAnalysis.FxCopAnalyzers/2.6.0": {
+        "dependencies": {
+          "Microsoft.CodeQuality.Analyzers": "2.6.0",
+          "Microsoft.NetCore.Analyzers": "2.6.0",
+          "Microsoft.NetFramework.Analyzers": "2.6.0",
+          "Text.Analyzers": "2.6.0"
+        }
+      },
+      "Microsoft.CodeQuality.Analyzers/2.6.0": {},
+      "Microsoft.NetCore.Analyzers/2.6.0": {},
+      "Microsoft.NETCore.Platforms/1.1.0": {},
+      "Microsoft.NetFramework.Analyzers/2.6.0": {},
+      "NETStandard.Library/2.0.3": {
+        "dependencies": {
+          "Microsoft.NETCore.Platforms": "1.1.0"
+        }
+      },
+      "StyleCop.Analyzers/1.1.0-beta006": {},
+      "Text.Analyzers/2.6.0": {}
+    }
+  },
+  "libraries": {
+    "Pegasus.Common/4.1.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "FixMe/1.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-XQqjPUmevyYz0EPIVnOaHLfyb/GaY+o0UOt+Gy0KF44ICjyj4LpL9CY+Yuw9739KNMfEF6eq+AdF5snwmvYX7Q==",
+      "path": "fixme/1.0.0",
+      "hashPath": "fixme.1.0.0.nupkg.sha512"
+    },
+    "GitVersionTask/4.0.0-beta0012": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-Tb3WBYoDTuYrSMisgvPev2OJPESdRdm9n3Oxxsie2ebgqCRkqdzks+aS5UkxOemt+gEnjG5D47237J7yqn/90g==",
+      "path": "gitversiontask/4.0.0-beta0012",
+      "hashPath": "gitversiontask.4.0.0-beta0012.nupkg.sha512"
+    },
+    "Microsoft.CodeAnalysis.FxCopAnalyzers/2.6.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-M2EcQ4JFC8fzRTP3Yqfxi6fUhAp7DrD1QW+Sij9baQag38oB4wDEHNgF1YxWoV68ahmkxyNDoX9RAb9EF+3Ofg==",
+      "path": "microsoft.codeanalysis.fxcopanalyzers/2.6.0",
+      "hashPath": "microsoft.codeanalysis.fxcopanalyzers.2.6.0.nupkg.sha512"
+    },
+    "Microsoft.CodeQuality.Analyzers/2.6.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-lQ5niPpqA0BpWkIdLRS65oIMHy2PZWpydQU0kwZthQbPBI12W07dTfHiI6P7KTPjt43AmigroehoHaF1ZR7hgw==",
+      "path": "microsoft.codequality.analyzers/2.6.0",
+      "hashPath": "microsoft.codequality.analyzers.2.6.0.nupkg.sha512"
+    },
+    "Microsoft.NetCore.Analyzers/2.6.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-tFPHfaOIAqHCa62QkxzZMHJiive4XyKe+M3fDw351xr6xqvMYW/2FKNPUj7P2x+SLX1mhMNCuTQvUGInh9an+g==",
+      "path": "microsoft.netcore.analyzers/2.6.0",
+      "hashPath": "microsoft.netcore.analyzers.2.6.0.nupkg.sha512"
+    },
+    "Microsoft.NETCore.Platforms/1.1.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-d15KS6WIdb5TzAEQiNM7KxB5TYb7cgiRk/767t83xYicHpHoqekPHXLWOc6gyh/FDF77dj4oR1/qg2tnPRfM1g==",
+      "path": "microsoft.netcore.platforms/1.1.0",
+      "hashPath": "microsoft.netcore.platforms.1.1.0.nupkg.sha512"
+    },
+    "Microsoft.NetFramework.Analyzers/2.6.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-L7l7ld75NZRhqekmNvWzDH4piekRyWL2wXr3vIMZ5S/Iukeka1lxRuv87rBzjyl91k0BU+ggsxrxegOxtltG0A==",
+      "path": "microsoft.netframework.analyzers/2.6.0",
+      "hashPath": "microsoft.netframework.analyzers.2.6.0.nupkg.sha512"
+    },
+    "NETStandard.Library/2.0.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-st47PosZSHrjECdjeIzZQbzivYBJFv6P2nv4cj2ypdI204DO+vZ7l5raGMiX4eXMJ53RfOIg+/s4DHVZ54Nu2A==",
+      "path": "netstandard.library/2.0.3",
+      "hashPath": "netstandard.library.2.0.3.nupkg.sha512"
+    },
+    "StyleCop.Analyzers/1.1.0-beta006": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-IJBeSIyInmBVeQk+vIjArZfE51oldfcfxqJuqTPYZC7uwX5xKroqaehXx0p8RVYEm+uzowjv4C1DPjgmFyDztA==",
+      "path": "stylecop.analyzers/1.1.0-beta006",
+      "hashPath": "stylecop.analyzers.1.1.0-beta006.nupkg.sha512"
+    },
+    "Text.Analyzers/2.6.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-SOrzKmrcUSBbx7i/phTy5S7Tws3CPAmBNGt1LK+OVXJn9vpaxjllERqPxe6jsjsNJND+1gat0kW2rALydX1MsA==",
+      "path": "text.analyzers/2.6.0",
+      "hashPath": "text.analyzers.2.6.0.nupkg.sha512"
+    }
+  }
+}

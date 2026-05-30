@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <AvailableItemName Include="PegGrammar" />
+  </ItemGroup>
+  <PropertyGroup Condition=" '$(MSBuildRuntimeType)' == 'Core' ">
+    <PegasusAssemblyPath>$(MSBuildThisFileDirectory)netcoreapp2.0\Pegasus.dll</PegasusAssemblyPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(MSBuildRuntimeType)' != 'Core' ">
+    <PegasusAssemblyPath>$(MSBuildThisFileDirectory)net45\Pegasus.exe</PegasusAssemblyPath>
+  </PropertyGroup>
+  <UsingTask AssemblyFile="$(PegasusAssemblyPath)" TaskName="CompilePegGrammar" />
+
+  <Target Name="CompilePegGrammars" DependsOnTargets="CoreCompilePegGrammars" BeforeTargets="Compile;CoreCompile;Build;CoreBuild" Condition=" '@(PegGrammar)' != '' ">
+    <ItemGroup>
+      <Compile Include="%(PegGrammar.OutputPath)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_UpdatePegGrammarsMetatdata">
+    <ItemGroup>
+      <PegGrammar Condition=" '%(PegGrammar.Link)' != '' And '%(PegGrammar.OutputPath)' == '' ">
+        <OutputPath>$(IntermediateOutputPath)$([System.Text.RegularExpressions.Regex]::Replace(%(PegGrammar.Link), '(?&lt;=^|\\|/)..(?=$|\\|/)', '__')).g.cs</OutputPath>
+      </PegGrammar>
+      <PegGrammar Condition=" '%(PegGrammar.Link)' == '' And '%(PegGrammar.OutputPath)' == '' ">
+        <OutputPath>$(IntermediateOutputPath)$([System.Text.RegularExpressions.Regex]::Replace(%(PegGrammar.Identity), '(?&lt;=^|\\|/)..(?=$|\\|/)', '__')).g.cs</OutputPath>
+      </PegGrammar>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="CleanPegGrammars" DependsOnTargets="_UpdatePegGrammarsMetatdata" BeforeTargets="Clean;CoreClean">
+    <Delete Files="@(PegGrammar -> '%(OutputPath)')" ContinueOnError="true" />
+  </Target>
+
+  <Target Name="CoreCompilePegGrammars" DependsOnTargets="_UpdatePegGrammarsMetatdata" Inputs="$(MSBuildThisFileFullPath);$(MSBuildProjectFile);@(PegGrammar)" Outputs="@(PegGrammar -> '%(OutputPath)')">
+    <CompilePegGrammar InputFiles="@(PegGrammar -> '%(FullPath)')" OutputFiles="@(PegGrammar -> '%(OutputPath)')" />
+    <Message Text="%(PegGrammar.FullPath) -> %(PegGrammar.OutputPath)" />
+  </Target>
+</Project>

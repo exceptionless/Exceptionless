@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Foundatio.Redis</id>
+    <version>13.0.1</version>
+    <authors>FoundatioFx</authors>
+    <license type="expression">Apache-2.0</license>
+    <licenseUrl>https://licenses.nuget.org/Apache-2.0</licenseUrl>
+    <icon>foundatio-icon.png</icon>
+    <readme>README.md</readme>
+    <projectUrl>https://github.com/FoundatioFx/Foundatio.Redis</projectUrl>
+    <description>Pluggable foundation blocks for building distributed apps.</description>
+    <releaseNotes>https://github.com/FoundatioFx/Foundatio.Redis/releases</releaseNotes>
+    <copyright>Copyright © 2026 Foundatio.  All rights reserved.</copyright>
+    <tags>Queue Messaging Message Bus ServiceBus Locking Lock Distributed File Storage Blob Jobs Metrics Stats Azure Redis StatsD Amazon AWS S3 broker Logging Log</tags>
+    <repository type="git" url="https://github.com/FoundatioFx/Foundatio.Redis" commit="ae0b86bba973e012422c9fe9a1694cc9a543cff1" />
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="Foundatio" version="13.0.1" exclude="Build,Analyzers" />
+        <dependency id="StackExchange.Redis" version="2.12.14" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net10.0">
+        <dependency id="Foundatio" version="13.0.1" exclude="Build,Analyzers" />
+        <dependency id="StackExchange.Redis" version="2.12.14" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

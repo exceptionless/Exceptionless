@@ -1,0 +1,2736 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>GitHubActionsTestLogger</name>
+    </assembly>
+    <members>
+        <member name="T:PowerKit.Cell`1">
+            <summary>
+            Container for a value that may or may not be set.
+            Essentially <see cref="T:System.Nullable`1" />, but for cases where null is also a valid value.
+            </summary>
+        </member>
+        <member name="P:PowerKit.Cell`1.IsEmpty">
+            <summary>
+            Gets a value indicating whether the cell has no value stored.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Cell`1.Store(`0)">
+            <summary>
+            Stores the specified value in the cell.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Cell`1.Clear">
+            <summary>
+            Clears the value stored in the cell, returning it to an unset state.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Cell`1.TryOpen(`0@)">
+            <summary>
+            Tries to retrieve the value stored in the cell.
+            Returns <see langword="true" /> if a value has been stored, <see langword="false" /> otherwise.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Cell`1.OpenOrDefault(`0)">
+            <summary>
+            Retrieves the value stored in the cell, or <paramref name="defaultValue" /> if no value has been stored.
+            </summary>
+        </member>
+        <member name="T:PowerKit.ClientDelegatingHandler">
+            <summary>
+            Like <see cref="T:System.Net.Http.DelegatingHandler" />, but wraps an <see cref="T:System.Net.Http.HttpClient" /> instead of an
+            <see cref="T:System.Net.Http.HttpMessageHandler" />. Used to extend an externally provided <see cref="T:System.Net.Http.HttpClient" />
+            with additional behavior.
+            </summary>
+        </member>
+        <member name="M:PowerKit.ClientDelegatingHandler.#ctor(System.Net.Http.HttpClient,System.Boolean)">
+            <summary>
+            Like <see cref="T:System.Net.Http.DelegatingHandler" />, but wraps an <see cref="T:System.Net.Http.HttpClient" /> instead of an
+            <see cref="T:System.Net.Http.HttpMessageHandler" />. Used to extend an externally provided <see cref="T:System.Net.Http.HttpClient" />
+            with additional behavior.
+            </summary>
+        </member>
+        <member name="T:PowerKit.DelegateProgress`1">
+            <summary>
+            Provides a lightweight <see cref="T:System.IProgress`1" /> implementation that delegates
+            progress reporting to an action.
+            </summary>
+        </member>
+        <member name="M:PowerKit.DelegateProgress`1.#ctor(System.Action{`0})">
+            <summary>
+            Provides a lightweight <see cref="T:System.IProgress`1" /> implementation that delegates
+            progress reporting to an action.
+            </summary>
+        </member>
+        <member name="M:PowerKit.DelegateProgress`1.Report(`0)">
+            <inheritdoc />
+        </member>
+        <member name="T:PowerKit.Disposable">
+            <summary>
+            Provides utility methods for creating and composing <see cref="T:System.IDisposable" /> instances.
+            </summary>
+        </member>
+        <member name="P:PowerKit.Disposable.Null">
+            <summary>
+            Gets a disposable that performs no action when disposed.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Disposable.Create(System.Action)">
+            <summary>
+            Creates a disposable that invokes the specified action when disposed.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Disposable.Merge(System.Collections.Generic.IEnumerable{System.IDisposable})">
+            <summary>
+            Creates a disposable that disposes all specified disposables when disposed,
+            aggregating any exceptions thrown during disposal.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.AggregateExceptionExtensions.TryGetSingle(System.AggregateException)">
+            <inheritdoc cref="M:PowerKit.Extensions.AggregateExceptionExtensions.&lt;G&gt;$751EE2A74A58AE72A2FA59B382AD6B09.TryGetSingle"/>
+        </member>
+        <member name="M:PowerKit.Extensions.AggregateExceptionExtensions.&lt;G&gt;$751EE2A74A58AE72A2FA59B382AD6B09.TryGetSingle">
+            <summary>
+            Returns the single inner exception if the aggregate contains exactly one after flattening;
+            otherwise, returns <see langword="null" />.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.AssemblyExtensions.ExtractManifestResource(System.Reflection.Assembly,System.String,System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.AssemblyExtensions.&lt;G&gt;$9EA1809196CC07098857FF38CF65557B.ExtractManifestResource(System.String,System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.AssemblyExtensions.ExtractManifestResourceAsync(System.Reflection.Assembly,System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.AssemblyExtensions.&lt;G&gt;$9EA1809196CC07098857FF38CF65557B.ExtractManifestResourceAsync(System.String,System.String,System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.AssemblyExtensions.GetManifestResourceString(System.Reflection.Assembly,System.String,System.Text.Encoding)">
+            <inheritdoc cref="M:PowerKit.Extensions.AssemblyExtensions.&lt;G&gt;$9EA1809196CC07098857FF38CF65557B.GetManifestResourceString(System.String,System.Text.Encoding)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.AssemblyExtensions.GetManifestResourceString(System.Reflection.Assembly,System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.AssemblyExtensions.&lt;G&gt;$9EA1809196CC07098857FF38CF65557B.GetManifestResourceString(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.AssemblyExtensions.GetManifestResourceStringAsync(System.Reflection.Assembly,System.String,System.Text.Encoding,System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.AssemblyExtensions.&lt;G&gt;$9EA1809196CC07098857FF38CF65557B.GetManifestResourceStringAsync(System.String,System.Text.Encoding,System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.AssemblyExtensions.GetManifestResourceStringAsync(System.Reflection.Assembly,System.String,System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.AssemblyExtensions.&lt;G&gt;$9EA1809196CC07098857FF38CF65557B.GetManifestResourceStringAsync(System.String,System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.AssemblyExtensions.TryGetVersionString(System.Reflection.Assembly)">
+            <inheritdoc cref="M:PowerKit.Extensions.AssemblyExtensions.&lt;G&gt;$9EA1809196CC07098857FF38CF65557B.TryGetVersionString"/>
+        </member>
+        <member name="M:PowerKit.Extensions.AssemblyExtensions.&lt;G&gt;$9EA1809196CC07098857FF38CF65557B.ExtractManifestResource(System.String,System.String)">
+            <summary>
+            Extracts the specified manifest resource to a file at the given path.
+            Throws <see cref="T:System.Resources.MissingManifestResourceException" /> if the resource is not found.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.AssemblyExtensions.&lt;G&gt;$9EA1809196CC07098857FF38CF65557B.ExtractManifestResourceAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Extracts the specified manifest resource to a file at the given path asynchronously.
+            Throws <see cref="T:System.Resources.MissingManifestResourceException" /> if the resource is not found.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.AssemblyExtensions.&lt;G&gt;$9EA1809196CC07098857FF38CF65557B.GetManifestResourceString(System.String,System.Text.Encoding)">
+            <summary>
+            Reads the specified manifest resource as a string using the specified encoding.
+            Throws <see cref="T:System.Resources.MissingManifestResourceException" /> if the resource is not found.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.AssemblyExtensions.&lt;G&gt;$9EA1809196CC07098857FF38CF65557B.GetManifestResourceString(System.String)">
+            <summary>
+            Reads the specified manifest resource as a UTF-8 string.
+            Throws <see cref="T:System.Resources.MissingManifestResourceException" /> if the resource is not found.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.AssemblyExtensions.&lt;G&gt;$9EA1809196CC07098857FF38CF65557B.GetManifestResourceStringAsync(System.String,System.Text.Encoding,System.Threading.CancellationToken)">
+            <summary>
+            Reads the specified manifest resource as a string using the specified encoding asynchronously.
+            Throws <see cref="T:System.Resources.MissingManifestResourceException" /> if the resource is not found.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.AssemblyExtensions.&lt;G&gt;$9EA1809196CC07098857FF38CF65557B.GetManifestResourceStringAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Reads the specified manifest resource as a UTF-8 string asynchronously.
+            Throws <see cref="T:System.Resources.MissingManifestResourceException" /> if the resource is not found.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.AssemblyExtensions.&lt;G&gt;$9EA1809196CC07098857FF38CF65557B.TryGetVersionString">
+            <summary>
+            Returns the informational version string of the assembly, falling back to the
+            assembly version if the <see cref="T:System.Reflection.AssemblyInformationalVersionAttribute" /> is not set.
+            Returns <see langword="null" /> if neither is available.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.AsyncDisposableExtensions.ToAsyncDisposable(System.IDisposable)">
+            <inheritdoc cref="M:PowerKit.Extensions.AsyncDisposableExtensions.&lt;G&gt;$08E97916DA4A7D897B8CBD4E8DD2445A.ToAsyncDisposable"/>
+        </member>
+        <member name="M:PowerKit.Extensions.AsyncDisposableExtensions.&lt;G&gt;$08E97916DA4A7D897B8CBD4E8DD2445A.ToAsyncDisposable">
+            <summary>
+            Wraps the disposable in an <see cref="T:System.IAsyncDisposable" /> adapter that calls
+            <see cref="M:System.IAsyncDisposable.DisposeAsync" /> if supported, or falls back to
+            <see cref="M:System.IDisposable.Dispose" />.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.AsyncEnumerableExtensions.SelectManyAsync``2(System.Collections.Generic.IAsyncEnumerable{``0},System.Func{``0,System.Collections.Generic.IEnumerable{``1}},System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.AsyncEnumerableExtensions.&lt;G&gt;$80073E1EF8BFBE3894A8F13DEEA08DF4`1.SelectManyAsync``1(System.Func{`0,System.Collections.Generic.IEnumerable{``0}},System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.AsyncEnumerableExtensions.SkipAsync``1(System.Collections.Generic.IAsyncEnumerable{``0},System.Int32,System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.AsyncEnumerableExtensions.&lt;G&gt;$80073E1EF8BFBE3894A8F13DEEA08DF4`1.SkipAsync(System.Int32,System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.AsyncEnumerableExtensions.TakeAsync``1(System.Collections.Generic.IAsyncEnumerable{``0},System.Int32,System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.AsyncEnumerableExtensions.&lt;G&gt;$80073E1EF8BFBE3894A8F13DEEA08DF4`1.TakeAsync(System.Int32,System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.AsyncEnumerableExtensions.ToListAsync``1(System.Collections.Generic.IAsyncEnumerable{``0},System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.AsyncEnumerableExtensions.&lt;G&gt;$80073E1EF8BFBE3894A8F13DEEA08DF4`1.ToListAsync(System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.AsyncEnumerableExtensions.GetAwaiter``1(System.Collections.Generic.IAsyncEnumerable{``0})">
+            <inheritdoc cref="M:PowerKit.Extensions.AsyncEnumerableExtensions.&lt;G&gt;$80073E1EF8BFBE3894A8F13DEEA08DF4`1.GetAwaiter"/>
+        </member>
+        <member name="M:PowerKit.Extensions.AsyncEnumerableExtensions.OfTypeAsync``1(System.Collections.Generic.IAsyncEnumerable{System.Object},System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.AsyncEnumerableExtensions.&lt;G&gt;$BC4B1F70E0449C4CB436391743417890.OfTypeAsync``1(System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.AsyncEnumerableExtensions.&lt;G&gt;$80073E1EF8BFBE3894A8F13DEEA08DF4`1.SelectManyAsync``1(System.Func{`0,System.Collections.Generic.IEnumerable{``0}},System.Threading.CancellationToken)">
+            <summary>
+            Projects each element of the async sequence to an <see cref="T:System.Collections.Generic.IEnumerable`1" />
+            and flattens the resulting sequences into one async sequence.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.AsyncEnumerableExtensions.&lt;G&gt;$80073E1EF8BFBE3894A8F13DEEA08DF4`1.SkipAsync(System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Bypasses a specified number of elements from the start of the async sequence
+            and returns the remaining elements.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.AsyncEnumerableExtensions.&lt;G&gt;$80073E1EF8BFBE3894A8F13DEEA08DF4`1.TakeAsync(System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Returns a specified number of elements from the start of the async sequence.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.AsyncEnumerableExtensions.&lt;G&gt;$80073E1EF8BFBE3894A8F13DEEA08DF4`1.ToListAsync(System.Threading.CancellationToken)">
+            <summary>
+            Materializes the async sequence into a <see cref="T:System.Collections.Generic.List`1" />.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.AsyncEnumerableExtensions.&lt;G&gt;$80073E1EF8BFBE3894A8F13DEEA08DF4`1.GetAwaiter">
+            <summary>
+            Enables directly awaiting the async sequence, materializing it into a <see cref="T:System.Collections.Generic.List`1" />.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.AsyncEnumerableExtensions.&lt;G&gt;$BC4B1F70E0449C4CB436391743417890.OfTypeAsync``1(System.Threading.CancellationToken)">
+            <summary>
+            Filters elements of the async sequence to only those of the specified type.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.BinaryReaderExtensions.get_IsEndOfStream(System.IO.BinaryReader)">
+            <inheritdoc cref="P:PowerKit.Extensions.BinaryReaderExtensions.&lt;G&gt;$695D470279A3D0B0E149C7DC966C880D.IsEndOfStream"/>
+        </member>
+        <member name="M:PowerKit.Extensions.BinaryReaderExtensions.ReadNullTerminatedString(System.IO.BinaryReader)">
+            <inheritdoc cref="M:PowerKit.Extensions.BinaryReaderExtensions.&lt;G&gt;$695D470279A3D0B0E149C7DC966C880D.ReadNullTerminatedString"/>
+        </member>
+        <member name="M:PowerKit.Extensions.BinaryReaderExtensions.SkipPadding(System.IO.BinaryReader,System.Int32)">
+            <inheritdoc cref="M:PowerKit.Extensions.BinaryReaderExtensions.&lt;G&gt;$695D470279A3D0B0E149C7DC966C880D.SkipPadding(System.Int32)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.BinaryReaderExtensions.SkipZeroes(System.IO.BinaryReader,System.Nullable{System.Int64})">
+            <inheritdoc cref="M:PowerKit.Extensions.BinaryReaderExtensions.&lt;G&gt;$695D470279A3D0B0E149C7DC966C880D.SkipZeroes(System.Nullable{System.Int64})"/>
+        </member>
+        <member name="P:PowerKit.Extensions.BinaryReaderExtensions.&lt;G&gt;$695D470279A3D0B0E149C7DC966C880D.IsEndOfStream">
+            <summary>
+            Gets a value indicating whether the reader has reached the end of the stream.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.BinaryReaderExtensions.&lt;G&gt;$695D470279A3D0B0E149C7DC966C880D.ReadNullTerminatedString">
+            <summary>
+            Reads a null-terminated string from the binary reader.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.BinaryReaderExtensions.&lt;G&gt;$695D470279A3D0B0E149C7DC966C880D.SkipPadding(System.Int32)">
+            <summary>
+            Skips bytes until the current position is aligned to the specified byte boundary.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.BinaryReaderExtensions.&lt;G&gt;$695D470279A3D0B0E149C7DC966C880D.SkipZeroes(System.Nullable{System.Int64})">
+            <summary>
+            Skips zero bytes in the stream, up to the specified maximum length.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.BinaryWriterExtensions.SkipPadding(System.IO.BinaryWriter,System.Int32)">
+            <inheritdoc cref="M:PowerKit.Extensions.BinaryWriterExtensions.&lt;G&gt;$79D6CA8AD6F016D369A7B29944A23805.SkipPadding(System.Int32)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.BinaryWriterExtensions.WriteNullTerminatedString(System.IO.BinaryWriter,System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.BinaryWriterExtensions.&lt;G&gt;$79D6CA8AD6F016D369A7B29944A23805.WriteNullTerminatedString(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.BinaryWriterExtensions.&lt;G&gt;$79D6CA8AD6F016D369A7B29944A23805.SkipPadding(System.Int32)">
+            <summary>
+            Writes zero bytes until the current position is aligned to the specified byte boundary.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.BinaryWriterExtensions.&lt;G&gt;$79D6CA8AD6F016D369A7B29944A23805.WriteNullTerminatedString(System.String)">
+            <summary>
+            Writes a null-terminated string to the binary writer.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.BoolExtensions.ParseOrNull(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.BoolExtensions.&lt;G&gt;$A73C5770D9DE823384DE9FB3AFAAD000.ParseOrNull(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.BoolExtensions.ParseOrDefault(System.String,System.Boolean)">
+            <inheritdoc cref="M:PowerKit.Extensions.BoolExtensions.&lt;G&gt;$A73C5770D9DE823384DE9FB3AFAAD000.ParseOrDefault(System.String,System.Boolean)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.BoolExtensions.&lt;G&gt;$A73C5770D9DE823384DE9FB3AFAAD000.ParseOrNull(System.String)">
+            <summary>
+            Parses the string as a <see cref="T:System.Boolean" />, returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.BoolExtensions.&lt;G&gt;$A73C5770D9DE823384DE9FB3AFAAD000.ParseOrDefault(System.String,System.Boolean)">
+            <summary>
+            Parses the string as a <see cref="T:System.Boolean" />, returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ByteExtensions.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)">
+            <inheritdoc cref="M:PowerKit.Extensions.ByteExtensions.&lt;G&gt;$984646E5C90D4BE007AAE446F159AC52.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ByteExtensions.ParseOrNull(System.String,System.IFormatProvider)">
+            <inheritdoc cref="M:PowerKit.Extensions.ByteExtensions.&lt;G&gt;$984646E5C90D4BE007AAE446F159AC52.ParseOrNull(System.String,System.IFormatProvider)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ByteExtensions.ParseOrNull(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.ByteExtensions.&lt;G&gt;$984646E5C90D4BE007AAE446F159AC52.ParseOrNull(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ByteExtensions.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.Byte)">
+            <inheritdoc cref="M:PowerKit.Extensions.ByteExtensions.&lt;G&gt;$984646E5C90D4BE007AAE446F159AC52.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.Byte)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ByteExtensions.ParseOrDefault(System.String,System.IFormatProvider,System.Byte)">
+            <inheritdoc cref="M:PowerKit.Extensions.ByteExtensions.&lt;G&gt;$984646E5C90D4BE007AAE446F159AC52.ParseOrDefault(System.String,System.IFormatProvider,System.Byte)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ByteExtensions.ParseOrDefault(System.String,System.Byte)">
+            <inheritdoc cref="M:PowerKit.Extensions.ByteExtensions.&lt;G&gt;$984646E5C90D4BE007AAE446F159AC52.ParseOrDefault(System.String,System.Byte)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ByteExtensions.&lt;G&gt;$984646E5C90D4BE007AAE446F159AC52.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)">
+            <summary>
+            Parses the string as a <see cref="T:System.Byte" /> using the specified styles and format provider,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ByteExtensions.&lt;G&gt;$984646E5C90D4BE007AAE446F159AC52.ParseOrNull(System.String,System.IFormatProvider)">
+            <summary>
+            Parses the string as a <see cref="T:System.Byte" /> using the specified format provider,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ByteExtensions.&lt;G&gt;$984646E5C90D4BE007AAE446F159AC52.ParseOrNull(System.String)">
+            <summary>
+            Parses the string as a <see cref="T:System.Byte" />, returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ByteExtensions.&lt;G&gt;$984646E5C90D4BE007AAE446F159AC52.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.Byte)">
+            <summary>
+            Parses the string as a <see cref="T:System.Byte" /> using the specified styles and format provider,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ByteExtensions.&lt;G&gt;$984646E5C90D4BE007AAE446F159AC52.ParseOrDefault(System.String,System.IFormatProvider,System.Byte)">
+            <summary>
+            Parses the string as a <see cref="T:System.Byte" /> using the specified format provider,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ByteExtensions.&lt;G&gt;$984646E5C90D4BE007AAE446F159AC52.ParseOrDefault(System.String,System.Byte)">
+            <summary>
+            Parses the string as a <see cref="T:System.Byte" />, returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.CharExtensions.Repeat(System.Char,System.Int32)">
+            <inheritdoc cref="M:PowerKit.Extensions.CharExtensions.&lt;G&gt;$617F055EF883302AD66AFAF0ACA83DC6.Repeat(System.Int32)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.CharExtensions.&lt;G&gt;$617F055EF883302AD66AFAF0ACA83DC6.Repeat(System.Int32)">
+            <summary>
+            Returns a string that contains the character repeated the specified number of times.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.CollectionExtensions.AddRange``1(System.Collections.Generic.ICollection{``0},System.Collections.Generic.IEnumerable{``0})">
+            <inheritdoc cref="M:PowerKit.Extensions.CollectionExtensions.&lt;G&gt;$847CB318C385471B1F4E7BD0A197DBCA`1.AddRange(System.Collections.Generic.IEnumerable{`0})"/>
+        </member>
+        <member name="M:PowerKit.Extensions.CollectionExtensions.RemoveAll``1(System.Collections.Generic.ICollection{``0},System.Func{``0,System.Boolean})">
+            <inheritdoc cref="M:PowerKit.Extensions.CollectionExtensions.&lt;G&gt;$847CB318C385471B1F4E7BD0A197DBCA`1.RemoveAll(System.Func{`0,System.Boolean})"/>
+        </member>
+        <member name="M:PowerKit.Extensions.CollectionExtensions.RemoveRange``1(System.Collections.Generic.ICollection{``0},System.Collections.Generic.IEnumerable{``0})">
+            <inheritdoc cref="M:PowerKit.Extensions.CollectionExtensions.&lt;G&gt;$847CB318C385471B1F4E7BD0A197DBCA`1.RemoveRange(System.Collections.Generic.IEnumerable{`0})"/>
+        </member>
+        <member name="M:PowerKit.Extensions.CollectionExtensions.&lt;G&gt;$847CB318C385471B1F4E7BD0A197DBCA`1.AddRange(System.Collections.Generic.IEnumerable{`0})">
+            <summary>
+            Adds all elements from the specified sequence to the collection.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.CollectionExtensions.&lt;G&gt;$847CB318C385471B1F4E7BD0A197DBCA`1.RemoveAll(System.Func{`0,System.Boolean})">
+            <summary>
+            Removes all elements from the collection that match the specified predicate.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.CollectionExtensions.&lt;G&gt;$847CB318C385471B1F4E7BD0A197DBCA`1.RemoveRange(System.Collections.Generic.IEnumerable{`0})">
+            <summary>
+            Removes all elements in the specified sequence from the collection.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ColorExtensions.ToHexString(System.Drawing.Color)">
+            <inheritdoc cref="M:PowerKit.Extensions.ColorExtensions.&lt;G&gt;$B73B7345C6FAC66E9EBD3203731F9C85.ToHexString"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ColorExtensions.ToRgb(System.Drawing.Color)">
+            <inheritdoc cref="M:PowerKit.Extensions.ColorExtensions.&lt;G&gt;$B73B7345C6FAC66E9EBD3203731F9C85.ToRgb"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ColorExtensions.WithAlpha(System.Drawing.Color,System.Int32)">
+            <inheritdoc cref="M:PowerKit.Extensions.ColorExtensions.&lt;G&gt;$B73B7345C6FAC66E9EBD3203731F9C85.WithAlpha(System.Int32)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ColorExtensions.WithFullAlpha(System.Drawing.Color)">
+            <inheritdoc cref="M:PowerKit.Extensions.ColorExtensions.&lt;G&gt;$B73B7345C6FAC66E9EBD3203731F9C85.WithFullAlpha"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ColorExtensions.&lt;G&gt;$B73B7345C6FAC66E9EBD3203731F9C85.ToHexString">
+            <summary>
+            Returns the hexadecimal representation of the color (e.g., <c>#RRGGBB</c>).
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ColorExtensions.&lt;G&gt;$B73B7345C6FAC66E9EBD3203731F9C85.ToRgb">
+            <summary>
+            Returns the RGB value of the color as a 32-bit integer (without the alpha channel).
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ColorExtensions.&lt;G&gt;$B73B7345C6FAC66E9EBD3203731F9C85.WithAlpha(System.Int32)">
+            <summary>
+            Returns a new <see cref="T:System.Drawing.Color" /> with the specified alpha value.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ColorExtensions.&lt;G&gt;$B73B7345C6FAC66E9EBD3203731F9C85.WithFullAlpha">
+            <summary>
+            Returns a new <see cref="T:System.Drawing.Color" /> with its alpha component set to 255 (fully opaque).
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.CommandExtensions.ExecuteIfCan(System.Windows.Input.ICommand,System.Object)">
+            <inheritdoc cref="M:PowerKit.Extensions.CommandExtensions.&lt;G&gt;$31680557AE7AB31D77C2A800447DA5C7.ExecuteIfCan(System.Object)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.CommandExtensions.&lt;G&gt;$31680557AE7AB31D77C2A800447DA5C7.ExecuteIfCan(System.Object)">
+            <summary>
+            Executes the command with the specified parameter if it can be executed.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ComparableExtensions.Clamp``1(``0,``0,``0)">
+            <inheritdoc cref="M:PowerKit.Extensions.ComparableExtensions.&lt;G&gt;$E725505F0A27D63E453277C0C551DC0B`1.Clamp(`0,`0)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ComparableExtensions.Max``1(``0,``0)">
+            <inheritdoc cref="M:PowerKit.Extensions.ComparableExtensions.&lt;G&gt;$E725505F0A27D63E453277C0C551DC0B`1.Max(`0)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ComparableExtensions.Min``1(``0,``0)">
+            <inheritdoc cref="M:PowerKit.Extensions.ComparableExtensions.&lt;G&gt;$E725505F0A27D63E453277C0C551DC0B`1.Min(`0)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ComparableExtensions.&lt;G&gt;$E725505F0A27D63E453277C0C551DC0B`1.Clamp(`0,`0)">
+            <summary>
+            Clamps the value to the specified range.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ComparableExtensions.&lt;G&gt;$E725505F0A27D63E453277C0C551DC0B`1.Max(`0)">
+            <summary>
+            Returns the larger of the current value and the specified value.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ComparableExtensions.&lt;G&gt;$E725505F0A27D63E453277C0C551DC0B`1.Min(`0)">
+            <summary>
+            Returns the smaller of the current value and the specified value.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ConsoleExtensions.WithBackgroundColor(System.ConsoleColor)">
+            <inheritdoc cref="M:PowerKit.Extensions.ConsoleExtensions.&lt;G&gt;$BAD8AF7B4AB3B102ABB1C587EA783F40.WithBackgroundColor(System.ConsoleColor)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ConsoleExtensions.WithForegroundColor(System.ConsoleColor)">
+            <inheritdoc cref="M:PowerKit.Extensions.ConsoleExtensions.&lt;G&gt;$BAD8AF7B4AB3B102ABB1C587EA783F40.WithForegroundColor(System.ConsoleColor)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ConsoleExtensions.WithColors(System.ConsoleColor,System.ConsoleColor)">
+            <inheritdoc cref="M:PowerKit.Extensions.ConsoleExtensions.&lt;G&gt;$BAD8AF7B4AB3B102ABB1C587EA783F40.WithColors(System.ConsoleColor,System.ConsoleColor)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ConsoleExtensions.&lt;G&gt;$BAD8AF7B4AB3B102ABB1C587EA783F40.WithBackgroundColor(System.ConsoleColor)">
+            <summary>
+            Temporarily changes the console background color and returns a handle that restores the original color when disposed.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ConsoleExtensions.&lt;G&gt;$BAD8AF7B4AB3B102ABB1C587EA783F40.WithForegroundColor(System.ConsoleColor)">
+            <summary>
+            Temporarily changes the console foreground color and returns a handle that restores the original color when disposed.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ConsoleExtensions.&lt;G&gt;$BAD8AF7B4AB3B102ABB1C587EA783F40.WithColors(System.ConsoleColor,System.ConsoleColor)">
+            <summary>
+            Temporarily changes the console foreground and background colors and returns a handle that restores the original colors when disposed.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.CultureInfoExtensions.GetParents(System.Globalization.CultureInfo)">
+            <inheritdoc cref="M:PowerKit.Extensions.CultureInfoExtensions.&lt;G&gt;$DA053DDB068CB793EB1433FE8405FEC9.GetParents"/>
+        </member>
+        <member name="M:PowerKit.Extensions.CultureInfoExtensions.GetSelfAndParents(System.Globalization.CultureInfo)">
+            <inheritdoc cref="M:PowerKit.Extensions.CultureInfoExtensions.&lt;G&gt;$DA053DDB068CB793EB1433FE8405FEC9.GetSelfAndParents"/>
+        </member>
+        <member name="M:PowerKit.Extensions.CultureInfoExtensions.&lt;G&gt;$DA053DDB068CB793EB1433FE8405FEC9.GetParents">
+            <summary>
+            Enumerates the parent cultures of the current culture, from the immediate parent up to
+            <see cref="P:System.Globalization.CultureInfo.InvariantCulture" />.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.CultureInfoExtensions.&lt;G&gt;$DA053DDB068CB793EB1433FE8405FEC9.GetSelfAndParents">
+            <summary>
+            Enumerates the current culture and its parent cultures, from the current culture up to
+            <see cref="P:System.Globalization.CultureInfo.InvariantCulture" />.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DateTimeExtensions.ParseOrNull(System.String,System.IFormatProvider,System.Globalization.DateTimeStyles)">
+            <inheritdoc cref="M:PowerKit.Extensions.DateTimeExtensions.&lt;G&gt;$AC0E513418EF159D5C3E15BA59576B4F.ParseOrNull(System.String,System.IFormatProvider,System.Globalization.DateTimeStyles)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DateTimeExtensions.ParseOrNull(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.DateTimeExtensions.&lt;G&gt;$AC0E513418EF159D5C3E15BA59576B4F.ParseOrNull(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DateTimeExtensions.ParseOrDefault(System.String,System.IFormatProvider,System.Globalization.DateTimeStyles,System.DateTime)">
+            <inheritdoc cref="M:PowerKit.Extensions.DateTimeExtensions.&lt;G&gt;$AC0E513418EF159D5C3E15BA59576B4F.ParseOrDefault(System.String,System.IFormatProvider,System.Globalization.DateTimeStyles,System.DateTime)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DateTimeExtensions.ParseOrDefault(System.String,System.DateTime)">
+            <inheritdoc cref="M:PowerKit.Extensions.DateTimeExtensions.&lt;G&gt;$AC0E513418EF159D5C3E15BA59576B4F.ParseOrDefault(System.String,System.DateTime)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DateTimeExtensions.&lt;G&gt;$AC0E513418EF159D5C3E15BA59576B4F.ParseOrNull(System.String,System.IFormatProvider,System.Globalization.DateTimeStyles)">
+            <summary>
+            Parses the string as a <see cref="T:System.DateTime" /> using the specified format provider and styles,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DateTimeExtensions.&lt;G&gt;$AC0E513418EF159D5C3E15BA59576B4F.ParseOrNull(System.String)">
+            <summary>
+            Parses the string as a <see cref="T:System.DateTime" />, returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DateTimeExtensions.&lt;G&gt;$AC0E513418EF159D5C3E15BA59576B4F.ParseOrDefault(System.String,System.IFormatProvider,System.Globalization.DateTimeStyles,System.DateTime)">
+            <summary>
+            Parses the string as a <see cref="T:System.DateTime" /> using the specified format provider and styles,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DateTimeExtensions.&lt;G&gt;$AC0E513418EF159D5C3E15BA59576B4F.ParseOrDefault(System.String,System.DateTime)">
+            <summary>
+            Parses the string as a <see cref="T:System.DateTime" />, returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DateTimeOffsetExtensions.ParseOrNull(System.String,System.IFormatProvider,System.Globalization.DateTimeStyles)">
+            <inheritdoc cref="M:PowerKit.Extensions.DateTimeOffsetExtensions.&lt;G&gt;$F57D98B00617BA4856B9B5882EBBA37F.ParseOrNull(System.String,System.IFormatProvider,System.Globalization.DateTimeStyles)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DateTimeOffsetExtensions.ParseOrNull(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.DateTimeOffsetExtensions.&lt;G&gt;$F57D98B00617BA4856B9B5882EBBA37F.ParseOrNull(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DateTimeOffsetExtensions.ParseOrDefault(System.String,System.IFormatProvider,System.Globalization.DateTimeStyles,System.DateTimeOffset)">
+            <inheritdoc cref="M:PowerKit.Extensions.DateTimeOffsetExtensions.&lt;G&gt;$F57D98B00617BA4856B9B5882EBBA37F.ParseOrDefault(System.String,System.IFormatProvider,System.Globalization.DateTimeStyles,System.DateTimeOffset)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DateTimeOffsetExtensions.ParseOrDefault(System.String,System.DateTimeOffset)">
+            <inheritdoc cref="M:PowerKit.Extensions.DateTimeOffsetExtensions.&lt;G&gt;$F57D98B00617BA4856B9B5882EBBA37F.ParseOrDefault(System.String,System.DateTimeOffset)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DateTimeOffsetExtensions.&lt;G&gt;$F57D98B00617BA4856B9B5882EBBA37F.ParseOrNull(System.String,System.IFormatProvider,System.Globalization.DateTimeStyles)">
+            <summary>
+            Parses the string as a <see cref="T:System.DateTimeOffset" /> using the specified format provider and styles,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DateTimeOffsetExtensions.&lt;G&gt;$F57D98B00617BA4856B9B5882EBBA37F.ParseOrNull(System.String)">
+            <summary>
+            Parses the string as a <see cref="T:System.DateTimeOffset" />, returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DateTimeOffsetExtensions.&lt;G&gt;$F57D98B00617BA4856B9B5882EBBA37F.ParseOrDefault(System.String,System.IFormatProvider,System.Globalization.DateTimeStyles,System.DateTimeOffset)">
+            <summary>
+            Parses the string as a <see cref="T:System.DateTimeOffset" /> using the specified format provider and styles,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DateTimeOffsetExtensions.&lt;G&gt;$F57D98B00617BA4856B9B5882EBBA37F.ParseOrDefault(System.String,System.DateTimeOffset)">
+            <summary>
+            Parses the string as a <see cref="T:System.DateTimeOffset" />, returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DecimalExtensions.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)">
+            <inheritdoc cref="M:PowerKit.Extensions.DecimalExtensions.&lt;G&gt;$05DA939D6DF05BA58CCF6B6457ACB41B.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DecimalExtensions.ParseOrNull(System.String,System.IFormatProvider)">
+            <inheritdoc cref="M:PowerKit.Extensions.DecimalExtensions.&lt;G&gt;$05DA939D6DF05BA58CCF6B6457ACB41B.ParseOrNull(System.String,System.IFormatProvider)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DecimalExtensions.ParseOrNull(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.DecimalExtensions.&lt;G&gt;$05DA939D6DF05BA58CCF6B6457ACB41B.ParseOrNull(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DecimalExtensions.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.Decimal)">
+            <inheritdoc cref="M:PowerKit.Extensions.DecimalExtensions.&lt;G&gt;$05DA939D6DF05BA58CCF6B6457ACB41B.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.Decimal)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DecimalExtensions.ParseOrDefault(System.String,System.IFormatProvider,System.Decimal)">
+            <inheritdoc cref="M:PowerKit.Extensions.DecimalExtensions.&lt;G&gt;$05DA939D6DF05BA58CCF6B6457ACB41B.ParseOrDefault(System.String,System.IFormatProvider,System.Decimal)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DecimalExtensions.ParseOrDefault(System.String,System.Decimal)">
+            <inheritdoc cref="M:PowerKit.Extensions.DecimalExtensions.&lt;G&gt;$05DA939D6DF05BA58CCF6B6457ACB41B.ParseOrDefault(System.String,System.Decimal)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DecimalExtensions.&lt;G&gt;$05DA939D6DF05BA58CCF6B6457ACB41B.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)">
+            <summary>
+            Parses the string as a <see cref="T:System.Decimal" /> using the specified styles and format provider,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DecimalExtensions.&lt;G&gt;$05DA939D6DF05BA58CCF6B6457ACB41B.ParseOrNull(System.String,System.IFormatProvider)">
+            <summary>
+            Parses the string as a <see cref="T:System.Decimal" /> using the specified format provider,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DecimalExtensions.&lt;G&gt;$05DA939D6DF05BA58CCF6B6457ACB41B.ParseOrNull(System.String)">
+            <summary>
+            Parses the string as a <see cref="T:System.Decimal" />, returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DecimalExtensions.&lt;G&gt;$05DA939D6DF05BA58CCF6B6457ACB41B.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.Decimal)">
+            <summary>
+            Parses the string as a <see cref="T:System.Decimal" /> using the specified styles and format provider,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DecimalExtensions.&lt;G&gt;$05DA939D6DF05BA58CCF6B6457ACB41B.ParseOrDefault(System.String,System.IFormatProvider,System.Decimal)">
+            <summary>
+            Parses the string as a <see cref="T:System.Decimal" /> using the specified format provider,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DecimalExtensions.&lt;G&gt;$05DA939D6DF05BA58CCF6B6457ACB41B.ParseOrDefault(System.String,System.Decimal)">
+            <summary>
+            Parses the string as a <see cref="T:System.Decimal" />, returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DictionaryExtensions.GetValueOrNull``2(System.Collections.Generic.IDictionary{``0,``1},``0)">
+            <inheritdoc cref="M:PowerKit.Extensions.DictionaryExtensions.&lt;G&gt;$8E5A6821E6AC3D2F816794BA67181A9D`2.GetValueOrNull(`0)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DictionaryExtensions.ToDictionary``2(System.Collections.IDictionary,System.Collections.Generic.IEqualityComparer{``0})">
+            <inheritdoc cref="M:PowerKit.Extensions.DictionaryExtensions.&lt;G&gt;$BED25D4BF78D31D5FF7653E8DD3C2E8E.ToDictionary``2(System.Collections.Generic.IEqualityComparer{``0})"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DictionaryExtensions.ToDictionary``2(System.Collections.IDictionary)">
+            <inheritdoc cref="M:PowerKit.Extensions.DictionaryExtensions.&lt;G&gt;$BED25D4BF78D31D5FF7653E8DD3C2E8E.ToDictionary``2"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DictionaryExtensions.&lt;G&gt;$8E5A6821E6AC3D2F816794BA67181A9D`2.GetValueOrNull(`0)">
+            <summary>
+            Returns the value associated with the specified key, or <see langword="null" /> if the key is not found.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DictionaryExtensions.&lt;G&gt;$BED25D4BF78D31D5FF7653E8DD3C2E8E.ToDictionary``2(System.Collections.Generic.IEqualityComparer{``0})">
+            <summary>
+            Converts a non-generic dictionary to a typed <see cref="T:System.Collections.Generic.Dictionary`2"/> using the specified comparer.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DictionaryExtensions.&lt;G&gt;$BED25D4BF78D31D5FF7653E8DD3C2E8E.ToDictionary``2">
+            <summary>
+            Converts a non-generic dictionary to a typed <see cref="T:System.Collections.Generic.Dictionary`2"/> using the default comparer.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DirectoryExtensions.CheckWriteAccess(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.DirectoryExtensions.&lt;G&gt;$7308ABC8FED7616EC364504034A27D12.CheckWriteAccess(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DirectoryExtensions.Copy(System.String,System.String,System.Boolean)">
+            <inheritdoc cref="M:PowerKit.Extensions.DirectoryExtensions.&lt;G&gt;$7308ABC8FED7616EC364504034A27D12.Copy(System.String,System.String,System.Boolean)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DirectoryExtensions.CreateForFile(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.DirectoryExtensions.&lt;G&gt;$7308ABC8FED7616EC364504034A27D12.CreateForFile(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DirectoryExtensions.Reset(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.DirectoryExtensions.&lt;G&gt;$7308ABC8FED7616EC364504034A27D12.Reset(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DirectoryExtensions.TryDelete(System.String,System.Boolean)">
+            <inheritdoc cref="M:PowerKit.Extensions.DirectoryExtensions.&lt;G&gt;$7308ABC8FED7616EC364504034A27D12.TryDelete(System.String,System.Boolean)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DirectoryExtensions.&lt;G&gt;$7308ABC8FED7616EC364504034A27D12.CheckWriteAccess(System.String)">
+            <summary>
+            Checks if it's possible to write to the specified directory.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DirectoryExtensions.&lt;G&gt;$7308ABC8FED7616EC364504034A27D12.Copy(System.String,System.String,System.Boolean)">
+            <summary>
+            Recursively copies all files from <paramref name="sourcePath" /> to <paramref name="destinationPath" />.
+            Destination files are opened with exclusive locks before any data is written.
+            Concurrent readers may be blocked or fail with a sharing violation while a file is being updated,
+            and this method does not guarantee atomic old-or-new visibility to readers.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DirectoryExtensions.&lt;G&gt;$7308ABC8FED7616EC364504034A27D12.CreateForFile(System.String)">
+            <summary>
+            Creates the directory for the specified file path, including all intermediate directories.
+            Does nothing if the directory already exists or if the path has no directory component.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DirectoryExtensions.&lt;G&gt;$7308ABC8FED7616EC364504034A27D12.Reset(System.String)">
+            <summary>
+            Deletes the directory and all its contents, then recreates it as an empty directory.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DirectoryExtensions.&lt;G&gt;$7308ABC8FED7616EC364504034A27D12.TryDelete(System.String,System.Boolean)">
+            <summary>
+            Attempts to delete the directory at the specified path.
+            Returns <see langword="true" /> if the directory was successfully deleted, or <see langword="false" /> if an error occurred.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DoubleExtensions.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)">
+            <inheritdoc cref="M:PowerKit.Extensions.DoubleExtensions.&lt;G&gt;$4EDA8CBD8B61F6706755C541165134FD.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DoubleExtensions.ParseOrNull(System.String,System.IFormatProvider)">
+            <inheritdoc cref="M:PowerKit.Extensions.DoubleExtensions.&lt;G&gt;$4EDA8CBD8B61F6706755C541165134FD.ParseOrNull(System.String,System.IFormatProvider)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DoubleExtensions.ParseOrNull(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.DoubleExtensions.&lt;G&gt;$4EDA8CBD8B61F6706755C541165134FD.ParseOrNull(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DoubleExtensions.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.Double)">
+            <inheritdoc cref="M:PowerKit.Extensions.DoubleExtensions.&lt;G&gt;$4EDA8CBD8B61F6706755C541165134FD.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.Double)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DoubleExtensions.ParseOrDefault(System.String,System.IFormatProvider,System.Double)">
+            <inheritdoc cref="M:PowerKit.Extensions.DoubleExtensions.&lt;G&gt;$4EDA8CBD8B61F6706755C541165134FD.ParseOrDefault(System.String,System.IFormatProvider,System.Double)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DoubleExtensions.ParseOrDefault(System.String,System.Double)">
+            <inheritdoc cref="M:PowerKit.Extensions.DoubleExtensions.&lt;G&gt;$4EDA8CBD8B61F6706755C541165134FD.ParseOrDefault(System.String,System.Double)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DoubleExtensions.Wrap(System.Double,System.Double,System.Double)">
+            <inheritdoc cref="M:PowerKit.Extensions.DoubleExtensions.&lt;G&gt;$4EDA8CBD8B61F6706755C541165134FD.Wrap(System.Double,System.Double)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.DoubleExtensions.&lt;G&gt;$4EDA8CBD8B61F6706755C541165134FD.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)">
+            <summary>
+            Parses the string as a <see cref="T:System.Double" /> using the specified styles and format provider,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DoubleExtensions.&lt;G&gt;$4EDA8CBD8B61F6706755C541165134FD.ParseOrNull(System.String,System.IFormatProvider)">
+            <summary>
+            Parses the string as a <see cref="T:System.Double" /> using the specified format provider,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DoubleExtensions.&lt;G&gt;$4EDA8CBD8B61F6706755C541165134FD.ParseOrNull(System.String)">
+            <summary>
+            Parses the string as a <see cref="T:System.Double" />, returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DoubleExtensions.&lt;G&gt;$4EDA8CBD8B61F6706755C541165134FD.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.Double)">
+            <summary>
+            Parses the string as a <see cref="T:System.Double" /> using the specified styles and format provider,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DoubleExtensions.&lt;G&gt;$4EDA8CBD8B61F6706755C541165134FD.ParseOrDefault(System.String,System.IFormatProvider,System.Double)">
+            <summary>
+            Parses the string as a <see cref="T:System.Double" /> using the specified format provider,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DoubleExtensions.&lt;G&gt;$4EDA8CBD8B61F6706755C541165134FD.ParseOrDefault(System.String,System.Double)">
+            <summary>
+            Parses the string as a <see cref="T:System.Double" />, returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.DoubleExtensions.&lt;G&gt;$4EDA8CBD8B61F6706755C541165134FD.Wrap(System.Double,System.Double)">
+            <summary>
+            Wraps the value into the half-open range [<paramref name="min" />, <paramref name="max" />).
+            A value equal to <paramref name="max" /> wraps to <paramref name="min" />.
+            </summary>
+            <param name="min">The inclusive lower bound of the range.</param>
+            <param name="max">The exclusive upper bound of the range.</param>
+            <remarks>
+            This method requires <paramref name="max" /> to be greater than <paramref name="min" />.
+            If <paramref name="max" /> is less than or equal to <paramref name="min" />, the behavior is invalid.
+            </remarks>
+        </member>
+        <member name="M:PowerKit.Extensions.EncodingExtensions.get_Utf8WithoutBom">
+            <inheritdoc cref="P:PowerKit.Extensions.EncodingExtensions.&lt;G&gt;$A5D28129F600FD77FB6D3E157F75B0E3.Utf8WithoutBom"/>
+        </member>
+        <member name="M:PowerKit.Extensions.EncodingExtensions.WithoutPreamble(System.Text.Encoding)">
+            <inheritdoc cref="M:PowerKit.Extensions.EncodingExtensions.&lt;G&gt;$A5D28129F600FD77FB6D3E157F75B0E3.WithoutPreamble"/>
+        </member>
+        <member name="P:PowerKit.Extensions.EncodingExtensions.&lt;G&gt;$A5D28129F600FD77FB6D3E157F75B0E3.Utf8WithoutBom">
+            <summary>
+            Gets an instance of the UTF-8 encoding that does not emit a byte order mark (BOM).
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.EncodingExtensions.&lt;G&gt;$A5D28129F600FD77FB6D3E157F75B0E3.WithoutPreamble">
+            <summary>
+            Creates a derived encoding that produces an empty preamble, regardless of the original encoding's preamble.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.EnumExtensions.ParseOrNull``1(System.String,System.Boolean)">
+            <inheritdoc cref="M:PowerKit.Extensions.EnumExtensions.&lt;G&gt;$8E5C3F0AE356A7A1CAD4B372112D6A6D.ParseOrNull``1(System.String,System.Boolean)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.EnumExtensions.ParseOrNull``1(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.EnumExtensions.&lt;G&gt;$8E5C3F0AE356A7A1CAD4B372112D6A6D.ParseOrNull``1(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.EnumExtensions.ParseOrDefault``1(System.String,System.Boolean,``0)">
+            <inheritdoc cref="M:PowerKit.Extensions.EnumExtensions.&lt;G&gt;$8E5C3F0AE356A7A1CAD4B372112D6A6D.ParseOrDefault``1(System.String,System.Boolean,``0)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.EnumExtensions.ParseOrDefault``1(System.String,``0)">
+            <inheritdoc cref="M:PowerKit.Extensions.EnumExtensions.&lt;G&gt;$8E5C3F0AE356A7A1CAD4B372112D6A6D.ParseOrDefault``1(System.String,``0)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.EnumExtensions.&lt;G&gt;$8E5C3F0AE356A7A1CAD4B372112D6A6D.ParseOrNull``1(System.String,System.Boolean)">
+            <summary>
+            Parses the string as an enum value of type <typeparamref name="TEnum" />,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.EnumExtensions.&lt;G&gt;$8E5C3F0AE356A7A1CAD4B372112D6A6D.ParseOrNull``1(System.String)">
+            <summary>
+            Parses the string as an enum value of type <typeparamref name="TEnum" />,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.EnumExtensions.&lt;G&gt;$8E5C3F0AE356A7A1CAD4B372112D6A6D.ParseOrDefault``1(System.String,System.Boolean,``0)">
+            <summary>
+            Parses the string as an enum value of type <typeparamref name="TEnum" />,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.EnumExtensions.&lt;G&gt;$8E5C3F0AE356A7A1CAD4B372112D6A6D.ParseOrDefault``1(System.String,``0)">
+            <summary>
+            Parses the string as an enum value of type <typeparamref name="TEnum" />,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.EnumerableExtensions.ToSingletonEnumerable``1(``0)">
+            <inheritdoc cref="M:PowerKit.Extensions.EnumerableExtensions.&lt;G&gt;$8048A6C8BE30A622530249B904B537EB`1.ToSingletonEnumerable"/>
+        </member>
+        <member name="M:PowerKit.Extensions.EnumerableExtensions.WhereNotNull``1(System.Collections.Generic.IEnumerable{``0})">
+            <inheritdoc cref="M:PowerKit.Extensions.EnumerableExtensions.&lt;G&gt;$1BD4FEAF00BE0B98A77E2F634853CD38`1.WhereNotNull"/>
+        </member>
+        <member name="M:PowerKit.Extensions.EnumerableExtensions.WhereNotNull``1(System.Collections.Generic.IEnumerable{System.Nullable{``0}})">
+            <inheritdoc cref="M:PowerKit.Extensions.EnumerableExtensions.&lt;G&gt;$B8B443F2F4C405CA4A4DCB7A189C80F8`1.WhereNotNull"/>
+        </member>
+        <member name="M:PowerKit.Extensions.EnumerableExtensions.WhereNotNullOrEmpty(System.Collections.Generic.IEnumerable{System.String})">
+            <inheritdoc cref="M:PowerKit.Extensions.EnumerableExtensions.&lt;G&gt;$847E497AF7B3C92F46645CBF28E0BD00.WhereNotNullOrEmpty"/>
+        </member>
+        <member name="M:PowerKit.Extensions.EnumerableExtensions.WhereNotNullOrWhiteSpace(System.Collections.Generic.IEnumerable{System.String})">
+            <inheritdoc cref="M:PowerKit.Extensions.EnumerableExtensions.&lt;G&gt;$847E497AF7B3C92F46645CBF28E0BD00.WhereNotNullOrWhiteSpace"/>
+        </member>
+        <member name="M:PowerKit.Extensions.EnumerableExtensions.ElementAtOrNull``1(System.Collections.Generic.IEnumerable{``0},System.Int32)">
+            <inheritdoc cref="M:PowerKit.Extensions.EnumerableExtensions.&lt;G&gt;$45E9FDC955BFFC6A9349ADF47C641A3F`1.ElementAtOrNull(System.Int32)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.EnumerableExtensions.FirstOrNull``1(System.Collections.Generic.IEnumerable{``0})">
+            <inheritdoc cref="M:PowerKit.Extensions.EnumerableExtensions.&lt;G&gt;$45E9FDC955BFFC6A9349ADF47C641A3F`1.FirstOrNull"/>
+        </member>
+        <member name="M:PowerKit.Extensions.EnumerableExtensions.LastOrNull``1(System.Collections.Generic.IEnumerable{``0})">
+            <inheritdoc cref="M:PowerKit.Extensions.EnumerableExtensions.&lt;G&gt;$45E9FDC955BFFC6A9349ADF47C641A3F`1.LastOrNull"/>
+        </member>
+        <member name="M:PowerKit.Extensions.EnumerableExtensions.&lt;G&gt;$8048A6C8BE30A622530249B904B537EB`1.ToSingletonEnumerable">
+            <summary>
+            Wraps the object in an enumerable containing a single element.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.EnumerableExtensions.&lt;G&gt;$1BD4FEAF00BE0B98A77E2F634853CD38`1.WhereNotNull">
+            <summary>
+            Filters out <see langword="null" /> elements from the sequence.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.EnumerableExtensions.&lt;G&gt;$B8B443F2F4C405CA4A4DCB7A189C80F8`1.WhereNotNull">
+            <summary>
+            Filters out <see langword="null" /> elements from the sequence of nullable value types.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.EnumerableExtensions.&lt;G&gt;$847E497AF7B3C92F46645CBF28E0BD00.WhereNotNullOrEmpty">
+            <summary>
+            Filters out <see langword="null" /> and empty strings from the sequence.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.EnumerableExtensions.&lt;G&gt;$847E497AF7B3C92F46645CBF28E0BD00.WhereNotNullOrWhiteSpace">
+            <summary>
+            Filters out <see langword="null" />, empty, and whitespace-only strings from the sequence.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.EnumerableExtensions.&lt;G&gt;$45E9FDC955BFFC6A9349ADF47C641A3F`1.ElementAtOrNull(System.Int32)">
+            <summary>
+            Returns the element at the specified index, or <see langword="null" /> if the index is out of range.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.EnumerableExtensions.&lt;G&gt;$45E9FDC955BFFC6A9349ADF47C641A3F`1.FirstOrNull">
+            <summary>
+            Returns the first element of the sequence, or <see langword="null" /> if the sequence is empty.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.EnumerableExtensions.&lt;G&gt;$45E9FDC955BFFC6A9349ADF47C641A3F`1.LastOrNull">
+            <summary>
+            Returns the last element of the sequence, or <see langword="null" /> if the sequence is empty.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.EnvironmentExtensions.RefreshEnvironmentVariables">
+            <inheritdoc cref="M:PowerKit.Extensions.EnvironmentExtensions.&lt;G&gt;$57DD63EC381B40E0D8049D1E01FA2D1C.RefreshEnvironmentVariables"/>
+        </member>
+        <member name="M:PowerKit.Extensions.EnvironmentExtensions.&lt;G&gt;$57DD63EC381B40E0D8049D1E01FA2D1C.RefreshEnvironmentVariables">
+            <summary>
+            Refreshes the environment variables of the current process by re-applying
+            the machine-level and user-level environment variables.
+            </summary>
+            <remarks>
+            On Windows, this first removes any process-level environment variables that
+            are not present at the machine or user scope, then applies the machine-level
+            and user-level values to the current process.
+            This can remove variables inherited from the parent process or set by the
+            application itself.
+            On other platforms, this method is a no-op.
+            </remarks>
+        </member>
+        <member name="M:PowerKit.Extensions.ExceptionExtensions.GetSelfAndDescendants(System.Exception)">
+            <inheritdoc cref="M:PowerKit.Extensions.ExceptionExtensions.&lt;G&gt;$6A188C7A03CB85FC44DF3FD030EA0664.GetSelfAndDescendants"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ExceptionExtensions.&lt;G&gt;$6A188C7A03CB85FC44DF3FD030EA0664.GetSelfAndDescendants">
+            <summary>
+            Returns a flat list containing the exception itself and all of its
+            nested inner exceptions, recursively unwrapping <see cref="T:System.AggregateException" /> instances.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.FileExtensions.TryDelete(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.FileExtensions.&lt;G&gt;$F8AA2908BAC5E2DCE9609C46C9D7AE18.TryDelete(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.FileExtensions.CheckWriteAccess(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.FileExtensions.&lt;G&gt;$F8AA2908BAC5E2DCE9609C46C9D7AE18.CheckWriteAccess(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.FileExtensions.Contains(System.String,System.ReadOnlySpan{System.Byte})">
+            <inheritdoc cref="M:PowerKit.Extensions.FileExtensions.&lt;G&gt;$F8AA2908BAC5E2DCE9609C46C9D7AE18.Contains(System.String,System.ReadOnlySpan{System.Byte})"/>
+        </member>
+        <member name="M:PowerKit.Extensions.FileExtensions.Contains(System.String,System.Byte[])">
+            <inheritdoc cref="M:PowerKit.Extensions.FileExtensions.&lt;G&gt;$F8AA2908BAC5E2DCE9609C46C9D7AE18.Contains(System.String,System.Byte[])"/>
+        </member>
+        <member name="M:PowerKit.Extensions.FileExtensions.ReadAllBytes(System.String,System.Int64)">
+            <inheritdoc cref="M:PowerKit.Extensions.FileExtensions.&lt;G&gt;$F8AA2908BAC5E2DCE9609C46C9D7AE18.ReadAllBytes(System.String,System.Int64)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.FileExtensions.ReadAllBytes(System.String,System.Int64,System.Int32)">
+            <inheritdoc cref="M:PowerKit.Extensions.FileExtensions.&lt;G&gt;$F8AA2908BAC5E2DCE9609C46C9D7AE18.ReadAllBytes(System.String,System.Int64,System.Int32)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.FileExtensions.ReadAllBytesAsync(System.String,System.Int64,System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.FileExtensions.&lt;G&gt;$F8AA2908BAC5E2DCE9609C46C9D7AE18.ReadAllBytesAsync(System.String,System.Int64,System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.FileExtensions.ReadAllBytesAsync(System.String,System.Int64,System.Int32,System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.FileExtensions.&lt;G&gt;$F8AA2908BAC5E2DCE9609C46C9D7AE18.ReadAllBytesAsync(System.String,System.Int64,System.Int32,System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.FileExtensions.WriteAllZeroes(System.String,System.Int64)">
+            <inheritdoc cref="M:PowerKit.Extensions.FileExtensions.&lt;G&gt;$F8AA2908BAC5E2DCE9609C46C9D7AE18.WriteAllZeroes(System.String,System.Int64)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.FileExtensions.&lt;G&gt;$F8AA2908BAC5E2DCE9609C46C9D7AE18.TryDelete(System.String)">
+            <summary>
+            Attempts to delete the file at the specified path.
+            Returns <see langword="true" /> if the delete operation completed without throwing an exception,
+            or <see langword="false" /> if an error occurred.
+            </summary>
+            <remarks>
+            This method can return <see langword="true" /> even if no file existed at <paramref name="path" />,
+            because <see cref="M:System.IO.File.Delete(System.String)" /> does not throw when the target file does not exist.
+            </remarks>
+        </member>
+        <member name="M:PowerKit.Extensions.FileExtensions.&lt;G&gt;$F8AA2908BAC5E2DCE9609C46C9D7AE18.CheckWriteAccess(System.String)">
+            <summary>
+            Checks if it's possible to write to the specified file.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.FileExtensions.&lt;G&gt;$F8AA2908BAC5E2DCE9609C46C9D7AE18.Contains(System.String,System.ReadOnlySpan{System.Byte})">
+            <summary>
+            Checks whether the file at the specified path contains the given byte sequence.
+            Returns <see langword="true" /> if <paramref name="bytes" /> is empty.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.FileExtensions.&lt;G&gt;$F8AA2908BAC5E2DCE9609C46C9D7AE18.Contains(System.String,System.Byte[])">
+            <summary>
+            Checks whether the file at the specified path contains the given byte sequence.
+            Returns <see langword="true" /> if <paramref name="bytes" /> is empty.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.FileExtensions.&lt;G&gt;$F8AA2908BAC5E2DCE9609C46C9D7AE18.ReadAllBytes(System.String,System.Int64)">
+            <summary>
+            Reads all bytes from the specified file starting at the given offset.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.FileExtensions.&lt;G&gt;$F8AA2908BAC5E2DCE9609C46C9D7AE18.ReadAllBytes(System.String,System.Int64,System.Int32)">
+            <summary>
+            Reads the specified number of bytes from the file starting at the given offset.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.FileExtensions.&lt;G&gt;$F8AA2908BAC5E2DCE9609C46C9D7AE18.ReadAllBytesAsync(System.String,System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Reads all bytes from the specified file starting at the given offset asynchronously.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.FileExtensions.&lt;G&gt;$F8AA2908BAC5E2DCE9609C46C9D7AE18.ReadAllBytesAsync(System.String,System.Int64,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Reads the specified number of bytes from the file starting at the given offset asynchronously.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.FileExtensions.&lt;G&gt;$F8AA2908BAC5E2DCE9609C46C9D7AE18.WriteAllZeroes(System.String,System.Int64)">
+            <summary>
+            Creates a file at the specified path and fills it with zeroes.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.FunctionalExtensions.Pipe``2(``0,System.Func{``0,``1})">
+            <inheritdoc cref="M:PowerKit.Extensions.FunctionalExtensions.&lt;G&gt;$8048A6C8BE30A622530249B904B537EB`1.Pipe``1(System.Func{`0,``0})"/>
+        </member>
+        <member name="M:PowerKit.Extensions.FunctionalExtensions.NullIf``1(``0,System.Func{``0,System.Boolean})">
+            <inheritdoc cref="M:PowerKit.Extensions.FunctionalExtensions.&lt;G&gt;$BCF902721DDD961E5243C324D8379E5C`1.NullIf(System.Func{`0,System.Boolean})"/>
+        </member>
+        <member name="M:PowerKit.Extensions.FunctionalExtensions.NullIfDefault``1(``0)">
+            <inheritdoc cref="M:PowerKit.Extensions.FunctionalExtensions.&lt;G&gt;$BCF902721DDD961E5243C324D8379E5C`1.NullIfDefault"/>
+        </member>
+        <member name="M:PowerKit.Extensions.FunctionalExtensions.NullIfEmpty(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.FunctionalExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.NullIfEmpty"/>
+        </member>
+        <member name="M:PowerKit.Extensions.FunctionalExtensions.NullIfWhiteSpace(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.FunctionalExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.NullIfWhiteSpace"/>
+        </member>
+        <member name="M:PowerKit.Extensions.FunctionalExtensions.&lt;G&gt;$8048A6C8BE30A622530249B904B537EB`1.Pipe``1(System.Func{`0,``0})">
+            <summary>
+            Passes the value through the specified transform function and returns the result.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.FunctionalExtensions.&lt;G&gt;$BCF902721DDD961E5243C324D8379E5C`1.NullIf(System.Func{`0,System.Boolean})">
+            <summary>
+            Returns <see langword="null" /> if the value matches the specified predicate; otherwise, returns the value.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.FunctionalExtensions.&lt;G&gt;$BCF902721DDD961E5243C324D8379E5C`1.NullIfDefault">
+            <summary>
+            Returns <see langword="null" /> if the value equals the default value for its type; otherwise, returns the value.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.FunctionalExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.NullIfEmpty">
+            <summary>
+            Returns <see langword="null" /> if the string is <see langword="null" /> or empty; otherwise, returns the string.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.FunctionalExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.NullIfWhiteSpace">
+            <summary>
+            Returns <see langword="null" /> if the string is <see langword="null" />, empty, or consists only of whitespace;
+            otherwise, returns the string.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ReferenceTypeFunctionalExtensions.NullIf``1(``0,System.Func{``0,System.Boolean})">
+            <inheritdoc cref="M:PowerKit.Extensions.ReferenceTypeFunctionalExtensions.&lt;G&gt;$66F77D1E46F965A5B22D4932892FA78B`1.NullIf(System.Func{`0,System.Boolean})"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ReferenceTypeFunctionalExtensions.&lt;G&gt;$66F77D1E46F965A5B22D4932892FA78B`1.NullIf(System.Func{`0,System.Boolean})">
+            <summary>
+            Returns <see langword="null" /> if the value is <see langword="null" /> or matches the specified predicate;
+            otherwise, returns the value.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.GuidExtensions.ParseOrNull(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.GuidExtensions.&lt;G&gt;$68F3962AE5697E254AA596E55C7A8792.ParseOrNull(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.GuidExtensions.ParseOrDefault(System.String,System.Guid)">
+            <inheritdoc cref="M:PowerKit.Extensions.GuidExtensions.&lt;G&gt;$68F3962AE5697E254AA596E55C7A8792.ParseOrDefault(System.String,System.Guid)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.GuidExtensions.&lt;G&gt;$68F3962AE5697E254AA596E55C7A8792.ParseOrNull(System.String)">
+            <summary>
+            Parses the string as a <see cref="T:System.Guid" />, returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.GuidExtensions.&lt;G&gt;$68F3962AE5697E254AA596E55C7A8792.ParseOrDefault(System.String,System.Guid)">
+            <summary>
+            Parses the string as a <see cref="T:System.Guid" />, returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.HashAlgorithmExtensions.ComputeHash(System.Security.Cryptography.HashAlgorithm,System.Byte[])">
+            <inheritdoc cref="M:PowerKit.Extensions.HashAlgorithmExtensions.&lt;G&gt;$19C2722A77BF47CF10D21F924D8B6039.ComputeHash(System.Security.Cryptography.HashAlgorithm,System.Byte[])"/>
+        </member>
+        <member name="M:PowerKit.Extensions.HashAlgorithmExtensions.&lt;G&gt;$19C2722A77BF47CF10D21F924D8B6039.ComputeHash(System.Security.Cryptography.HashAlgorithm,System.Byte[])">
+            <summary>
+            Computes the hash of the specified data using the given algorithm, then disposes the algorithm.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.HttpClientExtensions.DownloadAsync(System.Net.Http.HttpClient,System.Uri,System.String,System.IProgress{System.Double},System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.HttpClientExtensions.&lt;G&gt;$2C76DB3DB4BE8E5FC629D93AC0513B6F.DownloadAsync(System.Uri,System.String,System.IProgress{System.Double},System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.HttpClientExtensions.DownloadAsync(System.Net.Http.HttpClient,System.String,System.String,System.IProgress{System.Double},System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.HttpClientExtensions.&lt;G&gt;$2C76DB3DB4BE8E5FC629D93AC0513B6F.DownloadAsync(System.String,System.String,System.IProgress{System.Double},System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.HttpClientExtensions.HeadAsync(System.Net.Http.HttpClient,System.Uri,System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.HttpClientExtensions.&lt;G&gt;$2C76DB3DB4BE8E5FC629D93AC0513B6F.HeadAsync(System.Uri,System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.HttpClientExtensions.HeadAsync(System.Net.Http.HttpClient,System.String,System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.HttpClientExtensions.&lt;G&gt;$2C76DB3DB4BE8E5FC629D93AC0513B6F.HeadAsync(System.String,System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.HttpClientExtensions.&lt;G&gt;$2C76DB3DB4BE8E5FC629D93AC0513B6F.DownloadAsync(System.Uri,System.String,System.IProgress{System.Double},System.Threading.CancellationToken)">
+            <summary>
+            Downloads the content at the specified URI to a local file.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.HttpClientExtensions.&lt;G&gt;$2C76DB3DB4BE8E5FC629D93AC0513B6F.DownloadAsync(System.String,System.String,System.IProgress{System.Double},System.Threading.CancellationToken)">
+            <summary>
+            Downloads the content at the specified URI to a local file.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.HttpClientExtensions.&lt;G&gt;$2C76DB3DB4BE8E5FC629D93AC0513B6F.HeadAsync(System.Uri,System.Threading.CancellationToken)">
+            <summary>
+            Sends a HEAD request to the specified URI and returns the response.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.HttpClientExtensions.&lt;G&gt;$2C76DB3DB4BE8E5FC629D93AC0513B6F.HeadAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Sends a HEAD request to the specified URI and returns the response.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.HttpContentExtensions.CopyToStreamAsync(System.Net.Http.HttpContent,System.IO.Stream,System.IProgress{System.Double},System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.HttpContentExtensions.&lt;G&gt;$5D98DA1285640C9281056C08A04F6878.CopyToStreamAsync(System.IO.Stream,System.IProgress{System.Double},System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.HttpContentExtensions.&lt;G&gt;$5D98DA1285640C9281056C08A04F6878.CopyToStreamAsync(System.IO.Stream,System.IProgress{System.Double},System.Threading.CancellationToken)">
+            <summary>
+            Copies the HTTP content to the specified stream, reporting progress
+            as a ratio of bytes written to the content length when available.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.HttpHeadersExtensions.GetValuesOrEmpty(System.Net.Http.Headers.HttpHeaders,System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.HttpHeadersExtensions.&lt;G&gt;$DB62F12B273DDD15E95441EE153422CC.GetValuesOrEmpty(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.HttpHeadersExtensions.TryGetValue(System.Net.Http.Headers.HttpHeaders,System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.HttpHeadersExtensions.&lt;G&gt;$DB62F12B273DDD15E95441EE153422CC.TryGetValue(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.HttpHeadersExtensions.&lt;G&gt;$DB62F12B273DDD15E95441EE153422CC.GetValuesOrEmpty(System.String)">
+            <summary>
+            Gets the values of the header with the specified name.
+            Returns an empty sequence if the header is not present.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.HttpHeadersExtensions.&lt;G&gt;$DB62F12B273DDD15E95441EE153422CC.TryGetValue(System.String)">
+            <summary>
+            Attempts to get the value of the header with the specified name.
+            Returns null if the header is not present.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.HttpRequestMessageExtensions.Clone(System.Net.Http.HttpRequestMessage)">
+            <inheritdoc cref="M:PowerKit.Extensions.HttpRequestMessageExtensions.&lt;G&gt;$B0502C3D08854DD48DC55B7FDE7731E6.Clone"/>
+        </member>
+        <member name="M:PowerKit.Extensions.HttpRequestMessageExtensions.&lt;G&gt;$B0502C3D08854DD48DC55B7FDE7731E6.Clone">
+            <summary>
+            Creates a clone of the HTTP request message.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.Int16Extensions.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)">
+            <inheritdoc cref="M:PowerKit.Extensions.Int16Extensions.&lt;G&gt;$390DAE713F975834EF0C1ED2BEC2DBAC.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.Int16Extensions.ParseOrNull(System.String,System.IFormatProvider)">
+            <inheritdoc cref="M:PowerKit.Extensions.Int16Extensions.&lt;G&gt;$390DAE713F975834EF0C1ED2BEC2DBAC.ParseOrNull(System.String,System.IFormatProvider)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.Int16Extensions.ParseOrNull(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.Int16Extensions.&lt;G&gt;$390DAE713F975834EF0C1ED2BEC2DBAC.ParseOrNull(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.Int16Extensions.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.Int16)">
+            <inheritdoc cref="M:PowerKit.Extensions.Int16Extensions.&lt;G&gt;$390DAE713F975834EF0C1ED2BEC2DBAC.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.Int16)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.Int16Extensions.ParseOrDefault(System.String,System.IFormatProvider,System.Int16)">
+            <inheritdoc cref="M:PowerKit.Extensions.Int16Extensions.&lt;G&gt;$390DAE713F975834EF0C1ED2BEC2DBAC.ParseOrDefault(System.String,System.IFormatProvider,System.Int16)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.Int16Extensions.ParseOrDefault(System.String,System.Int16)">
+            <inheritdoc cref="M:PowerKit.Extensions.Int16Extensions.&lt;G&gt;$390DAE713F975834EF0C1ED2BEC2DBAC.ParseOrDefault(System.String,System.Int16)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.Int16Extensions.&lt;G&gt;$390DAE713F975834EF0C1ED2BEC2DBAC.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)">
+            <summary>
+            Parses the string as a <see cref="T:System.Int16" /> using the specified styles and format provider,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.Int16Extensions.&lt;G&gt;$390DAE713F975834EF0C1ED2BEC2DBAC.ParseOrNull(System.String,System.IFormatProvider)">
+            <summary>
+            Parses the string as a <see cref="T:System.Int16" /> using the specified format provider,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.Int16Extensions.&lt;G&gt;$390DAE713F975834EF0C1ED2BEC2DBAC.ParseOrNull(System.String)">
+            <summary>
+            Parses the string as a <see cref="T:System.Int16" />, returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.Int16Extensions.&lt;G&gt;$390DAE713F975834EF0C1ED2BEC2DBAC.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.Int16)">
+            <summary>
+            Parses the string as a <see cref="T:System.Int16" /> using the specified styles and format provider,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.Int16Extensions.&lt;G&gt;$390DAE713F975834EF0C1ED2BEC2DBAC.ParseOrDefault(System.String,System.IFormatProvider,System.Int16)">
+            <summary>
+            Parses the string as a <see cref="T:System.Int16" /> using the specified format provider,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.Int16Extensions.&lt;G&gt;$390DAE713F975834EF0C1ED2BEC2DBAC.ParseOrDefault(System.String,System.Int16)">
+            <summary>
+            Parses the string as a <see cref="T:System.Int16" />, returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.Int32Extensions.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)">
+            <inheritdoc cref="M:PowerKit.Extensions.Int32Extensions.&lt;G&gt;$BA41CFE2B5EDAEB8C1B9062F59ED4D69.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.Int32Extensions.ParseOrNull(System.String,System.IFormatProvider)">
+            <inheritdoc cref="M:PowerKit.Extensions.Int32Extensions.&lt;G&gt;$BA41CFE2B5EDAEB8C1B9062F59ED4D69.ParseOrNull(System.String,System.IFormatProvider)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.Int32Extensions.ParseOrNull(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.Int32Extensions.&lt;G&gt;$BA41CFE2B5EDAEB8C1B9062F59ED4D69.ParseOrNull(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.Int32Extensions.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.Int32)">
+            <inheritdoc cref="M:PowerKit.Extensions.Int32Extensions.&lt;G&gt;$BA41CFE2B5EDAEB8C1B9062F59ED4D69.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.Int32)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.Int32Extensions.ParseOrDefault(System.String,System.IFormatProvider,System.Int32)">
+            <inheritdoc cref="M:PowerKit.Extensions.Int32Extensions.&lt;G&gt;$BA41CFE2B5EDAEB8C1B9062F59ED4D69.ParseOrDefault(System.String,System.IFormatProvider,System.Int32)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.Int32Extensions.ParseOrDefault(System.String,System.Int32)">
+            <inheritdoc cref="M:PowerKit.Extensions.Int32Extensions.&lt;G&gt;$BA41CFE2B5EDAEB8C1B9062F59ED4D69.ParseOrDefault(System.String,System.Int32)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.Int32Extensions.&lt;G&gt;$BA41CFE2B5EDAEB8C1B9062F59ED4D69.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)">
+            <summary>
+            Parses the string as an <see cref="T:System.Int32" /> using the specified styles and format provider,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.Int32Extensions.&lt;G&gt;$BA41CFE2B5EDAEB8C1B9062F59ED4D69.ParseOrNull(System.String,System.IFormatProvider)">
+            <summary>
+            Parses the string as an <see cref="T:System.Int32" /> using the specified format provider,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.Int32Extensions.&lt;G&gt;$BA41CFE2B5EDAEB8C1B9062F59ED4D69.ParseOrNull(System.String)">
+            <summary>
+            Parses the string as an <see cref="T:System.Int32" />, returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.Int32Extensions.&lt;G&gt;$BA41CFE2B5EDAEB8C1B9062F59ED4D69.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.Int32)">
+            <summary>
+            Parses the string as an <see cref="T:System.Int32" /> using the specified styles and format provider,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.Int32Extensions.&lt;G&gt;$BA41CFE2B5EDAEB8C1B9062F59ED4D69.ParseOrDefault(System.String,System.IFormatProvider,System.Int32)">
+            <summary>
+            Parses the string as an <see cref="T:System.Int32" /> using the specified format provider,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.Int32Extensions.&lt;G&gt;$BA41CFE2B5EDAEB8C1B9062F59ED4D69.ParseOrDefault(System.String,System.Int32)">
+            <summary>
+            Parses the string as an <see cref="T:System.Int32" />, returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.Int64Extensions.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)">
+            <inheritdoc cref="M:PowerKit.Extensions.Int64Extensions.&lt;G&gt;$E8CA98ACBCAEE63BB261A3FD4AF31675.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.Int64Extensions.ParseOrNull(System.String,System.IFormatProvider)">
+            <inheritdoc cref="M:PowerKit.Extensions.Int64Extensions.&lt;G&gt;$E8CA98ACBCAEE63BB261A3FD4AF31675.ParseOrNull(System.String,System.IFormatProvider)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.Int64Extensions.ParseOrNull(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.Int64Extensions.&lt;G&gt;$E8CA98ACBCAEE63BB261A3FD4AF31675.ParseOrNull(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.Int64Extensions.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.Int64)">
+            <inheritdoc cref="M:PowerKit.Extensions.Int64Extensions.&lt;G&gt;$E8CA98ACBCAEE63BB261A3FD4AF31675.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.Int64)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.Int64Extensions.ParseOrDefault(System.String,System.IFormatProvider,System.Int64)">
+            <inheritdoc cref="M:PowerKit.Extensions.Int64Extensions.&lt;G&gt;$E8CA98ACBCAEE63BB261A3FD4AF31675.ParseOrDefault(System.String,System.IFormatProvider,System.Int64)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.Int64Extensions.ParseOrDefault(System.String,System.Int64)">
+            <inheritdoc cref="M:PowerKit.Extensions.Int64Extensions.&lt;G&gt;$E8CA98ACBCAEE63BB261A3FD4AF31675.ParseOrDefault(System.String,System.Int64)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.Int64Extensions.&lt;G&gt;$E8CA98ACBCAEE63BB261A3FD4AF31675.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)">
+            <summary>
+            Parses the string as a <see cref="T:System.Int64" /> using the specified styles and format provider,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.Int64Extensions.&lt;G&gt;$E8CA98ACBCAEE63BB261A3FD4AF31675.ParseOrNull(System.String,System.IFormatProvider)">
+            <summary>
+            Parses the string as a <see cref="T:System.Int64" /> using the specified format provider,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.Int64Extensions.&lt;G&gt;$E8CA98ACBCAEE63BB261A3FD4AF31675.ParseOrNull(System.String)">
+            <summary>
+            Parses the string as a <see cref="T:System.Int64" />, returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.Int64Extensions.&lt;G&gt;$E8CA98ACBCAEE63BB261A3FD4AF31675.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.Int64)">
+            <summary>
+            Parses the string as a <see cref="T:System.Int64" /> using the specified styles and format provider,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.Int64Extensions.&lt;G&gt;$E8CA98ACBCAEE63BB261A3FD4AF31675.ParseOrDefault(System.String,System.IFormatProvider,System.Int64)">
+            <summary>
+            Parses the string as a <see cref="T:System.Int64" /> using the specified format provider,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.Int64Extensions.&lt;G&gt;$E8CA98ACBCAEE63BB261A3FD4AF31675.ParseOrDefault(System.String,System.Int64)">
+            <summary>
+            Parses the string as a <see cref="T:System.Int64" />, returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.NotifyPropertyChangedExtensions.WatchProperty``2(``0,System.Linq.Expressions.Expression{System.Func{``0,``1}},System.Action{``1},System.Boolean)">
+            <inheritdoc cref="M:PowerKit.Extensions.NotifyPropertyChangedExtensions.&lt;G&gt;$B87FB99B0FC93086A396186AFB24677B`1.WatchProperty``1(System.Linq.Expressions.Expression{System.Func{`0,``0}},System.Action{``0},System.Boolean)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.NotifyPropertyChangedExtensions.WatchProperties``1(``0,System.Collections.Generic.IEnumerable{System.Linq.Expressions.Expression{System.Func{``0,System.Object}}},System.Action,System.Boolean)">
+            <inheritdoc cref="M:PowerKit.Extensions.NotifyPropertyChangedExtensions.&lt;G&gt;$B87FB99B0FC93086A396186AFB24677B`1.WatchProperties(System.Collections.Generic.IEnumerable{System.Linq.Expressions.Expression{System.Func{`0,System.Object}}},System.Action,System.Boolean)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.NotifyPropertyChangedExtensions.WatchAllProperties``1(``0,System.Action,System.Boolean)">
+            <inheritdoc cref="M:PowerKit.Extensions.NotifyPropertyChangedExtensions.&lt;G&gt;$B87FB99B0FC93086A396186AFB24677B`1.WatchAllProperties(System.Action,System.Boolean)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.NotifyPropertyChangedExtensions.&lt;G&gt;$B87FB99B0FC93086A396186AFB24677B`1.WatchProperty``1(System.Linq.Expressions.Expression{System.Func{`0,``0}},System.Action{``0},System.Boolean)">
+            <summary>
+            Subscribes to changes of the specified property on the owner object.
+            The returned <see cref="T:System.IDisposable" /> can be disposed to unsubscribe.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.NotifyPropertyChangedExtensions.&lt;G&gt;$B87FB99B0FC93086A396186AFB24677B`1.WatchProperties(System.Collections.Generic.IEnumerable{System.Linq.Expressions.Expression{System.Func{`0,System.Object}}},System.Action,System.Boolean)">
+            <summary>
+            Subscribes to changes of the specified properties on the owner object.
+            The returned <see cref="T:System.IDisposable" /> can be disposed to unsubscribe.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.NotifyPropertyChangedExtensions.&lt;G&gt;$B87FB99B0FC93086A396186AFB24677B`1.WatchAllProperties(System.Action,System.Boolean)">
+            <summary>
+            Subscribes to changes of all properties on the owner object.
+            The returned <see cref="T:System.IDisposable" /> can be disposed to unsubscribe.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.PathExtensions.GetInvalidFileNameChars(System.Boolean)">
+            <inheritdoc cref="M:PowerKit.Extensions.PathExtensions.&lt;G&gt;$009965FC9BE91ED9D11C3C63624A1761.GetInvalidFileNameChars(System.Boolean)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.PathExtensions.GetInvalidPathChars(System.Boolean)">
+            <inheritdoc cref="M:PowerKit.Extensions.PathExtensions.&lt;G&gt;$009965FC9BE91ED9D11C3C63624A1761.GetInvalidPathChars(System.Boolean)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.PathExtensions.EscapeFileName(System.String,System.Boolean)">
+            <inheritdoc cref="M:PowerKit.Extensions.PathExtensions.&lt;G&gt;$009965FC9BE91ED9D11C3C63624A1761.EscapeFileName(System.String,System.Boolean)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.PathExtensions.&lt;G&gt;$009965FC9BE91ED9D11C3C63624A1761.GetInvalidFileNameChars(System.Boolean)">
+            <summary>
+            Gets the characters that are invalid in file names.
+            When <paramref name="crossPlatform" /> is <see langword="true" />, returns characters
+            invalid across all major filesystems; otherwise, returns the OS-specific set.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.PathExtensions.&lt;G&gt;$009965FC9BE91ED9D11C3C63624A1761.GetInvalidPathChars(System.Boolean)">
+            <summary>
+            Gets the characters that are invalid in paths.
+            When <paramref name="crossPlatform" /> is <see langword="true" />, returns characters
+            invalid across all major filesystems; otherwise, returns the OS-specific set.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.PathExtensions.&lt;G&gt;$009965FC9BE91ED9D11C3C63624A1761.EscapeFileName(System.String,System.Boolean)">
+            <summary>
+            Replaces invalid file name characters with underscores and strips trailing dots and whitespace.
+            When <paramref name="crossPlatform" /> is <see langword="true" />, considers characters
+            invalid across all major filesystems.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ProcessExtensions.IsRunning(System.Int32)">
+            <inheritdoc cref="M:PowerKit.Extensions.ProcessExtensions.&lt;G&gt;$CF0CE17D7A3EA2BB5895271206595CBD.IsRunning(System.Int32)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ProcessExtensions.Start(System.String,System.Collections.Generic.IEnumerable{System.String})">
+            <inheritdoc cref="M:PowerKit.Extensions.ProcessExtensions.&lt;G&gt;$CF0CE17D7A3EA2BB5895271206595CBD.Start(System.String,System.Collections.Generic.IEnumerable{System.String})"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ProcessExtensions.StartShellExecute(System.String,System.Collections.Generic.IEnumerable{System.String})">
+            <inheritdoc cref="M:PowerKit.Extensions.ProcessExtensions.&lt;G&gt;$CF0CE17D7A3EA2BB5895271206595CBD.StartShellExecute(System.String,System.Collections.Generic.IEnumerable{System.String})"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ProcessExtensions.&lt;G&gt;$CF0CE17D7A3EA2BB5895271206595CBD.IsRunning(System.Int32)">
+            <summary>
+            Checks whether the process identified by the specified ID is currently running.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ProcessExtensions.&lt;G&gt;$CF0CE17D7A3EA2BB5895271206595CBD.Start(System.String,System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Starts a new process using the specified file path and optional arguments.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ProcessExtensions.&lt;G&gt;$CF0CE17D7A3EA2BB5895271206595CBD.StartShellExecute(System.String,System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Starts the process associated with the specified file path or URL, using the operating system shell.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ReadOnlyDictionaryExtensions.GetValueOrNull``2(System.Collections.Generic.IReadOnlyDictionary{``0,``1},``0)">
+            <inheritdoc cref="M:PowerKit.Extensions.ReadOnlyDictionaryExtensions.&lt;G&gt;$BB9DDC2352F8EDDFC1545974E613615F`2.GetValueOrNull(`0)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ReadOnlyDictionaryExtensions.&lt;G&gt;$BB9DDC2352F8EDDFC1545974E613615F`2.GetValueOrNull(`0)">
+            <summary>
+            Returns the value associated with the specified key, or <see langword="null" /> if the key is not found.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.RegexExtensions.FromWildcardPattern(System.String,System.Text.RegularExpressions.RegexOptions)">
+            <inheritdoc cref="M:PowerKit.Extensions.RegexExtensions.&lt;G&gt;$1AB12133D409FE96AAE6B0083687F1E9.FromWildcardPattern(System.String,System.Text.RegularExpressions.RegexOptions)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.RegexExtensions.&lt;G&gt;$1AB12133D409FE96AAE6B0083687F1E9.FromWildcardPattern(System.String,System.Text.RegularExpressions.RegexOptions)">
+            <summary>
+            Creates a <see cref="T:System.Text.RegularExpressions.Regex" /> from a wildcard pattern, where <c>?</c> matches any single
+            character and <c>*</c> matches any sequence of characters (including an empty sequence).
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.RegistryExtensions.get_Moniker(Microsoft.Win32.RegistryHive)">
+            <inheritdoc cref="P:PowerKit.Extensions.RegistryExtensions.&lt;G&gt;$6F0F5986D95F0918CE1F47B526FC965D.Moniker"/>
+        </member>
+        <member name="M:PowerKit.Extensions.RegistryExtensions.OpenKey(Microsoft.Win32.RegistryHive,Microsoft.Win32.RegistryView)">
+            <inheritdoc cref="M:PowerKit.Extensions.RegistryExtensions.&lt;G&gt;$6F0F5986D95F0918CE1F47B526FC965D.OpenKey(Microsoft.Win32.RegistryView)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.RegistryExtensions.ContainsSubKey(Microsoft.Win32.RegistryKey,System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.RegistryExtensions.&lt;G&gt;$462BE529D1402FAA0E6AACEBEEDC1389.ContainsSubKey(System.String)"/>
+        </member>
+        <member name="P:PowerKit.Extensions.RegistryExtensions.&lt;G&gt;$6F0F5986D95F0918CE1F47B526FC965D.Moniker">
+            <summary>
+            Returns the short moniker for the registry hive (e.g. <c>HKCU</c>, <c>HKLM</c>).
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.RegistryExtensions.&lt;G&gt;$6F0F5986D95F0918CE1F47B526FC965D.OpenKey(Microsoft.Win32.RegistryView)">
+            <summary>
+            Opens the base registry key for the hive using the specified <paramref name="view" />.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.RegistryExtensions.&lt;G&gt;$462BE529D1402FAA0E6AACEBEEDC1389.ContainsSubKey(System.String)">
+            <summary>
+            Checks whether a sub-key with the specified name exists under the registry key.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.SByteExtensions.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)">
+            <inheritdoc cref="M:PowerKit.Extensions.SByteExtensions.&lt;G&gt;$49699017F639EF34A5A9E25ACB3E4B14.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.SByteExtensions.ParseOrNull(System.String,System.IFormatProvider)">
+            <inheritdoc cref="M:PowerKit.Extensions.SByteExtensions.&lt;G&gt;$49699017F639EF34A5A9E25ACB3E4B14.ParseOrNull(System.String,System.IFormatProvider)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.SByteExtensions.ParseOrNull(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.SByteExtensions.&lt;G&gt;$49699017F639EF34A5A9E25ACB3E4B14.ParseOrNull(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.SByteExtensions.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.SByte)">
+            <inheritdoc cref="M:PowerKit.Extensions.SByteExtensions.&lt;G&gt;$49699017F639EF34A5A9E25ACB3E4B14.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.SByte)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.SByteExtensions.ParseOrDefault(System.String,System.IFormatProvider,System.SByte)">
+            <inheritdoc cref="M:PowerKit.Extensions.SByteExtensions.&lt;G&gt;$49699017F639EF34A5A9E25ACB3E4B14.ParseOrDefault(System.String,System.IFormatProvider,System.SByte)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.SByteExtensions.ParseOrDefault(System.String,System.SByte)">
+            <inheritdoc cref="M:PowerKit.Extensions.SByteExtensions.&lt;G&gt;$49699017F639EF34A5A9E25ACB3E4B14.ParseOrDefault(System.String,System.SByte)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.SByteExtensions.&lt;G&gt;$49699017F639EF34A5A9E25ACB3E4B14.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)">
+            <summary>
+            Parses the string as an <see cref="T:System.SByte" /> using the specified styles and format provider,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.SByteExtensions.&lt;G&gt;$49699017F639EF34A5A9E25ACB3E4B14.ParseOrNull(System.String,System.IFormatProvider)">
+            <summary>
+            Parses the string as an <see cref="T:System.SByte" /> using the specified format provider,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.SByteExtensions.&lt;G&gt;$49699017F639EF34A5A9E25ACB3E4B14.ParseOrNull(System.String)">
+            <summary>
+            Parses the string as an <see cref="T:System.SByte" />, returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.SByteExtensions.&lt;G&gt;$49699017F639EF34A5A9E25ACB3E4B14.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.SByte)">
+            <summary>
+            Parses the string as an <see cref="T:System.SByte" /> using the specified styles and format provider,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.SByteExtensions.&lt;G&gt;$49699017F639EF34A5A9E25ACB3E4B14.ParseOrDefault(System.String,System.IFormatProvider,System.SByte)">
+            <summary>
+            Parses the string as an <see cref="T:System.SByte" /> using the specified format provider,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.SByteExtensions.&lt;G&gt;$49699017F639EF34A5A9E25ACB3E4B14.ParseOrDefault(System.String,System.SByte)">
+            <summary>
+            Parses the string as an <see cref="T:System.SByte" />, returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.SingleExtensions.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)">
+            <inheritdoc cref="M:PowerKit.Extensions.SingleExtensions.&lt;G&gt;$464CF13CF05F23E774A9D567340C67D6.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.SingleExtensions.ParseOrNull(System.String,System.IFormatProvider)">
+            <inheritdoc cref="M:PowerKit.Extensions.SingleExtensions.&lt;G&gt;$464CF13CF05F23E774A9D567340C67D6.ParseOrNull(System.String,System.IFormatProvider)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.SingleExtensions.ParseOrNull(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.SingleExtensions.&lt;G&gt;$464CF13CF05F23E774A9D567340C67D6.ParseOrNull(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.SingleExtensions.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.Single)">
+            <inheritdoc cref="M:PowerKit.Extensions.SingleExtensions.&lt;G&gt;$464CF13CF05F23E774A9D567340C67D6.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.Single)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.SingleExtensions.ParseOrDefault(System.String,System.IFormatProvider,System.Single)">
+            <inheritdoc cref="M:PowerKit.Extensions.SingleExtensions.&lt;G&gt;$464CF13CF05F23E774A9D567340C67D6.ParseOrDefault(System.String,System.IFormatProvider,System.Single)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.SingleExtensions.ParseOrDefault(System.String,System.Single)">
+            <inheritdoc cref="M:PowerKit.Extensions.SingleExtensions.&lt;G&gt;$464CF13CF05F23E774A9D567340C67D6.ParseOrDefault(System.String,System.Single)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.SingleExtensions.Wrap(System.Single,System.Single,System.Single)">
+            <inheritdoc cref="M:PowerKit.Extensions.SingleExtensions.&lt;G&gt;$464CF13CF05F23E774A9D567340C67D6.Wrap(System.Single,System.Single)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.SingleExtensions.&lt;G&gt;$464CF13CF05F23E774A9D567340C67D6.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)">
+            <summary>
+            Parses the string as a <see cref="T:System.Single" /> using the specified styles and format provider,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.SingleExtensions.&lt;G&gt;$464CF13CF05F23E774A9D567340C67D6.ParseOrNull(System.String,System.IFormatProvider)">
+            <summary>
+            Parses the string as a <see cref="T:System.Single" /> using the specified format provider,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.SingleExtensions.&lt;G&gt;$464CF13CF05F23E774A9D567340C67D6.ParseOrNull(System.String)">
+            <summary>
+            Parses the string as a <see cref="T:System.Single" />, returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.SingleExtensions.&lt;G&gt;$464CF13CF05F23E774A9D567340C67D6.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.Single)">
+            <summary>
+            Parses the string as a <see cref="T:System.Single" /> using the specified styles and format provider,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.SingleExtensions.&lt;G&gt;$464CF13CF05F23E774A9D567340C67D6.ParseOrDefault(System.String,System.IFormatProvider,System.Single)">
+            <summary>
+            Parses the string as a <see cref="T:System.Single" /> using the specified format provider,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.SingleExtensions.&lt;G&gt;$464CF13CF05F23E774A9D567340C67D6.ParseOrDefault(System.String,System.Single)">
+            <summary>
+            Parses the string as a <see cref="T:System.Single" />, returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.SingleExtensions.&lt;G&gt;$464CF13CF05F23E774A9D567340C67D6.Wrap(System.Single,System.Single)">
+            <summary>
+            Wraps the value into the half-open range [<paramref name="min" />, <paramref name="max" />),
+            cycling it back around when it exceeds the bounds.
+            </summary>
+            <remarks>
+            The returned value is greater than or equal to <paramref name="min" /> and less than
+            <paramref name="max" /> for valid ranges. A value equal to <paramref name="max" />
+            wraps to <paramref name="min" />.
+            When <paramref name="max" /> is less than or equal to <paramref name="min" />, this
+            method does not throw; it follows floating-point arithmetic and may return
+            <see cref="F:System.Single.NaN" />.
+            </remarks>
+        </member>
+        <member name="M:PowerKit.Extensions.StreamExtensions.CopyToAsync(System.IO.Stream,System.IO.Stream,System.Boolean,System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.StreamExtensions.&lt;G&gt;$50F26341F4F164F9281EDEBBEB746904.CopyToAsync(System.IO.Stream,System.Boolean,System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.StreamExtensions.CopyToAsync(System.IO.Stream,System.IO.Stream,System.Int64,System.IProgress{System.Double},System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.StreamExtensions.&lt;G&gt;$50F26341F4F164F9281EDEBBEB746904.CopyToAsync(System.IO.Stream,System.Int64,System.IProgress{System.Double},System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.StreamExtensions.CopyToAsync(System.IO.Stream,System.IO.Stream,System.IProgress{System.Double},System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.StreamExtensions.&lt;G&gt;$50F26341F4F164F9281EDEBBEB746904.CopyToAsync(System.IO.Stream,System.IProgress{System.Double},System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.StreamExtensions.&lt;G&gt;$50F26341F4F164F9281EDEBBEB746904.CopyToAsync(System.IO.Stream,System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Copies the contents of the stream to the destination stream, optionally flushing after each write.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.StreamExtensions.&lt;G&gt;$50F26341F4F164F9281EDEBBEB746904.CopyToAsync(System.IO.Stream,System.Int64,System.IProgress{System.Double},System.Threading.CancellationToken)">
+            <summary>
+            Copies the contents of the stream to the destination stream, reporting progress
+            as a ratio of bytes read to <paramref name="sourceLength" />.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.StreamExtensions.&lt;G&gt;$50F26341F4F164F9281EDEBBEB746904.CopyToAsync(System.IO.Stream,System.IProgress{System.Double},System.Threading.CancellationToken)">
+            <summary>
+            Copies the contents of the stream to the destination stream, reporting progress
+            based on the source stream's length when available.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.StringBuilderExtensions.AppendIfNotEmpty(System.Text.StringBuilder,System.Char)">
+            <inheritdoc cref="M:PowerKit.Extensions.StringBuilderExtensions.&lt;G&gt;$CD29E70E0DCA5BBFCFAC7C2BEF3C5C99.AppendIfNotEmpty(System.Char)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.StringBuilderExtensions.Trim(System.Text.StringBuilder)">
+            <inheritdoc cref="M:PowerKit.Extensions.StringBuilderExtensions.&lt;G&gt;$CD29E70E0DCA5BBFCFAC7C2BEF3C5C99.Trim"/>
+        </member>
+        <member name="M:PowerKit.Extensions.StringBuilderExtensions.&lt;G&gt;$CD29E70E0DCA5BBFCFAC7C2BEF3C5C99.AppendIfNotEmpty(System.Char)">
+            <summary>
+            Appends the specified character only if the builder is not empty.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.StringBuilderExtensions.&lt;G&gt;$CD29E70E0DCA5BBFCFAC7C2BEF3C5C99.Trim">
+            <summary>
+            Removes leading and trailing whitespace characters from the builder.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.Replace(System.String,System.Func{System.Char,System.Char})">
+            <inheritdoc cref="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.Replace(System.Func{System.Char,System.Char})"/>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.ReplaceWhiteSpace(System.String,System.Func{System.Char,System.Char})">
+            <inheritdoc cref="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.ReplaceWhiteSpace(System.Func{System.Char,System.Char})"/>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.ReplaceWhiteSpace(System.String,System.Char)">
+            <inheritdoc cref="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.ReplaceWhiteSpace(System.Char)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.Reverse(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.Reverse"/>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.SeparateWords(System.String,System.Char)">
+            <inheritdoc cref="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.SeparateWords(System.Char)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.SubstringAfter(System.String,System.String,System.StringComparison)">
+            <inheritdoc cref="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.SubstringAfter(System.String,System.StringComparison)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.SubstringAfterLast(System.String,System.String,System.StringComparison)">
+            <inheritdoc cref="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.SubstringAfterLast(System.String,System.StringComparison)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.SubstringUntil(System.String,System.String,System.StringComparison)">
+            <inheritdoc cref="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.SubstringUntil(System.String,System.StringComparison)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.SubstringUntilLast(System.String,System.String,System.StringComparison)">
+            <inheritdoc cref="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.SubstringUntilLast(System.String,System.StringComparison)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.ToKebabCase(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.ToKebabCase"/>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.ToSecureString(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.ToSecureString"/>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.ToSnakeCase(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.ToSnakeCase"/>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.Truncate(System.String,System.Int32)">
+            <inheritdoc cref="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.Truncate(System.Int32)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.TruncateBytes(System.String,System.Int32,System.Text.Encoding)">
+            <inheritdoc cref="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.TruncateBytes(System.Int32,System.Text.Encoding)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.Replace(System.Func{System.Char,System.Char})">
+            <summary>
+            Replaces each character using the replacement produced by the provided selector.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.ReplaceWhiteSpace(System.Func{System.Char,System.Char})">
+            <summary>
+            Replaces each whitespace character using the replacement produced by the provided selector.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.ReplaceWhiteSpace(System.Char)">
+            <summary>
+            Replaces each whitespace character with the specified replacement character.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.Reverse">
+            <summary>
+            Returns the string with the characters in reverse order.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.SeparateWords(System.Char)">
+            <summary>
+            Inserts the specified separator before each uppercase letter, splitting PascalCase words.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.SubstringAfter(System.String,System.StringComparison)">
+            <summary>
+            Returns the substring after the first occurrence of the specified substring.
+            If the substring is not found, returns an empty string.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.SubstringAfterLast(System.String,System.StringComparison)">
+            <summary>
+            Returns the substring after the last occurrence of the specified substring.
+            If the substring is not found, returns an empty string.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.SubstringUntil(System.String,System.StringComparison)">
+            <summary>
+            Returns the substring before the first occurrence of the specified substring.
+            If the substring is not found, returns the original string.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.SubstringUntilLast(System.String,System.StringComparison)">
+            <summary>
+            Returns the substring before the last occurrence of the specified substring.
+            If the substring is not found, returns the original string.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.ToKebabCase">
+            <summary>
+            Converts the PascalCase string to kebab-case (e.g., "FooBar" → "foo-bar").
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.ToSecureString">
+            <summary>
+            Converts the string to a <see cref="T:System.Security.SecureString"/>.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.ToSnakeCase">
+            <summary>
+            Converts the PascalCase string to snake_case (e.g., "FooBar" → "foo_bar").
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.Truncate(System.Int32)">
+            <summary>
+            Truncates the string to the specified maximum number of characters.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.StringExtensions.&lt;G&gt;$34505F560D9EACF86A87F3ED1F85E448.TruncateBytes(System.Int32,System.Text.Encoding)">
+            <summary>
+            Truncates the string so that its encoded byte length does not exceed the specified maximum.
+            Uses the provided encoding, or UTF-8 if <paramref name="encoding"/> is <c>null</c>.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.TextReaderExtensions.ReadLinesAsync(System.IO.TextReader,System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.TextReaderExtensions.&lt;G&gt;$ED0C8F962EDBAD5B8F826E0ED7DBC34D.ReadLinesAsync(System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.TextReaderExtensions.&lt;G&gt;$ED0C8F962EDBAD5B8F826E0ED7DBC34D.ReadLinesAsync(System.Threading.CancellationToken)">
+            <summary>
+            Reads all lines from the text reader as an async sequence.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.TimeSpanExtensions.ParseOrNull(System.String,System.IFormatProvider)">
+            <inheritdoc cref="M:PowerKit.Extensions.TimeSpanExtensions.&lt;G&gt;$AEF4692409D6751FA6D278B69B50C9D0.ParseOrNull(System.String,System.IFormatProvider)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.TimeSpanExtensions.ParseOrNull(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.TimeSpanExtensions.&lt;G&gt;$AEF4692409D6751FA6D278B69B50C9D0.ParseOrNull(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.TimeSpanExtensions.ParseOrDefault(System.String,System.IFormatProvider,System.TimeSpan)">
+            <inheritdoc cref="M:PowerKit.Extensions.TimeSpanExtensions.&lt;G&gt;$AEF4692409D6751FA6D278B69B50C9D0.ParseOrDefault(System.String,System.IFormatProvider,System.TimeSpan)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.TimeSpanExtensions.ParseOrDefault(System.String,System.TimeSpan)">
+            <inheritdoc cref="M:PowerKit.Extensions.TimeSpanExtensions.&lt;G&gt;$AEF4692409D6751FA6D278B69B50C9D0.ParseOrDefault(System.String,System.TimeSpan)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.TimeSpanExtensions.&lt;G&gt;$AEF4692409D6751FA6D278B69B50C9D0.ParseOrNull(System.String,System.IFormatProvider)">
+            <summary>
+            Parses the string as a <see cref="T:System.TimeSpan" /> using the specified format provider,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.TimeSpanExtensions.&lt;G&gt;$AEF4692409D6751FA6D278B69B50C9D0.ParseOrNull(System.String)">
+            <summary>
+            Parses the string as a <see cref="T:System.TimeSpan" />, returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.TimeSpanExtensions.&lt;G&gt;$AEF4692409D6751FA6D278B69B50C9D0.ParseOrDefault(System.String,System.IFormatProvider,System.TimeSpan)">
+            <summary>
+            Parses the string as a <see cref="T:System.TimeSpan" /> using the specified format provider,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.TimeSpanExtensions.&lt;G&gt;$AEF4692409D6751FA6D278B69B50C9D0.ParseOrDefault(System.String,System.TimeSpan)">
+            <summary>
+            Parses the string as a <see cref="T:System.TimeSpan" />, returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt16Extensions.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)">
+            <inheritdoc cref="M:PowerKit.Extensions.UInt16Extensions.&lt;G&gt;$B7387B77E15A9DBF0D30EA969A07D0DD.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt16Extensions.ParseOrNull(System.String,System.IFormatProvider)">
+            <inheritdoc cref="M:PowerKit.Extensions.UInt16Extensions.&lt;G&gt;$B7387B77E15A9DBF0D30EA969A07D0DD.ParseOrNull(System.String,System.IFormatProvider)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt16Extensions.ParseOrNull(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.UInt16Extensions.&lt;G&gt;$B7387B77E15A9DBF0D30EA969A07D0DD.ParseOrNull(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt16Extensions.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.UInt16)">
+            <inheritdoc cref="M:PowerKit.Extensions.UInt16Extensions.&lt;G&gt;$B7387B77E15A9DBF0D30EA969A07D0DD.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.UInt16)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt16Extensions.ParseOrDefault(System.String,System.IFormatProvider,System.UInt16)">
+            <inheritdoc cref="M:PowerKit.Extensions.UInt16Extensions.&lt;G&gt;$B7387B77E15A9DBF0D30EA969A07D0DD.ParseOrDefault(System.String,System.IFormatProvider,System.UInt16)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt16Extensions.ParseOrDefault(System.String,System.UInt16)">
+            <inheritdoc cref="M:PowerKit.Extensions.UInt16Extensions.&lt;G&gt;$B7387B77E15A9DBF0D30EA969A07D0DD.ParseOrDefault(System.String,System.UInt16)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt16Extensions.&lt;G&gt;$B7387B77E15A9DBF0D30EA969A07D0DD.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)">
+            <summary>
+            Parses the string as a <see cref="T:System.UInt16" /> using the specified styles and format provider,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt16Extensions.&lt;G&gt;$B7387B77E15A9DBF0D30EA969A07D0DD.ParseOrNull(System.String,System.IFormatProvider)">
+            <summary>
+            Parses the string as a <see cref="T:System.UInt16" /> using the specified format provider,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt16Extensions.&lt;G&gt;$B7387B77E15A9DBF0D30EA969A07D0DD.ParseOrNull(System.String)">
+            <summary>
+            Parses the string as a <see cref="T:System.UInt16" />, returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt16Extensions.&lt;G&gt;$B7387B77E15A9DBF0D30EA969A07D0DD.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.UInt16)">
+            <summary>
+            Parses the string as a <see cref="T:System.UInt16" /> using the specified styles and format provider,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt16Extensions.&lt;G&gt;$B7387B77E15A9DBF0D30EA969A07D0DD.ParseOrDefault(System.String,System.IFormatProvider,System.UInt16)">
+            <summary>
+            Parses the string as a <see cref="T:System.UInt16" /> using the specified format provider,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt16Extensions.&lt;G&gt;$B7387B77E15A9DBF0D30EA969A07D0DD.ParseOrDefault(System.String,System.UInt16)">
+            <summary>
+            Parses the string as a <see cref="T:System.UInt16" />, returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt32Extensions.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)">
+            <inheritdoc cref="M:PowerKit.Extensions.UInt32Extensions.&lt;G&gt;$59D1B7AA0B822E2E4777E961258AA046.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt32Extensions.ParseOrNull(System.String,System.IFormatProvider)">
+            <inheritdoc cref="M:PowerKit.Extensions.UInt32Extensions.&lt;G&gt;$59D1B7AA0B822E2E4777E961258AA046.ParseOrNull(System.String,System.IFormatProvider)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt32Extensions.ParseOrNull(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.UInt32Extensions.&lt;G&gt;$59D1B7AA0B822E2E4777E961258AA046.ParseOrNull(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt32Extensions.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.UInt32)">
+            <inheritdoc cref="M:PowerKit.Extensions.UInt32Extensions.&lt;G&gt;$59D1B7AA0B822E2E4777E961258AA046.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.UInt32)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt32Extensions.ParseOrDefault(System.String,System.IFormatProvider,System.UInt32)">
+            <inheritdoc cref="M:PowerKit.Extensions.UInt32Extensions.&lt;G&gt;$59D1B7AA0B822E2E4777E961258AA046.ParseOrDefault(System.String,System.IFormatProvider,System.UInt32)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt32Extensions.ParseOrDefault(System.String,System.UInt32)">
+            <inheritdoc cref="M:PowerKit.Extensions.UInt32Extensions.&lt;G&gt;$59D1B7AA0B822E2E4777E961258AA046.ParseOrDefault(System.String,System.UInt32)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt32Extensions.&lt;G&gt;$59D1B7AA0B822E2E4777E961258AA046.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)">
+            <summary>
+            Parses the string as a <see cref="T:System.UInt32" /> using the specified styles and format provider,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt32Extensions.&lt;G&gt;$59D1B7AA0B822E2E4777E961258AA046.ParseOrNull(System.String,System.IFormatProvider)">
+            <summary>
+            Parses the string as a <see cref="T:System.UInt32" /> using the specified format provider,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt32Extensions.&lt;G&gt;$59D1B7AA0B822E2E4777E961258AA046.ParseOrNull(System.String)">
+            <summary>
+            Parses the string as a <see cref="T:System.UInt32" />, returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt32Extensions.&lt;G&gt;$59D1B7AA0B822E2E4777E961258AA046.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.UInt32)">
+            <summary>
+            Parses the string as a <see cref="T:System.UInt32" /> using the specified styles and format provider,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt32Extensions.&lt;G&gt;$59D1B7AA0B822E2E4777E961258AA046.ParseOrDefault(System.String,System.IFormatProvider,System.UInt32)">
+            <summary>
+            Parses the string as a <see cref="T:System.UInt32" /> using the specified format provider,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt32Extensions.&lt;G&gt;$59D1B7AA0B822E2E4777E961258AA046.ParseOrDefault(System.String,System.UInt32)">
+            <summary>
+            Parses the string as a <see cref="T:System.UInt32" />, returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt64Extensions.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)">
+            <inheritdoc cref="M:PowerKit.Extensions.UInt64Extensions.&lt;G&gt;$CC86B4FD6473E1534D8E28315C194AD4.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt64Extensions.ParseOrNull(System.String,System.IFormatProvider)">
+            <inheritdoc cref="M:PowerKit.Extensions.UInt64Extensions.&lt;G&gt;$CC86B4FD6473E1534D8E28315C194AD4.ParseOrNull(System.String,System.IFormatProvider)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt64Extensions.ParseOrNull(System.String)">
+            <inheritdoc cref="M:PowerKit.Extensions.UInt64Extensions.&lt;G&gt;$CC86B4FD6473E1534D8E28315C194AD4.ParseOrNull(System.String)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt64Extensions.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.UInt64)">
+            <inheritdoc cref="M:PowerKit.Extensions.UInt64Extensions.&lt;G&gt;$CC86B4FD6473E1534D8E28315C194AD4.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.UInt64)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt64Extensions.ParseOrDefault(System.String,System.IFormatProvider,System.UInt64)">
+            <inheritdoc cref="M:PowerKit.Extensions.UInt64Extensions.&lt;G&gt;$CC86B4FD6473E1534D8E28315C194AD4.ParseOrDefault(System.String,System.IFormatProvider,System.UInt64)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt64Extensions.ParseOrDefault(System.String,System.UInt64)">
+            <inheritdoc cref="M:PowerKit.Extensions.UInt64Extensions.&lt;G&gt;$CC86B4FD6473E1534D8E28315C194AD4.ParseOrDefault(System.String,System.UInt64)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt64Extensions.&lt;G&gt;$CC86B4FD6473E1534D8E28315C194AD4.ParseOrNull(System.String,System.Globalization.NumberStyles,System.IFormatProvider)">
+            <summary>
+            Parses the string as a <see cref="T:System.UInt64" /> using the specified styles and format provider,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt64Extensions.&lt;G&gt;$CC86B4FD6473E1534D8E28315C194AD4.ParseOrNull(System.String,System.IFormatProvider)">
+            <summary>
+            Parses the string as a <see cref="T:System.UInt64" /> using the specified format provider,
+            returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt64Extensions.&lt;G&gt;$CC86B4FD6473E1534D8E28315C194AD4.ParseOrNull(System.String)">
+            <summary>
+            Parses the string as a <see cref="T:System.UInt64" />, returning <see langword="null" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt64Extensions.&lt;G&gt;$CC86B4FD6473E1534D8E28315C194AD4.ParseOrDefault(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.UInt64)">
+            <summary>
+            Parses the string as a <see cref="T:System.UInt64" /> using the specified styles and format provider,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt64Extensions.&lt;G&gt;$CC86B4FD6473E1534D8E28315C194AD4.ParseOrDefault(System.String,System.IFormatProvider,System.UInt64)">
+            <summary>
+            Parses the string as a <see cref="T:System.UInt64" /> using the specified format provider,
+            returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.UInt64Extensions.&lt;G&gt;$CC86B4FD6473E1534D8E28315C194AD4.ParseOrDefault(System.String,System.UInt64)">
+            <summary>
+            Parses the string as a <see cref="T:System.UInt64" />, returning <paramref name="defaultValue" /> if parsing fails.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.UriExtensions.get_Domain(System.Uri)">
+            <inheritdoc cref="P:PowerKit.Extensions.UriExtensions.&lt;G&gt;$A2D159684F90C84BD35ED118E17F9ADC.Domain"/>
+        </member>
+        <member name="M:PowerKit.Extensions.UriExtensions.TryGetFileName(System.Uri)">
+            <inheritdoc cref="M:PowerKit.Extensions.UriExtensions.&lt;G&gt;$A2D159684F90C84BD35ED118E17F9ADC.TryGetFileName"/>
+        </member>
+        <member name="P:PowerKit.Extensions.UriExtensions.&lt;G&gt;$A2D159684F90C84BD35ED118E17F9ADC.Domain">
+            <summary>
+            Gets the scheme and host components of the URI (e.g. "https://example.com").
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.UriExtensions.&lt;G&gt;$A2D159684F90C84BD35ED118E17F9ADC.TryGetFileName">
+            <summary>
+            Tries to get the file name from the last segment of the URI's path.
+            Returns <see langword="null" /> if the URI has no file name segment.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.VersionExtensions.ToSemanticString(System.Version)">
+            <inheritdoc cref="M:PowerKit.Extensions.VersionExtensions.&lt;G&gt;$0261911B9BECA5A93E08C4E2975EAC20.ToSemanticString"/>
+        </member>
+        <member name="M:PowerKit.Extensions.VersionExtensions.&lt;G&gt;$0261911B9BECA5A93E08C4E2975EAC20.ToSemanticString">
+            <summary>
+            Formats the version as a semantic version string, omitting the revision component if it is not set or is zero.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.XElementExtensions.StripNamespaces(System.Xml.Linq.XElement)">
+            <inheritdoc cref="M:PowerKit.Extensions.XElementExtensions.&lt;G&gt;$7F36B48A1CC0DC1944B161C6557E26E4.StripNamespaces"/>
+        </member>
+        <member name="M:PowerKit.Extensions.XElementExtensions.&lt;G&gt;$7F36B48A1CC0DC1944B161C6557E26E4.StripNamespaces">
+            <summary>
+            Returns a copy of the element with element namespaces, namespace declarations, and
+            non-reserved attribute namespace prefixes removed from the element and its descendants.
+            Attributes in the reserved <c>xml</c> namespace are preserved.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ZipArchiveEntryExtensions.ReadAllBytes(System.IO.Compression.ZipArchiveEntry)">
+            <inheritdoc cref="M:PowerKit.Extensions.ZipArchiveEntryExtensions.&lt;G&gt;$E59C9E2B0DA09EA97F0D27E2F5DEBB2A.ReadAllBytes"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ZipArchiveEntryExtensions.ReadAllBytesAsync(System.IO.Compression.ZipArchiveEntry,System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.ZipArchiveEntryExtensions.&lt;G&gt;$E59C9E2B0DA09EA97F0D27E2F5DEBB2A.ReadAllBytesAsync(System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ZipArchiveEntryExtensions.ReadAllLines(System.IO.Compression.ZipArchiveEntry,System.Text.Encoding)">
+            <inheritdoc cref="M:PowerKit.Extensions.ZipArchiveEntryExtensions.&lt;G&gt;$E59C9E2B0DA09EA97F0D27E2F5DEBB2A.ReadAllLines(System.Text.Encoding)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ZipArchiveEntryExtensions.ReadAllLinesAsync(System.IO.Compression.ZipArchiveEntry,System.Text.Encoding,System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.ZipArchiveEntryExtensions.&lt;G&gt;$E59C9E2B0DA09EA97F0D27E2F5DEBB2A.ReadAllLinesAsync(System.Text.Encoding,System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ZipArchiveEntryExtensions.ReadAllText(System.IO.Compression.ZipArchiveEntry,System.Text.Encoding)">
+            <inheritdoc cref="M:PowerKit.Extensions.ZipArchiveEntryExtensions.&lt;G&gt;$E59C9E2B0DA09EA97F0D27E2F5DEBB2A.ReadAllText(System.Text.Encoding)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ZipArchiveEntryExtensions.ReadAllTextAsync(System.IO.Compression.ZipArchiveEntry,System.Text.Encoding,System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.ZipArchiveEntryExtensions.&lt;G&gt;$E59C9E2B0DA09EA97F0D27E2F5DEBB2A.ReadAllTextAsync(System.Text.Encoding,System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ZipArchiveEntryExtensions.WriteAllBytes(System.IO.Compression.ZipArchiveEntry,System.Byte[])">
+            <inheritdoc cref="M:PowerKit.Extensions.ZipArchiveEntryExtensions.&lt;G&gt;$E59C9E2B0DA09EA97F0D27E2F5DEBB2A.WriteAllBytes(System.Byte[])"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ZipArchiveEntryExtensions.WriteAllBytesAsync(System.IO.Compression.ZipArchiveEntry,System.Byte[],System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.ZipArchiveEntryExtensions.&lt;G&gt;$E59C9E2B0DA09EA97F0D27E2F5DEBB2A.WriteAllBytesAsync(System.Byte[],System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ZipArchiveEntryExtensions.WriteAllLines(System.IO.Compression.ZipArchiveEntry,System.Collections.Generic.IEnumerable{System.String},System.Text.Encoding)">
+            <inheritdoc cref="M:PowerKit.Extensions.ZipArchiveEntryExtensions.&lt;G&gt;$E59C9E2B0DA09EA97F0D27E2F5DEBB2A.WriteAllLines(System.Collections.Generic.IEnumerable{System.String},System.Text.Encoding)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ZipArchiveEntryExtensions.WriteAllLinesAsync(System.IO.Compression.ZipArchiveEntry,System.Collections.Generic.IEnumerable{System.String},System.Text.Encoding,System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.ZipArchiveEntryExtensions.&lt;G&gt;$E59C9E2B0DA09EA97F0D27E2F5DEBB2A.WriteAllLinesAsync(System.Collections.Generic.IEnumerable{System.String},System.Text.Encoding,System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ZipArchiveEntryExtensions.WriteAllText(System.IO.Compression.ZipArchiveEntry,System.String,System.Text.Encoding)">
+            <inheritdoc cref="M:PowerKit.Extensions.ZipArchiveEntryExtensions.&lt;G&gt;$E59C9E2B0DA09EA97F0D27E2F5DEBB2A.WriteAllText(System.String,System.Text.Encoding)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ZipArchiveEntryExtensions.WriteAllTextAsync(System.IO.Compression.ZipArchiveEntry,System.String,System.Text.Encoding,System.Threading.CancellationToken)">
+            <inheritdoc cref="M:PowerKit.Extensions.ZipArchiveEntryExtensions.&lt;G&gt;$E59C9E2B0DA09EA97F0D27E2F5DEBB2A.WriteAllTextAsync(System.String,System.Text.Encoding,System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:PowerKit.Extensions.ZipArchiveEntryExtensions.&lt;G&gt;$E59C9E2B0DA09EA97F0D27E2F5DEBB2A.ReadAllBytes">
+            <summary>
+            Reads all bytes from the zip archive entry.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ZipArchiveEntryExtensions.&lt;G&gt;$E59C9E2B0DA09EA97F0D27E2F5DEBB2A.ReadAllBytesAsync(System.Threading.CancellationToken)">
+            <summary>
+            Reads all bytes from the zip archive entry asynchronously.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ZipArchiveEntryExtensions.&lt;G&gt;$E59C9E2B0DA09EA97F0D27E2F5DEBB2A.ReadAllLines(System.Text.Encoding)">
+            <summary>
+            Reads all lines from the zip archive entry using the specified encoding.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ZipArchiveEntryExtensions.&lt;G&gt;$E59C9E2B0DA09EA97F0D27E2F5DEBB2A.ReadAllLinesAsync(System.Text.Encoding,System.Threading.CancellationToken)">
+            <summary>
+            Reads all lines from the zip archive entry using the specified encoding asynchronously.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ZipArchiveEntryExtensions.&lt;G&gt;$E59C9E2B0DA09EA97F0D27E2F5DEBB2A.ReadAllText(System.Text.Encoding)">
+            <summary>
+            Reads all text from the zip archive entry using the specified encoding.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ZipArchiveEntryExtensions.&lt;G&gt;$E59C9E2B0DA09EA97F0D27E2F5DEBB2A.ReadAllTextAsync(System.Text.Encoding,System.Threading.CancellationToken)">
+            <summary>
+            Reads all text from the zip archive entry using the specified encoding asynchronously.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ZipArchiveEntryExtensions.&lt;G&gt;$E59C9E2B0DA09EA97F0D27E2F5DEBB2A.WriteAllBytes(System.Byte[])">
+            <summary>
+            Writes all bytes to the zip archive entry.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ZipArchiveEntryExtensions.&lt;G&gt;$E59C9E2B0DA09EA97F0D27E2F5DEBB2A.WriteAllBytesAsync(System.Byte[],System.Threading.CancellationToken)">
+            <summary>
+            Writes all bytes to the zip archive entry asynchronously.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ZipArchiveEntryExtensions.&lt;G&gt;$E59C9E2B0DA09EA97F0D27E2F5DEBB2A.WriteAllLines(System.Collections.Generic.IEnumerable{System.String},System.Text.Encoding)">
+            <summary>
+            Writes all lines to the zip archive entry using the specified encoding.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ZipArchiveEntryExtensions.&lt;G&gt;$E59C9E2B0DA09EA97F0D27E2F5DEBB2A.WriteAllLinesAsync(System.Collections.Generic.IEnumerable{System.String},System.Text.Encoding,System.Threading.CancellationToken)">
+            <summary>
+            Writes all lines to the zip archive entry using the specified encoding asynchronously.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ZipArchiveEntryExtensions.&lt;G&gt;$E59C9E2B0DA09EA97F0D27E2F5DEBB2A.WriteAllText(System.String,System.Text.Encoding)">
+            <summary>
+            Writes all text to the zip archive entry using the specified encoding.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Extensions.ZipArchiveEntryExtensions.&lt;G&gt;$E59C9E2B0DA09EA97F0D27E2F5DEBB2A.WriteAllTextAsync(System.String,System.Text.Encoding,System.Threading.CancellationToken)">
+            <summary>
+            Writes all text to the zip archive entry using the specified encoding asynchronously.
+            </summary>
+        </member>
+        <member name="T:PowerKit.LockFile">
+            <summary>
+            Represents a file-based lock that prevents concurrent access to a shared resource.
+            </summary>
+        </member>
+        <member name="M:PowerKit.LockFile.#ctor(System.IO.FileStream)">
+            <summary>
+            Represents a file-based lock that prevents concurrent access to a shared resource.
+            </summary>
+        </member>
+        <member name="M:PowerKit.LockFile.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:PowerKit.LockFile.TryAcquire(System.String)">
+            <summary>
+            Tries to acquire a lock on the specified file path.
+            Returns <see langword="null" /> if the lock could not be acquired.
+            </summary>
+        </member>
+        <member name="T:PowerKit.Observable`1">
+            <summary>
+            Represents an observable sequence of values.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Observable`1.#ctor(System.Func{System.IObserver{`0},System.IDisposable})">
+            <summary>
+            Represents an observable sequence of values.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Observable`1.Subscribe(System.IObserver{`0})">
+            <inheritdoc />
+        </member>
+        <member name="T:PowerKit.Observable">
+            <summary>
+            Provides utility methods for creating <see cref="T:System.IObservable`1" /> instances.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Observable.Create``1(System.Func{System.IObserver{``0},System.IDisposable})">
+            <summary>
+            Creates an observable that invokes the specified subscribe function when subscribed to.
+            </summary>
+        </member>
+        <member name="M:PowerKit.Observable.CreateSynchronized``1(System.Func{System.IObserver{``0},System.IDisposable})">
+            <summary>
+            Creates an observable that invokes the specified subscribe function when subscribed to,
+            wrapping the observer in a <see cref="T:PowerKit.SynchronizedObserver`1" /> to ensure thread safety.
+            </summary>
+        </member>
+        <member name="T:PowerKit.ProgressMuxer">
+            <summary>
+            Multiplexes multiple <see cref="T:System.IProgress`1" /> reporters into a single output reporter,
+            combining weighted progress values from multiple sources.
+            </summary>
+        </member>
+        <member name="M:PowerKit.ProgressMuxer.#ctor(System.IProgress{System.Double})">
+            <summary>
+            Multiplexes multiple <see cref="T:System.IProgress`1" /> reporters into a single output reporter,
+            combining weighted progress values from multiple sources.
+            </summary>
+        </member>
+        <member name="M:PowerKit.ProgressMuxer.CreateInput(System.Double)">
+            <summary>
+            Creates a new progress input with the specified weight.
+            Progress reported to this input is combined with all other inputs as a normalized
+            weighted average before being forwarded to the output.
+            </summary>
+        </member>
+        <member name="T:PowerKit.ResizableSemaphore">
+            <summary>
+            Semaphore whose maximum concurrency count can be adjusted at run time.
+            </summary>
+        </member>
+        <member name="P:PowerKit.ResizableSemaphore.MaxCount">
+            <summary>
+            Gets or sets the maximum number of concurrent accesses.
+            Defaults to <see cref="F:System.Int32.MaxValue" />.
+            </summary>
+        </member>
+        <member name="M:PowerKit.ResizableSemaphore.AcquireAsync(System.Threading.CancellationToken)">
+            <summary>
+            Acquires access to the semaphore, waiting asynchronously if the maximum concurrency count
+            has been reached. Dispose the returned handle to release access.
+            </summary>
+        </member>
+        <member name="M:PowerKit.ResizableSemaphore.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="T:PowerKit.ISpanOwner`1">
+            <summary>
+            Represents a rented buffer that is exposed as a <see cref="T:System.Span`1" />.
+            </summary>
+        </member>
+        <member name="P:PowerKit.ISpanOwner`1.Span">
+            <summary>
+            Gets the rented buffer as a span.
+            </summary>
+        </member>
+        <member name="T:PowerKit.SpanPool`1">
+            <summary>
+            Provides a pool of buffers that are exposed as <see cref="T:System.Span`1" /> instances.
+            </summary>
+        </member>
+        <member name="M:PowerKit.SpanPool`1.#ctor(System.Buffers.ArrayPool{`0})">
+            <summary>
+            Provides a pool of buffers that are exposed as <see cref="T:System.Span`1" /> instances.
+            </summary>
+        </member>
+        <member name="P:PowerKit.SpanPool`1.Shared">
+            <summary>
+            Gets a shared <see cref="T:PowerKit.SpanPool`1" /> instance backed by
+            <see cref="P:System.Buffers.ArrayPool`1.Shared" />.
+            </summary>
+        </member>
+        <member name="M:PowerKit.SpanPool`1.Rent(System.Int32)">
+            <summary>
+            Rents a buffer of at least <paramref name="minimumLength" /> elements from the pool
+            and wraps it in an <see cref="T:PowerKit.ISpanOwner`1" /> that returns the buffer to the pool
+            when disposed.
+            </summary>
+        </member>
+        <member name="T:PowerKit.SynchronizedObserver`1">
+            <summary>
+            An observer that synchronizes access to the underlying observer.
+            </summary>
+        </member>
+        <member name="M:PowerKit.SynchronizedObserver`1.#ctor(System.IObserver{`0})">
+            <summary>
+            An observer that synchronizes access to the underlying observer.
+            </summary>
+        </member>
+        <member name="M:PowerKit.SynchronizedObserver`1.OnCompleted">
+            <inheritdoc />
+        </member>
+        <member name="M:PowerKit.SynchronizedObserver`1.OnError(System.Exception)">
+            <inheritdoc />
+        </member>
+        <member name="M:PowerKit.SynchronizedObserver`1.OnNext(`0)">
+            <inheritdoc />
+        </member>
+        <member name="T:PowerKit.TempDirectory">
+            <summary>
+            Represents a temporary directory that is automatically deleted when disposed.
+            </summary>
+        </member>
+        <member name="M:PowerKit.TempDirectory.#ctor(System.String)">
+            <summary>
+            Represents a temporary directory that is automatically deleted when disposed.
+            </summary>
+        </member>
+        <member name="P:PowerKit.TempDirectory.Path">
+            <summary>
+            Gets the path of the temporary directory.
+            </summary>
+        </member>
+        <member name="M:PowerKit.TempDirectory.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:PowerKit.TempDirectory.GeneratePath">
+            <summary>
+            Generates a unique path for a temporary directory without creating it.
+            </summary>
+        </member>
+        <member name="M:PowerKit.TempDirectory.Create(System.Boolean)">
+            <summary>
+            Creates a new temporary directory.
+            The directory is only created on disk when <paramref name="preCreate" /> is <see langword="true" />.
+            </summary>
+        </member>
+        <member name="T:PowerKit.TempFile">
+            <summary>
+            Represents a temporary file that is automatically deleted when disposed.
+            </summary>
+        </member>
+        <member name="M:PowerKit.TempFile.#ctor(System.String)">
+            <summary>
+            Represents a temporary file that is automatically deleted when disposed.
+            </summary>
+        </member>
+        <member name="P:PowerKit.TempFile.Path">
+            <summary>
+            Gets the path of the temporary file.
+            </summary>
+        </member>
+        <member name="M:PowerKit.TempFile.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:PowerKit.TempFile.GeneratePath">
+            <summary>
+            Generates a unique path for a temporary file without creating it.
+            </summary>
+        </member>
+        <member name="M:PowerKit.TempFile.Create(System.Boolean)">
+            <summary>
+            Creates a new temporary file.
+            The file is only created on disk when <paramref name="preCreate" /> is <see langword="true" />.
+            </summary>
+        </member>
+        <member name="T:PowerKit.ThrottleLock">
+            <summary>
+            Represents a lock that enforces a minimum interval between consecutive acquisitions,
+            ensuring that operations do not proceed faster than the specified rate.
+            </summary>
+        </member>
+        <member name="M:PowerKit.ThrottleLock.#ctor(System.TimeSpan)">
+            <summary>
+            Represents a lock that enforces a minimum interval between consecutive acquisitions,
+            ensuring that operations do not proceed faster than the specified rate.
+            </summary>
+        </member>
+        <member name="M:PowerKit.ThrottleLock.WaitAsync(System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously waits until the throttle interval has elapsed since the last acquisition,
+            then records the current instant as the new last-request time.
+            </summary>
+        </member>
+        <member name="M:PowerKit.ThrottleLock.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="T:GitHubActionsTestLogger.MtpIntegration">
+            <summary>
+            Extensions that integrate GitHub Actions test reporting into the Microsoft Testing Platform.
+            </summary>
+        </member>
+        <member name="M:GitHubActionsTestLogger.MtpIntegration.AddGitHubActionsReporting(Microsoft.Testing.Platform.Builder.ITestApplicationBuilder,System.IO.TextWriter,System.IO.TextWriter)">
+            <inheritdoc cref="M:GitHubActionsTestLogger.MtpIntegration.&lt;G&gt;$CF4DCD8E4372233A707327BFEBA5283A.AddGitHubActionsReporting(System.IO.TextWriter,System.IO.TextWriter)"/>
+        </member>
+        <member name="M:GitHubActionsTestLogger.MtpIntegration.AddGitHubActionsReporting(Microsoft.Testing.Platform.Builder.ITestApplicationBuilder)">
+            <inheritdoc cref="M:GitHubActionsTestLogger.MtpIntegration.&lt;G&gt;$CF4DCD8E4372233A707327BFEBA5283A.AddGitHubActionsReporting"/>
+        </member>
+        <member name="M:GitHubActionsTestLogger.MtpIntegration.AddExtensions(Microsoft.Testing.Platform.Builder.ITestApplicationBuilder,System.String[])">
+            <summary>
+            Adds GitHub Actions reporting support to the Testing Platform Builder.
+            </summary>
+        </member>
+        <member name="T:GitHubActionsTestLogger.MtpIntegration.&lt;G&gt;$CF4DCD8E4372233A707327BFEBA5283A.&lt;M&gt;$F58978173818D89B0081A2753786AA85">
+            <inheritdoc cref="T:GitHubActionsTestLogger.MtpIntegration" />
+        </member>
+        <member name="M:GitHubActionsTestLogger.MtpIntegration.&lt;G&gt;$CF4DCD8E4372233A707327BFEBA5283A.AddGitHubActionsReporting(System.IO.TextWriter,System.IO.TextWriter)">
+            <summary>
+            Adds GitHub Actions reporting support to the Testing Platform Builder.
+            </summary>
+            <remarks>
+            This overload is useful for testing purposes, as it allows providing custom
+            writers for GitHub's command and summary outputs.
+            </remarks>
+        </member>
+        <member name="M:GitHubActionsTestLogger.MtpIntegration.&lt;G&gt;$CF4DCD8E4372233A707327BFEBA5283A.AddGitHubActionsReporting">
+            <summary>
+            Adds GitHub Actions reporting support to the Testing Platform Builder.
+            </summary>
+        </member>
+        <member name="T:GitHubActionsTestLogger.VsTestLogger">
+            <summary>
+            GitHub Actions test logger for Visual Studio Test Platform (VSTest).
+            </summary>
+        </member>
+        <member name="M:GitHubActionsTestLogger.VsTestLogger.Initialize(Microsoft.VisualStudio.TestPlatform.ObjectModel.Client.TestLoggerEvents,System.Collections.Generic.Dictionary{System.String,System.String},System.IO.TextWriter,System.IO.TextWriter)">
+            <summary>
+            Initializes the logger.
+            </summary>
+            <remarks>
+            This overload is useful for testing purposes, as it allows providing custom
+            writers for GitHub's command and summary outputs.
+            </remarks>
+        </member>
+        <member name="M:GitHubActionsTestLogger.VsTestLogger.Initialize(Microsoft.VisualStudio.TestPlatform.ObjectModel.Client.TestLoggerEvents,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <summary>
+            Initializes the logger.
+            </summary>
+        </member>
+        <member name="M:GitHubActionsTestLogger.VsTestLogger.Initialize(Microsoft.VisualStudio.TestPlatform.ObjectModel.Client.TestLoggerEvents,System.String)">
+            <summary>
+            Initializes the logger.
+            </summary>
+        </member>
+        <member name="T:RazorBlade.Support.TemplateConstructorAttribute">
+            <summary>
+            Specifies that this constructor needs to be provided by the generated template class.
+            </summary>
+        </member>
+        <member name="T:RazorBlade.HtmlHelper">
+            <summary>
+            Utilities for HTML Razor templates.
+            </summary>
+        </member>
+        <member name="M:RazorBlade.HtmlHelper.Raw(System.Object)">
+            <summary>
+            Returns markup that is not HTML encoded.
+            </summary>
+            <param name="value">The HTML markup.</param>
+        </member>
+        <member name="M:RazorBlade.HtmlHelper.Encode(System.Object)">
+            <summary>
+            HTML-encodes the provided value.
+            </summary>
+            <param name="value">Value to HTML-encode.</param>
+        </member>
+        <member name="M:RazorBlade.HtmlHelper.Encode(System.Object,System.IO.TextWriter)">
+            <summary>
+            HTML-encodes the provided value to the writer.
+            </summary>
+            <param name="value">Value to HTML-encode.</param>
+            <param name="writer">Destination writer.</param>
+        </member>
+        <member name="T:RazorBlade.HtmlLayout">
+            <summary>
+            Base class for HTML layout pages.
+            </summary>
+        </member>
+        <member name="M:RazorBlade.HtmlLayout.Render(System.Threading.CancellationToken)">
+            <summary>
+            Should not be used on layout pages.
+            </summary>
+        </member>
+        <member name="M:RazorBlade.HtmlLayout.Render(System.IO.TextWriter,System.Threading.CancellationToken)">
+            <summary>
+            Should not be used on layout pages.
+            </summary>
+        </member>
+        <member name="M:RazorBlade.HtmlLayout.RenderAsync(System.Threading.CancellationToken)">
+            <summary>
+            Should not be used on layout pages.
+            </summary>
+        </member>
+        <member name="M:RazorBlade.HtmlLayout.RenderAsync(System.IO.TextWriter,System.Threading.CancellationToken)">
+            <summary>
+            Should not be used on layout pages.
+            </summary>
+        </member>
+        <member name="M:RazorBlade.HtmlLayout.RenderBody">
+            <summary>
+            Returns the inner page body.
+            </summary>
+        </member>
+        <member name="M:RazorBlade.HtmlLayout.RenderSection(System.String)">
+            <summary>
+            Renders a required section and returns the result as encoded content.
+            </summary>
+            <param name="name">The section name.</param>
+            <returns>The content to write to the output.</returns>
+        </member>
+        <member name="M:RazorBlade.HtmlLayout.RenderSection(System.String,System.Boolean)">
+            <summary>
+            Renders a section and returns the result as encoded content.
+            </summary>
+            <param name="name">The section name.</param>
+            <param name="required">Whether the section is required.</param>
+            <returns>The content to write to the output.</returns>
+        </member>
+        <member name="M:RazorBlade.HtmlLayout.RenderSectionAsync(System.String)">
+            <summary>
+            Renders a required section asynchronously and returns the result as encoded content.
+            </summary>
+            <param name="name">The section name.</param>
+            <returns>The content to write to the output.</returns>
+        </member>
+        <member name="M:RazorBlade.HtmlLayout.RenderSectionAsync(System.String,System.Boolean)">
+            <summary>
+            Renders a section asynchronously and returns the result as encoded content.
+            </summary>
+            <param name="name">The section name.</param>
+            <param name="required">Whether the section is required.</param>
+            <returns>The content to write to the output.</returns>
+        </member>
+        <member name="M:RazorBlade.HtmlLayout.IsSectionDefined(System.String)">
+            <summary>
+            Indicates if a given section is defined.
+            </summary>
+            <param name="name">The section name.</param>
+        </member>
+        <member name="M:RazorBlade.HtmlLayout.GetLayoutInput">
+            <summary>
+            Ensures the template is being executed as a layout and returns the input data.
+            </summary>
+        </member>
+        <member name="T:RazorBlade.HtmlString">
+            <summary>
+            Represents an HTML-encoded string that should not be encoded again.
+            </summary>
+        </member>
+        <member name="P:RazorBlade.HtmlString.Empty">
+            <summary>
+            Represents an empty HTML-encoded string.
+            </summary>
+        </member>
+        <member name="M:RazorBlade.HtmlString.#ctor(System.String)">
+            <summary>
+            Creates an HTML-encoded string.
+            </summary>
+        </member>
+        <member name="M:RazorBlade.HtmlString.ToString">
+            <inheritdoc />
+        </member>
+        <member name="T:RazorBlade.HtmlTemplate">
+            <summary>
+            Base class for HTML templates.
+            </summary>
+            <remarks>
+            Special HTML characters will be escaped.
+            </remarks>
+        </member>
+        <member name="P:RazorBlade.HtmlTemplate.Layout">
+            <inheritdoc cref="P:RazorBlade.RazorTemplate.Layout" />
+        </member>
+        <member name="P:RazorBlade.HtmlTemplate.Html">
+            <inheritdoc cref="T:RazorBlade.HtmlHelper"/>
+        </member>
+        <member name="M:RazorBlade.HtmlTemplate.Raw(System.Object)">
+            <inheritdoc cref="M:RazorBlade.HtmlHelper.Raw(System.Object)"/>
+        </member>
+        <member name="M:RazorBlade.HtmlTemplate.Write(System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:RazorBlade.HtmlTemplate.BeginWriteAttribute(System.String,System.String,System.Int32,System.String,System.Int32,System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="M:RazorBlade.HtmlTemplate.WriteAttributeValue(System.String,System.Int32,System.Object,System.Int32,System.Int32,System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:RazorBlade.HtmlTemplate.EndWriteAttribute">
+            <inheritdoc />
+        </member>
+        <member name="M:RazorBlade.HtmlTemplate.CreateLayout">
+            <inheritdoc cref="M:RazorBlade.HtmlTemplate.CreateLayoutInternal"/>
+        </member>
+        <member name="M:RazorBlade.HtmlTemplate.CreateLayoutInternal">
+            <inheritdoc />
+        </member>
+        <member name="T:RazorBlade.HtmlTemplate`1">
+            <summary>
+            Base class for HTML templates with a model.
+            </summary>
+            <remarks>
+            Special HTML characters will be escaped.
+            </remarks>
+            <typeparam name="TModel">The model type.</typeparam>
+        </member>
+        <member name="P:RazorBlade.HtmlTemplate`1.Model">
+            <summary>
+            The model for the template.
+            </summary>
+        </member>
+        <member name="M:RazorBlade.HtmlTemplate`1.#ctor(`0)">
+            <summary>
+            Initializes a new instance of the template.
+            </summary>
+            <param name="model">The model for the template.</param>
+        </member>
+        <member name="M:RazorBlade.HtmlTemplate`1.#ctor">
+            <summary>
+            This constructor is provided for the designer only. Do not use.
+            </summary>
+        </member>
+        <member name="T:RazorBlade.HtmlTemplateWithLayout`1">
+            <summary>
+            Base class for HTML templates with a layout.
+            </summary>
+            <remarks>
+            Special HTML characters will be escaped.
+            </remarks>
+            <typeparam name="TLayout">The layout type.</typeparam>
+        </member>
+        <member name="M:RazorBlade.HtmlTemplateWithLayout`1.CreateLayout">
+            <summary>
+            Creates a <typeparamref name="TLayout"/> instance to be used with this template.
+            </summary>
+        </member>
+        <member name="T:RazorBlade.IEncodedContent">
+            <summary>
+            Encoded content to be written to the output as-is.
+            </summary>
+        </member>
+        <member name="M:RazorBlade.IEncodedContent.WriteTo(System.IO.TextWriter)">
+            <summary>
+            Writes the content to the provided <see cref="T:System.IO.TextWriter"/>.
+            </summary>
+            <param name="textWriter"><see cref="T:System.IO.TextWriter"/> to write the content to.</param>
+        </member>
+        <member name="T:RazorBlade.IRazorExecutionResult">
+            <summary>
+            The execution result of a Razor template.
+            </summary>
+        </member>
+        <member name="P:RazorBlade.IRazorExecutionResult.Body">
+            <summary>
+            The rendered body contents.
+            </summary>
+        </member>
+        <member name="P:RazorBlade.IRazorExecutionResult.Layout">
+            <summary>
+            The layout this execution result should be wrapped in.
+            </summary>
+        </member>
+        <member name="P:RazorBlade.IRazorExecutionResult.CancellationToken">
+            <summary>
+            The cancellation token.
+            </summary>
+        </member>
+        <member name="M:RazorBlade.IRazorExecutionResult.RenderSectionAsync(System.String)">
+            <summary>
+            Renders a section.
+            </summary>
+            <param name="name">The section name.</param>
+            <returns>The rendered output, or null if the section is not defined.</returns>
+        </member>
+        <member name="M:RazorBlade.IRazorExecutionResult.IsSectionDefined(System.String)">
+            <summary>
+            Indicates if a given section is defined.
+            </summary>
+            <param name="name">The section name.</param>
+        </member>
+        <member name="T:RazorBlade.IRazorLayout">
+            <summary>
+            Represents a Razor layout page.
+            </summary>
+        </member>
+        <member name="M:RazorBlade.IRazorLayout.ExecuteLayoutAsync(RazorBlade.IRazorExecutionResult)">
+            <summary>
+            Renders the layout for a given page.
+            </summary>
+            <param name="input">The input data.</param>
+            <returns>The output data after rendering the layout, which can be used for the next layout.</returns>
+        </member>
+        <member name="T:RazorBlade.PlainTextTemplate">
+            <summary>
+            Base class for plain text templates.
+            </summary>
+            <remarks>
+            Values will be written as-is, without escaping.
+            </remarks>
+        </member>
+        <member name="M:RazorBlade.PlainTextTemplate.Write(System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:RazorBlade.PlainTextTemplate.BeginWriteAttribute(System.String,System.String,System.Int32,System.String,System.Int32,System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="M:RazorBlade.PlainTextTemplate.WriteAttributeValue(System.String,System.Int32,System.Object,System.Int32,System.Int32,System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:RazorBlade.PlainTextTemplate.EndWriteAttribute">
+            <inheritdoc />
+        </member>
+        <member name="T:RazorBlade.PlainTextTemplate`1">
+            <summary>
+            Base class for plain text templates with a model.
+            </summary>
+            <remarks>
+            Values will be written as-is, without escaping.
+            </remarks>
+            <typeparam name="TModel">The model type.</typeparam>
+        </member>
+        <member name="P:RazorBlade.PlainTextTemplate`1.Model">
+            <summary>
+            The model for the template.
+            </summary>
+        </member>
+        <member name="M:RazorBlade.PlainTextTemplate`1.#ctor(`0)">
+            <summary>
+            Initializes a new instance of the template.
+            </summary>
+            <param name="model">The model for the template.</param>
+        </member>
+        <member name="M:RazorBlade.PlainTextTemplate`1.#ctor">
+            <summary>
+            This constructor is provided for the designer only. Do not use.
+            </summary>
+        </member>
+        <member name="T:RazorBlade.RazorTemplate">
+            <summary>
+            Base class for Razor templates.
+            </summary>
+        </member>
+        <member name="P:RazorBlade.RazorTemplate.Output">
+            <summary>
+            The <see cref="T:System.IO.TextWriter"/> which receives the output.
+            </summary>
+        </member>
+        <member name="P:RazorBlade.RazorTemplate.CancellationToken">
+            <summary>
+            The cancellation token.
+            </summary>
+        </member>
+        <member name="P:RazorBlade.RazorTemplate.Layout">
+            <summary>
+            The layout to be used with this template.
+            </summary>
+        </member>
+        <member name="M:RazorBlade.RazorTemplate.Render(System.Threading.CancellationToken)">
+            <summary>
+            Renders the template synchronously and returns the result as a string.
+            </summary>
+            <param name="cancellationToken">The cancellation token.</param>
+            <remarks>
+            Use this only if the template does not use <c>@async</c> directives.
+            </remarks>
+        </member>
+        <member name="M:RazorBlade.RazorTemplate.Render(System.IO.TextWriter,System.Threading.CancellationToken)">
+            <summary>
+            Renders the template synchronously to the given <see cref="T:System.IO.TextWriter"/>.
+            </summary>
+            <param name="textWriter">The <see cref="T:System.IO.TextWriter"/> to write to.</param>
+            <param name="cancellationToken">The cancellation token.</param>
+            <remarks>
+            Use this only if the template does not use <c>@async</c> directives.
+            </remarks>
+        </member>
+        <member name="M:RazorBlade.RazorTemplate.RenderAsync(System.Threading.CancellationToken)">
+            <summary>
+            Renders the template asynchronously and returns the result as a string.
+            </summary>
+            <param name="cancellationToken">The cancellation token.</param>
+            <remarks>
+            Use this if the template uses <c>@async</c> directives.
+            </remarks>
+        </member>
+        <member name="M:RazorBlade.RazorTemplate.RenderAsync(System.IO.TextWriter,System.Threading.CancellationToken)">
+            <summary>
+            Renders the template asynchronously to the given <see cref="T:System.IO.TextWriter"/>.
+            </summary>
+            <param name="textWriter">The <see cref="T:System.IO.TextWriter"/> to write to.</param>
+            <param name="cancellationToken">The cancellation token.</param>
+            <remarks>
+            Use this if the template uses <c>@async</c> directives.
+            </remarks>
+        </member>
+        <member name="M:RazorBlade.RazorTemplate.RenderAsyncCore(System.IO.TextWriter,System.Threading.CancellationToken)">
+            <summary>
+            Renders the template and its layout stack.
+            </summary>
+        </member>
+        <member name="M:RazorBlade.RazorTemplate.ExecuteAsyncCore(System.IO.TextWriter,System.Threading.CancellationToken)">
+            <summary>
+            Calls the <see cref="M:RazorBlade.RazorTemplate.ExecuteAsync"/> method in a new <see cref="T:RazorBlade.RazorTemplate.ExecutionScope"/>.
+            </summary>
+        </member>
+        <member name="M:RazorBlade.RazorTemplate.FlushAsync">
+            <summary>
+            Flushes the output stream.
+            </summary>
+            <returns>
+            An empty <see cref="T:RazorBlade.IEncodedContent"/>, which allows using a direct expression: <c>@await FlushAsync()</c>
+            </returns>
+        </member>
+        <member name="M:RazorBlade.RazorTemplate.ExecuteAsync">
+            <summary>
+            Executes the template and appends the result to <see cref="P:RazorBlade.RazorTemplate.Output"/>.
+            </summary>
+        </member>
+        <member name="M:RazorBlade.RazorTemplate.WriteLiteral(System.String)">
+            <summary>
+            Writes a literal value to the output.
+            </summary>
+            <param name="value">The value to write.</param>
+        </member>
+        <member name="M:RazorBlade.RazorTemplate.Write(System.Object)">
+            <summary>
+            Write a value to the output.
+            </summary>
+            <param name="value">The value to write.</param>
+        </member>
+        <member name="M:RazorBlade.RazorTemplate.Write(RazorBlade.IEncodedContent)">
+            <summary>
+            Write already encoded content to the output.
+            </summary>
+            <param name="content">The template to render.</param>
+        </member>
+        <member name="M:RazorBlade.RazorTemplate.BeginWriteAttribute(System.String,System.String,System.Int32,System.String,System.Int32,System.Int32)">
+            <summary>
+            Begins writing an attribute.
+            </summary>
+            <param name="name">The attribute name.</param>
+            <param name="prefix">The attribute prefix, which is the text from the whitespace preceding the attribute name to the quote before the attribute value.</param>
+            <param name="prefixOffset">The prefix offset in the Razor file.</param>
+            <param name="suffix">The suffix, consisting of the end quote.</param>
+            <param name="suffixOffset">The suffix offset in the Razor file.</param>
+            <param name="attributeValuesCount">The count of attribute value parts, which is the count of subsequent <see cref="M:RazorBlade.RazorTemplate.WriteAttributeValue(System.String,System.Int32,System.Object,System.Int32,System.Int32,System.Boolean)"/> calls.</param>
+        </member>
+        <member name="M:RazorBlade.RazorTemplate.WriteAttributeValue(System.String,System.Int32,System.Object,System.Int32,System.Int32,System.Boolean)">
+            <summary>
+            Writes part of an attribute value.
+            </summary>
+            <param name="prefix">The value prefix, consisting of the whitespace preceding the value.</param>
+            <param name="prefixOffset">The prefix offset in the Razor file.</param>
+            <param name="value">The value to write.</param>
+            <param name="valueOffset">The value offset in the Razor file.</param>
+            <param name="valueLength">The value length in the Razor file.</param>
+            <param name="isLiteral">Whether the value is a literal.</param>
+        </member>
+        <member name="M:RazorBlade.RazorTemplate.EndWriteAttribute">
+            <summary>
+            Ends writing an attribute.
+            </summary>
+        </member>
+        <member name="M:RazorBlade.RazorTemplate.DefineSection(System.String,System.Func{System.Threading.Tasks.Task})">
+            <summary>
+            Defines a section.
+            </summary>
+            <param name="name">The name of the section.</param>
+            <param name="action">The action which renders the section.</param>
+        </member>
+        <member name="M:RazorBlade.RazorTemplate.PushWriter(System.IO.TextWriter)">
+            <summary>
+            Pushes a writer on the stack.
+            </summary>
+            <param name="writer">The writer to use.</param>
+        </member>
+        <member name="M:RazorBlade.RazorTemplate.PopWriter">
+            <summary>
+            Pops the last writer pushed on the stack.
+            </summary>
+        </member>
+        <member name="M:RazorBlade.RazorTemplate.CreateLayoutInternal">
+            <summary>
+            Creates the layout instance to use with this template, or returns null when no layout should be used. This is called before rendering.
+            </summary>
+            <remarks>
+            Using a layout disables direct rendering to <see cref="P:RazorBlade.RazorTemplate.Output"/>. Intermediate output will need to be buffered.
+            </remarks>
+        </member>
+        <member name="T:RazorBlade.RazorTemplate.ExecutionScope">
+            <summary>
+            Stores the state of a template execution.
+            </summary>
+        </member>
+        <member name="T:RazorBlade.RazorTemplate.ExecutionResult">
+            <summary>
+            Stores the result of a template execution.
+            </summary>
+        </member>
+        <member name="T:RazorBlade.RazorTemplate.BufferedContent">
+            <summary>
+            Stores the output of a template execution as a <see cref="T:System.Text.StringBuilder"/>.
+            </summary>
+            <remarks>
+            StringBuilders can be combined more efficiently than strings, which is useful for layouts.
+            <see cref="T:System.IO.TextWriter"/> has a dedicated <c>Write</c> overload for <see cref="T:System.Text.StringBuilder"/> in some frameworks.
+            </remarks>
+        </member>
+        <member name="T:RazorBlade.RazorTemplate.HelperResult">
+            <summary>
+            Represents a deferred write operation.
+            </summary>
+        </member>
+        <member name="M:RazorBlade.RazorTemplate.HelperResult.#ctor(System.Func{System.IO.TextWriter,System.Threading.Tasks.Task})">
+            <summary>
+            Creates a deferred operation.
+            </summary>
+            <param name="action">The action to execute.</param>
+        </member>
+        <member name="M:RazorBlade.RazorTemplate.HelperResult.WriteTo(System.IO.TextWriter)">
+            <inheritdoc />
+        </member>
+    </members>
+</doc>

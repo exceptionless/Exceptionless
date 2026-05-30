@@ -1,0 +1,636 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Extensions.Logging.Console</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.Extensions.Logging.Console.AnsiLogConsole">
+            <summary>
+            For consoles which understand the ANSI escape code sequences to represent color
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.AnsiParser.Parse(System.String)">
+            <summary>
+            Parses a subset of display attributes
+            Set Display Attributes
+            Set Attribute Mode [{attr1};...;{attrn}m
+            Sets multiple display attribute settings. The following lists standard attributes that are getting parsed:
+            1 Bright
+            Foreground Colours
+            30 Black
+            31 Red
+            32 Green
+            33 Yellow
+            34 Blue
+            35 Magenta
+            36 Cyan
+            37 White
+            Background Colours
+            40 Black
+            41 Red
+            42 Green
+            43 Yellow
+            44 Blue
+            45 Magenta
+            46 Cyan
+            47 White
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.ConfigurationConsoleLoggerSettings">
+            <summary>
+            Settings for a <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLogger"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConfigurationConsoleLoggerSettings.#ctor(Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Creates a new instance of <see cref="T:Microsoft.Extensions.Logging.Console.ConfigurationConsoleLoggerSettings"/>.
+            </summary>
+            <param name="configuration">The configuration values.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConfigurationConsoleLoggerSettings.ChangeToken">
+            <summary>
+            Gets the <see cref="T:Microsoft.Extensions.Primitives.IChangeToken"/> that propagates notifications that a change has occurred.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConfigurationConsoleLoggerSettings.IncludeScopes">
+            <summary>
+            Gets a value indicating whether scopes should be included in the message.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConfigurationConsoleLoggerSettings.Reload">
+            <summary>
+            Reload the settings from the configuration.
+            </summary>
+            <returns>The reloaded settings.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConfigurationConsoleLoggerSettings.TryGetSwitch(System.String,Microsoft.Extensions.Logging.LogLevel@)">
+            <summary>
+            Gets the log level for the specified switch.
+            </summary>
+            <param name="name">The name of the switch to look up.</param>
+            <param name="level">When this method returns, contains the value of the switch if it is found. If the switch is not found, the method returns false and sets the value of level to LogLevel.None</param>
+            <returns><see langword="true" /> if the switch was found, otherwise <see langword="false" />.</returns>
+            <exception cref="T:System.InvalidOperationException"></exception>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.ConsoleFormatter">
+            <summary>
+            Allows custom log messages formatting.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleFormatter.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleFormatter"/>.
+            </summary>
+            <param name="name"></param>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleFormatter.Name">
+            <summary>
+            Gets the name associated with the console log formatter.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleFormatter.Write``1(Microsoft.Extensions.Logging.Abstractions.LogEntry{``0}@,Microsoft.Extensions.Logging.IExternalScopeProvider,System.IO.TextWriter)">
+            <summary>
+            Writes the log message to the specified TextWriter.
+            </summary>
+            <remarks>
+            If the formatter wants to write colors to the console, it can do so by embedding ANSI color codes into the string.
+            </remarks>
+            <param name="logEntry">The log entry.</param>
+            <param name="scopeProvider">The provider of scope data.</param>
+            <param name="textWriter">The string writer embedding ansi code for colors.</param>
+            <typeparam name="TState">The type of the object to be written.</typeparam>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.ConsoleFormatterNames">
+            <summary>
+            Reserved formatter names for the built-in console formatters.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Logging.Console.ConsoleFormatterNames.Simple">
+            <summary>
+            Reserved name for simple console formatter.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Logging.Console.ConsoleFormatterNames.Json">
+            <summary>
+            Reserved name for json console formatter.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Logging.Console.ConsoleFormatterNames.Systemd">
+            <summary>
+            Reserved name for systemd console formatter.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions">
+            <summary>
+            Options for the built-in console log formatter.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions"/> class.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions.IncludeScopes">
+            <summary>
+            Gets or sets a value that indicates whether scopes are included.
+            </summary>
+            <value>
+            <see langword="true" /> if scopes are included.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions.TimestampFormat">
+            <summary>
+            Gets or sets the format string used to format timestamp in logging messages.
+            </summary>
+            <value>
+            The default is <see langword="null" />.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions.UseUtcTimestamp">
+            <summary>
+            Gets or sets a value that indicates whether or not UTC timezone should be used to format timestamps in logging messages.
+            </summary>
+            <value>
+            The default is <see langword="false" />.
+            </value>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.ConsoleLogger">
+            <summary>
+            A logger that writes messages in the console.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleLogger.Log``1(Microsoft.Extensions.Logging.LogLevel,Microsoft.Extensions.Logging.EventId,``0,System.Exception,System.Func{``0,System.Exception,System.String})">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleLogger.LogRecords(System.Collections.Generic.IEnumerable{Microsoft.Extensions.Logging.Abstractions.BufferedLogRecord})">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleLogger.IsEnabled(Microsoft.Extensions.Logging.LogLevel)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleLogger.BeginScope``1(``0)">
+            <inheritdoc />
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.ConsoleLoggerFormat">
+            <summary>
+            Describes the format of <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLogger" /> messages.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Logging.Console.ConsoleLoggerFormat.Default">
+            <summary>
+            Produce messages in the default console format.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Logging.Console.ConsoleLoggerFormat.Systemd">
+            <summary>
+            Produce messages in a format suitable for console output to the systemd journal.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions">
+            <summary>
+            Options for a <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLogger"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions.DisableColors">
+            <summary>
+            Gets or sets a value that indicates whether colors are disabled.
+            </summary>
+            <value>
+            <see langword="true" /> if colors are disabled.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions.Format">
+            <summary>
+            Gets or sets the log message format.
+            </summary>
+            <value>
+            The default value is <see cref="F:Microsoft.Extensions.Logging.Console.ConsoleLoggerFormat.Default" />.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions.FormatterName">
+            <summary>
+            Gets or sets the name of the log message formatter to use.
+            </summary>
+            <value>
+            The default value is <see langword="simple" />.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions.IncludeScopes">
+            <summary>
+            Gets or sets a value that indicates whether scopes are included.
+            </summary>
+            <value>
+            <see langword="true" /> if scopes are included.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions.LogToStandardErrorThreshold">
+            <summary>
+            Gets or sets value indicating the minimum level of messages that get written to <c>Console.Error</c>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions.TimestampFormat">
+            <summary>
+            Gets or sets the format string used to format timestamp in logging messages.
+            </summary>
+            <value>
+            The default value is <see langword="null" />.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions.UseUtcTimestamp">
+            <summary>
+            Gets or sets a value that indicates whether UTC timezone should be used to format timestamps in logging messages.
+            </summary>
+            <value>
+            <see langword="true"/> if the UTC timezone should be used to format timestamps. The default value is <see langword="false" />.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions.QueueFullMode">
+            <summary>
+            Gets or sets the desired console logger behavior when the queue becomes full.
+            </summary>
+            <value>
+            The default value is <see langword="wait" />.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions.MaxQueueLength">
+            <summary>
+            Gets or sets the maximum number of enqueued messages.
+            </summary>
+            <value>
+            The default value is 2500.
+            </value>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.ConsoleLoggerProvider">
+            <summary>
+            A provider of <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLogger"/> instances.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleLoggerProvider.#ctor(Microsoft.Extensions.Options.IOptionsMonitor{Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions})">
+            <summary>
+            Creates an instance of <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLoggerProvider"/>.
+            </summary>
+            <param name="options">The options to create <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLogger"/> instances with.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleLoggerProvider.#ctor(Microsoft.Extensions.Options.IOptionsMonitor{Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions},System.Collections.Generic.IEnumerable{Microsoft.Extensions.Logging.Console.ConsoleFormatter})">
+            <summary>
+            Creates an instance of <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLoggerProvider"/>.
+            </summary>
+            <param name="options">The options to create <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLogger"/> instances with.</param>
+            <param name="formatters">Log formatters added for <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLogger"/> instances.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleLoggerProvider.CreateLogger(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleLoggerProvider.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleLoggerProvider.SetScopeProvider(Microsoft.Extensions.Logging.IExternalScopeProvider)">
+            <inheritdoc />
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.ConsoleLoggerQueueFullMode">
+            <summary>
+            Describes the console logger behavior when the queue becomes full.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Logging.Console.ConsoleLoggerQueueFullMode.Wait">
+            <summary>
+            Blocks the logging threads once the queue limit is reached.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Logging.Console.ConsoleLoggerQueueFullMode.DropWrite">
+            <summary>
+            Drops new log messages when the queue is full.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.ConsoleLoggerSettings">
+            <summary>
+            This type is retained only for compatibility. The recommended alternative is ConsoleLoggerOptions.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerSettings.ChangeToken">
+            <inheritdoc/>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerSettings.IncludeScopes">
+            <inheritdoc/>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerSettings.DisableColors">
+            <summary>
+            This property is retained only for compatibility.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.ConsoleLoggerSettings.Switches">
+            <summary>
+            This property is retained only for compatibility.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleLoggerSettings.Reload">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.ConsoleLoggerSettings.TryGetSwitch(System.String,Microsoft.Extensions.Logging.LogLevel@)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings">
+            <summary>
+            This type is retained only for compatibility. The recommended alternative is ConsoleLoggerOptions.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings.IncludeScopes">
+            <summary>
+            This property is retained only for compatibility.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings.ChangeToken">
+            <summary>
+            This property is retained only for compatibility.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings.TryGetSwitch(System.String,Microsoft.Extensions.Logging.LogLevel@)">
+            <summary>
+            This property is retained only for compatibility.
+            </summary>
+            <param name="name">This property is retained only for compatibility.</param>
+            <param name="level">This property is retained only for compatibility.</param>
+            <returns>This property is retained only for compatibility.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings.Reload">
+            <summary>
+            This method is retained only for compatibility.
+            </summary>
+            <returns>This method is retained only for compatibility.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.JsonConsoleFormatterOptions">
+            <summary>
+            Options for the built-in JSON console log formatter.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.JsonConsoleFormatterOptions.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Logging.Console.JsonConsoleFormatterOptions"/> class.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.JsonConsoleFormatterOptions.JsonWriterOptions">
+            <summary>
+            Gets or sets JsonWriterOptions.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.LoggerColorBehavior">
+            <summary>
+            Describes when to use color when logging messages.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Logging.Console.LoggerColorBehavior.Default">
+            <summary>
+            Use the default color behavior, enabling color except when the console output is redirected.
+            </summary>
+            <remarks>
+            Enables color except when the console output is redirected.
+            </remarks>
+        </member>
+        <member name="F:Microsoft.Extensions.Logging.Console.LoggerColorBehavior.Enabled">
+            <summary>
+            Enable color for logging.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Logging.Console.LoggerColorBehavior.Disabled">
+            <summary>
+            Disable color for logging.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Console.SimpleConsoleFormatterOptions">
+            <summary>
+            Options for the built-in default console log formatter.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Console.SimpleConsoleFormatterOptions.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Logging.Console.SimpleConsoleFormatterOptions"/> class.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.SimpleConsoleFormatterOptions.ColorBehavior">
+            <summary>
+            Gets or sets the behavior that describes when to use color when logging messages.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Console.SimpleConsoleFormatterOptions.SingleLine">
+            <summary>
+            Gets or sets a value that indicates whether the entire message is logged in a single line.
+            </summary>
+            <value>
+            <see langword="true" /> if the entire message is logged in a single line.
+            </value>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.ConsoleFormatterConfigureOptions">
+            <summary>
+            Configures a ConsoleFormatterOptions object from an IConfiguration.
+            </summary>
+            <remarks>
+            Doesn't use ConfigurationBinder in order to allow ConfigurationBinder, and all its dependencies,
+            to be trimmed. This improves app size and startup.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.ConsoleLoggerConfigureOptions">
+            <summary>
+            Configures a ConsoleLoggerOptions object from an IConfiguration.
+            </summary>
+            <remarks>
+            Doesn't use ConfigurationBinder in order to allow ConfigurationBinder, and all its dependencies,
+            to be trimmed. This improves app size and startup.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.ConsoleLoggerExtensions">
+            <summary>
+            Provides extension methods for the <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> and <see cref="T:Microsoft.Extensions.Logging.Configuration.ILoggerProviderConfiguration`1"/> classes.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddConsole(Microsoft.Extensions.Logging.ILoggingBuilder)">
+            <summary>
+            Adds a console logger named 'Console' to the factory.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> to use.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddConsole(Microsoft.Extensions.Logging.ILoggingBuilder,System.Action{Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions})">
+            <summary>
+            Adds a console logger named 'Console' to the factory.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> to use.</param>
+            <param name="configure">A delegate to configure the <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLogger"/>.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddSimpleConsole(Microsoft.Extensions.Logging.ILoggingBuilder)">
+            <summary>
+            Add the default console log formatter named 'simple' to the factory with default properties.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> to use.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddSimpleConsole(Microsoft.Extensions.Logging.ILoggingBuilder,System.Action{Microsoft.Extensions.Logging.Console.SimpleConsoleFormatterOptions})">
+            <summary>
+            Add and configure a console log formatter named 'simple' to the factory.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> to use.</param>
+            <param name="configure">A delegate to configure the <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLogger"/> options for the built-in default log formatter.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddJsonConsole(Microsoft.Extensions.Logging.ILoggingBuilder)">
+            <summary>
+            Add a console log formatter named 'json' to the factory with default properties.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> to use.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddJsonConsole(Microsoft.Extensions.Logging.ILoggingBuilder,System.Action{Microsoft.Extensions.Logging.Console.JsonConsoleFormatterOptions})">
+            <summary>
+            Add and configure a console log formatter named 'json' to the factory.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> to use.</param>
+            <param name="configure">A delegate to configure the <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLogger"/> options for the built-in json log formatter.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddSystemdConsole(Microsoft.Extensions.Logging.ILoggingBuilder,System.Action{Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions})">
+            <summary>
+            Add and configure a console log formatter named 'systemd' to the factory.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> to use.</param>
+            <param name="configure">A delegate to configure the <see cref="T:Microsoft.Extensions.Logging.Console.ConsoleLogger"/> options for the built-in systemd log formatter.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddSystemdConsole(Microsoft.Extensions.Logging.ILoggingBuilder)">
+            <summary>
+            Add a console log formatter named 'systemd' to the factory with default properties.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> to use.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddConsoleFormatter``2(Microsoft.Extensions.Logging.ILoggingBuilder)">
+            <summary>
+            Adds a custom console logger formatter 'TFormatter' to be configured with options 'TOptions'.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> to use.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddConsoleFormatter``2(Microsoft.Extensions.Logging.ILoggingBuilder,System.Action{``1})">
+            <summary>
+            Adds a custom console logger formatter 'TFormatter' to be configured with options 'TOptions'.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> to use.</param>
+            <param name="configure">A delegate to configure options 'TOptions' for custom formatter 'TFormatter'.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddConsole(Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            This method is retained only for compatibility.
+            </summary>
+            <param name="factory">This method is retained only for compatibility.</param>
+            <param name="configuration">This method is retained only for compatibility.</param>
+            <returns>This method is retained only for compatibility.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddConsole(Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings)">
+            <summary>
+            This method is retained only for compatibility.
+            </summary>
+            <param name="factory">This method is retained only for compatibility.</param>
+            <param name="settings">This method is retained only for compatibility.</param>
+            <returns>This method is retained only for compatibility.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddConsole(Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Extensions.Logging.LogLevel,System.Boolean)">
+            <summary>
+            This method is retained only for compatibility.
+            </summary>
+            <param name="factory">This method is retained only for compatibility.</param>
+            <param name="minLevel">This method is retained only for compatibility.</param>
+            <param name="includeScopes">This method is retained only for compatibility.</param>
+            <returns>This method is retained only for compatibility.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddConsole(Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Extensions.Logging.LogLevel)">
+            <summary>
+            This method is retained only for compatibility.
+            </summary>
+            <param name="factory">This method is retained only for compatibility.</param>
+            <param name="minLevel">This method is retained only for compatibility.</param>
+            <returns>This method is retained only for compatibility.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddConsole(Microsoft.Extensions.Logging.ILoggerFactory,System.Boolean)">
+            <summary>
+            This method is retained only for compatibility.
+            </summary>
+            <param name="factory">This method is retained only for compatibility.</param>
+            <param name="includeScopes">This method is retained only for compatibility.</param>
+            <returns>This method is retained only for compatibility.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddConsole(Microsoft.Extensions.Logging.ILoggerFactory,System.Func{System.String,Microsoft.Extensions.Logging.LogLevel,System.Boolean},System.Boolean)">
+            <summary>
+            This method is retained only for compatibility.
+            </summary>
+            <param name="factory">This method is retained only for compatibility.</param>
+            <param name="filter">This method is retained only for compatibility.</param>
+            <param name="includeScopes">This method is retained only for compatibility.</param>
+            <returns>This method is retained only for compatibility.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddConsole(Microsoft.Extensions.Logging.ILoggerFactory,System.Func{System.String,Microsoft.Extensions.Logging.LogLevel,System.Boolean})">
+            <summary>
+            This method is retained only for compatibility.
+            </summary>
+            <param name="factory">This method is retained only for compatibility.</param>
+            <param name="filter">This method is retained only for compatibility.</param>
+            <returns>This method is retained only for compatibility.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ConsoleLoggerExtensions.AddConsole(Microsoft.Extensions.Logging.ILoggerFactory)">
+            <summary>
+            This method is retained only for compatibility.
+            </summary>
+            <param name="factory">This method is retained only for compatibility.</param>
+            <returns>This method is retained only for compatibility.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.NullExternalScopeProvider">
+            <summary>
+            Scope provider that does nothing.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.NullExternalScopeProvider.Instance">
+            <summary>
+            Returns a cached instance of <see cref="T:Microsoft.Extensions.Logging.NullExternalScopeProvider"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.NullExternalScopeProvider.Microsoft#Extensions#Logging#IExternalScopeProvider#ForEachScope``1(System.Action{System.Object,``0},``0)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.NullExternalScopeProvider.Microsoft#Extensions#Logging#IExternalScopeProvider#Push(System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.NullScope">
+            <summary>
+            An empty scope without any logic
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.NullScope.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.Bind_ConsoleFormatterOptions(Microsoft.Extensions.Configuration.IConfiguration,System.Object)">
+            <summary>Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.Bind_ConsoleLoggerOptions(Microsoft.Extensions.Configuration.IConfiguration,System.Object)">
+            <summary>Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.Bind_JsonConsoleFormatterOptions(Microsoft.Extensions.Configuration.IConfiguration,System.Object)">
+            <summary>Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.Bind_SimpleConsoleFormatterOptions(Microsoft.Extensions.Configuration.IConfiguration,System.Object)">
+            <summary>Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.TryGetConfigurationValue(Microsoft.Extensions.Configuration.IConfiguration,System.String,System.String@)">
+            <summary>Tries to get the configuration value for the specified key.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.ValidateConfigurationKeys(System.Type,System.Lazy{System.Collections.Generic.HashSet{System.String}},Microsoft.Extensions.Configuration.IConfiguration,Microsoft.Extensions.Configuration.BinderOptions)">
+            <summary>If required by the binder options, validates that there are no unknown keys in the input configuration object.</summary>
+        </member>
+        <member name="F:System.ConsoleUtils.s_emitAnsiColorCodes">
+            <summary>Whether to output ansi color strings.</summary>
+        </member>
+        <member name="P:System.ConsoleUtils.EmitAnsiColorCodes">
+            <summary>Get whether to emit ANSI color codes.</summary>
+        </member>
+        <member name="P:System.SR.QueueModeNotSupported">
+            <summary>{0} is not a supported queue mode value.</summary>
+        </member>
+        <member name="P:System.SR.MaxQueueLengthBadValue">
+            <summary>{0} must be larger than zero.</summary>
+        </member>
+        <member name="P:System.SR.WarningMessageOnDrop">
+            <summary>{0} message(s) dropped because of queue size limit. Increase the queue size or decrease logging verbosity to avoid this. You may change `ConsoleLoggerQueueFullMode` to stop dropping messages.</summary>
+        </member>
+        <member name="P:System.SR.InvalidConfigurationData">
+            <summary>Failed to convert configuration value at '{0}' to type '{1}'.</summary>
+        </member>
+    </members>
+</doc>

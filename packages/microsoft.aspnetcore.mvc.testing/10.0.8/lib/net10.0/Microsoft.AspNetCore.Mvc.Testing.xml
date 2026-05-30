@@ -1,0 +1,440 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.AspNetCore.Mvc.Testing</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.AspNetCore.Mvc.Testing.Handlers.CookieContainerHandler">
+            <summary>
+            A <see cref="T:System.Net.Http.DelegatingHandler"/> that manages cookies associated with one or
+            more pairs of <see cref="T:System.Net.Http.HttpRequestMessage"/> and <see cref="T:System.Net.Http.HttpResponseMessage"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.Handlers.CookieContainerHandler.#ctor">
+            <summary>
+            Creates a new instance of <see cref="T:Microsoft.AspNetCore.Mvc.Testing.Handlers.CookieContainerHandler"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.Handlers.CookieContainerHandler.#ctor(System.Net.CookieContainer)">
+            <summary>
+            Creates a new instance of <see cref="T:Microsoft.AspNetCore.Mvc.Testing.Handlers.CookieContainerHandler"/>.
+            </summary>
+            <param name="cookieContainer">The <see cref="T:System.Net.CookieContainer"/> to use for
+            storing and retrieving cookies.
+            </param>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.Handlers.CookieContainerHandler.Container">
+            <summary>
+            Gets the <see cref="T:System.Net.CookieContainer"/> used to store and retrieve cookies.
+            </summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.Handlers.CookieContainerHandler.SendAsync(System.Net.Http.HttpRequestMessage,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:Microsoft.AspNetCore.Mvc.Testing.Handlers.RedirectHandler">
+            <summary>
+            A <see cref="T:System.Net.Http.DelegatingHandler"/> that follows redirect responses.
+            </summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.Handlers.RedirectHandler.#ctor">
+            <summary>
+            Creates a new instance of <see cref="T:Microsoft.AspNetCore.Mvc.Testing.Handlers.RedirectHandler"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.Handlers.RedirectHandler.#ctor(System.Int32)">
+            <summary>
+            Creates a new instance of <see cref="T:Microsoft.AspNetCore.Mvc.Testing.Handlers.RedirectHandler"/>.
+            </summary>
+            <param name="maxRedirects">The maximum number of redirect responses to follow. It must be
+            equal or greater than 0.</param>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.Handlers.RedirectHandler.MaxRedirects">
+            <summary>
+            Gets the maximum number of redirects this handler will follow.
+            </summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.Handlers.RedirectHandler.SendAsync(System.Net.Http.HttpRequestMessage,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1">
+            <summary>
+            Factory for bootstrapping an application in memory for functional end to end tests.
+            </summary>
+            <typeparam name="TEntryPoint">A type in the entry point assembly of the application.
+            Typically the Startup or Program classes can be used.</typeparam>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.#ctor">
+            <summary>
+            <para>
+            Creates an instance of <see cref="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1"/>. This factory can be used to
+            create a <see cref="T:Microsoft.AspNetCore.TestHost.TestServer"/> instance using the MVC application defined by <typeparamref name="TEntryPoint"/>
+            and one or more <see cref="T:System.Net.Http.HttpClient"/> instances used to send <see cref="T:System.Net.Http.HttpRequestMessage"/> to the <see cref="T:Microsoft.AspNetCore.TestHost.TestServer"/>.
+            The <see cref="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1"/> will find the entry point class of <typeparamref name="TEntryPoint"/>
+            assembly and initialize the application by calling <c>IWebHostBuilder CreateWebHostBuilder(string [] args)</c>
+            on <typeparamref name="TEntryPoint"/>.
+            </para>
+            <para>
+            This constructor will infer the application content root path by searching for a
+            <see cref="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryContentRootAttribute"/> on the assembly containing the functional tests with
+            a key equal to the <typeparamref name="TEntryPoint"/> assembly <see cref="P:System.Reflection.Assembly.FullName"/>.
+            In case an attribute with the right key can't be found, <see cref="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1"/>
+            will fall back to searching for a solution file (*.sln) and then appending <typeparamref name="TEntryPoint"/> assembly name
+            to the solution directory. The application root directory will be used to discover views and content files.
+            </para>
+            <para>
+            The application assemblies will be loaded from the dependency context of the assembly containing
+            <typeparamref name="TEntryPoint" />. This means that project dependencies of the assembly containing
+            <typeparamref name="TEntryPoint" /> will be loaded as application assemblies.
+            </para>
+            </summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.Finalize">
+            <summary>
+            Finalizes an instance of the <see cref="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1"/> class.
+            </summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.Server">
+            <summary>
+            Gets the <see cref="T:Microsoft.AspNetCore.TestHost.TestServer"/> created by this <see cref="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.Services">
+            <summary>
+            Gets the <see cref="T:System.IServiceProvider"/> created by the server associated with this <see cref="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.ServerStarted">
+            <summary>
+            Helps determine if the `StartServer` method has been called already.
+            </summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.Factories">
+            <summary>
+            Gets the <see cref="T:System.Collections.Generic.IReadOnlyList`1"/> of factories created from this factory
+            by further customizing the <see cref="T:Microsoft.AspNetCore.Hosting.IWebHostBuilder"/> when calling
+            <see cref="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.WithWebHostBuilder(System.Action{Microsoft.AspNetCore.Hosting.IWebHostBuilder})"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.ClientOptions">
+            <summary>
+            Gets the <see cref="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions"/> used by <see cref="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CreateClient"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.WithWebHostBuilder(System.Action{Microsoft.AspNetCore.Hosting.IWebHostBuilder})">
+            <summary>
+            Creates a new <see cref="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1"/> with a <see cref="T:Microsoft.AspNetCore.Hosting.IWebHostBuilder"/>
+            that is further customized by <paramref name="configuration"/>.
+            </summary>
+            <param name="configuration">
+            An <see cref="T:System.Action`1"/> to configure the <see cref="T:Microsoft.AspNetCore.Hosting.IWebHostBuilder"/>.
+            </param>
+            <returns>A new <see cref="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1"/>.</returns>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.UseKestrel">
+            <summary>
+            Configures the factory to use Kestrel as the server.
+            </summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.UseKestrel(System.Int32)">
+            <summary>
+            Configures the factory to use Kestrel as the server.
+            </summary>
+            <param name="port">The port to listen to when the server starts. Use `0` to allow dynamic port selection.</param>
+            <exception cref="T:System.InvalidOperationException">Thrown, if this method is called after the WebHostFactory has been initialized.</exception>
+            <remarks>This method should be called before the factory is initialized either via one of the <see cref="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CreateClient"/> methods
+            or via the <see cref="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.StartServer"/> method.</remarks>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.UseKestrel(System.Action{Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions})">
+            <summary>
+            Configures the factory to use Kestrel as the server.
+            </summary>
+            <param name="configureKestrelOptions">A callback handler that will be used for configuring the server when it starts.</param>
+            <exception cref="T:System.InvalidOperationException">Thrown, if this method is called after the WebHostFactory has been initialized.</exception>
+            <remarks>This method should be called before the factory is initialized either via one of the <see cref="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CreateClient"/> methods
+            or via the <see cref="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.StartServer"/> method.</remarks>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.StartServer">
+            <summary>
+            Initializes the instance by configurating the host builder.
+            </summary>
+            <exception cref="T:System.InvalidOperationException">Thrown if the provided <typeparamref name="TEntryPoint"/> type has no factory method.</exception>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CustomJsonSerializerContext.IDictionaryStringString">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CustomJsonSerializerContext.String">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CustomJsonSerializerContext.Default">
+            <summary>
+            The default <see cref="T:System.Text.Json.Serialization.JsonSerializerContext"/> associated with a default <see cref="T:System.Text.Json.JsonSerializerOptions"/> instance.
+            </summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CustomJsonSerializerContext.GeneratedSerializerOptions">
+            <summary>
+            The source-generated options associated with this context.
+            </summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CustomJsonSerializerContext.#ctor">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CustomJsonSerializerContext.#ctor(System.Text.Json.JsonSerializerOptions)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CustomJsonSerializerContext.GetTypeInfo(System.Type)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.GetTestAssemblies">
+            <summary>
+            Gets the assemblies containing the functional tests. The
+            <see cref="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryContentRootAttribute"/> applied to these
+            assemblies defines the content root to use for the given
+            <typeparamref name="TEntryPoint"/>.
+            </summary>
+            <returns>The list of <see cref="T:System.Reflection.Assembly"/> containing tests.</returns>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CreateHostBuilder">
+            <summary>
+            Creates a <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> used to set up <see cref="T:Microsoft.AspNetCore.TestHost.TestServer"/>.
+            </summary>
+            <remarks>
+            The default implementation of this method looks for a <c>public static IHostBuilder CreateHostBuilder(string[] args)</c>
+            method defined on the entry point of the assembly of <typeparamref name="TEntryPoint" /> and invokes it passing an empty string
+            array as arguments.
+            </remarks>
+            <returns>A <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> instance.</returns>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CreateWebHostBuilder">
+            <summary>
+            Creates a <see cref="T:Microsoft.AspNetCore.Hosting.IWebHostBuilder"/> used to set up <see cref="T:Microsoft.AspNetCore.TestHost.TestServer"/>.
+            </summary>
+            <remarks>
+            The default implementation of this method looks for a <c>public static IWebHostBuilder CreateWebHostBuilder(string[] args)</c>
+            method defined on the entry point of the assembly of <typeparamref name="TEntryPoint" /> and invokes it passing an empty string
+            array as arguments.
+            </remarks>
+            <returns>A <see cref="T:Microsoft.AspNetCore.Hosting.IWebHostBuilder"/> instance.</returns>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CreateServer(Microsoft.AspNetCore.Hosting.IWebHostBuilder)">
+            <summary>
+            Creates the <see cref="T:Microsoft.AspNetCore.TestHost.TestServer"/> with the bootstrapped application in <paramref name="builder"/>.
+            This is only called for applications using <see cref="T:Microsoft.AspNetCore.Hosting.IWebHostBuilder"/>. Applications based on
+            <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> will use <see cref="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CreateHost(Microsoft.Extensions.Hosting.IHostBuilder)"/> instead.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.AspNetCore.Hosting.IWebHostBuilder"/> used to
+            create the server.</param>
+            <returns>The <see cref="T:Microsoft.AspNetCore.TestHost.TestServer"/> with the bootstrapped application.</returns>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CreateServer(System.IServiceProvider)">
+            <summary>
+            Creates the <see cref="T:Microsoft.AspNetCore.TestHost.TestServer"/> with the <see cref="T:System.IServiceProvider"/> from the bootstrapped application.
+            This is only called for applications using <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/>. Applications based on
+            <see cref="T:Microsoft.AspNetCore.Hosting.IWebHostBuilder"/> will use <see cref="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CreateHost(Microsoft.Extensions.Hosting.IHostBuilder)"/> instead.
+            </summary>
+            <param name="serviceProvider">The <see cref="T:System.IServiceProvider"/> from the bootstrapped application.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CreateHost(Microsoft.Extensions.Hosting.IHostBuilder)">
+            <summary>
+            Creates the <see cref="T:Microsoft.Extensions.Hosting.IHost"/> with the bootstrapped application in <paramref name="builder"/>.
+            This is only called for applications using <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/>. Applications based on
+            <see cref="T:Microsoft.AspNetCore.Hosting.IWebHostBuilder"/> will use <see cref="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CreateServer(Microsoft.AspNetCore.Hosting.IWebHostBuilder)"/> instead.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> used to create the host.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Hosting.IHost"/> with the bootstrapped application.</returns>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder)">
+            <summary>
+            Gives a fixture an opportunity to configure the application before it gets built.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.AspNetCore.Hosting.IWebHostBuilder"/> for the application.</param>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CreateClient">
+            <summary>
+            Creates an instance of <see cref="T:System.Net.Http.HttpClient"/> that automatically follows
+            redirects and handles cookies.
+            </summary>
+            <returns>The <see cref="T:System.Net.Http.HttpClient"/>.</returns>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CreateClient(Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions)">
+            <summary>
+            Creates an instance of <see cref="T:System.Net.Http.HttpClient"/> that automatically follows
+            redirects and handles cookies.
+            </summary>
+            <returns>The <see cref="T:System.Net.Http.HttpClient"/>.</returns>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CreateDefaultClient(System.Net.Http.DelegatingHandler[])">
+            <summary>
+            Creates a new instance of an <see cref="T:System.Net.Http.HttpClient"/> that can be used to
+            send <see cref="T:System.Net.Http.HttpRequestMessage"/> to the server. The base address of the <see cref="T:System.Net.Http.HttpClient"/>
+            instance will be set to <c>http://localhost</c>.
+            </summary>
+            <param name="handlers">A list of <see cref="T:System.Net.Http.DelegatingHandler"/> instances to set up on the
+            <see cref="T:System.Net.Http.HttpClient"/>.</param>
+            <returns>The <see cref="T:System.Net.Http.HttpClient"/>.</returns>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.ConfigureClient(System.Net.Http.HttpClient)">
+            <summary>
+            Configures <see cref="T:System.Net.Http.HttpClient"/> instances created by this <see cref="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1"/>.
+            </summary>
+            <param name="client">The <see cref="T:System.Net.Http.HttpClient"/> instance getting configured.</param>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CreateDefaultClient(System.Uri,System.Net.Http.DelegatingHandler[])">
+            <summary>
+            Creates a new instance of an <see cref="T:System.Net.Http.HttpClient"/> that can be used to
+            send <see cref="T:System.Net.Http.HttpRequestMessage"/> to the server.
+            </summary>
+            <param name="baseAddress">The base address of the <see cref="T:System.Net.Http.HttpClient"/> instance.</param>
+            <param name="handlers">A list of <see cref="T:System.Net.Http.DelegatingHandler"/> instances to set up on the
+            <see cref="T:System.Net.Http.HttpClient"/>.</param>
+            <returns>The <see cref="T:System.Net.Http.HttpClient"/>.</returns>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.Dispose(System.Boolean)">
+            <summary>
+            Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+            </summary>
+            <param name="disposing">
+            <see langword="true" /> to release both managed and unmanaged resources;
+            <see langword="false" /> to release only unmanaged resources.
+            </param>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.DisposeAsync">
+            <inheritdoc />
+        </member>
+        <member name="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions">
+            <summary>
+            The default options to use to when creating
+            <see cref="T:System.Net.Http.HttpClient"/> instances by calling
+            <see cref="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CreateClient(Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions)"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions.#ctor">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions.BaseAddress">
+            <summary>
+            Gets or sets the base address of <see cref="T:System.Net.Http.HttpClient"/> instances created by calling
+            <see cref="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CreateClient(Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions)"/>.
+            The default is <c>http://localhost</c>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions.AllowAutoRedirect">
+            <summary>
+            Gets or sets whether or not <see cref="T:System.Net.Http.HttpClient"/> instances created by calling
+            <see cref="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CreateClient(Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions)"/>
+            should automatically follow redirect responses.
+            The default is <c>true</c>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions.MaxAutomaticRedirections">
+            <summary>
+            Gets or sets the maximum number of redirect responses that <see cref="T:System.Net.Http.HttpClient"/> instances
+            created by calling <see cref="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CreateClient(Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions)"/>
+            should follow.
+            The default is <c>7</c>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions.HandleCookies">
+            <summary>
+            Gets or sets whether <see cref="T:System.Net.Http.HttpClient"/> instances created by calling
+            <see cref="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CreateClient(Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions)"/>
+            should handle cookies.
+            The default is <c>true</c>.
+            </summary>
+        </member>
+        <member name="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryContentRootAttribute">
+            <summary>
+            Metadata that <see cref="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1"/> uses to find out the content
+            root for the web application represented by <c>TEntryPoint</c>.
+            <see cref="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1"/> will iterate over all the instances of
+            <see cref="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryContentRootAttribute"/>, filter the instances whose
+            <see cref="P:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryContentRootAttribute.Key"/> is equal to <c>TEntryPoint</c> <see cref="P:System.Reflection.Assembly.FullName"/>,
+            order them by <see cref="P:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryContentRootAttribute.Priority"/> in ascending order.
+            <see cref="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1"/> will check for the existence of the marker
+            in <c>Path.Combine(<see cref="P:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryContentRootAttribute.ContentRootPath"/>, Path.GetFileName(<see cref="P:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryContentRootAttribute.ContentRootTest"/>))"</c>
+            and if the file exists it will set the content root to <see cref="P:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryContentRootAttribute.ContentRootPath"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryContentRootAttribute.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryContentRootAttribute"/>.
+            </summary>
+            <param name="key">
+            The key of this <see cref="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryContentRootAttribute"/>. This
+            key is used by <see cref="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1"/> to determine what of the
+            <see cref="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryContentRootAttribute"/> instances on the test assembly should be used
+            to match a given TEntryPoint class.
+            </param>
+            <param name="contentRootPath">The path to the content root. This path can be either relative or absolute.
+            In case the path is relative, the path will be combined with
+            <see cref="M:System.IO.Directory.GetCurrentDirectory"/></param>
+            <param name="contentRootTest">
+            A file that will be use as a marker to determine that the content root path for the given context is correct.
+            </param>
+            <param name="priority">
+            The priority of this content root attribute compared to other attributes. When
+            multiple <see cref="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryContentRootAttribute"/> instances are applied for the
+            same key, they are processed with <see cref="M:System.Int32.Parse(System.String)"/>, ordered in ascending order and applied
+            in priority until a match is found.
+            </param>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryContentRootAttribute.Key">
+            <summary>
+            Gets the key for the content root associated with this project. Typically <see cref="P:System.Reflection.Assembly.FullName"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryContentRootAttribute.ContentRootPath">
+            <summary>
+            Gets the content root path for a given project. This content root can be relative or absolute. If it is a
+            relative path, it will be combined with <see cref="P:System.AppContext.BaseDirectory"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryContentRootAttribute.ContentRootTest">
+            <summary>
+            A marker file used to ensure that the path the content root is being set to is correct.
+            </summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryContentRootAttribute.Priority">
+            <summary>
+            Gets a number for determining the probing order when multiple <see cref="T:Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryContentRootAttribute"/>
+            instances with the same key are present on the test <see cref="T:System.Reflection.Assembly"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.Resources.InvalidAssemblyEntryPoint">
+            <summary>The provided Type '{0}' does not belong to an assembly with an entry point. A common cause for this error is providing a Type from a class library.</summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.Resources.FormatInvalidAssemblyEntryPoint(System.Object)">
+            <summary>The provided Type '{0}' does not belong to an assembly with an entry point. A common cause for this error is providing a Type from a class library.</summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.Resources.MissingBuilderMethod">
+            <summary>No method 'public static {0} CreateHostBuilder(string[] args)' or 'public static {1} CreateWebHostBuilder(string[] args)' found on '{2}'. Alternatively, {3} can be extended and '{4}' or '{5}' can be overridden to provide your own instance.</summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.Resources.FormatMissingBuilderMethod(System.Object,System.Object,System.Object,System.Object,System.Object,System.Object)">
+            <summary>No method 'public static {0} CreateHostBuilder(string[] args)' or 'public static {1} CreateWebHostBuilder(string[] args)' found on '{2}'. Alternatively, {3} can be extended and '{4}' or '{5}' can be overridden to provide your own instance.</summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.Resources.MissingDepsFile">
+            <summary>Can't find '{0}'. This file is required for functional tests to run properly. There should be a copy of the file on your source project bin folder. If that is not the case, make sure that the property PreserveCompilationContext is set to true on your proje ...</summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Mvc.Testing.Resources.FormatMissingDepsFile(System.Object,System.Object)">
+            <summary>Can't find '{0}'. This file is required for functional tests to run properly. There should be a copy of the file on your source project bin folder. If that is not the case, make sure that the property PreserveCompilationContext is set to true on your proje ...</summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.Resources.ServerNotInitialized">
+            <summary>Server hasn't been initialized yet. Please initialize the server first before trying to create a client.</summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.Resources.TestServerNotSupportedWhenUsingKestrel">
+            <summary>Accessing the `Server` property isn't supported when using Kestrel server.</summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Mvc.Testing.Resources.UseKestrelCanBeCalledBeforeInitialization">
+            <summary>UseKestrel should be called before server initialization. Calling UseKestrel after the server was initialized will have no effect.</summary>
+        </member>
+    </members>
+</doc>

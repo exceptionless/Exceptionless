@@ -1,0 +1,9 @@
+<Project>
+  <ItemGroup>
+    <!-- Auto-register the MTP extension in consuming projects -->
+    <TestingPlatformBuilderHook Include="708E03CB-DB8B-4A7B-98A0-477BADDFEFBE" Visible="false">
+      <DisplayName>GithubActionsTestLogger</DisplayName>
+      <TypeFullName>GitHubActionsTestLogger.MtpIntegration</TypeFullName>
+    </TestingPlatformBuilderHook>
+  </ItemGroup>
+</Project>

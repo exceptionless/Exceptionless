@@ -1,0 +1,237 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Serilog.Settings.Configuration</name>
+    </assembly>
+    <members>
+        <member name="T:Serilog.ConfigurationLoggerConfigurationExtensions">
+            <summary>
+            Extends <see cref="T:Serilog.LoggerConfiguration"/> with support for System.Configuration appSettings elements.
+            </summary>
+        </member>
+        <member name="F:Serilog.ConfigurationLoggerConfigurationExtensions.DefaultSectionName">
+            <summary>
+            Configuration section name required by this package.
+            </summary>
+        </member>
+        <member name="M:Serilog.ConfigurationLoggerConfigurationExtensions.Configuration(Serilog.Configuration.LoggerSettingsConfiguration,Microsoft.Extensions.Configuration.IConfiguration,System.String,Microsoft.Extensions.DependencyModel.DependencyContext)">
+            <summary>
+            Reads logger settings from the provided configuration object using the provided section name. Generally this
+            is preferable over the other method that takes a configuration section. Only this version will populate
+            IConfiguration parameters on target methods.
+            </summary>
+            <param name="settingConfiguration">Logger setting configuration.</param>
+            <param name="configuration">A configuration object which contains a Serilog section.</param>
+            <param name="sectionName">A section name for section which contains a Serilog section.</param>
+            <param name="dependencyContext">The dependency context from which sink/enricher packages can be located. If not supplied, the platform
+            default will be used.</param>
+            <returns>An object allowing configuration to continue.</returns>
+        </member>
+        <member name="M:Serilog.ConfigurationLoggerConfigurationExtensions.Configuration(Serilog.Configuration.LoggerSettingsConfiguration,Microsoft.Extensions.Configuration.IConfiguration,Microsoft.Extensions.DependencyModel.DependencyContext)">
+            <summary>
+            Reads logger settings from the provided configuration object using the default section name. Generally this
+            is preferable over the other method that takes a configuration section. Only this version will populate
+            IConfiguration parameters on target methods.
+            </summary>
+            <param name="settingConfiguration">Logger setting configuration.</param>
+            <param name="configuration">A configuration object which contains a Serilog section.</param>
+            <param name="dependencyContext">The dependency context from which sink/enricher packages can be located. If not supplied, the platform
+            default will be used.</param>
+            <returns>An object allowing configuration to continue.</returns>
+        </member>
+        <member name="M:Serilog.ConfigurationLoggerConfigurationExtensions.ConfigurationSection(Serilog.Configuration.LoggerSettingsConfiguration,Microsoft.Extensions.Configuration.IConfigurationSection,Microsoft.Extensions.DependencyModel.DependencyContext)">
+            <summary>
+            Reads logger settings from the provided configuration section. Generally it is preferable to use the other
+            extension method that takes the full configuration object.
+            </summary>
+            <param name="settingConfiguration">Logger setting configuration.</param>
+            <param name="configSection">The Serilog configuration section</param>
+            <param name="dependencyContext">The dependency context from which sink/enricher packages can be located. If not supplied, the platform
+            default will be used.</param>
+            <returns>An object allowing configuration to continue.</returns>
+        </member>
+        <member name="M:Serilog.ConfigurationLoggerConfigurationExtensions.Configuration(Serilog.Configuration.LoggerSettingsConfiguration,Microsoft.Extensions.Configuration.IConfiguration,System.String,Serilog.Settings.Configuration.ConfigurationAssemblySource)">
+            <summary>
+            Reads logger settings from the provided configuration object using the provided section name. Generally this
+            is preferable over the other method that takes a configuration section. Only this version will populate
+            IConfiguration parameters on target methods.
+            </summary>
+            <param name="settingConfiguration">Logger setting configuration.</param>
+            <param name="configuration">A configuration object which contains a Serilog section.</param>
+            <param name="sectionName">A section name for section which contains a Serilog section.</param>
+            <param name="configurationAssemblySource">Defines how the package identifies assemblies to scan for sinks and other types.</param>
+            <returns>An object allowing configuration to continue.</returns>
+        </member>
+        <member name="M:Serilog.ConfigurationLoggerConfigurationExtensions.Configuration(Serilog.Configuration.LoggerSettingsConfiguration,Microsoft.Extensions.Configuration.IConfiguration,Serilog.Settings.Configuration.ConfigurationAssemblySource)">
+            <summary>
+            Reads logger settings from the provided configuration object using the default section name. Generally this
+            is preferable over the other method that takes a configuration section. Only this version will populate
+            IConfiguration parameters on target methods.
+            </summary>
+            <param name="settingConfiguration">Logger setting configuration.</param>
+            <param name="configuration">A configuration object which contains a Serilog section.</param>
+            <param name="configurationAssemblySource">Defines how the package identifies assemblies to scan for sinks and other types.</param>
+            <returns>An object allowing configuration to continue.</returns>
+        </member>
+        <member name="M:Serilog.ConfigurationLoggerConfigurationExtensions.ConfigurationSection(Serilog.Configuration.LoggerSettingsConfiguration,Microsoft.Extensions.Configuration.IConfigurationSection,Serilog.Settings.Configuration.ConfigurationAssemblySource)">
+            <summary>
+            Reads logger settings from the provided configuration section. Generally it is preferable to use the other
+            extension method that takes the full configuration object.
+            </summary>
+            <param name="settingConfiguration">Logger setting configuration.</param>
+            <param name="configSection">The Serilog configuration section</param>
+            <param name="configurationAssemblySource">Defines how the package identifies assemblies to scan for sinks and other types.</param>
+            <returns>An object allowing configuration to continue.</returns>
+        </member>
+        <member name="M:Serilog.ConfigurationLoggerConfigurationExtensions.Configuration(Serilog.Configuration.LoggerSettingsConfiguration,Microsoft.Extensions.Configuration.IConfiguration,System.String,System.Reflection.Assembly[])">
+            <summary>
+            Reads logger settings from the provided configuration object using the provided section name.
+            </summary>
+            <param name="settingConfiguration">Logger setting configuration.</param>
+            <param name="configuration">A configuration object which contains a Serilog section.</param>
+            <param name="sectionName">A section name for section which contains a Serilog section.</param>
+            <param name="assemblies">A collection of assemblies that contains sinks and other types.</param>
+            <returns>An object allowing configuration to continue.</returns>
+        </member>
+        <member name="M:Serilog.ConfigurationLoggerConfigurationExtensions.Configuration(Serilog.Configuration.LoggerSettingsConfiguration,Microsoft.Extensions.Configuration.IConfiguration,System.Reflection.Assembly[])">
+            <summary>
+            Reads logger settings from the provided configuration object using the default section name.
+            </summary>
+            <param name="settingConfiguration">Logger setting configuration.</param>
+            <param name="configuration">A configuration object which contains a Serilog section.</param>
+            <param name="assemblies">A collection of assemblies that contains sinks and other types.</param>
+            <returns>An object allowing configuration to continue.</returns>
+        </member>
+        <member name="M:Serilog.ConfigurationLoggerConfigurationExtensions.Configuration(Serilog.Configuration.LoggerSettingsConfiguration,Microsoft.Extensions.Configuration.IConfiguration,Serilog.Settings.Configuration.ConfigurationReaderOptions)">
+            <summary>
+            Reads logger settings from the provided configuration object using the specified context.
+            </summary>
+            <param name="settingConfiguration">Logger setting configuration.</param>
+            <param name="configuration">A configuration object which contains a Serilog section.</param>
+            <param name="readerOptions">Options to adjust how the configuration object is processed.</param>
+            <returns>An object allowing configuration to continue.</returns>
+        </member>
+        <member name="T:Serilog.Settings.Configuration.ConfigurationAssemblySource">
+            <summary>
+            Defines how the package will identify the assemblies which are scanned for sinks and other Type information.
+            </summary>
+        </member>
+        <member name="F:Serilog.Settings.Configuration.ConfigurationAssemblySource.UseLoadedAssemblies">
+            <summary>
+            Try to scan the assemblies already in memory. This is the default. If GetEntryAssembly is null, fallback to DLL scanning.
+            </summary>
+        </member>
+        <member name="F:Serilog.Settings.Configuration.ConfigurationAssemblySource.AlwaysScanDllFiles">
+            <summary>
+            Scan for assemblies in DLLs from the working directory. This is the fallback when GetEntryAssembly is null.
+            </summary>
+        </member>
+        <member name="T:Serilog.Settings.Configuration.ConfigurationReaderOptions">
+            <summary>
+            Options to adjust how the configuration object is processed.
+            </summary>
+        </member>
+        <member name="M:Serilog.Settings.Configuration.ConfigurationReaderOptions.#ctor(System.Reflection.Assembly[])">
+            <summary>
+            Initialize a new instance of the <see cref="T:Serilog.Settings.Configuration.ConfigurationReaderOptions"/> class.
+            </summary>
+            <param name="assemblies">A collection of assemblies that contains sinks and other types.</param>
+            <exception cref="T:System.ArgumentNullException">The <paramref name="assemblies"/> argument is null.</exception>
+            <exception cref="T:System.ArgumentException">The <paramref name="assemblies"/> argument is empty.</exception>
+        </member>
+        <member name="M:Serilog.Settings.Configuration.ConfigurationReaderOptions.#ctor">
+            <summary>
+            Initialize a new instance of the <see cref="T:Serilog.Settings.Configuration.ConfigurationReaderOptions"/> class.
+            </summary>
+            <remarks>Prefer the constructor taking explicit assemblies: <see cref="M:Serilog.Settings.Configuration.ConfigurationReaderOptions.#ctor(System.Reflection.Assembly[])"/>. It's the only one supporting single-file publishing.</remarks>
+        </member>
+        <member name="M:Serilog.Settings.Configuration.ConfigurationReaderOptions.#ctor(Microsoft.Extensions.DependencyModel.DependencyContext)">
+            <summary>
+            Initialize a new instance of the <see cref="T:Serilog.Settings.Configuration.ConfigurationReaderOptions"/> class.
+            </summary>
+            <param name="dependencyContext">
+            The dependency context from which sink/enricher packages can be located. If <see langword="null"/>, the platform default will be used.
+            </param>
+            <remarks>Prefer the constructor taking explicit assemblies: <see cref="M:Serilog.Settings.Configuration.ConfigurationReaderOptions.#ctor(System.Reflection.Assembly[])"/>. It's the only one supporting single-file publishing.</remarks>
+        </member>
+        <member name="M:Serilog.Settings.Configuration.ConfigurationReaderOptions.#ctor(Serilog.Settings.Configuration.ConfigurationAssemblySource)">
+            <summary>
+            Initialize a new instance of the <see cref="T:Serilog.Settings.Configuration.ConfigurationReaderOptions"/> class.
+            </summary>
+            <param name="configurationAssemblySource">Defines how the package identifies assemblies to scan for sinks and other types.</param>
+            <remarks>Prefer the constructor taking explicit assemblies: <see cref="M:Serilog.Settings.Configuration.ConfigurationReaderOptions.#ctor(System.Reflection.Assembly[])"/>. It's the only one supporting single-file publishing.</remarks>
+        </member>
+        <member name="P:Serilog.Settings.Configuration.ConfigurationReaderOptions.SectionName">
+            <summary>
+            The section name for section which contains a Serilog section. Defaults to <c>Serilog</c>.
+            </summary>
+        </member>
+        <member name="P:Serilog.Settings.Configuration.ConfigurationReaderOptions.FormatProvider">
+            <summary>
+            The <see cref="T:System.IFormatProvider"/> used when converting strings to other object types. Defaults to the invariant culture.
+            </summary>
+        </member>
+        <member name="P:Serilog.Settings.Configuration.ConfigurationReaderOptions.AllowInternalTypes">
+            <summary>
+            Allows to use internal types for extension methods for sink configuration. Defaults to <see langword="false"/>.
+            </summary>
+        </member>
+        <member name="P:Serilog.Settings.Configuration.ConfigurationReaderOptions.AllowInternalMethods">
+            <summary>
+            Allows to use internal extension methods for sink configuration. Defaults to <see langword="false"/>.
+            </summary>
+        </member>
+        <member name="P:Serilog.Settings.Configuration.ConfigurationReaderOptions.OnLevelSwitchCreated">
+            <summary>
+            Called when a log level switch is created while reading the configuration.
+            Log level switches are created either from the <c>Serilog:LevelSwitches</c> section (declared switches) or the <c>Serilog:MinimumLevel:Override</c> section (minimum level override switches).
+            <list type="bullet">
+              <item>For declared switches, the switch name includes the leading <c>$</c> character.</item>
+              <item>For minimum level override switches, the switch name is the (partial) namespace or type name of the override.</item>
+            </list>
+            </summary>
+        </member>
+        <member name="P:Serilog.Settings.Configuration.ConfigurationReaderOptions.OnFilterSwitchCreated">
+            <summary>
+            Called when a log filter switch is created while reading the <c>Serilog:FilterSwitches</c> section of the configuration.
+            </summary>
+        </member>
+        <member name="T:Serilog.Settings.Configuration.ILoggingFilterSwitch">
+            <summary>
+            A log event filter that can be modified at runtime.
+            </summary>
+            <remarks>
+            Under the hood, the logging filter switch is either a <c>Serilog.Expressions.LoggingFilterSwitch</c> or a <c>Serilog.Filters.Expressions.LoggingFilterSwitch</c> instance.
+            </remarks>
+        </member>
+        <member name="P:Serilog.Settings.Configuration.ILoggingFilterSwitch.Expression">
+            <summary>
+            A filter expression against which log events will be tested.
+            Only expressions that evaluate to <c>true</c> are included by the filter. A <c>null</c> expression will accept all events.
+            </summary>
+        </member>
+        <member name="T:Serilog.Settings.Configuration.ResolutionContext">
+            <summary>
+            Keeps track of available elements that are useful when resolving values in the settings system.
+            </summary>
+        </member>
+        <member name="M:Serilog.Settings.Configuration.ResolutionContext.LookUpLevelSwitchByName(System.String)">
+            <summary>
+            Looks up a switch in the declared LoggingLevelSwitches
+            </summary>
+            <param name="switchName">the name of a switch to look up</param>
+            <returns>the LoggingLevelSwitch registered with the name</returns>
+            <exception cref="T:System.InvalidOperationException">if no switch has been registered with <paramref name="switchName"/></exception>
+        </member>
+        <member name="T:Serilog.Settings.Configuration.SurrogateConfigurationMethods">
+             <summary>
+             Contains "fake extension" methods for the Serilog configuration API.
+             By default the settings know how to find extension methods, but some configuration
+             are actually "regular" method calls and would not be found otherwise.
+            
+             This static class contains internal methods that can be used instead.
+            
+             </summary>
+        </member>
+    </members>
+</doc>

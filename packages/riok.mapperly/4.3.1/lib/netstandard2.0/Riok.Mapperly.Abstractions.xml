@@ -1,0 +1,1042 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Riok.Mapperly.Abstractions</name>
+    </assembly>
+    <members>
+        <member name="T:Riok.Mapperly.Abstractions.EnumMappingStrategy">
+            <summary>
+            Defines the strategy to use when mapping an enum to another enum.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.EnumMappingStrategy.ByValue">
+            <summary>
+            Matches enum members by their values.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.EnumMappingStrategy.ByName">
+            <summary>
+            Matches enum members by their names.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.EnumMappingStrategy.ByValueCheckDefined">
+            <summary>
+            Matches enum members by their values.
+            Checks if the value is defined in the enum.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.EnumNamingStrategy">
+            <summary>
+            Defines the strategy to use when mapping an enum from/to string.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.EnumNamingStrategy.MemberName">
+            <summary>
+            Matches enum values using their name.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.EnumNamingStrategy.CamelCase">
+            <summary>
+            Matches enum values using camelCase.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.EnumNamingStrategy.PascalCase">
+            <summary>
+            Matches enum values using PascalCase.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.EnumNamingStrategy.SnakeCase">
+            <summary>
+            Matches enum values using snake_case.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.EnumNamingStrategy.UpperSnakeCase">
+            <summary>
+            Matches enum values using UPPER_SNAKE_CASE.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.EnumNamingStrategy.KebabCase">
+            <summary>
+            Matches enum values using kebab-case.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.EnumNamingStrategy.UpperKebabCase">
+            <summary>
+            Matches enum values using UPPER-KEBAB-CASE.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.EnumNamingStrategy.ComponentModelDescriptionAttribute">
+            <summary>
+            Matches enum values using <see cref="P:System.ComponentModel.DescriptionAttribute.Description"/>
+            or <see cref="F:Riok.Mapperly.Abstractions.EnumNamingStrategy.MemberName"/> if the attribute is not present on the enum member.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.EnumNamingStrategy.SerializationEnumMemberAttribute">
+            <summary>
+            Matches enum values using <see cref="P:System.Runtime.Serialization.EnumMemberAttribute.Value"/>
+            or <see cref="F:Riok.Mapperly.Abstractions.EnumNamingStrategy.MemberName"/> if the attribute is not present on the enum member.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.FormatProviderAttribute">
+            <summary>
+            Marks a property or field as a format provider.
+            A format provider needs to be of a type which implements <see cref="T:System.IFormatProvider"/> and needs to have a getter.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.FormatProviderAttribute.Default">
+            <summary>
+            If set to true, this format provider acts as a default format provider
+            and is used for all <see cref="T:System.IFormattable"/> conversions without an explicit <see cref="P:Riok.Mapperly.Abstractions.MapPropertyAttribute.FormatProvider"/> set.
+            Only one <see cref="T:Riok.Mapperly.Abstractions.FormatProviderAttribute"/> in a Mapper can be set to <c>true</c>.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.IgnoreObsoleteMembersStrategy">
+            <summary>
+            Defines the strategy to use when mapping members marked with <see cref="T:System.ObsoleteAttribute"/>.
+            Note that <see cref="T:Riok.Mapperly.Abstractions.MapPropertyAttribute"/> will always map <see cref="T:System.ObsoleteAttribute"/> marked members,
+            even if they are ignored.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.IgnoreObsoleteMembersStrategy.None">
+            <summary>
+            Maps <see cref="T:System.ObsoleteAttribute"/> marked members.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.IgnoreObsoleteMembersStrategy.Both">
+            <summary>
+            Will not map <see cref="T:System.ObsoleteAttribute"/> marked source or target members.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.IgnoreObsoleteMembersStrategy.Source">
+            <summary>
+            Ignores source <see cref="T:System.ObsoleteAttribute"/> marked members.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.IgnoreObsoleteMembersStrategy.Target">
+            <summary>
+            Ignores target <see cref="T:System.ObsoleteAttribute"/> marked members.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.IncludeMappingConfigurationAttribute">
+            <summary>
+            An attribute used to include the mapping configuration of another mapping method in the attributed method.
+            Use the other mapping's method name to identify the configuration.
+            </summary>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.IncludeMappingConfigurationAttribute.#ctor(System.String)">
+            <summary>
+            An attribute used to include the mapping configuration of another mapping method in the attributed method.
+            Use the other mapping's method name to identify the configuration.
+            </summary>
+            <param name="name">
+            The name of the mapping configuration to include. Use the method name of the other mapping
+            method.
+            </param>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.IncludeMappingConfigurationAttribute.Name">
+            <summary>
+            Gets the name of the mapping configuration to include.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.MapDerivedTypeAttribute">
+            <summary>
+            Specifies derived type mappings for which a mapping should be generated.
+            A type switch is implemented over the source object and the provided source types.
+            Each source type has to be unique but multiple source types can be mapped to the same target type.
+            Each source type needs to extend or implement the parameter type of the mapping method.
+            Each target type needs to extend or implement the return type of the mapping method.
+            </summary>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.MapDerivedTypeAttribute.#ctor(System.Type,System.Type)">
+            <summary>
+            Registers a derived type mapping.
+            </summary>
+            <param name="sourceType">The derived source type.</param>
+            <param name="targetType">The derived target type.</param>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapDerivedTypeAttribute.SourceType">
+            <summary>
+            Gets the source type of the derived type mapping.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapDerivedTypeAttribute.TargetType">
+            <summary>
+            Gets the target type of the derived type mapping.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.MapDerivedTypeAttribute`2">
+            <summary>
+            Specifies derived type mappings for which a mapping should be generated.
+            A type switch is implemented over the source object and the provided source types.
+            Each source type has to be unique but multiple source types can be mapped to the same target type.
+            Each source type needs to extend or implement the parameter type of the mapping method.
+            Each target type needs to extend or implement the return type of the mapping method.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.MapEnumAttribute">
+            <summary>
+            Customizes how enums are mapped.
+            </summary>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.MapEnumAttribute.#ctor(Riok.Mapperly.Abstractions.EnumMappingStrategy)">
+            <summary>
+            Customizes how enums are mapped.
+            </summary>
+            <param name="strategy">The strategy to be used to map enums.</param>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapEnumAttribute.Strategy">
+            <summary>
+            The strategy to be used to map enums to enums.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapEnumAttribute.IgnoreCase">
+            <summary>
+            Whether the case should be ignored during mappings.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapEnumAttribute.FallbackValue">
+            <summary>
+            The fallback value if an enum cannot be mapped, used instead of throwing.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapEnumAttribute.NamingStrategy">
+            <summary>
+            The strategy to be used to map enums from/to strings.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.MapEnumValueAttribute">
+            <summary>
+            Customizes how enum values are mapped
+            </summary>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.MapEnumValueAttribute.#ctor(System.Object,System.Object)">
+            <summary>
+            Customizes how enum values are mapped
+            </summary>
+            <param name="source">The value to map from</param>
+            <param name="target">The value to map to</param>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapEnumValueAttribute.Target">
+            <summary>
+            What to map to
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapEnumValueAttribute.Source">
+            <summary>
+            What to map from
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.MapNestedPropertiesAttribute">
+            <summary>
+            Maps all properties from a nested path on the source to the root of the target.
+            </summary>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.MapNestedPropertiesAttribute.#ctor(System.String)">
+            <summary>
+            Maps all members of the specified source property to the root of the target.
+            </summary>
+            <param name="source">
+            The name of the source property that will be flattened. The use of `nameof()` is encouraged. A path can be specified by joining property names with a '.'.
+            </param>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.MapNestedPropertiesAttribute.#ctor(System.String[])">
+            <summary>
+            Maps all members of the specified source property to the root of the target.
+            </summary>
+            <param name="source">The path of the source property that will be flattened. The use of `nameof()` is encouraged.</param>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapNestedPropertiesAttribute.Source">
+            <summary>
+            Gets the name of the source property to flatten.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapNestedPropertiesAttribute.SourceFullName">
+            <summary>
+            Gets the full name of the source property path to flatten.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.MapperAttribute">
+            <summary>
+            Marks a partial class as a mapper.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapperAttribute.PropertyNameMappingStrategy">
+            <summary>
+            Strategy on how to match mapping property names.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapperAttribute.EnumMappingStrategy">
+            <summary>
+            The default enum mapping strategy.
+            Can be overwritten on specific enums via mapping method configurations.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapperAttribute.EnumNamingStrategy">
+            <summary>
+            Defines the strategy to use when mapping an enum from/to string.
+            Can be overwritten on specific enums via mapping method configurations.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapperAttribute.EnumMappingIgnoreCase">
+            <summary>
+            Whether the case should be ignored for enum mappings.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapperAttribute.ThrowOnMappingNullMismatch">
+            <summary>
+            Specifies the behaviour in the case when the mapper tries to return <c>null</c> in a mapping method with a non-nullable return type.
+            If set to <c>true</c> an <see cref="T:System.ArgumentNullException"/> is thrown.
+            If set to <c>false</c> the mapper tries to return a default value.
+            For a <see cref="T:System.String"/> this is <see cref="F:System.String.Empty"/>,
+            for value types <c>default</c>
+            and for reference types <c>new()</c> if a parameterless constructor exists or else an <see cref="T:System.ArgumentNullException"/> is thrown.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapperAttribute.ThrowOnPropertyMappingNullMismatch">
+            <summary>
+            Specifies the behaviour in the case when the mapper tries to set a non-nullable property to a <c>null</c> value.
+            If set to <c>true</c> an <see cref="T:System.ArgumentNullException"/> is thrown.
+            If set to <c>false</c> the property assignment is ignored.
+            This is ignored for required init properties and <see cref="T:System.Linq.IQueryable`1"/> projection mappings.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapperAttribute.AllowNullPropertyAssignment">
+            <summary>
+            Specifies whether <c>null</c> values are assigned to the target.
+            If <c>true</c> (default), the source is <c>null</c>, and the target does allow <c>null</c> values,
+            <c>null</c> is assigned.
+            If <c>false</c>, <c>null</c> values are never assigned to the target property.
+            This is ignored for required init properties and <see cref="T:System.Linq.IQueryable`1"/> projection mappings.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapperAttribute.UseDeepCloning">
+            <summary>
+            Whether to always deep copy objects.
+            Eg. when the type <c>Person[]</c> should be mapped to the same type <c>Person[]</c>,
+            when <c>false</c>, the same array is reused.
+            when <c>true</c>, the array and each person is cloned.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapperAttribute.EnabledConversions">
+            <summary>
+            Enabled conversions which Mapperly automatically implements.
+            By default all supported type conversions are enabled.
+            <example>
+            Eg. to disable all automatically implemented conversions:<br />
+            <c>EnabledConversions = MappingConversionType.None</c>
+            </example>
+            <example>
+            Eg. to disable <c>ToString()</c> method calls:<br />
+            <c>EnabledConversions = MappingConversionType.All &amp; ~MappingConversionType.ToStringMethod</c>
+            </example>
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapperAttribute.UseReferenceHandling">
+            <summary>
+            Enables the reference handling feature.
+            Disabled by default for performance reasons.
+            When enabled, an <see cref="T:Riok.Mapperly.Abstractions.ReferenceHandling.IReferenceHandler"/> instance is passed through the mapping methods
+            to keep track of and reuse existing target object instances.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapperAttribute.IgnoreObsoleteMembersStrategy">
+            <summary>
+            The ignore obsolete attribute strategy. Determines how <see cref="T:System.ObsoleteAttribute"/> marked members are mapped.
+            Defaults to <see cref="F:Riok.Mapperly.Abstractions.IgnoreObsoleteMembersStrategy.None"/>.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapperAttribute.RequiredMappingStrategy">
+            <summary>
+            Defines the strategy used when emitting warnings for unmapped members.
+            By default this is <see cref="F:Riok.Mapperly.Abstractions.RequiredMappingStrategy.Both"/>, emitting warnings for unmapped source and target members.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapperAttribute.RequiredEnumMappingStrategy">
+            <summary>
+            Defines the strategy used when emitting warnings for unmapped enum members.
+            By default this is <see cref="F:Riok.Mapperly.Abstractions.RequiredMappingStrategy.Both"/>, inheriting the strategy from <see cref="P:Riok.Mapperly.Abstractions.MapperAttribute.RequiredMappingStrategy"/>.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapperAttribute.IncludedMembers">
+            <summary>
+            Determines the access level of members that Mapperly will map.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapperAttribute.IncludedConstructors">
+            <summary>
+            Determines the access level of constructors that Mapperly will take into account.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapperAttribute.PreferParameterlessConstructors">
+            <summary>
+            Controls the priority of constructors used in mapping.
+            When <c>true</c>, a parameterless constructor is prioritized over constructors with parameters.
+            When <c>false</c>, accessible constructors are ordered in descending order by their parameter count.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapperAttribute.AutoUserMappings">
+             <summary>
+             Whether to automatically discover user mapping methods based on their signature.
+             Partial methods are always considered mapping methods.
+             If <c>true</c>, all partial methods and methods with an implementation body and a mapping method signature are discovered as mapping methods.
+             If <c>false</c> only partial methods and methods with a <see cref="T:Riok.Mapperly.Abstractions.UserMappingAttribute"/> are discovered.
+            
+             To discover mappings in external mappers (<seealso cref="T:Riok.Mapperly.Abstractions.UseMapperAttribute"/> and <seealso cref="T:Riok.Mapperly.Abstractions.UseStaticMapperAttribute"/>)
+             the same rules are applied:
+             If set to <c>true</c> all methods with a mapping method signature are automatically discovered.
+             If set to <c>false</c> methods with a <see cref="T:Riok.Mapperly.Abstractions.UserMappingAttribute"/> and if the containing class has a <see cref="T:Riok.Mapperly.Abstractions.MapperAttribute"/>
+             partial methods are discovered.
+             </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.MapperConstructorAttribute">
+            <summary>
+            Marks the constructor to be used when type gets activated by Mapperly.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.MapperDefaultsAttribute">
+            <summary>
+            Used to set mapper default values in the assembly.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.MapperIgnoreAttribute">
+            <summary>
+            Ignores a member or method from the mapping.
+            </summary>
+            <remarks>
+            When applied to a method, prevents the method from being used as a mapping method.
+            This is useful for excluding specific static or instance methods from being used as mappers.
+            </remarks>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.MapperIgnoreObsoleteMembersAttribute">
+            <summary>
+            Specifies options for obsolete ignoring strategy.
+            </summary>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.MapperIgnoreObsoleteMembersAttribute.#ctor(Riok.Mapperly.Abstractions.IgnoreObsoleteMembersStrategy)">
+            <summary>
+            Specifies options for obsolete ignoring strategy.
+            </summary>
+            <param name="ignoreObsoleteStrategy">The strategy to be used to map <see cref="T:System.ObsoleteAttribute"/> marked members. Defaults to <see cref="F:Riok.Mapperly.Abstractions.IgnoreObsoleteMembersStrategy.Both"/>.</param>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapperIgnoreObsoleteMembersAttribute.IgnoreObsoleteStrategy">
+            <summary>
+            The strategy used to map <see cref="T:System.ObsoleteAttribute"/> marked members.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.MapperIgnoreSourceAttribute">
+            <summary>
+            Ignores a source property from the mapping.
+            </summary>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.MapperIgnoreSourceAttribute.#ctor(System.String)">
+            <summary>
+            Ignores the specified source property from the mapping.
+            </summary>
+            <param name="source">The name of the source property to ignore. The use of `nameof()` is encouraged.</param>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapperIgnoreSourceAttribute.Source">
+            <summary>
+            Gets the source property name which should be ignored from the mapping.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.MapperIgnoreSourceValueAttribute">
+            <summary>
+            Ignores a source enum value from the mapping.
+            </summary>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.MapperIgnoreSourceValueAttribute.#ctor(System.Object)">
+            <summary>
+            Ignores the specified source enum value from the mapping.
+            </summary>
+            <param name="source">The source enum value to ignore.</param>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapperIgnoreSourceValueAttribute.SourceValue">
+            <summary>
+            Gets the source enum value which should be ignored from the mapping.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.MapperIgnoreTargetAttribute">
+            <summary>
+            Ignores a target property from the mapping.
+            </summary>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.MapperIgnoreTargetAttribute.#ctor(System.String)">
+            <summary>
+            Ignores the specified target property from the mapping.
+            </summary>
+            <param name="target">The name of the target property to ignore. The use of `nameof()` is encouraged.</param>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapperIgnoreTargetAttribute.Target">
+            <summary>
+            Gets the target property name which should be ignored from the mapping.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.MapperIgnoreTargetValueAttribute">
+            <summary>
+            Ignores a target enum value from the mapping.
+            </summary>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.MapperIgnoreTargetValueAttribute.#ctor(System.Object)">
+            <summary>
+            Ignores the specified target enum value from the mapping.
+            </summary>
+            <param name="target">The target enum value to ignore.</param>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapperIgnoreTargetValueAttribute.TargetValue">
+            <summary>
+            Gets the target enum value which should be ignored from the mapping.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.MapperRequiredMappingAttribute">
+            <summary>
+            Defines the strategy used when emitting warnings for unmapped members.
+            </summary>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.MapperRequiredMappingAttribute.#ctor(Riok.Mapperly.Abstractions.RequiredMappingStrategy)">
+            <summary>
+            Defines the strategy used when emitting warnings for unmapped members.
+            </summary>
+            <param name="requiredMappingStrategy">The strategy used when emitting warnings for unmapped members.</param>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapperRequiredMappingAttribute.RequiredMappingStrategy">
+            <summary>
+            The strategy used when emitting warnings for unmapped members.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.MappingConversionType">
+            <summary>
+            A <see cref="T:Riok.Mapperly.Abstractions.MappingConversionType"/> represents a type of conversion
+            how one type can be converted into another.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MappingConversionType.None">
+            <summary>
+            None.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MappingConversionType.Constructor">
+            <summary>
+            Use the constructor of the target type,
+            which accepts the source type as a single parameter.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MappingConversionType.ImplicitCast">
+            <summary>
+            An implicit cast from the source type to the target type.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MappingConversionType.ExplicitCast">
+            <summary>
+            An explicit cast from the source type to the target type.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MappingConversionType.ParseMethod">
+            <summary>
+            If the source type is a <see cref="T:System.String"/>,
+            uses a static visible method named `Parse` on the target type
+            with a return type equal to the target type and a string as single parameter.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MappingConversionType.ToStringMethod">
+            <summary>
+            If the target type is a <see cref="T:System.String"/>,
+            uses the `ToString` method on the source type.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MappingConversionType.StringToEnum">
+            <summary>
+            If the target is an <see cref="T:System.Enum"/>
+            and the source is a <see cref="T:System.String"/>,
+            parses the string to match the name of an enum member.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MappingConversionType.EnumToString">
+            <summary>
+            If the source is an <see cref="T:System.Enum"/>
+            and the target is a <see cref="T:System.String"/>,
+            uses the name of the enum member to convert it to a string.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MappingConversionType.EnumToEnum">
+            <summary>
+            If the source is an <see cref="T:System.Enum"/>
+            and the target is another <see cref="T:System.Enum"/>,
+            map it according to the <see cref="T:Riok.Mapperly.Abstractions.EnumMappingStrategy"/>.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MappingConversionType.DateTimeToDateOnly">
+            <summary>
+            If the source is a <see cref="T:System.DateTime"/>
+            and the target is a <c>DateOnly</c>
+            uses the `FromDateTime` method on the target type with the source as single parameter.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MappingConversionType.DateTimeToTimeOnly">
+            <summary>
+            If the source is a <see cref="T:System.DateTime"/>
+            and the target is a <c>TimeOnly</c>
+            uses the `FromDateTime` method on the target type with the source as single parameter.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MappingConversionType.Queryable">
+            <summary>
+            If the source and the target are a <see cref="T:System.Linq.IQueryable`1"/>.
+            Only uses object initializers and inlines the mapping code.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MappingConversionType.Enumerable">
+            <summary>
+            If the source and the target are an <see cref="T:System.Collections.Generic.IEnumerable`1"/>
+            Maps each element individually.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MappingConversionType.Dictionary">
+            <summary>
+            If the source and targets are <see cref="T:System.Collections.Generic.IDictionary`2"/>
+            or <see cref="T:System.Collections.Generic.IReadOnlyDictionary`2"/>.
+            Maps each <see cref="T:System.Collections.Generic.KeyValuePair`2"/> individually.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MappingConversionType.Span">
+            <summary>
+            If the source or target is a Span&lt;T&gt; or ReadOnlySpan&lt;T&gt;
+            Maps each element individually.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MappingConversionType.Memory">
+            <summary>
+            If the source or target is a Memory&lt;T&gt; or ReadOnlyMemory&lt;T&gt;
+            Maps each element individually.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MappingConversionType.Tuple">
+            <summary>
+            If the target is a <see cref="T:System.ValueTuple`2"/> or tuple expression (A: 10, B: 12).
+            Supports positional and named mapping.
+            Only uses <see cref="T:System.ValueTuple`2"/> in <see cref="T:System.Linq.IQueryable`1"/>.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MappingConversionType.EnumUnderlyingType">
+            <summary>
+            Allow using the underlying type of enum to map from or to an enum type.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MappingConversionType.ToTargetMethod">
+            <summary>
+            If the source type contains a `ToTarget` method other than `ToString`, use it
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MappingConversionType.StaticConvertMethods">
+            <summary>
+            If the source type contains a static `ToTarget` method
+            or the target type contains a static methods
+            `Create(TSource)`,
+            `CreateFrom(TSource)`,
+            `CreateFromTSource(TSource)`,
+            `From(TSource)`,
+            `FromTSource(TSource)`
+            or similar methods with <see langword="params"/> keyword, use it.
+            The exception is <see cref="T:System.DateTime"/> conversions,
+            which are enabled by separate options (<seealso cref="F:Riok.Mapperly.Abstractions.MappingConversionType.DateTimeToTimeOnly"/>, <seealso cref="F:Riok.Mapperly.Abstractions.MappingConversionType.DateTimeToDateOnly"/>).
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MappingConversionType.All">
+            <summary>
+            Enables all supported conversions.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.MappingTargetAttribute">
+            <summary>
+            Marks a given parameter as the mapping target.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.MapPropertyAttribute">
+            <summary>
+            Specifies options for a property mapping.
+            </summary>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.MapPropertyAttribute.#ctor(System.String,System.String)">
+            <summary>
+            Maps a specified source property to the specified target property.
+            </summary>
+            <param name="source">The name of the source property. The use of `nameof()` is encouraged. A path can be specified by joining property names with a '.'.</param>
+            <param name="target">The name of the target property. The use of `nameof()` is encouraged. A path can be specified by joining property names with a '.'.</param>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.MapPropertyAttribute.#ctor(System.String[],System.String)">
+            <summary>
+            Maps a specified source property to the specified target property.
+            </summary>
+            <param name="source">The path of the source property. The use of `nameof()` is encouraged.</param>
+            <param name="target">The name of the target property. The use of `nameof()` is encouraged. A path can be specified by joining property names with a '.'.</param>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.MapPropertyAttribute.#ctor(System.String,System.String[])">
+            <summary>
+            Maps a specified source property to the specified target property.
+            </summary>
+            <param name="source">The path of the source property. The use of `nameof()` is encouraged.</param>
+            <param name="target">The path of the target property. The use of `nameof()` is encouraged.</param>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.MapPropertyAttribute.#ctor(System.String[],System.String[])">
+            <summary>
+            Maps a specified source property to the specified target property.
+            </summary>
+            <param name="source">The path of the source property. The use of `nameof()` is encouraged.</param>
+            <param name="target">The path of the target property. The use of `nameof()` is encouraged.</param>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapPropertyAttribute.Source">
+            <summary>
+            Gets the name of the source property.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapPropertyAttribute.SourceFullName">
+            <summary>
+            Gets the full name of the source property path.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapPropertyAttribute.Target">
+            <summary>
+            Gets the name of the target property.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapPropertyAttribute.TargetFullName">
+            <summary>
+            Gets the full name of the target property path.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapPropertyAttribute.StringFormat">
+            <summary>
+            Gets or sets the format of the <c>ToString</c> conversion (implementing <see cref="T:System.IFormattable" />).
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapPropertyAttribute.FormatProvider">
+            <summary>
+            Gets or sets the name of a format provider field or property to be used for conversions accepting a format provider (implementing <see cref="T:System.IFormattable"/>).
+            If <c>null</c> the default format provider (annotated with <see cref="T:Riok.Mapperly.Abstractions.FormatProviderAttribute"/> and <see cref="P:Riok.Mapperly.Abstractions.FormatProviderAttribute.Default"/> <c>true</c>)
+            or none (if no default format provider is provided) is used.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapPropertyAttribute.Use">
+            <summary>
+            Reference to a unique named mapping method which should be used to map this member.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapPropertyAttribute.SuppressNullMismatchDiagnostic">
+            <summary>
+            When set to true, RMG089 is not emitted.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.MapPropertyFromSourceAttribute">
+            <summary>
+            Maps a property from the source object.
+            </summary>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.MapPropertyFromSourceAttribute.#ctor(System.String)">
+            <summary>
+            Maps the specified target property from the source object.
+            </summary>
+            <param name="target">The name of the target property. The use of `nameof()` is encouraged. A path can be specified by joining property names with a '.'.</param>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.MapPropertyFromSourceAttribute.#ctor(System.String[])">
+            <summary>
+            Maps the specified target property from the source object.
+            </summary>
+            <param name="target">The path of the target property. The use of `nameof()` is encouraged.</param>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapPropertyFromSourceAttribute.Target">
+            <summary>
+            Gets the name of the target property.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapPropertyFromSourceAttribute.TargetFullName">
+            <summary>
+            Gets the full name of the target property path.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapPropertyFromSourceAttribute.StringFormat">
+            <summary>
+            Gets or sets the format of the <c>ToString</c> conversion (implementing <see cref="T:System.IFormattable" />).
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapPropertyFromSourceAttribute.FormatProvider">
+            <summary>
+            Gets or sets the name of a format provider field or property to be used for conversions accepting a format provider (implementing <see cref="T:System.IFormattable"/>).
+            If <see langword="null"/> the default format provider (annotated with <see cref="T:Riok.Mapperly.Abstractions.FormatProviderAttribute"/> and <see cref="P:Riok.Mapperly.Abstractions.FormatProviderAttribute.Default"/> <see langword="true"/>)
+            or none (if no default format provider is provided) is used.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapPropertyFromSourceAttribute.Use">
+            <summary>
+            Reference to a unique named mapping method which should be used to map this member.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.MapValueAttribute">
+            <summary>
+            Specifies a constant value mapping.
+            </summary>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.MapValueAttribute.#ctor(System.String,System.Object)">
+            <summary>
+            Maps a constant value to a target member.
+            </summary>
+            <param name="target">The target member path.</param>
+            <param name="value">The value to assign to the <paramref name="target"/>, needs to be of the same type as the <paramref name="target"/>.</param>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.MapValueAttribute.#ctor(System.String[],System.Object)">
+            <summary>
+            Maps a constant value to a target member.
+            </summary>
+            <param name="target">The target member path.</param>
+            <param name="value">The value to assign to the <paramref name="target"/>, needs to be of the same type as the <paramref name="target"/>.</param>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.MapValueAttribute.#ctor(System.String)">
+            <summary>
+            Maps a method generated value to a target member.
+            Requires the usage of the <see cref="P:Riok.Mapperly.Abstractions.MapValueAttribute.Use"/> property.
+            </summary>
+            <param name="target">The target member path.</param>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.MapValueAttribute.#ctor(System.String[])">
+            <summary>
+            Maps a method generated value to a target member.
+            Requires the usage of the <see cref="P:Riok.Mapperly.Abstractions.MapValueAttribute.Use"/> property.
+            </summary>
+            <param name="target">The target member path, the usage of nameof is encouraged.</param>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapValueAttribute.Target">
+            <summary>
+            Gets the name of the target property.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapValueAttribute.TargetFullName">
+            <summary>
+            Gets the full name of the target property path.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapValueAttribute.Value">
+            <summary>
+            Gets the value to be assigned to <see cref="P:Riok.Mapperly.Abstractions.MapValueAttribute.Target"/>.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.MapValueAttribute.Use">
+            <summary>
+            Gets or sets the method name of the method which generates the value to be assigned to <see cref="P:Riok.Mapperly.Abstractions.MapValueAttribute.Target"/>.
+            Either this property or <see cref="P:Riok.Mapperly.Abstractions.MapValueAttribute.Value"/> needs to be set.
+            The return type of the referenced method must exactly match the type of <see cref="P:Riok.Mapperly.Abstractions.MapValueAttribute.Target"/>
+            and needs to be parameterless.
+            The usage of nameof is encouraged.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.MemberVisibility">
+            <summary>
+            Determines what member accessibility Mapperly will attempt to map.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MemberVisibility.AllAccessible">
+            <summary>
+            Maps all accessible members.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MemberVisibility.All">
+            <summary>
+            Maps all members, even members which are not directly accessible by the mapper are mapped
+            by using accessors with the UnsafeAccessorAttribute. This can only be used for .NET 8.0 and later.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MemberVisibility.Accessible">
+            <summary>
+            Maps only accessible members.
+            If not set, the UnsafeAccessorAttribute is used to generate mappings for inaccessible members.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MemberVisibility.Public">
+            <summary>
+            Maps public members.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MemberVisibility.Internal">
+            <summary>
+            Maps internal members.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MemberVisibility.Protected">
+            <summary>
+            Maps protected members.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.MemberVisibility.Private">
+            <summary>
+            Maps private members.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.NamedMappingAttribute">
+            <summary>
+            Specifies a custom name for the mapping. This can be used to reference in other mapping configurations.
+            </summary>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.NamedMappingAttribute.#ctor(System.String)">
+            <summary>
+            Specifies a custom name for the mapping. This can be used to reference in other mapping configurations.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.NamedMappingAttribute.Name">
+            <summary>
+            Gets the custom name specified for the mapping.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.ObjectFactoryAttribute">
+            <summary>
+            Marks a method as an object factory.
+            An object factory can be used to instantiate or resolve target objects.
+            An object factory method needs to be a method with a non-void return type.
+            It can be generic with constraints and can have one or none parameters.
+            If the object factory has a parameter, the source object is provided as an argument.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.PropertyNameMappingStrategy">
+            <summary>
+            Defines the strategy to use when mapping a property to another property.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.PropertyNameMappingStrategy.CaseSensitive">
+            <summary>
+            Matches a property by its name in case sensitive manner.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.PropertyNameMappingStrategy.CaseInsensitive">
+            <summary>
+            Matches a property by its name in case insensitive manner.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.ReferenceHandling.IReferenceHandler">
+            <summary>
+            A reference handler can store and resolve references
+            of mapping target objects.
+            </summary>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.ReferenceHandling.IReferenceHandler.TryGetReference``2(``0,``1@)">
+            <summary>
+            Before an object is created by Mapperly this method is called.
+            It can attempt to resolve existing target object instances based on the source object instance.
+            If <c>false</c> is returned, Mapperly creates a new instance of the target class.
+            If <c>true</c> is returned, target has to be non-null.
+            Mapperly then uses the target instance.
+            </summary>
+            <param name="source">The source object instance.</param>
+            <param name="target">The resolved target object instance or <c>null</c> if none could be resolved.</param>
+            <typeparam name="TSource">The type of the source object.</typeparam>
+            <typeparam name="TTarget">The target object type.</typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.ReferenceHandling.IReferenceHandler.SetReference``2(``0,``1)">
+            <summary>
+            Stores the created target instance.
+            Called by Mapperly just after a new target object instance is created.
+            </summary>
+            <param name="source">The source object instance.</param>
+            <param name="target">The target object instance.</param>
+            <typeparam name="TSource">The type of the source object.</typeparam>
+            <typeparam name="TTarget">The type of the target object.</typeparam>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.ReferenceHandling.PreserveReferenceHandler">
+            <summary>
+            A <see cref="T:Riok.Mapperly.Abstractions.ReferenceHandling.IReferenceHandler"/> implementation
+            which returns the same target object instance if encountered the same source object instance.
+            Do not use directly. Should only be used by Mapperly generated code.
+            API surface is not subject to semantic releases and may break in any release.
+            </summary>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.ReferenceHandling.PreserveReferenceHandler.TryGetReference``2(``0,``1@)">
+            <inheritdoc cref="M:Riok.Mapperly.Abstractions.ReferenceHandling.IReferenceHandler.TryGetReference``2(``0,``1@)"/>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.ReferenceHandling.PreserveReferenceHandler.SetReference``2(``0,``1)">
+            <inheritdoc cref="M:Riok.Mapperly.Abstractions.ReferenceHandling.IReferenceHandler.SetReference``2(``0,``1)"/>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.ReferenceHandling.ReferenceHandlerAttribute">
+            <summary>
+            Marks a mapping method parameter as a <see cref="T:Riok.Mapperly.Abstractions.ReferenceHandling.IReferenceHandler"/>.
+            The type of the parameter needs to be <see cref="T:Riok.Mapperly.Abstractions.ReferenceHandling.IReferenceHandler"/>.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.RequiredMappingStrategy">
+            <summary>
+            Defines the strategy used when emitting warnings for unmapped members.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.RequiredMappingStrategy.None">
+            <summary>
+            Warnings are not emitted for unmapped source or target members.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.RequiredMappingStrategy.Both">
+            <summary>
+            Warnings are emitted for both unmapped source and target members.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.RequiredMappingStrategy.Source">
+            <summary>
+            Warnings are emitted for unmapped source members but not for target members.
+            </summary>
+        </member>
+        <member name="F:Riok.Mapperly.Abstractions.RequiredMappingStrategy.Target">
+            <summary>
+            Warnings are emitted for unmapped target members but not for source members.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.UseMapperAttribute">
+            <summary>
+            Considers all accessible mapping methods provided by the type of this member.
+            Includes static and instance methods.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.UserMappingAttribute">
+            <summary>
+            A given method is marked as user implemented mapping with this attribute.
+            If <see cref="P:Riok.Mapperly.Abstractions.MapperAttribute.AutoUserMappings"/> is <c>true</c>,
+            this attribute allows to ignore a user implemented mapping method.
+            </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.UserMappingAttribute.Default">
+             <summary>
+             If set to <c>true</c>, this user mapping acts as the default mapping for the given type pair.
+             Only one mapping per type-pair in a mapper can be set to <c>true</c>.
+            
+             If no mapping for a given type-pair has a value of <c>true</c> for <see cref="P:Riok.Mapperly.Abstractions.UserMappingAttribute.Default"/>
+             the first mapping encountered without an explicit value of <c>false</c> is considered the default mapping.
+             </summary>
+        </member>
+        <member name="P:Riok.Mapperly.Abstractions.UserMappingAttribute.Ignore">
+            <summary>
+            Whether this user mapping should be ignored.
+            </summary>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.UseStaticMapperAttribute">
+            <summary>
+            Considers all static mapping methods provided by the type.
+            </summary>
+        </member>
+        <member name="M:Riok.Mapperly.Abstractions.UseStaticMapperAttribute.#ctor(System.Type)">
+            <summary>
+            Considers all static mapping methods provided by the <paramref name="mapperType"/>.
+            </summary>
+            <param name="mapperType">The type of which mapping methods will be included.</param>
+        </member>
+        <member name="T:Riok.Mapperly.Abstractions.UseStaticMapperAttribute`1">
+            <summary>
+            Considers all static mapping methods provided by the generic type.
+            </summary>
+            <typeparam name="T">The type of which mapping methods will be included.</typeparam>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute">
+            <summary>Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue"/>, the parameter will not be null even if the corresponding type allows it.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified return value condition.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter will not be null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+    </members>
+</doc>

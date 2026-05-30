@@ -1,0 +1,3624 @@
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Accordion/FluentAccordionItem.razor.rz.scp.css */
+[dir='rtl'] fluent-accordion-item[b-d6xo7qntdj]::part(button) {
+    text-align: right;
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/AnchoredRegion/FluentAnchoredRegion.razor.rz.scp.css */
+fluent-anchored-region[b-2ov9fhztky] {
+    pointer-events: none;
+}
+
+    fluent-anchored-region > *[b-2ov9fhztky] {
+        pointer-events: all;
+    }
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Anchor/FluentAnchor.razor.rz.scp.css */
+
+fluent-anchor[appearance="hypertext"][b-acyx52swce]::part(start) {
+    display: unset;
+    position: relative;
+    top: calc(var(--design-unit)* 1px);
+}
+
+fluent-anchor[appearance="hypertext"][b-acyx52swce]::part(end) {
+    display: unset;
+    position: relative;
+    top: calc(var(--design-unit)* 1px);
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/AppBar/FluentAppBar.razor.rz.scp.css */
+.fluent-appbar[b-dkkdhxy2t7] {
+    --appbar-item-size: 68;
+}
+
+[b-dkkdhxy2t7] .fluent-appbar-item {
+    width: calc(var(--appbar-item-size) * 1px);
+    --appbar-active-indicator-width: calc(var(--design-unit) * 0.5px);
+    height: calc(var(--appbar-item-size) * 1px - 20px);
+}
+
+    [b-dkkdhxy2t7] .fluent-appbar-item:hover {
+        background-color: var(--neutral-fill-secondary-rest);
+    }
+
+[b-dkkdhxy2t7] a {
+    color: inherit;
+    text-decoration: none;
+    font-size: var(--type-ramp-minus-2-font-size);
+    line-height: var(--type-ramp-minus-2-line-height);
+    position: relative;
+    display: inline-block;
+    height: 100%;
+    width: 100%;
+}
+
+[b-dkkdhxy2t7] a .stack-vertical {
+    padding: calc(var(--design-unit) * 1px) calc(var(--appbar-active-indicator-width) + (var(--design-unit) * 1.5px));
+    height: 100%;
+}
+
+[b-dkkdhxy2t7] div[part="label"] {
+    color: var(--neutral-foreground-rest);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+    text-align: center;
+}
+
+.fluent-appbar[orientation=vertical][b-dkkdhxy2t7]  .fluent-appbar-item:not([inpopover]) a.active::before {
+    content: "";
+    position: absolute;
+    width: var(--appbar-active-indicator-width);
+    height: 100%;
+    background-color: var(--accent-fill-rest);
+    border-radius: calc(var(--control-corner-radius) * 1px);
+    top: 0;
+    left: calc(var(--design-unit) * 0.5px);
+    right: unset;
+}
+
+.fluent-appbar[orientation=vertical][b-dkkdhxy2t7]  .fluent-appbar-item.fluent-appbar-item-local:not([inpopover]) a.active::before {
+    all: initial;
+}
+
+[dir='rtl'] .fluent-appbar[orientation=vertical][b-dkkdhxy2t7]  .fluent-appbar-item:not([inpopover]) a.active::before {
+    right: calc(var(--design-unit) * 0.5px);
+    left: unset;
+}
+
+[dir='rtl'] .fluent-appbar[orientation=vertical][b-dkkdhxy2t7]  .fluent-appbar-item.fluent-appbar-item-local:not([inpopover]) a.active::before {
+    all: initial;
+}
+
+[b-dkkdhxy2t7] .fluent-popover-content .fluent-popover-body {
+    margin-top: 0 !important;
+}
+
+[b-dkkdhxy2t7] .fluent-appbar-item:hover svg[part="icon-rest"],
+[b-dkkdhxy2t7] .fluent-appbar-item:not(:hover):not(.active) svg[part="icon-active"],
+[b-dkkdhxy2t7] .fluent-appbar-item:not(:hover) a.active svg[part="icon-rest"],
+[b-dkkdhxy2t7] .fluent-appbar-item[overflow] {
+    display: none;
+}
+
+[b-dkkdhxy2t7] .fluent-appbar-item:not(:hover) .active svg[part="icon-active"] {
+    display: block;
+}
+
+[b-dkkdhxy2t7] .fluent-appbar-item[inpopover]:not(:hover) a.active svg[part="icon-active"] {
+    display: none;
+}
+
+[b-dkkdhxy2t7] .fluent-appbar-item[inpopover=true]:not(:hover) a.active svg[part="icon-rest"] {
+    display: block;
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/BodyContent/FluentBodyContent.razor.rz.scp.css */
+.body-content[b-9l28a7kahd] {
+    margin: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    align-items: flex-start;
+    height: 100%;
+    width: 100%;
+    font-family: var(--body-font);
+    font-weight: normal;
+    font-size: var(--type-ramp-base-font-size);
+    line-height: var(--type-ramp-base-line-height);
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Button/FluentButton.razor.rz.scp.css */
+.loading-button[b-x1200685t0] {
+    position: relative;
+    height: calc((var(--base-height-multiplier) + var(--density))* var(--design-unit)* 1px);
+    display: inline-block;
+}
+
+    .loading-button[b-x1200685t0]  fluent-progress-ring {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 16px;
+        height: 16px;
+        cursor: not-allowed;
+    }
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Card/FluentCard.razor.rz.scp.css */
+fluent-card[b-6epdlk0xtt]  {
+    padding: calc(var(--design-unit) * 5px);
+}
+
+.fluent-card-minimal-style[b-6epdlk0xtt]  {
+    height: var(--card-height, 100%);
+    width: var(--card-width, 100%);
+    contain: content;
+    background: var(--fill-color);
+    color: var(--neutral-foreground-rest);
+    border: calc(var(--stroke-width)* 1px) solid var(--neutral-stroke-layer-rest);
+    border-radius: calc(var(--layer-corner-radius)* 1px);
+    box-shadow: var(--elevation-shadow-card-rest);
+    padding: calc(var(--design-unit)* 5px);
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/CollapsibleRegion/FluentCollapsibleRegion.razor.rz.scp.css */
+.fluent-collapsible-region-container[b-hk0m26j2or] {
+    overflow: hidden;
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/CounterBadge/FluentCounterBadge.razor.rz.scp.css */
+.fluentui-counterbadge-container[b-v8ui8wcemu] {
+    display: inline;
+    position: relative;
+    height: 100%;
+}
+
+.fluentui-counterbadge[b-v8ui8wcemu] {
+    position: absolute;
+    z-index: 10;
+    font-size: var(--type-ramp-minus-2-font-size);
+    font-weight: 600;
+    border-radius: 10000px;
+    letter-spacing: 0;
+    min-width: 10px;
+    padding: 4px 4px;
+    line-height: 1;
+    text-align: center;
+    text-indent: 0;
+    white-space: nowrap;
+    box-sizing: content-box;
+    cursor: default;
+}
+
+    .fluentui-counterbadge[dot-only][b-v8ui8wcemu] {
+        width: var(--design-unit);
+        min-width: unset;
+        height: var(--design-unit);
+    }
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/DataGrid/Columns/ColumnBase.razor.rz.scp.css */
+.col-title[b-pxhtqoo8qd] {
+    padding: 6px 16px;
+    user-select: none;
+}
+
+.col-title-text[b-pxhtqoo8qd] {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+th.col-justify-center svg[b-pxhtqoo8qd] {
+    align-content: center;
+    text-align:center;
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/DataGrid/FluentDataGrid.razor.rz.scp.css */
+.fluent-data-grid[b-ppmhrkw1mj] {
+    --fluent-data-grid-resize-handle-color: var(--accent-fill-rest);
+    --fluent-data-grid-resize-handle-width: 1px;
+    --fluent-data-grid-header-opacity: 0.5;
+    width: auto;
+    flex: 1;
+    border-collapse: collapse;
+    align-items: center;
+    height: max-content;
+    margin-bottom: 0px;
+}
+
+    .fluent-data-grid.grid[b-ppmhrkw1mj] {
+        display: grid;
+    }
+
+.grid thead[b-ppmhrkw1mj],
+.grid tbody[b-ppmhrkw1mj] {
+    display: contents;
+}
+
+.grid[b-ppmhrkw1mj]  tr {
+    display: contents;
+}
+
+.fluent-data-grid tbody tr .hover[b-ppmhrkw1mj] {
+    background: var(--neutral-fill-stealth-hover);
+}
+
+.col-options[b-ppmhrkw1mj], .col-resize[b-ppmhrkw1mj] {
+    position: absolute;
+    min-width: 250px;
+    top: 2.7rem;
+    background: var(--neutral-layer-2);
+    border: 1px solid var(--neutral-layer-3);
+    border-radius: 0.3rem;
+    box-shadow: 0 3px 8px 1px var(--neutral-layer-4);
+    padding: 1rem;
+    visibility: hidden;
+    z-index: 1;
+}
+
+[dir=rtl] .col-options[b-ppmhrkw1mj] {
+    left: unset;
+}
+
+.col-justify-end .col-options[b-ppmhrkw1mj],
+.col-justify-right .col-options[b-ppmhrkw1mj] {
+    left: unset;
+    margin-right: 0.6rem;
+}
+
+[dir=rtl] .col-justify-end .col-options[b-ppmhrkw1mj],
+[dir=rtl] .col-justify-right .col-options[b-ppmhrkw1mj] {
+    right: unset;
+    margin-left: 0.6rem;
+}
+
+
+
+.resize-options[b-ppmhrkw1mj] {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+}
+
+[b-ppmhrkw1mj] .resize-handle {
+    position: absolute;
+    right: 0;
+    left: unset;
+    bottom: 0;
+    height: 30px;
+    cursor: col-resize;
+    width: 6px;
+    border-inline-end: var(--fluent-data-grid-resize-handle-width) solid var(--fluent-data-grid-resize-handle-color);
+    opacity: var(--fluent-data-grid-header-opacity);
+}
+
+[dir=rtl] *[b-ppmhrkw1mj]  .resize-handle {
+    right: unset;
+    left: 0;
+}
+
+.header[b-ppmhrkw1mj] {
+    padding: 0;
+    z-index: 3;
+}
+
+[b-ppmhrkw1mj] tr[row-type='sticky-header'] > th {
+    position: sticky;
+    top: 0;
+    background-color: var(--neutral-fill-stealth-rest);
+    z-index: 2;
+}
+
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/DataGrid/FluentDataGridCell.razor.rz.scp.css */
+th[b-w6qdxfylwy], td[b-w6qdxfylwy] {
+    border-bottom: calc(var(--stroke-width)* 1px) solid var(--neutral-stroke-divider-rest);
+}
+
+td[b-w6qdxfylwy] {
+    padding: 6px 16px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    align-content: center;
+}
+
+
+    td.col-justify-center[b-w6qdxfylwy] {
+        text-align: center;
+    }
+
+    td.col-justify-end[b-w6qdxfylwy],
+    td.col-justify-right[b-w6qdxfylwy] {
+        text-align: end;
+    }
+
+th.col-justify-end > div[b-w6qdxfylwy] {
+    justify-content: flex-end;
+}
+
+
+td.grid-cell-placeholder[b-w6qdxfylwy]:after {
+    content: '\2026'; /*horizontal ellipsis*/
+    opacity: 0.75;
+}
+
+
+.empty-content-cell[b-w6qdxfylwy],
+.loading-content-cell[b-w6qdxfylwy] {
+    font-weight: 600;
+    text-align: center;
+    height: 100%;
+    user-select: none;
+}
+
+.multiline-text[b-w6qdxfylwy] {
+    white-space: inherit;
+    overflow: auto;
+    word-break: break-word;
+    align-content: start;
+}
+
+.column-header[b-w6qdxfylwy] {
+    font-weight: 600;
+    text-align: center;
+    position: relative;
+}
+
+[b-w6qdxfylwy] .col-sort-button {
+    width: calc(100% - 20px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+    [b-w6qdxfylwy] .col-sort-button::part(content) {
+        overflow: hidden;
+    }
+
+[b-w6qdxfylwy] .col-options-button {
+    padding-inline-start: 4px;
+}
+
+.col-justify-start[b-w6qdxfylwy]  .col-sort-button::part(control) {
+    justify-content: start;
+    overflow: hidden;
+    opacity: 1
+}
+
+.col-justify-center[b-w6qdxfylwy]  .col-sort-button::part(control) {
+    justify-content: center;
+    overflow: hidden;
+    opacity: 1
+}
+
+.col-justify-end[b-w6qdxfylwy]  .col-sort-button::part(control) {
+    justify-content: end;
+    overflow: hidden;
+    opacity: 1
+}
+
+
+.col-justify-end[b-w6qdxfylwy]  .col-sort-button::part(start) {
+    margin-inline-end: 2px;
+}
+
+.col-justify-start[b-w6qdxfylwy]  .col-sort-button::part(end),
+.col-justify-center[b-w6qdxfylwy]  .col-sort-button::part(end) {
+    margin-inline-start: 2px;
+}
+
+.col-justify-start[b-w6qdxfylwy]  .col-title {
+    text-align: start;
+}
+
+.col-justify-center[b-w6qdxfylwy]  .col-title {
+    text-align: center;
+}
+
+.col-justify-end[b-w6qdxfylwy]  .col-title {
+    text-align: end;
+}
+
+[b-w6qdxfylwy] .hierarchical-toggle-container {
+    height: 24px;
+    display: inline-flex;
+    vertical-align: middle;
+    align-items: center;
+    column-gap: calc(var(--design-unit) * 1px);
+    position: relative;
+    left: calc(var(--design-unit) * -1.5px);
+}
+
+[b-w6qdxfylwy] .hierarchical-expander {
+    display: inline-block;
+    width: 18px;
+}
+
+    [b-w6qdxfylwy] .hierarchical-expander svg {
+        transition: transform 0.1s linear;
+        pointer-events: none;
+    }
+
+[b-w6qdxfylwy] .hierarchical-collapsed svg {
+    transform: rotate(0deg);
+}
+
+[dir=rtl] *[b-w6qdxfylwy]  .hierarchical-collapsed svg {
+    transform: rotate(180deg);
+}
+
+[b-w6qdxfylwy] .hierarchical-expanded svg {
+    transform: rotate(90deg);
+}
+
+[b-w6qdxfylwy] .hierarchical-expand-button {
+    width: 18px;
+    height: 24px;
+    min-width: 18px;
+    vertical-align: middle;
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/DataGrid/FluentDataGridRow.razor.rz.scp.css */
+.sticky-header[b-upi3f9mbnn] {
+    z-index: 3;
+}
+
+.hover:not([row-type='header'],[row-type='sticky-header'],.loading-content-row):hover[b-upi3f9mbnn]  td:not(.empty-content-cell) {
+    cursor: pointer;
+    background-color: var(--datagrid-hover-color, var(--neutral-fill-stealth-hover));
+}
+
+
+
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/DateTime/FluentCalendar.razor.rz.scp.css */
+/*
+    "Days" View
+*/
+.fluent-calendar[b-bgn9u4guxz] {
+    --calendar-cell-size: 28px;
+    --calendar-gap: 2px;
+    --multi-select-opacity: 0.2;
+    font-family: var(--body-font);
+    font-size: var(--type-ramp-base-font-size);
+    line-height: var(--type-ramp-base-line-height);
+    color: var(--neutral-foreground-rest);
+    width: calc((var(--calendar-cell-size) + 2 * var(--calendar-gap)) * 7);
+    height: calc((var(--calendar-cell-size) + 3 * var(--calendar-gap)) * 8);
+    user-select: none;
+}
+
+    /* Header: month name and month navigation */
+    .fluent-calendar[b-bgn9u4guxz]  .title {
+        display: flex;
+        padding: calc(var(--design-unit) * 2px);
+        font-weight: 600;
+        width: 100%;
+        height: calc(var(--calendar-cell-size) + 4 * var(--calendar-gap));
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
+        .fluent-calendar[b-bgn9u4guxz]  .title > .label {
+            vertical-align: middle;
+            cursor: pointer;
+            width: 100%;
+        }
+
+            .fluent-calendar[b-bgn9u4guxz]  .title > .label[readonly] {
+                cursor: default;
+            }
+
+    .fluent-calendar[b-bgn9u4guxz]  .change-period {
+        float: right;
+        display: flex;
+        margin-right: -6px;
+    }
+
+        .fluent-calendar[b-bgn9u4guxz]  .change-period > .previous,
+        .fluent-calendar[b-bgn9u4guxz]  .change-period > .next {
+            width: var(--calendar-cell-size);
+            height: var(--calendar-cell-size);
+            margin-left: calc(2 * var(--calendar-gap));
+            text-align: center;
+            cursor: pointer;
+        }
+
+            .fluent-calendar[b-bgn9u4guxz]  .change-period > .previous:not([disabled]):hover,
+            .fluent-calendar[b-bgn9u4guxz]  .change-period > .next:not([disabled]):hover {
+                background: var(--neutral-fill-stealth-hover);
+            }
+
+            .fluent-calendar[b-bgn9u4guxz]  .change-period > .previous svg,
+            .fluent-calendar[b-bgn9u4guxz]  .change-period > .next svg {
+                width: 16px;
+                fill: var(--neutral-fill-strong-focus);
+            }
+
+    /* List of days */
+    .fluent-calendar[b-bgn9u4guxz]  .days {
+        text-align: center;
+    }
+
+    .fluent-calendar[b-bgn9u4guxz]  .week-days,
+    .fluent-calendar[b-bgn9u4guxz]  .week {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        grid-gap: var(--calendar-gap);
+        border: 0px;
+        padding: 0px;
+    }
+
+    .fluent-calendar[b-bgn9u4guxz]  .day,
+    .fluent-calendar[b-bgn9u4guxz]  .week-day {
+        border: 1px solid transparent;
+        width: var(--calendar-cell-size);
+        height: var(--calendar-cell-size);
+        line-height: var(--calendar-cell-size);
+        padding: 0px;
+        box-sizing: initial;
+    }
+
+    /* Week names */
+    .fluent-calendar[b-bgn9u4guxz]  .week-day {
+        font-weight: 600;
+    }
+
+    /* Days */
+    .fluent-calendar[b-bgn9u4guxz]  .day {
+        border: calc(var(--stroke-width) * 1px) solid transparent;
+        border-radius: calc(var(--control-corner-radius) * 1px);
+        cursor: pointer;
+    }
+
+    .fluent-calendar[readonly][b-bgn9u4guxz]  .day {
+        cursor: default;
+    }
+
+    .fluent-calendar:not([readonly])[b-bgn9u4guxz]  .day:not([disabled]):not([inactive]):not([today]):hover {
+        background: var(--neutral-fill-stealth-hover);
+    }
+
+    /* Inactive and Disabled */
+    .fluent-calendar[b-bgn9u4guxz]  .day[inactive] {
+        color: var(--neutral-stroke-focus);
+        cursor: default;
+    }
+
+    .fluent-calendar[b-bgn9u4guxz]  .day[disabled] {
+        color: var(--neutral-stroke-focus);
+        cursor: default;
+    }
+
+        .fluent-calendar[b-bgn9u4guxz]  .day[disabled]::before { /* strikethrough */
+            transform: translate(-4px, 0px) rotate(45deg);
+            content: "";
+            display: inline-block;
+            width: calc(var(--calendar-cell-size) * .8);
+            height: calc(var(--stroke-width) * 1px);
+            background: currentcolor;
+            position: absolute;
+            margin-top: calc(var(--calendar-cell-size) / 2);
+            transform-origin: center center;
+            z-index: 1;
+        }
+
+    /* Today */
+    .fluent-calendar[b-bgn9u4guxz]  .day:not([selected]):not([multi-day])[today] {
+        color: var(--foreground-on-accent-rest);
+        background: var(--accent-fill-rest);
+        border-radius: 50%;
+        position: relative;
+    }
+
+    /* Selected */
+    .fluent-calendar[b-bgn9u4guxz]  .day[selected] {
+        color: var(--accent-fill-rest);
+        border: 1px solid var(--accent-fill-rest);
+        background: var(--fill-color);
+    }
+
+    /* Selected Multiple Days */
+    .fluent-calendar[b-bgn9u4guxz]  .day[multi-day],
+    .fluent-calendar[b-bgn9u4guxz]  .day[multi-start],
+    .fluent-calendar[b-bgn9u4guxz]  .day[multi-end] {
+        position: relative;
+    }
+
+        .fluent-calendar[b-bgn9u4guxz]  .day[multi-day]::before,
+        .fluent-calendar[b-bgn9u4guxz]  .day[multi-start]::before,
+        .fluent-calendar[b-bgn9u4guxz]  .day[multi-end]::before {
+            content: "";
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            left: 0;
+            background: var(--accent-fill-rest);
+            opacity: var(--multi-select-opacity);
+        }
+
+        .fluent-calendar[b-bgn9u4guxz]  .day[multi-start]::before {
+            border-top-left-radius: 50%;
+            border-bottom-left-radius: 50%;
+        }
+
+        .fluent-calendar[b-bgn9u4guxz]  .day[multi-end]::before {
+            border-top-right-radius: 50%;
+            border-bottom-right-radius: 50%;
+        }
+
+    .fluent-calendar[b-bgn9u4guxz]  .day[multi-day-over] {
+        background: var(--neutral-fill-stealth-hover);
+    }
+
+    /* Animations */
+    .fluent-calendar[b-bgn9u4guxz]  .animation-running-down {
+        animation: 0.2s fluent-text-animation-down-b-bgn9u4guxz ease-out;
+    }
+
+    .fluent-calendar[b-bgn9u4guxz]  .animation-running-up {
+        animation: 0.2s fluent-text-animation-up-b-bgn9u4guxz ease-out;
+    }
+
+    .fluent-calendar[b-bgn9u4guxz]  .animation-none {
+        animation: none;
+    }
+
+[dir="rtl"] .fluent-calendar[b-bgn9u4guxz]  .day[disabled]::before {
+    transform: translate(4px, 0px) rotate(45deg);
+}
+
+/*
+    "Months" View
+*/
+.fluent-month[b-bgn9u4guxz] {
+    --month-cell-size: 28px;
+    --month-cell-height: 48px;
+    --month-gap: 2px;
+    font-family: var(--body-font);
+    font-size: var(--type-ramp-base-font-size);
+    line-height: var(--type-ramp-base-line-height);
+    color: var(--neutral-foreground-rest);
+    min-width: 220px;
+    max-width: calc((var(--month-cell-size) + 2 * var(--month-gap)) * 7);
+    user-select: none;
+}
+
+    /* Header: Year name and navigation arrows */
+    .fluent-month[b-bgn9u4guxz]  .title {
+        display: flex;
+        padding: calc(var(--design-unit) * 2px);
+        font-weight: 600;
+        width: 100%;
+        height: calc(var(--month-cell-size) + 4 * var(--month-gap));
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
+        .fluent-month[b-bgn9u4guxz]  .title > .label {
+            vertical-align: middle;
+            cursor: pointer;
+            width: 100%;
+        }
+
+            .fluent-month[b-bgn9u4guxz]  .title > .label[readonly] {
+                cursor: default;
+            }
+
+    .fluent-month[b-bgn9u4guxz]  .change-period {
+        float: right;
+        display: flex;
+        margin-right: -6px;
+    }
+
+        .fluent-month[b-bgn9u4guxz]  .change-period > .previous,
+        .fluent-month[b-bgn9u4guxz]  .change-period > .next {
+            width: var(--month-cell-size);
+            height: var(--month-cell-size);
+            margin-left: calc(2 * var(--month-gap));
+            text-align: center;
+            cursor: pointer;
+        }
+
+            .fluent-month[b-bgn9u4guxz]  .change-period > .previous:not([disabled]):hover,
+            .fluent-month[b-bgn9u4guxz]  .change-period > .next:not([disabled]):hover {
+                background: var(--neutral-fill-stealth-hover);
+            }
+
+            .fluent-month[b-bgn9u4guxz]  .change-period > .previous svg,
+            .fluent-month[b-bgn9u4guxz]  .change-period > .next svg {
+                width: 16px;
+                fill: var(--neutral-fill-strong-focus);
+            }
+
+    /* List of months */
+    .fluent-month[b-bgn9u4guxz]  .months {
+        text-align: center;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-gap: var(--month-gap);
+        width: 100%;
+    }
+
+    .fluent-month[b-bgn9u4guxz]  .month {
+        display: flex;
+        height: var(--month-cell-height);
+        border: calc(var(--stroke-width) * 1px) solid transparent;
+        border-radius: calc(var(--control-corner-radius) * 1px);
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .fluent-month[readonly][b-bgn9u4guxz]  .month {
+        cursor: default;
+    }
+
+    .fluent-month:not([readonly])[b-bgn9u4guxz]  .month:not([disabled]):hover {
+        background: var(--neutral-fill-stealth-hover);
+    }
+
+    .fluent-month[b-bgn9u4guxz]  .month[selected] {
+        color: var(--accent-fill-rest);
+        border: 1px solid var(--accent-fill-rest);
+        background: var(--fill-color);
+    }
+
+    .fluent-month[b-bgn9u4guxz]  .month[disabled] {
+        color: var(--neutral-stroke-focus);
+        cursor: default;
+    }
+
+    /* Animations */
+    .fluent-month[b-bgn9u4guxz]  .animation-running-down {
+        animation: 0.2s fluent-text-animation-down-b-bgn9u4guxz ease-out;
+    }
+
+    .fluent-month[b-bgn9u4guxz]  .animation-running-up {
+        animation: 0.2s fluent-text-animation-up-b-bgn9u4guxz ease-out;
+    }
+
+    .fluent-month[b-bgn9u4guxz]  .animation-none {
+        animation: none;
+    }
+
+/*
+    "Years" View
+*/
+.fluent-year[b-bgn9u4guxz] {
+    --year-cell-size: 28px;
+    --year-cell-height: 48px;
+    --year-gap: 2px;
+    font-family: var(--body-font);
+    font-size: var(--type-ramp-base-font-size);
+    line-height: var(--type-ramp-base-line-height);
+    color: var(--neutral-foreground-rest);
+    min-width: 220px;
+    max-width: calc((var(--year-cell-size) + 2 * var(--year-gap)) * 7);
+    user-select: none;
+}
+
+    /* Header: Multiple years and navigation arrows */
+    .fluent-year[b-bgn9u4guxz]  .title {
+        display: flex;
+        padding: calc(var(--design-unit) * 2px);
+        font-weight: 600;
+        width: 100%;
+        height: calc(var(--year-cell-size) + 4 * var(--year-gap));
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
+        .fluent-year[b-bgn9u4guxz]  .title > .label {
+            vertical-align: middle;
+        }
+
+            .fluent-year[b-bgn9u4guxz]  .title > .label[readonly] {
+                cursor: default;
+            }
+
+    .fluent-year[b-bgn9u4guxz]  .change-period {
+        float: right;
+        display: flex;
+        margin-right: -6px;
+    }
+
+        .fluent-year[b-bgn9u4guxz]  .change-period > .previous,
+        .fluent-year[b-bgn9u4guxz]  .change-period > .next {
+            width: var(--year-cell-size);
+            height: var(--year-cell-size);
+            margin-left: calc(2 * var(--year-gap));
+            text-align: center;
+            cursor: pointer;
+        }
+
+            .fluent-year[b-bgn9u4guxz]  .change-period > .previous:not([disabled]):hover,
+            .fluent-year[b-bgn9u4guxz]  .change-period > .next:not([disabled]):hover {
+                background: var(--neutral-fill-stealth-hover);
+            }
+
+            .fluent-year[b-bgn9u4guxz]  .change-period > .previous svg,
+            .fluent-year[b-bgn9u4guxz]  .change-period > .next svg {
+                width: 16px;
+                fill: var(--neutral-fill-strong-focus);
+            }
+
+    /* List of years */
+    .fluent-year[b-bgn9u4guxz]  .years {
+        text-align: center;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-gap: var(--year-gap);
+        width: 100%;
+    }
+
+    .fluent-year[b-bgn9u4guxz]  .year {
+        display: flex;
+        height: var(--year-cell-height);
+        border: calc(var(--stroke-width) * 1px) solid transparent;
+        border-radius: calc(var(--control-corner-radius) * 1px);
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .fluent-year[readonly][b-bgn9u4guxz]  .year {
+        cursor: default;
+    }
+
+    .fluent-year:not([readonly])[b-bgn9u4guxz]  .year:not([disabled]):hover {
+        background: var(--neutral-fill-stealth-hover);
+    }
+
+    .fluent-year[b-bgn9u4guxz]  .year[selected] {
+        color: var(--accent-fill-rest);
+        border: 1px solid var(--accent-fill-rest);
+        background: var(--fill-color);
+    }
+
+    .fluent-year[b-bgn9u4guxz]  .year[disabled] {
+        color: var(--neutral-stroke-focus);
+        cursor: default;
+    }
+
+    /* Animations */
+    .fluent-year[b-bgn9u4guxz]  .animation-running-down {
+        animation: 0.2s fluent-text-animation-down-b-bgn9u4guxz ease-out;
+    }
+
+    .fluent-year[b-bgn9u4guxz]  .animation-running-up {
+        animation: 0.2s fluent-text-animation-up-b-bgn9u4guxz ease-out;
+    }
+
+    .fluent-year[b-bgn9u4guxz]  .animation-none {
+        animation: none;
+    }
+
+@keyframes fluent-text-animation-up-b-bgn9u4guxz {
+    0% {
+        opacity: 0;
+        transform: translateY(80%);
+    }
+
+    20% {
+        opacity: 0;
+    }
+
+    80% {
+        opacity: 1;
+        transform: translateY(0%);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0%);
+    }
+}
+
+@keyframes fluent-text-animation-down-b-bgn9u4guxz {
+    0% {
+        opacity: 0;
+        transform: translateY(-80%);
+    }
+
+    20% {
+        opacity: 0;
+    }
+
+    80% {
+        opacity: 1;
+        transform: translateY(0%);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0%);
+    }
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/DateTime/FluentDatePicker.razor.rz.scp.css */
+.fluent-datepicker-popup[b-i3i7ux5rp5] {
+ 
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/DateTime/FluentTimePicker.razor.rz.scp.css */
+.fluent-timepicker[b-6gigqm0f7f] {
+    min-width: 110px;
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Dialog/ContentComponents/FluentSplashScreen.razor.rz.scp.css */
+.fluent-launch[b-84hlqzw3vk] {
+    font-family: var(--body-font);
+    -webkit-font-smoothing: antialiased;
+    background-color: white;
+    color: rgb(73, 72, 71);
+    --accent-fill-rest: #d3d3d3;
+    user-select: none;
+}
+
+    .fluent-launch h1[b-84hlqzw3vk] {
+        font-size: 32px;
+        font-weight: 600;
+        margin-top: 40px;
+        line-height: 40px;
+        margin: 40px 0px 0px 0px;
+        user-select: none;
+    }
+
+    .fluent-launch h2[b-84hlqzw3vk] {
+        font-size: 24px;
+        font-weight: 400;
+        line-height: 32px;
+        margin: 24px 0px 50px 0px;
+        user-select: none;
+    }
+
+    .fluent-launch h3[b-84hlqzw3vk] {
+        font-size: 12px;
+        font-weight: 300;
+        margin: 0px;
+        user-select: none;
+    }
+    
+    .fluent-launch p[b-84hlqzw3vk] {
+        user-select: none;
+    }
+
+    .fluent-launch .icon[b-84hlqzw3vk] {
+        width: 150px;
+        margin: 20px 0px 0px 0px;
+    }
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Dialog/ContentComponents/MessageBox.razor.rz.scp.css */
+.fluent-messagebox[b-0npbikdt9h] {
+    font-family: var(--body-font);
+    -webkit-font-smoothing: antialiased;
+    color: var( --neutral-foreground-rest);
+    word-break: break-word;
+}
+
+.fluent-messagebox[b-0npbikdt9h]  .icon {
+    min-width: 24px;
+    margin: 4px;
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Dialog/FluentDialog.razor.rz.scp.css */
+fluent-dialog[b-dsxskpj5rr]::part(control) {
+    --dialog-padding: calc(var(--design-unit) * 6 * 1px);
+    position: relative;
+    padding: var(--dialog-padding);
+    width: calc(var(--dialog-width) - 2 * var(--dialog-padding));
+    height: calc(var(--dialog-height) - 2 * var(--dialog-padding));
+}
+
+fluent-dialog:has(div[class~="fluent-dialog-body"]):not(:is(fluent-dialog[class~="right"], fluent-dialog[class~="left"]) )[b-dsxskpj5rr]::part(control) {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas:
+        'dialog-header'
+        'dialog-body'
+        'dialog-footer';
+}
+
+fluent-dialog[class~="right"][b-dsxskpj5rr]::part(control),
+fluent-dialog[class~="left"][b-dsxskpj5rr]::part(control) {
+    display: flex;
+    flex-direction: column;
+    border-radius: unset;
+    border-width: 0;
+    --dialog-height: 100dvh;
+    overflow-y: auto;
+}
+
+:is(fluent-dialog[class~="right"], fluent-dialog[class~="left"])[b-dsxskpj5rr]  .fluent-dialog-body {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+fluent-dialog[class~="right"][b-dsxskpj5rr]::part(control) {
+    position: absolute;
+    right: 0;
+}
+
+fluent-dialog[class~="left"][b-dsxskpj5rr]::part(control) {
+    position: absolute;
+    left: 0;
+}
+
+fluent-dialog[b-dsxskpj5rr]  .fluent-dialog-header {
+    grid-area: dialog-header;
+    padding: 0 0 var(--dialog-padding) 0;
+}
+
+fluent-dialog[b-dsxskpj5rr]  .fluent-dialog-footer {
+    grid-area: dialog-footer;
+    margin-top: auto;
+    padding: var(--dialog-padding) 0 0 0;
+}
+
+fluent-dialog:has(div[class~="fluent-dialog-body"])[b-dsxskpj5rr]  .fluent-dialog-footer {
+    grid-area: dialog-footer;
+    margin-top: auto;
+    padding-top: var(--dialog-padding);
+    right: 0px;
+}
+
+fluent-dialog[b-dsxskpj5rr]  .fluent-dialog-body {
+    grid-area: dialog-body;
+    width: 100%;
+    height: auto;
+    min-height: 80px;
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Drag/FluentDropZone.razor.rz.scp.css */
+div[draggable='true'][b-qxma62j335] {
+    cursor: move;
+}
+
+div[dragged-over][b-qxma62j335] {
+    background-color: lightgray;
+    opacity: 0.6;
+    animation: blinker 1s linear infinite;
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Footer/FluentFooter.razor.rz.scp.css */
+.footer[b-v3odva5qa5] {
+    display: flex;
+    z-index: 10;
+    flex-direction: row;
+    font-family: var(--body-font);
+    font-weight: normal;
+    font-size: var(--type-ramp-minus-1-font-size);
+    line-height: var(--type-ramp-minus-1-line-height);
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Forms/FluentValidationMessage.razor.rz.scp.css */
+.validation-message[b-tlmhiy4gb8] {
+    color: var(--error);
+    font-size: var(--type-ramp-minus-1-font-size);
+    display: flex;
+    align-items: center;
+    column-gap: 4px;
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Grid/FluentGrid.razor.rz.scp.css */
+.fluent-grid[b-9fxwfzgab8] {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    box-sizing: border-box;
+}
+
+    .fluent-grid[b-9fxwfzgab8]  > div {
+        margin: 0;
+        box-sizing: border-box;
+    }
+
+    /* Spacing */
+
+    .fluent-grid[spacing="1"][b-9fxwfzgab8] {
+        width: calc(100% + 8px);
+        margin: -4px;
+    }
+
+        .fluent-grid[spacing="1"][b-9fxwfzgab8]  > div {
+            padding: 4px;
+        }
+
+    .fluent-grid[spacing="2"][b-9fxwfzgab8] {
+        width: calc(100% + 16px);
+        margin: -8px;
+    }
+
+        .fluent-grid[spacing="2"][b-9fxwfzgab8]  > div {
+            padding: 8px;
+        }
+
+    .fluent-grid[spacing="3"][b-9fxwfzgab8] {
+        width: calc(100% + 24px);
+        margin: -12px;
+    }
+
+        .fluent-grid[spacing="3"][b-9fxwfzgab8]  > div {
+            padding: 12px;
+        }
+
+    .fluent-grid[spacing="4"][b-9fxwfzgab8] {
+        width: calc(100% + 32px);
+        margin: -16px;
+    }
+
+        .fluent-grid[spacing="4"][b-9fxwfzgab8]  > div {
+            padding: 16px;
+        }
+
+    .fluent-grid[spacing="5"][b-9fxwfzgab8] {
+        width: calc(100% + 40px);
+        margin: -20px;
+    }
+
+        .fluent-grid[spacing="5"][b-9fxwfzgab8]  > div {
+            padding: 20px;
+        }
+
+    .fluent-grid[spacing="6"][b-9fxwfzgab8] {
+        width: calc(100% + 48px);
+        margin: -24px;
+    }
+
+        .fluent-grid[spacing="6"][b-9fxwfzgab8]  > div {
+            padding: 24px;
+        }
+
+    .fluent-grid[spacing="7"][b-9fxwfzgab8] {
+        width: calc(100% + 56px);
+        margin: -28px;
+    }
+
+        .fluent-grid[spacing="7"][b-9fxwfzgab8]  > div {
+            padding: 28px;
+        }
+
+    .fluent-grid[spacing="8"][b-9fxwfzgab8] {
+        width: calc(100% + 64px);
+        margin: -32px;
+    }
+
+        .fluent-grid[spacing="8"][b-9fxwfzgab8]  > div {
+            padding: 32px;
+        }
+
+    .fluent-grid[spacing="9"][b-9fxwfzgab8] {
+        width: calc(100% + 72px);
+        margin: -36px;
+    }
+
+        .fluent-grid[spacing="9"][b-9fxwfzgab8]  > div {
+            padding: 36px;
+        }
+
+    .fluent-grid[spacing="10"][b-9fxwfzgab8] {
+        width: calc(100% + 80px);
+        margin: -40px;
+    }
+
+        .fluent-grid[spacing="10"][b-9fxwfzgab8]  > div {
+            padding: 40px;
+        }
+
+
+
+    /* Size xs */
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xs="auto"] {
+        flex-grow: 0;
+        max-width: none;
+        flex-basis: auto;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xs="true"] {
+        flex-grow: 1;
+        max-width: 100%;
+        flex-basis: 0;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xs="0"] {
+        flex: 1;
+        max-width: fit-content;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xs="1"] {
+        flex-grow: 0;
+        max-width: 8.3333%;
+        flex-basis: 8.3333%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xs="2"] {
+        flex-grow: 0;
+        max-width: 16.6667%;
+        flex-basis: 16.6667%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xs="3"] {
+        flex-grow: 0;
+        max-width: 25%;
+        flex-basis: 25%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xs="4"] {
+        flex-grow: 0;
+        max-width: 33.3333%;
+        flex-basis: 33.3333%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xs="5"] {
+        flex-grow: 0;
+        max-width: 41.6667%;
+        flex-basis: 41.6667%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xs="6"] {
+        flex-grow: 0;
+        max-width: 50%;
+        flex-basis: 50%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xs="7"] {
+        flex-grow: 0;
+        max-width: 58.3333%;
+        flex-basis: 58.3333%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xs="8"] {
+        flex-grow: 0;
+        max-width: 66.6667%;
+        flex-basis: 66.6667%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xs="9"] {
+        flex-grow: 0;
+        max-width: 75%;
+        flex-basis: 75%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xs="10"] {
+        flex-grow: 0;
+        max-width: 83.3333%;
+        flex-basis: 83.3333%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xs="11"] {
+        flex-grow: 0;
+        max-width: 91.6667%;
+        flex-basis: 91.6667%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xs="12"] {
+        flex-grow: 0;
+        max-width: 100%;
+        flex-basis: 100%;
+    }
+
+
+@media(min-width: 600px) {
+
+    /* Size sm */
+
+    .fluent-grid[b-9fxwfzgab8]  > div[sm="auto"] {
+        flex-grow: 0;
+        max-width: none;
+        flex-basis: auto;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[sm="true"] {
+        flex-grow: 1;
+        max-width: 100%;
+        flex-basis: 0;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[sm="0"] {
+        flex: 1;
+        max-width: fit-content;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[sm="1"] {
+        flex-grow: 0;
+        max-width: 8.3333%;
+        flex-basis: 8.3333%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[sm="2"] {
+        flex-grow: 0;
+        max-width: 16.6667%;
+        flex-basis: 16.6667%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[sm="3"] {
+        flex-grow: 0;
+        max-width: 25%;
+        flex-basis: 25%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[sm="4"] {
+        flex-grow: 0;
+        max-width: 33.3333%;
+        flex-basis: 33.3333%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[sm="5"] {
+        flex-grow: 0;
+        max-width: 41.6667%;
+        flex-basis: 41.6667%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[sm="6"] {
+        flex-grow: 0;
+        max-width: 50%;
+        flex-basis: 50%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[sm="7"] {
+        flex-grow: 0;
+        max-width: 58.3333%;
+        flex-basis: 58.3333%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[sm="8"] {
+        flex-grow: 0;
+        max-width: 66.6667%;
+        flex-basis: 66.6667%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[sm="9"] {
+        flex-grow: 0;
+        max-width: 75%;
+        flex-basis: 75%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[sm="10"] {
+        flex-grow: 0;
+        max-width: 83.3333%;
+        flex-basis: 83.3333%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[sm="11"] {
+        flex-grow: 0;
+        max-width: 91.6667%;
+        flex-basis: 91.6667%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[sm="12"] {
+        flex-grow: 0;
+        max-width: 100%;
+        flex-basis: 100%;
+    }
+}
+
+@media(min-width: 960px) {
+
+    /* Size md */
+
+    .fluent-grid[b-9fxwfzgab8]  > div[md="auto"] {
+        flex-grow: 0;
+        max-width: none;
+        flex-basis: auto;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[md="true"] {
+        flex-grow: 1;
+        max-width: 100%;
+        flex-basis: 0;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[md="0"] {
+        flex: 1;
+        max-width: fit-content;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[md="1"] {
+        flex-grow: 0;
+        max-width: 8.3333%;
+        flex-basis: 8.3333%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[md="2"] {
+        flex-grow: 0;
+        max-width: 16.6667%;
+        flex-basis: 16.6667%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[md="3"] {
+        flex-grow: 0;
+        max-width: 25%;
+        flex-basis: 25%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[md="4"] {
+        flex-grow: 0;
+        max-width: 33.3333%;
+        flex-basis: 33.3333%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[md="5"] {
+        flex-grow: 0;
+        max-width: 41.6667%;
+        flex-basis: 41.6667%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[md="6"] {
+        flex-grow: 0;
+        max-width: 50%;
+        flex-basis: 50%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[md="7"] {
+        flex-grow: 0;
+        max-width: 58.3333%;
+        flex-basis: 58.3333%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[md="8"] {
+        flex-grow: 0;
+        max-width: 66.6667%;
+        flex-basis: 66.6667%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[md="9"] {
+        flex-grow: 0;
+        max-width: 75%;
+        flex-basis: 75%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[md="10"] {
+        flex-grow: 0;
+        max-width: 83.3333%;
+        flex-basis: 83.3333%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[md="11"] {
+        flex-grow: 0;
+        max-width: 91.6667%;
+        flex-basis: 91.6667%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[md="12"] {
+        flex-grow: 0;
+        max-width: 100%;
+        flex-basis: 100%;
+    }
+}
+
+@media(min-width: 1280px) {
+
+    /* Size lg */
+
+    .fluent-grid[b-9fxwfzgab8]  > div[lg="auto"] {
+        flex-grow: 0;
+        max-width: none;
+        flex-basis: auto;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[lg="true"] {
+        flex-grow: 1;
+        max-width: 100%;
+        flex-basis: 0;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[lg="0"] {
+        flex: 1;
+        max-width: fit-content;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[lg="1"] {
+        flex-grow: 0;
+        max-width: 8.3333%;
+        flex-basis: 8.3333%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[lg="2"] {
+        flex-grow: 0;
+        max-width: 16.6667%;
+        flex-basis: 16.6667%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[lg="3"] {
+        flex-grow: 0;
+        max-width: 25%;
+        flex-basis: 25%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[lg="4"] {
+        flex-grow: 0;
+        max-width: 33.3333%;
+        flex-basis: 33.3333%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[lg="5"] {
+        flex-grow: 0;
+        max-width: 41.6667%;
+        flex-basis: 41.6667%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[lg="6"] {
+        flex-grow: 0;
+        max-width: 50%;
+        flex-basis: 50%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[lg="7"] {
+        flex-grow: 0;
+        max-width: 58.3333%;
+        flex-basis: 58.3333%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[lg="8"] {
+        flex-grow: 0;
+        max-width: 66.6667%;
+        flex-basis: 66.6667%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[lg="9"] {
+        flex-grow: 0;
+        max-width: 75%;
+        flex-basis: 75%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[lg="10"] {
+        flex-grow: 0;
+        max-width: 83.3333%;
+        flex-basis: 83.3333%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[lg="11"] {
+        flex-grow: 0;
+        max-width: 91.6667%;
+        flex-basis: 91.6667%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[lg="12"] {
+        flex-grow: 0;
+        max-width: 100%;
+        flex-basis: 100%;
+    }
+}
+
+@media(min-width: 1920px) {
+
+    /* Size xl */
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xl="auto"] {
+        flex-grow: 0;
+        max-width: none;
+        flex-basis: auto;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xl="true"] {
+        flex-grow: 1;
+        max-width: 100%;
+        flex-basis: 0;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xl="0"] {
+        flex: 1;
+        max-width: fit-content;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xl="1"] {
+        flex-grow: 0;
+        max-width: 8.3333%;
+        flex-basis: 8.3333%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xl="2"] {
+        flex-grow: 0;
+        max-width: 16.6667%;
+        flex-basis: 16.6667%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xl="3"] {
+        flex-grow: 0;
+        max-width: 25%;
+        flex-basis: 25%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xl="4"] {
+        flex-grow: 0;
+        max-width: 33.3333%;
+        flex-basis: 33.3333%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xl="5"] {
+        flex-grow: 0;
+        max-width: 41.6667%;
+        flex-basis: 41.6667%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xl="6"] {
+        flex-grow: 0;
+        max-width: 50%;
+        flex-basis: 50%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xl="7"] {
+        flex-grow: 0;
+        max-width: 58.3333%;
+        flex-basis: 58.3333%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xl="8"] {
+        flex-grow: 0;
+        max-width: 66.6667%;
+        flex-basis: 66.6667%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xl="9"] {
+        flex-grow: 0;
+        max-width: 75%;
+        flex-basis: 75%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xl="10"] {
+        flex-grow: 0;
+        max-width: 83.3333%;
+        flex-basis: 83.3333%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xl="11"] {
+        flex-grow: 0;
+        max-width: 91.6667%;
+        flex-basis: 91.6667%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xl="12"] {
+        flex-grow: 0;
+        max-width: 100%;
+        flex-basis: 100%;
+    }
+}
+
+@media(min-width: 2560px) {
+
+    /* Size xxl */
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xxl="auto"] {
+        flex-grow: 0;
+        max-width: none;
+        flex-basis: auto;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xxl="true"] {
+        flex-grow: 1;
+        max-width: 100%;
+        flex-basis: 0;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xxl="0"] {
+        flex: 1;
+        max-width: fit-content;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xxl="1"] {
+        flex-grow: 0;
+        max-width: 8.3333%;
+        flex-basis: 8.3333%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xxl="2"] {
+        flex-grow: 0;
+        max-width: 16.6667%;
+        flex-basis: 16.6667%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xxl="3"] {
+        flex-grow: 0;
+        max-width: 25%;
+        flex-basis: 25%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xxl="4"] {
+        flex-grow: 0;
+        max-width: 33.3333%;
+        flex-basis: 33.3333%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xxl="5"] {
+        flex-grow: 0;
+        max-width: 41.6667%;
+        flex-basis: 41.6667%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xxl="6"] {
+        flex-grow: 0;
+        max-width: 50%;
+        flex-basis: 50%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xxl="7"] {
+        flex-grow: 0;
+        max-width: 58.3333%;
+        flex-basis: 58.3333%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xxl="8"] {
+        flex-grow: 0;
+        max-width: 66.6667%;
+        flex-basis: 66.6667%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xxl="9"] {
+        flex-grow: 0;
+        max-width: 75%;
+        flex-basis: 75%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xxl="10"] {
+        flex-grow: 0;
+        max-width: 83.3333%;
+        flex-basis: 83.3333%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xxl="11"] {
+        flex-grow: 0;
+        max-width: 91.6667%;
+        flex-basis: 91.6667%;
+    }
+
+    .fluent-grid[b-9fxwfzgab8]  > div[xxl="12"] {
+        flex-grow: 0;
+        max-width: 100%;
+        flex-basis: 100%;
+    }
+}
+
+/* Hidden */
+
+@media (max-width: 599.98px) {
+    .fluent-grid[b-9fxwfzgab8]  > div[hidden-when~="xs"] {
+        display: none;
+    }
+}
+
+@media (min-width: 600px) and (max-width: 959.98px) {
+    .fluent-grid[b-9fxwfzgab8]  > div[hidden-when~="sm"] {
+        display: none;
+    }
+}
+
+@media (min-width: 960px) and (max-width: 1279.98px) {
+    .fluent-grid[b-9fxwfzgab8]  > div[hidden-when~="md"] {
+        display: none;
+    }
+}
+
+@media (min-width: 1280px) and (max-width: 1919.98px) {
+    .fluent-grid[b-9fxwfzgab8]  > div[hidden-when~="lg"] {
+        display: none;
+    }
+}
+
+@media (min-width: 1920px) and (max-width: 2559.98px) {
+    .fluent-grid[b-9fxwfzgab8]  > div[hidden-when~="xl"] {
+        display: none;
+    }
+}
+
+@media (min-width: 2560px) {
+    .fluent-grid[b-9fxwfzgab8]  > div[hidden-when~="xxl"] {
+        display: none;
+    }
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Header/FluentHeader.razor.rz.scp.css */
+.header[b-wxpnc5dx1o] {
+    display: flex;
+    z-index: 10;
+    flex-shrink: 0;
+    background-color: var(--accent-fill-rest);
+    font-family: var(--body-font);
+    font-weight: bold;
+    font-size: var(--type-ramp-plus-1-font-size);
+    line-height: var(--type-ramp-plus-1-line-height);
+    color: var(--fill-color);
+}
+
+    .header .header-gutters[b-wxpnc5dx1o] {
+        display: flex;
+        position: relative;
+        align-items: center;
+        width: 100%;
+        margin: 0.5rem 1.5rem;
+    }
+
+.header .header-fixed-top[b-wxpnc5dx1o] {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/InputFile/FluentInputFile.razor.rz.scp.css */
+.fluent-inputfile-container[b-72uj7bp8pi] {
+    display: grid;
+    grid-gap: 10px;
+    background-color: var(--neutral-fill-hover);
+    border: 1px dashed var(--accent-fill-rest);
+}
+
+    .fluent-inputfile-container[drop-files][b-72uj7bp8pi] {
+        border: 1px solid var(--accent-fill-rest);
+    }
+
+    .fluent-inputfile-container .inputfile-content[b-72uj7bp8pi] {
+        grid-column: 1;
+        grid-row: 1;
+        text-align: center;
+        align-self: center;
+        justify-self: center;
+    }
+
+    .fluent-inputfile-container:has(input[type='file']:focus-visible)[b-72uj7bp8pi] {
+        outline: calc(var(--focus-stroke-width) * 1px) solid var(--focus-stroke-outer);
+        outline-offset: calc(var(--focus-stroke-width) * -1px);
+    }
+
+    .fluent-inputfile-container[b-72uj7bp8pi]  input[type='file'] {
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+    }
+
+    .fluent-inputfile-container[b-72uj7bp8pi]  label,
+    .fluent-inputfile-container[b-72uj7bp8pi]  a {
+        color: var(--accent-fill-rest);
+        text-decoration: underline;
+        cursor: pointer;
+    }
+
+    .fluent-inputfile-container .inputfile-progress[b-72uj7bp8pi] {
+        padding-top: 20px;
+        height: 50px;
+        margin: 0px 15%;
+        text-align: center;
+        line-height: 8px;
+        font-size: var(--type-ramp-minus-2-font-size);
+    }
+
+    .fluent-inputfile-container[disabled][b-72uj7bp8pi], .fluent-inputfile-container[disabled="true"][b-72uj7bp8pi] {
+        opacity: 0.5;
+        pointer-events: none;
+        cursor: not-allowed;
+    }
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Label/FluentInputLabel.razor.rz.scp.css */
+.fluent-input-label[b-hum22yrq17] {
+    display: flex;
+    color: var(--neutral-foreground-rest);
+    cursor: pointer;
+    font-family: var(--body-font);
+    font-size: var(--type-ramp-base-font-size);
+    line-height: var(--type-ramp-base-line-height);
+    font-weight: initial;
+    font-variation-settings: var(--type-ramp-base-font-variations);
+    margin-bottom: calc(var(--design-unit) * 1px);
+    align-items: center;
+}
+
+    .fluent-input-label[orientation='horizontal'][b-hum22yrq17] {
+        margin-bottom: 0;
+    }
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Label/FluentLabel.razor.rz.scp.css */
+/*
+    --type-ramp-base-font-size: 14px;
+    --type-ramp-base-line-height: 20px;
+*/
+.fluent-typography[b-1nnnfjehkp] {
+    font-family: var(--body-font);
+    color: var(--neutral-foreground-rest);
+    font-style: normal;
+}
+
+    .fluent-typography:not([default-margin])[b-1nnnfjehkp] {
+        margin-block: 0px;
+    }
+
+    .fluent-typography[typo='body'][b-1nnnfjehkp] {
+        font-size: var(--type-ramp-base-font-size);
+        line-height: var(--type-ramp-base-line-height);
+        font-weight: 400;
+    }
+
+    .fluent-typography[typo='subject'][b-1nnnfjehkp] {
+        font-size: var(--type-ramp-plus-1-font-size);
+        line-height: var(--type-ramp-plus-1-line-height);
+        font-weight: 400;
+    }
+
+    .fluent-typography[typo='header'][b-1nnnfjehkp] {
+        font-size: var(--type-ramp-plus-2-font-size);
+        line-height: var(--type-ramp-plus-2-line-height);
+        font-weight: 400;
+    }
+
+    .fluent-typography[typo='pane-header'][b-1nnnfjehkp] {
+        font-size: var(--type-ramp-plus-3-font-size);
+        line-height: var(--type-ramp-plus-3-line-height);
+        font-weight: 400;
+    }
+
+    .fluent-typography[typo='email-header'][b-1nnnfjehkp] {
+        font-size: var(--type-ramp-plus-4-font-size);
+        line-height: var(--type-ramp-plus-4-line-height);
+        font-weight: 400;
+    }
+
+    .fluent-typography[typo='page-title'][b-1nnnfjehkp] {
+        font-size: var(--type-ramp-plus-5-font-size);
+        line-height: var(--type-ramp-plus-5-line-height);
+        font-weight: 400;
+    }
+
+    .fluent-typography[typo='hero-title'][b-1nnnfjehkp] {
+        font-size: var(--type-ramp-plus-6-font-size);
+        line-height: var(--type-ramp-plus-6-line-height);
+        font-weight: 400;
+    }
+
+    .fluent-typography[bold][b-1nnnfjehkp] {
+        font-weight: 600;
+    }
+
+    .fluent-typography[bolder][b-1nnnfjehkp] {
+        font-weight: 800;
+    }
+
+    .fluent-typography[disabled][b-1nnnfjehkp] {
+        opacity: var(--disabled-opacity);
+    }
+
+.fluent-typo-left[b-1nnnfjehkp] {
+    text-align: left;
+}
+
+.fluent-typo-center[b-1nnnfjehkp] {
+    text-align: center;
+}
+
+.fluent-typo-right[b-1nnnfjehkp] {
+    text-align: right;
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Layout/FluentLayout.razor.rz.scp.css */
+.layout[b-emdrz8ckod] {
+    height: 100%;
+    width: 100%;
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.layout[orientation='horizontal'][b-emdrz8ckod] {
+    flex-direction: row;
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/List/FluentAutocomplete.razor.rz.scp.css */
+.fluent-autocomplete-multiselect div[role=listbox][b-hg72r5b4ox] {
+    overflow-y: auto;
+    max-height: 300px;
+    outline: none;
+    padding: 2px;
+    display: inline-flex;
+    flex-direction: column;
+}
+
+    .fluent-autocomplete-multiselect div[role=listbox][b-hg72r5b4ox]  fluent-option {
+        min-height: 32px;
+    }
+
+        /* This first fluent-option will be selected when user presses Enter */
+        .fluent-autocomplete-multiselect div[role=listbox][b-hg72r5b4ox]  fluent-option:not([disabled])[selectable] {
+            border: var(--neutral-fill-strong-hover) solid 1px;
+        }
+
+        .fluent-autocomplete-multiselect div[role=listbox][b-hg72r5b4ox]  fluent-option:not([disabled]):not([selected])[selectable]::before {
+            background: unset !important;
+        }
+
+.fluent-autocomplete-multiselect[b-hg72r5b4ox]  fluent-text-field::part(start) {
+    max-width: calc(100% - 80px);
+}
+
+.fluent-autocomplete-next[b-hg72r5b4ox] {
+    height: 25px;
+}
+
+.fluent-autocomplete-previous[b-hg72r5b4ox] {
+    height: 25px;
+}
+
+/* Auto-height */
+.fluent-autocomplete-multiselect[auto-height][b-hg72r5b4ox]  .auto-height {
+    width: max-content;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.fluent-autocomplete-multiselect[auto-height][b-hg72r5b4ox]  fluent-text-field::part(root) {
+    min-height: calc((var(--base-height-multiplier) + var(--density)) * var(--design-unit) * 1px);
+    height: auto;
+    padding: 4px 0;
+}
+
+
+.fluent-autocomplete-multiselect[single-select][b-hg72r5b4ox]  fluent-text-field::part(control) {
+    display: none;
+}
+
+.fluent-autocomplete-multiselect[single-select][b-hg72r5b4ox]  fluent-text-field:not([disabled]):active::after {
+    width: 100%;
+}
+
+.fluent-autocomplete-multiselect[single-select][b-hg72r5b4ox]  fluent-text-field::part(start) {
+    max-width: calc(100% - 40px);
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+@media (forced-colors: active) {
+
+    .fluent-autocomplete-multiselect div[role=listbox][b-hg72r5b4ox] {
+        border: calc(var(--stroke-width)* 1px) solid transparent;
+    }
+
+        .fluent-autocomplete-multiselect div[role=listbox][b-hg72r5b4ox]  fluent-option:not([disabled]):not([selected])[selectable] {
+            forced-color-adjust: none;
+            background: highlight;
+            color: highlighttext;
+        }
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/List/FluentPersona.razor.rz.scp.css */
+.fluent-persona[b-n7zog0zvqi] {
+    display: flex;
+    width: fit-content;
+    border-radius: 999px;
+    align-items: center;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+    .fluent-persona .initials[b-n7zog0zvqi] {
+        display: flex;
+        color: var(--fill-color);
+        background: var(--accent-stroke-control-active);
+        font-weight: 600;
+        border-radius: 50%;
+        text-align: center;
+        align-items: center;
+        justify-content: center;
+        aspect-ratio: 1/1;
+    }
+
+    .fluent-persona[position='start'] .initials[b-n7zog0zvqi] {
+        order: 3;
+    }
+
+        .fluent-persona .initials img[b-n7zog0zvqi] {
+            border-radius: 50%;
+            aspect-ratio: 1 / 1;
+            width: auto;
+            height: auto;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+    .fluent-persona .name[b-n7zog0zvqi] {
+        margin-inline-start: 16px;
+    }
+
+    .fluent-persona[position='start'] .name[b-n7zog0zvqi] {
+        order: 1;
+        margin-inline-start: 0px;
+        margin-inline-end: 16px;
+    } 
+
+    .fluent-persona .close[b-n7zog0zvqi] {
+        display: flex;
+        text-align: center;
+        align-items: center;
+        justify-content: center;
+        margin: 0px 4px;
+    }
+
+    .fluent-persona[position='start'] .close[b-n7zog0zvqi] {
+        order: 2;
+    }
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Main/FluentMain.razor.rz.scp.css */
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/MenuButton/FluentMenuButton.razor.rz.scp.css */
+.fluent-menubutton-container[b-nrgns4mio7] {
+    position: relative;
+
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/MessageBar/FluentMessageBar.razor.rz.scp.css */
+/* OneRow */
+
+.fluent-messagebar[b-ig2qs97tvl] {
+    font-family: var(--body-font);
+    background-color: var(--neutral-layer-floating);
+    color: var(--neutral-foreground-rest);
+    display: grid;
+    grid-template-columns: 24px 1fr auto;
+    width: 100%;
+    padding: 0px 3px;
+    align-items: center;
+    min-height: 36px;
+    border-radius: calc(var(--control-corner-radius) * 1px);
+    padding: 0 12px;
+    column-gap: 8px;
+}
+
+.fluent-messagebar[animation="fadein"][b-ig2qs97tvl] {
+    animation: fadein-b-ig2qs97tvl 1.5s;
+}
+
+.fluent-messagebar-container-action[b-ig2qs97tvl] {
+    display: flex;
+    padding: 6px 0px;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+}
+
+    .fluent-messagebar.intent-info[b-ig2qs97tvl] {
+        background-color: #f5f5f5; 
+        border: 1px solid #d1d1d1; 
+
+    }
+
+    .fluent-messagebar.dark.intent-info[b-ig2qs97tvl] {
+        background-color: #141414;
+        border: 1px solid #666;
+    }
+
+    .fluent-messagebar.intent-warning[b-ig2qs97tvl] {
+        background-color: #FDF6F3; 
+        border: 1px solid #f4bfab; 
+    }
+
+    .fluent-messagebar.dark.intent-warning[b-ig2qs97tvl] {
+        background-color: #411200;
+        border: 1px solid #DA3B01;
+    }
+    .fluent-messagebar.intent-error[b-ig2qs97tvl] {
+        background-color: #FDF3F4;
+        border: 1px solid #f1bbbc;
+    }
+
+    .fluent-messagebar.dark.intent-error[b-ig2qs97tvl] {
+        background-color: #3F1011;
+        border: 1px solid #D13438;
+    }
+    .fluent-messagebar.intent-success[b-ig2qs97tvl] {
+        background-color: #f1faf1;
+        border: 1px solid #9fd89f;
+    }
+
+    .fluent-messagebar.dark.intent-success[b-ig2qs97tvl] {
+        background-color: #052505;
+        border: 1px solid #107C10;
+    }
+    .fluent-messagebar.intent-custom[b-ig2qs97tvl] {
+        background-color: var(--neutral-layer-1);
+        border: 1px solid var(--neutral-stroke-layer-rest);
+    }
+
+.fluent-messagebar-icon[b-ig2qs97tvl] {
+        grid-column: 1;
+        display: flex;
+        justify-content:center;
+    }
+
+.fluent-messagebar-message[b-ig2qs97tvl] {
+    grid-column: 2;
+    padding: 10px 0;
+    align-self: center;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 16px;
+
+}
+
+.fluent-messagebar-message .title[b-ig2qs97tvl]{
+    font-weight: 600;
+    padding: 0 4px 0 0;
+
+}
+
+.fluent-messagebar-message[b-ig2qs97tvl]  fluent-anchor {
+        margin-inline-start: 5px;
+ }
+
+[b-ig2qs97tvl] .fluent-messagebar-action {
+    height: 24px;
+
+}
+
+.fluent-messagebar-close[b-ig2qs97tvl] {
+    grid-column: 3;
+    padding: 4px;
+    justify-self: center;
+    align-self: center;
+    fill: var(--neutral-fill-strong-active);
+    cursor: pointer;
+    max-width: 16px;
+    max-height: 16px;
+}
+
+/* Notification */
+
+.fluent-messagebar-notification[b-ig2qs97tvl] {
+    font-family: var(--body-font);
+    color: var(--neutral-foreground-rest);
+    display: grid;
+    grid-template-columns: 24px 1fr auto;
+    grid-template-rows: 36px 1fr auto;
+    width: 100%;
+    min-height: 36px;
+    padding: 0 12px;
+    column-gap: 8px;
+}
+
+    .fluent-messagebar-notification.intent-info[b-ig2qs97tvl] {
+        fill: #797775; /* Gray */
+    }
+
+    .fluent-messagebar-notification.intent-warning[b-ig2qs97tvl] {
+        fill: #d83b01; /* Orange */
+    }
+
+    .fluent-messagebar-notification.intent-error[b-ig2qs97tvl] {
+        fill: #a80000; /* Red */
+    }
+
+    .fluent-messagebar-notification.intent-success[b-ig2qs97tvl] {
+        fill: #107c10; /* Green */
+    }
+
+.fluent-messagebar-notification-icon[b-ig2qs97tvl] {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.fluent-messagebar-notification-message[b-ig2qs97tvl] {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 10px 0;
+    align-self: center;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 16px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.fluent-messagebar-notification-content[b-ig2qs97tvl] {
+    grid-column: 1 / 4;
+    grid-row: 2;
+    padding: 6px 6px;
+}
+
+.fluent-messagebar-notification-content[b-ig2qs97tvl]   fluent-anchor {
+    margin-inline-start: 5px;
+}
+
+[b-ig2qs97tvl] .fluent-messagebar-notification-action {
+    margin-left: 5px;
+}
+
+.fluent-messagebar-notification-close[b-ig2qs97tvl] {
+    grid-column: 3;
+    grid-row: 1;
+    padding: 4px;
+    display: flex;
+    justify-content: center;
+    justify-self: center;
+    cursor: pointer;
+}
+
+.fluent-messagebar-notification-time[b-ig2qs97tvl] {
+    grid-column: 2 / 4;
+    grid-row: 3;
+    font-size: 12px;
+    right: 10px;
+    text-align: right;
+    padding: 0px 4px 4px 0px;
+}
+
+@keyframes fadein-b-ig2qs97tvl {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/MessageBar/FluentMessageBarProvider.razor.rz.scp.css */
+.fluent-messagebar-provider[b-aw4knpwcro] {
+    display: flex;
+    flex-direction: column;
+    row-gap: calc( var(--design-unit) * 2px);
+    padding-bottom: calc(var(--design-unit) * 1px);
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/NavMenuTree/FluentNavMenuTree.razor.rz.scp.css */
+/*
+    NavMenu
+*/
+.navmenu[b-4qk64k9jmw] {
+    background-color: var(--neutral-layer-1);
+}
+
+/*
+    NavMenu expander
+*/
+[b-4qk64k9jmw] .navmenu-expander::part(positioning-region) {
+    background-color: var(--neutral-fill-stealth-rest);
+}
+
+[b-4qk64k9jmw] .navmenu-expander::part(content-region) {
+    margin-inline-start: calc(var(--design-unit) * 2px);
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+[b-4qk64k9jmw] .navmenu-expander::part(positioning-region):hover {
+    background-color: var(--neutral-fill-secondary-rest);
+}
+
+[b-4qk64k9jmw] .navmenu-expander.selected::after {
+    display: none;
+}
+
+
+
+/*
+    Child Elements (Groups and Items)
+*/
+[b-4qk64k9jmw] .navmenu-child-element::part(content-region) {
+    -webkit-user-select: none;
+    user-select: none;
+    margin-inline-start: calc(var(--design-unit) * 2px);
+    margin-inline-end: calc(var(--design-unit) * 2px);
+}
+
+[b-4qk64k9jmw] .navmenu .treeitem-text, [b-4qk64k9jmw] .navmenu fluent-tree-item.navmenu-child-element::part(start) {
+    pointer-events: none;
+}
+
+[b-4qk64k9jmw] .navmenu.collapsed .treeitem-text, [b-4qk64k9jmw] .navmenu.collapsed fluent-tree-item.navmenu-child-element::part(expand-collapse-button) {
+    display: none;
+}
+
+
+
+/* 
+    Groups
+*/
+[b-4qk64k9jmw] .navmenu-group::part(content-region) {
+    margin-inline-end: var(--expand-collapse-button-size);
+}
+
+
+
+/*
+    Group expander
+*/
+[b-4qk64k9jmw] .navmenu .navmenu-group::part(expand-collapse-button) {
+    right: calc(var(--design-unit) * 2px);
+    left: unset;
+    margin-inline-end: calc(var(--expand-collapse-button-size) * -1);
+}
+
+[dir="rtl"] *[b-4qk64k9jmw]  .navmenu-group::part(expand-collapse-button) {
+    left: calc(var(--design-unit) * 2px);
+    right: unset;
+    margin-inline-start: calc(var(--expand-collapse-button-size) - (var(--design-unit) * 2px));
+}
+
+
+/*
+    Group items
+*/
+[b-4qk64k9jmw] .navmenu-group .navmenu-child-element::part(content-region) {
+    padding-inline-start: calc(var(--design-unit) * 2px);
+}
+
+/* Hide any items inside groups of a collapsed nav menu*/
+[b-4qk64k9jmw] .navmenu.collapsed > .navmenu-parent-element::part(items) {
+    display: none;
+}
+
+
+/*
+    Nav links
+*/
+[b-4qk64k9jmw] .navmenu .navmenu-link::part(content-region) {
+    margin-inline-start: calc(var(--design-unit) * 2px);
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/NavMenu/FluentNavGroup.razor.rz.scp.css */
+[b-hv9rzieq3w] .fluent-nav-link {
+    width: 100%;
+    color: inherit;
+    align-items: center;
+    text-decoration: none;
+    display: flex;
+}
+
+    [b-hv9rzieq3w] .fluent-nav-link.notactive:focus-within {
+        outline-offset: 1px;
+    }
+
+[b-hv9rzieq3w] .fluent-nav-icon {
+    min-width: 20px;
+}
+
+/* Group expand/collapse */
+[b-hv9rzieq3w] .expand-collapse-button {
+    position: absolute;
+    right: calc(var(--design-unit) * 2px);
+    left: unset;
+    border-radius: calc(var(--control-corner-radius) * 1px);
+    width: calc((((var(--base-height-multiplier) / 2) * var(--design-unit)) + ((var(--design-unit) * var(--density)) / 2) + (var(--design-unit) * 2)) * 1px);
+    height: calc((((var(--base-height-multiplier) / 2) * var(--design-unit)) + ((var(--design-unit) * var(--density)) / 2) + (var(--design-unit) * 2)) * 1px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+[dir="rtl"] * .expand-collapse-button[b-hv9rzieq3w] {
+    position: absolute;
+    left: calc(var(--design-unit) * 2px);
+    right: unset;
+}
+
+[b-hv9rzieq3w] .expand-collapse-button:hover {
+    background: var(--tree-item-expand-collapse-hover)
+}
+
+[b-hv9rzieq3w] .expand-collapse-button svg {
+    transition: transform 0.1s linear 0s;
+    pointer-events: none;
+}
+
+[dir="rtl"] *[b-hv9rzieq3w]  .expand-collapse-button svg {
+    transform: rotate(180deg);
+}
+
+[b-hv9rzieq3w] .rotate.expand-collapse-button svg {
+    transform: rotate(90deg);
+}
+
+:not(.expanded)[b-hv9rzieq3w]  .items {
+    display: none;
+} 
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/NavMenu/FluentNavLink.razor.rz.scp.css */
+[b-5upkyn31e7] .fluent-nav-link {
+    width: 100%;
+    color: inherit;
+    align-items: center;
+    text-decoration: none;
+    display: flex;
+}
+
+[b-5upkyn31e7] .fluent-nav-icon:not(fluent-menu-item) {
+    min-width: 20px;
+}
+
+[b-5upkyn31e7] .fluent-nav-link.disabled:not(fluent-menu-item, a) {
+    color: var(--neutral-foreground-rest) !important;
+    opacity: var(--disabled-opacity);
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+
+[b-5upkyn31e7] a.disabled .content-region {
+    opacity: var(--disabled-opacity);
+}
+
+
+[b-5upkyn31e7] .fluent-nav-link.disabled .fluent-nav-icon {
+    fill: var(--neutral-foreground-rest) !important;
+    opacity: var(--disabled-opacity);
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/NavMenu/FluentNavMenu.razor.rz.scp.css */
+/*  NavMenu */
+.fluent-nav-menu[b-vs37bumpa7] {
+    padding: 0 2px;
+}
+
+[b-vs37bumpa7] .fluent-nav-item.expander:focus-within {
+    outline-offset: 1px;
+}
+
+[b-vs37bumpa7] .fluent-nav-item {
+    margin: calc(var(--design-unit) * 1px) 0;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+    /* Hover and active highlighting */
+    [b-vs37bumpa7] .fluent-nav-item:not(.disabled) .positioning-region:hover:not(:has(.disabled)) {
+        cursor: pointer;
+        background: var(--neutral-fill-secondary-rest);
+    }
+
+    /* Active item indicator */
+    [b-vs37bumpa7] .fluent-nav-item .active .positioning-region::before {
+        content: "";
+        display: block;
+        position: absolute;
+        right: unset;
+        width: 3px;
+        height: calc(((var(--base-height-multiplier) + var(--density)) * var(--design-unit) / 2) * 1px);
+        background: var(--accent-fill-rest);
+        border-radius: calc(var(--control-corner-radius) * 1px);
+        margin: calc(var(--design-unit) * 2px) 2px;
+        z-index: 5;
+    }
+
+[b-vs37bumpa7] .fluent-nav-group.disabled {
+    pointer-events: none;
+}
+
+    [b-vs37bumpa7] .fluent-nav-group.disabled .fluent-nav-icon {
+        fill: var(--neutral-stroke-rest) !important;
+    }
+
+    [b-vs37bumpa7] .fluent-nav-group.disabled .fluent-nav-text {
+        opacity: var(--disabled-opacity);
+    }
+
+[dir='rtl'] *[b-vs37bumpa7]  .fluent-nav-item a.active .positioning-region::before {
+    left: unset;
+}
+
+[b-vs37bumpa7] .content-region {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    width: 100%;
+    margin-inline-start: calc(var(--design-unit) * 2px);
+}
+
+/* Nav items */
+[b-vs37bumpa7] .fluent-nav-item .positioning-region {
+    display: flex;
+    width: 100%;
+    position: relative;
+    align-items: center;
+    box-sizing: border-box;
+    background: var(--neutral-fill-stealth-rest);
+    border: calc(var(--stroke-width) * 1px) solid transparent;
+    border-radius: calc(var(--control-corner-radius) * 1px);
+    min-height: calc(((var(--base-height-multiplier) + var(--density)) * var(--design-unit) + 1) * 1px);
+}
+
+[b-vs37bumpa7] .fluent-nav-group .fluent-nav-item:last-of-type, .fluent-nav-menu .fluent-nav-item:last-of-type[b-vs37bumpa7] {
+    margin-bottom: 2px;
+}
+
+[b-vs37bumpa7] fluent-menu-item .fluent-nav-link {
+    width: 100%;
+    color: inherit;
+    align-items: center;
+    text-decoration: none;
+    display: flex;
+}
+
+/* level indenting */
+[b-vs37bumpa7] .fluent-nav-group * .fluent-nav-menu .fluent-nav-item .content-region {
+    padding-inline-start: 24px;
+}
+
+[b-vs37bumpa7] .fluent-nav-group * .fluent-nav-menu .fluent-nav-item * .fluent-nav-menu .fluent-nav-item .content-region {
+    padding-inline-start: 48px;
+}
+
+[b-vs37bumpa7] .fluent-nav-group * .fluent-nav-menu .fluent-nav-item * .fluent-nav-menu .fluent-nav-item * .fluent-nav-menu .fluent-nav-item .content-region {
+    padding-inline-start: 72px;
+}
+
+[b-vs37bumpa7] .fluent-nav-group * .fluent-nav-menu .fluent-nav-item * .fluent-nav-menu .fluent-nav-item * .fluent-nav-menu .fluent-nav-item * .fluent-nav-menu .fluent-nav-item .content-region {
+    padding-inline-start: 96px;
+}
+
+[b-vs37bumpa7] .fluent-nav-text {
+    margin-inline-start: calc(var(--design-unit) * 2px + 2px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: calc(100% - 70px);
+}
+
+/* collapsed */
+[b-vs37bumpa7].collapsed .fluent-nav-text {
+    display: none;
+}
+
+[b-vs37bumpa7].collapsed .expand-collapse-button {
+    display: none;
+}
+
+[b-vs37bumpa7].collapsed .fluent-nav-group * .fluent-nav-menu > .fluent-nav-item {
+    display: none;
+}
+
+    [b-vs37bumpa7].collapsed .fluent-nav-group * .fluent-nav-menu > .fluent-nav-item * .fluent-nav-menu > .fluent-nav-item {
+        display: none;
+    }
+
+        [b-vs37bumpa7].collapsed .fluent-nav-group * .fluent-nav-menu > .fluent-nav-item * .fluent-nav-menu > .fluent-nav-item * .fluent-nav-menu > .fluent-nav-item {
+            display: none;
+        }
+
+@media (max-width: 600px) {
+    [b-vs37bumpa7].collapsed .fluent-nav-text {
+        display: block;
+    }
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Overflow/FluentOverflow.razor.rz.scp.css */
+.fluent-overflow[orientation="horizontal"][b-vceposnczs] {
+    display: flex;
+    flex-direction: row;
+    overflow-x: hidden;
+    gap: 5px;
+}
+
+.fluent-overflow[orientation="vertical"][b-vceposnczs] {
+    display: flex;
+    flex-direction: column;
+    overflow-y: hidden;
+}
+
+.fluent-overflow-more[b-vceposnczs] {
+    min-width: 32px;
+    max-width: 32px;
+}
+
+.fluent-overflow[b-vceposnczs]  > *[overflow] {
+    display: none;
+}
+
+.fluent-overflow[b-vceposnczs]  .fluent-overflow-item[fixed='ellipsis'] {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: fit-content;
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Overlay/FluentOverlay.razor.rz.scp.css */
+.fluent-overlay[b-xkrr7evqik] {
+    inset: 0px;
+    display: flex;
+    pointer-events: auto;    
+    width: 100%;
+    height: 100%;
+    overflow: hidden auto;
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Pagination/FluentPaginator.razor.rz.scp.css */
+.paginator[b-mskuhp0vb1] {
+    display: flex;
+    /*border-top: 1px solid var(--neutral-stroke-divider-rest);*/
+    margin-top: 0.5rem;
+    padding: 0.25rem 0;
+    align-items: center;
+}
+
+.pagination-text[b-mskuhp0vb1] {
+    margin: 0 0.5rem;
+}
+
+.paginator-nav[b-mskuhp0vb1] {
+    padding: 0; 
+    display: flex;
+    margin-inline-start: auto;
+    margin-inline-end: 0;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+    
+[dir="rtl"] *[b-mskuhp0vb1]  fluent-button > svg {
+    transform: rotate(180deg);
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Popover/FluentPopover.razor.rz.scp.css */
+.fluent-popover-content[b-qp3z8ghd2d]  {
+    font-family: var(--body-font);
+    -webkit-font-smoothing: antialiased;
+    line-height: 27px;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
+    width: 100%;
+    padding: 1em;
+}
+
+    .fluent-popover-content div[part="header"][b-qp3z8ghd2d] {
+        font-size: 20px;
+        font-weight: 600;
+        width: inherit;
+        margin-bottom: 12px;
+    }
+
+    .fluent-popover-content div[part="body"][b-qp3z8ghd2d] {
+        height: 100%;
+    }
+
+    .fluent-popover-content div[part="footer"][b-qp3z8ghd2d] {
+        font-size: 14px;
+        font-weight: normal;
+        width: inherit;
+        margin-top: 12px;
+    }
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/PresenceBadge/FluentPresenceBadge.razor.rz.scp.css */
+.fluent-presence-badge[b-1o8tp31nhy] {
+    position: relative;
+    display: inline-block;
+    --fluent-presence-badge-border-size: 2px;
+}
+
+    .fluent-presence-badge[b-1o8tp31nhy]  *:first-child {
+        display: block;
+    }
+
+    .fluent-presence-badge[b-1o8tp31nhy]  > img {
+        border-radius: 999px;
+        aspect-ratio: 1 / 1;
+    }
+
+    .fluent-presence-badge[b-1o8tp31nhy]  .status {
+        display: block;
+        position: absolute;
+        background-color: var(--neutral-layer-1);
+        bottom: calc(-1 * var(--fluent-presence-badge-border-size));
+        right: calc(-1 * var(--fluent-presence-badge-border-size));
+        border-radius: 999px;
+        border: var(--fluent-presence-badge-border-size) solid var(--neutral-layer-1);
+    }
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/ProfileMenu/FluentProfileMenu.razor.rz.scp.css */
+.fluent-profile-menu[b-rsm9d6pikk] {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+}
+
+    .fluent-profile-menu:hover[b-rsm9d6pikk] {
+        background-color: var(--fluent-profile-menu-hover);
+    }
+
+    .fluent-profile-menu[b-rsm9d6pikk]  > .fluent-persona > .name {
+        display: none;
+    }
+
+    .fluent-profile-menu[top-corner][b-rsm9d6pikk]  + div + fluent-anchored-region {
+        transform: unset !important;
+        left: unset;
+        right: -4px;
+        top: 32px;
+    }
+
+[dir="rtl"] .fluent-profile-menu[top-corner][b-rsm9d6pikk]  + div + fluent-anchored-region {
+    transform: unset !important;
+    left: -4px;
+    right: unset;
+    top: 32px;
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/PullToRefresh/FluentPullToRefresh.razor.rz.scp.css */
+.fluent-pull-container[b-rq0hhda1ik] {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    height: 100%;
+}
+
+    .fluent-pull-container div[part="tip"][b-rq0hhda1ik] {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--neutral-layer-2);
+        color: var(--neutral-base-color);
+        padding: 0.5rem;
+        height: var(--fluent-pull-refresh-head-height, 50px);
+        width: 100%;
+    }
+
+        .fluent-pull-container div[part="tip"][direction="down"][b-rq0hhda1ik] {
+            position: relative;
+            top: 0px;
+        }
+
+        .fluent-pull-container div[part="tip"][direction="up"][b-rq0hhda1ik] {
+            position: relative;
+            bottom: 0px;
+        }
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Radio/FluentRadio.razor.rz.scp.css */
+fluent-radio[b-98313echfq] {
+    margin: calc(var(--design-unit) * 1px) 0;
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Rating/FluentRating.razor.rz.scp.css */
+.fluent-rating[b-9p46vl6e0d] {
+    justify-content: start;
+    align-items: start;
+    column-gap: 0px;
+}
+
+    .fluent-rating[b-9p46vl6e0d]  input[type='radio'] {
+        opacity: 0;
+        position: absolute;
+        width: 0px;
+        height: 0px;
+    }
+
+    .fluent-rating:focus-within[b-9p46vl6e0d]  svg[selected] {
+        outline-style: auto;
+        outline-color: var(--focus-stroke-outer);
+        outline-width: var(--focus-stroke-width);
+    }
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Search/FluentSearch.razor.rz.scp.css */
+fluent-search[readonly][b-1xzrearrmp]::part(clear-button),
+fluent-search[disabled][b-1xzrearrmp]::part(clear-button) {
+    pointer-events: none;
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/SortableList/FluentSortableList.razor.rz.scp.css */
+/* 
+  you need the ::deep identifier if you are using scoped styles like this
+  because scoped styles are only applied to markup in the component, not
+  to the markup inside the render fragment.
+*/
+
+.fluent-sortable-list[b-0uum8h8hrq] {
+    --fluent-sortable-list-background-color: var(--neutral-layer-2);
+    --fluent-sortable-list-item-height: calc(var(--design-unit) * 8px);
+    --fluent-sortable-list-filtered: var(--warning);
+    --fluent-sortable-list-border-width: calc(var(--stroke-width) * 1px);
+    --fluent-sortable-list-border-color: var(--neutral-stroke-input-active);
+    --fluent-sortable-list-padding: calc(var(--design-unit) * 1px);
+    --fluent-sortable-list-item-border-width: calc(var(--stroke-width) * 1px);
+    --fluent-sortable-list-item-border-color: var(--neutral-stroke-input-active);
+    --fluent-sortable-list-item-drop-border-color: var(--accent-fill-rest);
+    --fluent-sortable-list-item-drop-color: var(--neutral-layer-1);
+    --fluent-sortable-list-item-padding: 0 calc(var(--design-unit) * 2px);
+    --fluent-sortable-list-item-spacing: 2px;
+    border: var(--fluent-sortable-list-border-width) solid var(--fluent-sortable-list-border-color);
+    border-radius: calc(var(--control-corner-radius) * 1px);
+    padding: var(--fluent-sortable-list-padding);
+    min-height: var(--fluent-sortable-list-item-height);
+}
+
+    /*Not sure yet if this can be deleted. Need to test on iOS*/
+    /*.fluent-sortable-list ::deep .sortable-fallback {
+        opacity: 1 !important
+    }*/
+
+    .fluent-sortable-list[b-0uum8h8hrq]  .sortable-grab {
+        cursor: grab;
+        background-color: var(--neutral-layer-1);
+        display: flex;
+        position: relative;
+        height: 100%;
+        left: calc(var(--design-unit) * -2px);
+        right: unset;
+        border-radius: calc(var(--control-corner-radius)* 1px) 0 0 calc(var(--control-corner-radius)* 1px);
+        width: 32px;
+        padding: 0 5px;
+    }
+
+    [dir='rtl'] .fluent-sortable-list[b-0uum8h8hrq]  .sortable-grab {
+        left: unset;
+        right: calc(var(--design-unit) * -2px);
+        border-radius: 0 calc(var(--control-corner-radius)* 1px) calc(var(--control-corner-radius)* 1px) 0;
+    }
+
+.fluent-sortable-list[b-0uum8h8hrq]  .sortable-item {
+    display: flex;
+    align-items: center;
+    height: var(--fluent-sortable-list-item-height) !important;
+    background-color: var(--fluent-sortable-list-background-color);
+    border: var(--fluent-sortable-list-item-border-width) solid var(--fluent-sortable-list-item-border-color);
+    border-radius: calc(var(--control-corner-radius) * 1px);
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -webkit-user-select: none;
+    user-select: none;
+    padding: var(--fluent-sortable-list-item-padding);
+    margin-bottom: var(--fluent-sortable-list-item-spacing);
+}
+
+    .fluent-sortable-list[b-0uum8h8hrq]  .sortable-item:last-of-type {
+        margin-bottom: 0;
+    }
+
+.fluent-sortable-list[b-0uum8h8hrq]  .sortable-ghost > .sortable-item-content {
+    background-color: var(--fluent-sortable-list-item-drop-color) !important;
+}
+
+.fluent-sortable-list[b-0uum8h8hrq]  .sortable-ghost {
+    background: var(--fluent-sortable-list-item-drop-color) !important;
+    border: calc(var(--stroke-width) * 1px) dotted var(--fluent-sortable-list-item-drop-border-color) !important;
+}
+
+.fluent-sortable-list > .sortable-item:is(.filtered)[b-0uum8h8hrq] {
+    background: var(--fluent-sortable-list-filtered);
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Splitter/FluentMultiSplitter.razor.rz.scp.css */
+.fluent-multi-splitter[b-ug2ltnxcve] {
+    /* Resize Icon colors */
+    --fluent-multi-splitter-color: var(--neutral-stroke-strong-rest);
+    --fluent-multi-splitter-color-active: var(--neutral-stroke-strong-hover);
+
+    /* Bar colors */
+    --fluent-multi-splitter-background-color: var(--neutral-stroke-rest);
+    --fluent-multi-splitter-background-color-active: var(--neutral-stroke-hover);
+    --fluent-multi-splitter-hover-opacity: 0.8;
+
+    /* Bar size */
+    --fluent-multi-splitter-bar-size: 8px;
+
+    /* Styles */
+    display: flex;
+    flex-wrap: nowrap;
+    width: 100%;
+    height: 100%;
+}
+
+    /* Resize bar */
+    .fluent-multi-splitter[b-ug2ltnxcve]  > .fluent-multi-splitter-bar {
+        flex: 0 0 auto;
+        position: relative;
+        text-align: center;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--fluent-multi-splitter-color);
+        background-color: var(--fluent-multi-splitter-background-color);
+        opacity: 0.4;
+        user-select: none;
+        font-size: 8px;
+    }
+
+        .fluent-multi-splitter[b-ug2ltnxcve]  > .fluent-multi-splitter-bar > span[part="resize"] {
+            border: 1px solid var(--fluent-multi-splitter-color);
+            border-radius: 1px;
+        }
+
+        /* Collapse button */
+        .fluent-multi-splitter[b-ug2ltnxcve]  > .fluent-multi-splitter-bar > span[part="collapse"] {
+            display: table;
+        }
+
+            .fluent-multi-splitter[b-ug2ltnxcve]  > .fluent-multi-splitter-bar > span[part="collapse"]:before {
+                line-height: normal;
+                display: table-cell;
+            }
+
+            .fluent-multi-splitter[b-ug2ltnxcve]  > .fluent-multi-splitter-bar > span[part="collapse"]:hover {
+                cursor: pointer;
+            }
+
+        /* Expand button */
+        .fluent-multi-splitter[b-ug2ltnxcve]  > .fluent-multi-splitter-bar > span[part="expand"] {
+            display: table;
+        }
+
+            .fluent-multi-splitter[b-ug2ltnxcve]  > .fluent-multi-splitter-bar > span[part="expand"]:before {
+                line-height: normal;
+                display: table-cell;
+            }
+
+            .fluent-multi-splitter[b-ug2ltnxcve]  > .fluent-multi-splitter-bar > span[part="expand"]:hover {
+                cursor: pointer;
+            }
+
+    /* Hover and Active */
+    .fluent-multi-splitter[b-ug2ltnxcve]  > .fluent-multi-splitter-bar[status="resizable"]:hover {
+        background-color: var(--fluent-multi-splitter-background-color);
+        opacity: var(--fluent-multi-splitter-hover-opacity);
+    }
+
+    .fluent-multi-splitter[b-ug2ltnxcve]  > .fluent-multi-splitter-bar[status="resizable"]:active {
+        background-color: var(--fluent-multi-splitter-background-color-active);
+        opacity: var(--fluent-multi-splitter-hover-opacity);
+    }
+
+        .fluent-multi-splitter[b-ug2ltnxcve]  > .fluent-multi-splitter-bar[status="resizable"]:active > span[part="expand"],
+        .fluent-multi-splitter[b-ug2ltnxcve]  > .fluent-multi-splitter-bar[status="resizable"]:active > span[part="resize"],
+        .fluent-multi-splitter[b-ug2ltnxcve]  > .fluent-multi-splitter-bar[status="resizable"]:active > span[part="collapse"] {
+            color: var(--fluent-multi-splitter-color-active);
+        }
+
+        .fluent-multi-splitter[b-ug2ltnxcve]  > .fluent-multi-splitter-bar[status="resizable"]:active > span[part="resize"] {
+            border: 1px solid var(--fluent-multi-splitter-color-active);
+        }
+
+    /* Disabled */
+    .fluent-multi-splitter[b-ug2ltnxcve]  > .fluent-multi-splitter-bar[status="resizable"]:disabled {
+        opacity: 0.2;
+    }
+
+/* Horizontal bar */
+.fluent-multi-splitter[orientation="horizontal"][b-ug2ltnxcve] {
+    flex-direction: row;
+}
+
+    .fluent-multi-splitter[orientation="horizontal"][b-ug2ltnxcve]  > .fluent-multi-splitter-bar {
+        flex-direction: column;
+        width: var(--fluent-multi-splitter-bar-size);
+    }
+
+        .fluent-multi-splitter[orientation="horizontal"][b-ug2ltnxcve]  > .fluent-multi-splitter-bar > span[part="collapse"]:before {
+            content: '\025C0';
+        }
+
+        [dir="rtl"] .fluent-multi-splitter[orientation="horizontal"][b-ug2ltnxcve]  > .fluent-multi-splitter-bar > span[part="collapse"]:before {
+            content: '\025B6';
+        }
+
+        .fluent-multi-splitter[orientation="horizontal"][b-ug2ltnxcve]  > .fluent-multi-splitter-bar > span[part="resize"] {
+            height: 16px;
+            margin: 2px 0;
+        }
+
+        .fluent-multi-splitter[orientation="horizontal"][b-ug2ltnxcve]  > .fluent-multi-splitter-bar > span[part="expand"]:before {
+            content: '\025B6';
+        }
+
+        [dir="rtl"] .fluent-multi-splitter[orientation="horizontal"][b-ug2ltnxcve]  > .fluent-multi-splitter-bar > span[part="expand"]:before {
+            content: '\025C0';
+        }
+
+        .fluent-multi-splitter[orientation="horizontal"][b-ug2ltnxcve]  > .fluent-multi-splitter-bar[status="resizable"]:hover {
+            cursor: ew-resize;
+        }
+
+/* Vertical bar */
+.fluent-multi-splitter[orientation="vertical"][b-ug2ltnxcve] {
+    flex-direction: column;
+}
+
+    .fluent-multi-splitter[orientation="vertical"][b-ug2ltnxcve]  > .fluent-multi-splitter-bar {
+        flex-direction: row;
+        height: var(--fluent-multi-splitter-bar-size);
+    }
+
+        .fluent-multi-splitter[orientation="vertical"][b-ug2ltnxcve]  > .fluent-multi-splitter-bar > span[part="collapse"]:before {
+            content: '\025B2';
+        }
+
+        .fluent-multi-splitter[orientation="vertical"][b-ug2ltnxcve]  > .fluent-multi-splitter-bar > span[part="resize"] {
+            width: 16px;
+            margin: 0 2px;
+        }
+
+        .fluent-multi-splitter[orientation="vertical"][b-ug2ltnxcve]  > .fluent-multi-splitter-bar > span[part="expand"]:before {
+            content: '\025BC';
+        }
+
+        .fluent-multi-splitter[orientation="vertical"][b-ug2ltnxcve]  > .fluent-multi-splitter-bar[status="resizable"]:hover {
+            cursor: ns-resize;
+        }
+
+/* Pane */
+.fluent-multi-splitter[b-ug2ltnxcve]  > .fluent-multi-splitter-pane {
+    overflow: hidden;
+    flex: 0 1 auto;
+    flex-grow: 0;
+    flex-shrink: 0;
+}
+
+    .fluent-multi-splitter[b-ug2ltnxcve]  > .fluent-multi-splitter-pane[status="collapsed"] {
+        flex: 0 1 0% !important;
+        overflow: hidden !important;
+        display: block !important;
+    }
+
+    .fluent-multi-splitter[b-ug2ltnxcve]  > .fluent-multi-splitter-pane[status="lastresizable"] {
+        flex: 1 1 auto;
+    }
+
+    .fluent-multi-splitter[b-ug2ltnxcve]  > .fluent-multi-splitter-pane[status="resizable"] {
+    }
+
+    .fluent-multi-splitter[b-ug2ltnxcve]  > .fluent-multi-splitter-pane[status="locked"] {
+    }
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Stack/FluentStack.razor.rz.scp.css */
+.stack-vertical[b-0nr62qx0mz] {
+    display: flex;
+    flex-direction: column;
+}
+
+.stack-horizontal[b-0nr62qx0mz] {
+    display: flex;
+    flex-direction: row;
+}
+
+.stack-vertical[reverse][b-0nr62qx0mz] {
+    display: flex;
+    flex-direction: column-reverse;
+}
+
+.stack-horizontal[reverse][b-0nr62qx0mz] {
+    display: flex;
+    flex-direction: row-reverse;
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Tabs/FluentTab.razor.rz.scp.css */
+fluent-tab[b-urryfr514w] {
+    -webkit-user-select: none;
+    user-select: none;
+    font-weight: 400;
+}
+
+    fluent-tab[aria-selected="true"][b-urryfr514w] {
+        font-weight: 600;
+        z-index: 1;
+    }
+
+    fluent-tab[overflow][b-urryfr514w] {
+        display: none;
+    }
+
+    fluent-tab[disabled][b-urryfr514w] {
+        cursor: not-allowed;
+        color: var(--neutral-foreground-hint)
+    }
+
+[b-urryfr514w] .fluent-tab-icon {
+    fill: var(--neutral-fill-strong-active);
+    min-width: 18px;
+    max-width: 18px;
+}
+
+[b-urryfr514w] .fluent-tab-close {
+    fill: var(--neutral-fill-strong-active) !important;
+    cursor: pointer;
+    max-width: 12px;
+    max-height: 12px;
+    margin-left: 6px;
+}
+
+    [b-urryfr514w] .fluent-tab-close:hover {
+        fill: var(--neutral-fill-strong-hover) !important;
+    }
+
+[b-urryfr514w] fluent-tab[aria-selected="true"] {
+    font-variation-settings: normal;
+}
+
+fluent-tabs fluent-tab-panel[b-urryfr514w] {
+    --density: 0;
+}
+
+
+fluent-tabs.medium fluent-tab[b-urryfr514w] {
+    font-size: var(--type-ramp-base-font-size);
+    padding: 0 10px;
+}
+
+fluent-tabs.large fluent-tab[b-urryfr514w] {
+    font-size: var(--type-ramp-plus-1-font-size);
+    padding: 0 16px;
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Toast/FluentToast.razor.rz.scp.css */
+.fluent-toast[b-uq7572caeb] {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex-grow: initial;
+    margin-bottom: 10px;
+    padding: 12px;
+    position: relative;
+    min-width: 292px;
+    max-width: 500px;
+    min-height: 44px;
+    font-family: var(--body-font);
+    background-color: var(--neutral-layer-floating);
+    box-shadow: var(--elevation-shadow-tooltip);
+    border-radius: calc( var(--control-corner-radius) * 1px);
+    color: var(--neutral-foreground-rest);
+    overflow-wrap: break-word;
+    word-break: break-word;
+    -webkit-hyphens: auto;
+    hyphens: auto;
+    -webkit-user-select: none;
+    user-select: none;
+    overflow: hidden;
+    pointer-events: auto;
+    animation-name: fadein-b-uq7572caeb;
+    animation-duration: 0.5s;
+    animation-delay: 0s;
+}
+
+
+    .fluent-toast[b-uq7572caeb]  .fluent-toast-title {
+        flex-grow: 1;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .fluent-toast[b-uq7572caeb]  .fluent-toast-action {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 8px;
+        width: 48px;
+        min-width: 48px;
+        height: 20px;
+        font-weight: 400;
+    }
+
+    .fluent-toast[b-uq7572caeb]  .fluent-toast-body {
+        display: flex;
+        flex-direction: column;
+        width: calc( 100% - 12px);
+        justify-content: flex-start;
+        padding-inline-start: 24px;
+    }
+
+    .fluent-toast[b-uq7572caeb]  .fluent-toast-small {
+        font-size: 12px;
+        line-height: 16px;
+    }
+
+    .fluent-toast[b-uq7572caeb]  .fluent-toast-action:has(.timestamp) {
+        cursor: initial;
+        width: auto;
+    }
+
+    .fluent-toast[b-uq7572caeb]  .fluent-toast-details {
+        font-size: 14px;
+        line-height: 20px;
+    }
+
+    .fluent-toast[b-uq7572caeb]  .fluent-toast-progressbar {
+        display: grid;
+        padding: 8px 0px 0px;
+        width: 100%;
+    }
+
+    .fluent-toast[b-uq7572caeb]  .fluent-toast-progressbar-percentage {
+        font-size: 12px;
+        line-height: 16px;
+        padding-top: 7px;
+    }
+
+    .fluent-toast[b-uq7572caeb]  .fluent-toast-actions {
+        display: flex;
+        align-items: flex-end;
+        gap: 16px;
+        height: 28px;
+        width: calc( 100% - 12px);
+        justify-content: flex-start;
+        padding-inline-start: 24px;
+    }
+
+@keyframes fadein-b-uq7572caeb {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Toast/FluentToastProvider.razor.rz.scp.css */
+.fluent-toast-provider[b-wmvy1145n8] {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    z-index: 999;
+}
+
+.position-topleft[b-wmvy1145n8],
+.position-topright[b-wmvy1145n8],
+.position-topcenter[b-wmvy1145n8] {
+    top: 0;
+}
+
+.position-bottomleft[b-wmvy1145n8],
+.position-bottomright[b-wmvy1145n8],
+.position-bottomcenter[b-wmvy1145n8] {
+    bottom: 0;
+}
+
+.position-topleft[b-wmvy1145n8] {
+    top: 24px;
+    left: 24px;
+}
+
+.position-topright[b-wmvy1145n8] {
+    top: 24px;
+    right: 24px;
+}
+
+.position-topcenter[b-wmvy1145n8] {
+    top: 24px;
+    left: 50%;
+    transform: translate(-50%, 0%);
+}
+
+.position-bottomleft[b-wmvy1145n8] {
+    bottom: 24px;
+    left: 24px;
+}
+
+.position-bottomright[b-wmvy1145n8] {
+    bottom: 24px;
+    right: 24px;
+}
+
+.position-bottomcenter[b-wmvy1145n8] {
+    bottom: 24px;
+    left: 50%;
+    transform: translate(-50%, 0%);
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/TreeView/FluentTreeItem.razor.rz.scp.css */
+.treeitem-text[b-toee5o4b4e] {
+    pointer-events: none;
+}
+
+[dir='rtl'] fluent-tree-item[selected][b-toee5o4b4e]::after {
+    right: calc(var(--focus-stroke-width)* 1px);
+}
+
+[dir='rtl'] fluent-tree-item.nested[b-toee5o4b4e]::part(expand-collapse-button) {
+    right: var(--expand-collapse-button-nested-width, calc((var(--base-height-multiplier) + var(--density))* var(--design-unit)* -1px));
+}
+
+[dir='rtl'] fluent-tree-item.nested:not(.expanded)[b-toee5o4b4e]::part(expand-collapse-button) {
+    transform: rotate(180deg);
+}
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Wizard/FluentWizard.razor.rz.scp.css */
+.fluent-wizard[b-l81u9o5gjc] {
+    display: grid;
+    height: 100%;
+    --fluent-wizard-circle-size: 24px;
+    --fluent-wizard-spacing: 4px;
+}
+
+    .fluent-wizard[border-outside][b-l81u9o5gjc] {
+        border: 1px solid var(--neutral-stroke-hover);
+    }
+
+    .fluent-wizard > ol[b-l81u9o5gjc] {
+        display: flex;
+        padding-inline-start: 0px;
+        margin-block-start: 0px;
+        margin-block-end: 0px;
+        padding: 10px;
+    }
+
+    .fluent-wizard .fluent-wizard-buttons[b-l81u9o5gjc] {
+        display: flex;
+        justify-content: end;
+    }
+
+    .fluent-wizard .fluent-wizard-buttons[border-inside][b-l81u9o5gjc] {
+        border-top: 1px solid var(--neutral-stroke-hover);
+    }
+
+    /* Wizard with steps on Left */
+    .fluent-wizard[position="left"][b-l81u9o5gjc] {
+        grid-template-columns: auto 1fr;
+        grid-template-rows: 1fr auto;
+    }
+
+        .fluent-wizard[position="left"] > ol[b-l81u9o5gjc] {
+            flex-direction: column;
+            grid-column: 1;
+            grid-row: 1 / span 2;
+        }
+
+            .fluent-wizard[position="left"] > ol[border-inside][b-l81u9o5gjc] {
+                border-right: 1px solid var(--neutral-stroke-hover);
+            }
+
+        .fluent-wizard[position="left"] .fluent-wizard-content[b-l81u9o5gjc] {
+            grid-column: 2;
+            grid-row: 1;
+            margin: 5px 10px 0px 15px;
+        }
+
+        .fluent-wizard[position="left"] .fluent-wizard-buttons[b-l81u9o5gjc] {
+            grid-column: 2;
+            grid-row: 2;
+            text-align-last: end;
+            padding: 10px;
+        }
+
+    /* Wizard with steps on Top */
+    .fluent-wizard[position="top"][b-l81u9o5gjc] {
+        grid-template-columns: auto;
+        grid-template-rows: auto 1fr auto;
+    }
+
+        .fluent-wizard[position="top"] > ol[b-l81u9o5gjc] {
+            flex-direction: row;
+            justify-content: center;
+        }
+
+            .fluent-wizard[position="top"] > ol[border-inside][b-l81u9o5gjc] {
+                border-bottom: 1px solid var(--neutral-stroke-hover);
+            }
+
+        .fluent-wizard[position="top"] .fluent-wizard-content[b-l81u9o5gjc] {
+            margin: 5px 10px 0px 10px;
+        }
+
+        .fluent-wizard[position="top"] .fluent-wizard-buttons[b-l81u9o5gjc] {
+            padding: 10px;
+        }
+/* _content/Microsoft.FluentUI.AspNetCore.Components/Components/Wizard/FluentWizardStep.razor.rz.scp.css */
+/* Wizard with steps */
+.fluent-wizard > ol > li[b-a5o5s1yurv] {
+    position: relative;
+    display: flex;
+}
+
+/* Wizard with steps on Left */
+.fluent-wizard[position="left"] > ol > li[b-a5o5s1yurv] {
+    gap: 10px;
+}
+
+    .fluent-wizard[position="left"] > ol > li[b-a5o5s1yurv]:before {
+        flex: 0 0 var(--fluent-wizard-circle-size);
+        height: var(--fluent-wizard-circle-size);
+    }
+
+    .fluent-wizard[position="left"] > ol > li:last-child[b-a5o5s1yurv] {
+        height: auto;
+    }
+
+    .fluent-wizard[position="left"] > ol > li:not(:last-child)[b-a5o5s1yurv]:after {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: calc(var(--fluent-wizard-circle-size) + var(--fluent-wizard-spacing));
+        bottom: var(--fluent-wizard-spacing);
+        order: -1;
+        transform: translateX(calc(var(--fluent-wizard-circle-size) / 2));
+        width: 2px;
+        background-color: var(--neutral-stroke-hover);
+    }
+
+[dir="rtl"] .fluent-wizard[position="left"] > ol > li:not(:last-child)[b-a5o5s1yurv]:after {
+    left: revert;
+    transform: translateX(calc(var(--fluent-wizard-circle-size) / -2));
+}
+
+/* Wizard with steps on Top */
+.fluent-wizard[position="top"] > ol > li[b-a5o5s1yurv] {
+    flex-direction: column;
+    flex: 1;
+    text-align: center;
+}
+
+    .fluent-wizard[position="top"] > ol > li[b-a5o5s1yurv]:before {
+        width: var(--fluent-wizard-circle-size);
+        height: var(--fluent-wizard-circle-size);
+        margin-left: calc((100% - var(--fluent-wizard-circle-size)) / 2);
+    }
+
+    .fluent-wizard[position="top"] > ol > li:not(:last-child)[b-a5o5s1yurv]:after {
+        content: "";
+        position: absolute;
+        left: calc(50% + calc(var(--fluent-wizard-circle-size) / 2 + var(--fluent-wizard-spacing)));
+        right: unset;
+        top: calc(var(--fluent-wizard-circle-size) / 2);
+        width: calc(100% - var(--fluent-wizard-circle-size) - calc(var(--fluent-wizard-spacing) * 2));
+        height: 2px;
+        order: -1;
+        background-color: var(--neutral-stroke-hover);
+    }
+
+
+[dir="rtl"] .fluent-wizard[position="top"] > ol > li:not(:last-child)[b-a5o5s1yurv]:after {
+    left: unset;
+    right: calc(50% + calc(var(--fluent-wizard-circle-size) / 2 + var(--fluent-wizard-spacing)));
+}
+
+/* Icon */
+.fluent-wizard > ol > li .fluent-wizard-icon[b-a5o5s1yurv] {
+    min-width: calc(1.2 * var(--fluent-wizard-circle-size));
+    min-height: calc(1.2 * var(--fluent-wizard-circle-size));
+}
+
+/* Icon Number */
+.fluent-wizard > ol > li .fluent-wizard-icon-number[b-a5o5s1yurv] {
+    margin-top: calc(var(--fluent-wizard-circle-size) * -1 - 5px);
+    font-size: small;
+    color: var(--accent-fill-rest);
+    text-align: center;
+    align-content: center;
+}
+
+.fluent-wizard[position="top"] > ol > li .fluent-wizard-icon-number[b-a5o5s1yurv] {
+    height: var(--fluent-wizard-circle-size);
+}
+
+.fluent-wizard[position="left"] > ol > li .fluent-wizard-icon-number[b-a5o5s1yurv] {
+    width: var(--fluent-wizard-circle-size);
+    height: var(--fluent-wizard-circle-size);
+}
+
+.fluent-wizard > ol > li .fluent-wizard-icon-number[disabled][b-a5o5s1yurv] {
+    opacity: var(--disabled-opacity);
+}
+
+.fluent-wizard > ol > li .fluent-wizard-icon-number[status='previous']:not([disabled])[b-a5o5s1yurv] {
+    color: var(--foreground-on-accent-rest);
+}
+
+.fluent-wizard > ol > li .fluent-wizard-icon-number[status='current']:not([disabled])[b-a5o5s1yurv] {
+    color: var(--foreground-on-accent-rest);
+}
+
+.fluent-wizard > ol > li .fluent-wizard-icon-number[status='next']:not([disabled])[b-a5o5s1yurv] {
+    color: var(--accent-fill-rest);
+}
+
+/* Title */
+.fluent-wizard > ol > li .fluent-wizard-title[b-a5o5s1yurv] {
+    margin-block-start: 2px;
+    margin-block-end: 0px;
+    white-space: nowrap;
+}
+
+.fluent-wizard > ol > li[status='next'][b-a5o5s1yurv]  .fluent-wizard-title {
+    color: var(--neutral-stroke-strong-rest);
+}
+
+.fluent-wizard > ol > li[status='current'][b-a5o5s1yurv]  .fluent-wizard-title {
+    font-weight: bold;
+}
+
+/* Summary */
+.fluent-wizard > ol > li[b-a5o5s1yurv]  .fluent-wizard-summary {
+    margin-block-start: 4px;
+    margin-block-end: 0px;
+    font-size: smaller;
+}
+
+.fluent-wizard > ol > li[status='current'][b-a5o5s1yurv]  .fluent-wizard-summary {
+    color: var(--accent-fill-rest);
+}
+
+.fluent-wizard > ol > li[status='next'][b-a5o5s1yurv]  .fluent-wizard-summary {
+    color: var(--neutral-stroke-strong-rest);
+}
+
+/* Body */
+.fluent-wizard-body[b-a5o5s1yurv] {
+    margin: 10px;
+}
+
+/* Hidden */
+@media (max-width: 599.98px) {
+    .fluent-wizard > ol > li[b-a5o5s1yurv]  > div[hidden-when~="xs"] {
+        display: none;
+    }
+}
+
+@media (min-width: 600px) and (max-width: 959.98px) {
+    .fluent-wizard > ol > li[b-a5o5s1yurv]  > div[hidden-when~="sm"] {
+        display: none;
+    }
+}
+
+@media (min-width: 960px) and (max-width: 1279.98px) {
+    .fluent-wizard > ol > li[b-a5o5s1yurv]  > div[hidden-when~="md"] {
+        display: none;
+    }
+}
+
+@media (min-width: 1280px) and (max-width: 1919.98px) {
+    .fluent-wizard > ol > li[b-a5o5s1yurv]  > div[hidden-when~="lg"] {
+        display: none;
+    }
+}
+
+@media (min-width: 1920px) and (max-width: 2559.98px) {
+    .fluent-wizard > ol > li[b-a5o5s1yurv]  > div[hidden-when~="xl"] {
+        display: none;
+    }
+}
+
+@media (min-width: 2560px) {
+    .fluent-wizard > ol > li[b-a5o5s1yurv]  > div[hidden-when~="xxl"] {
+        display: none;
+    }
+}

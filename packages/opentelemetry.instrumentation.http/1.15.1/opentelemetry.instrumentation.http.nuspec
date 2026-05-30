@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>OpenTelemetry.Instrumentation.Http</id>
+    <version>1.15.1</version>
+    <authors>OpenTelemetry Authors</authors>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <license type="expression">Apache-2.0</license>
+    <licenseUrl>https://licenses.nuget.org/Apache-2.0</licenseUrl>
+    <icon>opentelemetry-icon-color.png</icon>
+    <readme>README.md</readme>
+    <projectUrl>https://opentelemetry.io/</projectUrl>
+    <description>HTTP instrumentation for OpenTelemetry .NET.</description>
+    <releaseNotes>For detailed changes see: https://github.com/open-telemetry/opentelemetry-dotnet-contrib/blob/8401783fd26f7e53390b79c510424a0774378f07/src/OpenTelemetry.Instrumentation.Http/CHANGELOG.md.</releaseNotes>
+    <copyright>Copyright The OpenTelemetry Authors</copyright>
+    <tags>Observability OpenTelemetry Monitoring Telemetry distributed-tracing</tags>
+    <repository type="git" url="https://github.com/open-telemetry/opentelemetry-dotnet-contrib" commit="8401783fd26f7e53390b79c510424a0774378f07" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.6.2">
+        <dependency id="Microsoft.Extensions.Configuration" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Options" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="OpenTelemetry.Api.ProviderBuilderExtensions" version="[1.15.3, 2.0.0)" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net8.0">
+        <dependency id="Microsoft.Extensions.Configuration" version="8.0.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Options" version="8.0.0" exclude="Build,Analyzers" />
+        <dependency id="OpenTelemetry.Api.ProviderBuilderExtensions" version="[1.15.3, 2.0.0)" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net10.0">
+        <dependency id="Microsoft.Extensions.Configuration" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Options" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="OpenTelemetry.Api.ProviderBuilderExtensions" version="[1.15.3, 2.0.0)" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="Microsoft.Extensions.Configuration" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Options" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="OpenTelemetry.Api.ProviderBuilderExtensions" version="[1.15.3, 2.0.0)" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="System.Net.Http" targetFramework=".NETFramework4.6.2" />
+    </frameworkAssemblies>
+  </metadata>
+</package>

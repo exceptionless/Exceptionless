@@ -1,0 +1,758 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Grpc.AspNetCore.Server</name>
+    </assembly>
+    <members>
+        <member name="T:Grpc.AspNetCore.Server.GrpcActivatorHandle`1">
+            <summary>
+            Handle to the activator instance.
+            </summary>
+            <typeparam name="T">The instance type.</typeparam>
+        </member>
+        <member name="M:Grpc.AspNetCore.Server.GrpcActivatorHandle`1.#ctor(`0,System.Boolean,System.Object)">
+            <summary>
+            Creates a new instance of <see cref="T:Grpc.AspNetCore.Server.GrpcActivatorHandle`1"/>.
+            </summary>
+            <param name="instance">The activated instance.</param>
+            <param name="created">A value indicating whether the instance was created by the activator.</param>
+            <param name="state">State related to the instance.</param>
+        </member>
+        <member name="P:Grpc.AspNetCore.Server.GrpcActivatorHandle`1.Instance">
+            <summary>
+            Gets the activated instance.
+            </summary>
+        </member>
+        <member name="P:Grpc.AspNetCore.Server.GrpcActivatorHandle`1.Created">
+            <summary>
+            Gets a value indicating whether the instanced was created by the activator.
+            </summary>
+        </member>
+        <member name="P:Grpc.AspNetCore.Server.GrpcActivatorHandle`1.State">
+            <summary>
+            Gets state related to the instance.
+            </summary>
+        </member>
+        <member name="T:Grpc.AspNetCore.Server.GrpcMethodMetadata">
+            <summary>
+            Metadata for a gRPC method endpoint.
+            </summary>
+        </member>
+        <member name="M:Grpc.AspNetCore.Server.GrpcMethodMetadata.#ctor(System.Type,Grpc.Core.IMethod)">
+            <summary>
+            Creates a new instance of <see cref="T:Grpc.AspNetCore.Server.GrpcMethodMetadata"/> with the provided service type and method.
+            </summary>
+            <param name="serviceType">The implementing service type.</param>
+            <param name="method">The method representation.</param>
+        </member>
+        <member name="P:Grpc.AspNetCore.Server.GrpcMethodMetadata.ServiceType">
+            <summary>
+            Gets the implementing service type.
+            </summary>
+        </member>
+        <member name="P:Grpc.AspNetCore.Server.GrpcMethodMetadata.Method">
+            <summary>
+            Gets the method representation.
+            </summary>
+        </member>
+        <member name="T:Grpc.AspNetCore.Server.GrpcServiceOptions">
+            <summary>
+            Options used to configure service instances.
+            </summary>
+        </member>
+        <member name="P:Grpc.AspNetCore.Server.GrpcServiceOptions.MaxSendMessageSize">
+            <summary>
+            Gets or sets the maximum message size in bytes that can be sent from the server.
+            Attempting to send a message that exceeds the configured maximum message size results in an exception.
+            <para>
+            A <c>null</c> value removes the maximum message size limit. Defaults to <c>null</c>.
+            </para>
+            </summary>
+        </member>
+        <member name="P:Grpc.AspNetCore.Server.GrpcServiceOptions.MaxSendMessageSizeSpecified">
+            <summary>
+            Gets or sets a flag indicating whether <see cref="P:Grpc.AspNetCore.Server.GrpcServiceOptions.MaxSendMessageSize"/> is specified.
+            This flag is automatically set to true when <see cref="P:Grpc.AspNetCore.Server.GrpcServiceOptions.MaxSendMessageSize"/> is configured.
+            </summary>
+        </member>
+        <member name="P:Grpc.AspNetCore.Server.GrpcServiceOptions.MaxReceiveMessageSize">
+            <summary>
+            Gets or sets the maximum message size in bytes that can be received by the server.
+            If the server receives a message that exceeds this limit, it throws an exception.
+            <para>
+            A <c>null</c> value removes the maximum message size limit. Defaults to 4,194,304 (4 MB).
+            </para>
+            </summary>
+        </member>
+        <member name="P:Grpc.AspNetCore.Server.GrpcServiceOptions.MaxReceiveMessageSizeSpecified">
+            <summary>
+            Gets or sets a flag indicating whether <see cref="P:Grpc.AspNetCore.Server.GrpcServiceOptions.MaxReceiveMessageSize"/> is specified.
+            This flag is automatically set to true when <see cref="P:Grpc.AspNetCore.Server.GrpcServiceOptions.MaxReceiveMessageSize"/> is configured.
+            </summary>
+        </member>
+        <member name="P:Grpc.AspNetCore.Server.GrpcServiceOptions.EnableDetailedErrors">
+            <summary>
+            Gets or sets a value indicating whether detailed error messages are sent to the peer.
+            Detailed error messages include details from exceptions thrown on the server.
+            </summary>
+        </member>
+        <member name="P:Grpc.AspNetCore.Server.GrpcServiceOptions.ResponseCompressionAlgorithm">
+            <summary>
+            Gets or sets the compression algorithm used to compress messages sent from the server.
+            The request grpc-accept-encoding header value must contain this algorithm for it to
+            be used.
+            </summary>
+        </member>
+        <member name="P:Grpc.AspNetCore.Server.GrpcServiceOptions.ResponseCompressionLevel">
+            <summary>
+            Gets or sets the compression level used to compress messages sent from the server.
+            The compression level will be passed to the compression provider.
+            </summary>
+        </member>
+        <member name="P:Grpc.AspNetCore.Server.GrpcServiceOptions.CompressionProviders">
+            <summary>
+            Gets or sets the list of compression providers used to compress and decompress gRPC messages.
+            </summary>
+        </member>
+        <member name="P:Grpc.AspNetCore.Server.GrpcServiceOptions.IgnoreUnknownServices">
+            <summary>
+            Gets or sets a value indicating whether gRPC should ignore calls to unknown services and methods.
+            If set to <c>true</c>, calls to unknown services and methods won't return an 'UNIMPLEMENTED' status,
+            and the request will pass to the next registered middleware in ASP.NET Core.
+            </summary>
+        </member>
+        <member name="P:Grpc.AspNetCore.Server.GrpcServiceOptions.Interceptors">
+            <summary>
+            Get a collection of interceptors to be executed with every call. Interceptors are executed in order.
+            </summary>
+        </member>
+        <member name="P:Grpc.AspNetCore.Server.GrpcServiceOptions.SuppressCreatingService">
+            <summary>
+            Gets or sets a value indicating whether creating a service is suppressed when handling a gRPC call.
+            </summary>
+        </member>
+        <member name="T:Grpc.AspNetCore.Server.GrpcServiceOptions`1">
+            <summary>
+            Options used to configure the specified service type instances. These options override globally set options.
+            </summary>
+            <typeparam name="TService">The service type to configure.</typeparam>
+        </member>
+        <member name="T:Grpc.AspNetCore.Server.IGrpcInterceptorActivator">
+            <summary>
+            An interceptor activator abstraction.
+            </summary>
+        </member>
+        <member name="M:Grpc.AspNetCore.Server.IGrpcInterceptorActivator.Create(System.IServiceProvider,Grpc.AspNetCore.Server.InterceptorRegistration)">
+            <summary>
+            Creates an interceptor.
+            </summary>
+            <param name="serviceProvider">The service provider.</param>
+            <param name="interceptorRegistration">The arguments to pass to the interceptor type instance's constructor.</param>
+            <returns>The created interceptor.</returns>
+        </member>
+        <member name="M:Grpc.AspNetCore.Server.IGrpcInterceptorActivator.ReleaseAsync(Grpc.AspNetCore.Server.GrpcActivatorHandle{Grpc.Core.Interceptors.Interceptor})">
+            <summary>
+            Releases the specified interceptor.
+            </summary>
+            <param name="interceptor">The interceptor to release.</param>
+        </member>
+        <member name="T:Grpc.AspNetCore.Server.IGrpcInterceptorActivator`1">
+            <summary>
+            A <typeparamref name="TInterceptor"/> activator abstraction.
+            </summary>
+            <typeparam name="TInterceptor">The interceptor type.</typeparam>
+        </member>
+        <member name="T:Grpc.AspNetCore.Server.IGrpcServerBuilder">
+            <summary>
+            A builder abstraction for configuring gRPC servers.
+            </summary>
+        </member>
+        <member name="P:Grpc.AspNetCore.Server.IGrpcServerBuilder.Services">
+            <summary>
+            Gets the builder service collection.
+            </summary>
+        </member>
+        <member name="T:Grpc.AspNetCore.Server.IGrpcServiceActivator`1">
+            <summary>
+            A <typeparamref name="TGrpcService"/> activator abstraction.
+            </summary>
+            <typeparam name="TGrpcService">The service type.</typeparam>
+        </member>
+        <member name="M:Grpc.AspNetCore.Server.IGrpcServiceActivator`1.Create(System.IServiceProvider)">
+            <summary>
+            Creates a service.
+            </summary>
+            <param name="serviceProvider">The service provider.</param>
+            <returns>The created service.</returns>
+        </member>
+        <member name="M:Grpc.AspNetCore.Server.IGrpcServiceActivator`1.ReleaseAsync(Grpc.AspNetCore.Server.GrpcActivatorHandle{`0})">
+            <summary>
+            Releases the specified service.
+            </summary>
+            <param name="service">The service to release.</param>
+        </member>
+        <member name="T:Grpc.AspNetCore.Server.InterceptorCollection">
+            <summary>
+            Represents the pipeline of interceptors to be invoked when processing a gRPC call.
+            </summary>
+        </member>
+        <member name="M:Grpc.AspNetCore.Server.InterceptorCollection.Add``1(System.Object[])">
+            <summary>
+            Add an interceptor to the end of the pipeline.
+            </summary>
+            <typeparam name="TInterceptor">The interceptor type.</typeparam>
+            <param name="args">The list of arguments to pass to the interceptor constructor when creating an instance.</param>
+        </member>
+        <member name="M:Grpc.AspNetCore.Server.InterceptorCollection.Add(System.Type,System.Object[])">
+            <summary>
+            Add an interceptor to the end of the pipeline.
+            </summary>
+            <param name="interceptorType">The interceptor type.</param>
+            <param name="args">The list of arguments to pass to the interceptor constructor when creating an instance.</param>
+        </member>
+        <member name="M:Grpc.AspNetCore.Server.InterceptorCollection.AddRange(System.Collections.Generic.IEnumerable{Grpc.AspNetCore.Server.InterceptorRegistration})">
+            <summary>
+            Append a set of interceptor registrations to the end of the pipeline.
+            </summary>
+            <param name="registrations">The set of interceptor registrations to add.</param>
+        </member>
+        <member name="T:Grpc.AspNetCore.Server.InterceptorRegistration">
+            <summary>
+            Representation of a registration of an <see cref="T:Grpc.Core.Interceptors.Interceptor"/> in the server pipeline.
+            </summary>
+        </member>
+        <member name="P:Grpc.AspNetCore.Server.InterceptorRegistration.Type">
+            <summary>
+            Get the type of the interceptor.
+            </summary>
+        </member>
+        <member name="P:Grpc.AspNetCore.Server.InterceptorRegistration.Arguments">
+            <summary>
+            Get the arguments used to create the interceptor.
+            </summary>
+        </member>
+        <member name="M:Grpc.AspNetCore.Server.Internal.CallHandlers.ServerCallHandlerBase`3.DisableMinRequestBodyDataRateAndMaxRequestBodySize(Microsoft.AspNetCore.Http.HttpContext)">
+            <summary>
+            This should only be called from client streaming calls
+            </summary>
+            <param name="httpContext"></param>
+        </member>
+        <member name="T:Grpc.AspNetCore.Server.Internal.GrpcMarkerService">
+            <summary>
+            A marker class used to determine if all the required gRPC services were added
+            to the <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.
+            </summary>
+        </member>
+        <member name="P:Grpc.AspNetCore.Server.Internal.HttpContextStreamWriter`1.IsWriteInProgressUnsynchronized">
+            <summary>
+            A value indicating whether there is an async write already in progress.
+            Should only check this property when holding the write lock.
+            </summary>
+        </member>
+        <member name="M:Grpc.AspNetCore.Server.Internal.PipeExtensions.ReadSingleMessageAsync``1(System.IO.Pipelines.PipeReader,Grpc.AspNetCore.Server.Internal.HttpContextServerCallContext,System.Func{Grpc.Core.DeserializationContext,``0})">
+            <summary>
+            Read a single message from the pipe reader. Ensure the reader completes without additional data.
+            </summary>
+            <param name="input">The request pipe reader.</param>
+            <param name="serverCallContext">The request context.</param>
+            <param name="deserializer">Message deserializer.</param>
+            <returns>Complete message data.</returns>
+        </member>
+        <member name="M:Grpc.AspNetCore.Server.Internal.PipeExtensions.ReadStreamMessageAsync``1(System.IO.Pipelines.PipeReader,Grpc.AspNetCore.Server.Internal.HttpContextServerCallContext,System.Func{Grpc.Core.DeserializationContext,``0},System.Threading.CancellationToken)">
+            <summary>
+            Read a message in a stream from the pipe reader. Additional message data is left in the reader.
+            </summary>
+            <param name="input">The request pipe reader.</param>
+            <param name="serverCallContext">The request content.</param>
+            <param name="deserializer">Message deserializer.</param>
+            <param name="cancellationToken">The cancellation token.</param>
+            <returns>Complete message data or null if the stream is complete.</returns>
+        </member>
+        <member name="T:Grpc.AspNetCore.Server.Internal.ServerCallHandlerFactory`1">
+            <summary>
+            Creates server call handlers. Provides a place to get services that call handlers will use.
+            </summary>
+        </member>
+        <member name="T:Grpc.AspNetCore.Server.IServerCallContextFeature">
+            <summary>
+            Provides access to the gRPC server call context for the current HTTP request.
+            </summary>
+        </member>
+        <member name="P:Grpc.AspNetCore.Server.IServerCallContextFeature.ServerCallContext">
+            <summary>
+            Gets the gRPC server call context for the current HTTP request.
+            </summary>
+        </member>
+        <member name="T:Grpc.AspNetCore.Server.Model.Internal.ServiceMethodsRegistry">
+            <summary>
+            A registry of all the service methods in the application.
+            </summary>
+        </member>
+        <member name="T:Grpc.AspNetCore.Server.Model.IServiceMethodProvider`1">
+            <summary>
+            Defines a contract for specifying methods for <typeparamref name="TService"/>.
+            </summary>
+            <remarks>
+            <para>
+            On application initialization, gRPC invokes all registered instances of <see cref="T:Grpc.AspNetCore.Server.Model.IServiceMethodProvider`1"/> to 
+            perform method discovery. 
+            <see cref="T:Grpc.AspNetCore.Server.Model.IServiceMethodProvider`1"/> instances are invoked in the order they are registered.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Grpc.AspNetCore.Server.Model.IServiceMethodProvider`1.OnServiceMethodDiscovery(Grpc.AspNetCore.Server.Model.ServiceMethodProviderContext{`0})">
+            <summary>
+            Called to execute the provider.
+            </summary>
+            <param name="context">The <see cref="T:Grpc.AspNetCore.Server.Model.ServiceMethodProviderContext`1"/>.</param>
+        </member>
+        <member name="T:Grpc.AspNetCore.Server.Model.UnaryServerMethod`3">
+            <summary>
+            Server-side handler for a unary call.
+            </summary>
+            <typeparam name="TService">Service type for this method.</typeparam>
+            <typeparam name="TRequest">Request message type for this method.</typeparam>
+            <typeparam name="TResponse">Response message type for this method.</typeparam>
+            <param name="service">The service instance.</param>
+            <param name="request">The request message.</param>
+            <param name="serverCallContext">The <see cref="T:Grpc.Core.ServerCallContext"/> for the call.</param>
+            <returns>
+            A task that represents the completion of the call. The <see cref="P:System.Threading.Tasks.Task`1.Result"/>
+            property returns a <typeparamref name="TResponse"/> for the call response.
+            </returns>
+        </member>
+        <member name="T:Grpc.AspNetCore.Server.Model.ClientStreamingServerMethod`3">
+            <summary>
+            Server-side handler for a client streaming call.
+            </summary>
+            <typeparam name="TService">Service type for this method.</typeparam>
+            <typeparam name="TRequest">Request message type for this method.</typeparam>
+            <typeparam name="TResponse">Response message type for this method.</typeparam>
+            <param name="service">The service instance.</param>
+            <param name="stream">A <see cref="T:Grpc.Core.IAsyncStreamReader`1"/> that is used to read a stream of request messages.</param>
+            <param name="serverCallContext">The <see cref="T:Grpc.Core.ServerCallContext"/> for the call.</param>
+            <returns>
+            A task that represents the completion of the call. The <see cref="P:System.Threading.Tasks.Task`1.Result"/>
+            property returns a <typeparamref name="TResponse"/> for the call response.
+            </returns>
+        </member>
+        <member name="T:Grpc.AspNetCore.Server.Model.ServerStreamingServerMethod`3">
+            <summary>
+            Server-side handler for a server streaming call.
+            </summary>
+            <typeparam name="TService">Service type for this method.</typeparam>
+            <typeparam name="TRequest">Request message type for this method.</typeparam>
+            <typeparam name="TResponse">Response message type for this method.</typeparam>
+            <param name="service">The service instance.</param>
+            <param name="request">The request message.</param>
+            <param name="stream">A <see cref="T:Grpc.Core.IServerStreamWriter`1"/> that is used to write a stream of response messages.</param>
+            <param name="serverCallContext">The <see cref="T:Grpc.Core.ServerCallContext"/> for the call.</param>
+            <returns>A task that represents the completion of the call.</returns>
+        </member>
+        <member name="T:Grpc.AspNetCore.Server.Model.DuplexStreamingServerMethod`3">
+            <summary>
+            Server-side handler for a duplex streaming call.
+            </summary>
+            <typeparam name="TService">Service type for this method.</typeparam>
+            <typeparam name="TRequest">Request message type for this method.</typeparam>
+            <typeparam name="TResponse">Response message type for this method.</typeparam>
+            <param name="service">The service instance.</param>
+            <param name="input">A <see cref="T:Grpc.Core.IAsyncStreamReader`1"/> that is used to read a stream of request messages.</param>
+            <param name="output">A <see cref="T:Grpc.Core.IServerStreamWriter`1"/> that is used to write a stream of response messages.</param>
+            <param name="serverCallContext">The <see cref="T:Grpc.Core.ServerCallContext"/> for the call.</param>
+            <returns>A task that represents the completion of the call.</returns>
+        </member>
+        <member name="T:Grpc.AspNetCore.Server.Model.ServiceMethodProviderContext`1">
+            <summary>
+            A context for <see cref="T:Grpc.AspNetCore.Server.Model.IServiceMethodProvider`1"/>.
+            </summary>
+            <typeparam name="TService">Service type for the context.</typeparam>
+        </member>
+        <member name="P:Grpc.AspNetCore.Server.Model.ServiceMethodProviderContext`1.Argument">
+            <summary>
+            Gets the argument passed to the <see cref="T:Grpc.AspNetCore.Server.Model.IServiceMethodProvider`1"/> constructor.
+            </summary>
+        </member>
+        <member name="M:Grpc.AspNetCore.Server.Model.ServiceMethodProviderContext`1.AddUnaryMethod``2(Grpc.Core.Method{``0,``1},System.Collections.Generic.IList{System.Object},Grpc.AspNetCore.Server.Model.UnaryServerMethod{`0,``0,``1})">
+            <summary>
+            Adds a unary method to a service.
+            </summary>
+            <typeparam name="TRequest">Request message type for this method.</typeparam>
+            <typeparam name="TResponse">Response message type for this method.</typeparam>
+            <param name="method">The method description.</param>
+            <param name="metadata">The method metadata. This metadata can be used by routing and middleware when invoking a gRPC method.</param>
+            <param name="invoker">The method invoker that is executed when the method is called.</param>
+        </member>
+        <member name="M:Grpc.AspNetCore.Server.Model.ServiceMethodProviderContext`1.AddServerStreamingMethod``2(Grpc.Core.Method{``0,``1},System.Collections.Generic.IList{System.Object},Grpc.AspNetCore.Server.Model.ServerStreamingServerMethod{`0,``0,``1})">
+            <summary>
+            Adds a server streaming method to a service.
+            </summary>
+            <typeparam name="TRequest">Request message type for this method.</typeparam>
+            <typeparam name="TResponse">Response message type for this method.</typeparam>
+            <param name="method">The method description.</param>
+            <param name="metadata">The method metadata. This metadata can be used by routing and middleware when invoking a gRPC method.</param>
+            <param name="invoker">The method invoker that is executed when the method is called.</param>
+        </member>
+        <member name="M:Grpc.AspNetCore.Server.Model.ServiceMethodProviderContext`1.AddClientStreamingMethod``2(Grpc.Core.Method{``0,``1},System.Collections.Generic.IList{System.Object},Grpc.AspNetCore.Server.Model.ClientStreamingServerMethod{`0,``0,``1})">
+            <summary>
+            Adds a client streaming method to a service.
+            </summary>
+            <typeparam name="TRequest">Request message type for this method.</typeparam>
+            <typeparam name="TResponse">Response message type for this method.</typeparam>
+            <param name="method">The method description.</param>
+            <param name="metadata">The method metadata. This metadata can be used by routing and middleware when invoking a gRPC method.</param>
+            <param name="invoker">The method invoker that is executed when the method is called.</param>
+        </member>
+        <member name="M:Grpc.AspNetCore.Server.Model.ServiceMethodProviderContext`1.AddDuplexStreamingMethod``2(Grpc.Core.Method{``0,``1},System.Collections.Generic.IList{System.Object},Grpc.AspNetCore.Server.Model.DuplexStreamingServerMethod{`0,``0,``1})">
+            <summary>
+            Adds a duplex streaming method to a service.
+            </summary>
+            <typeparam name="TRequest">Request message type for this method.</typeparam>
+            <typeparam name="TResponse">Response message type for this method.</typeparam>
+            <param name="method">The method description.</param>
+            <param name="metadata">The method metadata. This metadata can be used by routing and middleware when invoking a gRPC method.</param>
+            <param name="invoker">The method invoker that is executed when the method is called.</param>
+        </member>
+        <member name="M:Grpc.AspNetCore.Server.Model.ServiceMethodProviderContext`1.AddMethod``2(Grpc.Core.Method{``0,``1},Microsoft.AspNetCore.Routing.Patterns.RoutePattern,System.Collections.Generic.IList{System.Object},Microsoft.AspNetCore.Http.RequestDelegate)">
+            <summary>
+            Adds a method to a service. This method is handled by the specified <see cref="T:Microsoft.AspNetCore.Http.RequestDelegate"/>.
+            This overload of <c>AddMethod</c> is intended for advanced scenarios where raw processing of HTTP requests
+            is desired.
+            Note: experimental API that can change or be removed without any prior notice.
+            </summary>
+            <typeparam name="TRequest">Request message type for this method.</typeparam>
+            <typeparam name="TResponse">Response message type for this method.</typeparam>
+            <param name="method">The method description.</param>
+            <param name="pattern">The method pattern. This pattern is used by routing to match the method to an HTTP request.</param>
+            <param name="metadata">The method metadata. This metadata can be used by routing and middleware when invoking a gRPC method.</param>
+            <param name="invoker">The <see cref="T:Microsoft.AspNetCore.Http.RequestDelegate"/> that is executed when the method is called.</param>
+        </member>
+        <member name="T:Grpc.Core.ServerCallContextExtensions">
+            <summary>
+            Extension methods for ServerCallContext.
+            </summary>
+        </member>
+        <member name="M:Grpc.Core.ServerCallContextExtensions.GetHttpContext(Grpc.Core.ServerCallContext)">
+            <summary>
+            Retrieve the <see cref="T:Microsoft.AspNetCore.Http.HttpContext"/> from the a call's <see cref="T:Grpc.Core.ServerCallContext"/>.
+            The HttpContext is only available when gRPC services are hosted by ASP.NET Core. An error will be
+            thrown if this method is used outside of ASP.NET Core.
+            Note that read-only usage of HttpContext is recommended as changes to the HttpContext are not synchronized
+            with the ServerCallContext.
+            </summary>
+            <param name="serverCallContext">The <see cref="T:Grpc.Core.ServerCallContext"/>.</param>
+            <returns>The call's <see cref="T:Microsoft.AspNetCore.Http.HttpContext"/>.</returns>
+        </member>
+        <member name="T:Grpc.Shared.Server.ClientStreamingServerMethodInvoker`3">
+            <summary>
+            Client streaming server method invoker.
+            </summary>
+            <typeparam name="TService">Service type for this method.</typeparam>
+            <typeparam name="TRequest">Request message type for this method.</typeparam>
+            <typeparam name="TResponse">Response message type for this method.</typeparam>
+        </member>
+        <member name="M:Grpc.Shared.Server.ClientStreamingServerMethodInvoker`3.#ctor(Grpc.AspNetCore.Server.Model.ClientStreamingServerMethod{`0,`1,`2},Grpc.Core.Method{`1,`2},Grpc.Shared.Server.MethodOptions,Grpc.AspNetCore.Server.IGrpcServiceActivator{`0},Grpc.Shared.Server.InterceptorActivators)">
+            <summary>
+            Creates a new instance of <see cref="T:Grpc.Shared.Server.ClientStreamingServerMethodInvoker`3"/>.
+            </summary>
+            <param name="invoker">The client streaming method to invoke.</param>
+            <param name="method">The description of the gRPC method.</param>
+            <param name="options">The options used to execute the method.</param>
+            <param name="serviceActivator">The service activator used to create service instances.</param>
+            <param name="interceptorActivators">The interceptor activators used to create interceptor instances.</param>
+        </member>
+        <member name="M:Grpc.Shared.Server.ClientStreamingServerMethodInvoker`3.Invoke(Microsoft.AspNetCore.Http.HttpContext,Grpc.Core.ServerCallContext,Grpc.Core.IAsyncStreamReader{`1})">
+            <summary>
+            Invoke the client streaming method with the specified <see cref="T:Microsoft.AspNetCore.Http.HttpContext"/>.
+            </summary>
+            <param name="httpContext">The <see cref="T:Microsoft.AspNetCore.Http.HttpContext"/> for the current request.</param>
+            <param name="serverCallContext">The <see cref="T:Grpc.Core.ServerCallContext"/>.</param>
+            <param name="requestStream">The <typeparamref name="TRequest"/> reader.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task`1"/> that represents the asynchronous method. The <see cref="P:System.Threading.Tasks.Task`1.Result"/>
+            property returns the <typeparamref name="TResponse"/> message.</returns>
+        </member>
+        <member name="T:Grpc.Shared.Server.DuplexStreamingServerMethodInvoker`3">
+            <summary>
+            Duplex streaming server method invoker.
+            </summary>
+            <typeparam name="TService">Service type for this method.</typeparam>
+            <typeparam name="TRequest">Request message type for this method.</typeparam>
+            <typeparam name="TResponse">Response message type for this method.</typeparam>
+        </member>
+        <member name="M:Grpc.Shared.Server.DuplexStreamingServerMethodInvoker`3.#ctor(Grpc.AspNetCore.Server.Model.DuplexStreamingServerMethod{`0,`1,`2},Grpc.Core.Method{`1,`2},Grpc.Shared.Server.MethodOptions,Grpc.AspNetCore.Server.IGrpcServiceActivator{`0},Grpc.Shared.Server.InterceptorActivators)">
+            <summary>
+            Creates a new instance of <see cref="T:Grpc.Shared.Server.DuplexStreamingServerMethodInvoker`3"/>.
+            </summary>
+            <param name="invoker">The duplex streaming method to invoke.</param>
+            <param name="method">The description of the gRPC method.</param>
+            <param name="options">The options used to execute the method.</param>
+            <param name="serviceActivator">The service activator used to create service instances.</param>
+            <param name="interceptorActivators">The interceptor activators used to create interceptor instances.</param>
+        </member>
+        <member name="M:Grpc.Shared.Server.DuplexStreamingServerMethodInvoker`3.Invoke(Microsoft.AspNetCore.Http.HttpContext,Grpc.Core.ServerCallContext,Grpc.Core.IAsyncStreamReader{`1},Grpc.Core.IServerStreamWriter{`2})">
+            <summary>
+            Invoke the duplex streaming method with the specified <see cref="T:Microsoft.AspNetCore.Http.HttpContext"/>.
+            </summary>
+            <param name="httpContext">The <see cref="T:Microsoft.AspNetCore.Http.HttpContext"/> for the current request.</param>
+            <param name="serverCallContext">The <see cref="T:Grpc.Core.ServerCallContext"/>.</param>
+            <param name="requestStream">The <typeparamref name="TRequest"/> reader.</param>
+            <param name="responseStream">The <typeparamref name="TResponse"/> writer.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task`1"/> that represents the asynchronous method.</returns>
+        </member>
+        <member name="T:Grpc.Shared.Server.MethodOptions">
+            <summary>
+            Options used to execute a gRPC method.
+            </summary>
+        </member>
+        <member name="P:Grpc.Shared.Server.MethodOptions.CompressionProviders">
+            <summary>
+            Gets the list of compression providers used to compress and decompress gRPC messages.
+            </summary>
+        </member>
+        <member name="P:Grpc.Shared.Server.MethodOptions.Interceptors">
+            <summary>
+            Get a collection of interceptors to be executed with every call. Interceptors are executed in order.
+            </summary>
+        </member>
+        <member name="P:Grpc.Shared.Server.MethodOptions.MaxSendMessageSize">
+            <summary>
+            Gets the maximum message size in bytes that can be sent from the server.
+            </summary>
+        </member>
+        <member name="P:Grpc.Shared.Server.MethodOptions.MaxReceiveMessageSize">
+            <summary>
+            Gets the maximum message size in bytes that can be received by the server.
+            </summary>
+        </member>
+        <member name="P:Grpc.Shared.Server.MethodOptions.EnableDetailedErrors">
+            <summary>
+            Gets a value indicating whether detailed error messages are sent to the peer.
+            Detailed error messages include details from exceptions thrown on the server.
+            </summary>
+        </member>
+        <member name="P:Grpc.Shared.Server.MethodOptions.ResponseCompressionAlgorithm">
+            <summary>
+            Gets the compression algorithm used to compress messages sent from the server.
+            The request grpc-accept-encoding header value must contain this algorithm for it to
+            be used.
+            </summary>
+        </member>
+        <member name="P:Grpc.Shared.Server.MethodOptions.ResponseCompressionLevel">
+            <summary>
+            Gets the compression level used to compress messages sent from the server.
+            The compression level will be passed to the compression provider.
+            </summary>
+        </member>
+        <member name="M:Grpc.Shared.Server.MethodOptions.Create(System.Collections.Generic.IEnumerable{Grpc.AspNetCore.Server.GrpcServiceOptions})">
+            <summary>
+            Creates method options by merging together the settings the specificed <see cref="T:Grpc.AspNetCore.Server.GrpcServiceOptions"/> collection.
+            The <see cref="T:Grpc.AspNetCore.Server.GrpcServiceOptions"/> should be ordered with items arranged in ascending order of precedence.
+            When interceptors from multiple options are merged together they will be executed in reverse order of precendence.
+            </summary>
+            <param name="serviceOptions">A collection of <see cref="T:Grpc.AspNetCore.Server.GrpcServiceOptions"/> instances, arranged in ascending order of precedence.</param>
+            <returns>A new <see cref="T:Grpc.Shared.Server.MethodOptions"/> instanced with settings merged from specifid <see cref="T:Grpc.AspNetCore.Server.GrpcServiceOptions"/> collection.</returns>
+        </member>
+        <member name="T:Grpc.Shared.Server.ServerMethodInvokerBase`3">
+            <summary>
+            Server method invoker base type.
+            </summary>
+            <typeparam name="TService">Service type for this method.</typeparam>
+            <typeparam name="TRequest">Request message type for this method.</typeparam>
+            <typeparam name="TResponse">Response message type for this method.</typeparam>
+        </member>
+        <member name="P:Grpc.Shared.Server.ServerMethodInvokerBase`3.Method">
+            <summary>
+            Gets the description of the gRPC method.
+            </summary>
+        </member>
+        <member name="P:Grpc.Shared.Server.ServerMethodInvokerBase`3.Options">
+            <summary>
+            Gets the options used to execute the method.
+            </summary>
+        </member>
+        <member name="P:Grpc.Shared.Server.ServerMethodInvokerBase`3.ServiceActivator">
+            <summary>
+            Gets the service activator used to create service instances.
+            </summary>
+        </member>
+        <member name="M:Grpc.Shared.Server.ServerMethodInvokerBase`3.#ctor(Grpc.Core.Method{`1,`2},Grpc.Shared.Server.MethodOptions,Grpc.AspNetCore.Server.IGrpcServiceActivator{`0})">
+            <summary>
+            Creates a new instance of <see cref="T:Grpc.Shared.Server.ServerMethodInvokerBase`3"/>.
+            </summary>
+            <param name="method">The description of the gRPC method.</param>
+            <param name="options">The options used to execute the method.</param>
+            <param name="serviceActivator">The service activator used to create service instances.</param>
+        </member>
+        <member name="T:Grpc.Shared.Server.ServerStreamingServerMethodInvoker`3">
+            <summary>
+            Server streaming server method invoker.
+            </summary>
+            <typeparam name="TService">Service type for this method.</typeparam>
+            <typeparam name="TRequest">Request message type for this method.</typeparam>
+            <typeparam name="TResponse">Response message type for this method.</typeparam>
+        </member>
+        <member name="M:Grpc.Shared.Server.ServerStreamingServerMethodInvoker`3.#ctor(Grpc.AspNetCore.Server.Model.ServerStreamingServerMethod{`0,`1,`2},Grpc.Core.Method{`1,`2},Grpc.Shared.Server.MethodOptions,Grpc.AspNetCore.Server.IGrpcServiceActivator{`0},Grpc.Shared.Server.InterceptorActivators)">
+            <summary>
+            Creates a new instance of <see cref="T:Grpc.Shared.Server.ServerStreamingServerMethodInvoker`3"/>.
+            </summary>
+            <param name="invoker">The server streaming method to invoke.</param>
+            <param name="method">The description of the gRPC method.</param>
+            <param name="options">The options used to execute the method.</param>
+            <param name="serviceActivator">The service activator used to create service instances.</param>
+            <param name="interceptorActivators">The interceptor activators used to create interceptor instances.</param>
+        </member>
+        <member name="M:Grpc.Shared.Server.ServerStreamingServerMethodInvoker`3.Invoke(Microsoft.AspNetCore.Http.HttpContext,Grpc.Core.ServerCallContext,`1,Grpc.Core.IServerStreamWriter{`2})">
+            <summary>
+            Invoke the server streaming method with the specified <see cref="T:Microsoft.AspNetCore.Http.HttpContext"/>.
+            </summary>
+            <param name="httpContext">The <see cref="T:Microsoft.AspNetCore.Http.HttpContext"/> for the current request.</param>
+            <param name="serverCallContext">The <see cref="T:Grpc.Core.ServerCallContext"/>.</param>
+            <param name="request">The <typeparamref name="TRequest"/> message.</param>
+            <param name="streamWriter">The <typeparamref name="TResponse"/> stream writer.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/> that represents the asynchronous method.</returns>
+        </member>
+        <member name="T:Grpc.Shared.Server.UnaryServerMethodInvoker`3">
+            <summary>
+            Unary server method invoker.
+            </summary>
+            <typeparam name="TService">Service type for this method.</typeparam>
+            <typeparam name="TRequest">Request message type for this method.</typeparam>
+            <typeparam name="TResponse">Response message type for this method.</typeparam>
+        </member>
+        <member name="M:Grpc.Shared.Server.UnaryServerMethodInvoker`3.#ctor(Grpc.AspNetCore.Server.Model.UnaryServerMethod{`0,`1,`2},Grpc.Core.Method{`1,`2},Grpc.Shared.Server.MethodOptions,Grpc.AspNetCore.Server.IGrpcServiceActivator{`0},Grpc.Shared.Server.InterceptorActivators)">
+            <summary>
+            Creates a new instance of <see cref="T:Grpc.Shared.Server.UnaryServerMethodInvoker`3"/>.
+            </summary>
+            <param name="invoker">The unary method to invoke.</param>
+            <param name="method">The description of the gRPC method.</param>
+            <param name="options">The options used to execute the method.</param>
+            <param name="serviceActivator">The service activator used to create service instances.</param>
+            <param name="interceptorActivators">The interceptor activators used to create interceptor instances.</param>
+        </member>
+        <member name="M:Grpc.Shared.Server.UnaryServerMethodInvoker`3.Invoke(Microsoft.AspNetCore.Http.HttpContext,Grpc.Core.ServerCallContext,`1)">
+            <summary>
+            Invoke the unary method with the specified <see cref="T:Microsoft.AspNetCore.Http.HttpContext"/>.
+            </summary>
+            <param name="httpContext">The <see cref="T:Microsoft.AspNetCore.Http.HttpContext"/> for the current request.</param>
+            <param name="serverCallContext">The <see cref="T:Grpc.Core.ServerCallContext"/>.</param>
+            <param name="request">The <typeparamref name="TRequest"/> message.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task`1"/> that represents the asynchronous method. The <see cref="P:System.Threading.Tasks.Task`1.Result"/>
+            property returns the <typeparamref name="TResponse"/> message.</returns>
+        </member>
+        <member name="T:Grpc.Shared.Server.ServerDynamicAccessConstants">
+            <summary>
+            Contains constants for specifying dynamically accessed member types for gRPC server services.
+            </summary>
+        </member>
+        <member name="F:Grpc.Shared.Server.ServerDynamicAccessConstants.ServiceAccessibility">
+            <summary>
+            Specifies the member types that should be dynamically accessed for gRPC services.
+            Includes public constructors, public methods, and non-public methods.
+            </summary>
+        </member>
+        <member name="T:Grpc.Shared.Server.InterceptorActivators">
+            <summary>
+            Provides caching and activation of gRPC interceptor activators.
+            </summary>
+        </member>
+        <member name="M:Grpc.Shared.Server.InterceptorActivators.#ctor(System.IServiceProvider)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Grpc.Shared.Server.InterceptorActivators"/> class.
+            </summary>
+            <param name="serviceProvider">The service provider used to resolve activators.</param>
+        </member>
+        <member name="M:Grpc.Shared.Server.InterceptorActivators.GetInterceptorActivator(System.Type)">
+            <summary>
+            Gets the <see cref="T:Grpc.AspNetCore.Server.IGrpcInterceptorActivator"/> for the specified interceptor type.
+            </summary>
+            <param name="type">The interceptor type.</param>
+            <returns>The activator for the specified interceptor type.</returns>
+        </member>
+        <member name="M:Grpc.Shared.ObjectDisposedThrowHelper.ThrowIf(System.Boolean,System.Object)">
+            <summary>Throws an <see cref="T:System.ObjectDisposedException"/> if the specified <paramref name="condition"/> is <see langword="true"/>.</summary>
+            <param name="condition">The condition to evaluate.</param>
+            <param name="instance">The object whose type's full name should be included in any resulting <see cref="T:System.ObjectDisposedException"/>.</param>
+            <exception cref="T:System.ObjectDisposedException">The <paramref name="condition"/> is <see langword="true"/>.</exception>
+        </member>
+        <member name="M:Grpc.Shared.ObjectDisposedThrowHelper.ThrowIf(System.Boolean,System.Type)">
+            <summary>Throws an <see cref="T:System.ObjectDisposedException"/> if the specified <paramref name="condition"/> is <see langword="true"/>.</summary>
+            <param name="condition">The condition to evaluate.</param>
+            <param name="type">The type whose full name should be included in any resulting <see cref="T:System.ObjectDisposedException"/>.</param>
+            <exception cref="T:System.ObjectDisposedException">The <paramref name="condition"/> is <see langword="true"/>.</exception>
+        </member>
+        <member name="M:Grpc.Shared.ArgumentNullThrowHelper.ThrowIfNull(System.Object,System.String)">
+            <summary>Throws an <see cref="T:System.ArgumentNullException"/> if <paramref name="argument"/> is null.</summary>
+            <param name="argument">The reference type argument to validate as non-null.</param>
+            <param name="paramName">The name of the parameter with which <paramref name="argument"/> corresponds.</param>
+        </member>
+        <member name="T:Microsoft.AspNetCore.Builder.GrpcEndpointRouteBuilderExtensions">
+            <summary>
+            Provides extension methods for <see cref="T:Microsoft.AspNetCore.Routing.IEndpointRouteBuilder"/> to add gRPC service endpoints.
+            </summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Builder.GrpcEndpointRouteBuilderExtensions.MapGrpcService``1(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder)">
+            <summary>
+            Maps incoming requests to the specified <typeparamref name="TService"/> type.
+            </summary>
+            <typeparam name="TService">The service type to map requests to.</typeparam>
+            <param name="builder">The <see cref="T:Microsoft.AspNetCore.Routing.IEndpointRouteBuilder"/> to add the route to.</param>
+            <returns>A <see cref="T:Microsoft.AspNetCore.Builder.GrpcServiceEndpointConventionBuilder"/> for endpoints associated with the service.</returns>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Builder.GrpcEndpointRouteBuilderExtensions.MapGrpcService(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder,System.Func{System.IServiceProvider,Grpc.Core.ServerServiceDefinition})">
+            <summary>
+            Maps incoming requests to the <see cref="T:Grpc.Core.ServerServiceDefinition"/> instance from the specified factory.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.AspNetCore.Routing.IEndpointRouteBuilder"/> to add the route to.</param>
+            <param name="mapDefinition">The factory for <see cref="T:Grpc.Core.ServerServiceDefinition"/> instance.</param>
+            <returns>A <see cref="T:Microsoft.AspNetCore.Builder.GrpcServiceEndpointConventionBuilder"/> for endpoints associated with the service.</returns>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Builder.GrpcEndpointRouteBuilderExtensions.MapGrpcService(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder,Grpc.Core.ServerServiceDefinition)">
+            <summary>
+            Maps incoming requests to the specified <see cref="T:Grpc.Core.ServerServiceDefinition"/> instance.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.AspNetCore.Routing.IEndpointRouteBuilder"/> to add the route to.</param>
+            <param name="serviceDefinition">The instance of <see cref="T:Grpc.Core.ServerServiceDefinition"/>.</param>
+            <returns>A <see cref="T:Microsoft.AspNetCore.Builder.GrpcServiceEndpointConventionBuilder"/> for endpoints associated with the service.</returns>
+        </member>
+        <member name="T:Microsoft.AspNetCore.Builder.GrpcServiceEndpointConventionBuilder">
+            <summary>
+            Builds conventions that will be used for customization of gRPC service <see cref="T:Microsoft.AspNetCore.Builder.EndpointBuilder"/> instances.
+            </summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Builder.GrpcServiceEndpointConventionBuilder.Add(System.Action{Microsoft.AspNetCore.Builder.EndpointBuilder})">
+            <summary>
+            Adds the specified convention to the builder. Conventions are used to customize <see cref="T:Microsoft.AspNetCore.Builder.EndpointBuilder"/> instances.
+            </summary>
+            <param name="convention">The convention to add to the builder.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.GrpcServicesExtensions">
+            <summary>
+            Extension methods for the gRPC services.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.GrpcServicesExtensions.AddServiceOptions``1(Grpc.AspNetCore.Server.IGrpcServerBuilder,System.Action{Grpc.AspNetCore.Server.GrpcServiceOptions{``0}})">
+            <summary>
+            Adds service specific options to an <see cref="T:Grpc.AspNetCore.Server.IGrpcServerBuilder"/>.
+            </summary>
+            <typeparam name="TService">The service type to configure.</typeparam>
+            <param name="grpcBuilder">The <see cref="T:Grpc.AspNetCore.Server.IGrpcServerBuilder"/>.</param>
+            <param name="configure">A callback to configure the service options.</param>
+            <returns>The same instance of the <see cref="T:Grpc.AspNetCore.Server.IGrpcServerBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.GrpcServicesExtensions.AddGrpc(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds gRPC services to the specified <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" />.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> for adding services.</param>
+            <returns>An <see cref="T:Grpc.AspNetCore.Server.IGrpcServerBuilder"/> that can be used to further configure the gRPC services.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.GrpcServicesExtensions.AddGrpc(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Grpc.AspNetCore.Server.GrpcServiceOptions})">
+            <summary>
+            Adds gRPC services to the specified <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" />.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> for adding services.</param>
+            <param name="configureOptions">An <see cref="T:System.Action`1"/> to configure the provided <see cref="T:Grpc.AspNetCore.Server.GrpcServiceOptions"/>.</param>
+            <returns>An <see cref="T:Grpc.AspNetCore.Server.IGrpcServerBuilder"/> that can be used to further configure the gRPC services.</returns>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,644 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Fractions</name>
+    </assembly>
+    <members>
+        <member name="T:Fractions.FractionExt">
+            <summary>
+            Extension methods for the <see cref="T:Fractions.Fraction"/> data type
+            </summary>
+        </member>
+        <member name="M:Fractions.FractionExt.Sqrt(Fractions.Fraction,System.Int32)">
+            <summary>
+            Returns the square root of <paramref name="x"/>.
+            Use <paramref name="accuracy"/> to set the accuracy by specifying the number of digits after the decimal point of accuracy.
+            Higher value of <paramref name="accuracy"/> means better accuracy but longer calculations time.
+            </summary>
+            <param name="x">Source value</param>
+            <param name="accuracy">Number of digits after the decimal point of accuracy</param>
+        </member>
+        <member name="T:Fractions.Extensions.MathExt">
+            <summary>
+            Math extension methods
+            </summary>
+        </member>
+        <member name="M:Fractions.Extensions.MathExt.IsEven(System.Int64)">
+            <summary>
+            Checks for an even number.
+            </summary>
+            <param name="number"></param>
+            <returns><c>true</c> if the number is even.</returns>
+        </member>
+        <member name="M:Fractions.Extensions.MathExt.IsOdd(System.Int64)">
+            <summary>
+            Checks for an odd number.
+            </summary>
+            <param name="number"></param>
+            <returns><c>true</c> if the number is odd.</returns>
+        </member>
+        <member name="M:Fractions.Extensions.MathExt.GreatestCommonDivisor(System.Int64,System.Int64)">
+            <summary>
+            Get the greatest common divisor (GCD) of <paramref name="a"/> and <paramref name="b"/>.
+            </summary>
+            <param name="a">First number.</param>
+            <param name="b">Second number.</param>
+            <returns>The largest positive integer that divides <paramref name="a"/> and <paramref name="b"/> without a remainder.</returns>
+        </member>
+        <member name="M:Fractions.Extensions.MathExt.LeastCommonMultiple(System.Int64,System.Int64)">
+            <summary>
+            Get the least common multiple (LCM) of <paramref name="a"/> and <paramref name="b"/>.
+            </summary>
+            <param name="a">The first number.</param>
+            <param name="b">The second number.</param>
+            <returns>The smallest positive integer that is divisible by both <paramref name="a"/> and <paramref name="b"/> or 0 if either <paramref name="a"/> or <paramref name="b"/> is 0</returns>
+            <exception cref="T:System.ArgumentException">If <paramref name="a"/> and <paramref name="b"/> are 0</exception>
+        </member>
+        <member name="M:Fractions.Extensions.MathExt.RemainingDigitsAfterTheDecimalPoint(System.Double)">
+            <summary>
+            Returns <c>true</c> if there are remaining digits after the decimal point.
+            </summary>
+            <param name="remainingDigits">A <see cref="T:System.Double"/> value with possible remaining digits</param>
+            <returns><c>true</c> if <paramref name="remainingDigits"/> has digits after the decimal point</returns>
+        </member>
+        <member name="T:Fractions.Formatter.DefaultFractionFormatProvider">
+            <summary>
+            Default <see cref="M:Fractions.Fraction.ToString"/> formatter.
+            </summary>
+        </member>
+        <member name="F:Fractions.Formatter.DefaultFractionFormatProvider.Instance">
+            <summary>
+            Singleton instance
+            </summary>
+        </member>
+        <member name="T:Fractions.Fraction">
+            <summary>
+            A mathematical fraction. A rational number written as a/b (a is the numerator and b the denominator). 
+            The data type is not capable to store NaN (not a number) or infinite.
+            </summary>
+        </member>
+        <member name="M:Fractions.Fraction.CompareTo(System.Object)">
+            <summary>
+            Compares the calculated value with the supplied <paramref name="other"/>.
+            </summary>
+            <param name="other">Fraction that shall be compared with.</param>
+            <returns>
+            Less than 0 if <paramref name="other"/> is greater.
+            Zero (0) if both calculated values are equal.
+            Greater then zero (0) if <paramref name="other"/> less.</returns>
+            <exception cref="T:System.ArgumentException">If <paramref name="other"/> is not of type <see cref="T:Fractions.Fraction"/>.</exception>
+        </member>
+        <member name="M:Fractions.Fraction.CompareTo(Fractions.Fraction)">
+            <summary>
+            Compares the calculated value with the supplied <paramref name="other"/>.
+            </summary>
+            <param name="other">Fraction that shall be compared with.</param>
+            <returns>
+            Less than 0 if <paramref name="other"/> is greater.
+            Zero (0) if both calculated values are equal.
+            Greater then zero (0) if <paramref name="other"/> less.</returns>
+        </member>
+        <member name="M:Fractions.Fraction.#ctor(System.Numerics.BigInteger,System.Numerics.BigInteger,Fractions.FractionState)">
+            <summary>
+            Create a fraction with <paramref name="numerator"/>, <paramref name="denominator"/> and the fraction' <paramref name="state"/>. 
+            Warning: if you use unreduced values combined with a state of <see cref="F:Fractions.FractionState.IsNormalized"/> 
+            you will get wrong results when working with the fraction value.
+            </summary>
+            <param name="numerator"></param>
+            <param name="denominator"></param>
+            <param name="state"></param>
+        </member>
+        <member name="M:Fractions.Fraction.#ctor(System.Numerics.BigInteger,System.Numerics.BigInteger)">
+            <summary>
+            Creates a normalized (reduced/simplified) fraction using <paramref name="numerator"/> and <paramref name="denominator"/>.
+            </summary>
+            <param name="numerator">Numerator</param>
+            <param name="denominator">Denominator</param>
+        </member>
+        <member name="M:Fractions.Fraction.#ctor(System.Numerics.BigInteger,System.Numerics.BigInteger,System.Boolean)">
+            <summary>
+            Creates a normalized (reduced/simplified) or unnormalized fraction using <paramref name="numerator"/> and <paramref name="denominator"/>.
+            </summary>
+            <param name="numerator">Numerator</param>
+            <param name="denominator">Denominator</param>
+            <param name="normalize">If <c>true</c> the fraction will be created as reduced/simplified fraction. 
+            This is recommended, especially if your applications requires that the results of the equality methods <see cref="M:System.Object.Equals(System.Object)"/> 
+            and <see cref="M:System.IComparable.CompareTo(System.Object)"/> are always the same. (1/2 != 2/4)</param>
+        </member>
+        <member name="M:Fractions.Fraction.#ctor(System.Int32)">
+            <summary>
+            Creates a normalized fraction using a signed 32bit integer.
+            </summary>
+            <param name="numerator">integer value that will be used for the numerator. The denominator will be 1.</param>
+        </member>
+        <member name="M:Fractions.Fraction.#ctor(System.Int64)">
+            <summary>
+            Creates a normalized fraction using a signed 64bit integer.
+            </summary>
+            <param name="numerator">integer value that will be used for the numerator. The denominator will be 1.</param>
+        </member>
+        <member name="M:Fractions.Fraction.#ctor(System.UInt32)">
+            <summary>
+            Creates a normalized fraction using a unsigned 32bit integer.
+            </summary>
+            <param name="numerator">integer value that will be used for the numerator. The denominator will be 1.</param>
+        </member>
+        <member name="M:Fractions.Fraction.#ctor(System.UInt64)">
+            <summary>
+            Creates a normalized fraction using a unsigned 64bit integer.
+            </summary>
+            <param name="numerator">integer value that will be used for the numerator. The denominator will be 1.</param>
+        </member>
+        <member name="M:Fractions.Fraction.#ctor(System.Numerics.BigInteger)">
+            <summary>
+            Creates a normalized fraction using a big integer.
+            </summary>
+            <param name="numerator">big integer value that will be used for the numerator. The denominator will be 1.</param>
+        </member>
+        <member name="M:Fractions.Fraction.#ctor(System.Double)">
+            <summary>
+            Creates a normalized fraction using a 64bit floating point value (double).
+            The value will not be rounded therefore you will probably get huge numbers as numerator und denominator. 
+            <see cref="T:System.Double"/> values are not able to store simple rational numbers like 0.2 or 0.3 - so please 
+            don't be worried if the fraction looks weird. For more information visit 
+            http://en.wikipedia.org/wiki/Floating_point
+            </summary>
+            <param name="value">Floating point value.</param>
+        </member>
+        <member name="M:Fractions.Fraction.#ctor(System.Decimal)">
+            <summary>
+            Creates a normalized fraction using a 128bit decimal value (decimal).
+            </summary>
+            <param name="value">Floating point value.</param>
+        </member>
+        <member name="M:Fractions.Fraction.FromString(System.String)">
+            <summary>
+            Converts a string to a fraction. Example: "3/4" or "4.5" (the decimal separator character is depending on the system culture).
+            If the number contains a decimal separator it will be parsed as <see cref="T:System.Decimal"/>.
+            </summary>
+            <param name="fractionString">A fraction or a (decimal) number. The numerator and denominator must be separated with a '/' (slash) character.</param>
+            <returns>A normalized <see cref="T:Fractions.Fraction"/></returns>
+        </member>
+        <member name="M:Fractions.Fraction.FromString(System.String,System.IFormatProvider)">
+            <summary>
+            Converts a string to a fraction. Example: "3/4" or "4.5" (the decimal separator character depends on <paramref name="formatProvider"/>).
+            If the number contains a decimal separator it will be parsed as <see cref="T:System.Decimal"/>.
+            </summary>
+            <param name="fractionString">A fraction or a (decimal) number. The numerator and denominator must be separated with a '/' (slash) character.</param>
+            <param name="formatProvider">Provides culture specific information that will be used to parse the <paramref name="fractionString"/>.</param>
+            <returns>A normalized <see cref="T:Fractions.Fraction"/></returns>
+        </member>
+        <member name="M:Fractions.Fraction.FromString(System.String,System.Globalization.NumberStyles,System.IFormatProvider)">
+            <summary>
+            Converts a string to a fraction. Example: "3/4" or "4.5" (the decimal separator character depends on <paramref name="formatProvider"/>).
+            If the number contains a decimal separator it will be parsed as <see cref="T:System.Decimal"/>.
+            </summary>
+            <param name="fractionString">A fraction or a (decimal) number. The numerator and denominator must be separated with a '/' (slash) character.</param>
+            <param name="numberStyles">A bitwise combination of number styles that are allowed in <paramref name="fractionString"/>.</param>
+            <param name="formatProvider">Provides culture specific information that will be used to parse the <paramref name="fractionString"/>.</param>
+            <returns>A normalized <see cref="T:Fractions.Fraction"/></returns>
+        </member>
+        <member name="M:Fractions.Fraction.TryParse(System.String,Fractions.Fraction@)">
+            <summary>
+            Try to convert a string to a fraction. Example: "3/4" or "4.5" (the decimal separator character depends on the system's culture).
+            If the number contains a decimal separator it will be parsed as <see cref="T:System.Decimal"/>.
+            </summary>
+            <param name="fractionString">A fraction or a (decimal) number. The numerator and denominator must be separated with a '/' (slash) character.</param>
+            <param name="fraction">A normalized <see cref="T:Fractions.Fraction"/> if the method returns with <c>true</c>. Otherwise the value is invalid.</param>
+            <returns>
+            <para><c>true</c> if <paramref name="fractionString"/> was well formed. The parsing result will be written to <paramref name="fraction"/>. </para>
+            <para><c>false</c> if <paramref name="fractionString"/> was invalid.</para></returns>
+        </member>
+        <member name="M:Fractions.Fraction.TryParse(System.String,System.Globalization.NumberStyles,System.IFormatProvider,Fractions.Fraction@)">
+            <summary>
+            Try to convert a string to a fraction. Example: "3/4" or "4.5" (the decimal separator character depends on <paramref name="formatProvider"/>).
+            If the number contains a decimal separator it will be parsed as <see cref="T:System.Decimal"/>.
+            </summary>
+            <param name="fractionString">A fraction or a (decimal) number. The numerator and denominator must be separated with a '/' (slash) character.</param>
+            <param name="numberStyles">A bitwise combination of number styles that are allowed in <paramref name="fractionString"/>.</param>
+            <param name="formatProvider">Provides culture specific information that will be used to parse the <paramref name="fractionString"/>.</param>
+            <param name="fraction">A normalized <see cref="T:Fractions.Fraction"/> if the method returns with <c>true</c>. Otherwise the value is invalid.</param>
+            <returns>
+            <para><c>true</c> if <paramref name="fractionString"/> was well formed. The parsing result will be written to <paramref name="fraction"/>. </para>
+            <para><c>false</c> if <paramref name="fractionString"/> was invalid.</para>
+            </returns>
+        </member>
+        <member name="M:Fractions.Fraction.TryParse(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.Boolean,Fractions.Fraction@)">
+            <summary>
+            Try to convert a string to a fraction. Example: "3/4" or "4.5" (the decimal separator character depends on <paramref name="formatProvider"/>).
+            If the number contains a decimal separator it will be parsed as <see cref="T:System.Decimal"/>.
+            </summary>
+            <param name="fractionString">A fraction or a (decimal) number. The numerator and denominator must be separated with a '/' (slash) character.</param>
+            <param name="numberStyles">A bitwise combination of number styles that are allowed in <paramref name="fractionString"/>.</param>
+            <param name="formatProvider">Provides culture specific information that will be used to parse the <paramref name="fractionString"/>.</param>
+            <param name="normalize">If <c>true</c> the parsed fraction will be reduced.</param>
+            <param name="fraction">A <see cref="T:Fractions.Fraction"/> if the method returns with <c>true</c>. Otherwise the value is invalid.</param>
+            <returns>
+            <para><c>true</c> if <paramref name="fractionString"/> was well formed. The parsing result will be written to <paramref name="fraction"/>. </para>
+            <para><c>false</c> if <paramref name="fractionString"/> was invalid.</para>
+            </returns>
+        </member>
+        <member name="M:Fractions.Fraction.TryParseSingleNumber(System.String,System.Globalization.NumberStyles,System.IFormatProvider,Fractions.Fraction@)">
+            <summary>
+            Try to convert a single number to a fraction. Example 34 or 4.5 (depending on the supplied culture used in <paramref name="formatProvider"/>)
+            If the number contains a decimal separator it will be parsed as <see cref="T:System.Decimal"/>.
+            </summary>
+            <param name="number">A (decimal) number</param>
+            <param name="numberStyles">A bitwise combination of number styles that are allowed in <paramref name="number"/>.</param>
+            <param name="formatProvider">Provides culture specific information that will be used to parse the <paramref name="number"/>.</param>
+            <param name="fraction">A <see cref="T:Fractions.Fraction"/> if the method returns with <c>true</c>. Otherwise the value is invalid.</param>
+            <returns>
+            <para><c>true</c> if <paramref name="number"/> was well formed. The parsing result will be written to <paramref name="fraction"/>. </para>
+            <para><c>false</c> if <paramref name="number"/> was invalid.</para>
+            </returns>
+        </member>
+        <member name="M:Fractions.Fraction.CannotParse(Fractions.Fraction@)">
+            <summary>
+            Returns false. <paramref name="fraction"/> contains an invalid value.
+            </summary>
+            <param name="fraction">Returns <c>default()</c> of <see cref="T:Fractions.Fraction"/></param>
+            <returns><c>false</c></returns>
+        </member>
+        <member name="M:Fractions.Fraction.FromDouble(System.Double)">
+            <summary>
+            Converts a floating point value to a fraction. The value will not be rounded therefore you will probably 
+            get huge numbers as numerator und denominator. <see cref="T:System.Double"/> values are not able to store simple rational
+            numbers like 0.2 or 0.3 - so please don't be worried if the fraction looks weird. For more information visit 
+            http://en.wikipedia.org/wiki/Floating_point
+            </summary>
+            <param name="value">A floating point value.</param>
+            <returns>A fraction</returns>
+            <exception cref="T:Fractions.InvalidNumberException">If <paramref name="value"/> is NaN (not a number) or infinite.</exception>
+        </member>
+        <member name="M:Fractions.Fraction.FromDoubleRounded(System.Double)">
+            <summary>
+            Converts a floating point value to a fraction. The value will be rounded if possible.
+            </summary>
+            <param name="value">A floating point value.</param>
+            <returns>A fraction</returns>
+            <exception cref="T:Fractions.InvalidNumberException">If <paramref name="value"/> is NaN (not a number) or infinite.</exception>
+        </member>
+        <member name="M:Fractions.Fraction.FromDecimal(System.Decimal)">
+            <summary>
+            Converts a decimal value in a fraction. The value will not be rounded.
+            </summary>
+            <param name="value">A decimal value.</param>
+            <returns>A fraction.</returns>
+        </member>
+        <member name="M:Fractions.Fraction.ToInt32">
+            <summary>
+            Returns the fraction as signed 32bit integer.
+            </summary>
+            <returns>32bit signed integer</returns>
+        </member>
+        <member name="M:Fractions.Fraction.ToInt64">
+            <summary>
+            Returns the fraction as signed 64bit integer.
+            </summary>
+            <returns>64bit signed integer</returns>
+        </member>
+        <member name="M:Fractions.Fraction.ToUInt32">
+            <summary>
+            Returns the fraction as unsigned 32bit integer.
+            </summary>
+            <returns>32bit unsigned integer</returns>
+        </member>
+        <member name="M:Fractions.Fraction.ToUInt64">
+            <summary>
+            Returns the fraction as unsigned 64bit integer.
+            </summary>
+            <returns>64-Bit unsigned integer</returns>
+        </member>
+        <member name="M:Fractions.Fraction.ToBigInteger">
+            <summary>
+            Returns the fraction as BigInteger.
+            </summary>
+            <returns>BigInteger</returns>
+        </member>
+        <member name="M:Fractions.Fraction.ToDecimal">
+            <summary>
+            Returns the fraction as (rounded!) decimal value.
+            </summary>
+            <returns>Decimal value</returns>
+        </member>
+        <member name="M:Fractions.Fraction.ToDouble">
+            <summary>
+            Returns the fraction as (rounded!) floating point value.
+            </summary>
+            <returns>A floating point value</returns>
+        </member>
+        <member name="P:Fractions.Fraction.Numerator">
+            <summary>
+            The numerator.
+            </summary>
+        </member>
+        <member name="P:Fractions.Fraction.Denominator">
+            <summary>
+            The denominator
+            </summary>
+        </member>
+        <member name="P:Fractions.Fraction.IsPositive">
+            <summary>
+            <c>true</c> if the value is positive (greater than or equal to 0).
+            </summary>
+        </member>
+        <member name="P:Fractions.Fraction.IsNegative">
+            <summary>
+            <c>true</c> if the value is negative (lesser than 0).
+            </summary>
+        </member>
+        <member name="P:Fractions.Fraction.IsZero">
+            <summary>
+            <c>true</c> if the fraction has a real (calculated) value of 0.
+            </summary>
+        </member>
+        <member name="P:Fractions.Fraction.State">
+            <summary>
+            The fraction's state.
+            </summary>
+        </member>
+        <member name="P:Fractions.Fraction.Zero">
+            <summary>
+            A fraction with the reduced/simplified value of 0.
+            </summary>
+        </member>
+        <member name="P:Fractions.Fraction.One">
+            <summary>
+            A fraction with the reduced/simplified value of 1.
+            </summary>
+        </member>
+        <member name="P:Fractions.Fraction.Two">
+            <summary>
+            A fraction with the reduced/simplified value of 2.
+            </summary>
+        </member>
+        <member name="P:Fractions.Fraction.MinusOne">
+            <summary>
+            A fraction with the reduced/simplified value of -1.
+            </summary>
+        </member>
+        <member name="M:Fractions.Fraction.IsEquivalentTo(Fractions.Fraction)">
+            <summary>
+            Tests if the calculated value of this fraction equals to the calculated value of <paramref name="other"/>.
+            It does not matter if either of them is not normalized. Both values will be reduced (normalized) before performing 
+            the <see cref="M:System.Object.Equals(System.Object)"/> test.
+            </summary>
+            <param name="other">The fraction to compare with.</param>
+            <returns><c>true</c> if both values are equivalent. (e.g. 2/4 is equivalent to 1/2. But 2/4 is not equivalent to -1/2)</returns>
+        </member>
+        <member name="M:Fractions.Fraction.Equals(Fractions.Fraction)">
+            <summary>
+            <para>Performs an exact comparison with <paramref name="other"/> using numerator and denominator.</para>
+            <para>Warning: 1/2 is NOT equal to 2/4! -1/2 is NOT equal to 1/-2!</para>
+            <para>If you want to test the calculated values for equality use <see cref="M:Fractions.Fraction.CompareTo(Fractions.Fraction)"/> or
+            <see cref="M:Fractions.Fraction.IsEquivalentTo(Fractions.Fraction)"/> </para>
+            </summary>
+            <param name="other">The fraction to compare with.</param>
+            <returns><c>true</c> if numerator and denominator of both fractions are equal.</returns>
+        </member>
+        <member name="M:Fractions.Fraction.Equals(System.Object)">
+            <summary>
+            <para>Performs an exact comparison with <paramref name="other"/> using numerator and denominator.</para>
+            <para>Warning: 1/2 is NOT equal to 2/4! -1/2 is NOT equal to 1/-2!</para>
+            <para>If you want to test the calculated values for equality use <see cref="M:Fractions.Fraction.CompareTo(Fractions.Fraction)"/> or
+            <see cref="M:Fractions.Fraction.IsEquivalentTo(Fractions.Fraction)"/> </para>
+            </summary>
+            <param name="other">The fraction to compare with.</param>
+            <returns><c>true</c> if <paramref name="other"/> is type of <see cref="T:Fractions.Fraction"/> and numerator and denominator of both are equal.</returns>
+        </member>
+        <member name="M:Fractions.Fraction.GetHashCode">
+            <summary>
+            Returns the hash code.
+            </summary>
+            <returns>
+            A 32bit integer with sign. It has been constructed using the <see cref="P:Fractions.Fraction.Numerator"/> and the <see cref="P:Fractions.Fraction.Denominator"/>.
+            </returns>
+            <filterpriority>2</filterpriority>
+        </member>
+        <member name="M:Fractions.Fraction.Remainder(Fractions.Fraction)">
+            <summary>
+            Calculates the remainder of the division with the fraction's value and the supplied <paramref name="divisor"/> (% operator).
+            </summary>
+            <param name="divisor">Divisor</param>
+            <returns>The remainder (left over)</returns>
+        </member>
+        <member name="M:Fractions.Fraction.Add(Fractions.Fraction)">
+            <summary>
+            Adds the fraction's value with <paramref name="summand"/>.
+            </summary>
+            <param name="summand">Summand</param>
+            <returns>The result as summation.</returns>
+        </member>
+        <member name="M:Fractions.Fraction.Subtract(Fractions.Fraction)">
+            <summary>
+            Subtracts the fraction's value (minuend) with <paramref name="subtrahend"/>.
+            </summary>
+            <param name="subtrahend">Subtrahend.</param>
+            <returns>The result as difference.</returns>
+        </member>
+        <member name="M:Fractions.Fraction.Invert">
+            <summary>
+            Inverts the fraction. Has the same result as multiplying it by -1.
+            </summary>
+            <returns>The inverted fraction.</returns>
+        </member>
+        <member name="M:Fractions.Fraction.Multiply(Fractions.Fraction)">
+            <summary>
+            Multiply the fraction's value by <paramref name="factor"/>.
+            </summary>
+            <param name="factor">Factor</param>
+            <returns>The result as product.</returns>
+        </member>
+        <member name="M:Fractions.Fraction.Divide(Fractions.Fraction)">
+            <summary>
+            Divides the fraction's value by <paramref name="divisor"/>.
+            </summary>
+            <param name="divisor">Divisor</param>
+            <returns>The result as quotient.</returns>
+        </member>
+        <member name="M:Fractions.Fraction.Reduce">
+            <summary>
+            Returns this as reduced/simplified fraction. The fraction's sign will be normalized.
+            </summary>
+            <returns>A reduced and normalized fraction.</returns>
+        </member>
+        <member name="M:Fractions.Fraction.Abs">
+            <summary>
+            Gets the absolute value of a <see cref="T:Fractions.Fraction"/> object.
+            </summary>
+            <returns>The absolute value.</returns>
+        </member>
+        <member name="M:Fractions.Fraction.Abs(Fractions.Fraction)">
+            <summary>
+            Gets the absolute value of a <see cref="T:Fractions.Fraction"/> object.
+            </summary>
+            <param name="fraction">The fraction.</param>
+            <returns>The absolute value.</returns>
+        </member>
+        <member name="M:Fractions.Fraction.GetReducedFraction(System.Numerics.BigInteger,System.Numerics.BigInteger)">
+            <summary>
+            Returns a reduced and normalized fraction.
+            </summary>
+            <param name="numerator">Numerator</param>
+            <param name="denominator">Denominator</param>
+            <returns>A reduced and normalized fraction</returns>
+        </member>
+        <member name="M:Fractions.Fraction.Pow(Fractions.Fraction,System.Int32)">
+            <summary>
+            Returns a fraction raised to the specified power.
+            </summary>
+            <param name="base">base to be raised to a power</param>
+            <param name="exponent">A number that specifies a power (exponent)</param>
+            <returns>The fraction <paramref name="base"/> raised to the power <paramref name="exponent"/>.</returns>
+        </member>
+        <member name="M:Fractions.Fraction.Reciprocal">
+            <summary>
+            Returns a fraction with the numerator and denominator exchanged.
+            </summary>
+            <returns>
+            The fraction with the numerator and denominator exchanged.
+            </returns>
+        </member>
+        <member name="M:Fractions.Fraction.Reciprocal(Fractions.Fraction)">
+            <summary>
+            Returns a fraction with the numerator and denominator exchanged.
+            </summary>
+            <param name="fraction">The fraction.</param>
+            <returns>
+            The fraction with the numerator and denominator exchanged.
+            </returns>
+        </member>
+        <member name="M:Fractions.Fraction.ToString">
+            <summary>
+            Returns the fraction as "numerator/denominator" or just "numerator" if the denominator has a value of 1.
+            The returning value is culture invariant (<see cref="T:System.Globalization.CultureInfo" />).
+            </summary>
+            <returns>"numerator/denominator" or just "numerator"</returns>
+        </member>
+        <member name="M:Fractions.Fraction.ToString(System.String)">
+            <summary>
+            Formats the value of the current instance using the specified format.
+            The returning value is culture invariant (<see cref="T:System.Globalization.CultureInfo" />).
+            See <see cref="M:Fractions.Fraction.ToString(System.String,System.IFormatProvider)"/> for all formatting options.
+            </summary>
+            <returns>"numerator/denominator" or just "numerator"</returns>
+        </member>
+        <member name="M:Fractions.Fraction.ToString(System.String,System.IFormatProvider)">
+            <summary>
+            Formats the value of the current instance using the specified format. The numbers are however culture invariant.
+            </summary>
+            <returns>
+            The value of the current instance in the specified format.
+            </returns>
+            <param name="format">The format to use. 
+            <list type="table">
+            <listheader><term>symbol</term><description>description</description></listheader>
+            <item><term>G</term><description>General format: numerator/denominator</description></item>
+            <item><term>n</term><description>Numerator</description></item>
+            <item><term>d</term><description>Denominator</description></item>
+            <item><term>z</term><description>The fraction as integer</description></item>
+            <item><term>r</term><description>The positive remainder of all digits after the decimal point using the format: numerator/denominator or <see cref="F:System.String.Empty"/> if the fraction is a valid integer without digits after the decimal point.</description></item>
+            <item><term>m</term><description>The fraction as mixed number e.g. "2 1/3" instead of "7/3"</description></item>
+            </list>
+            -or- A null reference (Nothing in Visual Basic) to use the default format defined for the type of the <see cref="T:System.IFormattable"/> implementation. </param>
+            <param name="formatProvider">The provider to use to format the value. -or- A null reference (Nothing in Visual Basic) to obtain the numeric format information from the current locale setting of the operating system.</param>
+            <filterpriority>2</filterpriority>
+        </member>
+        <member name="T:Fractions.FractionState">
+            <summary>
+            The fraction's state.
+            </summary>
+        </member>
+        <member name="F:Fractions.FractionState.Unknown">
+            <summary>
+            Unknown state.
+            </summary>
+        </member>
+        <member name="F:Fractions.FractionState.IsNormalized">
+            <summary>
+            A reduced/simplified fraction.
+            </summary>
+        </member>
+        <member name="T:Fractions.InvalidNumberException">
+            <summary>
+            Exception that will be thrown if an argument contains not a number (NaN) or is infinite.
+            </summary>
+        </member>
+        <member name="T:Fractions.Properties.Resources">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:Fractions.Properties.Resources.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:Fractions.Properties.Resources.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="P:Fractions.Properties.Resources.CannotConvertToFraction">
+            <summary>
+              Looks up a localized string similar to The string &apos;{0}&apos; cannot be converted to fraction..
+            </summary>
+        </member>
+        <member name="P:Fractions.Properties.Resources.CompareToArgumentException">
+            <summary>
+              Looks up a localized string similar to The comparing instance must be of type {0}. The supplied argument is of type {1}.
+            </summary>
+        </member>
+        <member name="P:Fractions.Properties.Resources.DivideByZero">
+            <summary>
+              Looks up a localized string similar to {0} shall be divided by zero..
+            </summary>
+        </member>
+        <member name="P:Fractions.Properties.Resources.TypeXnotSupported">
+            <summary>
+              Looks up a localized string similar to The type {0} is not supported..
+            </summary>
+        </member>
+        <member name="T:Fractions.TypeConverters.FractionTypeConverter">
+            <summary>
+            Converts the <see cref="T:Fractions.Fraction"/> from / to various data types.
+            </summary>
+        </member>
+        <member name="M:Fractions.TypeConverters.FractionTypeConverter.CanConvertTo(System.ComponentModel.ITypeDescriptorContext,System.Type)">
+            <summary>
+            Returns whether the type converter can convert an object to the specified type. 
+            </summary>
+            <param name="context">An object that provides a format context.</param>
+            <param name="destinationType">The type you want to convert to.</param>
+            <returns><c>true</c> if this converter can perform the conversion; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="M:Fractions.TypeConverters.FractionTypeConverter.CanConvertFrom(System.ComponentModel.ITypeDescriptorContext,System.Type)">
+            <summary>
+            Returns whether this converter can convert an object of the given type to the type of this converter, using the specified context. 
+            </summary>
+            <param name="context">An <see cref="T:System.ComponentModel.ITypeDescriptorContext"/>that provides a format context. </param>
+            <param name="sourceType">A <see cref="T:System.Type"/> that represents the type you want to convert from. </param>
+            <returns><c>true</c>if this converter can perform the conversion; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="M:Fractions.TypeConverters.FractionTypeConverter.ConvertTo(System.ComponentModel.ITypeDescriptorContext,System.Globalization.CultureInfo,System.Object,System.Type)">
+            <summary>
+            Converts the given value object to the specified type, using the specified context and culture information. 
+            </summary>
+            <param name="context">An <see cref="T:System.ComponentModel.ITypeDescriptorContext" /> that provides a format context.</param>
+            <param name="culture">A CultureInfo. If <c>null</c> is passed, the current culture is assumed.</param>
+            <param name="value">The <see cref="T:System.Object"/> to convert.</param>
+            <param name="destinationType">The <see cref="T:System.Type" />  to convert the value parameter to.</param>
+            <returns>An <see cref="T:System.Object"/> that represents the converted value.</returns>
+        </member>
+        <member name="M:Fractions.TypeConverters.FractionTypeConverter.ConvertFrom(System.ComponentModel.ITypeDescriptorContext,System.Globalization.CultureInfo,System.Object)">
+            <summary>
+            Converts the given object to the type of this converter, using the specified context and culture information.
+            </summary>
+            <param name="context">An <see cref="T:System.ComponentModel.ITypeDescriptorContext"/> that provides a format context.</param>
+            <param name="culture">The <see cref="T:System.Globalization.CultureInfo"/> to use as the current culture.</param>
+            <param name="value">The <see cref="T:System.Object"/> to convert.</param>
+            <returns>An <see cref="T:System.Object"/> that represents the converted value.</returns>
+        </member>
+    </members>
+</doc>

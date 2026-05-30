@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/01/nuspec.xsd">
+  <metadata minClientVersion="2.5">
+    <id>Pegasus</id>
+    <version>4.1.0</version>
+    <authors>John Gietzen</authors>
+    <owners>John Gietzen</owners>
+    <licenseUrl>https://raw.github.com/otac0n/Pegasus/master/license.md</licenseUrl>
+    <projectUrl>https://github.com/otac0n/Pegasus</projectUrl>
+    <iconUrl>https://raw.github.com/otac0n/Pegasus/master/Pegasus.ico</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>A PEG (Parsing Expression Grammar) parser compiler that integrates with MSBuild / Visual Studio.  Features selective packrat parsing and syntax-highlighting output.</description>
+    <copyright>Copyright © 2018 John Gietzen</copyright>
+    <tags>parser generator compiler lexer PEG DSL AST</tags>
+  </metadata>
+</package>

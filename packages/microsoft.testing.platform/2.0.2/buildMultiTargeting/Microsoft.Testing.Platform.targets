@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Project>
+  <PropertyGroup>
+    <!-- This is the knob to disable completely for this project the machinery -->
+    <IsTestingPlatformApplication Condition=" '$(IsTestingPlatformApplication)' == '' ">true</IsTestingPlatformApplication>
+  </PropertyGroup>
+
+  <!-- Declare our capability to Visual Studio/Visual Studio Code -->
+  <!-- Note: DisableTestingPlatformServerCapability or IsTestingPlatformApplication may be set by TestAdapter targets -->
+  <!-- While TestAdapter targets file is imported *after* this file, MSBuild evaluates properties -->
+  <!-- first, then items. So, we will be able to pick up the correct value here. -->
+  <ItemGroup Condition=" '$(DisableTestingPlatformServerCapability)' != 'true' AND '$(IsTestingPlatformApplication)' == 'true' ">
+    <ProjectCapability Include="TestingPlatformServer" />
+
+    <!-- Old capability expected by VS/VSCode -->
+    <ProjectCapability Include="TestContainer" />
+  </ItemGroup>
+
+  <!-- Add assembly attribute metadata for reflection usage -->
+  <ItemGroup>
+    <AssemblyMetadata Include="Microsoft.Testing.Platform.Application" Value="true" Condition=" '$(IsTestingPlatformApplication)' == 'true' " />
+  </ItemGroup>
+
+  <Target Name="_MTPAddArguments" BeforeTargets="ComputeRunArguments">
+    <PropertyGroup>
+      <RunArguments Condition="'(TestingPlatformCommandLineArguments)' != ''">$(RunArguments) $(TestingPlatformCommandLineArguments)</RunArguments>
+    </PropertyGroup>
+  </Target>
+
+</Project>

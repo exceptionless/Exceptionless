@@ -1,0 +1,2051 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Json.More</name>
+    </assembly>
+    <members>
+        <!-- Badly formed XML comment ignored for member "T:Json.More.EnumStringConverter`1" -->
+        <member name="M:Json.More.EnumStringConverter`1.Read(System.Text.Json.Utf8JsonReader@,System.Type,System.Text.Json.JsonSerializerOptions)">
+            <summary>Reads and converts the JSON to type <typeparamref name="T" />.</summary>
+            <param name="reader">The reader.</param>
+            <param name="typeToConvert">The type to convert.</param>
+            <param name="options">An object that specifies serialization options to use.</param>
+            <returns>The converted value.</returns>
+            <exception cref="T:System.Text.Json.JsonException">Element was not a string or could not identify the JSON value as a known enum value.</exception>
+        </member>
+        <member name="M:Json.More.EnumStringConverter`1.ReadAsPropertyName(System.Text.Json.Utf8JsonReader@,System.Type,System.Text.Json.JsonSerializerOptions)">
+            <summary>Reads a dictionary key from a JSON property name.</summary>
+            <param name="reader">The <see cref="T:System.Text.Json.Utf8JsonReader" /> to read from.</param>
+            <param name="typeToConvert">The type to convert.</param>
+            <param name="options">The options to use when reading the value.</param>
+            <returns>The value that was converted.</returns>
+        </member>
+        <member name="M:Json.More.EnumStringConverter`1.Write(System.Text.Json.Utf8JsonWriter,`0,System.Text.Json.JsonSerializerOptions)">
+            <summary>Writes a specified value as JSON.</summary>
+            <param name="writer">The writer to write to.</param>
+            <param name="value">The value to convert to JSON.</param>
+            <param name="options">An object that specifies serialization options to use.</param>
+        </member>
+        <member name="M:Json.More.EnumStringConverter`1.WriteAsPropertyName(System.Text.Json.Utf8JsonWriter,`0,System.Text.Json.JsonSerializerOptions)">
+            <summary>Writes a dictionary key as a JSON property name.</summary>
+            <param name="writer">The <see cref="T:System.Text.Json.Utf8JsonWriter" /> to write to.</param>
+            <param name="value">The value to convert. The value of <see cref="P:System.Text.Json.Serialization.JsonConverter`1.HandleNull" /> determines if the converter handles <see langword="null" /> values.</param>
+            <param name="options">The options to use when writing the value.</param>
+        </member>
+        <member name="T:Json.More.JsonArrayTupleConverter">
+            <summary>
+            Provides JSON serialization for the <see cref="T:System.ValueTuple`1"/> family of types.
+            </summary>
+            <remarks>
+            WARNING: This converter is not AOT-friendly.
+            </remarks>
+        </member>
+        <member name="M:Json.More.JsonArrayTupleConverter.CanConvert(System.Type)">
+            <summary>When overridden in a derived class, determines whether the converter instance can convert the specified object type.</summary>
+            <param name="typeToConvert">The type of the object to check whether it can be converted by this converter instance.</param>
+            <returns>
+            <see langword="true" /> if the instance can convert the specified object type; otherwise, <see langword="false" />.</returns>
+        </member>
+        <member name="M:Json.More.JsonArrayTupleConverter.CreateConverter(System.Type,System.Text.Json.JsonSerializerOptions)">
+            <summary>Creates a converter for a specified type.</summary>
+            <param name="typeToConvert">The type handled by the converter.</param>
+            <param name="options">The serialization options to use.</param>
+            <returns>A converter which is compatible with <paramref name="typeToConvert" />.</returns>
+        </member>
+        <member name="T:Json.More.JsonDocumentEqualityComparer">
+             <summary>
+             Calculates equality between two <see cref="T:System.Text.Json.JsonDocument"/>s.
+             </summary>
+             <remarks>
+             This comparison is compliant with the ideals expressed by JSON:
+            
+             - Objects are unordered.
+             - Arrays are ordered.
+             </remarks>
+        </member>
+        <member name="P:Json.More.JsonDocumentEqualityComparer.Instance">
+            <summary>
+            A singleton instance for convenience.
+            </summary>
+        </member>
+        <member name="M:Json.More.JsonDocumentEqualityComparer.Equals(System.Text.Json.JsonDocument,System.Text.Json.JsonDocument)">
+            <summary>Determines whether the specified objects are equal.</summary>
+            <param name="x">The first object of type T to compare.</param>
+            <param name="y">The second object of type T to compare.</param>
+            <returns>true if the specified objects are equal; otherwise, false.</returns>
+        </member>
+        <member name="M:Json.More.JsonDocumentEqualityComparer.GetHashCode(System.Text.Json.JsonDocument)">
+            <summary>Returns a hash code for the specified object.</summary>
+            <param name="obj">The <see cref="T:System.Object"></see> for which a hash code is to be returned.</param>
+            <returns>A hash code for the specified object.</returns>
+            <exception cref="T:System.ArgumentNullException">The type of <paramref name="obj">obj</paramref> is a reference type and <paramref name="obj">obj</paramref> is null.</exception>
+        </member>
+        <member name="T:Json.More.JsonDocumentExtensions">
+            <summary>
+            Provides extension functionality for <see cref="T:System.Text.Json.JsonDocument"/>.
+            </summary>
+        </member>
+        <member name="M:Json.More.JsonDocumentExtensions.IsEquivalentTo(System.Text.Json.JsonDocument,System.Text.Json.JsonDocument)">
+            <summary>
+            Determines JSON-compatible equivalence.
+            </summary>
+            <param name="a">The first document.</param>
+            <param name="b">The second document.</param>
+            <returns>`true` if the documents are equivalent; `false` otherwise.</returns>
+        </member>
+        <member name="M:Json.More.JsonDocumentExtensions.ToJsonDocument``1(``0,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Converts an object to a <see cref="T:System.Text.Json.JsonDocument"/>.
+            </summary>
+            <typeparam name="T">The type of the object.</typeparam>
+            <param name="value">The value to convert.</param>
+            <param name="options">(optional) JSON serialization options.</param>
+            <returns>A <see cref="T:System.Text.Json.JsonDocument"/> representing the vale.</returns>
+        </member>
+        <member name="T:Json.More.JsonElementEqualityComparer">
+             <summary>
+             Calculates equality between two <see cref="T:System.Text.Json.JsonElement"/>s.
+             </summary>
+             <remarks>
+             This comparison is compliant with the ideals expressed by JSON:
+            
+             - Objects are unordered.
+             - Arrays are ordered.
+             </remarks>
+        </member>
+        <member name="P:Json.More.JsonElementEqualityComparer.Instance">
+            <summary>
+            A singleton instance for convenience.
+            </summary>
+        </member>
+        <member name="M:Json.More.JsonElementEqualityComparer.Equals(System.Text.Json.JsonElement,System.Text.Json.JsonElement)">
+            <summary>Determines whether the specified objects are equal.</summary>
+            <param name="x">The first object of type T to compare.</param>
+            <param name="y">The second object of type T to compare.</param>
+            <returns>true if the specified objects are equal; otherwise, false.</returns>
+        </member>
+        <member name="M:Json.More.JsonElementEqualityComparer.GetHashCode(System.Text.Json.JsonElement)">
+            <summary>Returns a hash code for the specified object.</summary>
+            <param name="obj">The <see cref="T:System.Object"></see> for which a hash code is to be returned.</param>
+            <returns>A hash code for the specified object.</returns>
+            <exception cref="T:System.ArgumentNullException">The type of <paramref name="obj">obj</paramref> is a reference type and <paramref name="obj">obj</paramref> is null.</exception>
+        </member>
+        <member name="T:Json.More.JsonElementExtensions">
+            <summary>
+            Provides extension functionality for <see cref="T:System.Text.Json.JsonElement"/>.
+            </summary>
+        </member>
+        <member name="M:Json.More.JsonElementExtensions.IsEquivalentTo(System.Text.Json.JsonElement,System.Text.Json.JsonElement)">
+            <summary>
+            Determines JSON-compatible equivalence.
+            </summary>
+            <param name="a">The first element.</param>
+            <param name="b">The second element.</param>
+            <returns>`true` if the element are equivalent; `false` otherwise.</returns>
+            <exception cref="T:System.ArgumentOutOfRangeException">The <see cref="P:System.Text.Json.JsonElement.ValueKind"/> is not valid.</exception>
+        </member>
+        <member name="M:Json.More.JsonElementExtensions.GetEquivalenceHashCode(System.Text.Json.JsonElement,System.Int32)">
+             <summary>
+             Generate a consistent JSON-value-based hash code for the element.
+             </summary>
+             <param name="element">The element.</param>
+             <param name="maxHashDepth">Maximum depth to calculate.  Default is -1 which utilizes the entire structure without limitation.</param>
+             <returns>The hash code.</returns>
+             <remarks>
+             See the following for discussion on why the default implementation is insufficient:
+            
+             - https://github.com/json-everything/json-everything/issues/76
+             - https://github.com/dotnet/runtime/issues/33388
+             </remarks>
+        </member>
+        <member name="M:Json.More.JsonElementExtensions.ToJsonString(System.Text.Json.JsonElement)">
+            <summary>
+            Just a shortcut for calling `JsonSerializer.Serialize()` because `.ToString()` doesn't do what you might expect.
+            </summary>
+            <param name="element">The value to convert.</param>
+            <returns>A JSON string.</returns>
+            <remarks>
+            See https://github.com/dotnet/runtime/issues/42502
+            </remarks>
+        </member>
+        <member name="M:Json.More.JsonElementExtensions.AsJsonElement(System.Int64)">
+            <summary>
+            Converts a <see cref="T:System.Int64"/> to a <see cref="T:System.Text.Json.JsonElement"/>.
+            </summary>
+            <param name="value">The value to convert.</param>
+            <returns>A <see cref="T:System.Text.Json.JsonElement"/> representing the value.</returns>
+            <remarks>This is a workaround for lack of native support in the System.Text.Json namespace.</remarks>
+        </member>
+        <member name="M:Json.More.JsonElementExtensions.AsJsonElement(System.Int32)">
+            <summary>
+            Converts a <see cref="T:System.Int32"/> to a <see cref="T:System.Text.Json.JsonElement"/>.
+            </summary>
+            <param name="value">The value to convert.</param>
+            <returns>A <see cref="T:System.Text.Json.JsonElement"/> representing the value.</returns>
+            <remarks>This is a workaround for lack of native support in the System.Text.Json namespace.</remarks>
+        </member>
+        <member name="M:Json.More.JsonElementExtensions.AsJsonElement(System.Int16)">
+            <summary>
+            Converts a <see cref="T:System.Int16"/> to a <see cref="T:System.Text.Json.JsonElement"/>.
+            </summary>
+            <param name="value">The value to convert.</param>
+            <returns>A <see cref="T:System.Text.Json.JsonElement"/> representing the value.</returns>
+            <remarks>This is a workaround for lack of native support in the System.Text.Json namespace.</remarks>
+        </member>
+        <member name="M:Json.More.JsonElementExtensions.AsJsonElement(System.Boolean)">
+            <summary>
+            Converts a <see cref="T:System.Boolean"/> to a <see cref="T:System.Text.Json.JsonElement"/>.
+            </summary>
+            <param name="value">The value to convert.</param>
+            <returns>A <see cref="T:System.Text.Json.JsonElement"/> representing the value.</returns>
+            <remarks>This is a workaround for lack of native support in the System.Text.Json namespace.</remarks>
+        </member>
+        <member name="M:Json.More.JsonElementExtensions.AsJsonElement(System.Decimal)">
+            <summary>
+            Converts a <see cref="T:System.Int64"/> to a <see cref="T:System.Text.Json.JsonElement"/>.
+            </summary>
+            <param name="value">The value to convert.</param>
+            <returns>A <see cref="T:System.Text.Json.JsonElement"/> representing the value.</returns>
+            <remarks>This is a workaround for lack of native support in the System.Text.Json namespace.</remarks>
+        </member>
+        <member name="M:Json.More.JsonElementExtensions.AsJsonElement(System.Double)">
+            <summary>
+            Converts a <see cref="T:System.Double"/> to a <see cref="T:System.Text.Json.JsonElement"/>.
+            </summary>
+            <param name="value">The value to convert.</param>
+            <returns>A <see cref="T:System.Text.Json.JsonElement"/> representing the value.</returns>
+            <remarks>This is a workaround for lack of native support in the System.Text.Json namespace.</remarks>
+        </member>
+        <member name="M:Json.More.JsonElementExtensions.AsJsonElement(System.Single)">
+            <summary>
+            Converts a <see cref="T:System.Single"/> to a <see cref="T:System.Text.Json.JsonElement"/>.
+            </summary>
+            <param name="value">The value to convert.</param>
+            <returns>A <see cref="T:System.Text.Json.JsonElement"/> representing the value.</returns>
+            <remarks>This is a workaround for lack of native support in the System.Text.Json namespace.</remarks>
+        </member>
+        <member name="M:Json.More.JsonElementExtensions.AsJsonElement(System.String)">
+            <summary>
+            Converts a <see cref="T:System.String"/> to a <see cref="T:System.Text.Json.JsonElement"/>.  Can also be used to get a `null` element.
+            </summary>
+            <param name="value">The value to convert.</param>
+            <returns>A <see cref="T:System.Text.Json.JsonElement"/> representing the value.</returns>
+            <remarks>This is a workaround for lack of native support in the System.Text.Json namespace.</remarks>
+        </member>
+        <member name="M:Json.More.JsonElementExtensions.AsJsonElement(System.Collections.Generic.IEnumerable{System.Text.Json.JsonElement})">
+            <summary>
+            Converts a <see cref="T:System.Int64"/> to a <see cref="T:System.Text.Json.JsonElement"/>.
+            </summary>
+            <param name="values">The array of values to convert.</param>
+            <returns>A <see cref="T:System.Text.Json.JsonElement"/> representing the value.</returns>
+            <remarks>This is a workaround for lack of native support in the System.Text.Json namespace.</remarks>
+        </member>
+        <member name="M:Json.More.JsonElementExtensions.AsJsonElement(System.Collections.Generic.IDictionary{System.String,System.Text.Json.JsonElement})">
+            <summary>
+            Converts a <see cref="T:System.Int64"/> to a <see cref="T:System.Text.Json.JsonElement"/>.
+            </summary>
+            <param name="values">The value to convert.</param>
+            <returns>A <see cref="T:System.Text.Json.JsonElement"/> representing the value.</returns>
+            <remarks>This is a workaround for lack of native support in the System.Text.Json namespace.</remarks>
+        </member>
+        <member name="M:Json.More.JsonElementExtensions.AsNode(System.Text.Json.JsonElement)">
+            <summary>
+            Converts a <see cref="T:System.Text.Json.JsonElement"/> to a <see cref="T:System.Text.Json.Nodes.JsonNode"/>.
+            </summary>
+            <param name="element">The element.</param>
+            <returns>An equivalent node.</returns>
+            <remarks>
+            This provides a single point of conversion as one is not provided by .Net.
+            See https://github.com/dotnet/runtime/issues/70427 for more information.
+            </remarks>
+        </member>
+        <member name="P:Json.More.MoreSerializerContext.JsonElement">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Json.More.MoreSerializerContext.String">
+            <summary>
+            Defines the source generated JSON serialization contract metadata for a given type.
+            </summary>
+        </member>
+        <member name="P:Json.More.MoreSerializerContext.Default">
+            <summary>
+            The default <see cref="T:System.Text.Json.Serialization.JsonSerializerContext"/> associated with a default <see cref="T:System.Text.Json.JsonSerializerOptions"/> instance.
+            </summary>
+        </member>
+        <member name="P:Json.More.MoreSerializerContext.GeneratedSerializerOptions">
+            <summary>
+            The source-generated options associated with this context.
+            </summary>
+        </member>
+        <member name="M:Json.More.MoreSerializerContext.#ctor">
+            <inheritdoc/>
+        </member>
+        <member name="M:Json.More.MoreSerializerContext.#ctor(System.Text.Json.JsonSerializerOptions)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Json.More.MoreSerializerContext.GetTypeInfo(System.Type)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Json.More.JsonElementProxy">
+            <summary>
+            Acts as an intermediary that allows an "implicit casting"-like behavior between
+            native JSON types and <see cref="T:System.Text.Json.JsonElement"/>.
+            </summary>
+        </member>
+        <member name="M:Json.More.JsonElementProxy.op_Implicit(System.Int32)~Json.More.JsonElementProxy">
+            <summary>
+            Converts an `int` to a <see cref="T:Json.More.JsonElementProxy"/>.
+            </summary>
+            <param name="value">The value.</param>
+        </member>
+        <member name="M:Json.More.JsonElementProxy.op_Implicit(System.Int64)~Json.More.JsonElementProxy">
+            <summary>
+            Converts an `long` to a <see cref="T:Json.More.JsonElementProxy"/>.
+            </summary>
+            <param name="value">The value.</param>
+        </member>
+        <member name="M:Json.More.JsonElementProxy.op_Implicit(System.Int16)~Json.More.JsonElementProxy">
+            <summary>
+            Converts an `short` to a <see cref="T:Json.More.JsonElementProxy"/>.
+            </summary>
+            <param name="value">The value.</param>
+        </member>
+        <member name="M:Json.More.JsonElementProxy.op_Implicit(System.Single)~Json.More.JsonElementProxy">
+            <summary>
+            Converts an `float` to a <see cref="T:Json.More.JsonElementProxy"/>.
+            </summary>
+            <param name="value">The value.</param>
+        </member>
+        <member name="M:Json.More.JsonElementProxy.op_Implicit(System.Double)~Json.More.JsonElementProxy">
+            <summary>
+            Converts an `double` to a <see cref="T:Json.More.JsonElementProxy"/>.
+            </summary>
+            <param name="value">The value.</param>
+        </member>
+        <member name="M:Json.More.JsonElementProxy.op_Implicit(System.Decimal)~Json.More.JsonElementProxy">
+            <summary>
+            Converts an `decimal` to a <see cref="T:Json.More.JsonElementProxy"/>.
+            </summary>
+            <param name="value">The value.</param>
+        </member>
+        <member name="M:Json.More.JsonElementProxy.op_Implicit(System.String)~Json.More.JsonElementProxy">
+            <summary>
+            Converts an `string` to a <see cref="T:Json.More.JsonElementProxy"/>.
+            </summary>
+            <param name="value">The value.</param>
+        </member>
+        <member name="M:Json.More.JsonElementProxy.op_Implicit(System.Boolean)~Json.More.JsonElementProxy">
+            <summary>
+            Converts an `bool` to a <see cref="T:Json.More.JsonElementProxy"/>.
+            </summary>
+            <param name="value">The value.</param>
+        </member>
+        <member name="M:Json.More.JsonElementProxy.op_Implicit(Json.More.JsonElementProxy)~System.Text.Json.JsonElement">
+            <summary>
+            Converts a <see cref="T:Json.More.JsonElementProxy"/> to a <see cref="T:System.Text.Json.JsonElement"/>.
+            </summary>
+            <param name="proxy">The proxy.</param>
+        </member>
+        <member name="T:Json.More.JsonNodeEqualityComparer">
+             <summary>
+             Calculates equality between two <see cref="T:System.Text.Json.JsonElement"/>s.
+             </summary>
+             <remarks>
+             This comparison is compliant with the ideals expressed by JSON:
+            
+             - Objects are unordered.
+             - Arrays are ordered.
+             </remarks>
+        </member>
+        <member name="P:Json.More.JsonNodeEqualityComparer.Instance">
+            <summary>
+            A singleton instance for convenience.
+            </summary>
+        </member>
+        <member name="M:Json.More.JsonNodeEqualityComparer.Equals(System.Text.Json.Nodes.JsonNode,System.Text.Json.Nodes.JsonNode)">
+            <summary>Determines whether the specified objects are equal.</summary>
+            <param name="x">The first object of type T to compare.</param>
+            <param name="y">The second object of type T to compare.</param>
+            <returns>true if the specified objects are equal; otherwise, false.</returns>
+        </member>
+        <member name="M:Json.More.JsonNodeEqualityComparer.GetHashCode(System.Text.Json.Nodes.JsonNode)">
+            <summary>Returns a hash code for the specified object.</summary>
+            <param name="obj">The <see cref="T:System.Object"></see> for which a hash code is to be returned.</param>
+            <returns>A hash code for the specified object.</returns>
+            <exception cref="T:System.ArgumentNullException">The type of <paramref name="obj">obj</paramref> is a reference type and <paramref name="obj">obj</paramref> is null.</exception>
+        </member>
+        <member name="T:Json.More.JsonNodeExtensions">
+            <summary>
+            Provides extension functionality for <see cref="T:System.Text.Json.Nodes.JsonNode"/>.
+            </summary>
+        </member>
+        <member name="M:Json.More.JsonNodeExtensions.IsEquivalentTo(System.Text.Json.Nodes.JsonNode,System.Text.Json.Nodes.JsonNode)">
+            <summary>
+            Determines JSON-compatible equivalence.
+            </summary>
+            <param name="a">The first element.</param>
+            <param name="b">The second element.</param>
+            <returns>`true` if the element are equivalent; `false` otherwise.</returns>
+            <remarks>
+            <see cref="M:System.Text.Json.Nodes.JsonNode.DeepEquals(System.Text.Json.Nodes.JsonNode,System.Text.Json.Nodes.JsonNode)"/> has trouble testing numeric
+            equality when `decimal` is involved.  As such, it is still advised to use this
+            method instead.  See https://github.com/dotnet/runtime/issues/97490.
+            </remarks>
+        </member>
+        <member name="M:Json.More.JsonNodeExtensions.GetEquivalenceHashCode(System.Text.Json.Nodes.JsonNode,System.Int32)">
+             <summary>
+             Generate a consistent JSON-value-based hash code for the element.
+             </summary>
+             <param name="node">The element.</param>
+             <param name="maxHashDepth">Maximum depth to calculate.  Default is -1 which utilizes the entire structure without limitation.</param>
+             <returns>The hash code.</returns>
+             <remarks>
+             See the following for discussion on why the default implementation is insufficient:
+            
+             - https://github.com/json-everything/json-everything/issues/76
+             - https://github.com/dotnet/runtime/issues/33388
+             </remarks>
+        </member>
+        <member name="M:Json.More.JsonNodeExtensions.AsJsonString(System.Text.Json.Nodes.JsonNode,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Gets JSON string representation for <see cref="T:System.Text.Json.Nodes.JsonNode"/>, including null support.
+            </summary>
+            <param name="node">A node.</param>
+            <param name="options">Serializer options</param>
+            <returns>JSON string representation.</returns>
+        </member>
+        <member name="M:Json.More.JsonNodeExtensions.GetNumber(System.Text.Json.Nodes.JsonValue)">
+            <summary>
+            Gets a node's underlying numeric value.
+            </summary>
+            <param name="value">A JSON value.</param>
+            <returns>Gets the underlying numeric value, or null if the node represented a non-numeric value.</returns>
+        </member>
+        <member name="M:Json.More.JsonNodeExtensions.GetInteger(System.Text.Json.Nodes.JsonValue)">
+            <summary>
+            Gets a node's underlying numeric value if it's an integer.
+            </summary>
+            <param name="value">A JSON value.</param>
+            <returns>Gets the underlying numeric value if it's an integer, or null if the node represented a non-integer value.</returns>
+        </member>
+        <member name="M:Json.More.JsonNodeExtensions.GetString(System.Text.Json.Nodes.JsonValue)">
+            <summary>
+            Gets a node's underlying string value.
+            </summary>
+            <param name="value">A JSON value.</param>
+            <returns>Gets the underlying string value, or null.</returns>
+            <remarks>
+            JsonNode may use a <see cref="T:System.Text.Json.JsonElement"/> under the hood which subsequently contains a string.
+            This means that `JsonNode.GetValue&lt;string&gt;()` will not work as expected.
+            </remarks>
+        </member>
+        <member name="M:Json.More.JsonNodeExtensions.GetBool(System.Text.Json.Nodes.JsonValue)">
+            <summary>
+            Gets a node's underlying boolean value.
+            </summary>
+            <param name="value">A JSON value.</param>
+            <returns>Gets the underlying boolean value, or null.</returns>
+            <remarks>
+            JsonNode may use a <see cref="T:System.Text.Json.JsonElement"/> under the hood which subsequently contains a boolean.
+            This means that `JsonNode.GetValue&lt;bool&gt;()` will not work as expected.
+            </remarks>
+        </member>
+        <member name="M:Json.More.JsonNodeExtensions.TryGetValue(System.Text.Json.Nodes.JsonObject,System.String,System.Text.Json.Nodes.JsonNode@,System.Exception@)">
+            <summary>
+            Convenience method that wraps <see cref="M:System.Text.Json.Nodes.JsonObject.TryGetPropertyValue(System.String,System.Text.Json.Nodes.JsonNode@)"/>
+            and catches argument exceptions.
+            </summary>
+            <param name="obj">The JSON object.</param>
+            <param name="propertyName">The property name</param>
+            <param name="node">The node under the property name if it exists and is singular; null otherwise.</param>
+            <param name="e">An exception if one was thrown during the access attempt.</param>
+            <returns>true if the property exists and is singular within the JSON data.</returns>
+            <remarks>
+            <see cref="M:System.Text.Json.Nodes.JsonObject.TryGetPropertyValue(System.String,System.Text.Json.Nodes.JsonNode@)"/> throws an
+            <see cref="T:System.ArgumentException"/> if the node was parsed from data that has duplicate
+            keys.  Please see https://github.com/dotnet/runtime/issues/70604 for more information.
+            </remarks>
+        </member>
+        <member name="M:Json.More.JsonNodeExtensions.ToJsonArray(System.Collections.Generic.IEnumerable{System.Text.Json.Nodes.JsonNode})">
+            <summary>
+            Creates a new <see cref="T:System.Text.Json.Nodes.JsonArray"/> by copying from an enumerable of nodes.
+            </summary>
+            <param name="nodes">The nodes.</param>
+            <returns>A JSON array.</returns>
+            <remarks>
+            `JsonNode` may only be part of a single JSON tree, i.e. have a single parent.
+            Copying a node allows its value to be saved to another JSON tree.
+            </remarks>
+        </member>
+        <member name="M:Json.More.JsonNodeExtensions.GetPathFromRoot(System.Text.Json.Nodes.JsonNode,System.Boolean)">
+             <summary>
+             Gets a JSON Path string that indicates the node's location within
+             its JSON structure.
+             </summary>
+             <param name="node">The node to find.</param>
+             <param name="useShorthand">Determines whether shorthand syntax is used when possible, e.g. `$.foo`.</param>
+             <exception cref="T:System.ArgumentNullException">Null nodes cannot be located as the parent cannot be determined.</exception>
+             <returns>
+            	A string containing a JSON Path.
+             </returns>
+        </member>
+        <member name="M:Json.More.JsonNodeExtensions.GetPointerFromRoot(System.Text.Json.Nodes.JsonNode)">
+             <summary>
+             Gets a JSON Pointer string that indicates the node's location within
+             its JSON structure.
+             </summary>
+             <param name="node">The node to find.</param>
+             <exception cref="T:System.ArgumentNullException">Null nodes cannot be located as the parent cannot be determined.</exception>
+             <returns>
+            	A string containing a JSON Pointer.
+             </returns>
+        </member>
+        <member name="T:Json.More.JsonSerializerOptionsExtensions">
+            <summary>
+            Provides extension functionality for <see cref="T:System.Text.Json.JsonSerializerOptions"/>.
+            </summary>
+            <remarks>
+            Most (if not all) of these extension methods are workarounds for
+            https://github.com/dotnet/runtime/issues/50205.
+            </remarks>
+        </member>
+        <member name="M:Json.More.JsonSerializerOptionsExtensions.GetConverter``1(System.Text.Json.JsonSerializerOptions,System.Text.Json.Serialization.Metadata.JsonTypeInfo)">
+            <summary>
+            Returns the converter for the specified type.
+            </summary>
+            <typeparam name="T">The <see cref="T:System.Type"/> to convert.</typeparam>
+            <param name="options">The <see cref="T:System.Text.Json.JsonSerializerOptions"/> being used.</param>
+            <param name="typeInfo">An explicit typeInfo to use for looking up the Converter. If not provided, options.GetTypeInfo will be used.</param>
+            <returns>An implementation of <see cref="T:System.Text.Json.Serialization.JsonConverter`1"/> as determined by the provided options</returns>
+        </member>
+        <member name="M:Json.More.JsonSerializerOptionsExtensions.Read``1(System.Text.Json.JsonSerializerOptions,System.Text.Json.Utf8JsonReader@,System.Text.Json.Serialization.Metadata.JsonTypeInfo{``0})">
+            <summary>
+            Read and convert the JSON to T.
+            </summary>
+            <remarks>
+            A converter may throw any Exception, but should throw <cref>JsonException</cref> when the JSON is invalid.
+            </remarks>
+            <typeparam name="T">The <see cref="T:System.Type"/> to convert.</typeparam>
+            <param name="options">The <see cref="T:System.Text.Json.JsonSerializerOptions"/> being used.</param>
+            <param name="reader">The <see cref="T:System.Text.Json.Utf8JsonReader"/> to read from.</param>
+            <param name="typeInfo">An explicit typeInfo to use for looking up the Converter. If not provided, options.GetTypeInfo will be used.</param>
+            <returns>The value that was converted.</returns>
+        </member>
+        <member name="M:Json.More.JsonSerializerOptionsExtensions.Write``1(System.Text.Json.JsonSerializerOptions,System.Text.Json.Utf8JsonWriter,``0,System.Text.Json.Serialization.Metadata.JsonTypeInfo{``0})">
+            <summary>
+            Write a T to JSON.
+            </summary>
+            <remarks>
+            A converter may throw any Exception, but should throw <cref>JsonException</cref> when the JSON is invalid.
+            </remarks>
+            <typeparam name="T">The <see cref="T:System.Type"/> to convert.</typeparam>
+            <param name="options">The <see cref="T:System.Text.Json.JsonSerializerOptions"/> being used.</param>
+            <param name="writer">The <see cref="T:System.Text.Json.Utf8JsonReader"/> to read from.</param>
+            <param name="value">The value to serialize.</param>
+            <param name="typeInfo">An explicit typeInfo to use for looking up the Converter. If not provided, options.GetTypeInfo will be used.</param>
+            <returns>The value that was converted.</returns>
+        </member>
+        <member name="M:Json.More.JsonSerializerOptionsExtensions.ReadList``1(System.Text.Json.JsonSerializerOptions,System.Text.Json.Utf8JsonReader@,System.Text.Json.Serialization.Metadata.JsonTypeInfo{``0})">
+            <summary>
+            Read and convert the JSON to multiple T.
+            </summary>
+            <remarks>
+            A converter may throw any Exception, but should throw <cref>JsonException</cref> when the JSON is invalid.
+            </remarks>
+            <typeparam name="T">The <see cref="T:System.Type"/> to convert.</typeparam>
+            <param name="options">The <see cref="T:System.Text.Json.JsonSerializerOptions"/> being used.</param>
+            <param name="reader">The <see cref="T:System.Text.Json.Utf8JsonReader"/> to read from.</param>
+            <param name="typeInfo">An explicit typeInfo to use for looking up the Converter. If not provided, options.GetTypeInfo will be used.</param>
+            <returns>The value that was converted.</returns>
+        </member>
+        <member name="M:Json.More.JsonSerializerOptionsExtensions.ReadArray``1(System.Text.Json.JsonSerializerOptions,System.Text.Json.Utf8JsonReader@,System.Text.Json.Serialization.Metadata.JsonTypeInfo{``0})">
+            <summary>
+            Read and convert the JSON to multiple T.
+            </summary>
+            <remarks>
+            A converter may throw any Exception, but should throw <cref>JsonException</cref> when the JSON is invalid.
+            </remarks>
+            <typeparam name="T">The <see cref="T:System.Type"/> to convert.</typeparam>
+            <param name="options">The <see cref="T:System.Text.Json.JsonSerializerOptions"/> being used.</param>
+            <param name="reader">The <see cref="T:System.Text.Json.Utf8JsonReader"/> to read from.</param>
+            <param name="typeInfo">An explicit typeInfo to use for looking up the Converter. If not provided, options.GetTypeInfo will be used.</param>
+            <returns>The value that was converted.</returns>
+        </member>
+        <member name="M:Json.More.JsonSerializerOptionsExtensions.WriteList``1(System.Text.Json.JsonSerializerOptions,System.Text.Json.Utf8JsonWriter,System.Collections.Generic.IEnumerable{``0},System.Text.Json.Serialization.Metadata.JsonTypeInfo{``0})">
+            <summary>
+            Convert and write multiple T to JSON
+            </summary>
+            <typeparam name="T">The <see cref="T:System.Type"/> to convert.</typeparam>
+            <param name="options">The <see cref="T:System.Text.Json.JsonSerializerOptions"/> being used.</param>
+            <param name="writer">The <see cref="T:System.Text.Json.Utf8JsonWriter"/> to write to.</param>
+            <param name="values">The collection of values to convert.</param>
+            <param name="typeInfo">An explicit typeInfo to use for looking up the Converter. If not provided, options.GetTypeInfo will be used.</param>
+        </member>
+        <member name="M:Json.More.JsonSerializerOptionsExtensions.ReadDictionary``1(System.Text.Json.JsonSerializerOptions,System.Text.Json.Utf8JsonReader@,System.Text.Json.Serialization.Metadata.JsonTypeInfo{``0})">
+            <summary>
+            Read and convert string/T dictionary to JSON
+            </summary>
+            <typeparam name="T">The <see cref="T:System.Type"/> to convert.</typeparam>
+            <param name="options">The <see cref="T:System.Text.Json.JsonSerializerOptions"/> being used.</param>
+            <param name="reader">The <see cref="T:System.Text.Json.Utf8JsonReader"/> to read from.</param>
+            <param name="valueTypeInfo">An explicit typeInfo to use for looking up the Converter. If not provided, options.GetTypeInfo will be used.</param>
+            <returns>The value that was converted.</returns>
+            <exception cref="T:System.Text.Json.JsonException">The JSON is not valid for this type.</exception>
+        </member>
+        <member name="M:Json.More.JsonSerializerOptionsExtensions.ReadDictionaryList``1(System.Text.Json.JsonSerializerOptions,System.Text.Json.Utf8JsonReader@,System.Text.Json.Serialization.Metadata.JsonTypeInfo{``0})">
+            <summary>
+            Read and convert string/list-T dictionary to JSON
+            </summary>
+            <typeparam name="T">The <see cref="T:System.Type"/> to convert.</typeparam>
+            <param name="options">The <see cref="T:System.Text.Json.JsonSerializerOptions"/> being used.</param>
+            <param name="reader">The <see cref="T:System.Text.Json.Utf8JsonReader"/> to read from.</param>
+            <param name="valueTypeInfo">An explicit typeInfo to use for looking up the Converter. If not provided, options.GetTypeInfo will be used.</param>
+            <returns>The value that was converted.</returns>
+            <exception cref="T:System.Text.Json.JsonException"></exception>
+        </member>
+        <member name="M:Json.More.JsonSerializerOptionsExtensions.WriteDictionary``1(System.Text.Json.JsonSerializerOptions,System.Text.Json.Utf8JsonWriter,System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,``0}},System.Text.Json.Serialization.Metadata.JsonTypeInfo{``0})">
+            <summary>
+            Convert and write string/T dictionary to JSON
+            </summary>
+            <typeparam name="T">The <see cref="T:System.Type"/> to convert.</typeparam>
+            <param name="options">The <see cref="T:System.Text.Json.JsonSerializerOptions"/> being used.</param>
+            <param name="writer">The <see cref="T:System.Text.Json.Utf8JsonWriter"/> to write to.</param>
+            <param name="values">The collection of values to convert.</param>
+            <param name="valueTypeInfo">An explicit typeInfo to use for looking up the Converter. If not provided, options.GetTypeInfo will be used.</param>
+        </member>
+        <member name="M:Json.More.JsonSerializerOptionsExtensions.WriteDictionaryList``1(System.Text.Json.JsonSerializerOptions,System.Text.Json.Utf8JsonWriter,System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,System.Collections.Generic.IReadOnlyList{``0}}},System.Text.Json.Serialization.Metadata.JsonTypeInfo{``0})">
+            <summary>
+            Convert and write string/list-T dictionary to JSON
+            </summary>
+            <typeparam name="T">The <see cref="T:System.Type"/> to convert.</typeparam>
+            <param name="options">The <see cref="T:System.Text.Json.JsonSerializerOptions"/> being used.</param>
+            <param name="writer">The <see cref="T:System.Text.Json.Utf8JsonWriter"/> to write to.</param>
+            <param name="values">The collection of values to convert.</param>
+            <param name="valueTypeInfo">An explicit typeInfo to use for looking up the Converter. If not provided, options.GetTypeInfo will be used.</param>
+        </member>
+        <member name="M:Json.More.JsonSerializerOptionsExtensions.Write(System.Text.Json.JsonSerializerOptions,System.Text.Json.Utf8JsonWriter,System.Object,System.Type)">
+            <summary>
+            Write an object to JSON. If the type is known, prefer Write<![CDATA[<T>]]>
+            </summary>
+            <remarks>
+            A converter may throw any Exception, but should throw <cref>JsonException</cref> when the JSON is invalid.
+            </remarks>
+            <param name="options">The <see cref="T:System.Text.Json.JsonSerializerOptions"/> being used.</param>
+            <param name="writer">The <see cref="T:System.Text.Json.Utf8JsonReader"/> to read from.</param>
+            <param name="value">The value to serialize.</param>
+            <param name="inputType">The type to serialize.</param>
+            <returns>The value that was converted.</returns>
+        </member>
+        <member name="T:Json.More.TypeExtensions">
+            <summary>
+            Provides informative methods for types.
+            </summary>
+        </member>
+        <member name="M:Json.More.TypeExtensions.IsInteger(System.Type)">
+            <summary>
+            Determines whether the type is considered an integer.
+            </summary>
+            <param name="type">The type.</param>
+            <returns>true if it represents an integer; false otherwise.</returns>
+        </member>
+        <member name="M:Json.More.TypeExtensions.IsFloatingPoint(System.Type)">
+            <summary>
+            Determines whether the type is a non-integer floating point number.
+            </summary>
+            <param name="type">The type.</param>
+            <returns>true if it represents a floating-point number; false otherwise.</returns>
+        </member>
+        <member name="M:Json.More.TypeExtensions.IsNumber(System.Type)">
+            <summary>
+            Determines whether the type is a number.
+            </summary>
+            <param name="type">The type.</param>
+            <returns>true if it represents a number; false otherwise.</returns>
+        </member>
+        <member name="T:Json.More.Utf8JsonWriterExtensions">
+            <summary>
+            Provides extension functionality for <see cref="T:System.Text.Json.Utf8JsonWriter"/>.
+            </summary>
+        </member>
+        <member name="M:Json.More.Utf8JsonWriterExtensions.WriteValue(System.Text.Json.Utf8JsonWriter,System.Text.Json.JsonElement)">
+            <summary>
+            Writes a <see cref="T:System.Text.Json.JsonElement"/> to the stream.
+            </summary>
+            <param name="writer">The JSON stream writer.</param>
+            <param name="element">The element to write.</param>
+            <exception cref="T:System.ArgumentOutOfRangeException">The <see cref="P:System.Text.Json.JsonElement.ValueKind"/> is not valid.</exception>
+        </member>
+        <member name="T:Json.More.IWeaklyTypedJsonConverter">
+            <summary>
+            Interface to enable JsonConverter implementations to call other JsonConverter's Read methods
+            without statically being aware of their type parameters.
+            </summary>
+        </member>
+        <member name="M:Json.More.IWeaklyTypedJsonConverter.Read(System.Text.Json.Utf8JsonReader@,System.Type,System.Text.Json.JsonSerializerOptions)">
+            <summary>Reads and converts the JSON to object?.</summary>
+            <param name="reader">The reader.</param>
+            <param name="typeToConvert">The type to convert.</param>
+            <param name="options">An object that specifies serialization options to use.</param>
+            <returns>The converted value.</returns>
+        </member>
+        <member name="M:Json.More.IWeaklyTypedJsonConverter.Write(System.Text.Json.Utf8JsonWriter,System.Object,System.Text.Json.JsonSerializerOptions,System.Text.Json.Serialization.Metadata.JsonTypeInfo)">
+            <summary>Writes a specified value as JSON.</summary>
+            <param name="writer">The writer to write to.</param>
+            <param name="value">The value to convert to JSON.</param>
+            <param name="options">An object that specifies serialization options to use.</param>
+            <param name="typeInfo">The <see cref="T:System.Text.Json.Serialization.Metadata.JsonTypeInfo"/> for the value being serialized.</param>
+        </member>
+        <member name="T:Json.More.WeaklyTypedJsonConverter`1">
+            <summary>
+            Abstract base class of JsonConverter<typeparamref name="T"/> that helps external code call 
+            a JsonConverter<typeparamref name="T"/> without statically knowing about T.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.AllowNullAttribute">
+            <summary>
+            Specifies that null is allowed as an input even if the corresponding type disallows it.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute">
+            <summary>
+            Indicates that the specified method parameter expects a constant.
+            </summary>
+            <remarks>
+            This can be used to inform tooling that a constant should be used as an argument for the annotated parameter.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute.Min">
+            <summary>
+            Indicates the minimum bound of the expected constant, inclusive.
+            </summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute.Max">
+            <summary>
+            Indicates the maximum bound of the expected constant, inclusive.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DisallowNullAttribute">
+            <summary>
+            Specifies that null is disallowed as an input even if the corresponding type allows it.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute">
+            <summary>
+            Applied to a method that will never return under any circumstance.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute">
+            <summary>
+            Specifies that the method will not return if the associated Boolean parameter is passed the specified value.
+            </summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.#ctor(System.Boolean)">
+            <summary>
+            Initializes the attribute with the specified parameter value.
+            </summary>
+            <param name="parameterValue">
+            The condition parameter value. Code after the method will be considered unreachable
+            by diagnostics if the argument to the associated parameter matches this value.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.ParameterValue">
+            <summary>
+            Gets the condition parameter value.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute">
+            <summary>
+            Indicates that an API is experimental and it may change in the future.
+            </summary>
+            <remarks>
+            This attribute allows call sites to be flagged with a diagnostic that indicates that an experimental
+            feature is used. Authors can use this attribute to ship preview features in their assemblies.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.ExperimentalAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute"/> class,
+            specifying the ID that the compiler will use when reporting a use of the API the attribute applies to.
+            </summary>
+            <param name="diagnosticId">The ID that the compiler will use when reporting a use of the API the attribute applies to.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.ExperimentalAttribute.DiagnosticId">
+            <summary>
+            Gets the ID that the compiler will use when reporting a use of the API the attribute applies to.
+            </summary>
+            <value>The unique diagnostic ID.</value>
+            <remarks>
+            The diagnostic ID is shown in build output for warnings and errors.
+            <para>This property represents the unique ID that can be used to suppress the warnings or errors, if needed.</para>
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.ExperimentalAttribute.UrlFormat">
+            <summary>
+            Gets or sets the URL for corresponding documentation.
+            The API accepts a format string instead of an actual URL, creating a generic URL that includes the diagnostic ID.
+            </summary>
+            <value>The format string that represents a URL to corresponding documentation.</value>
+            <remarks>An example format string is <c>https://contoso.com/obsoletion-warnings/{0}</c>.</remarks>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullAttribute">
+            <summary>
+            Specifies that an output may be null even if the corresponding type disallows it.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute">
+            <summary>
+            Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue"/>, the parameter may be null even if the corresponding type disallows it.
+            </summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>
+            Initializes the attribute with the specified return value condition.
+            </summary>
+            <param name="returnValue">The return value condition. If the method returns this value, the associated parameter may be null.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue">
+            <summary>
+            Gets the return value condition.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute">
+            <summary>
+            Specifies that the method or property will ensure that the listed field and property members have not-null values.
+            </summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String)">
+            <summary>
+            Initializes the attribute with a field or property member.
+            </summary>
+            <param name="member">The field or property member that is promised to be not-null.</param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String[])">
+            <summary>
+            Initializes the attribute with the list of field and property members.
+            </summary>
+            <param name="members">The list of field and property members that are promised to be not-null.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.Members">
+            <summary>
+            Gets field or property member names.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute">
+            <summary>
+            Specifies that the method or property will ensure that the listed field and property
+            members have not-null values when returning with the specified return value condition.
+            </summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.#ctor(System.Boolean,System.String)">
+            <summary>
+            Initializes the attribute with the specified return value condition and a field or property member.
+            </summary>
+            <param name="returnValue">The return value condition. If the method returns this value, the associated parameter will not be null.</param>
+            <param name="member">The field or property member that is promised to be not-null.</param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.#ctor(System.Boolean,System.String[])">
+            <summary>
+            Initializes the attribute with the specified return value condition and list of field and property members.
+            </summary>
+            <param name="returnValue">The return value condition. If the method returns this value, the associated parameter will not be null.</param>
+            <param name="members">The list of field and property members that are promised to be not-null.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.ReturnValue">
+            <summary>
+            Gets the return value condition.
+            </summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.Members">
+            <summary>
+            Gets field or property member names.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullAttribute">
+            <summary>
+            Specifies that an output will not be null even if the corresponding type allows it.
+            Specifies that an input argument was not null when the call returns.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute">
+            <summary>
+            Specifies that the output will be non-null if the named parameter is non-null.
+            </summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.#ctor(System.String)">
+            <summary>
+            Initializes the attribute with the associated parameter name.
+            </summary>
+            <param name="parameterName">The associated parameter name. The output will be non-null if the argument to the parameter specified is non-null.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.ParameterName">
+            <summary>
+            Gets the associated parameter name.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute">
+            <summary>
+            Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue"/>, the parameter will not be null even if the corresponding type allows it.
+            </summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>
+            Initializes the attribute with the specified return value condition.
+            </summary>
+            <param name="returnValue">The return value condition. If the method returns this value, the associated parameter will not be null.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute">
+            <summary>
+            Specifies that this constructor sets all required members for the current type,
+            and callers do not need to set any required members themselves.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute">
+            <summary>
+            Specifies the syntax used in a string.
+            </summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.#ctor(System.String)">
+            <summary>
+            Initializes the <see cref="T:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute"/> with the identifier of the syntax used.
+            </summary>
+            <param name="syntax">The syntax identifier.</param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.#ctor(System.String,System.Object[])">
+            <summary>Initializes the <see cref="T:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute"/> with the identifier of the syntax used.</summary>
+            <param name="syntax">The syntax identifier.</param>
+            <param name="arguments">Optional arguments associated with the specific syntax employed.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Syntax">
+            <summary>Gets the identifier of the syntax used.</summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Arguments">
+            <summary>Optional arguments associated with the specific syntax employed.</summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.CompositeFormat">
+            <summary>The syntax identifier for strings containing composite formats for string formatting.</summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateOnlyFormat">
+            <summary>The syntax identifier for strings containing date format specifiers.</summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat">
+            <summary>The syntax identifier for strings containing date and time format specifiers.</summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.EnumFormat">
+            <summary>The syntax identifier for strings containing <see cref="T:System.Enum"/> format specifiers.</summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.GuidFormat">
+            <summary>The syntax identifier for strings containing <see cref="T:System.Guid"/> format specifiers.</summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Json">
+            <summary>The syntax identifier for strings containing JavaScript Object Notation (JSON).</summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.NumericFormat">
+            <summary>The syntax identifier for strings containing numeric format specifiers.</summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex">
+            <summary>The syntax identifier for strings containing regular expressions.</summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.TimeOnlyFormat">
+            <summary>The syntax identifier for strings containing time format specifiers.</summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.TimeSpanFormat">
+            <summary>The syntax identifier for strings containing <see cref="T:System.TimeSpan"/> format specifiers.</summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Uri">
+            <summary>The syntax identifier for strings containing URIs.</summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Xml">
+            <summary>The syntax identifier for strings containing XML.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.UnscopedRefAttribute">
+            <summary>
+            Used to indicate a byref escapes and is not scoped.
+            </summary>
+            <remarks>
+            <para>
+            There are several cases where the C# compiler treats a <see langword="ref"/> as implicitly
+            <see langword="scoped"/> - where the compiler does not allow the <see langword="ref"/> to escape the method.
+            </para>
+            <para>
+            For example:
+            <list type="number">
+                <item><see langword="this"/> for <see langword="struct"/> instance methods.</item>
+                <item><see langword="ref"/> parameters that refer to <see langword="ref"/> <see langword="struct"/> types.</item>
+                <item><see langword="out"/> parameters.</item>
+            </list>
+            </para>
+            <para>
+            This attribute is used in those instances where the <see langword="ref"/> should be allowed to escape.
+            </para>
+            <para>
+            Applying this attribute, in any form, has impact on consumers of the applicable API. It is necessary for
+            API authors to understand the lifetime implications of applying this attribute and how it may impact their users.
+            </para>
+            </remarks>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
+             <summary>
+             Indicates that certain members on a specified <see cref="T:System.Type"/> are accessed dynamically,
+             for example through <see cref="N:System.Reflection"/>.
+             </summary>
+             <remarks>
+             This allows tools to understand which members are being accessed during the execution
+             of a program.
+            
+             This attribute is valid on members whose type is <see cref="T:System.Type"/> or <see cref="T:System.String"/>.
+            
+             When this attribute is applied to a location of type <see cref="T:System.String"/>, the assumption is
+             that the string represents a fully qualified type name.
+            
+             When this attribute is applied to a class, interface, or struct, the members specified
+             can be accessed dynamically on <see cref="T:System.Type"/> instances returned from calling
+             <see cref="M:System.Object.GetType"/> on instances of that class, interface, or struct.
+            
+             If the attribute is applied to a method it's treated as a special case and it implies
+             the attribute should be applied to the "this" parameter of the method. As such the attribute
+             should only be used on instance methods of types assignable to System.Type (or string, but no methods
+             will use it there).
+             </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute.#ctor(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute"/> class
+            with the specified member types.
+            </summary>
+            <param name="memberTypes">The types of members dynamically accessed.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute.MemberTypes">
+            <summary>
+            Gets the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes"/> which specifies the type
+            of members dynamically accessed.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">
+             <summary>
+             Specifies the types of members that are dynamically accessed.
+            
+             This enumeration has a <see cref="T:System.FlagsAttribute"/> attribute that allows a
+             bitwise combination of its member values.
+             </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.None">
+            <summary>
+            Specifies no members.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor">
+            <summary>
+            Specifies the default, parameterless public constructor.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors">
+            <summary>
+            Specifies all public constructors.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors">
+            <summary>
+            Specifies all non-public constructors.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods">
+            <summary>
+            Specifies all public methods.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods">
+            <summary>
+            Specifies all non-public methods.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields">
+            <summary>
+            Specifies all public fields.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields">
+            <summary>
+            Specifies all non-public fields.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes">
+            <summary>
+            Specifies all public nested types.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypes">
+            <summary>
+            Specifies all non-public nested types.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties">
+            <summary>
+            Specifies all public properties.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties">
+            <summary>
+            Specifies all non-public properties.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents">
+            <summary>
+            Specifies all public events.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicEvents">
+            <summary>
+            Specifies all non-public events.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces">
+            <summary>
+            Specifies all interfaces implemented by the type.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All">
+            <summary>
+            Specifies all members.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute">
+            <summary>
+            States a dependency that one member has on another.
+            </summary>
+            <remarks>
+            This can be used to inform tooling of a dependency that is otherwise not evident purely from
+            metadata and IL, for example a member relied on via reflection.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute"/> class
+            with the specified signature of a member on the same type as the consumer.
+            </summary>
+            <param name="memberSignature">The signature of the member depended on.</param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.String,System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute"/> class
+            with the specified signature of a member on a <see cref="T:System.Type"/>.
+            </summary>
+            <param name="memberSignature">The signature of the member depended on.</param>
+            <param name="type">The <see cref="T:System.Type"/> containing <paramref name="memberSignature"/>.</param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute"/> class
+            with the specified signature of a member on a type in an assembly.
+            </summary>
+            <param name="memberSignature">The signature of the member depended on.</param>
+            <param name="typeName">The full name of the type containing the specified member.</param>
+            <param name="assemblyName">The assembly name of the type containing the specified member.</param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes,System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute"/> class
+            with the specified types of members on a <see cref="T:System.Type"/>.
+            </summary>
+            <param name="memberTypes">The types of members depended on.</param>
+            <param name="type">The <see cref="T:System.Type"/> containing the specified members.</param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.#ctor(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute"/> class
+            with the specified types of members on a type in an assembly.
+            </summary>
+            <param name="memberTypes">The types of members depended on.</param>
+            <param name="typeName">The full name of the type containing the specified members.</param>
+            <param name="assemblyName">The assembly name of the type containing the specified members.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberSignature">
+            <summary>
+            Gets the signature of the member depended on.
+            </summary>
+            <remarks>
+            Either <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberSignature"/> must be a valid string or <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberTypes"/>
+            must not equal <see cref="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.None"/>, but not both.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberTypes">
+            <summary>
+            Gets the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes"/> which specifies the type
+            of members depended on.
+            </summary>
+            <remarks>
+            Either <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberSignature"/> must be a valid string or <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.MemberTypes"/>
+            must not equal <see cref="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.None"/>, but not both.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.Type">
+            <summary>
+            Gets the <see cref="T:System.Type"/> containing the specified member.
+            </summary>
+            <remarks>
+            If neither <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.Type"/> nor <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.TypeName"/> are specified,
+            the type of the consumer is assumed.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.TypeName">
+            <summary>
+            Gets the full name of the type containing the specified member.
+            </summary>
+            <remarks>
+            If neither <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.Type"/> nor <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.TypeName"/> are specified,
+            the type of the consumer is assumed.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.AssemblyName">
+            <summary>
+            Gets the assembly name of the specified type.
+            </summary>
+            <remarks>
+            <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.AssemblyName"/> is only valid when <see cref="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.TypeName"/> is specified.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute.Condition">
+            <summary>
+            Gets or sets the condition in which the dependency is applicable, e.g. "DEBUG".
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.FeatureGuardAttribute">
+            <summary>
+            Indicates that the specified public static boolean get-only property
+            guards access to the specified feature.
+            </summary>
+            <remarks>
+            Analyzers can use this to prevent warnings on calls to code that is
+            annotated as requiring that feature, when the callsite is guarded by a
+            call to the property.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.FeatureGuardAttribute.#ctor(System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.FeatureGuardAttribute"/> class
+            with the specified feature type.
+            </summary>
+            <param name="featureType">
+            The type that represents the feature guarded by the property.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.FeatureGuardAttribute.FeatureType">
+            <summary>
+            The type that represents the feature guarded by the property.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.FeatureSwitchDefinitionAttribute">
+            <summary>
+            Indicates that the specified public static boolean get-only property
+            corresponds to the feature switch specified by name.
+            </summary>
+            <remarks>
+            IL rewriters and compilers can use this to substitute the return value
+            of the specified property with the value of the feature switch.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.FeatureSwitchDefinitionAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.FeatureSwitchDefinitionAttribute"/> class
+            with the specified feature switch name.
+            </summary>
+            <param name="switchName">
+            The name of the feature switch that provides the value for the specified property.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.FeatureSwitchDefinitionAttribute.SwitchName">
+            <summary>
+            The name of the feature switch that provides the value for the specified property.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute">
+            <summary>
+            Indicates that the specified member requires assembly files to be on disk.
+            </summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="!:global::System.RequiresAssemblyFilesAttribute"/> class.
+            </summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="!:global::System.RequiresAssemblyFilesAttribute"/> class.
+            </summary>
+            <param name="message">
+            A message that contains information about the need for assembly files to be on disk.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute.Message">
+            <summary>
+            Gets an optional message that contains information about the need for
+            assembly files to be on disk.
+            </summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute.Url">
+            <summary>
+            Gets or sets an optional URL that contains more information about the member,
+            why it requires assembly files to be on disk, and what options a consumer has
+            to deal with it.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute">
+            <summary>
+            Indicates that the specified method requires the ability to generate new code at runtime,
+            for example through <see cref="N:System.Reflection"/>.
+            </summary>
+            <remarks>
+            This allows tools to understand which methods are unsafe to call when compiling ahead of time.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute"/> class
+            with the specified message.
+            </summary>
+            <param name="message">
+            A message that contains information about the usage of dynamic code.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute.Message">
+            <summary>
+            Gets a message that contains information about the usage of dynamic code.
+            </summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute.Url">
+            <summary>
+            Gets or sets an optional URL that contains more information about the method,
+            why it requires dynamic code, and what options a consumer has to deal with it.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute">
+            <summary>
+            Indicates that the specified method requires dynamic access to code that is not referenced
+            statically, for example through <see cref="N:System.Reflection"/>.
+            </summary>
+            <remarks>
+            This allows tools to understand which methods are unsafe to call when removing unreferenced
+            code from an application.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute"/> class
+            with the specified message.
+            </summary>
+            <param name="message">
+            A message that contains information about the usage of unreferenced code.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.Message">
+            <summary>
+            Gets a message that contains information about the usage of unreferenced code.
+            </summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.Url">
+            <summary>
+            Gets or sets an optional URL that contains more information about the method,
+            why it requires unreferenced code, and what options a consumer has to deal with it.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+            <summary>
+            Suppresses reporting of a specific rule violation, allowing multiple suppressions on a
+            single code artifact.
+            </summary>
+            <remarks>
+            <see cref="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute"/> is different than
+            <see cref="T:System.Diagnostics.CodeAnalysis.SuppressMessageAttribute"/> in that it doesn't have a
+            <see cref="T:System.Diagnostics.ConditionalAttribute"/>. So it is always preserved in the compiled assembly.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute"/>
+            class, specifying the category of the tool and the identifier for an analysis rule.
+            </summary>
+            <param name="category">The category for the attribute.</param>
+            <param name="checkId">The identifier of the analysis rule the attribute applies to.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Category">
+            <summary>
+            Gets the category identifying the classification of the attribute.
+            </summary>
+            <remarks>
+            The <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Category"/> property describes the tool or tool analysis category
+            for which a message suppression attribute applies.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.CheckId">
+            <summary>
+            Gets the identifier of the analysis tool rule to be suppressed.
+            </summary>
+            <remarks>
+            Concatenated together, the <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Category"/> and <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.CheckId"/>
+            properties form a unique check identifier.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Scope">
+            <summary>
+            Gets or sets the scope of the code that is relevant for the attribute.
+            </summary>
+            <remarks>
+            The Scope property is an optional argument that specifies the metadata scope for which
+            the attribute is relevant.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Target">
+            <summary>
+            Gets or sets a fully qualified path that represents the target of the attribute.
+            </summary>
+            <remarks>
+            The <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Target"/> property is an optional argument identifying the analysis target
+            of the attribute. An example value is "System.IO.Stream.ctor():System.Void".
+            Because it is fully qualified, it can be long, particularly for targets such as parameters.
+            The analysis tool user interface should be capable of automatically formatting the parameter.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.MessageId">
+            <summary>
+            Gets or sets an optional argument expanding on exclusion criteria.
+            </summary>
+            <remarks>
+            The <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.MessageId"/> property is an optional argument that specifies additional
+            exclusion where the literal metadata target is not sufficiently precise. For example,
+            the <see cref="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute"/> cannot be applied within a method,
+            and it may be desirable to suppress a violation against a statement in the method that will
+            give a rule violation, but not against all statements in the method.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Justification">
+            <summary>
+            Gets or sets the justification for suppressing the code analysis message.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.DebuggerDisableUserUnhandledExceptionsAttribute">
+            <summary>
+            If a .NET Debugger is attached which supports the Debugger.BreakForUserUnhandledException(Exception) API,
+            this attribute will prevent the debugger from breaking on user-unhandled exceptions when the
+            exception is caught by a method with this attribute, unless BreakForUserUnhandledException is called.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.StackTraceHiddenAttribute">
+            <summary>
+            Types and Methods attributed with StackTraceHidden will be omitted from the stack trace text shown in StackTrace.ToString()
+            and Exception.StackTrace
+            </summary>
+        </member>
+        <member name="M:System.Diagnostics.StackTraceHiddenAttribute.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.StackTraceHiddenAttribute"/> class.
+            </summary>
+        </member>
+        <member name="T:System.Index">
+            <summary>Represent a type can be used to index a collection either from the start or the end.</summary>
+            <remarks>
+            Index is used by the C# compiler to support the new index syntax
+            <code>
+            int[] someArray = new int[5] { 1, 2, 3, 4, 5 } ;
+            int lastElement = someArray[^1]; // lastElement = 5
+            </code>
+            </remarks>
+        </member>
+        <member name="M:System.Index.#ctor(System.Int32,System.Boolean)">
+            <summary>Construct an Index using a value and indicating if the index is from the start or from the end.</summary>
+            <param name="value">The index value. it has to be zero or positive number.</param>
+            <param name="fromEnd">Indicating if the index is from the start or from the end.</param>
+            <remarks>
+            If the Index constructed from the end, index value 1 means pointing at the last element and index value 0 means pointing at beyond last element.
+            </remarks>
+        </member>
+        <member name="P:System.Index.Start">
+            <summary>Create an Index pointing at first element.</summary>
+        </member>
+        <member name="P:System.Index.End">
+            <summary>Create an Index pointing at beyond last element.</summary>
+        </member>
+        <member name="M:System.Index.FromStart(System.Int32)">
+            <summary>Create an Index from the start at the position indicated by the value.</summary>
+            <param name="value">The index value from the start.</param>
+        </member>
+        <member name="M:System.Index.FromEnd(System.Int32)">
+            <summary>Create an Index from the end at the position indicated by the value.</summary>
+            <param name="value">The index value from the end.</param>
+        </member>
+        <member name="P:System.Index.Value">
+            <summary>Returns the index value.</summary>
+        </member>
+        <member name="P:System.Index.IsFromEnd">
+            <summary>Indicates whether the index is from the start or the end.</summary>
+        </member>
+        <member name="M:System.Index.GetOffset(System.Int32)">
+            <summary>Calculate the offset from the start using the giving collection length.</summary>
+            <param name="length">The length of the collection that the Index will be used with. length has to be a positive value</param>
+            <remarks>
+            For performance reason, we don't validate the input length parameter and the returned offset value against negative values.
+            we don't validate either the returned offset is greater than the input length.
+            It is expected Index will be used with collections which always have non negative length/count. If the returned offset is negative and
+            then used to index a collection will get out of range exception which will be same affect as the validation.
+            </remarks>
+        </member>
+        <member name="M:System.Index.Equals(System.Object)">
+            <summary>Indicates whether the current Index object is equal to another object of the same type.</summary>
+            <param name="value">An object to compare with this object</param>
+        </member>
+        <member name="M:System.Index.Equals(System.Index)">
+            <summary>Indicates whether the current Index object is equal to another Index object.</summary>
+            <param name="other">An object to compare with this object</param>
+        </member>
+        <member name="M:System.Index.GetHashCode">
+            <summary>Returns the hash code for this instance.</summary>
+        </member>
+        <member name="M:System.Index.op_Implicit(System.Int32)~System.Index">
+            <summary>Converts integer number to an Index.</summary>
+        </member>
+        <member name="M:System.Index.ToString">
+            <summary>Converts the value of the current Index object to its equivalent string representation.</summary>
+        </member>
+        <member name="T:System.Range">
+            <summary>Represent a range has start and end indexes.</summary>
+            <remarks>
+            Range is used by the C# compiler to support the range syntax.
+            <code>
+            int[] someArray = new int[5] { 1, 2, 3, 4, 5 };
+            int[] subArray1 = someArray[0..2]; // { 1, 2 }
+            int[] subArray2 = someArray[1..^0]; // { 2, 3, 4, 5 }
+            </code>
+            </remarks>
+        </member>
+        <member name="P:System.Range.Start">
+            <summary>Represent the inclusive start index of the Range.</summary>
+        </member>
+        <member name="P:System.Range.End">
+            <summary>Represent the exclusive end index of the Range.</summary>
+        </member>
+        <member name="M:System.Range.#ctor(System.Index,System.Index)">
+            <summary>Construct a Range object using the start and end indexes.</summary>
+            <param name="start">Represent the inclusive start index of the range.</param>
+            <param name="end">Represent the exclusive end index of the range.</param>
+        </member>
+        <member name="M:System.Range.Equals(System.Object)">
+            <summary>Indicates whether the current Range object is equal to another object of the same type.</summary>
+            <param name="value">An object to compare with this object</param>
+        </member>
+        <member name="M:System.Range.Equals(System.Range)">
+            <summary>Indicates whether the current Range object is equal to another Range object.</summary>
+            <param name="other">An object to compare with this object</param>
+        </member>
+        <member name="M:System.Range.GetHashCode">
+            <summary>Returns the hash code for this instance.</summary>
+        </member>
+        <member name="M:System.Range.ToString">
+            <summary>Converts the value of the current Range object to its equivalent string representation.</summary>
+        </member>
+        <member name="M:System.Range.StartAt(System.Index)">
+            <summary>Create a Range object starting from start index to the end of the collection.</summary>
+        </member>
+        <member name="M:System.Range.EndAt(System.Index)">
+            <summary>Create a Range object starting from first element in the collection to the end Index.</summary>
+        </member>
+        <member name="P:System.Range.All">
+            <summary>Create a Range object starting from first element to the end.</summary>
+        </member>
+        <member name="M:System.Range.GetOffsetAndLength(System.Int32)">
+            <summary>Calculate the start offset and length of range object using a collection length.</summary>
+            <param name="length">The length of the collection that the range will be used with. length has to be a positive value.</param>
+            <remarks>
+            For performance reason, we don't validate the input length parameter against negative values.
+            It is expected Range will be used with collections which always have non negative length/count.
+            We validate the range is inside the length scope though.
+            </remarks>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.CallerArgumentExpressionAttribute">
+            <summary>
+            An attribute that allows parameters to receive the expression of other parameters.
+            </summary>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.CallerArgumentExpressionAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.CompilerServices.CallerArgumentExpressionAttribute"/> class.
+            </summary>
+            <param name="parameterName">The condition parameter value.</param>
+        </member>
+        <member name="P:System.Runtime.CompilerServices.CallerArgumentExpressionAttribute.ParameterName">
+            <summary>
+            Gets the parameter name the expression is retrieved from.
+            </summary>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.CollectionBuilderAttribute.#ctor(System.Type,System.String)">
+            <summary>
+            Initialize the attribute to refer to the <paramref name="methodName"/> method on the <paramref name="builderType"/> type.
+            </summary>
+            <param name="builderType">The type of the builder to use to construct the collection.</param>
+            <param name="methodName">The name of the method on the builder to use to construct the collection.</param>
+            <remarks>
+            <paramref name="methodName"/> must refer to a static method that accepts a single parameter of
+            type <see cref="T:System.ReadOnlySpan`1"/> and returns an instance of the collection being built containing
+            a copy of the data from that span.  In future releases of .NET, additional patterns may be supported.
+            </remarks>
+        </member>
+        <member name="P:System.Runtime.CompilerServices.CollectionBuilderAttribute.BuilderType">
+            <summary>
+            Gets the type of the builder to use to construct the collection.
+            </summary>
+        </member>
+        <member name="P:System.Runtime.CompilerServices.CollectionBuilderAttribute.MethodName">
+            <summary>
+            Gets the name of the method on the builder to use to construct the collection.
+            </summary>
+            <remarks>
+            This should match the metadata name of the target method.
+            For example, this might be ".ctor" if targeting the type's constructor.
+            </remarks>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.CompilerFeatureRequiredAttribute">
+            <summary>
+            Indicates that compiler support for a particular feature is required for the location where this attribute is applied.
+            </summary>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.CompilerFeatureRequiredAttribute.#ctor(System.String)">
+            <summary>
+            Creates a new instance of the <see cref="T:System.Runtime.CompilerServices.CompilerFeatureRequiredAttribute"/> type.
+            </summary>
+            <param name="featureName">The name of the feature to indicate.</param>
+        </member>
+        <member name="P:System.Runtime.CompilerServices.CompilerFeatureRequiredAttribute.FeatureName">
+            <summary>
+            The name of the compiler feature.
+            </summary>
+        </member>
+        <member name="P:System.Runtime.CompilerServices.CompilerFeatureRequiredAttribute.IsOptional">
+            <summary>
+            If true, the compiler can choose to allow access to the location where this attribute is applied if it does not understand <see cref="P:System.Runtime.CompilerServices.CompilerFeatureRequiredAttribute.FeatureName"/>.
+            </summary>
+        </member>
+        <member name="F:System.Runtime.CompilerServices.CompilerFeatureRequiredAttribute.RefStructs">
+            <summary>
+            The <see cref="P:System.Runtime.CompilerServices.CompilerFeatureRequiredAttribute.FeatureName"/> used for the ref structs C# feature.
+            </summary>
+        </member>
+        <member name="F:System.Runtime.CompilerServices.CompilerFeatureRequiredAttribute.RequiredMembers">
+            <summary>
+            The <see cref="P:System.Runtime.CompilerServices.CompilerFeatureRequiredAttribute.FeatureName"/> used for the required members C# feature.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute">
+            <summary>
+            Indicates which arguments to a method involving an interpolated string handler should be passed to that handler.
+            </summary>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute"/> class.
+            </summary>
+            <param name="argument">The name of the argument that should be passed to the handler.</param>
+            <remarks><see langword="null"/> may be used as the name of the receiver in an instance method.</remarks>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute.#ctor(System.String[])">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute"/> class.
+            </summary>
+            <param name="arguments">The names of the arguments that should be passed to the handler.</param>
+            <remarks><see langword="null"/> may be used as the name of the receiver in an instance method.</remarks>
+        </member>
+        <member name="P:System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute.Arguments">
+            <summary>
+            Gets the names of the arguments that should be passed to the handler.
+            </summary>
+            <remarks><see langword="null"/> may be used as the name of the receiver in an instance method.</remarks>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute">
+            <summary>
+            Indicates the attributed type is to be used as an interpolated string handler.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.IsExternalInit">
+            <summary>
+            Reserved to be used by the compiler for tracking metadata.
+            This class should not be used by developers in source code.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.ModuleInitializerAttribute">
+             <summary>
+             Used to indicate to the compiler that a method should be called
+             in its containing module's initializer.
+             </summary>
+             <remarks>
+             When one or more valid methods
+             with this attribute are found in a compilation, the compiler will
+             emit a module initializer which calls each of the attributed methods.
+            
+             Certain requirements are imposed on any method targeted with this attribute:
+             - The method must be `static`.
+             - The method must be an ordinary member method, as opposed to a property accessor, constructor, local function, etc.
+             - The method must be parameterless.
+             - The method must return `void`.
+             - The method must not be generic or be contained in a generic type.
+             - The method's effective accessibility must be `internal` or `public`.
+            
+             The specification for module initializers in the .NET runtime can be found here:
+             https://github.com/dotnet/runtime/blob/main/docs/design/specs/Ecma-335-Augments.md#module-initializer
+             </remarks>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute">
+            <summary>
+            Specifies the priority of a member in overload resolution. When unspecified, the default priority is 0.
+            </summary>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute.#ctor(System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute"/> class.
+            </summary>
+            <param name="priority">The priority of the attributed member. Higher numbers are prioritized, lower numbers are deprioritized. 0 is the default if no attribute is present.</param>
+        </member>
+        <member name="P:System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute.Priority">
+            <summary>
+            The priority of the member.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.ParamCollectionAttribute">
+            <summary>
+            Indicates that a method will allow a variable number of arguments in its invocation.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.RequiredMemberAttribute">
+            <summary>
+            Specifies that a type has required members or that a member is required.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.RequiresLocationAttribute">
+            <summary>
+            Reserved for use by a compiler for tracking metadata.
+            This attribute should not be used by developers in source code.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.SkipLocalsInitAttribute">
+            <summary>
+            Used to indicate to the compiler that the <c>.locals init</c> flag should not be set in method headers.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute">
+             <summary>
+             Disables the built-in runtime managed/unmanaged marshalling subsystem for
+             P/Invokes, Delegate types, and unmanaged function pointer invocations.
+             </summary>
+             <remarks>
+             The built-in marshalling subsystem has some behaviors that cannot be changed due to
+             backward-compatibility requirements. This attribute allows disabling the built-in
+             subsystem and instead uses the following rules for P/Invokes, Delegates,
+             and unmanaged function pointer invocations:
+            
+             - All value types that do not contain reference type fields recursively (<c>unmanaged</c> in C#) are blittable
+             - Value types that recursively have any fields that have <c>[StructLayout(LayoutKind.Auto)]</c> are disallowed from interop.
+             - All reference types are disallowed from usage in interop scenarios.
+             - SetLastError support in P/Invokes is disabled.
+             - varargs support is disabled.
+             - LCIDConversionAttribute support is disabled.
+             </remarks>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.UnsafeAccessorAttribute">
+             <summary>
+             Provides access to an inaccessible member of a specific type.
+             </summary>
+             <remarks>
+             This attribute may be applied to an <code>extern static</code> method.
+             The implementation of the <code>extern static</code> method annotated with
+             this attribute will be provided by the runtime based on the information in
+             the attribute and the signature of the method that the attribute is applied to.
+             The runtime will try to find the matching method or field and forward the call
+             to it. If the matching method or field is not found, the body of the <code>extern</code>
+             method will throw <see cref="T:System.MissingFieldException" /> or <see cref="T:System.MissingMethodException" />.
+             Only the specific type defined will be examined for inaccessible members. The type hierarchy
+             is not walked looking for a match.
+            
+             For <see cref="F:System.Runtime.CompilerServices.UnsafeAccessorKind.Method"/>,
+             <see cref="F:System.Runtime.CompilerServices.UnsafeAccessorKind.StaticMethod"/>,
+             <see cref="F:System.Runtime.CompilerServices.UnsafeAccessorKind.Field"/>,
+             and <see cref="F:System.Runtime.CompilerServices.UnsafeAccessorKind.StaticField"/>, the type of
+             the first argument of the annotated <code>extern</code> method identifies the owning type.
+             The value of the first argument is treated as <code>this</code> pointer for instance fields and methods.
+             The first argument must be passed as <code>ref</code> for instance fields and methods on structs.
+             The value of the first argument is not used by the implementation for <code>static</code> fields and methods.
+            
+             Return type is considered for the signature match. modreqs and modopts are initially not considered for
+             the signature match. However, if an ambiguity exists ignoring modreqs and modopts, a precise match
+             is attempted. If an ambiguity still exists <see cref="T:System.Reflection.AmbiguousMatchException" /> is thrown.
+            
+             By default, the attributed method's name dictates the name of the method/field. This can cause confusion
+             in some cases since language abstractions, like C# local functions, generate mangled IL names. The
+             solution to this is to use the <code>nameof</code> mechanism and define the <see cref="P:System.Runtime.CompilerServices.UnsafeAccessorAttribute.Name"/> property.
+            
+             <code>
+             public void Method(Class c)
+             {
+                 PrivateMethod(c);
+            
+                 [UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(PrivateMethod))]
+                 extern static void PrivateMethod(Class c);
+             }
+             </code>
+             </remarks>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.UnsafeAccessorAttribute.#ctor(System.Runtime.CompilerServices.UnsafeAccessorKind)">
+            <summary>
+            Instantiates an <see cref="T:System.Runtime.CompilerServices.UnsafeAccessorAttribute"/>
+            providing access to a member of kind <see cref="T:System.Runtime.CompilerServices.UnsafeAccessorKind"/>.
+            </summary>
+            <param name="kind">The kind of the target to which access is provided.</param>
+        </member>
+        <member name="P:System.Runtime.CompilerServices.UnsafeAccessorAttribute.Kind">
+            <summary>
+            Gets the kind of member to which access is provided.
+            </summary>
+        </member>
+        <member name="P:System.Runtime.CompilerServices.UnsafeAccessorAttribute.Name">
+            <summary>
+            Gets or sets the name of the member to which access is provided.
+            </summary>
+            <remarks>
+            The name defaults to the annotated method name if not specified.
+            The name must be unset/<code>null</code> for <see cref="F:System.Runtime.CompilerServices.UnsafeAccessorKind.Constructor"/>.
+            </remarks>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.UnsafeAccessorKind">
+            <summary>
+            Specifies the kind of target to which an <see cref="T:System.Runtime.CompilerServices.UnsafeAccessorAttribute" /> is providing access.
+            </summary>
+        </member>
+        <member name="F:System.Runtime.CompilerServices.UnsafeAccessorKind.Constructor">
+            <summary>
+            Provide access to a constructor.
+            </summary>
+        </member>
+        <member name="F:System.Runtime.CompilerServices.UnsafeAccessorKind.Method">
+            <summary>
+            Provide access to a method.
+            </summary>
+        </member>
+        <member name="F:System.Runtime.CompilerServices.UnsafeAccessorKind.StaticMethod">
+            <summary>
+            Provide access to a static method.
+            </summary>
+        </member>
+        <member name="F:System.Runtime.CompilerServices.UnsafeAccessorKind.Field">
+            <summary>
+            Provide access to a field.
+            </summary>
+        </member>
+        <member name="F:System.Runtime.CompilerServices.UnsafeAccessorKind.StaticField">
+            <summary>
+            Provide access to a static field.
+            </summary>
+        </member>
+        <member name="M:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute"/> class.
+            </summary>
+        </member>
+        <member name="M:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute"/> class with the specified message.
+            </summary>
+            <param name="message">An optional message associated with this attribute instance.</param>
+        </member>
+        <member name="P:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute.Message">
+            <summary>
+            Returns the optional message associated with this attribute instance.
+            </summary>
+        </member>
+        <member name="P:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute.Url">
+            <summary>
+            Returns the optional URL associated with this attribute instance.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.Versioning.ObsoletedOSPlatformAttribute">
+            <summary>
+            Marks APIs that were obsoleted in a given operating system version.
+            </summary>
+            <remarks>
+            Primarily used by OS bindings to indicate APIs that should not be used anymore.
+            </remarks>
+        </member>
+        <member name="T:System.Runtime.Versioning.SupportedOSPlatformAttribute">
+             <summary>
+             Records the operating system (and minimum version) that supports an API. Multiple attributes can be
+             applied to indicate support on multiple operating systems.
+             </summary>
+             <remarks>
+             Callers can apply a <see cref="T:System.Runtime.Versioning.SupportedOSPlatformAttribute" />
+             or use guards to prevent calls to APIs on unsupported operating systems.
+            
+             A given platform should only be specified once.
+             </remarks>
+        </member>
+        <member name="T:System.Runtime.Versioning.SupportedOSPlatformGuardAttribute">
+             <summary>
+             Annotates a custom guard field, property or method with a supported platform name and optional version.
+             Multiple attributes can be applied to indicate guard for multiple supported platforms.
+             </summary>
+             <remarks>
+             Callers can apply a <see cref="T:System.Runtime.Versioning.SupportedOSPlatformGuardAttribute" /> to a field, property or method
+             and use that field, property or method in a conditional or assert statements in order to safely call platform specific APIs.
+            
+             The type of the field or property should be boolean, the method return type should be boolean in order to be used as platform guard.
+             </remarks>
+        </member>
+        <member name="T:System.Runtime.Versioning.TargetPlatformAttribute">
+            <summary>
+            Records the platform that the project targeted.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute">
+            <summary>
+            Marks APIs that were removed in a given operating system version.
+            </summary>
+            <remarks>
+            Primarily used by OS bindings to indicate APIs that are only available in
+            earlier versions.
+            </remarks>
+        </member>
+        <member name="T:System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute">
+             <summary>
+             Annotates the custom guard field, property or method with an unsupported platform name and optional version.
+             Multiple attributes can be applied to indicate guard for multiple unsupported platforms.
+             </summary>
+             <remarks>
+             Callers can apply a <see cref="T:System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute" /> to a field, property or method
+             and use that  field, property or method in a conditional or assert statements as a guard to safely call APIs unsupported on those platforms.
+            
+             The type of the field or property should be boolean, the method return type should be boolean in order to be used as platform guard.
+             </remarks>
+        </member>
+        <member name="T:System.Runtime.CompilerServices2.InlineArrayAttribute">
+            <summary>
+            Indicates that the instance's storage is sequentially replicated "length" times.
+            </summary>
+            <remarks>
+            <para>
+            This attribute can be used to annotate a <see langword="struct"/> type with a single field.
+            The runtime will replicate that field in the actual type layout as many times as is specified.
+            </para>
+            <para>
+            Here's an example of how an inline array type with 8 <see cref="T:System.Single"/> values can be declared:
+            <code lang="csharp">
+            [InlineArray(8)]
+            struct Float8InlineArray
+            {
+                private float _value;
+            }
+            </code>
+            </para>
+            </remarks>
+        </member>
+        <member name="M:System.Runtime.CompilerServices2.InlineArrayAttribute.#ctor(System.Int32)">
+            <summary>Creates a new <see cref="T:System.Runtime.CompilerServices2.InlineArrayAttribute"/> instance with the specified length.</summary>
+            <param name="length">The number of sequential fields to replicate in the inline array type.</param>
+        </member>
+        <member name="P:System.Runtime.CompilerServices2.InlineArrayAttribute.Length">
+            <summary>Gets the number of sequential fields to replicate in the inline array type.</summary>
+        </member>
+        <member name="T:System.Runtime.InteropServices.SuppressGCTransitionAttribute">
+             <summary>
+             An attribute used to indicate a GC transition should be skipped when making an unmanaged function call.
+             </summary>
+             <example>
+             Example of a valid use case. The Win32 `GetTickCount()` function is a small performance related function
+             that reads some global memory and returns the value. In this case, the GC transition overhead is significantly
+             more than the memory read.
+             <code>
+             using System;
+             using System.Runtime.InteropServices;
+             class Program
+             {
+                 [DllImport("Kernel32")]
+                 [SuppressGCTransition]
+                 static extern int GetTickCount();
+                 static void Main()
+                 {
+                     Console.WriteLine($"{GetTickCount()}");
+                 }
+             }
+             </code>
+             </example>
+             <remarks>
+             This attribute is ignored if applied to a method without the <see cref="T:System.Runtime.InteropServices.DllImportAttribute"/>.
+            
+             Forgoing this transition can yield benefits when the cost of the transition is more than the execution time
+             of the unmanaged function. However, avoiding this transition removes some of the guarantees the runtime
+             provides through a normal P/Invoke. When exiting the managed runtime to enter an unmanaged function the
+             GC must transition from Cooperative mode into Preemptive mode. Full details on these modes can be found at
+             https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/clr-code-guide.md#2.1.8.
+             Suppressing the GC transition is an advanced scenario and should not be done without fully understanding
+             potential consequences.
+            
+             One of these consequences is an impact to Mixed-mode debugging (https://docs.microsoft.com/visualstudio/debugger/how-to-debug-in-mixed-mode).
+             During Mixed-mode debugging, it is not possible to step into or set breakpoints in a P/Invoke that
+             has been marked with this attribute. A workaround is to switch to native debugging and set a breakpoint in the native function.
+             In general, usage of this attribute is not recommended if debugging the P/Invoke is important, for example
+             stepping through the native code or diagnosing an exception thrown from the native code.
+            
+             The runtime may load the native library for method marked with this attribute in advance before the method is called for the first time.
+             Usage of this attribute is not recommended for platform neutral libraries with conditional platform specific code.
+            
+             The P/Invoke method that this attribute is applied to must have all of the following properties:
+               * Native function always executes for a trivial amount of time (less than 1 microsecond).
+               * Native function does not perform a blocking syscall (e.g. any type of I/O).
+               * Native function does not call back into the runtime (e.g. Reverse P/Invoke).
+               * Native function does not throw exceptions.
+               * Native function does not manipulate locks or other concurrency primitives.
+            
+             Consequences of invalid uses of this attribute:
+               * GC starvation.
+               * Immediate runtime termination.
+               * Data corruption.
+             </remarks>
+        </member>
+        <member name="T:System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute">
+            <summary>
+            Any method marked with <see cref="T:System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute" /> can be directly called from
+            native code. The function token can be loaded to a local variable using the <see href="https://docs.microsoft.com/dotnet/csharp/language-reference/operators/pointer-related-operators#address-of-operator-">address-of</see> operator
+            in C# and passed as a callback to a native method.
+            </summary>
+            <remarks>
+            Methods marked with this attribute have the following restrictions:
+              * Method must be marked "static".
+              * Must not be called from managed code.
+              * Must only have <see href="https://docs.microsoft.com/dotnet/framework/interop/blittable-and-non-blittable-types">blittable</see> arguments.
+            </remarks>
+        </member>
+        <member name="F:System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute.CallConvs">
+            <summary>
+            Optional. If omitted, the runtime will use the default platform calling convention.
+            </summary>
+            <remarks>
+            Supplied types must be from the official "System.Runtime.CompilerServices" namespace and
+            be of the form "CallConvXXX".
+            </remarks>
+        </member>
+        <member name="F:System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute.EntryPoint">
+            <summary>
+            Optional. If omitted, no named export is emitted during compilation.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.InteropServices.WasmImportLinkageAttribute">
+            <summary>
+            Specifies that the P/Invoke marked with this attribute should be linked in as a WASM import.
+            </summary>
+            <remarks>
+            See https://webassembly.github.io/spec/core/syntax/modules.html#imports.
+            </remarks>
+        </member>
+        <member name="M:System.Runtime.InteropServices.WasmImportLinkageAttribute.#ctor">
+            <summary>
+            Instance constructor.
+            </summary>
+        </member>
+    </members>
+</doc>

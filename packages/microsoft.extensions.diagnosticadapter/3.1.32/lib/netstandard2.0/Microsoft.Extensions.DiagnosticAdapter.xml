@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Extensions.DiagnosticAdapter</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.Extensions.DiagnosticAdapter.Infrastructure.IProxy">
+            <summary>
+            An interface for unwrappable proxy objects.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DiagnosticAdapter.Infrastructure.IProxy.Upwrap``1">
+            <summary>
+            Unwraps the underlying object and performs a cast to <typeparamref name="T"/>.
+            </summary>
+            <typeparam name="T">The type of the underlying object.</typeparam>
+            <returns>The underlying object.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.DiagnosticAdapter.Infrastructure.IProxyFactory">
+            <summary>
+            A factory for runtime creation of proxy objects.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DiagnosticAdapter.Infrastructure.IProxyFactory.CreateProxy``1(System.Object)">
+            <summary>
+            Creates a proxy object that is assignable to type <typeparamref name="TProxy"/>
+            </summary>
+            <typeparam name="TProxy">The type of the proxy to create.</typeparam>
+            <param name="obj">The object to wrap in a proxy.</param>
+            <returns>A proxy object, or <paramref name="obj"/> if a proxy is not needed.</returns>
+        </member>
+        <member name="P:Microsoft.Extensions.DiagnosticAdapter.Resources.Converter_PropertyMustHaveGetter">
+            <summary>The property '{0}' on type '{1}' must define a getter to support proxy generation.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DiagnosticAdapter.Resources.FormatConverter_PropertyMustHaveGetter(System.Object,System.Object)">
+            <summary>The property '{0}' on type '{1}' must define a getter to support proxy generation.</summary>
+        </member>
+        <member name="P:Microsoft.Extensions.DiagnosticAdapter.Resources.Converter_PropertyMustNotHaveIndexParameters">
+            <summary>The property '{0}' on type '{1}' must not use index parameters to support proxy generation.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DiagnosticAdapter.Resources.FormatConverter_PropertyMustNotHaveIndexParameters(System.Object,System.Object)">
+            <summary>The property '{0}' on type '{1}' must not use index parameters to support proxy generation.</summary>
+        </member>
+        <member name="P:Microsoft.Extensions.DiagnosticAdapter.Resources.Converter_PropertyMustNotHaveSetter">
+            <summary>The property '{0}' on type '{1}' must not define a setter to support proxy generation.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DiagnosticAdapter.Resources.FormatConverter_PropertyMustNotHaveSetter(System.Object,System.Object)">
+            <summary>The property '{0}' on type '{1}' must not define a setter to support proxy generation.</summary>
+        </member>
+        <member name="P:Microsoft.Extensions.DiagnosticAdapter.Resources.Converter_TypeMustBeInterface">
+            <summary>Type '{0}' must be an interface in order to support proxy generation from source type '{1}'.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DiagnosticAdapter.Resources.FormatConverter_TypeMustBeInterface(System.Object,System.Object)">
+            <summary>Type '{0}' must be an interface in order to support proxy generation from source type '{1}'.</summary>
+        </member>
+        <member name="P:Microsoft.Extensions.DiagnosticAdapter.Resources.Converter_TypeMustNotHavePropertiesThatVaryByCase">
+            <summary>Proxy method generation doesn't support types with properties that vary only by case. The type '{0}' defines multiple properties named '{1}' that vary only by case.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DiagnosticAdapter.Resources.FormatConverter_TypeMustNotHavePropertiesThatVaryByCase(System.Object,System.Object)">
+            <summary>Proxy method generation doesn't support types with properties that vary only by case. The type '{0}' defines multiple properties named '{1}' that vary only by case.</summary>
+        </member>
+        <member name="P:Microsoft.Extensions.DiagnosticAdapter.Resources.Converter_UnableToGenerateProxy">
+            <summary>Unable to generate a proxy for method '{0}'. See Inner Exception for details.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DiagnosticAdapter.Resources.FormatConverter_UnableToGenerateProxy(System.Object)">
+            <summary>Unable to generate a proxy for method '{0}'. See Inner Exception for details.</summary>
+        </member>
+    </members>
+</doc>

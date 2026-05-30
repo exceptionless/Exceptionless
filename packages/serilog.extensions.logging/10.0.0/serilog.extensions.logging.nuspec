@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Serilog.Extensions.Logging</id>
+    <version>10.0.0</version>
+    <authors>Microsoft,Serilog Contributors</authors>
+    <license type="expression">Apache-2.0</license>
+    <licenseUrl>https://licenses.nuget.org/Apache-2.0</licenseUrl>
+    <icon>serilog-extension-nuget.png</icon>
+    <readme>README.md</readme>
+    <projectUrl>https://github.com/serilog/serilog-extensions-logging</projectUrl>
+    <description>Low-level Serilog provider for Microsoft.Extensions.Logging</description>
+    <tags>serilog Microsoft.Extensions.Logging</tags>
+    <repository type="git" url="https://github.com/serilog/serilog-extensions-logging" branch="refs/heads/main" commit="538cf2fd64baf760950e202a00dd426c6b76e18c" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.6.2">
+        <dependency id="Microsoft.Extensions.Logging" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog" version="4.2.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net8.0">
+        <dependency id="Microsoft.Extensions.Logging" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog" version="4.2.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net9.0">
+        <dependency id="Microsoft.Extensions.Logging" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog" version="4.2.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net10.0">
+        <dependency id="Microsoft.Extensions.Logging" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog" version="4.2.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="Microsoft.Extensions.Logging" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog" version="4.2.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.1">
+        <dependency id="Microsoft.Extensions.Logging" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog" version="4.2.0" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="Microsoft.CSharp" targetFramework=".NETFramework4.6.2" />
+      <frameworkAssembly assemblyName="System.Core" targetFramework=".NETFramework4.6.2" />
+      <frameworkAssembly assemblyName="System" targetFramework=".NETFramework4.6.2" />
+    </frameworkAssemblies>
+  </metadata>
+</package>

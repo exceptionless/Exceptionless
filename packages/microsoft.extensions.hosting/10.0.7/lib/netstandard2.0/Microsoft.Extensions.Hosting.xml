@@ -1,0 +1,1298 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Extensions.Hosting</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.Extensions.Hosting.BackgroundServiceExceptionBehavior">
+            <summary>
+            Specifies a behavior that the <see cref="T:Microsoft.Extensions.Hosting.IHost"/> will honor if an
+            unhandled exception occurs in one of its <see cref="T:Microsoft.Extensions.Hosting.BackgroundService"/> instances.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Hosting.BackgroundServiceExceptionBehavior.StopHost">
+            <summary>
+            Stops the <see cref="T:Microsoft.Extensions.Hosting.IHost"/> instance.
+            </summary>
+            <remarks>
+            If a <see cref="T:Microsoft.Extensions.Hosting.BackgroundService"/> throws an exception, the <see cref="T:Microsoft.Extensions.Hosting.IHost"/> instance stops, and the process continues.
+            </remarks>
+        </member>
+        <member name="F:Microsoft.Extensions.Hosting.BackgroundServiceExceptionBehavior.Ignore">
+            <summary>
+            Ignore exceptions thrown in <see cref="T:Microsoft.Extensions.Hosting.BackgroundService"/>.
+            </summary>
+            <remarks>
+            If a <see cref="T:Microsoft.Extensions.Hosting.BackgroundService"/> throws an exception, the <see cref="T:Microsoft.Extensions.Hosting.IHost"/> will log the error, but otherwise ignore it.
+            The <see cref="T:Microsoft.Extensions.Hosting.BackgroundService"/> is not restarted.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.ConsoleLifetimeOptions">
+            <summary>
+            Provides option flags for <see cref="T:Microsoft.Extensions.Hosting.Internal.ConsoleLifetime"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.ConsoleLifetimeOptions.SuppressStatusMessages">
+            <summary>
+            Gets or sets a value that indicates if host lifetime status messages should be suppressed, such as on startup.
+            </summary>
+            <value>
+            <see langword="true"/> if host lifetime status messages should be suppressed.
+            The default is <see langword="false"/>.
+            </value>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.Host">
+            <summary>
+            Provides convenience methods for creating instances of <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> with pre-configured defaults.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.Host.CreateDefaultBuilder">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Hosting.HostBuilder"/> class with pre-configured defaults.
+            </summary>
+            <remarks>
+              The following defaults are applied to the returned <see cref="T:Microsoft.Extensions.Hosting.HostBuilder"/>:
+              <list type="bullet">
+                <item><description>set the <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.ContentRootPath"/> to the result of <see cref="M:System.IO.Directory.GetCurrentDirectory"/></description></item>
+                <item><description>load host <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from "DOTNET_" prefixed environment variables</description></item>
+                <item><description>load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from 'appsettings.json' and 'appsettings.[<see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/>].json'</description></item>
+                <item><description>load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from User Secrets when <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/> is 'Development' using the entry assembly</description></item>
+                <item><description>load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from environment variables</description></item>
+                <item><description>configure the <see cref="T:Microsoft.Extensions.Logging.ILoggerFactory"/> to log to the console, debug, and event source output</description></item>
+                <item><description>enables scope validation on the dependency injection container when <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/> is 'Development'</description></item>
+              </list>
+            </remarks>
+            <returns>The initialized <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.Host.CreateDefaultBuilder(System.String[])">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Hosting.HostBuilder"/> class with pre-configured defaults.
+            </summary>
+            <remarks>
+              The following defaults are applied to the returned <see cref="T:Microsoft.Extensions.Hosting.HostBuilder"/>:
+              <list type="bullet">
+                <item><description>set the <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.ContentRootPath"/> to the result of <see cref="M:System.IO.Directory.GetCurrentDirectory"/></description></item>
+                <item><description>load host <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from "DOTNET_" prefixed environment variables</description></item>
+                <item><description>load host <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from supplied command line args</description></item>
+                <item><description>load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from 'appsettings.json' and 'appsettings.[<see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/>].json'</description></item>
+                <item><description>load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from User Secrets when <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/> is 'Development' using the entry assembly</description></item>
+                <item><description>load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from environment variables</description></item>
+                <item><description>load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from supplied command line args</description></item>
+                <item><description>configure the <see cref="T:Microsoft.Extensions.Logging.ILoggerFactory"/> to log to the console, debug, and event source output</description></item>
+                <item><description>enables scope validation on the dependency injection container when <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/> is 'Development'</description></item>
+              </list>
+            </remarks>
+            <param name="args">The command line args.</param>
+            <returns>The initialized <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.Host.CreateApplicationBuilder">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Hosting.HostApplicationBuilder"/> class with pre-configured defaults.
+            </summary>
+            <remarks>
+              The following defaults are applied to the returned <see cref="T:Microsoft.Extensions.Hosting.HostApplicationBuilder"/>:
+              <list type="bullet">
+                <item><description>set the <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.ContentRootPath"/> to the result of <see cref="M:System.IO.Directory.GetCurrentDirectory"/></description></item>
+                <item><description>load host <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from "DOTNET_" prefixed environment variables</description></item>
+                <item><description>load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from 'appsettings.json' and 'appsettings.[<see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/>].json'</description></item>
+                <item><description>load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from User Secrets when <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/> is 'Development' using the entry assembly</description></item>
+                <item><description>load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from environment variables</description></item>
+                <item><description>configure the <see cref="T:Microsoft.Extensions.Logging.ILoggerFactory"/> to log to the console, debug, and event source output</description></item>
+                <item><description>enables scope validation on the dependency injection container when <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/> is 'Development'</description></item>
+              </list>
+            </remarks>
+            <returns>The initialized <see cref="T:Microsoft.Extensions.Hosting.HostApplicationBuilder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.Host.CreateApplicationBuilder(System.String[])">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Hosting.HostApplicationBuilder"/> class with pre-configured defaults.
+            </summary>
+            <remarks>
+              The following defaults are applied to the returned <see cref="T:Microsoft.Extensions.Hosting.HostApplicationBuilder"/>:
+              <list type="bullet">
+                <item><description>set the <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.ContentRootPath"/> to the result of <see cref="M:System.IO.Directory.GetCurrentDirectory"/></description></item>
+                <item><description>load host <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from "DOTNET_" prefixed environment variables</description></item>
+                <item><description>load host <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from supplied command line args</description></item>
+                <item><description>load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from 'appsettings.json' and 'appsettings.[<see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/>].json'</description></item>
+                <item><description>load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from User Secrets when <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/> is 'Development' using the entry assembly</description></item>
+                <item><description>load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from environment variables</description></item>
+                <item><description>load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from supplied command line args</description></item>
+                <item><description>configure the <see cref="T:Microsoft.Extensions.Logging.ILoggerFactory"/> to log to the console, debug, and event source output</description></item>
+                <item><description>enables scope validation on the dependency injection container when <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/> is 'Development'</description></item>
+              </list>
+            </remarks>
+            <param name="args">The command line args.</param>
+            <returns>The initialized <see cref="T:Microsoft.Extensions.Hosting.HostApplicationBuilder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.Host.CreateApplicationBuilder(Microsoft.Extensions.Hosting.HostApplicationBuilderSettings)">
+            <inheritdoc cref="M:Microsoft.Extensions.Hosting.Host.CreateApplicationBuilder" />
+            <param name="settings">Controls the initial configuration and other settings for constructing the <see cref="T:Microsoft.Extensions.Hosting.HostApplicationBuilder"/>.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.Host.CreateEmptyApplicationBuilder(Microsoft.Extensions.Hosting.HostApplicationBuilderSettings)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Hosting.HostApplicationBuilder"/> class with no pre-configured defaults.
+            </summary>
+            <param name="settings">Controls the initial configuration and other settings for constructing the <see cref="T:Microsoft.Extensions.Hosting.HostApplicationBuilder"/>.</param>
+            <returns>The initialized <see cref="T:Microsoft.Extensions.Hosting.HostApplicationBuilder"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.HostApplicationBuilder">
+            <summary>
+            Represents a hosted applications and services builder that helps manage configuration, logging, lifetime, and more.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostApplicationBuilder.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Hosting.HostApplicationBuilder"/> class with preconfigured defaults.
+            </summary>
+            <remarks>
+              The following defaults are applied to the returned <see cref="T:Microsoft.Extensions.Hosting.HostApplicationBuilder"/>:
+              <list type="bullet">
+                <item><description>set the <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.ContentRootPath"/> to the result of <see cref="M:System.IO.Directory.GetCurrentDirectory"/></description></item>
+                <item><description>load host <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from "DOTNET_" prefixed environment variables</description></item>
+                <item><description>load host <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from supplied command line args</description></item>
+                <item><description>load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from 'appsettings.json' and 'appsettings.[<see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/>].json'</description></item>
+                <item><description>load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from '[<see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.ApplicationName"/>].settings.json' and '[<see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.ApplicationName"/>].settings.[<see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/>].json' when <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.ApplicationName"/> is not empty</description></item>
+                <item><description>load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from User Secrets when <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/> is 'Development' using the entry assembly</description></item>
+                <item><description>load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from environment variables</description></item>
+                <item><description>load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from supplied command line args</description></item>
+                <item><description>configure the <see cref="T:Microsoft.Extensions.Logging.ILoggerFactory"/> to log to the console, debug, and event source output</description></item>
+                <item><description>enables scope validation on the dependency injection container when <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/> is 'Development'</description></item>
+              </list>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostApplicationBuilder.#ctor(System.String[])">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Hosting.HostApplicationBuilder"/> class with preconfigured defaults.
+            </summary>
+            <remarks>
+              The following defaults are applied to the returned <see cref="T:Microsoft.Extensions.Hosting.HostApplicationBuilder"/>:
+              <list type="bullet">
+                <item><description>set the <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.ContentRootPath"/> to the result of <see cref="M:System.IO.Directory.GetCurrentDirectory"/></description></item>
+                <item><description>load host <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from "DOTNET_" prefixed environment variables</description></item>
+                <item><description>load host <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from supplied command line args</description></item>
+                <item><description>load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from 'appsettings.json' and 'appsettings.[<see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/>].json'</description></item>
+                <item><description>load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from '[<see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.ApplicationName"/>].settings.json' and '[<see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.ApplicationName"/>].settings.[<see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/>].json' when <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.ApplicationName"/> is not empty</description></item>
+                <item><description>load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from User Secrets when <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/> is 'Development' using the entry assembly</description></item>
+                <item><description>load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from environment variables</description></item>
+                <item><description>load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from supplied command line args</description></item>
+                <item><description>configure the <see cref="T:Microsoft.Extensions.Logging.ILoggerFactory"/> to log to the console, debug, and event source output</description></item>
+                <item><description>enables scope validation on the dependency injection container when <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/> is 'Development'</description></item>
+              </list>
+            </remarks>
+            <param name="args">The command line args.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostApplicationBuilder.#ctor(Microsoft.Extensions.Hosting.HostApplicationBuilderSettings)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Hosting.HostApplicationBuilder"/>.
+            </summary>
+            <param name="settings">Settings controlling initial configuration and whether default settings should be used.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.HostApplicationBuilder.Environment">
+            <inheritdoc />
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.HostApplicationBuilder.Configuration">
+            <summary>
+            Gets the set of key/value configuration properties.
+            </summary>
+            <remarks>
+            This can be mutated by adding more configuration sources, which will update its current view.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.HostApplicationBuilder.Services">
+            <inheritdoc />
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.HostApplicationBuilder.Logging">
+            <inheritdoc />
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.HostApplicationBuilder.Metrics">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostApplicationBuilder.ConfigureContainer``1(Microsoft.Extensions.DependencyInjection.IServiceProviderFactory{``0},System.Action{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostApplicationBuilder.Build">
+            <summary>
+            Builds the host. This method can only be called once.
+            </summary>
+            <returns>An initialized <see cref="T:Microsoft.Extensions.Hosting.IHost"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.HostApplicationBuilderSettings">
+            <summary>
+            Settings for constructing an <see cref="T:Microsoft.Extensions.Hosting.HostApplicationBuilder"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostApplicationBuilderSettings.#ctor">
+            <summary>
+            Initializes an instance of the <see cref="T:Microsoft.Extensions.Hosting.HostApplicationBuilderSettings"/> class.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.HostApplicationBuilderSettings.DisableDefaults">
+            <summary>
+            Gets or sets a value that indicates whether the <see cref="T:Microsoft.Extensions.Hosting.HostApplicationBuilder"/> instance is configured with pre-configured defaults.
+            </summary>
+            <value>
+            <see langword="false"/> if the <see cref="T:Microsoft.Extensions.Hosting.HostApplicationBuilder"/> instance is configured with pre-configured defaults.
+            This has a similar effect to calling <see cref="M:Microsoft.Extensions.Hosting.HostingHostBuilderExtensions.ConfigureDefaults(Microsoft.Extensions.Hosting.IHostBuilder,System.String[])"/>.
+            </value>
+            <remarks>
+              The following defaults are applied to the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/>:
+                * set the <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.ContentRootPath"/> to the result of <see cref="M:System.IO.Directory.GetCurrentDirectory"/>
+                * load <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from "DOTNET_" prefixed environment variables
+                * load <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from 'appsettings.json' and 'appsettings.[<see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/>].json'
+                * load <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from User Secrets when <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/> is 'Development' using the entry assembly
+                * load <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from environment variables
+                * load <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from supplied command line args
+                * configure the <see cref="T:Microsoft.Extensions.Logging.ILoggerFactory"/> to log to the console, debug, and event source output
+                * enables scope validation on the dependency injection container when <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/> is 'Development'
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.HostApplicationBuilderSettings.Args">
+            <summary>
+            Gets or sets the command-line arguments to add to the <see cref="P:Microsoft.Extensions.Hosting.HostApplicationBuilder.Configuration"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.HostApplicationBuilderSettings.Configuration">
+            <summary>
+            Gets or sets the initial configuration sources to be added to the <see cref="P:Microsoft.Extensions.Hosting.HostApplicationBuilder.Configuration"/>. These sources can influence
+            the <see cref="P:Microsoft.Extensions.Hosting.HostApplicationBuilder.Environment"/> through the use of <see cref="T:Microsoft.Extensions.Hosting.HostDefaults"/> keys. Disposing the built
+            <see cref="T:Microsoft.Extensions.Hosting.IHost"/> disposes the <see cref="T:Microsoft.Extensions.Configuration.ConfigurationManager"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.HostApplicationBuilderSettings.EnvironmentName">
+            <summary>
+            Gets or sets the environment name.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.HostApplicationBuilderSettings.ApplicationName">
+            <summary>
+            Gets or sets the application name.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.HostApplicationBuilderSettings.ContentRootPath">
+            <summary>
+            Gets or sets the content root path.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.HostBuilder">
+            <summary>
+            A program initialization utility.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostBuilder.#ctor">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.Extensions.Hosting.HostBuilder"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.HostBuilder.Properties">
+            <summary>
+            Gets a central location for sharing state between components during the host building process.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostBuilder.ConfigureHostConfiguration(System.Action{Microsoft.Extensions.Configuration.IConfigurationBuilder})">
+            <summary>
+            Set up the configuration for the builder itself. This will be used to initialize the <see cref="T:Microsoft.Extensions.Hosting.IHostEnvironment"/>
+            for use later in the build process. This can be called multiple times and the results will be additive.
+            </summary>
+            <param name="configureDelegate">The delegate for configuring the <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/> that will be used
+            to construct the <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> for the host.</param>
+            <returns>The same instance of the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostBuilder.ConfigureAppConfiguration(System.Action{Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.Configuration.IConfigurationBuilder})">
+            <summary>
+            Sets up the configuration for the remainder of the build process and application. This can be called multiple times and
+            the results will be additive. The results will be available at <see cref="P:Microsoft.Extensions.Hosting.HostBuilderContext.Configuration"/> for
+            subsequent operations, as well as in <see cref="P:Microsoft.Extensions.Hosting.IHost.Services"/>.
+            </summary>
+            <param name="configureDelegate">The delegate for configuring the <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/> that will be used
+            to construct the <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> for the host.</param>
+            <returns>The same instance of the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostBuilder.ConfigureServices(System.Action{Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.DependencyInjection.IServiceCollection})">
+            <summary>
+            Adds services to the container. This can be called multiple times and the results will be additive.
+            </summary>
+            <param name="configureDelegate">The delegate for configuring the <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/> that will be used
+            to construct the <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> for the host.</param>
+            <returns>The same instance of the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostBuilder.UseServiceProviderFactory``1(Microsoft.Extensions.DependencyInjection.IServiceProviderFactory{``0})">
+            <summary>
+            Overrides the factory used to create the service provider.
+            </summary>
+            <typeparam name="TContainerBuilder">The type of the builder to create.</typeparam>
+            <param name="factory">A factory used for creating service providers.</param>
+            <returns>The same instance of the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostBuilder.UseServiceProviderFactory``1(System.Func{Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.DependencyInjection.IServiceProviderFactory{``0}})">
+            <summary>
+            Overrides the factory used to create the service provider.
+            </summary>
+            <param name="factory">A factory used for creating service providers.</param>
+            <typeparam name="TContainerBuilder">The type of the builder to create.</typeparam>
+            <returns>The same instance of the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostBuilder.ConfigureContainer``1(System.Action{Microsoft.Extensions.Hosting.HostBuilderContext,``0})">
+            <summary>
+            Enables configuring the instantiated dependency container. This can be called multiple times and
+            the results will be additive.
+            </summary>
+            <typeparam name="TContainerBuilder">The type of the builder to create.</typeparam>
+            <param name="configureDelegate">The delegate for configuring the <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/> that will be used
+            to construct the <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> for the host.</param>
+            <returns>The same instance of the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostBuilder.Build">
+            <summary>
+            Run the given actions to initialize the host. This can only be called once.
+            </summary>
+            <returns>An initialized <see cref="T:Microsoft.Extensions.Hosting.IHost"/>.</returns>
+            <remarks>Adds basic services to the host such as application lifetime, host environment, and logging.</remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.HostingHostBuilderExtensions">
+            <summary>
+            Provides extension methods for the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> from the hosting package.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingHostBuilderExtensions.UseEnvironment(Microsoft.Extensions.Hosting.IHostBuilder,System.String)">
+            <summary>
+            Specifies the environment to be used by the host. To avoid the environment being overwritten by a default
+            value, ensure this is called after defaults are configured.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> to configure.</param>
+            <param name="environment">The environment to host the application in.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingHostBuilderExtensions.UseContentRoot(Microsoft.Extensions.Hosting.IHostBuilder,System.String)">
+            <summary>
+            Specifies the content root directory to be used by the host. To avoid the content root directory being
+            overwritten by a default value, ensure this is called after defaults are configured.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> to configure.</param>
+            <param name="contentRoot">Path to root directory of the application.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingHostBuilderExtensions.UseDefaultServiceProvider(Microsoft.Extensions.Hosting.IHostBuilder,System.Action{Microsoft.Extensions.DependencyInjection.ServiceProviderOptions})">
+            <summary>
+            Specifies the <see cref="T:System.IServiceProvider"/> to be the default one.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> to configure.</param>
+            <param name="configure">The delegate that configures the <see cref="T:System.IServiceProvider"/>.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingHostBuilderExtensions.UseDefaultServiceProvider(Microsoft.Extensions.Hosting.IHostBuilder,System.Action{Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.DependencyInjection.ServiceProviderOptions})">
+            <summary>
+            Specifies the <see cref="T:System.IServiceProvider"/> to be the default one.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> to configure.</param>
+            <param name="configure">The delegate that configures the <see cref="T:System.IServiceProvider"/>.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingHostBuilderExtensions.ConfigureLogging(Microsoft.Extensions.Hosting.IHostBuilder,System.Action{Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.Logging.ILoggingBuilder})">
+            <summary>
+            Adds a delegate for configuring the provided <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/>. This can be called multiple times.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder" /> to configure.</param>
+            <param name="configureLogging">The delegate that configures the <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/>.</param>
+            <returns>The same instance of the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingHostBuilderExtensions.ConfigureLogging(Microsoft.Extensions.Hosting.IHostBuilder,System.Action{Microsoft.Extensions.Logging.ILoggingBuilder})">
+            <summary>
+            Adds a delegate for configuring the provided <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/>. This can be called multiple times.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder" /> to configure.</param>
+            <param name="configureLogging">The delegate that configures the <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/>.</param>
+            <returns>The same instance of the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingHostBuilderExtensions.ConfigureHostOptions(Microsoft.Extensions.Hosting.IHostBuilder,System.Action{Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.Hosting.HostOptions})">
+            <summary>
+            Adds a delegate for configuring the <see cref="T:Microsoft.Extensions.Hosting.HostOptions"/> of the <see cref="T:Microsoft.Extensions.Hosting.IHost"/>.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder" /> to configure.</param>
+            <param name="configureOptions">The delegate for configuring the <see cref="T:Microsoft.Extensions.Hosting.HostOptions"/>.</param>
+            <returns>The same instance of the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingHostBuilderExtensions.ConfigureHostOptions(Microsoft.Extensions.Hosting.IHostBuilder,System.Action{Microsoft.Extensions.Hosting.HostOptions})">
+            <summary>
+            Adds a delegate for configuring the <see cref="T:Microsoft.Extensions.Hosting.HostOptions"/> of the <see cref="T:Microsoft.Extensions.Hosting.IHost"/>.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder" /> to configure.</param>
+            <param name="configureOptions">The delegate for configuring the <see cref="T:Microsoft.Extensions.Hosting.HostOptions"/>.</param>
+            <returns>The same instance of the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingHostBuilderExtensions.ConfigureAppConfiguration(Microsoft.Extensions.Hosting.IHostBuilder,System.Action{Microsoft.Extensions.Configuration.IConfigurationBuilder})">
+            <summary>
+            Sets up the configuration for the remainder of the build process and application. This can be called multiple times and
+            the results will be additive. The results will be available at <see cref="P:Microsoft.Extensions.Hosting.HostBuilderContext.Configuration"/> for
+            subsequent operations, as well as in <see cref="P:Microsoft.Extensions.Hosting.IHost.Services"/>.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder" /> to configure.</param>
+            <param name="configureDelegate">The delegate for configuring the <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/> that will be used
+            to construct the <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> for the host.</param>
+            <returns>The same instance of the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingHostBuilderExtensions.ConfigureServices(Microsoft.Extensions.Hosting.IHostBuilder,System.Action{Microsoft.Extensions.DependencyInjection.IServiceCollection})">
+            <summary>
+            Adds services to the container. This can be called multiple times and the results will be additive.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder" /> to configure.</param>
+            <param name="configureDelegate">The delegate for configuring the <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.</param>
+            <returns>The same instance of the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingHostBuilderExtensions.ConfigureContainer``1(Microsoft.Extensions.Hosting.IHostBuilder,System.Action{``0})">
+            <summary>
+            Enables configuring the instantiated dependency container. This can be called multiple times and
+            the results will be additive.
+            </summary>
+            <typeparam name="TContainerBuilder">The type of builder.</typeparam>
+            <param name="hostBuilder">The <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder" /> to configure.</param>
+            <param name="configureDelegate">The delegate for configuring the <typeparamref name="TContainerBuilder"/>.</param>
+            <returns>The same instance of the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingHostBuilderExtensions.ConfigureDefaults(Microsoft.Extensions.Hosting.IHostBuilder,System.String[])">
+            <summary>
+            Configures an existing <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> instance with pre-configured defaults. This will overwrite
+            previously configured values and is intended to be called before additional configuration calls.
+            </summary>
+            <remarks>
+              The following defaults are applied to the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/>:
+                * set the <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.ContentRootPath"/> to the result of <see cref="M:System.IO.Directory.GetCurrentDirectory"/>
+                * load host <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from "DOTNET_" prefixed environment variables
+                * load host <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from supplied command line args
+                * load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from 'appsettings.json' and 'appsettings.[<see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/>].json'
+                * load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from '[<see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.ApplicationName"/>].settings.json' and '[<see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.ApplicationName"/>].settings.[<see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/>].json' when <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.ApplicationName"/> is not empty
+                * load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from User Secrets when <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/> is 'Development' using the entry assembly
+                * load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from environment variables
+                * load app <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> from supplied command line args
+                * configure the <see cref="T:Microsoft.Extensions.Logging.ILoggerFactory"/> to log to the console, debug, and event source output
+                * enables scope validation on the dependency injection container when <see cref="P:Microsoft.Extensions.Hosting.IHostEnvironment.EnvironmentName"/> is 'Development'
+            </remarks>
+            <param name="builder">The existing builder to configure.</param>
+            <param name="args">The command line args.</param>
+            <returns>The same instance of the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingHostBuilderExtensions.UseConsoleLifetime(Microsoft.Extensions.Hosting.IHostBuilder)">
+            <summary>
+            Listens for Ctrl+C or SIGTERM and calls <see cref="M:Microsoft.Extensions.Hosting.IHostApplicationLifetime.StopApplication"/> to start the shutdown process.
+            This will unblock extensions like RunAsync and WaitForShutdownAsync.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder" /> to configure.</param>
+            <returns>The same instance of the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingHostBuilderExtensions.UseConsoleLifetime(Microsoft.Extensions.Hosting.IHostBuilder,System.Action{Microsoft.Extensions.Hosting.ConsoleLifetimeOptions})">
+            <summary>
+            Listens for Ctrl+C or SIGTERM and calls <see cref="M:Microsoft.Extensions.Hosting.IHostApplicationLifetime.StopApplication"/> to start the shutdown process.
+            This will unblock extensions like RunAsync and WaitForShutdownAsync.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder" /> to configure.</param>
+            <param name="configureOptions">The delegate for configuring the <see cref="T:Microsoft.Extensions.Hosting.Internal.ConsoleLifetime"/>.</param>
+            <returns>The same instance of the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingHostBuilderExtensions.RunConsoleAsync(Microsoft.Extensions.Hosting.IHostBuilder,System.Threading.CancellationToken)">
+            <summary>
+            Enables console support, builds and starts the host, and waits for Ctrl+C or SIGTERM to shut down.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder" /> to configure.</param>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken"/> that can be used to cancel the console.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/> that only completes when the token is triggered or shutdown is triggered.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingHostBuilderExtensions.RunConsoleAsync(Microsoft.Extensions.Hosting.IHostBuilder,System.Action{Microsoft.Extensions.Hosting.ConsoleLifetimeOptions},System.Threading.CancellationToken)">
+            <summary>
+            Enables console support, builds and starts the host, and waits for Ctrl+C or SIGTERM to shut down.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder" /> to configure.</param>
+            <param name="configureOptions">The delegate for configuring the <see cref="T:Microsoft.Extensions.Hosting.Internal.ConsoleLifetime"/>.</param>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken"/> that can be used to cancel the console.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/> that only completes when the token is triggered or shutdown is triggered.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingHostBuilderExtensions.ConfigureMetrics(Microsoft.Extensions.Hosting.IHostBuilder,System.Action{Microsoft.Extensions.Diagnostics.Metrics.IMetricsBuilder})">
+            <summary>
+            Adds a delegate for configuring the provided <see cref="T:Microsoft.Extensions.Diagnostics.Metrics.IMetricsBuilder"/>. This can be called multiple times.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder" /> to configure.</param>
+            <param name="configureMetrics">The delegate that configures the <see cref="T:Microsoft.Extensions.Diagnostics.Metrics.IMetricsBuilder"/>.</param>
+            <returns>The same instance of the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> for chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.HostingHostBuilderExtensions.ConfigureMetrics(Microsoft.Extensions.Hosting.IHostBuilder,System.Action{Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.Diagnostics.Metrics.IMetricsBuilder})">
+            <summary>
+            Adds a delegate for configuring the provided <see cref="T:Microsoft.Extensions.Diagnostics.Metrics.IMetricsBuilder"/>. This can be called multiple times.
+            </summary>
+            <param name="hostBuilder">The <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder" /> to configure.</param>
+            <param name="configureMetrics">The delegate that configures the <see cref="T:Microsoft.Extensions.Diagnostics.Metrics.IMetricsBuilder"/>.</param>
+            <returns>The same instance of the <see cref="T:Microsoft.Extensions.Hosting.IHostBuilder"/> for chaining.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.HostOptions">
+            <summary>
+            Options for <see cref="T:Microsoft.Extensions.Hosting.IHost"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.HostOptions.ShutdownTimeout">
+            <summary>
+            Gets or sets the default timeout for <see cref="M:Microsoft.Extensions.Hosting.IHost.StopAsync(System.Threading.CancellationToken)"/>.
+            </summary>
+            <remarks>
+            This timeout also encompasses all host services implementing
+            <see cref="M:Microsoft.Extensions.Hosting.IHostedLifecycleService.StoppingAsync(System.Threading.CancellationToken)"/> and
+            <see cref="M:Microsoft.Extensions.Hosting.IHostedLifecycleService.StoppedAsync(System.Threading.CancellationToken)"/>.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.HostOptions.StartupTimeout">
+            <summary>
+            Gets or sets the default timeout for <see cref="M:Microsoft.Extensions.Hosting.IHost.StartAsync(System.Threading.CancellationToken)"/>.
+            </summary>
+            <remarks>
+            This timeout also encompasses all host services implementing
+            <see cref="M:Microsoft.Extensions.Hosting.IHostedLifecycleService.StartingAsync(System.Threading.CancellationToken)"/> and
+            <see cref="M:Microsoft.Extensions.Hosting.IHostedLifecycleService.StartedAsync(System.Threading.CancellationToken)"/>.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.HostOptions.ServicesStartConcurrently">
+            <summary>
+            Gets or sets a value that indicates if the <see cref="T:Microsoft.Extensions.Hosting.IHost"/> will start registered instances of <see cref="T:Microsoft.Extensions.Hosting.IHostedService"/> concurrently or sequentially.
+            </summary>
+            <value>
+            <see langword="true"/> if the <see cref="T:Microsoft.Extensions.Hosting.IHost"/> will start registered instances of <see cref="T:Microsoft.Extensions.Hosting.IHostedService"/> concurrently; <see langword="false"/> if the <see cref="T:Microsoft.Extensions.Hosting.IHost"/> will start registered instances sequentially. The default is <see langword="false"/> .
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.HostOptions.ServicesStopConcurrently">
+            <summary>
+            Gets or sets a value that indicates if the <see cref="T:Microsoft.Extensions.Hosting.IHost"/> will stop registered instances of <see cref="T:Microsoft.Extensions.Hosting.IHostedService"/> concurrently or sequentially.
+            </summary>
+            <value>
+            <see langword="true"/> if the <see cref="T:Microsoft.Extensions.Hosting.IHost"/> will stop registered instances of <see cref="T:Microsoft.Extensions.Hosting.IHostedService"/> concurrently; <see langword="false"/> if the <see cref="T:Microsoft.Extensions.Hosting.IHost"/> will stop registered instances sequentially. The default is <see langword="false"/> .
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.HostOptions.BackgroundServiceExceptionBehavior">
+            <summary>
+            Gets or sets the behavior the <see cref="T:Microsoft.Extensions.Hosting.IHost"/> will follow when any of
+            its <see cref="T:Microsoft.Extensions.Hosting.BackgroundService"/> instances throw an unhandled exception.
+            </summary>
+            <remarks>
+            Defaults to <see cref="F:Microsoft.Extensions.Hosting.BackgroundServiceExceptionBehavior.StopHost"/>.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.Internal.ApplicationLifetime">
+            <summary>
+            Allows consumers to perform cleanup during a graceful shutdown.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.Internal.ApplicationLifetime.#ctor(Microsoft.Extensions.Logging.ILogger{Microsoft.Extensions.Hosting.Internal.ApplicationLifetime})">
+            <summary>
+            Initializes an <see cref="T:Microsoft.Extensions.Hosting.Internal.ApplicationLifetime"/> instance using the specified logger.
+            </summary>
+            <param name="logger">The logger to initialize this instance with.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.Internal.ApplicationLifetime.ApplicationStarted">
+            <summary>
+            Gets a cancellation token. Triggered when the application host has fully started and is about to wait
+            for a graceful shutdown.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.Internal.ApplicationLifetime.ApplicationStopping">
+            <summary>
+            Gets a cancellation token. Triggered when the application host is performing a graceful shutdown.
+            Request might still be in flight. Shutdown will block until this event completes.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.Internal.ApplicationLifetime.ApplicationStopped">
+            <summary>
+            Gets a cancellation token. Triggered when the application host is performing a graceful shutdown.
+            All requests should be complete at this point. Shutdown will block
+            until this event completes.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.Internal.ApplicationLifetime.StopApplication">
+            <summary>
+            Signals the ApplicationStopping event and blocks until it completes.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.Internal.ApplicationLifetime.NotifyStarted">
+            <summary>
+            Signals the ApplicationStarted event and blocks until it completes.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.Internal.ApplicationLifetime.NotifyStopped">
+            <summary>
+            Signals the ApplicationStopped event and blocks until it completes.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.Internal.ConsoleLifetime">
+            <summary>
+            Listens for Ctrl+C or SIGTERM and initiates shutdown.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.Internal.ConsoleLifetime.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Extensions.Hosting.ConsoleLifetimeOptions},Microsoft.Extensions.Hosting.IHostEnvironment,Microsoft.Extensions.Hosting.IHostApplicationLifetime,Microsoft.Extensions.Options.IOptions{Microsoft.Extensions.Hosting.HostOptions})">
+            <summary>
+            Initializes a <see cref="T:Microsoft.Extensions.Hosting.Internal.ConsoleLifetime"/> instance using the specified console lifetime options, host environment, host application lifetime, and host options.
+            </summary>
+            <param name="options">An object used to retrieve <see cref="T:Microsoft.Extensions.Hosting.ConsoleLifetimeOptions"/> instances.</param>
+            <param name="environment">Information about the hosting environment an application is running in.</param>
+            <param name="applicationLifetime">An object that allows consumers to be notified of application lifetime events.</param>
+            <param name="hostOptions">An object used to retrieve internal host options instances.</param>
+            <exception cref="T:System.ArgumentNullException"><paramref name="options"/> or <paramref name="environment"/> or <paramref name="applicationLifetime"/> or <paramref name="hostOptions"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.Internal.ConsoleLifetime.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Extensions.Hosting.ConsoleLifetimeOptions},Microsoft.Extensions.Hosting.IHostEnvironment,Microsoft.Extensions.Hosting.IHostApplicationLifetime,Microsoft.Extensions.Options.IOptions{Microsoft.Extensions.Hosting.HostOptions},Microsoft.Extensions.Logging.ILoggerFactory)">
+            <summary>
+            Initializes a <see cref="T:Microsoft.Extensions.Hosting.Internal.ConsoleLifetime"/> instance using the specified console lifetime options, host environment, host options, and logger factory.
+            </summary>
+            <param name="options">An object used to retrieve <see cref="T:Microsoft.Extensions.Hosting.ConsoleLifetimeOptions"/> instances.</param>
+            <param name="environment">Information about the hosting environment an application is running in.</param>
+            <param name="applicationLifetime">An object that allows consumers to be notified of application lifetime events.</param>
+            <param name="hostOptions">An object used to retrieve <see cref="P:Microsoft.Extensions.Hosting.Internal.ConsoleLifetime.HostOptions"/> instances.</param>
+            <param name="loggerFactory">An object to configure the logging system and create instances of <see cref="T:Microsoft.Extensions.Logging.ILogger"/> from the registered <see cref="T:Microsoft.Extensions.Logging.ILoggerProvider"/>.</param>
+            <exception cref="T:System.ArgumentNullException"><paramref name="options"/> or <paramref name="environment"/> or <paramref name="applicationLifetime"/> or <paramref name="hostOptions"/> or <paramref name="loggerFactory"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.Internal.ConsoleLifetime.WaitForStartAsync(System.Threading.CancellationToken)">
+            <summary>
+            Registers the application start, application stop and shutdown handlers for this application.
+            </summary>
+            <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/> that represents the asynchronous registration operation.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.Internal.ConsoleLifetime.StopAsync(System.Threading.CancellationToken)">
+            <summary>
+            This method does nothing.
+            </summary>
+            <param name="cancellationToken">A cancellation token instance.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/> that represents a completed task.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.Internal.ConsoleLifetime.Dispose">
+            <summary>
+            Unregisters the shutdown handlers and disposes the application start and application stop registrations.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.Internal.Host.StartAsync(System.Threading.CancellationToken)">
+            <summary>
+            Order:
+             IHostLifetime.WaitForStartAsync
+             Services.GetService{IStartupValidator}().Validate()
+             IHostedLifecycleService.StartingAsync
+             IHostedService.Start
+             IHostedLifecycleService.StartedAsync
+             IHostApplicationLifetime.ApplicationStarted
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.Internal.Host.StopAsync(System.Threading.CancellationToken)">
+            <summary>
+            Order:
+             IHostedLifecycleService.StoppingAsync
+             IHostApplicationLifetime.ApplicationStopping
+             IHostedService.Stop
+             IHostedLifecycleService.StoppedAsync
+             IHostApplicationLifetime.ApplicationStopped
+             IHostLifetime.StopAsync
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.Internal.HostingEnvironment">
+            <summary>
+            This API supports infrastructure and is not intended to be used
+            directly from your code. This API may change or be removed in future releases.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.Internal.HostingEnvironment.EnvironmentName">
+            <summary>
+            This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.Internal.HostingEnvironment.ApplicationName">
+            <summary>
+            This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.Internal.HostingEnvironment.ContentRootPath">
+            <summary>
+            This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.Internal.HostingEnvironment.ContentRootFileProvider">
+            <summary>
+            This API supports infrastructure and is not intended to be used directly from your code. This API may change or be removed in future releases.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.Internal.NullLifetime">
+            <summary>
+            Minimalistic lifetime that does nothing.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+            <summary>
+            Suppresses reporting of a specific rule violation, allowing multiple suppressions on a
+            single code artifact.
+            </summary>
+            <remarks>
+            <see cref="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute"/> is different than
+            <see cref="T:System.Diagnostics.CodeAnalysis.SuppressMessageAttribute"/> in that it doesn't have a
+            <see cref="T:System.Diagnostics.ConditionalAttribute"/>. So it is always preserved in the compiled assembly.
+            </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute"/>
+            class, specifying the category of the tool and the identifier for an analysis rule.
+            </summary>
+            <param name="category">The category for the attribute.</param>
+            <param name="checkId">The identifier of the analysis rule the attribute applies to.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Category">
+            <summary>
+            Gets the category identifying the classification of the attribute.
+            </summary>
+            <remarks>
+            The <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Category"/> property describes the tool or tool analysis category
+            for which a message suppression attribute applies.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.CheckId">
+            <summary>
+            Gets the identifier of the analysis tool rule to be suppressed.
+            </summary>
+            <remarks>
+            Concatenated together, the <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Category"/> and <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.CheckId"/>
+            properties form a unique check identifier.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Scope">
+            <summary>
+            Gets or sets the scope of the code that is relevant for the attribute.
+            </summary>
+            <remarks>
+            The Scope property is an optional argument that specifies the metadata scope for which
+            the attribute is relevant.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Target">
+            <summary>
+            Gets or sets a fully qualified path that represents the target of the attribute.
+            </summary>
+            <remarks>
+            The <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Target"/> property is an optional argument identifying the analysis target
+            of the attribute. An example value is "System.IO.Stream.ctor():System.Void".
+            Because it is fully qualified, it can be long, particularly for targets such as parameters.
+            The analysis tool user interface should be capable of automatically formatting the parameter.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.MessageId">
+            <summary>
+            Gets or sets an optional argument expanding on exclusion criteria.
+            </summary>
+            <remarks>
+            The <see cref="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.MessageId"/> property is an optional argument that specifies additional
+            exclusion where the literal metadata target is not sufficiently precise. For example,
+            the <see cref="T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute"/> cannot be applied within a method,
+            and it may be desirable to suppress a violation against a statement in the method that will
+            give a rule violation, but not against all statements in the method.
+            </remarks>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute.Justification">
+            <summary>
+            Gets or sets the justification for suppressing the code analysis message.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
+             <summary>
+             Indicates that certain members on a specified <see cref="T:System.Type"/> are accessed dynamically,
+             for example through <see cref="N:System.Reflection"/>.
+             </summary>
+             <remarks>
+             This allows tools to understand which members are being accessed during the execution
+             of a program.
+            
+             This attribute is valid on members whose type is <see cref="T:System.Type"/> or <see cref="T:System.String"/>.
+            
+             When this attribute is applied to a location of type <see cref="T:System.String"/>, the assumption is
+             that the string represents a fully qualified type name.
+            
+             When this attribute is applied to a class, interface, or struct, the members specified
+             can be accessed dynamically on <see cref="T:System.Type"/> instances returned from calling
+             <see cref="M:System.Object.GetType"/> on instances of that class, interface, or struct.
+            
+             If the attribute is applied to a method it's treated as a special case and it implies
+             the attribute should be applied to the "this" parameter of the method. As such the attribute
+             should only be used on instance methods of types assignable to System.Type (or string, but no methods
+             will use it there).
+             </remarks>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute.#ctor(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute"/> class
+            with the specified member types.
+            </summary>
+            <param name="memberTypes">The types of members dynamically accessed.</param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute.MemberTypes">
+            <summary>
+            Gets the <see cref="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes"/> which specifies the type
+            of members dynamically accessed.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">
+             <summary>
+             Specifies the types of members that are dynamically accessed.
+            
+             This enumeration has a <see cref="T:System.FlagsAttribute"/> attribute that allows a
+             bitwise combination of its member values.
+             </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.None">
+            <summary>
+            Specifies no members.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor">
+            <summary>
+            Specifies the default, parameterless public constructor.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors">
+            <summary>
+            Specifies all public constructors.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors">
+            <summary>
+            Specifies all non-public constructors.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods">
+            <summary>
+            Specifies all public methods.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods">
+            <summary>
+            Specifies all non-public methods.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields">
+            <summary>
+            Specifies all public fields.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields">
+            <summary>
+            Specifies all non-public fields.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes">
+            <summary>
+            Specifies all public nested types.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypes">
+            <summary>
+            Specifies all non-public nested types.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties">
+            <summary>
+            Specifies all public properties.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties">
+            <summary>
+            Specifies all non-public properties.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents">
+            <summary>
+            Specifies all public events.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicEvents">
+            <summary>
+            Specifies all non-public events.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces">
+            <summary>
+            Specifies all interfaces implemented by the type.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructorsWithInherited">
+            <summary>
+            Specifies all non-public constructors, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethodsWithInherited">
+            <summary>
+            Specifies all non-public methods, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFieldsWithInherited">
+            <summary>
+            Specifies all non-public fields, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypesWithInherited">
+            <summary>
+            Specifies all non-public nested types, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicPropertiesWithInherited">
+            <summary>
+            Specifies all non-public properties, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicEventsWithInherited">
+            <summary>
+            Specifies all non-public events, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructorsWithInherited">
+            <summary>
+            Specifies all public constructors, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypesWithInherited">
+            <summary>
+            Specifies all public nested types, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllConstructors">
+            <summary>
+            Specifies all constructors, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods">
+            <summary>
+            Specifies all methods, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllFields">
+            <summary>
+            Specifies all fields, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllNestedTypes">
+            <summary>
+            Specifies all nested types, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllProperties">
+            <summary>
+            Specifies all properties, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllEvents">
+            <summary>
+            Specifies all events, including those inherited from base classes.
+            </summary>
+        </member>
+        <member name="F:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All">
+            <summary>
+            Specifies all members.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.AllowNullAttribute">
+            <summary>Specifies that null is allowed as an input even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DisallowNullAttribute">
+            <summary>Specifies that null is disallowed as an input even if the corresponding type allows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullAttribute">
+            <summary>Specifies that an output may be null even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullAttribute">
+            <summary>Specifies that an output will not be null even if the corresponding type allows it. Specifies that an input argument was not null when the call returns.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute">
+            <summary>Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue"/>, the parameter may be null even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified return value condition.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter may be null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute">
+            <summary>Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue"/>, the parameter will not be null even if the corresponding type allows it.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified return value condition.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter will not be null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute">
+            <summary>Specifies that the output will be non-null if the named parameter is non-null.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.#ctor(System.String)">
+            <summary>Initializes the attribute with the associated parameter name.</summary>
+            <param name="parameterName">
+            The associated parameter name.  The output will be non-null if the argument to the parameter specified is non-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.ParameterName">
+            <summary>Gets the associated parameter name.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute">
+            <summary>Applied to a method that will never return under any circumstance.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute">
+            <summary>Specifies that the method will not return if the associated Boolean parameter is passed the specified value.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified parameter value.</summary>
+            <param name="parameterValue">
+            The condition parameter value. Code after the method will be considered unreachable by diagnostics if the argument to
+            the associated parameter matches this value.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.ParameterValue">
+            <summary>Gets the condition parameter value.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute">
+            <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String)">
+            <summary>Initializes the attribute with a field or property member.</summary>
+            <param name="member">
+            The field or property member that is promised to be not-null.
+            </param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String[])">
+            <summary>Initializes the attribute with the list of field and property members.</summary>
+            <param name="members">
+            The list of field and property members that are promised to be not-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.Members">
+            <summary>Gets field or property member names.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute">
+            <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values when returning with the specified return value condition.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.#ctor(System.Boolean,System.String)">
+            <summary>Initializes the attribute with the specified return value condition and a field or property member.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated field or property member will not be null.
+            </param>
+            <param name="member">
+            The field or property member that is promised to be not-null.
+            </param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.#ctor(System.Boolean,System.String[])">
+            <summary>Initializes the attribute with the specified return value condition and list of field and property members.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated field and property members will not be null.
+            </param>
+            <param name="members">
+            The list of field and property members that are promised to be not-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.Members">
+            <summary>Gets field or property member names.</summary>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.CompilerLoweringPreserveAttribute">
+            <summary>
+            When applied to an attribute class, instructs the compiler to flow applications of that attribute,
+            from source code down to compiler-generated symbols. This can help IL-based analysis tools.
+            </summary>
+            <remarks>
+            One example where this attribute applies is in C# primary constructor parameters. If an attribute
+            marked with <see cref="T:System.Runtime.CompilerServices.CompilerLoweringPreserveAttribute"/> gets applied to a primary constructor
+            parameter, the attribute will also be applied to any compiler-generated fields storing that parameter.
+            </remarks>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.CompilerLoweringPreserveAttribute.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.CompilerServices.CompilerLoweringPreserveAttribute"/> class.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.InteropServices.LibraryImportAttribute">
+            <summary>
+            Attribute used to indicate a source generator should create a function for marshalling
+            arguments instead of relying on the runtime to generate an equivalent marshalling function at run-time.
+            </summary>
+            <remarks>
+            This attribute is meaningless if the source generator associated with it is not enabled.
+            The current built-in source generator only supports C# and only supplies an implementation when
+            applied to static, partial, non-generic methods.
+            </remarks>
+        </member>
+        <member name="M:System.Runtime.InteropServices.LibraryImportAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.InteropServices.LibraryImportAttribute"/>.
+            </summary>
+            <param name="libraryName">Name of the library containing the import.</param>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.LibraryName">
+            <summary>
+            Gets the name of the library containing the import.
+            </summary>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.EntryPoint">
+            <summary>
+            Gets or sets the name of the entry point to be called.
+            </summary>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshalling">
+            <summary>
+            Gets or sets how to marshal string arguments to the method.
+            </summary>
+            <remarks>
+            If this field is set to a value other than <see cref="F:System.Runtime.InteropServices.StringMarshalling.Custom" />,
+            <see cref="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshallingCustomType" /> must not be specified.
+            </remarks>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshallingCustomType">
+            <summary>
+            Gets or sets the <see cref="T:System.Type"/> used to control how string arguments to the method are marshalled.
+            </summary>
+            <remarks>
+            If this field is specified, <see cref="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshalling" /> must not be specified
+            or must be set to <see cref="F:System.Runtime.InteropServices.StringMarshalling.Custom" />.
+            </remarks>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.SetLastError">
+            <summary>
+            Gets or sets whether the callee sets an error (SetLastError on Windows or errno
+            on other platforms) before returning from the attributed method.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.InteropServices.StringMarshalling">
+            <summary>
+            Specifies how strings should be marshalled for generated p/invokes
+            </summary>
+        </member>
+        <member name="F:System.Runtime.InteropServices.StringMarshalling.Custom">
+            <summary>
+            Indicates the user is supplying a specific marshaller in <see cref="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshallingCustomType"/>.
+            </summary>
+        </member>
+        <member name="F:System.Runtime.InteropServices.StringMarshalling.Utf8">
+            <summary>
+            Use the platform-provided UTF-8 marshaller.
+            </summary>
+        </member>
+        <member name="F:System.Runtime.InteropServices.StringMarshalling.Utf16">
+            <summary>
+            Use the platform-provided UTF-16 marshaller.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.Versioning.OSPlatformAttribute">
+            <summary>
+            Base type for all platform-specific API attributes.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.Versioning.TargetPlatformAttribute">
+            <summary>
+            Records the platform that the project targeted.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.Versioning.SupportedOSPlatformAttribute">
+             <summary>
+             Records the operating system (and minimum version) that supports an API. Multiple attributes can be
+             applied to indicate support on multiple operating systems.
+             </summary>
+             <remarks>
+             Callers can apply a <see cref="T:System.Runtime.Versioning.SupportedOSPlatformAttribute" />
+             or use guards to prevent calls to APIs on unsupported operating systems.
+            
+             A given platform should only be specified once.
+             </remarks>
+        </member>
+        <member name="T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute">
+            <summary>
+            Marks APIs that were removed in a given operating system version.
+            </summary>
+            <remarks>
+            Primarily used by OS bindings to indicate APIs that are only available in
+            earlier versions.
+            </remarks>
+        </member>
+        <member name="T:System.Runtime.Versioning.ObsoletedOSPlatformAttribute">
+            <summary>
+            Marks APIs that were obsoleted in a given operating system version.
+            </summary>
+            <remarks>
+            Primarily used by OS bindings to indicate APIs that should not be used anymore.
+            </remarks>
+        </member>
+        <member name="M:System.Runtime.Versioning.ObsoletedOSPlatformAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.Versioning.ObsoletedOSPlatformAttribute"/> class with the specified platform name.
+            </summary>
+            <param name="platformName">The name of the platform where the API was obsoleted.</param>
+        </member>
+        <member name="M:System.Runtime.Versioning.ObsoletedOSPlatformAttribute.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.Versioning.ObsoletedOSPlatformAttribute"/> class with the specified platform name and message.
+            </summary>
+            <param name="platformName">The name of the platform where the API was obsoleted.</param>
+            <param name="message">The message that explains the obsolescence.</param>
+        </member>
+        <member name="P:System.Runtime.Versioning.ObsoletedOSPlatformAttribute.Message">
+            <summary>
+            Gets the message that explains the obsolescence.
+            </summary>
+        </member>
+        <member name="P:System.Runtime.Versioning.ObsoletedOSPlatformAttribute.Url">
+            <summary>
+            Gets or sets the URL that provides more information about the obsolescence.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.Versioning.SupportedOSPlatformGuardAttribute">
+             <summary>
+             Annotates a custom guard field, property or method with a supported platform name and optional version.
+             Multiple attributes can be applied to indicate guard for multiple supported platforms.
+             </summary>
+             <remarks>
+             Callers can apply a <see cref="T:System.Runtime.Versioning.SupportedOSPlatformGuardAttribute" /> to a field, property or method
+             and use that field, property or method in a conditional or assert statements in order to safely call platform specific APIs.
+            
+             The type of the field or property should be boolean, the method return type should be boolean in order to be used as platform guard.
+             </remarks>
+        </member>
+        <member name="T:System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute">
+             <summary>
+             Annotates the custom guard field, property or method with an unsupported platform name and optional version.
+             Multiple attributes can be applied to indicate guard for multiple unsupported platforms.
+             </summary>
+             <remarks>
+             Callers can apply a <see cref="T:System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute" /> to a field, property or method
+             and use that  field, property or method in a conditional or assert statements as a guard to safely call APIs unsupported on those platforms.
+            
+             The type of the field or property should be boolean, the method return type should be boolean in order to be used as platform guard.
+             </remarks>
+        </member>
+        <member name="P:System.SR.ApplicationNameChangeNotSupported">
+            <summary>The application name changed from "{0}" to "{1}". Changing host configuration is not supported.</summary>
+        </member>
+        <member name="P:System.SR.BackgroundServiceExceptionStoppedHost">
+            <summary>The HostOptions.BackgroundServiceExceptionBehavior is configured to StopHost. A BackgroundService has thrown an unhandled exception, and the IHost instance is stopping. To avoid this behavior, configure this to Ignore; however the BackgroundService will no ...</summary>
+        </member>
+        <member name="P:System.SR.BuildCalled">
+            <summary>Build can only be called once.</summary>
+        </member>
+        <member name="P:System.SR.ContentRootChangeNotSupported">
+            <summary>The content root changed from "{0}" to "{1}". Changing host configuration is not supported.</summary>
+        </member>
+        <member name="P:System.SR.CreateBuilderCallBeforeCreateServiceProvider">
+            <summary>CreateBuilder must be called before CreateServiceProvider</summary>
+        </member>
+        <member name="P:System.SR.EnvironmentNameChangeNotSupoprted">
+            <summary>The environment name changed from "{0}" to "{1}". Changing host configuration is not supported.</summary>
+        </member>
+        <member name="P:System.SR.IHostApplicationLifetimeReplacementNotSupported">
+            <summary>Replacing IHostApplicationLifetime is not supported.</summary>
+        </member>
+        <member name="P:System.SR.NullIServiceProvider">
+            <summary>The IServiceProviderFactory returned a null IServiceProvider</summary>
+        </member>
+        <member name="P:System.SR.ResolverReturnedNull">
+            <summary>The resolver returned a null IServiceProviderFactory</summary>
+        </member>
+        <member name="T:System.ExceptionPolyfills">
+            <summary>Provides downlevel polyfills for static methods on Exception-derived types.</summary>
+        </member>
+    </members>
+</doc>

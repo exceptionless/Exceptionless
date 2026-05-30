@@ -1,0 +1,79 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "Microsoft.SourceLink.GitHub/10.0.300": {
+        "runtime": {
+          "Microsoft.SourceLink.GitHub.dll": {}
+        },
+        "resources": {
+          "cs/Microsoft.SourceLink.GitHub.resources.dll": {
+            "locale": "cs"
+          },
+          "de/Microsoft.SourceLink.GitHub.resources.dll": {
+            "locale": "de"
+          },
+          "es/Microsoft.SourceLink.GitHub.resources.dll": {
+            "locale": "es"
+          },
+          "fr/Microsoft.SourceLink.GitHub.resources.dll": {
+            "locale": "fr"
+          },
+          "it/Microsoft.SourceLink.GitHub.resources.dll": {
+            "locale": "it"
+          },
+          "ja/Microsoft.SourceLink.GitHub.resources.dll": {
+            "locale": "ja"
+          },
+          "ko/Microsoft.SourceLink.GitHub.resources.dll": {
+            "locale": "ko"
+          },
+          "pl/Microsoft.SourceLink.GitHub.resources.dll": {
+            "locale": "pl"
+          },
+          "pt-BR/Microsoft.SourceLink.GitHub.resources.dll": {
+            "locale": "pt-BR"
+          },
+          "ru/Microsoft.SourceLink.GitHub.resources.dll": {
+            "locale": "ru"
+          },
+          "tr/Microsoft.SourceLink.GitHub.resources.dll": {
+            "locale": "tr"
+          },
+          "zh-Hans/Microsoft.SourceLink.GitHub.resources.dll": {
+            "locale": "zh-Hans"
+          },
+          "zh-Hant/Microsoft.SourceLink.GitHub.resources.dll": {
+            "locale": "zh-Hant"
+          }
+        }
+      },
+      "System.IO.Hashing/10.0.8": {
+        "runtime": {
+          "lib/net8.0/System.IO.Hashing.dll": {
+            "assemblyVersion": "10.0.0.8",
+            "fileVersion": "10.0.826.23019"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Microsoft.SourceLink.GitHub/10.0.300": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "System.IO.Hashing/10.0.8": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-+dJsbPJ3FyUbTZNplFj0RCKePFizmv6ewDV46JE9q/IVH4c3xTCftHfHelLsAKf0jryIPqgMb5GpS0x7TAY3mg==",
+      "path": "system.io.hashing/10.0.8",
+      "hashPath": "system.io.hashing.10.0.8.nupkg.sha512"
+    }
+  }
+}

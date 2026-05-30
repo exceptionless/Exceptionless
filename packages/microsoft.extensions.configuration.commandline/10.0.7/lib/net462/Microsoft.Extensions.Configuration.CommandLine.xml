@@ -1,0 +1,393 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Extensions.Configuration.CommandLine</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.Extensions.Configuration.CommandLineConfigurationExtensions">
+            <summary>
+            Extension methods for registering <see cref="T:Microsoft.Extensions.Configuration.CommandLine.CommandLineConfigurationProvider"/> with <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.CommandLineConfigurationExtensions.AddCommandLine(Microsoft.Extensions.Configuration.IConfigurationBuilder,System.String[])">
+             <summary>
+               Adds a <see cref="T:Microsoft.Extensions.Configuration.CommandLine.CommandLineConfigurationProvider"/> <see cref="T:Microsoft.Extensions.Configuration.IConfigurationProvider"/>
+               that reads configuration values from the command line.
+             </summary>
+             <param name="configurationBuilder">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/> to add to.</param>
+             <param name="args">The command line args.</param>
+             <returns>The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/>.</returns>
+             <remarks>
+               <para>
+                 The values passed on the command line, in the <c>args</c> string array, should be a set
+                 of keys prefixed with two dashes ("--") and then values, separate by either the
+                 equals sign ("=") or a space (" ").
+               </para>
+               <para>
+                 A forward slash ("/") can be used as an alternative prefix, with either equals or space, and when using
+                 an equals sign the prefix can be left out altogether.
+               </para>
+               <para>
+                 There are five basic alternative formats for arguments:
+                 <c>key1=value1 --key2=value2 /key3=value3 --key4 value4 /key5 value5</c>.
+               </para>
+             </remarks>
+             <example>
+               A simple console application that has five values.
+               <code>
+                 // dotnet run key1=value1 --key2=value2 /key3=value3 --key4 value4 /key5 value5
+            
+                 using Microsoft.Extensions.Configuration;
+                 using System;
+            
+                 namespace CommandLineSample
+                 {
+                    public class Program
+                    {
+                        public static void Main(string[] args)
+                        {
+                            var builder = new ConfigurationBuilder();
+                            builder.AddCommandLine(args);
+            
+                            var config = builder.Build();
+            
+                            Console.WriteLine($"Key1: '{config["Key1"]}'");
+                            Console.WriteLine($"Key2: '{config["Key2"]}'");
+                            Console.WriteLine($"Key3: '{config["Key3"]}'");
+                            Console.WriteLine($"Key4: '{config["Key4"]}'");
+                            Console.WriteLine($"Key5: '{config["Key5"]}'");
+                        }
+                    }
+                 }
+               </code>
+             </example>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.CommandLineConfigurationExtensions.AddCommandLine(Microsoft.Extensions.Configuration.IConfigurationBuilder,System.String[],System.Collections.Generic.IDictionary{System.String,System.String})">
+             <summary>
+               Adds a <see cref="T:Microsoft.Extensions.Configuration.CommandLine.CommandLineConfigurationProvider"/> <see cref="T:Microsoft.Extensions.Configuration.IConfigurationProvider"/> that reads
+               configuration values from the command line using the specified switch mappings.
+             </summary>
+             <param name="configurationBuilder">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/> to add to.</param>
+             <param name="args">The command line args.</param>
+             <param name="switchMappings">
+               The switch mappings. A dictionary of short (with prefix "-") and
+               alias keys (with prefix "--"), mapped to the configuration key (no prefix).
+             </param>
+             <returns>The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/>.</returns>
+             <remarks>
+               <para>
+                 The <c>switchMappings</c> allows additional formats for alternative short and alias keys
+                 to be used from the command line. Also see the basic version of <c>AddCommandLine</c> for
+                 the standard formats supported.
+               </para>
+               <para>
+                 Short keys start with a single dash ("-") and are mapped to the main key name (without
+                 prefix), and can be used with either equals or space. The single dash mappings are intended
+                 to be used for shorter alternative switches.
+               </para>
+               <para>
+                 Note that a single dash switch cannot be accessed directly, but must have a switch mapping
+                 defined and accessed using the full key. Passing an undefined single dash argument will
+                 cause as <c>FormatException</c>.
+               </para>
+               <para>
+                 There are two formats for short arguments:
+                 <c>-k1=value1 -k2 value2</c>.
+               </para>
+               <para>
+                 Alias key definitions start with two dashes ("--") and are mapped to the main key name (without
+                 prefix), and can be used in place of the normal key. They also work when a forward slash prefix
+                 is used in the command line (but not with the no prefix equals format).
+               </para>
+               <para>
+                 There are only four formats for aliased arguments:
+                 <c>--alt3=value3 /alt4=value4 --alt5 value5 /alt6 value6</c>.
+               </para>
+             </remarks>
+             <example>
+               A simple console application that has two short and four alias switch mappings defined.
+               <code>
+                 // dotnet run -k1=value1 -k2 value2 --alt3=value2 /alt4=value3 --alt5 value5 /alt6 value6
+            
+                 using Microsoft.Extensions.Configuration;
+                 using System;
+                 using System.Collections.Generic;
+            
+                 namespace CommandLineSample
+                 {
+                    public class Program
+                    {
+                        public static void Main(string[] args)
+                        {
+                            var switchMappings = new Dictionary&lt;string, string&gt;()
+                            {
+                                { "-k1", "key1" },
+                                { "-k2", "key2" },
+                                { "--alt3", "key3" },
+                                { "--alt4", "key4" },
+                                { "--alt5", "key5" },
+                                { "--alt6", "key6" },
+                            };
+                            var builder = new ConfigurationBuilder();
+                            builder.AddCommandLine(args, switchMappings);
+            
+                            var config = builder.Build();
+            
+                            Console.WriteLine($"Key1: '{config["Key1"]}'");
+                            Console.WriteLine($"Key2: '{config["Key2"]}'");
+                            Console.WriteLine($"Key3: '{config["Key3"]}'");
+                            Console.WriteLine($"Key4: '{config["Key4"]}'");
+                            Console.WriteLine($"Key5: '{config["Key5"]}'");
+                            Console.WriteLine($"Key6: '{config["Key6"]}'");
+                        }
+                    }
+                 }
+               </code>
+             </example>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.CommandLineConfigurationExtensions.AddCommandLine(Microsoft.Extensions.Configuration.IConfigurationBuilder,System.Action{Microsoft.Extensions.Configuration.CommandLine.CommandLineConfigurationSource})">
+            <summary>
+            Adds an <see cref="T:Microsoft.Extensions.Configuration.IConfigurationProvider"/> that reads configuration values from the command line.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/> to add to.</param>
+            <param name="configureSource">Configures the source.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Configuration.CommandLine.CommandLineConfigurationProvider">
+            <summary>
+            Provides configuration key-value pairs that are obtained from the command line.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.CommandLine.CommandLineConfigurationProvider.#ctor(System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.IDictionary{System.String,System.String})">
+            <summary>
+            Initializes a new instance.
+            </summary>
+            <param name="args">The command line args.</param>
+            <param name="switchMappings">The switch mappings.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Configuration.CommandLine.CommandLineConfigurationProvider.Args">
+            <summary>
+            Gets the command-line arguments.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.CommandLine.CommandLineConfigurationProvider.Load">
+            <summary>
+            Loads the configuration data from the command-line arguments.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Configuration.CommandLine.CommandLineConfigurationSource">
+            <summary>
+            Represents command-line arguments as an <see cref="T:Microsoft.Extensions.Configuration.IConfigurationSource"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Configuration.CommandLine.CommandLineConfigurationSource.SwitchMappings">
+            <summary>
+            Gets or sets the switch mappings.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Configuration.CommandLine.CommandLineConfigurationSource.Args">
+            <summary>
+            Gets or sets the command line arguments.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.CommandLine.CommandLineConfigurationSource.Build(Microsoft.Extensions.Configuration.IConfigurationBuilder)">
+            <summary>
+            Builds the <see cref="T:Microsoft.Extensions.Configuration.CommandLine.CommandLineConfigurationProvider"/> for this source.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationBuilder"/>.</param>
+            <returns>A <see cref="T:Microsoft.Extensions.Configuration.CommandLine.CommandLineConfigurationProvider"/>.</returns>
+        </member>
+        <member name="P:System.SR.Error_DuplicatedKeyInSwitchMappings">
+            <summary>Keys in switch mappings are case-insensitive. A duplicated key '{0}' was found.</summary>
+        </member>
+        <member name="P:System.SR.Error_InvalidSwitchMapping">
+            <summary>The switch mappings contain an invalid switch '{0}'.</summary>
+        </member>
+        <member name="P:System.SR.Error_ShortSwitchNotDefined">
+            <summary>The short switch '{0}' is not defined in the switch mappings.</summary>
+        </member>
+        <member name="T:System.Runtime.InteropServices.LibraryImportAttribute">
+            <summary>
+            Attribute used to indicate a source generator should create a function for marshalling
+            arguments instead of relying on the runtime to generate an equivalent marshalling function at run-time.
+            </summary>
+            <remarks>
+            This attribute is meaningless if the source generator associated with it is not enabled.
+            The current built-in source generator only supports C# and only supplies an implementation when
+            applied to static, partial, non-generic methods.
+            </remarks>
+        </member>
+        <member name="M:System.Runtime.InteropServices.LibraryImportAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.InteropServices.LibraryImportAttribute"/>.
+            </summary>
+            <param name="libraryName">Name of the library containing the import.</param>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.LibraryName">
+            <summary>
+            Gets the name of the library containing the import.
+            </summary>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.EntryPoint">
+            <summary>
+            Gets or sets the name of the entry point to be called.
+            </summary>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshalling">
+            <summary>
+            Gets or sets how to marshal string arguments to the method.
+            </summary>
+            <remarks>
+            If this field is set to a value other than <see cref="F:System.Runtime.InteropServices.StringMarshalling.Custom" />,
+            <see cref="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshallingCustomType" /> must not be specified.
+            </remarks>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshallingCustomType">
+            <summary>
+            Gets or sets the <see cref="T:System.Type"/> used to control how string arguments to the method are marshalled.
+            </summary>
+            <remarks>
+            If this field is specified, <see cref="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshalling" /> must not be specified
+            or must be set to <see cref="F:System.Runtime.InteropServices.StringMarshalling.Custom" />.
+            </remarks>
+        </member>
+        <member name="P:System.Runtime.InteropServices.LibraryImportAttribute.SetLastError">
+            <summary>
+            Gets or sets whether the callee sets an error (SetLastError on Windows or errno
+            on other platforms) before returning from the attributed method.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.InteropServices.StringMarshalling">
+            <summary>
+            Specifies how strings should be marshalled for generated p/invokes
+            </summary>
+        </member>
+        <member name="F:System.Runtime.InteropServices.StringMarshalling.Custom">
+            <summary>
+            Indicates the user is supplying a specific marshaller in <see cref="P:System.Runtime.InteropServices.LibraryImportAttribute.StringMarshallingCustomType"/>.
+            </summary>
+        </member>
+        <member name="F:System.Runtime.InteropServices.StringMarshalling.Utf8">
+            <summary>
+            Use the platform-provided UTF-8 marshaller.
+            </summary>
+        </member>
+        <member name="F:System.Runtime.InteropServices.StringMarshalling.Utf16">
+            <summary>
+            Use the platform-provided UTF-16 marshaller.
+            </summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.AllowNullAttribute">
+            <summary>Specifies that null is allowed as an input even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DisallowNullAttribute">
+            <summary>Specifies that null is disallowed as an input even if the corresponding type allows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullAttribute">
+            <summary>Specifies that an output may be null even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullAttribute">
+            <summary>Specifies that an output will not be null even if the corresponding type allows it. Specifies that an input argument was not null when the call returns.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute">
+            <summary>Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue"/>, the parameter may be null even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified return value condition.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter may be null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute">
+            <summary>Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue"/>, the parameter will not be null even if the corresponding type allows it.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified return value condition.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter will not be null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute">
+            <summary>Specifies that the output will be non-null if the named parameter is non-null.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.#ctor(System.String)">
+            <summary>Initializes the attribute with the associated parameter name.</summary>
+            <param name="parameterName">
+            The associated parameter name.  The output will be non-null if the argument to the parameter specified is non-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.ParameterName">
+            <summary>Gets the associated parameter name.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute">
+            <summary>Applied to a method that will never return under any circumstance.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute">
+            <summary>Specifies that the method will not return if the associated Boolean parameter is passed the specified value.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified parameter value.</summary>
+            <param name="parameterValue">
+            The condition parameter value. Code after the method will be considered unreachable by diagnostics if the argument to
+            the associated parameter matches this value.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.ParameterValue">
+            <summary>Gets the condition parameter value.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute">
+            <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String)">
+            <summary>Initializes the attribute with a field or property member.</summary>
+            <param name="member">
+            The field or property member that is promised to be not-null.
+            </param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String[])">
+            <summary>Initializes the attribute with the list of field and property members.</summary>
+            <param name="members">
+            The list of field and property members that are promised to be not-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.Members">
+            <summary>Gets field or property member names.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute">
+            <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values when returning with the specified return value condition.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.#ctor(System.Boolean,System.String)">
+            <summary>Initializes the attribute with the specified return value condition and a field or property member.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated field or property member will not be null.
+            </param>
+            <param name="member">
+            The field or property member that is promised to be not-null.
+            </param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.#ctor(System.Boolean,System.String[])">
+            <summary>Initializes the attribute with the specified return value condition and list of field and property members.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated field and property members will not be null.
+            </param>
+            <param name="members">
+            The list of field and property members that are promised to be not-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.Members">
+            <summary>Gets field or property member names.</summary>
+        </member>
+        <member name="T:System.ExceptionPolyfills">
+            <summary>Provides downlevel polyfills for static methods on Exception-derived types.</summary>
+        </member>
+    </members>
+</doc>

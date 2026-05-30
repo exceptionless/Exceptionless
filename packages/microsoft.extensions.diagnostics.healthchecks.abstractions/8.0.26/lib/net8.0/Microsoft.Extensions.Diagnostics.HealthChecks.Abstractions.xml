@@ -1,0 +1,365 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckContext">
+            <summary>
+            Health check context. Provides health check registrations to <see cref="M:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck.CheckHealthAsync(Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckContext,System.Threading.CancellationToken)"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckContext.Registration">
+            <summary>
+            Gets or sets the <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration"/> of the currently executing <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck"/>.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration">
+            <summary>
+            Represent the registration information associated with an <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck"/> implementation.
+            </summary>
+            <remarks>
+            <para>
+            The health check registration is provided as a separate object so that application developers can customize
+            how health check implementations are configured.
+            </para>
+            <para>
+            The registration is provided to an <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck"/> implementation during execution through
+            <see cref="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckContext.Registration"/>. This allows a health check implementation to access named
+            options or perform other operations based on the registered name.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration.#ctor(System.String,Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck,System.Nullable{Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus},System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Creates a new <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration" /> for an existing <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck" /> instance.
+            </summary>
+            <param name="name">The health check name.</param>
+            <param name="instance">The <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck" /> instance.</param>
+            <param name="failureStatus">
+            The <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus" /> that should be reported upon failure of the health check. If the provided value
+            is <c>null</c>, then <see cref="F:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy" /> will be reported.
+            </param>
+            <param name="tags">A list of tags that can be used for filtering health checks.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration.#ctor(System.String,Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck,System.Nullable{Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus},System.Collections.Generic.IEnumerable{System.String},System.Nullable{System.TimeSpan})">
+            <summary>
+            Creates a new <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration"/> for an existing <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck"/> instance.
+            </summary>
+            <param name="name">The health check name.</param>
+            <param name="instance">The <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck"/> instance.</param>
+            <param name="failureStatus">
+            The <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus"/> that should be reported upon failure of the health check. If the provided value
+            is <c>null</c>, then <see cref="F:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy"/> will be reported.
+            </param>
+            <param name="tags">A list of tags that can be used for filtering health checks.</param>
+            <param name="timeout">An optional <see cref="T:System.TimeSpan"/> representing the timeout of the check.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration.#ctor(System.String,System.Func{System.IServiceProvider,Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck},System.Nullable{Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus},System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Creates a new <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration"/> for an existing <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck"/> instance.
+            </summary>
+            <param name="name">The health check name.</param>
+            <param name="factory">A delegate used to create the <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck"/> instance.</param>
+            <param name="failureStatus">
+            The <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus"/> that should be reported when the health check reports a failure. If the provided value
+            is <c>null</c>, then <see cref="F:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy"/> will be reported.
+            </param>
+            <param name="tags">A list of tags that can be used for filtering health checks.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration.#ctor(System.String,System.Func{System.IServiceProvider,Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck},System.Nullable{Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus},System.Collections.Generic.IEnumerable{System.String},System.Nullable{System.TimeSpan})">
+            <summary>
+            Creates a new <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration"/> for an existing <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck"/> instance.
+            </summary>
+            <param name="name">The health check name.</param>
+            <param name="factory">A delegate used to create the <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck"/> instance.</param>
+            <param name="failureStatus">
+            The <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus"/> that should be reported when the health check reports a failure. If the provided value
+            is <c>null</c>, then <see cref="F:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy"/> will be reported.
+            </param>
+            <param name="tags">A list of tags that can be used for filtering health checks.</param>
+            <param name="timeout">An optional <see cref="T:System.TimeSpan"/> representing the timeout of the check.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration.Factory">
+            <summary>
+            Gets or sets a delegate used to create the <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck"/> instance.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration.FailureStatus">
+            <summary>
+            Gets or sets the <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus"/> that should be reported upon failure of the health check.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration.Timeout">
+            <summary>
+            Gets or sets the timeout used for the test.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration.Delay">
+            <summary>
+            Gets or sets the individual delay applied to the health check after the application starts before executing
+            <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheckPublisher"/> instances. The delay is applied once at startup, and does
+            not apply to subsequent iterations.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration.Period">
+            <summary>
+            Gets or sets the individual period used for the check.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration.Name">
+            <summary>
+            Gets or sets the health check name.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration.Tags">
+            <summary>
+            Gets a list of tags that can be used for filtering health checks.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult">
+            <summary>
+            Represents the result of a health check.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.#ctor(Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus,System.String,System.Exception,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object})">
+            <summary>
+            Creates a new <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult"/> with the specified values for <paramref name="status"/>,
+            <paramref name="exception"/>, <paramref name="description"/>, and <paramref name="data"/>.
+            </summary>
+            <param name="status">A value indicating the status of the component that was checked.</param>
+            <param name="description">A human-readable description of the status of the component that was checked.</param>
+            <param name="exception">An <see cref="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Exception"/> representing the exception that was thrown when checking for status (if any).</param>
+            <param name="data">Additional key-value pairs describing the health of the component.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Data">
+            <summary>
+            Gets additional key-value pairs describing the health of the component.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Description">
+            <summary>
+            Gets a human-readable description of the status of the component that was checked.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Exception">
+            <summary>
+            Gets an <see cref="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Exception"/> representing the exception that was thrown when checking for status (if any).
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Status">
+            <summary>
+            Gets a value indicating the status of the component that was checked.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy(System.String,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object})">
+            <summary>
+            Creates a <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult"/> representing a healthy component.
+            </summary>
+            <param name="description">A human-readable description of the status of the component that was checked. Optional.</param>
+            <param name="data">Additional key-value pairs describing the health of the component. Optional.</param>
+            <returns>A <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult"/> representing a healthy component.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Degraded(System.String,System.Exception,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object})">
+            <summary>
+            Creates a <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult"/> representing a degraded component.
+            </summary>
+            <param name="description">A human-readable description of the status of the component that was checked. Optional.</param>
+            <param name="exception">An <see cref="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Exception"/> representing the exception that was thrown when checking for status. Optional.</param>
+            <param name="data">Additional key-value pairs describing the health of the component. Optional.</param>
+            <returns>A <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult"/> representing a degraged component.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Unhealthy(System.String,System.Exception,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object})">
+            <summary>
+            Creates a <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult"/> representing an unhealthy component.
+            </summary>
+            <param name="description">A human-readable description of the status of the component that was checked. Optional.</param>
+            <param name="exception">An <see cref="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Exception"/> representing the exception that was thrown when checking for status. Optional.</param>
+            <param name="data">Additional key-value pairs describing the health of the component. Optional.</param>
+            <returns>A <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult"/> representing an unhealthy component.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReport">
+            <summary>
+            Represents the result of executing a group of <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck"/> instances.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReport.#ctor(System.Collections.Generic.IReadOnlyDictionary{System.String,Microsoft.Extensions.Diagnostics.HealthChecks.HealthReportEntry},System.TimeSpan)">
+            <summary>
+            Create a new <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReport"/> from the specified results.
+            </summary>
+            <param name="entries">A <see cref="T:System.Collections.Generic.IReadOnlyDictionary`2"/> containing the results from each health check.</param>
+            <param name="totalDuration">A value indicating the time the health check service took to execute.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReport.#ctor(System.Collections.Generic.IReadOnlyDictionary{System.String,Microsoft.Extensions.Diagnostics.HealthChecks.HealthReportEntry},Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus,System.TimeSpan)">
+            <summary>
+            Create a new <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReport"/> from the specified results.
+            </summary>
+            <param name="entries">A <see cref="T:System.Collections.Generic.IReadOnlyDictionary`2"/> containing the results from each health check.</param>
+            <param name="status">A <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus"/> representing the aggregate status of all the health checks.</param>
+            <param name="totalDuration">A value indicating the time the health check service took to execute.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReport.Entries">
+            <summary>
+            A <see cref="T:System.Collections.Generic.IReadOnlyDictionary`2"/> containing the results from each health check.
+            </summary>
+            <remarks>
+            The keys in this dictionary map the name of each executed health check to a <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReportEntry"/> for the
+            result data returned from the corresponding health check.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReport.Status">
+            <summary>
+            Gets a <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus"/> representing the aggregate status of all the health checks. The value of <see cref="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReport.Status"/>
+            will be the most severe status reported by a health check. If no checks were executed, the value is always <see cref="F:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Healthy"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReport.TotalDuration">
+            <summary>
+            Gets the time the health check service took to execute.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReportEntry">
+            <summary>
+            Represents an entry in a <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReport"/>. Corresponds to the result of a single <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReportEntry.#ctor(Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus,System.String,System.TimeSpan,System.Exception,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object})">
+            <summary>
+            Creates a new <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReportEntry"/> with the specified values for <paramref name="status"/>, <paramref name="exception"/>,
+            <paramref name="description"/>, and <paramref name="data"/>.
+            </summary>
+            <param name="status">A value indicating the health status of the component that was checked.</param>
+            <param name="description">A human-readable description of the status of the component that was checked.</param>
+            <param name="duration">A value indicating the health execution duration.</param>
+            <param name="exception">An <see cref="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReportEntry.Exception"/> representing the exception that was thrown when checking for status (if any).</param>
+            <param name="data">Additional key-value pairs describing the health of the component.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReportEntry.#ctor(Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus,System.String,System.TimeSpan,System.Exception,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object},System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Creates a new <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReportEntry"/> with the specified values for <paramref name="status"/>, <paramref name="exception"/>,
+            <paramref name="description"/>, and <paramref name="data"/>.
+            </summary>
+            <param name="status">A value indicating the health status of the component that was checked.</param>
+            <param name="description">A human-readable description of the status of the component that was checked.</param>
+            <param name="duration">A value indicating the health execution duration.</param>
+            <param name="exception">An <see cref="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReportEntry.Exception"/> representing the exception that was thrown when checking for status (if any).</param>
+            <param name="data">Additional key-value pairs describing the health of the component.</param>
+            <param name="tags">Tags associated with the health check that generated the report entry.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReportEntry.Data">
+            <summary>
+            Gets additional key-value pairs describing the health of the component.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReportEntry.Description">
+            <summary>
+            Gets a human-readable description of the status of the component that was checked.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReportEntry.Duration">
+            <summary>
+            Gets the health check execution duration.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReportEntry.Exception">
+            <summary>
+            Gets an <see cref="T:System.Exception"/> representing the exception that was thrown when checking for status (if any).
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReportEntry.Status">
+            <summary>
+            Gets the health status of the component that was checked.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReportEntry.Tags">
+            <summary>
+            Gets the tags associated with the health check.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus">
+            <summary>
+            Represents the reported status of a health check result.
+            </summary>
+            <remarks>
+            <para>
+            A status of <see cref="F:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy"/> should be considered the default value for a failing health check. Application
+            developers may configure a health check to report a different status as desired.
+            </para>
+            <para>
+            The values of this enum or ordered from least healthy to most healthy. So <see cref="F:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Degraded"/> is
+            greater than <see cref="F:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy"/> but less than <see cref="F:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Healthy"/>.
+            </para>
+            </remarks>
+        </member>
+        <member name="F:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy">
+            <summary>
+            Indicates that the health check determined that the component was unhealthy, or an unhandled
+            exception was thrown while executing the health check.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Degraded">
+            <summary>
+            Indicates that the health check determined that the component was in a degraded state.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Healthy">
+            <summary>
+            Indicates that the health check determined that the component was healthy.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck">
+            <summary>
+            Represents a health check, which can be used to check the status of a component in the application, such as a backend service, database or some internal
+            state.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck.CheckHealthAsync(Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckContext,System.Threading.CancellationToken)">
+            <summary>
+            Runs the health check, returning the status of the component being checked.
+            </summary>
+            <param name="context">A context object associated with the current execution.</param>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken"/> that can be used to cancel the health check.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task`1"/> that completes when the health check has finished, yielding the status of the component being checked.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheckPublisher">
+            <summary>
+            Represents a publisher of <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReport"/> information.
+            </summary>
+            <remarks>
+            <para>
+            The default health checks implementation provided an <c>IHostedService</c> implementation that can
+            be used to execute health checks at regular intervals and provide the resulting <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReport"/>
+            data to all registered <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheckPublisher"/> instances.
+            </para>
+            <para>
+            To provide an <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheckPublisher"/> implementation, register an instance or type as a singleton
+            service in the dependency injection container.
+            </para>
+            <para>
+            <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheckPublisher"/> instances are provided with a <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReport"/> after executing
+            health checks in a background thread. The use of <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheckPublisher"/> depend on hosting in
+            an application using <c>IWebHost</c> or generic host (<c>IHost</c>). Execution of <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheckPublisher"/>
+            instance is not related to execution of health checks via a middleware.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheckPublisher.PublishAsync(Microsoft.Extensions.Diagnostics.HealthChecks.HealthReport,System.Threading.CancellationToken)">
+            <summary>
+            Publishes the provided <paramref name="report"/>.
+            </summary>
+            <param name="report">The <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthReport"/>. The result of executing a set of health checks.</param>
+            <param name="cancellationToken">The <see cref="T:System.Threading.CancellationToken"/>.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/> which will complete when publishing is complete.</returns>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Shared.ArgumentNullThrowHelper.ThrowIfNull(System.Object,System.String)">
+            <summary>Throws an <see cref="T:System.ArgumentNullException"/> if <paramref name="argument"/> is null.</summary>
+            <param name="argument">The reference type argument to validate as non-null.</param>
+            <param name="paramName">The name of the parameter with which <paramref name="argument"/> corresponds.</param>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Shared.ArgumentNullThrowHelper.ThrowIfNullOrEmpty(System.String,System.String)">
+            <summary>Throws an <see cref="T:System.ArgumentException"/> if <paramref name="argument"/> is null or empty.</summary>
+            <param name="argument">The <see cref="T:System.String"/> argument to validate as non-null and non-empty.</param>
+            <param name="paramName">The name of the parameter with which <paramref name="argument"/> corresponds.</param>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,1389 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Extensions.Http.Diagnostics</name>
+    </assembly>
+    <members>
+        <member name="T:System.Diagnostics.CodeAnalysis.AllowNullAttribute">
+            <summary>Specifies that null is allowed as an input even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DisallowNullAttribute">
+            <summary>Specifies that null is disallowed as an input even if the corresponding type allows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullAttribute">
+            <summary>Specifies that an output may be null even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullAttribute">
+            <summary>Specifies that an output will not be null even if the corresponding type allows it. Specifies that an input argument was not null when the call returns.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute">
+            <summary>Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue"/>, the parameter may be null even if the corresponding type disallows it.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified return value condition.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter may be <see langword="null" />.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute">
+            <summary>Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue"/>, the parameter will not be null even if the corresponding type allows it.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified return value condition.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter will not be <see langword="null" />.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute">
+            <summary>Specifies that the output will be non-null if the named parameter is non-null.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.#ctor(System.String)">
+            <summary>Initializes the attribute with the associated parameter name.</summary>
+            <param name="parameterName">
+            The associated parameter name.  The output will be non-null if the argument to the parameter specified is non-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.ParameterName">
+            <summary>Gets the associated parameter name.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute">
+            <summary>Applied to a method that will never return under any circumstance.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute">
+            <summary>Specifies that the method will not return if the associated Boolean parameter is passed the specified value.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.#ctor(System.Boolean)">
+            <summary>Initializes the attribute with the specified parameter value.</summary>
+            <param name="parameterValue">
+            The condition parameter value. Code after the method will be considered unreachable by diagnostics if the argument to
+            the associated parameter matches this value.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.ParameterValue">
+            <summary>Gets the condition parameter value.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute">
+            <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String)">
+            <summary>Initializes the attribute with a field or property member.</summary>
+            <param name="member">
+            The field or property member that is promised to be not-null.
+            </param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.#ctor(System.String[])">
+            <summary>Initializes the attribute with the list of field and property members.</summary>
+            <param name="members">
+            The list of field and property members that are promised to be not-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute.Members">
+            <summary>Gets field or property member names.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute">
+            <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values when returning with the specified return value condition.</summary>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.#ctor(System.Boolean,System.String)">
+            <summary>Initializes the attribute with the specified return value condition and a field or property member.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter will not be <see langword="null" />.
+            </param>
+            <param name="member">
+            The field or property member that is promised to be not-null.
+            </param>
+        </member>
+        <member name="M:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.#ctor(System.Boolean,System.String[])">
+            <summary>Initializes the attribute with the specified return value condition and list of field and property members.</summary>
+            <param name="returnValue">
+            The return value condition. If the method returns this value, the associated parameter will not be <see langword="null" />.
+            </param>
+            <param name="members">
+            The list of field and property members that are promised to be not-null.
+            </param>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.ReturnValue">
+            <summary>Gets the return value condition.</summary>
+        </member>
+        <member name="P:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute.Members">
+            <summary>Gets field or property member names.</summary>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.CallerArgumentExpressionAttribute">
+            <summary>
+            Tags parameter that should be filled with specific caller name.
+            </summary>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.CallerArgumentExpressionAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Runtime.CompilerServices.CallerArgumentExpressionAttribute"/> class.
+            </summary>
+            <param name="parameterName">Function parameter to take the name from.</param>
+        </member>
+        <member name="P:System.Runtime.CompilerServices.CallerArgumentExpressionAttribute.ParameterName">
+            <summary>
+            Gets name of the function parameter that name should be taken from.
+            </summary>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.SkipLocalsInitAttribute">
+            <summary>
+            Used to indicate to the compiler that the <c>.locals init</c>
+            flag should not be set in method headers.
+            </summary>
+            <remarks>
+            This attribute is unsafe because it may reveal uninitialized memory to
+            the application in certain instances (e.g., reading from uninitialized
+            stackalloc'd memory). If applied to a method directly, the attribute
+            applies to that method and all nested functions (lambdas, local
+            functions) below it. If applied to a type or module, it applies to all
+            methods nested inside. This attribute is intentionally not permitted on
+            assemblies. Use at the module level instead to apply to multiple type
+            declarations.
+            </remarks>
+        </member>
+        <member name="T:System.Threading.Tasks.TaskExtensions">
+            <summary>
+            Provides a set of static methods for <see cref="T:System.Threading.Tasks.Task"/>.
+            </summary>
+        </member>
+        <member name="M:System.Threading.Tasks.TaskExtensions.WaitAsync``1(System.Threading.Tasks.Task{``0},System.Threading.CancellationToken)">
+            <summary>
+            Gets a <see cref="T:System.Threading.Tasks.Task`1"/> that will complete when the <paramref name="task"/> completes or when the specified <paramref name="cancellationToken"/> has cancellation requested.
+            </summary>
+            <typeparam name="TResult">The type of the task result.</typeparam>
+            <param name="task">The task to wait on for completion.</param>
+            <param name="cancellationToken">The <see cref="T:System.Threading.CancellationToken"/> to monitor for a cancellation request.</param>
+            <returns>The <see cref="T:System.Threading.Tasks.Task`1"/> representing the asynchronous wait.</returns>
+        </member>
+        <member name="T:System.Net.Http.HttpDiagnosticsHttpRequestMessageExtensions">
+            <summary>
+            Extensions for telemetry utilities.
+            </summary>
+        </member>
+        <member name="M:System.Net.Http.HttpDiagnosticsHttpRequestMessageExtensions.SetRequestMetadata(System.Net.Http.HttpRequestMessage,Microsoft.Extensions.Http.Diagnostics.RequestMetadata)">
+            <summary>
+            Sets metadata for outgoing requests to be used for telemetry purposes.
+            </summary>
+            <param name="request"><see cref="T:System.Net.Http.HttpRequestMessage"/> object.</param>
+            <param name="metadata">Metadata for the request.</param>
+        </member>
+        <member name="M:System.Net.Http.HttpDiagnosticsHttpRequestMessageExtensions.GetRequestMetadata(System.Net.Http.HttpRequestMessage)">
+            <summary>
+            Gets metadata for outgoing requests to be used for telemetry purposes.
+            </summary>
+            <param name="request"><see cref="T:System.Net.Http.HttpRequestMessage"/> object.</param>
+            <returns>Request metadata or <see langword="null"/>.</returns>
+        </member>
+        <member name="T:System.Net.HttpDiagnosticsHttpWebRequestExtensions">
+            <summary>
+            Extensions for telemetry utilities.
+            </summary>
+        </member>
+        <member name="M:System.Net.HttpDiagnosticsHttpWebRequestExtensions.SetRequestMetadata(System.Net.HttpWebRequest,Microsoft.Extensions.Http.Diagnostics.RequestMetadata)">
+            <summary>
+            Sets metadata for outgoing requests to be used for telemetry purposes.
+            </summary>
+            <param name="request"><see cref="T:System.Net.HttpWebRequest"/> object.</param>
+            <param name="metadata">Metadata for the request.</param>
+        </member>
+        <member name="M:System.Net.HttpDiagnosticsHttpWebRequestExtensions.GetRequestMetadata(System.Net.HttpWebRequest)">
+            <summary>
+            Gets metadata for outgoing requests to be used for telemetry purposes.
+            </summary>
+            <param name="request"><see cref="T:System.Net.HttpWebRequest"/> object.</param>
+            <returns>Request metadata.</returns>
+        </member>
+        <member name="T:Microsoft.Shared.Collections.Empty">
+            <summary>
+            Defines static methods used to optimize the use of empty collections.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Shared.Collections.Empty.ReadOnlyCollection``1">
+            <summary>
+            Returns an optimized empty collection.
+            </summary>
+            <typeparam name="T">The type of the collection.</typeparam>
+            <returns>Returns an efficient static instance of an empty collection.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Collections.Empty.Enumerable``1">
+            <summary>
+            Returns an optimized empty collection.
+            </summary>
+            <typeparam name="T">The type of the collection.</typeparam>
+            <returns>Returns an efficient static instance of an empty collection.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Collections.Empty.ReadOnlyList``1">
+            <summary>
+            Returns an optimized empty collection.
+            </summary>
+            <typeparam name="T">The type of the collection.</typeparam>
+            <returns>Returns an efficient static instance of an empty list.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Collections.Empty.ReadOnlyDictionary``2">
+            <summary>
+            Returns an optimized empty dictionary.
+            </summary>
+            <typeparam name="TKey">The key type of the dictionary.</typeparam>
+            <typeparam name="TValue">The value type of the dictionary.</typeparam>
+            <returns>Returns an efficient static instance of an empty dictionary.</returns>
+        </member>
+        <member name="T:Microsoft.Shared.Collections.EmptyCollectionExtensions">
+            <summary>
+            Defines static methods used to optimize the use of empty collections.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Shared.Collections.EmptyCollectionExtensions.EmptyIfNull``1(System.Collections.Generic.IReadOnlyCollection{``0})">
+            <summary>
+            Returns an optimized empty collection if the input is <see langword="null"/> or empty, otherwise returns the input.
+            </summary>
+            <typeparam name="T">The type of the collection.</typeparam>
+            <param name="collection">The collection to check for <see langword="null"/> or empty.</param>
+            <returns>Returns a static instance of an empty type if the input collection is <see langword="null"/> or empty, otherwise the collection.</returns>
+            <remarks>
+            Substituting a static collection whenever an empty collection is needed helps in two ways. First,
+            it allows the original empty collection to be garbage collected, freeing memory. Second, the
+            empty collection that is returned is optimized to not allocated memory whenever the collection is
+            enumerated.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Collections.EmptyCollectionExtensions.EmptyIfNull``1(System.Collections.Generic.ICollection{``0})">
+            <summary>
+            Returns an optimized empty collection if the input is <see langword="null"/> or empty, otherwise returns the input.
+            </summary>
+            <typeparam name="T">The type of the collection.</typeparam>
+            <param name="collection">The collection to check for <see langword="null"/> or empty.</param>
+            <returns>Returns a static instance of an empty type if the input collection is <see langword="null"/> or empty, otherwise the collection.</returns>
+            <remarks>
+            Substituting a static collection whenever an empty collection is needed helps in two ways. First,
+            it allows the original empty collection to be garbage collected, freeing memory. Second, the
+            empty collection that is returned is optimized to not allocated memory whenever the collection is
+            enumerated.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Collections.EmptyCollectionExtensions.EmptyIfNull``1(System.Collections.Generic.IReadOnlyList{``0})">
+            <summary>
+            Returns an optimized empty collection if the input is <see langword="null"/> or empty, otherwise returns the input.
+            </summary>
+            <typeparam name="T">The type of the collection.</typeparam>
+            <param name="list">The collection to check for <see langword="null"/> or empty.</param>
+            <returns>Returns a static instance of an empty type if the input collection is <see langword="null"/> or empty, otherwise the collection.</returns>
+            <remarks>
+            Substituting a static collection whenever an empty collection is needed helps in two ways. First,
+            it allows the original empty collection to be garbage collected, freeing memory. Second, the
+            empty collection that is returned is optimized to not allocated memory whenever the collection is
+            enumerated.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Collections.EmptyCollectionExtensions.EmptyIfNull``1(System.Collections.Generic.IList{``0})">
+            <summary>
+            Returns an optimized empty list if the input is <see langword="null"/> or empty, otherwise returns the input.
+            </summary>
+            <typeparam name="T">The type of the collection.</typeparam>
+            <param name="list">The list to check for <see langword="null"/> or empty.</param>
+            <returns>Returns a static instance of an empty type if the input collection is <see langword="null"/> or empty, otherwise the collection.</returns>
+            <remarks>
+            Substituting a static list whenever an empty collection is needed helps in two ways. First,
+            it allows the original empty collection to be garbage collected, freeing memory. Second, the
+            empty collection that is returned is optimized to not allocated memory whenever the collection is
+            enumerated.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Collections.EmptyCollectionExtensions.EmptyIfNull``1(``0[])">
+            <summary>
+            Returns an optimized empty array if the input is <see langword="null"/> or empty, otherwise returns the input.
+            </summary>
+            <typeparam name="T">The type of the array.</typeparam>
+            <param name="array">The array to check for <see langword="null"/> or empty.</param>
+            <returns>Returns a static instance of an empty array if the input array is <see langword="null"/> or empty, otherwise the array.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Collections.EmptyCollectionExtensions.EmptyIfNull``1(System.Collections.Generic.IEnumerable{``0})">
+            <summary>
+            Returns an optimized empty collection if the input is <see langword="null"/> or can be determined to be empty, otherwise returns the input.
+            </summary>
+            <typeparam name="T">The type of the collection.</typeparam>
+            <param name="enumerable">The collection to check for <see langword="null"/> or empty.</param>
+            <returns>Returns a static instance of an empty type if the input collection is <see langword="null"/> or empty, otherwise the collection.</returns>
+            <remarks>
+            This method does not enumerate the collection.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Collections.EmptyCollectionExtensions.EmptyIfNull``2(System.Collections.Generic.IReadOnlyDictionary{``0,``1})">
+            <summary>
+            Returns an optimized empty dictionary if the input is <see langword="null"/> or can be determined to be empty, otherwise returns the input.
+            </summary>
+            <typeparam name="TKey">The key type of the dictionary.</typeparam>
+            <typeparam name="TValue">The value type of the dictionary.</typeparam>
+            <param name="dictionary">The dictionary to check for <see langword="null"/> or empty.</param>
+            <returns>Returns a static instance of an empty type if the input dictionary is <see langword="null"/> or empty, otherwise the dictionary.</returns>
+            <remarks>
+            Note that this method does not enumerate the dictionary.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Shared.Text.NumericExtensions">
+            <summary>
+            Utilities to augment the basic numeric types.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Shared.Text.NumericExtensions.ToInvariantString(System.Int32)">
+            <summary>
+            Formats an integer as an invariant string.
+            </summary>
+            <param name="value">The value to format as a string.</param>
+            <returns>The string representation of the integer value.</returns>
+            <remarks>
+            This works identically to <c>value.ToString(CultureInfo.InvariantCulture)</c> except that it is faster as it maintains
+            preformatted strings for common integer values.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Text.NumericExtensions.ToInvariantString(System.Int64)">
+            <summary>
+            Formats a 64-bit integer as an invariant string.
+            </summary>
+            <param name="value">The value to format as a string.</param>
+            <returns>The string representation of the integer value.</returns>
+            <remarks>
+            This works identically to <c>value.ToString(CultureInfo.InvariantCulture)</c> except that it is faster as it maintains
+            preformatted strings for common integer values.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Shared.Diagnostics.AttachedDebugger">
+            <summary>
+            Always attached debugger.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Shared.Diagnostics.AttachedDebugger.Instance">
+            <summary>
+            Gets cached instance of <see cref="T:Microsoft.Shared.Diagnostics.AttachedDebugger"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Shared.Diagnostics.AttachedDebugger.IsAttached">
+            <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Shared.Diagnostics.DebuggerExtensions">
+            <summary>
+            Adds debugger to DI container.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.DebuggerExtensions.AddSystemDebuggerState(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Registers system debugger as <see cref="T:Microsoft.Shared.Diagnostics.IDebuggerState"/> interface.
+            </summary>
+            <param name="services">Service collection to register system debugger in.</param>
+            <returns>Passed instance of service collection for further configuration.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.DebuggerExtensions.AddAttachedDebuggerState(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Registers system debugger as <see cref="T:Microsoft.Shared.Diagnostics.IDebuggerState"/> interface.
+            </summary>
+            <param name="services">Service collection to register system debugger in.</param>
+            <returns>Passed instance of service collection for further configuration.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.DebuggerExtensions.AddDetachedDebuggerState(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Registers system debugger as <see cref="T:Microsoft.Shared.Diagnostics.IDebuggerState"/> interface.
+            </summary>
+            <param name="services">Service collection to register system debugger in.</param>
+            <returns>Passed instance of service collection for further configuration.</returns>
+        </member>
+        <member name="T:Microsoft.Shared.Diagnostics.DebuggerState">
+            <summary>
+            Holds all debugger states useful for test writing.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Shared.Diagnostics.DebuggerState.System">
+            <summary>
+            Gets a debugger dynamically changing its state depending on environment.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Shared.Diagnostics.DebuggerState.Attached">
+            <summary>
+            Gets always attached debugger.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Shared.Diagnostics.DebuggerState.Detached">
+            <summary>
+            Gets always detached debugger.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Diagnostics.DetachedDebugger">
+            <summary>
+            Always detached debugger.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Shared.Diagnostics.DetachedDebugger.Instance">
+            <summary>
+            Gets cached instance of <see cref="T:Microsoft.Shared.Diagnostics.DetachedDebugger"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Shared.Diagnostics.DetachedDebugger.IsAttached">
+            <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Shared.Diagnostics.IDebuggerState">
+            <summary>
+            Abstracts debugger presence to increase testability.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Shared.Diagnostics.IDebuggerState.IsAttached">
+            <summary>
+            Gets a value indicating whether a debugger is attached or not.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Diagnostics.SystemDebugger">
+            <summary>
+            Debugger with environment dependent state.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Shared.Diagnostics.SystemDebugger.Instance">
+            <summary>
+            Gets cached instance of <see cref="T:Microsoft.Shared.Diagnostics.SystemDebugger"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Shared.Diagnostics.SystemDebugger.IsAttached">
+            <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.BufferWriter`1">
+            <summary>
+            Represents an output sink into which <typeparamref name="T"/> data can be written.
+            </summary>
+            <remarks>
+            This class is similar to <c>System.Buffers.ArrayBufferWriter&lt;T&gt;</c>, with the exception that the
+            <c>ArrayBufferWriter&lt;T&gt;.Clear</c> method has been replaced with a <see cref="M:Microsoft.Shared.Pools.BufferWriter`1.Reset"/>
+            method. When used with value types, <see cref="M:Microsoft.Shared.Pools.BufferWriter`1.Reset"/> doesn't clear the underlying memory
+            buffer to <c>default(T)</c>, which makes it considerably faster. Additionally, this class
+            lets you explicitly set the capacity of the underlying buffer.
+            </remarks>
+            <typeparam name="T">The type of value that will be written into the writer.</typeparam>
+        </member>
+        <member name="P:Microsoft.Shared.Pools.BufferWriter`1.WrittenMemory">
+            <summary>
+            Gets the data written to the underlying buffer so far.
+            </summary>
+            <remarks>
+            The returned value can become stale whenever the buffer is written to again. As such, you should
+            always call this property in order to get a fresh value before reading from the buffer.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Shared.Pools.BufferWriter`1.WrittenSpan">
+            <summary>
+            Gets the data written to the underlying buffer so far.
+            </summary>
+            <remarks>
+            The returned span can become stale whenever the buffer is written to again. As such, you should
+            always call this property in order to get a fresh span before reading from the buffer.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Shared.Pools.BufferWriter`1.WrittenCount">
+            <summary>
+            Gets the amount of data written to the underlying buffer so far.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Shared.Pools.BufferWriter`1.Capacity">
+            <summary>
+            Gets or sets the total amount of space within the underlying buffer.
+            </summary>
+            <remarks>
+            When reducing the capacity, the value of <see cref="P:Microsoft.Shared.Pools.BufferWriter`1.WrittenCount" /> is clamped to the
+            new capacity.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.BufferWriter`1.Reset">
+            <summary>
+            Clears the data written to the underlying buffer.
+            </summary>
+            <remarks>
+            You must reset the <see cref="T:Microsoft.Shared.Pools.BufferWriter`1"/> before trying to re-use it.
+            If <typeparamref name="T"/> is or contains reference types, than this method
+            will clear the underlying memory buffers to default(T) in order to ensure the
+            GC is able to reclaim references correctly. If <typeparamref name="T"/>
+            is a value type and only contains value types, then this method doesn't
+            clear memory and so completes considerably faster.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.BufferWriter`1.Advance(System.Int32)">
+            <summary>
+            Notifies <see cref="T:System.Buffers.IBufferWriter`1"/> that <paramref name="count"/> amount of data was written to the output <see cref="T:System.Span`1"/>/<see cref="T:System.Memory`1"/>.
+            </summary>
+            <param name="count">The amount of data that has been consumed.</param>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            Thrown when <paramref name="count"/> is negative or when attempting to advance past the end of the underlying buffer.
+            </exception>
+            <remarks>
+            You must request a new buffer after calling <see cref="M:Microsoft.Shared.Pools.BufferWriter`1.Advance(System.Int32)"/> to continue writing more data and cannot write to a previously acquired buffer.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.BufferWriter`1.GetMemory(System.Int32)">
+            <summary>
+            Returns a <see cref="T:System.Memory`1"/> to write to that is at least the requested length (specified by <paramref name="sizeHint"/>).
+            </summary>
+            <exception cref="T:System.ArgumentException">
+            Thrown when <paramref name="sizeHint"/> is negative.
+            </exception>
+            <remarks>
+            This will never return an empty <see cref="T:System.Memory`1"/>.
+            There is no guarantee that successive calls will return the same buffer or the same-sized buffer.
+            You must request a new buffer after calling <see cref="M:Microsoft.Shared.Pools.BufferWriter`1.Advance(System.Int32)"/> to continue writing more data and cannot write to a previously acquired buffer.
+            </remarks>
+            <param name="sizeHint">THe minimum size of the returned buffer. If this is 0, returns a buffer with at least 1 byte available.</param>
+            <returns>A block of memory that can be written to.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.BufferWriter`1.GetSpan(System.Int32)">
+            <summary>
+            Returns a <see cref="T:System.Span`1"/> to write to that is at least the requested length (specified by <paramref name="sizeHint"/>).
+            </summary>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            Thrown when <paramref name="sizeHint"/> is negative.
+            </exception>
+            <remarks>
+            This will never return an empty <see cref="T:System.Span`1"/>.
+            There is no guarantee that successive calls will return the same buffer or the same-sized buffer.
+            You must request a new buffer after calling <see cref="M:Microsoft.Shared.Pools.BufferWriter`1.Advance(System.Int32)"/> to continue writing more data and cannot write to a previously acquired buffer.
+            </remarks>
+            <param name="sizeHint">THe minimum size of the returned buffer. If this is 0, returns a buffer with at least 1 byte available.</param>
+            <returns>A block of memory that can be written to.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.BufferWriterPool.CreateBufferWriterPool``1(System.Int32,System.Int32)">
+            <summary>
+            Creates an object pool of <see cref="T:Microsoft.Shared.Pools.BufferWriter`1"/> instances.
+            </summary>
+            <typeparam name="T">The type of object managed by the buffer writers.</typeparam>
+            <param name="maxCapacity">The maximum number of items to keep in the pool. This defaults to 1024. This value is a recommendation, the pool may keep more objects than this.</param>
+            <param name="maxBufferWriterCapacity">The maximum capacity of the buffer writers to keep in the pool. This defaults to 256K.</param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="P:Microsoft.Shared.Pools.BufferWriterPool.SharedBufferWriterPool">
+            <summary>
+            Gets the shared pool of <see cref="T:Microsoft.Shared.Pools.BufferWriter`1"/> instances.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.BufferWriterPooledObjectPolicy`1">
+            <summary>
+            An object pooling policy designed for <see cref="T:Microsoft.Shared.Pools.BufferWriter`1"/>.
+            </summary>
+            <typeparam name="T">The type of objects to hold in the buffer writer.</typeparam>
+        </member>
+        <member name="F:Microsoft.Shared.Pools.BufferWriterPooledObjectPolicy`1.DefaultMaximumRetainedCapacity">
+            <summary>
+            Default maximum retained capacity of buffer writer instances in the pool.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.BufferWriterPooledObjectPolicy`1.#ctor(System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Shared.Pools.BufferWriterPooledObjectPolicy`1"/> class.
+            </summary>
+            <param name="maximumRetainedCapacity">
+            The maximum capacity of <see cref="T:Microsoft.Shared.Pools.BufferWriter`1"/> to keep in the pool.
+            If an object is returned to the pool whose capacity exceeds this number, the object
+            instance is not added to the pool, and thus becomes eligible for garbage collection.
+            </param>
+        </member>
+        <member name="P:Microsoft.Shared.Pools.BufferWriterPooledObjectPolicy`1.MaximumRetainedCapacity">
+            <summary>
+            Gets the maximum capacity of <see cref="T:Microsoft.Shared.Pools.BufferWriter`1"/> to keep in the pool.
+            </summary>
+            <remarks>
+            If an object is returned to the pool whose capacity exceeds this number, the object
+            instance is not added to the pool, and thus becomes eligible for garbage collection.
+            Default maximum retained capacity is 256 * 1024 bytes.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.BufferWriterPooledObjectPolicy`1.Create">
+            <summary>
+            Creates an instance of <see cref="T:Microsoft.Shared.Pools.BufferWriter`1"/>.
+            </summary>
+            <returns>The newly created instance.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.BufferWriterPooledObjectPolicy`1.Return(Microsoft.Shared.Pools.BufferWriter{`0})">
+            <summary>
+            Performs any work needed before returning an object to a pool.
+            </summary>
+            <param name="obj">The object to return to a pool.</param>
+            <returns>true if the object should be returned to the pool, false if it shouldn't.</returns>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.ReturnableBufferWriter`1">
+            <summary>
+             Represents a buffer writer that can be automatically returned to an object pool upon dispose.
+            </summary>
+            <typeparam name="T">The type of the elements in the buffer.</typeparam>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.ReturnableBufferWriter`1.#ctor(Microsoft.Extensions.ObjectPool.ObjectPool{Microsoft.Shared.Pools.BufferWriter{`0}})">
+            <summary>
+             Initializes a new instance of the <see cref="T:Microsoft.Shared.Pools.ReturnableBufferWriter`1"/> struct.
+            </summary>
+            <param name="pool">The object pool to return the buffer writer to.</param>
+        </member>
+        <member name="P:Microsoft.Shared.Pools.ReturnableBufferWriter`1.Buffer">
+            <summary>
+             Gets the buffer writer.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.ReturnableBufferWriter`1.Dispose">
+            <summary>
+             Disposes the buffer writer and returns it to the object pool.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Diagnostics.Constants">
+            <summary>
+            Common telemetry constants used by various telemetry libraries.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Diagnostics.Constants.HttpWebConstants.RequestRouteHeader">
+            <summary>
+            Request Route HTTP Header key.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Diagnostics.Constants.HttpWebConstants.RequestNameHeader">
+            <summary>
+            Request Name HTTP Header key.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Diagnostics.Constants.HttpWebConstants.DependencyNameHeader">
+            <summary>
+            Dependency Name HTTP Header key.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Diagnostics.DefaultHttpDependencyMetadataResolver">
+            <summary>
+            Default implementation of <see cref="T:Microsoft.Extensions.Http.Diagnostics.HttpDependencyMetadataResolver"/> that uses the base
+            trie-based lookup algorithm.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Diagnostics.DefaultHttpDependencyMetadataResolver.#ctor(System.Collections.Generic.IEnumerable{Microsoft.Extensions.Http.Diagnostics.IDownstreamDependencyMetadata})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Http.Diagnostics.DefaultHttpDependencyMetadataResolver"/> class.
+            </summary>
+            <param name="dependencyMetadata">A collection of HTTP dependency metadata used for request resolution.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Diagnostics.HttpDependencyMetadataResolver">
+            <summary>
+            Resolves metadata for HTTP requests based on hostname, path, and method patterns.
+            </summary>
+            <remarks>
+            This class provides a high-performance way to identify HTTP requests by mapping them to previously
+            configured metadata using specialized trie-based data structures. This enables efficient lookup
+            of service information, operation names, and other metadata for telemetry and policy application.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Diagnostics.HttpDependencyMetadataResolver.#ctor(System.Collections.Generic.IEnumerable{Microsoft.Extensions.Http.Diagnostics.IDownstreamDependencyMetadata})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Http.Diagnostics.HttpDependencyMetadataResolver"/> class.
+            </summary>
+            <param name="dependencyMetadata">A collection of HTTP dependency metadata used for request resolution.</param>
+            <exception cref="T:System.ArgumentNullException"><paramref name="dependencyMetadata"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Diagnostics.HttpDependencyMetadataResolver.GetRequestMetadata(System.Net.Http.HttpRequestMessage)">
+            <summary>
+            Gets request metadata for the specified instance of <see cref="T:System.Net.Http.HttpRequestMessage"/>.
+            </summary>
+            <param name="requestMessage">The HTTP request message.</param>
+            <returns>The resolved <see cref="T:Microsoft.Extensions.Http.Diagnostics.RequestMetadata"/> if found; otherwise, <see langword="null"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Latency.HttpClientLatencyTelemetryOptions">
+            <summary>
+            Options to configure the http client latency telemetry.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Latency.HttpClientLatencyTelemetryOptions.EnableDetailedLatencyBreakdown">
+            <summary>
+            Gets or sets a value indicating whether to collect detailed latency breakdown of <see cref="T:System.Net.Http.HttpClient"/> call.
+            </summary>
+            <value>
+            The default value is <see langword="true"/>.
+            </value>
+            <remarks>
+            Detailed breakdowns add checkpoints for HTTP operations, such as connection open and request headers sent.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Latency.Internal.HttpClientLatencyLogEnricher">
+            <summary>
+            The enricher appends checkpoints for the outgoing http request.
+            It also logs the server name from the response header to correlate logs between client and server.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Latency.Internal.HttpLatencyTelemetryHandler">
+            <summary>
+            This delegating handler creates a <see cref="T:Microsoft.Extensions.Diagnostics.Latency.ILatencyContext"/> for the request if it has not been created for the request.
+            It also adds client name to outgoing request header which helps with correlating client and server telemetry.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Logging.HttpClientLoggingTagNames">
+            <summary>
+            Constants used for HTTP client logging tags.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Logging.HttpClientLoggingTagNames.Duration">
+            <summary>
+            HTTP Request duration.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Logging.HttpClientLoggingTagNames.Host">
+            <summary>
+            HTTP Host.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Logging.HttpClientLoggingTagNames.Method">
+            <summary>
+            HTTP Method.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Logging.HttpClientLoggingTagNames.Path">
+            <summary>
+            HTTP Path.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Logging.HttpClientLoggingTagNames.RequestBody">
+            <summary>
+            HTTP Request Body.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Logging.HttpClientLoggingTagNames.ResponseBody">
+            <summary>
+            HTTP Response Body.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Logging.HttpClientLoggingTagNames.RequestHeaderPrefix">
+            <summary>
+            HTTP Request Headers prefix.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Logging.HttpClientLoggingTagNames.ResponseHeaderPrefix">
+            <summary>
+            HTTP Response Headers prefix.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Logging.HttpClientLoggingTagNames.UrlQuery">
+            <summary>
+            URL query parameters prefix.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Logging.HttpClientLoggingTagNames.StatusCode">
+            <summary>
+            HTTP Status Code.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.HttpClientLoggingTagNames.TagNames">
+            <summary>
+            Gets a list of all tag names.
+            </summary>
+            <returns>A read-only <see cref="T:System.Collections.Generic.IReadOnlyList`1"/> of all tag names.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Logging.IHttpClientLogEnricher">
+            <summary>
+            Interface for implementing log enrichers for HTTP client requests.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Logging.IHttpClientLogEnricher.Enrich(Microsoft.Extensions.Diagnostics.Enrichment.IEnrichmentTagCollector,System.Net.Http.HttpRequestMessage,System.Net.Http.HttpResponseMessage,System.Exception)">
+            <summary>
+            Enrich HTTP client request logs.
+            </summary>
+            <param name="collector">Tag collector to add tags to.</param>
+            <param name="request"><see cref="T:System.Net.Http.HttpRequestMessage"/> object associated with the outgoing HTTP request.</param>
+            <param name="response"><see cref="T:System.Net.Http.HttpResponseMessage"/> object associated with the outgoing HTTP request.</param>
+            <param name="exception">An optional <see cref="T:System.Exception"/> that was thrown within the outgoing HTTP request processing.</param>
+            <remarks>
+            Depending on the result of the HTTP request,
+            the <paramref name="response"/> and <paramref name="exception"/> parameters might be <see langword="null"/>.
+            </remarks>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Logging.Internal.HttpRequestBodyReader.RequestReadTimeout">
+            <summary>
+            Exposed for testing purposes.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Logging.Internal.HttpResponseBodyReader.ResponseReadTimeout">
+            <summary>
+            Exposed for testing purposes.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Logging.Internal.IHttpHeadersReader">
+            <summary>
+            Methods to read HTTP headers.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Logging.Internal.IHttpHeadersReader.ReadRequestHeaders(System.Net.Http.HttpRequestMessage,System.Collections.Generic.List{System.Collections.Generic.KeyValuePair{System.String,System.String}})">
+            <summary>
+            Read HTTP request headers.
+            </summary>
+            <param name="request">An instance of <see cref="T:System.Net.Http.HttpRequestMessage"/> to read headers from.</param>
+            <param name="destination">Destination to save read headers to.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Logging.Internal.IHttpHeadersReader.ReadResponseHeaders(System.Net.Http.HttpResponseMessage,System.Collections.Generic.List{System.Collections.Generic.KeyValuePair{System.String,System.String}})">
+            <summary>
+            Read HTTP response headers.
+            </summary>
+            <param name="response">An instance of <see cref="T:System.Net.Http.HttpResponseMessage"/> to read headers from.</param>
+            <param name="destination">Destination to save read headers to.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Logging.Internal.IHttpHeadersReader.RedactValue(System.String,Microsoft.Extensions.Compliance.Classification.DataClassification)">
+            <summary>
+            Redact values by using a <see cref="T:Microsoft.Extensions.Compliance.Classification.DataClassification"/>.
+            </summary>
+            <param name="value">A value that needs to be redacted.</param>
+            <param name="classification">An instance of <see cref="T:Microsoft.Extensions.Compliance.Classification.DataClassification"/> to redact a value.</param>
+            <returns>Redacted value.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Logging.Internal.IHttpRequestReader">
+            <summary>
+            Methods to read <see cref="T:System.Net.Http.HttpResponseMessage"/> or <see cref="T:System.Net.Http.HttpRequestMessage"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Logging.Internal.IHttpRequestReader.ReadResponseAsync(Microsoft.Extensions.Http.Logging.Internal.LogRecord,System.Net.Http.HttpResponseMessage,System.Collections.Generic.List{System.Collections.Generic.KeyValuePair{System.String,System.String}},System.Threading.CancellationToken)">
+            <summary>
+            Reads <see cref="T:System.Net.Http.HttpResponseMessage"/>.
+            </summary>
+            <param name="record">A log record object to fill in.</param>
+            <param name="response">HTTP response.</param>
+            <param name="responseHeadersBuffer">A buffer to read response headers to.</param>
+            <param name="cancellationToken">A cancellation token to cancel operation.</param>
+            <returns>A task representing an async operation.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Logging.Internal.IHttpRequestReader.ReadRequestAsync(Microsoft.Extensions.Http.Logging.Internal.LogRecord,System.Net.Http.HttpRequestMessage,System.Collections.Generic.List{System.Collections.Generic.KeyValuePair{System.String,System.String}},System.Threading.CancellationToken)">
+            <summary>
+            Reads <see cref="T:System.Net.Http.HttpRequestMessage"/>.
+            </summary>
+            <param name="record">A log record object to fill in.</param>
+            <param name="request">HTTP request.</param>
+            <param name="requestHeadersBuffer">A buffer to read request headers to.</param>
+            <param name="cancellationToken">A cancellation token to cancel operation.</param>
+            <returns>A task representing an async operation.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Logging.Internal.Log">
+            <summary>
+            Logs <see cref="T:System.Net.Http.HttpRequestMessage"/>, <see cref="T:System.Net.Http.HttpResponseMessage"/> and the exceptions due to errors of request/response.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Logging.Internal.Log.RequestReadError(Microsoft.Extensions.Logging.ILogger,System.Exception,System.Net.Http.HttpMethod,System.String,System.String)">
+            <summary>
+            Logs "An error occurred while reading the request data to fill the logger context for request: {http.request.method} {server.address}/{url.path}" at "Error" level.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Logging.Internal.Log.ResponseReadError(Microsoft.Extensions.Logging.ILogger,System.Exception,System.Net.Http.HttpMethod,System.String,System.String)">
+            <summary>
+            Logs "An error occurred while reading the response data to fill the logger context for request: {http.request.method} {server.address}/{url.path}" at "Error" level.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Logging.Internal.Log.LoggerContextMissing(Microsoft.Extensions.Logging.ILogger,System.Exception,System.String,System.Net.Http.HttpMethod,System.String)">
+            <summary>
+            Logs "The logger couldn't read its context for {RequestState} request: {http.request.method} {server.address}" at "Error" level.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Logging.Internal.Log.EnrichmentError(Microsoft.Extensions.Logging.ILogger,System.Exception,System.String,System.Net.Http.HttpMethod,System.String,System.String)">
+            <summary>
+            Logs "An error occurred in enricher '{Enricher}' while enriching the logger context for request: {http.request.method} {server.address}/{url.path}" at "Error" level.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Logging.Internal.LoggerMessageStateExtensions.AddRequestHeaders(Microsoft.Extensions.Logging.LoggerMessageState,System.Collections.Generic.List{System.Collections.Generic.KeyValuePair{System.String,System.String}},System.Int32@)">
+            <summary>
+            Adds request headers to <see cref="T:Microsoft.Extensions.Logging.LoggerMessageState"/>.
+            </summary>
+            <param name="state">A <see cref="T:Microsoft.Extensions.Logging.LoggerMessageState"/> to be filled.</param>
+            <param name="items">A list with request headers.</param>
+            <param name="index">Represents an index to be used when writing tags into <paramref name="state"/>.</param>
+            <remarks><paramref name="index"/> will be mutated to point to the next <paramref name="state"/> item.</remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Logging.Internal.LoggerMessageStateExtensions.AddResponseHeaders(Microsoft.Extensions.Logging.LoggerMessageState,System.Collections.Generic.List{System.Collections.Generic.KeyValuePair{System.String,System.String}},System.Int32@)">
+            <summary>
+            Adds response headers to <see cref="T:Microsoft.Extensions.Logging.LoggerMessageState"/>.
+            </summary>
+            <param name="state">A <see cref="T:Microsoft.Extensions.Logging.LoggerMessageState"/> to be filled.</param>
+            <param name="items">A list with response headers.</param>
+            <param name="index">Represents an index to be used when writing tags into <paramref name="state"/>.</param>
+            <remarks><paramref name="index"/> will be mutated to point to the next <paramref name="state"/> item.</remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Logging.Internal.LoggerMessageStateExtensions.AddPathParameters(Microsoft.Extensions.Logging.LoggerMessageState,Microsoft.Extensions.Http.Diagnostics.HttpRouteParameter[],System.Int32,System.Int32@)">
+            <summary>
+            Adds path parameters to <see cref="T:Microsoft.Extensions.Logging.LoggerMessageState"/>.
+            </summary>
+            <param name="state">A <see cref="T:Microsoft.Extensions.Logging.LoggerMessageState"/> to be filled.</param>
+            <param name="parameters">An array with path parameters.</param>
+            <param name="paramsCount">A number of path parameters.</param>
+            <param name="index">Represents an index to be used when writing tags into <paramref name="state"/>.</param>
+            <remarks><paramref name="index"/> will be mutated to point to the next <paramref name="state"/> item.</remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Logging.Internal.LoggingOptionsValidator.Validate(System.String,Microsoft.Extensions.Http.Logging.LoggingOptions)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>Validation result.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Logging.Internal.LogRecord">
+            <summary>
+            Parsed HTTP information.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.Internal.LogRecord.Host">
+            <summary>
+            Gets or sets HTTP host.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.Internal.LogRecord.Method">
+            <summary>
+            Gets or sets HTTP request method.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.Internal.LogRecord.Path">
+            <summary>
+            Gets or sets parsed request path.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.Internal.LogRecord.Duration">
+            <summary>
+            Gets or sets HTTP request duration in milliseconds.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.Internal.LogRecord.StatusCode">
+            <summary>
+            Gets or sets HTTP response status code.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.Internal.LogRecord.RequestHeaders">
+            <summary>
+            Gets or sets parsed list of request headers.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.Internal.LogRecord.ResponseHeaders">
+            <summary>
+            Gets or sets parsed list of headers.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.Internal.LogRecord.RequestBody">
+            <summary>
+            Gets or sets parsed request body.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.Internal.LogRecord.ResponseBody">
+            <summary>
+            Gets or sets parsed response body.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.Internal.LogRecord.EnrichmentTags">
+            <summary>
+            Gets or sets enrichment properties.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.Internal.LogRecord.PathParameters">
+            <summary>
+            Gets or sets request path parameters.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.Internal.LogRecord.PathParametersCount">
+            <summary>
+            Gets or sets request path parameters count for <see cref="P:Microsoft.Extensions.Http.Logging.Internal.LogRecord.PathParameters"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.Internal.LogRecord.QueryString">
+            <summary>
+            Gets or sets formatted query parameters.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Logging.Internal.OptionsExtensions.GetKeyedOrCurrent``1(Microsoft.Extensions.Options.IOptionsMonitor{``0},System.String)">
+            <summary>
+            Gets the options for the given service key, or the current value if the service key is <see langword="null"/>.
+            </summary>
+            <typeparam name="TOptions">The options type.</typeparam>
+            <param name="optionsMonitor">The <see cref="T:Microsoft.Extensions.Options.IOptionsMonitor`1"/> to load the options object from.</param>
+            <param name="serviceKey">An optional string that specifies the name of the options object to get.</param>
+            <returns>The <typeparamref name="TOptions"/> instance.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Logging.Internal.ServiceProviderExtensions.GetRequiredOrKeyedRequiredService``1(System.IServiceProvider,System.String)">
+            <summary>
+            Gets a keyed service from the <see cref="T:System.IServiceProvider"/>, or a non-keyed service if the key is <see langword="null"/>.
+            </summary>
+            <typeparam name="T">The type of service object to get.</typeparam>
+            <param name="provider">The <see cref="T:System.IServiceProvider"/> to retrieve the service object from.</param>
+            <param name="serviceKey">An optional string that specifies the key of service object to get.</param>
+            <returns>A service object of type <typeparamref name="T"/>.</returns>
+            <exception cref="T:System.InvalidOperationException">There is no service of type <typeparamref name="T"/> registered.</exception>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Logging.LoggingOptions">
+            <summary>
+            Options to configure HTTP client requests logging.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.LoggingOptions.LogRequestStart">
+            <summary>
+            Gets or sets a value indicating whether the request is logged additionally before any further processing.
+            </summary>
+            <value>
+            The default value is <see langword="false"/>.
+            </value>
+            <remarks>
+            When enabled, two entries will be logged for each incoming request - one for request and one for response, if available.
+            When disabled, only one entry will be logged for each incoming request, which includes both request and response data.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.LoggingOptions.RequestQueryParametersDataClasses">
+            <summary>
+            Gets or sets the set of HTTP request query parameters to log and their respective data classifications to use for redaction.
+            </summary>
+            <value>
+            The default value is <see cref="T:System.Collections.Generic.Dictionary`2"/>.
+            </value>
+            <remarks>
+            If empty, no HTTP request query parameters will be logged.
+            If the data class is <see cref="P:Microsoft.Extensions.Compliance.Classification.DataClassification.None"/>, no redaction will be done.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.LoggingOptions.LogBody">
+            <summary>
+            Gets or sets a value indicating whether the HTTP request and response body are logged.
+            </summary>
+            <value>
+            The default value is <see langword="false"/>.
+            </value>
+            <remarks>
+            Avoid enabling this option in a production environment as it might lead to leaking privacy information.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.LoggingOptions.BodySizeLimit">
+            <summary>
+            Gets or sets the maximum number of bytes of the request or response body to read.
+            </summary>
+            <value>
+            The default value is ≈ 32K.
+            </value>
+            <remarks>
+            The number should ideally be below 85000 bytes to not be allocated on the <see href="https://learn.microsoft.com/dotnet/standard/garbage-collection/large-object-heap">large object heap</see>.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.LoggingOptions.BodyReadTimeout">
+            <summary>
+            Gets or sets the maximum amount of time to wait for the request or response body to be read.
+            </summary>
+            <value>
+            The default value is 1 second.
+            </value>
+            <remarks>
+            The value should be in the range of 1 millisecond to 1 minute.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.LoggingOptions.RequestBodyContentTypes">
+            <summary>
+            Gets or sets the list of HTTP request content types which are considered text and thus possible to serialize.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.LoggingOptions.ResponseBodyContentTypes">
+            <summary>
+            Gets or sets the list of HTTP response content types which are considered text and thus possible to serialize.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.LoggingOptions.RequestHeadersDataClasses">
+            <summary>
+            Gets or sets the set of HTTP request headers to log and their respective data classifications to use for redaction.
+            </summary>
+            <value>
+            The default value is <see cref="T:System.Collections.Generic.HashSet`1"/>.
+            </value>
+            <remarks>
+            If empty, no HTTP request headers will be logged.
+            If the data class is <see cref="P:Microsoft.Extensions.Compliance.Classification.DataClassification.None"/>, no redaction will be done.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.LoggingOptions.ResponseHeadersDataClasses">
+            <summary>
+            Gets or sets the set of HTTP response headers to log and their respective data classifications to use for redaction.
+            </summary>
+            <value>
+            The default value is <see cref="T:System.Collections.Generic.HashSet`1"/>.
+            </value>
+            <remarks>
+            If the data class is <see cref="P:Microsoft.Extensions.Compliance.Classification.DataClassification.None"/>, no redaction will be done.
+            If empty, no HTTP response headers will be logged.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.LoggingOptions.RequestPathLoggingMode">
+            <summary>
+            Gets or sets a value indicating how the outgoing HTTP request path should be logged.
+            </summary>
+            <value>
+            The default value is <see cref="F:Microsoft.Extensions.Http.Logging.OutgoingPathLoggingMode.Formatted"/>.
+            </value>
+            <remarks>
+            This option is applied only when the <see cref="P:Microsoft.Extensions.Http.Logging.LoggingOptions.RequestPathParameterRedactionMode"/> option is not set to
+            <see cref="F:Microsoft.Extensions.Http.Diagnostics.HttpRouteParameterRedactionMode.None"/>,
+            otherwise this setting is ignored and the non-redacted HTTP request path is logged.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.LoggingOptions.RequestPathParameterRedactionMode">
+            <summary>
+            Gets or sets a value indicating how outgoing HTTP request path parameters should be redacted.
+            </summary>
+            <value>
+            The default value is <see cref="F:Microsoft.Extensions.Http.Diagnostics.HttpRouteParameterRedactionMode.Strict"/>.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.LoggingOptions.RouteParameterDataClasses">
+            <summary>
+            Gets or sets the route parameters to redact with their corresponding data classifications to apply appropriate redaction.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Logging.LoggingOptions.LogContentHeaders">
+            <summary>
+            Gets or sets a value indicating whether the HTTP request and response content headers are logged.
+            </summary>
+            <value>
+            The default value is <see langword="false"/>.
+            </value>
+            <remarks>
+            This property controls whether the logging of HTTP request and response representation headers (e.g. <c>Content-Type</c>) is enabled.
+            Keep this option disabled if <see cref="P:Microsoft.Extensions.Http.Logging.LoggingOptions.RequestHeadersDataClasses"/> or <see cref="P:Microsoft.Extensions.Http.Logging.LoggingOptions.ResponseHeadersDataClasses"/>
+            don't contain any representation headers, otherwise it will create unnecessary minor performance impact on the headers logging.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Logging.OutgoingPathLoggingMode">
+            <summary>
+            Strategy to decide how outgoing HTTP path is logged.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Logging.OutgoingPathLoggingMode.Formatted">
+            <summary>
+            HTTP path is formatted, for example in a form of /foo/bar/redactedUserId.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Logging.OutgoingPathLoggingMode.Structured">
+            <summary>
+            HTTP path is not formatted, route parameters logged in curly braces, for example in a form of /foo/bar/{userId}.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.HttpDiagnosticsServiceCollectionExtensions">
+            <summary>
+            Extensions for telemetry utilities.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.HttpDiagnosticsServiceCollectionExtensions.AddDownstreamDependencyMetadata(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Http.Diagnostics.IDownstreamDependencyMetadata)">
+            <summary>
+            Adds dependency metadata.
+            </summary>
+            <param name="services"><see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> object instance.</param>
+            <param name="downstreamDependencyMetadata">DownstreamDependencyMetadata object to add.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.HttpDiagnosticsServiceCollectionExtensions.AddDownstreamDependencyMetadata``1(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds dependency metadata.
+            </summary>
+            <typeparam name="T"><see cref="T:Microsoft.Extensions.Http.Diagnostics.IDownstreamDependencyMetadata"/> instance to be registered.</typeparam>
+            <param name="services"><see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> object instance.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.HttpClientLatencyTelemetryExtensions">
+            <summary>
+            Extensions to add http client latency telemetry.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.HttpClientLatencyTelemetryExtensions.AddHttpClientLatencyTelemetry(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds a <see cref="T:System.Net.Http.DelegatingHandler" /> to collect latency information and enrich outgoing request log for all http clients.
+            </summary>
+            <remarks>
+            This extension configures latency information collection globally for all http clients.
+            </remarks>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" />.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.HttpClientLatencyTelemetryExtensions.AddHttpClientLatencyTelemetry(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfigurationSection)">
+            <summary>
+            Adds a <see cref="T:System.Net.Http.DelegatingHandler" /> to collect latency information and enrich outgoing request log for all http clients.
+            </summary>
+            <remarks>
+            This extension configures outgoing request logs auto collection globally for all http clients.
+            </remarks>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" />.</param>
+            <param name="section">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationSection"/> to use for configuring <see cref="T:Microsoft.Extensions.Http.Latency.HttpClientLatencyTelemetryOptions"/>.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.HttpClientLatencyTelemetryExtensions.AddHttpClientLatencyTelemetry(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Microsoft.Extensions.Http.Latency.HttpClientLatencyTelemetryOptions})">
+            <summary>
+            Adds a <see cref="T:System.Net.Http.DelegatingHandler" /> to collect latency information and enrich outgoing request log for all http clients.
+            </summary>
+            <remarks>
+            This extension configures outgoing request logs auto collection globally for all http clients.
+            </remarks>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" />.</param>
+            <param name="configure">The delegate to configure <see cref="T:Microsoft.Extensions.Http.Latency.HttpClientLatencyTelemetryOptions"/> with.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.HttpClientLoggingHttpClientBuilderExtensions">
+            <summary>
+            Extensions to register extended HTTP client logging features.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.HttpClientLoggingHttpClientBuilderExtensions.AddExtendedHttpClientLogging(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder)">
+            <summary>
+            Adds an <see cref="T:Microsoft.Extensions.Http.Logging.IHttpClientAsyncLogger" /> to emit logs for outgoing requests for a named <see cref="T:System.Net.Http.HttpClient"/>.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.DependencyInjection.IHttpClientBuilder" />.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+            <remarks>
+            All other loggers are removed - including the default one, registered via <see cref="M:Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions.AddDefaultLogger(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder)"/>.
+            Information logged by this method is added as key/value pairs to log state.
+            </remarks>
+            <exception cref="T:System.ArgumentNullException">Argument <paramref name="builder"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.HttpClientLoggingHttpClientBuilderExtensions.AddExtendedHttpClientLogging(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder,System.Boolean)">
+            <summary>
+            Adds an <see cref="T:Microsoft.Extensions.Http.Logging.IHttpClientAsyncLogger" /> to emit logs for outgoing requests for a named <see cref="T:System.Net.Http.HttpClient"/>.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.DependencyInjection.IHttpClientBuilder" />.</param>
+            <param name="wrapHandlersPipeline">
+            When <see langword="true"/>, the logger is placed at the beginning of the request pipeline, wrapping all other handlers.
+            When <see langword="false"/>, the logger is placed at the end of the pipeline, right before the primary message handler.
+            </param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+            <remarks>
+            All other loggers are removed - including the default one, registered via <see cref="M:Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions.AddDefaultLogger(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder)"/>.
+            Information logged by this method is added as key/value pairs to log state.
+            </remarks>
+            <exception cref="T:System.ArgumentNullException">Argument <paramref name="builder"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.HttpClientLoggingHttpClientBuilderExtensions.AddExtendedHttpClientLogging(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder,Microsoft.Extensions.Configuration.IConfigurationSection)">
+            <summary>
+            Adds an <see cref="T:Microsoft.Extensions.Http.Logging.IHttpClientAsyncLogger" /> to emit logs for outgoing requests for a named <see cref="T:System.Net.Http.HttpClient"/>.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.DependencyInjection.IHttpClientBuilder" />.</param>
+            <param name="section">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationSection"/> to use for configuring <see cref="T:Microsoft.Extensions.Http.Logging.LoggingOptions"/>.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+            <remarks>
+            All other loggers are removed - including the default one, registered via <see cref="M:Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions.AddDefaultLogger(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder)"/>.
+            Information logged by this method is added as key/value pairs to log state.
+            </remarks>
+            <exception cref="T:System.ArgumentNullException">Any of the arguments is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.HttpClientLoggingHttpClientBuilderExtensions.AddExtendedHttpClientLogging(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder,Microsoft.Extensions.Configuration.IConfigurationSection,System.Boolean)">
+            <summary>
+            Adds an <see cref="T:Microsoft.Extensions.Http.Logging.IHttpClientAsyncLogger" /> to emit logs for outgoing requests for a named <see cref="T:System.Net.Http.HttpClient"/>.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.DependencyInjection.IHttpClientBuilder" />.</param>
+            <param name="section">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationSection"/> to use for configuring <see cref="T:Microsoft.Extensions.Http.Logging.LoggingOptions"/>.</param>
+            <param name="wrapHandlersPipeline">
+            When <see langword="true"/>, the logger is placed at the beginning of the request pipeline, wrapping all other handlers.
+            When <see langword="false"/>, the logger is placed at the end of the pipeline, right before the primary message handler.
+            </param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+            <remarks>
+            All other loggers are removed - including the default one, registered via <see cref="M:Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions.AddDefaultLogger(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder)"/>.
+            Information logged by this method is added as key/value pairs to log state.
+            </remarks>
+            <exception cref="T:System.ArgumentNullException">Any of the arguments is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.HttpClientLoggingHttpClientBuilderExtensions.AddExtendedHttpClientLogging(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder,System.Action{Microsoft.Extensions.Http.Logging.LoggingOptions})">
+            <summary>
+            Adds an <see cref="T:Microsoft.Extensions.Http.Logging.IHttpClientAsyncLogger" /> to emit logs for outgoing requests for a named <see cref="T:System.Net.Http.HttpClient"/>.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.DependencyInjection.IHttpClientBuilder" />.</param>
+            <param name="configure">The delegate to configure <see cref="T:Microsoft.Extensions.Http.Logging.LoggingOptions"/> with.</param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+            <remarks>
+            All other loggers are removed - including the default one, registered via <see cref="M:Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions.AddDefaultLogger(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder)"/>.
+            Information logged by this method is added as key/value pairs to log state.
+            </remarks>
+            <exception cref="T:System.ArgumentNullException">Any of the arguments is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.HttpClientLoggingHttpClientBuilderExtensions.AddExtendedHttpClientLogging(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder,System.Action{Microsoft.Extensions.Http.Logging.LoggingOptions},System.Boolean)">
+            <summary>
+            Adds an <see cref="T:Microsoft.Extensions.Http.Logging.IHttpClientAsyncLogger" /> to emit logs for outgoing requests for a named <see cref="T:System.Net.Http.HttpClient"/>.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.DependencyInjection.IHttpClientBuilder" />.</param>
+            <param name="configure">The delegate to configure <see cref="T:Microsoft.Extensions.Http.Logging.LoggingOptions"/> with.</param>
+            <param name="wrapHandlersPipeline">
+            When <see langword="true"/>, the logger is placed at the beginning of the request pipeline, wrapping all other handlers.
+            When <see langword="false"/>, the logger is placed at the end of the pipeline, right before the primary message handler.
+            </param>
+            <returns>The value of <paramref name="builder"/>.</returns>
+            <remarks>
+            All other loggers are removed - including the default one, registered via <see cref="M:Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions.AddDefaultLogger(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder)"/>.
+            Information logged by this method is added as key/value pairs to log state.
+            </remarks>
+            <exception cref="T:System.ArgumentNullException">Any of the arguments is <see langword="null"/>.</exception>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.HttpClientLoggingServiceCollectionExtensions">
+            <summary>
+            Extensions to register extended HTTP client logging features.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.HttpClientLoggingServiceCollectionExtensions.AddExtendedHttpClientLogging(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds an <see cref="T:Microsoft.Extensions.Http.Logging.IHttpClientAsyncLogger" /> to emit logs for outgoing requests for all HTTP clients created with <see cref="T:System.Net.Http.IHttpClientFactory"/>.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" />.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+            <remarks>
+            All other loggers are removed - including the default one, registered via <see cref="M:Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions.AddDefaultLogger(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder)"/>.
+            </remarks>
+            <exception cref="T:System.ArgumentNullException">Argument <paramref name="services"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.HttpClientLoggingServiceCollectionExtensions.AddExtendedHttpClientLogging(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfigurationSection)">
+            <summary>
+            Adds an <see cref="T:Microsoft.Extensions.Http.Logging.IHttpClientAsyncLogger" /> to emit logs for outgoing requests for all HTTP clients created with <see cref="T:System.Net.Http.IHttpClientFactory"/>.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" />.</param>
+            <param name="section">The <see cref="T:Microsoft.Extensions.Configuration.IConfigurationSection"/> to use for configuring <see cref="T:Microsoft.Extensions.Http.Logging.LoggingOptions"/>.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+            <remarks>
+            All other loggers are removed - including the default one, registered via <see cref="M:Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions.AddDefaultLogger(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder)"/>.
+            </remarks>
+            <exception cref="T:System.ArgumentNullException">Any of the arguments is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.HttpClientLoggingServiceCollectionExtensions.AddExtendedHttpClientLogging(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Microsoft.Extensions.Http.Logging.LoggingOptions})">
+            <summary>
+            Adds an <see cref="T:Microsoft.Extensions.Http.Logging.IHttpClientAsyncLogger" /> to emit logs for outgoing requests for all HTTP clients created with <see cref="T:System.Net.Http.IHttpClientFactory"/>.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" />.</param>
+            <param name="configure">The delegate to configure <see cref="T:Microsoft.Extensions.Http.Logging.LoggingOptions"/> with.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+            <remarks>
+            All other loggers are removed - including the default one, registered via <see cref="M:Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions.AddDefaultLogger(Microsoft.Extensions.DependencyInjection.IHttpClientBuilder)"/>.
+            </remarks>
+            <exception cref="T:System.ArgumentNullException">Any of the arguments is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.HttpClientLoggingServiceCollectionExtensions.AddHttpClientLogEnricher``1(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds an enricher instance of <typeparamref name="T"/> to the <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to enrich <see cref="T:System.Net.Http.HttpClient"/> logs.
+            </summary>
+            <typeparam name="T">Type of enricher.</typeparam>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to add the instance of <typeparamref name="T"/> to.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Telemetry.Internal.IHttpHeadersRedactor">
+            <summary>
+            HTTP headers redactor.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Telemetry.Internal.IHttpHeadersRedactor.Redact(System.Collections.Generic.IEnumerable{System.String},Microsoft.Extensions.Compliance.Classification.DataClassification)">
+            <summary>
+            Redacts HTTP header values and joins the results into a <see cref="T:System.String"/>.
+            </summary>
+            <param name="headerValues">HTTP header values.</param>
+            <param name="classification">Data classification which is used to get an appropriate redactor <see cref="T:Microsoft.Extensions.Compliance.Redaction.Redactor"/> to redact headers.</param>
+            <returns>Returns text and parameter segments of route.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Telemetry.Internal.IHttpHeadersRedactor.Redact(System.String,Microsoft.Extensions.Compliance.Classification.DataClassification)">
+            <summary>
+            Redacts HTTP header value which results into a <see cref="T:System.String"/>.
+            </summary>
+            <param name="headerValue">HTTP header value.</param>
+            <param name="classification">Data classification which is used to get an appropriate redactor <see cref="T:Microsoft.Extensions.Compliance.Redaction.Redactor"/> to redact header.</param>
+            <returns>Returns text and parameter segments of route.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.Bind``1(Microsoft.Extensions.Options.OptionsBuilder{``0},Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>Registers a configuration instance which <typeparamref name="TOptions"/> will bind against.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.Bind``1(Microsoft.Extensions.Options.OptionsBuilder{``0},Microsoft.Extensions.Configuration.IConfiguration,System.Action{Microsoft.Extensions.Configuration.BinderOptions})">
+            <summary>Registers a configuration instance which <typeparamref name="TOptions"/> will bind against.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.Configure``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>Registers a configuration instance which TOptions will bind against.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.Configure``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String,Microsoft.Extensions.Configuration.IConfiguration,System.Action{Microsoft.Extensions.Configuration.BinderOptions})">
+            <summary>Registers a configuration instance which TOptions will bind against.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.ValidateConfigurationKeys(System.Type,System.Lazy{System.Collections.Generic.HashSet{System.String}},Microsoft.Extensions.Configuration.IConfiguration,Microsoft.Extensions.Configuration.BinderOptions)">
+            <summary>If required by the binder options, validates that there are no unknown keys in the input configuration object.</summary>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,253 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>UAParser</name>
+    </assembly>
+    <members>
+        <member name="T:UAParser.Device">
+            <summary>
+            Represents the physical device the user agent is using
+            </summary>
+        </member>
+        <member name="M:UAParser.Device.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Constructs a Device instance
+            </summary>
+        </member>
+        <member name="P:UAParser.Device.IsSpider">
+            <summary>
+            Returns true if the device is likely to be a spider or a bot device
+            </summary>
+        </member>
+        <member name="P:UAParser.Device.Brand">
+             <summary>
+            The brand of the device
+             </summary>
+        </member>
+        <member name="P:UAParser.Device.Family">
+            <summary>
+            The family of the device, if available
+            </summary>
+        </member>
+        <member name="P:UAParser.Device.Model">
+            <summary>
+            The model of the device, if available
+            </summary>
+        </member>
+        <member name="M:UAParser.Device.ToString">
+            <summary>
+            A readable description of the device
+            </summary>
+        </member>
+        <member name="T:UAParser.OS">
+            <summary>
+            Represents the operating system the user agent runs on
+            </summary>
+        </member>
+        <member name="M:UAParser.OS.#ctor(System.String,System.String,System.String,System.String,System.String)">
+            <summary>
+            Constructs an OS instance
+            </summary>
+        </member>
+        <member name="P:UAParser.OS.Family">
+            <summary>
+            The familiy of the OS
+            </summary>
+        </member>
+        <member name="P:UAParser.OS.Major">
+            <summary>
+            The major version of the OS, if available
+            </summary>
+        </member>
+        <member name="P:UAParser.OS.Minor">
+            <summary>
+            The minor version of the OS, if available
+            </summary>
+        </member>
+        <member name="P:UAParser.OS.Patch">
+            <summary>
+            The patch version of the OS, if available
+            </summary>
+        </member>
+        <member name="P:UAParser.OS.PatchMinor">
+            <summary>
+            The minor patch version of the OS, if available
+            </summary>
+        </member>
+        <member name="M:UAParser.OS.ToString">
+            <summary>
+            A readable description of the OS
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:UAParser.UserAgent">
+            <summary>
+            Represents a user agent, commonly a browser
+            </summary>
+        </member>
+        <member name="M:UAParser.UserAgent.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>
+            Construct a UserAgent instance
+            </summary>
+        </member>
+        <member name="P:UAParser.UserAgent.Family">
+            <summary>
+            The family of user agent
+            </summary>
+        </member>
+        <member name="P:UAParser.UserAgent.Major">
+            <summary>
+            Major version of the user agent, if available
+            </summary>
+        </member>
+        <member name="P:UAParser.UserAgent.Minor">
+            <summary>
+            Minor version of the user agent, if available
+            </summary>
+        </member>
+        <member name="P:UAParser.UserAgent.Patch">
+            <summary>
+            Patch version of the user agent, if available
+            </summary>
+        </member>
+        <member name="M:UAParser.UserAgent.ToString">
+            <summary>
+            The user agent as a readbale string
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:UAParser.IUAParserOutput">
+            <summary>
+            Representing the parse results. Structure of this class aligns with the
+            ua-parser-output WebIDL structure defined in this document: https://github.com/ua-parser/uap-core/blob/master/docs/specification.md
+            </summary>
+        </member>
+        <member name="P:UAParser.IUAParserOutput.String">
+            <summary>
+            The user agent string, the input for the UAParser
+            </summary>
+        </member>
+        <member name="P:UAParser.IUAParserOutput.OS">
+            <summary>
+            The OS parsed from the user agent string
+            </summary>
+        </member>
+        <member name="P:UAParser.IUAParserOutput.Device">
+            <summary>
+            The Device parsed from the user agent string
+            </summary>
+        </member>
+        <member name="P:UAParser.IUAParserOutput.UA">
+            <summary>
+            The User Agent parsed from the user agent string
+            </summary>
+        </member>
+        <member name="T:UAParser.ClientInfo">
+            <summary>
+            Represents the user agent client information resulting from parsing
+            a user agent string
+            </summary>
+        </member>
+        <member name="P:UAParser.ClientInfo.String">
+            <summary>
+            The user agent string, the input for the UAParser
+            </summary>
+        </member>
+        <member name="P:UAParser.ClientInfo.OS">
+            <summary>
+            The OS parsed from the user agent string
+            </summary>
+        </member>
+        <member name="P:UAParser.ClientInfo.Device">
+            <summary>
+            The Device parsed from the user agent string
+            </summary>
+        </member>
+        <member name="P:UAParser.ClientInfo.UserAgent">
+            <summary>
+            The User Agent parsed from the user agent string
+            </summary>
+        </member>
+        <member name="P:UAParser.ClientInfo.UA">
+            <summary>
+            The User Agent parsed from the user agent string
+            </summary>
+        </member>
+        <member name="M:UAParser.ClientInfo.#ctor(System.String,UAParser.OS,UAParser.Device,UAParser.UserAgent)">
+            <summary>
+            Constructs an instance of the ClientInfo with results of the user agent string parsing
+            </summary>
+        </member>
+        <member name="M:UAParser.ClientInfo.ToString">
+            <summary>
+            A readable description of the user agent client information
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:UAParser.ParserOptions">
+            <summary>
+            Options available for the parser
+            </summary>
+        </member>
+        <member name="P:UAParser.ParserOptions.UseCompiledRegex">
+            <summary>
+            If true, will use compiled regular expressions for slower startup time
+            but higher throughput. The default is false.
+            </summary>
+        </member>
+        <member name="T:UAParser.Parser">
+            <summary>
+            Represents a parser of a user agent string
+            </summary>
+        </member>
+        <member name="F:UAParser.Parser.Other">
+            <summary>
+            The constant string value used to signal an unknown match for a given property or value. This
+            is by default the string "Other".
+            </summary>
+        </member>
+        <member name="M:UAParser.Parser.FromYaml(System.String,UAParser.ParserOptions)">
+            <summary>
+            Returns a <see cref="T:UAParser.Parser"/> instance based on the regex definitions in a yaml string
+            </summary>
+            <param name="yaml">a string containing yaml definitions of reg-ex</param>
+            <param name="parserOptions">specifies the options for the parser</param>
+            <returns>A <see cref="T:UAParser.Parser"/> instance parsing user agent strings based on the regexes defined in the yaml string</returns>
+        </member>
+        <member name="M:UAParser.Parser.GetDefault(UAParser.ParserOptions)">
+            <summary>
+            Returns a <see cref="T:UAParser.Parser"/> instance based on the embedded regex definitions.
+            <remarks>The embedded regex definitions may be outdated. Consider passing in external yaml definitions using <see cref="M:UAParser.Parser.FromYaml(System.String,UAParser.ParserOptions)"/></remarks>
+            </summary>
+            <param name="parserOptions">specifies the options for the parser</param>
+            <returns></returns>
+        </member>
+        <member name="M:UAParser.Parser.Parse(System.String)">
+            <summary>
+            Parse a user agent string and obtain all client information
+            </summary>
+        </member>
+        <member name="M:UAParser.Parser.ParseOS(System.String)">
+            <summary>
+            Parse a user agent string and obtain the OS information
+            </summary>
+        </member>
+        <member name="M:UAParser.Parser.ParseDevice(System.String)">
+            <summary>
+            Parse a user agent string and obtain the device information
+            </summary>
+        </member>
+        <member name="M:UAParser.Parser.ParseUserAgent(System.String)">
+            <summary>
+            Parse a user agent string and obtain the UserAgent information
+            </summary>
+        </member>
+        <member name="T:UAParser.MinimalYamlParser">
+            <summary>
+            Just enough string parsing to recognize the regexes.yaml file format. Introduced to remove
+            dependency on large Yaml parsing lib. Note that a unittest ensures compatibility
+            by ensuring regexes and properties are read similar to using the full yaml lib
+            </summary>
+        </member>
+    </members>
+</doc>

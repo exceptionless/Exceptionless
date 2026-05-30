@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>App.Metrics.Extensions.DependencyInjection</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.Extensions.DependencyInjection.AppMetricsServiceCollectionExtensions">
+            <summary>
+                Extension methods on <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" /> to register App Metrics services via an
+                <see cref="T:App.Metrics.IMetricsBuilder" />.
+            </summary>
+        </member>
+        <member name="M:App.Metrics.Extensions.DependencyInjection.Internal.AppMetricsServicesHelper.ThrowIfMetricsNotRegistered(System.IServiceProvider)">
+            <summary>
+                Throws InvalidOperationException when MetricsMarkerService is not present
+                in the list of services.
+            </summary>
+            <param name="services">The list of services.</param>
+        </member>
+        <member name="M:App.Metrics.Extensions.DependencyInjection.Internal.AppMetricsServicesHelper.ThrowIfMetricsNotRegistered(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+                Throws InvalidOperationException when MetricsMarkerService is not present
+                in the list of services.
+            </summary>
+            <param name="services">The list of services.</param>
+        </member>
+    </members>
+</doc>

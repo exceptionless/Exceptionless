@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <_MSTestEnableParentProcessQuery Condition="'$(UseUwpTools)'=='true'">false</_MSTestEnableParentProcessQuery>
+    <_MSTestEnableParentProcessQuery Condition="'$(_MSTestEnableParentProcessQuery)'==''">true</_MSTestEnableParentProcessQuery>
+  </PropertyGroup>
+  <ItemGroup>
+    <RuntimeHostConfigurationOption
+      Include="MSTest.EnableParentProcessQuery"
+      Value="$(_MSTestEnableParentProcessQuery)"
+      Trim="true" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,2126 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Extensions.Telemetry.Abstractions</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.Shared.DiagnosticIds.DiagnosticIds">
+            <summary>
+             Various diagnostic IDs reported by this repo.
+            </summary>
+            <remarks>
+             When adding a new diagnostic ID, add a corresponding suppression to the root <c>Directory.Build.targets</c> file,
+             and add a documentation entry to <c>docs/list-of-diagnostics.md</c>.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Shared.DiagnosticIds.DiagnosticIds.Experiments">
+            <summary>
+             Experiments supported by this repo.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Diagnostics.Throw">
+            <summary>
+            Defines static methods used to throw exceptions.
+            </summary>
+            <remarks>
+            The main purpose is to reduce code size, improve performance, and standardize exception
+            messages.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfNull``1(``0,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentNullException"/> if the specified argument is <see langword="null"/>.
+            </summary>
+            <typeparam name="T">Argument type to be checked for <see langword="null"/>.</typeparam>
+            <param name="argument">Object to be checked for <see langword="null"/>.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfNullOrMemberNull``2(``0,``1,System.String,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentNullException"/> if the specified argument is <see langword="null"/>,
+            or <see cref="T:System.ArgumentException" /> if the specified member is <see langword="null"/>.
+            </summary>
+            <typeparam name="TParameter">Argument type to be checked for <see langword="null"/>.</typeparam>
+            <typeparam name="TMember">Member type to be checked for <see langword="null"/>.</typeparam>
+            <param name="argument">Argument to be checked for <see langword="null"/>.</param>
+            <param name="member">Object member to be checked for <see langword="null"/>.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <param name="memberName">The name of the member.</param>
+            <returns>The original value of <paramref name="member"/>.</returns>
+            <example>
+            <code language="csharp">
+            Throws.IfNullOrMemberNull(myObject, myObject?.MyProperty)
+            </code>
+            </example>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfMemberNull``2(``0,``1,System.String,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentException" /> if the specified member is <see langword="null"/>.
+            </summary>
+            <typeparam name="TParameter">Argument type.</typeparam>
+            <typeparam name="TMember">Member type to be checked for <see langword="null"/>.</typeparam>
+            <param name="argument">Argument to which member belongs.</param>
+            <param name="member">Object member to be checked for <see langword="null"/>.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <param name="memberName">The name of the member.</param>
+            <returns>The original value of <paramref name="member"/>.</returns>
+            <example>
+            <code language="csharp">
+            Throws.IfMemberNull(myObject, myObject.MyProperty)
+            </code>
+            </example>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfNullOrWhitespace(System.String,System.String)">
+            <summary>
+            Throws either an <see cref="T:System.ArgumentNullException"/> or an <see cref="T:System.ArgumentException"/>
+            if the specified string is <see langword="null"/> or whitespace respectively.
+            </summary>
+            <param name="argument">String to be checked for <see langword="null"/> or whitespace.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfNullOrEmpty(System.String,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentNullException"/> if the string is <see langword="null"/>,
+            or <see cref="T:System.ArgumentException"/> if it is empty.
+            </summary>
+            <param name="argument">String to be checked for <see langword="null"/> or empty.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfBufferTooSmall(System.Int32,System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentException"/> if the argument's buffer size is less than the required buffer size.
+            </summary>
+            <param name="bufferSize">The actual buffer size.</param>
+            <param name="requiredSize">The required buffer size.</param>
+            <param name="paramName">The name of the parameter to be checked.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfOutOfRange``1(``0,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the enum value is not valid.
+            </summary>
+            <param name="argument">The argument to evaluate.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <typeparam name="T">The type of the enumeration.</typeparam>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfNullOrEmpty``1(System.Collections.Generic.IEnumerable{``0},System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentNullException"/> if the collection is <see langword="null"/>,
+            or <see cref="T:System.ArgumentException"/> if it is empty.
+            </summary>
+            <param name="argument">The collection to evaluate.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <typeparam name="T">The type of objects in the collection.</typeparam>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentNullException(System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentNullException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentNullException(System.String,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentNullException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+            <param name="message">A message that describes the error.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentOutOfRangeException(System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentOutOfRangeException(System.String,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+            <param name="message">A message that describes the error.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentOutOfRangeException(System.String,System.Object,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+            <param name="actualValue">The value of the argument that caused this exception.</param>
+            <param name="message">A message that describes the error.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentException(System.String,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+            <param name="message">A message that describes the error.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.ArgumentException(System.String,System.String,System.Exception)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentException"/>.
+            </summary>
+            <param name="paramName">The name of the parameter that caused the exception.</param>
+            <param name="message">A message that describes the error.</param>
+            <param name="innerException">The exception that is the cause of the current exception.</param>
+            <remarks>
+            If the <paramref name="innerException"/> is not a <see langword="null"/>, the current exception is raised in a catch
+            block that handles the inner exception.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.InvalidOperationException(System.String)">
+            <summary>
+            Throws an <see cref="T:System.InvalidOperationException"/>.
+            </summary>
+            <param name="message">A message that describes the error.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.InvalidOperationException(System.String,System.Exception)">
+            <summary>
+            Throws an <see cref="T:System.InvalidOperationException"/>.
+            </summary>
+            <param name="message">A message that describes the error.</param>
+            <param name="innerException">The exception that is the cause of the current exception.</param>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThan(System.Int32,System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>  if the specified number is less than min.
+            </summary>
+            <param name="argument">Number to be expected being less than min.</param>
+            <param name="min">The number that must be less than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThan(System.Int32,System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater than max.
+            </summary>
+            <param name="argument">Number to be expected being greater than max.</param>
+            <param name="max">The number that must be greater than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThanOrEqual(System.Int32,System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is less or equal than min.
+            </summary>
+            <param name="argument">Number to be expected being less or equal than min.</param>
+            <param name="min">The number that must be less or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThanOrEqual(System.Int32,System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater or equal than max.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="max">The number that must be greater or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfOutOfRange(System.Int32,System.Int32,System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is not in the specified range.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="min">The lower bound of the allowed range of argument values.</param>
+            <param name="max">The upper bound of the allowed range of argument values.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfZero(System.Int32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is equal to 0.
+            </summary>
+            <param name="argument">Number to be expected being not equal to zero.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThan(System.UInt32,System.UInt32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>  if the specified number is less than min.
+            </summary>
+            <param name="argument">Number to be expected being less than min.</param>
+            <param name="min">The number that must be less than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThan(System.UInt32,System.UInt32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater than max.
+            </summary>
+            <param name="argument">Number to be expected being greater than max.</param>
+            <param name="max">The number that must be greater than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThanOrEqual(System.UInt32,System.UInt32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is less or equal than min.
+            </summary>
+            <param name="argument">Number to be expected being less or equal than min.</param>
+            <param name="min">The number that must be less or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThanOrEqual(System.UInt32,System.UInt32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater or equal than max.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="max">The number that must be greater or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfOutOfRange(System.UInt32,System.UInt32,System.UInt32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is not in the specified range.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="min">The lower bound of the allowed range of argument values.</param>
+            <param name="max">The upper bound of the allowed range of argument values.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfZero(System.UInt32,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is equal to 0.
+            </summary>
+            <param name="argument">Number to be expected being not equal to zero.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThan(System.Int64,System.Int64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>  if the specified number is less than min.
+            </summary>
+            <param name="argument">Number to be expected being less than min.</param>
+            <param name="min">The number that must be less than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThan(System.Int64,System.Int64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater than max.
+            </summary>
+            <param name="argument">Number to be expected being greater than max.</param>
+            <param name="max">The number that must be greater than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThanOrEqual(System.Int64,System.Int64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is less or equal than min.
+            </summary>
+            <param name="argument">Number to be expected being less or equal than min.</param>
+            <param name="min">The number that must be less or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThanOrEqual(System.Int64,System.Int64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater or equal than max.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="max">The number that must be greater or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfOutOfRange(System.Int64,System.Int64,System.Int64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is not in the specified range.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="min">The lower bound of the allowed range of argument values.</param>
+            <param name="max">The upper bound of the allowed range of argument values.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfZero(System.Int64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is equal to 0.
+            </summary>
+            <param name="argument">Number to be expected being not equal to zero.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThan(System.UInt64,System.UInt64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/>  if the specified number is less than min.
+            </summary>
+            <param name="argument">Number to be expected being less than min.</param>
+            <param name="min">The number that must be less than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThan(System.UInt64,System.UInt64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater than max.
+            </summary>
+            <param name="argument">Number to be expected being greater than max.</param>
+            <param name="max">The number that must be greater than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThanOrEqual(System.UInt64,System.UInt64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is less or equal than min.
+            </summary>
+            <param name="argument">Number to be expected being less or equal than min.</param>
+            <param name="min">The number that must be less or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThanOrEqual(System.UInt64,System.UInt64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater or equal than max.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="max">The number that must be greater or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfOutOfRange(System.UInt64,System.UInt64,System.UInt64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is not in the specified range.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="min">The lower bound of the allowed range of argument values.</param>
+            <param name="max">The upper bound of the allowed range of argument values.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfZero(System.UInt64,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is equal to 0.
+            </summary>
+            <param name="argument">Number to be expected being not equal to zero.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThan(System.Double,System.Double,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is less than min.
+            </summary>
+            <param name="argument">Number to be expected being less than min.</param>
+            <param name="min">The number that must be less than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThan(System.Double,System.Double,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater than max.
+            </summary>
+            <param name="argument">Number to be expected being greater than max.</param>
+            <param name="max">The number that must be greater than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfLessThanOrEqual(System.Double,System.Double,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is less or equal than min.
+            </summary>
+            <param name="argument">Number to be expected being less or equal than min.</param>
+            <param name="min">The number that must be less or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfGreaterThanOrEqual(System.Double,System.Double,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is greater or equal than max.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="max">The number that must be greater or equal than the argument.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfOutOfRange(System.Double,System.Double,System.Double,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is not in the specified range.
+            </summary>
+            <param name="argument">Number to be expected being greater or equal than max.</param>
+            <param name="min">The lower bound of the allowed range of argument values.</param>
+            <param name="max">The upper bound of the allowed range of argument values.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Diagnostics.Throw.IfZero(System.Double,System.String)">
+            <summary>
+            Throws an <see cref="T:System.ArgumentOutOfRangeException"/> if the specified number is equal to 0.
+            </summary>
+            <param name="argument">Number to be expected being not equal to zero.</param>
+            <param name="paramName">The name of the parameter being checked.</param>
+            <returns>The original value of <paramref name="argument"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.NoopPooledObjectPolicy`1">
+            <summary>
+            An object pool policy that does nothing.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.PooledCancellationTokenSourcePolicy">
+            <summary>
+            An object pool policy for cancellation token sources.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.PooledDictionaryPolicy`2">
+            <summary>
+            An object pool policy for dictionaries.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.PooledListPolicy`1">
+            <summary>
+            An object pool policy for lists.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.PooledListWithCapacityPolicy`1">
+            <summary>
+            An object pool policy for lists with capacity.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.PooledSetPolicy`1">
+            <summary>
+            An object pool policy for sets.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Shared.Pools.PoolFactory">
+            <summary>
+            A factory of object pools.
+            </summary>
+            <remarks>
+            This class makes it easy to create efficient object pools used to improve performance by reducing
+            strain on the garbage collector.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreatePool``1(System.Int32)">
+            <summary>
+            Creates an object pool.
+            </summary>
+            <typeparam name="T">The type of object to keep in the pool.</typeparam>
+            <param name="maxCapacity">The maximum number of items to keep in the pool. This defaults to 1024. This value is a recommendation, the pool may keep more objects than this.</param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreatePool``1(Microsoft.Extensions.ObjectPool.IPooledObjectPolicy{``0},System.Int32)">
+            <summary>
+            Creates an object pool with a custom policy.
+            </summary>
+            <typeparam name="T">The type of object to keep in the pool.</typeparam>
+            <param name="policy">The custom policy that is responsible for creating new objects and preparing objects to be added to the pool.</param>
+            <param name="maxCapacity">The maximum number of items to keep in the pool. This defaults to 1024. This value is a recommendation, the pool may keep more objects than this.</param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateResettingPool``1(System.Int32)">
+            <summary>
+            Creates an object pool for resettable objects.
+            </summary>
+            <typeparam name="T">The type of object to keep in the pool.</typeparam>
+            <param name="maxCapacity">The maximum number of items to keep in the pool. This defaults to 1024. This value is a recommendation, the pool may keep more objects than this.</param>
+            <returns>The pool.</returns>
+            <remarks>
+            Objects are systematically reset before being added to the pool.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateStringBuilderPool(System.Int32,System.Int32)">
+            <summary>
+            Creates a pool of <see cref="T:System.Text.StringBuilder"/> instances.
+            </summary>
+            <param name="maxCapacity">The maximum number of items to keep in the pool. This defaults to 1024. This value is a recommendation, the pool may keep more objects than this.</param>
+            <param name="maxStringBuilderCapacity">The maximum capacity of the string builders to keep in the pool. This defaults to 64K.</param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateListPool``1(System.Int32)">
+            <summary>
+            Creates an object pool of <see cref="T:System.Collections.Generic.List`1"/> instances.
+            </summary>
+            <typeparam name="T">The type of object held by the lists.</typeparam>
+            <param name="maxCapacity">
+            The maximum number of items to keep in the pool.
+            This defaults to 1024.
+            This value is a recommendation, the pool may keep more objects than this.
+            </param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateListPoolWithCapacity``1(System.Int32,System.Int32)">
+            <summary>
+            Creates an object pool of <see cref="T:System.Collections.Generic.List`1"/> instances, each with provided  <paramref name="listCapacity"/>.
+            </summary>
+            <typeparam name="T">The type of object held by the lists.</typeparam>
+            <param name="listCapacity">The capacity of each created <see cref="T:System.Collections.Generic.List`1"/> instance.</param>
+            <param name="maxCapacity">
+            The maximum number of items to keep in the pool.
+            This defaults to 1024.
+            This value is a recommendation, the pool may keep more objects than this.
+            </param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateDictionaryPool``2(System.Collections.Generic.IEqualityComparer{``0},System.Int32)">
+            <summary>
+            Creates an object pool of <see cref="T:System.Collections.Generic.Dictionary`2"/> instances.
+            </summary>
+            <typeparam name="TKey">The type of the dictionary keys.</typeparam>
+            <typeparam name="TValue">The type of the dictionary values.</typeparam>
+            <param name="comparer">Optional key comparer used by the dictionaries.</param>
+            <param name="maxCapacity">
+            The maximum number of items to keep in the pool.
+            This defaults to 1024.
+            This value is a recommendation, the pool may keep more objects than this.
+            </param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateHashSetPool``1(System.Collections.Generic.IEqualityComparer{``0},System.Int32)">
+            <summary>
+            Creates an object pool of <see cref="T:System.Collections.Generic.HashSet`1"/> instances.
+            </summary>
+            <typeparam name="T">The type of objects held in the sets.</typeparam>
+            <param name="comparer">Optional key comparer used by the sets.</param>
+            <param name="maxCapacity">
+            The maximum number of items to keep in the pool.
+            This defaults to 1024.
+            This value is a recommendation, the pool may keep more objects than this.
+            </param>
+            <returns>The pool.</returns>
+        </member>
+        <member name="M:Microsoft.Shared.Pools.PoolFactory.CreateCancellationTokenSourcePool(System.Int32)">
+            <summary>
+            Creates an object pool of <see cref="T:System.Threading.CancellationTokenSource" /> instances.
+            </summary>
+            <param name="maxCapacity">
+            The maximum number of items to keep in the pool.
+            This defaults to 1024.
+            This value is a recommendation, the pool may keep more objects than this.
+            </param>
+            <returns>The pool.</returns>
+            <remarks>
+            On .NET 6 and above, cancellation token sources are reusable and this pool leverages this feature.
+            When running on older frameworks, this pool is actually a no-op, every time a source is fetched
+            from the pool, it is always a new instance. In that case, returning an object to the pool merely
+            disposes it.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Shared.Pools.PoolFactory.SharedStringBuilderPool">
+            <summary>
+            Gets the shared pool of <see cref="T:System.Text.StringBuilder"/> instances.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.EnrichmentServiceCollectionExtensions">
+            <summary>
+            Lets you register telemetry enrichers in a dependency injection container.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.EnrichmentServiceCollectionExtensions.AddLogEnricher``1(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Registers a log enricher type.
+            </summary>
+            <param name="services">The dependency injection container to add the enricher type to.</param>
+            <typeparam name="T">Enricher type.</typeparam>
+            <returns>The value of <paramref name="services"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.EnrichmentServiceCollectionExtensions.AddLogEnricher(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Diagnostics.Enrichment.ILogEnricher)">
+            <summary>
+            Registers a log enricher instance.
+            </summary>
+            <param name="services">The dependency injection container to add the enricher instance to.</param>
+            <param name="enricher">The enricher instance to add.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="services"/> or <paramref name="enricher"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.EnrichmentServiceCollectionExtensions.AddStaticLogEnricher``1(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Registers a static log enricher type.
+            </summary>
+            <param name="services">The dependency injection container to add the enricher type to.</param>
+            <typeparam name="T">Enricher type.</typeparam>
+            <returns>The value of <paramref name="services"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.EnrichmentServiceCollectionExtensions.AddStaticLogEnricher(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Diagnostics.Enrichment.IStaticLogEnricher)">
+            <summary>
+            Registers a static log enricher instance.
+            </summary>
+            <param name="services">The dependency injection container to add the enricher instance to.</param>
+            <param name="enricher">The enricher instance to add.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="services"/> or <paramref name="enricher"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.NullLatencyContextServiceCollectionExtensions">
+            <summary>
+            Extensions to add a no-op latency context.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.NullLatencyContextServiceCollectionExtensions.AddNullLatencyContext(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds a no-op latency context to a dependency injection container.
+            </summary>
+            <param name="services">The dependency injection container to add the context to.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.LatencyRegistryServiceCollectionExtensions">
+            <summary>
+            Extensions to configure a latency context.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.LatencyRegistryServiceCollectionExtensions.RegisterCheckpointNames(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String[])">
+            <summary>
+            Registers a set of checkpoint names for a latency context.
+            </summary>
+            <param name="services">The dependency injection container to add the names to.</param>
+            <param name="names">Set of checkpoint names.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="services"/> or <paramref name="names"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.LatencyRegistryServiceCollectionExtensions.RegisterMeasureNames(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String[])">
+            <summary>
+            Registers a set of measure names for a latency context.
+            </summary>
+            <param name="services">The dependency injection container to add the names to.</param>
+            <param name="names">Set of measure names.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="services"/> or <paramref name="names"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.LatencyRegistryServiceCollectionExtensions.RegisterTagNames(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String[])">
+            <summary>
+            Registers a set of tag names for a latency context.
+            </summary>
+            <param name="services">The dependency injection container to add the names to.</param>
+            <param name="names">Set of tag names.</param>
+            <returns>The value of <paramref name="services"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="services"/> or <paramref name="names"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Enrichment.IEnrichmentTagCollector">
+            <summary>
+            Allows enrichers to report enrichment properties.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Enrichment.IEnrichmentTagCollector.Add(System.String,System.Object)">
+            <summary>
+            Adds a tag in form of a key/value pair.
+            </summary>
+            <param name="tagName">Enrichment property key.</param>
+            <param name="tagValue">Enrichment property value.</param>
+            <exception cref="T:System.ArgumentException"><paramref name="tagName"/> is an empty string.</exception>
+            <exception cref="T:System.ArgumentNullException">
+            Either <paramref name="tagName"/> or <paramref name="tagValue"/> is <see langword="null" />.
+            </exception>
+            <remarks>
+            For log enrichment, <paramref name="tagValue"/> is serialized as per the rules below:
+            <list type="bullet">
+              <item>
+                <term>Arrays</term>
+                <description>Recognized and serialized in a loop.</description>
+              </item>
+              <item>
+                <term><see cref="T:System.Collections.IDictionary"/></term>
+                <description>Recognized as IDictionary&lt;string, object&gt; and serialized in a loop.</description>
+              </item>
+              <item>
+                <term><see cref="T:System.DateTime"/></term>
+                <description>Recognized and serialized after converting to <see cref="M:System.DateTime.ToUniversalTime"/>.</description>
+              </item>
+              <item>
+                <term>All other primitive types</term>
+                <description>Converted to <see cref="T:System.String"/> as is and serialized.</description>
+              </item>
+            </list>
+            For metric enrichment, <paramref name="tagValue"/> is converted to <see cref="T:System.String"/> format using <see cref="M:System.Object.ToString"/> method.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Enrichment.ILogEnricher">
+            <summary>
+            Represents a component that augments log records with additional properties.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Enrichment.ILogEnricher.Enrich(Microsoft.Extensions.Diagnostics.Enrichment.IEnrichmentTagCollector)">
+            <summary>
+            Collects tags for a log record.
+            </summary>
+            <param name="collector">Where the enricher puts the tags it produces.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Enrichment.IStaticLogEnricher">
+            <summary>
+            Augments log records with additional properties that are unchanging over the life of the object.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Enrichment.IStaticLogEnricher.Enrich(Microsoft.Extensions.Diagnostics.Enrichment.IEnrichmentTagCollector)">
+            <summary>
+            Collects tags for a log record.
+            </summary>
+            <param name="collector">The collector where the enricher puts the tags it produces.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Latency.Checkpoint">
+            <summary>
+            Represents an event and the time it occurred relative to a well-known starting point.
+            </summary>
+            <remarks>
+            Related checkpoints are used to capture when sequential points in time are reached in an
+            operation like request execution. They are measured relative to the start of an operation and
+            hence capture latency as well as operation flow.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Checkpoint.#ctor(System.String,System.Int64,System.Int64)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Latency.Checkpoint"/> struct.
+            </summary>
+            <param name="name">Name of the checkpoint.</param>
+            <param name="elapsed">Elapsed time since start.</param>
+            <param name="frequency">Frequency of the elapsed time.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.Checkpoint.Name">
+            <summary>
+            Gets the name of the checkpoint.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.Checkpoint.Elapsed">
+            <summary>
+            Gets the relative time since the beginning of the associated operation at which the checkpoint was created.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.Checkpoint.Frequency">
+            <summary>
+            Gets the frequency of the timestamp value.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Checkpoint.Equals(System.Object)">
+            <summary>
+            Determines whether this and a specified object are identical.
+            </summary>
+            <param name="obj">The object to compare.</param>
+            <returns><see langword="true"/> if identical; <see langword="false"/> otherwise.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Checkpoint.Equals(Microsoft.Extensions.Diagnostics.Latency.Checkpoint)">
+            <summary>
+            Determines whether this and a specified checkpoint are identical.
+            </summary>
+            <param name="other">The other checkpoint.</param>
+            <returns><see langword="true"/> if identical; <see langword="false"/> otherwise.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Checkpoint.GetHashCode">
+            <summary>
+            Gets a hash code for this object.
+            </summary>
+            <returns>A hash code for the current object.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Checkpoint.op_Equality(Microsoft.Extensions.Diagnostics.Latency.Checkpoint,Microsoft.Extensions.Diagnostics.Latency.Checkpoint)">
+            <summary>
+            Equality operator.
+            </summary>
+            <param name="left">First value.</param>
+            <param name="right">Second value.</param>
+            <returns><see langword="true" /> if the operands are equal, <see langword="false" /> otherwise.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Checkpoint.op_Inequality(Microsoft.Extensions.Diagnostics.Latency.Checkpoint,Microsoft.Extensions.Diagnostics.Latency.Checkpoint)">
+            <summary>
+            Inequality operator.
+            </summary>
+            <param name="left">First value.</param>
+            <param name="right">Second value.</param>
+            <returns><see langword="true" /> if the operands are unequal, <see langword="false" /> otherwise.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Latency.ILatencyContext">
+            <summary>
+            Abstraction that provides the context for latency measurement and diagnostics.
+            </summary>
+            <remarks>
+            The context ties in latency signals such as checkpoints and measures for a scope along with
+            mechanisms such as tags that allow describing the scope. For example, a context lets you record
+            tags, checkpoints, and measures within the scope of a web request.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.ILatencyContext.SetTag(Microsoft.Extensions.Diagnostics.Latency.TagToken,System.String)">
+            <summary>
+            Adds a tag to the context.
+            </summary>
+            <param name="token">The tag token.</param>
+            <param name="value">The value of the tag.</param>
+            <remarks>
+            Tags are used to provide metadata to the context. These are pivots that are useful to
+            slice and dice the data for analysis. Examples include API, Client, and UserType.
+            Setting a tag with the same name overrides its prior value, that is, the last call wins.
+            </remarks>
+            <exception cref="T:System.ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.ILatencyContext.AddCheckpoint(Microsoft.Extensions.Diagnostics.Latency.CheckpointToken)">
+            <summary>
+            Adds a checkpoint to the context.
+            </summary>
+            <param name="token">The checkpoint token.</param>
+            <remarks>
+            A checkpoint can be added only once per context. Use checkpoints for
+            code that is non-reentrant per context.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.ILatencyContext.AddMeasure(Microsoft.Extensions.Diagnostics.Latency.MeasureToken,System.Int64)">
+            <summary>
+            Adds to a measure.
+            </summary>
+            <param name="token">The measure token.</param>
+            <param name="value">The value to add.</param>
+            <remarks>
+            Adds the value to a measure. Measures are used for tracking total latency
+            or the count for repeating operations. Example: Latency for all database calls,
+            or number of calls to an external service.</remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.ILatencyContext.RecordMeasure(Microsoft.Extensions.Diagnostics.Latency.MeasureToken,System.Int64)">
+            <summary>
+            Sets a measure to an absolute value.
+            </summary>
+            <param name="token">The measure token.</param>
+            <param name="value">The value to set.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.ILatencyContext.Freeze">
+            <summary>
+            Stops the latency measurement.
+            </summary>
+            <remarks>This prevents any state change to the context.</remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.ILatencyContext.LatencyData">
+            <summary>
+            Gets the accumulated latency data.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Latency.ILatencyContextProvider">
+            <summary>
+            A factory of latency contexts.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.ILatencyContextProvider.CreateContext">
+            <summary>
+            Creates a new <see cref="T:Microsoft.Extensions.Diagnostics.Latency.ILatencyContext"/>.
+            </summary>
+            <returns>A new latency context.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Latency.ILatencyDataExporter">
+            <summary>
+            Abstraction that is used to export latency data.
+            </summary>
+            <remarks>This is called when latency context is frozen to export the context's data.</remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.ILatencyDataExporter.ExportAsync(Microsoft.Extensions.Diagnostics.Latency.LatencyData,System.Threading.CancellationToken)">
+            <summary>
+            Exports latency data.
+            </summary>
+            <param name="data">The latency context's latency data.</param>
+            <param name="cancellationToken">The cancellation token.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/> that represents the export operation.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Latency.LatencyData">
+            <summary>
+            Encapsulates the state accumulated while measuring the latency of an operation.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.LatencyData.#ctor(System.ArraySegment{Microsoft.Extensions.Diagnostics.Latency.Tag},System.ArraySegment{Microsoft.Extensions.Diagnostics.Latency.Checkpoint},System.ArraySegment{Microsoft.Extensions.Diagnostics.Latency.Measure},System.Int64,System.Int64)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Latency.LatencyData"/> struct.
+            </summary>
+            <param name="tags">List of tags.</param>
+            <param name="checkpoints">List of checkpoints.</param>
+            <param name="measures">List of measures.</param>
+            <param name="durationTimestamp">Total duration of the operation that is represented by this data.</param>
+            <param name="durationTimestampFrequency">Frequency of the duration timestamp.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.LatencyData.Checkpoints">
+            <summary>
+            Gets the list of checkpoints added while measuring the operation's latency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.LatencyData.Tags">
+            <summary>
+            Gets the list of tags added to provide metadata about the operation being measured.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.LatencyData.Measures">
+            <summary>
+            Gets the list of measures added.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.LatencyData.DurationTimestamp">
+            <summary>
+            Gets the total time measured by the latency context.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.LatencyData.DurationTimestampFrequency">
+            <summary>
+            Gets the frequency of the duration timestamp.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Latency.Measure">
+            <summary>
+            Represents a measure.
+            </summary>
+            <remarks>
+            Measures are used to aggregate or record values. They are used to track
+            statistics about recurring operations. Example: number of calls to
+            a database, or total latency of database calls.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Measure.#ctor(System.String,System.Int64)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Latency.Measure"/> struct.
+            </summary>
+            <param name="name">Name of the counter.</param>
+            <param name="value">Value of the counter.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.Measure.Name">
+            <summary>
+            Gets the name of the measure.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.Measure.Value">
+            <summary>
+            Gets the value of the measure.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Measure.Equals(System.Object)">
+            <summary>
+            Determines whether this and a specified object are identical.
+            </summary>
+            /// <param name="obj">The object to compare.</param>
+            <returns><see langword="true"/> if identical; <see langword="false"/> otherwise.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Measure.Equals(Microsoft.Extensions.Diagnostics.Latency.Measure)">
+            <summary>
+            Determines whether this and a specified measure are identical.
+            </summary>
+            <param name="other">The other measure.</param>
+            <returns><see langword="true"/> if identical; <see langword="false"/> otherwise.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Measure.GetHashCode">
+            <summary>
+            Gets a hash code for this object.
+            </summary>
+            <returns>A hash code for the current object.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Measure.op_Equality(Microsoft.Extensions.Diagnostics.Latency.Measure,Microsoft.Extensions.Diagnostics.Latency.Measure)">
+            <summary>
+            Equality operator.
+            </summary>
+            <param name="left">First value.</param>
+            <param name="right">Second value.</param>
+            <returns><see langword="true" /> if the operands are equal, <see langword="false" /> otherwise.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Measure.op_Inequality(Microsoft.Extensions.Diagnostics.Latency.Measure,Microsoft.Extensions.Diagnostics.Latency.Measure)">
+            <summary>
+            Inequality operator.
+            </summary>
+            <param name="left">First value.</param>
+            <param name="right">Second value.</param>
+            <returns><see langword="true" /> if the operands are unequal, <see langword="false" /> otherwise.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Latency.NullLatencyContext">
+            <summary>
+            No-op implementation of a latency context.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Latency.CheckpointToken">
+            <summary>
+            Represents a registered checkpoint.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.CheckpointToken.Name">
+            <summary>
+            Gets the name of the checkpoint.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.CheckpointToken.Position">
+            <summary>
+            Gets the position of token in the token table.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.CheckpointToken.#ctor(System.String,System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Latency.CheckpointToken"/> struct.
+            </summary>
+            <param name="name">Name of the checkpoint.</param>
+            <param name="position">Position of the token in the token table.</param>
+            <exception cref="T:System.ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Latency.ILatencyContextTokenIssuer">
+            <summary>
+            Issues tokens for various object types.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.ILatencyContextTokenIssuer.GetTagToken(System.String)">
+            <summary>
+            Gets a token for a named tag.
+            </summary>
+            <param name="name">Name of the tag.</param>
+            <returns>Token to use with <see cref="M:Microsoft.Extensions.Diagnostics.Latency.ILatencyContext.SetTag(Microsoft.Extensions.Diagnostics.Latency.TagToken,System.String)"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.ILatencyContextTokenIssuer.GetCheckpointToken(System.String)">
+            <summary>
+            Gets a token for a named checkpoint.
+            </summary>
+            <param name="name">Name of the checkpoint.</param>
+            <returns>Token to use with <see cref="M:Microsoft.Extensions.Diagnostics.Latency.ILatencyContext.AddCheckpoint(Microsoft.Extensions.Diagnostics.Latency.CheckpointToken)"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.ILatencyContextTokenIssuer.GetMeasureToken(System.String)">
+            <summary>
+            Gets a token for a named measure.
+            </summary>
+            <param name="name">Name of the measure.</param>
+            <returns>Token to use with <see cref="M:Microsoft.Extensions.Diagnostics.Latency.ILatencyContext.AddMeasure(Microsoft.Extensions.Diagnostics.Latency.MeasureToken,System.Int64)"/>
+            and <see cref="M:Microsoft.Extensions.Diagnostics.Latency.ILatencyContext.RecordMeasure(Microsoft.Extensions.Diagnostics.Latency.MeasureToken,System.Int64)"/>.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Latency.LatencyContextRegistrationOptions">
+            <summary>
+            Registered names for <see cref="T:Microsoft.Extensions.Diagnostics.Latency.ILatencyContext"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.LatencyContextRegistrationOptions.CheckpointNames">
+            <summary>
+            Gets or sets the list of registered checkpoint names.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.LatencyContextRegistrationOptions.MeasureNames">
+            <summary>
+            Gets or sets the list of registered measure names.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.LatencyContextRegistrationOptions.TagNames">
+            <summary>
+            Gets or sets the list of registered tag names.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.LatencyContextRegistrationOptionsValidator.Validate(System.String,Microsoft.Extensions.Diagnostics.Latency.LatencyContextRegistrationOptions)">
+            <summary>
+            Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+            </summary>
+            <param name="name">The name of the options instance being validated.</param>
+            <param name="options">The options instance.</param>
+            <returns>Validation result.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Latency.MeasureToken">
+            <summary>
+            Represents a registered measure.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.MeasureToken.Name">
+            <summary>
+            Gets the name of the measure.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.MeasureToken.Position">
+            <summary>
+            Gets the position of the token in the token table.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.MeasureToken.#ctor(System.String,System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Latency.MeasureToken"/> struct.
+            </summary>
+            <param name="name">Name of the measure.</param>
+            <param name="position">Position of the token in the token table.</param>
+            <exception cref="T:System.ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Latency.TagToken">
+            <summary>
+            Represents a registered tag.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.TagToken.Name">
+            <summary>
+            Gets the name of the tag.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.TagToken.Position">
+            <summary>
+            Gets the position of the token in the token table.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.TagToken.#ctor(System.String,System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Latency.TagToken"/> struct.
+            </summary>
+            <param name="name">Name of the tag.</param>
+            <param name="position">Position of the token in the token table.</param>
+            <exception cref="T:System.ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Latency.Tag">
+            <summary>
+            Represents a name and value pair to provide metadata about an operation being measured.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Latency.Tag.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Latency.Tag"/> struct.
+            </summary>
+            <param name="name">Name of the tag.</param>
+            <param name="value">Value of the tag.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.Tag.Name">
+            <summary>
+            Gets the name of the tag.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Latency.Tag.Value">
+            <summary>
+            Gets the value of the tag.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Metrics.CounterAttribute">
+            <summary>
+            Provides information to guide the production of a strongly typed 64 bit integer counter metric factory method and associated type.
+            </summary>
+            <remarks>
+            This attribute is applied to a method that has the following constraints:
+            <list type="bullet">
+              <item>Must be a partial method.</item>
+              <item>Must return <c>metricName</c> as the type. A class with that name will be generated.</item>
+              <item>Must not be generic.</item>
+              <item>Must have <c>System.Diagnostics.Metrics.Meter</c> as first parameter.</item>
+              <item>Must have all the keys provided in <c>staticTagNames</c> as string type parameters.</item>
+            </list>
+            </remarks>
+            <example>
+            <code language="csharp">
+            static partial class Metric
+            {
+                [Counter("RequestName", "RequestStatusCode")]
+                static partial RequestCounter CreateRequestCounter(Meter meter);
+            }
+            </code>
+            </example>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Metrics.CounterAttribute.#ctor(System.String[])">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Metrics.CounterAttribute"/> class.
+            </summary>
+            <param name="tagNames">Dimension names.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Metrics.CounterAttribute.#ctor(System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Metrics.CounterAttribute"/> class.
+            </summary>
+            <param name="type">A type providing the metric tag names. The tag values are taken from the type's public fields and properties.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.CounterAttribute.Name">
+            <summary>
+            Gets or sets the name of the metric.
+            </summary>
+            <example>
+            In this example, the metric name is <c>SampleMetric</c>. When <c>Name</c> is not
+            provided, the return type of the method is used as the metric name. In this example,
+            the metric name would be <c>RequestCounter</c> if <c>Name</c> wasn't provided.
+            <code language="csharp">
+            static partial class Metric
+            {
+                [Counter("RequestName", "RequestStatusCode", Name="SampleMetric")]
+                static partial RequestCounter CreateRequestCounter(Meter meter);
+            }
+            </code>
+            </example>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.CounterAttribute.TagNames">
+            <summary>
+            Gets the metric's tag names.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.CounterAttribute.Type">
+            <summary>
+            Gets the type that supplies metric tag values.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.CounterAttribute.Unit">
+            <summary>
+            Gets or sets the unit of measurement for the metric.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Metrics.CounterAttribute`1">
+            <summary>
+            Provides information to guide the production of a strongly typed 64 bit integer counter metric factory method and associated type.
+            </summary>
+            <typeparam name="T">
+            The type of value the counter will hold, which is limited to <see cref="T:System.Byte"/>, <see cref="T:System.Int16"/>, <see cref="T:System.Int32"/>, <see cref="T:System.Int64"/>,
+            <see cref="T:System.Single"/>, <see cref="T:System.Double"/>, or <see cref="T:System.Decimal"/>.
+            </typeparam>
+            <remarks>
+            This attribute is applied to a method that has the following constraints:
+            <list type="bullet">
+              <item>Must be a partial method.</item>
+              <item>Must return <c>metricName</c> as the type. A class with that name will be generated.</item>
+              <item>Must not be generic.</item>
+              <item>Must have <c>System.Diagnostics.Metrics.Meter</c> as first parameter.</item>
+              <item>Must have all the keys provided in <c>staticTags</c> as string type parameters.</item>
+            </list>
+            </remarks>
+            <example>
+            <code language="csharp">
+            static partial class Metric
+            {
+                [Counter&lt;int&gt;("RequestName", "RequestStatusCode")]
+                static partial RequestCounter CreateRequestCounter(Meter meter);
+            }
+            </code>
+            </example>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Metrics.CounterAttribute`1.#ctor(System.String[])">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Metrics.CounterAttribute`1"/> class.
+            </summary>
+            <param name="tagNames">variable array of tag names.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Metrics.CounterAttribute`1.#ctor(System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Metrics.CounterAttribute`1"/> class.
+            </summary>
+            <param name="type">A type providing the metric tag names. The tag values are taken from the type's public fields and properties.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.CounterAttribute`1.Name">
+            <summary>
+            Gets or sets the name of the metric.
+            </summary>
+            <example>
+            In this example, the metric name is <c>SampleMetric</c>. When <c>Name</c> is not provided, the return type of the method is used as the metric name. In this example,
+            the metric name would be <c>RequestCounter</c> if <c>Name</c> wasn't provided.
+            <code language="csharp">
+            static partial class Metric
+            {
+                [Counter&lt;int&gt;("RequestName", "RequestStatusCode", Name="SampleMetric")]
+                static partial RequestCounter CreateRequestCounter(Meter meter);
+            }
+            </code>
+            </example>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.CounterAttribute`1.TagNames">
+            <summary>
+            Gets the metric's tag names.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.CounterAttribute`1.Type">
+            <summary>
+            Gets the type that supplies metric tag values.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.CounterAttribute`1.Unit">
+            <summary>
+            Gets or sets the unit of measurement for the metric.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Metrics.GaugeAttribute">
+            <summary>
+            Provides information to guide the production of a strongly typed gauge metric factory method and associated type.
+            </summary>
+            <remarks>
+            This attribute is applied to a method that has the following constraints:
+            <list type="bullet">
+              <item>Must be a partial method.</item>
+              <item>Must return <c>metricName</c> as the type. A class with that name will be generated.</item>
+              <item>Must not be generic.</item>
+              <item>Must have <c>System.Diagnostics.Metrics.Meter</c> as first parameter.</item>
+              <item>Must have all the keys provided in <c>staticTags</c> as string type parameters.</item>
+            </list>
+            </remarks>
+            <example>
+            <code language="csharp">
+            static partial class Metric
+            {
+                [Gauge]
+                static partial MemoryUsage CreateMemoryUsage(Meter meter);
+            }
+            </code>
+            </example>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Metrics.GaugeAttribute.#ctor(System.String[])">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Metrics.GaugeAttribute"/> class.
+            </summary>
+            <param name="tagNames">Variable array of tag names.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Metrics.GaugeAttribute.#ctor(System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Metrics.GaugeAttribute"/> class.
+            </summary>
+            <param name="type">A type providing the metric tag names. The tag values are taken from the type's public fields and properties.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.GaugeAttribute.Name">
+            <summary>
+            Gets or sets the name of the metric.
+            </summary>
+            <example>
+            In this example, the metric name is <c>SampleMetric</c>. When <c>Name</c> is not provided, the return type of the method is used as metric name. In this example,
+            the metric name would be <c>MemoryUsage</c> if <c>Name</c> wasn't provided.
+            <code language="csharp">
+            static partial class Metric
+            {
+                [Gauge(Name="SampleMetric")]
+                static partial MemoryUsage CreateMemoryUsage(Meter meter);
+            }
+            </code>
+            </example>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.GaugeAttribute.TagNames">
+            <summary>
+            Gets the metric's tag names.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.GaugeAttribute.Type">
+            <summary>
+            Gets the type that supplies metric tag values.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.GaugeAttribute.Unit">
+            <summary>
+            Gets or sets the unit of measurement for the metric.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Metrics.GaugeAttribute`1">
+            <summary>
+            Provides information to guide the production of a strongly typed gauge metric factory method and associated type.
+            </summary>
+            <typeparam name="T">
+            The type of value the gauge will hold, which is limited to <see cref="T:System.Byte"/>, <see cref="T:System.Int16"/>, <see cref="T:System.Int32"/>, <see cref="T:System.Int64"/>,
+            <see cref="T:System.Single"/>, <see cref="T:System.Double"/>, or <see cref="T:System.Decimal"/>.
+            </typeparam>
+            <remarks>
+            This attribute is applied to a method that has the following constraints:
+            <list type="bullet">
+            <item><description>Must be a partial method.</description></item>
+            <item><description>Must return <c>metricName</c> as the type. A class with that name will be generated.</description></item>
+            <item><description>Must not be generic.</description></item>
+            <item><description>Must have <c>System.Diagnostics.Metrics.Meter</c> as first parameter.</description></item>
+            <item><description>Must have all the keys provided in <c>staticTags</c> as string type parameters.</description></item>
+            </list>
+            </remarks>
+            <example>
+            <code language="csharp">
+            static partial class Metric
+            {
+                [Gauge&lt;double&gt;("MemoryUsage", "Region")]
+                static partial MemoryGauge CreateMemoryGauge(Meter meter);
+            }
+            </code>
+            </example>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Metrics.GaugeAttribute`1.#ctor(System.String[])">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Metrics.GaugeAttribute`1"/> class.
+            </summary>
+            <param name="tagNames">Variable array of tag names.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Metrics.GaugeAttribute`1.#ctor(System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Metrics.GaugeAttribute`1"/> class.
+            </summary>
+            <param name="type">A type providing the metric tag names. The tag values are taken from the type's public fields and properties.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.GaugeAttribute`1.Name">
+            <summary>
+            Gets or sets the name of the metric.
+            </summary>
+            <example>
+            In this example, the metric name is <c>SampleMetric</c>. When <c>Name</c> is not provided, the return type of the method is used as the metric name. In this example,
+            the metric name would be <c>MemoryGauge</c> if <c>Name</c> wasn't provided.
+            <code language="csharp">
+            static partial class Metric
+            {
+                [Gauge&lt;double&gt;("Region", Name="SampleMetric")]
+                static partial MemoryGauge CreateMemoryGauge(Meter meter);
+            }
+            </code>
+            </example>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.GaugeAttribute`1.TagNames">
+            <summary>
+            Gets the metric's tag names.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.GaugeAttribute`1.Type">
+            <summary>
+            Gets the type that supplies metric tag values.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.GaugeAttribute`1.Unit">
+            <summary>
+            Gets or sets the unit of measurement for the metric.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Metrics.HistogramAttribute">
+            <summary>
+            Provides information to guide the production of a strongly typed histogram metric factory method and associated type.
+            </summary>
+            <remarks>
+            This attribute is applied to a method that has the following constraints:
+            <list type="bullet">
+              <item>Must be a partial method.</item>
+              <item>Must return <c>metricName</c> as the type. A class with that name will be generated.</item>
+              <item>Must not be generic.</item>
+              <item>Must have <c>System.Diagnostics.Metrics.Meter</c> as first parameter.</item>
+              <item>Must have all the keys provided in <c>staticTags</c> as string type parameters.</item>
+            </list>
+            </remarks>
+            <example>
+            <code language="csharp">
+            static partial class Metric
+            {
+                [Histogram("RequestName", "RequestStatusCode")]
+                static partial RequestLatency CreateRequestLatency(Meter meter);
+            }
+            </code>
+            </example>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Metrics.HistogramAttribute.#ctor(System.String[])">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Metrics.HistogramAttribute"/> class.
+            </summary>
+            <param name="tagNames">variable array of tag names.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Metrics.HistogramAttribute.#ctor(System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Metrics.HistogramAttribute"/> class.
+            </summary>
+            <param name="type">A type providing the metric tag names. The tag values are taken from the type's public fields and properties.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.HistogramAttribute.Name">
+            <summary>
+            Gets or sets the name of the metric.
+            </summary>
+            <example>
+            In this example, the metric name is <c>SampleMetric</c>. When <c>Name</c> is not provided, the return type of the method is used as the metric name. In this example,
+            the metric name would be <c>RequestLatency</c> if <c>Name</c> wasn't provided.
+            <code language="csharp">
+            static partial class Metric
+            {
+                [Histogram("RequestName", "RequestStatusCode", Name="SampleMetric")]
+                static partial RequestLatency CreateRequestLatency(Meter meter);
+            }
+            </code>
+            </example>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.HistogramAttribute.TagNames">
+            <summary>
+            Gets the metric's tags.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.HistogramAttribute.Type">
+            <summary>
+            Gets the type that supplies metric tag values.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.HistogramAttribute.Unit">
+            <summary>
+            Gets or sets the unit of measurement for the metric.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Metrics.HistogramAttribute`1">
+            <summary>
+            Provides information to guide the production of a strongly typed histogram metric factory method and associated type.
+            </summary>
+            <typeparam name="T">
+            The type of value the histogram will hold, which is limited to <see cref="T:System.Byte"/>, <see cref="T:System.Int16"/>, <see cref="T:System.Int32"/>, <see cref="T:System.Int64"/>,
+            <see cref="T:System.Single"/>, <see cref="T:System.Double"/>, or <see cref="T:System.Decimal"/>.
+            </typeparam>
+            <remarks>
+            This attribute is applied to a method that has the following constraints:
+            <list type="bullet">
+              <item>Must be a partial method.</item>
+              <item>Must return <c>metricName</c> as the type. A class with that name will be generated.</item>
+              <item>Must not be generic.</item>
+              <item>Must have <c>System.Diagnostics.Metrics.Meter</c> as first parameter.</item>
+              <item>Must have all the keys provided in <c>staticTags</c> as string type parameters.</item>
+            </list>
+            </remarks>
+            <example>
+            <code language="csharp">
+            static partial class Metric
+            {
+                [Histogram&lt;int&gt;("RequestName", "RequestStatusCode")]
+                static partial RequestLatency CreateRequestLatency(Meter meter);
+            }
+            </code>
+            </example>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Metrics.HistogramAttribute`1.#ctor(System.String[])">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Metrics.HistogramAttribute`1"/> class.
+            </summary>
+            <param name="tagNames">A variable array of tag names.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Metrics.HistogramAttribute`1.#ctor(System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Metrics.HistogramAttribute`1"/> class.
+            </summary>
+            <param name="type">A type providing the metric tag names. The tag values are taken from the type's public fields and properties.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.HistogramAttribute`1.Name">
+            <summary>
+            Gets or sets the name of the metric.
+            </summary>
+            <example>
+            In this example metric name is <c>SampleMetric</c>.
+            If <c>Name</c> wasn't passed, the metric name would be <c>RequestLatency</c>.
+            <code language="csharp">
+            static partial class Metric
+            {
+                [Histogram&lt;int&gt;("RequestName", "RequestStatusCode", Name = "SampleMetric")]
+                static partial RequestLatency CreateRequestLatency(Meter meter);
+            }
+            </code>
+            </example>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.HistogramAttribute`1.TagNames">
+            <summary>
+            Gets the metric's tag names.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.HistogramAttribute`1.Type">
+            <summary>
+            Gets the type that supplies metric tag values.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.HistogramAttribute`1.Unit">
+            <summary>
+            Gets or sets the unit of measurement for the metric.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Diagnostics.Metrics.TagNameAttribute">
+             <summary>
+             Provides tag information for strongly typed metrics.
+             </summary>
+             <remarks>
+             This attribute is applied to fields or properties of a metric class to override default tag names. By default,
+             the tag name is the same as the respective field or property. You can use this attribute to override the default
+             and provide a custom tag name.
+             </remarks>
+             <example>
+             <code language="csharp">
+             public class MyStrongTypeMetric
+             {
+                 [TagName("tag_name_as_per_some_convention1")]
+                 public string Name1 { get; set; }
+            
+                 [TagName("tag_name_as_per_some_convention2")]
+                 public string Name2;
+             }
+             </code>
+             </example>
+        </member>
+        <member name="M:Microsoft.Extensions.Diagnostics.Metrics.TagNameAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Diagnostics.Metrics.TagNameAttribute"/> class.
+            </summary>
+            <param name="name">Tag name.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Diagnostics.Metrics.TagNameAttribute.Name">
+            <summary>
+            Gets the name of the tag.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Diagnostics.HttpRouteParameterRedactionMode">
+            <summary>
+            Strategy to decide how HTTP request path parameters are redacted.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Diagnostics.HttpRouteParameterRedactionMode.Strict">
+            <summary>
+            All parameters are considered as sensitive and are required to be explicitly annotated with a data classification.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Diagnostics.HttpRouteParameterRedactionMode.Loose">
+            <summary>
+            All parameters are considered as non-sensitive and included as-is by default.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Diagnostics.HttpRouteParameterRedactionMode.None">
+            <summary>
+            Route parameters are not redacted regardless of the presence of data classification annotations.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Diagnostics.IDownstreamDependencyMetadata">
+            <summary>
+            Interface for passing dependency metadata.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Diagnostics.IDownstreamDependencyMetadata.DependencyName">
+            <summary>
+            Gets the name of the dependent service.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Diagnostics.IDownstreamDependencyMetadata.UniqueHostNameSuffixes">
+            <summary>
+            Gets the list of host name suffixes that can uniquely identify a host as this dependency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Diagnostics.IDownstreamDependencyMetadata.RequestMetadata">
+            <summary>
+            Gets the list of all metadata for all routes to the dependency service.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Diagnostics.IOutgoingRequestContext">
+            <summary>
+            Interface to represent outgoing request context.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Diagnostics.IOutgoingRequestContext.SetRequestMetadata(Microsoft.Extensions.Http.Diagnostics.RequestMetadata)">
+            <summary>
+            Sets metadata for outgoing requests to be used for telemetry purposes.
+            </summary>
+            <param name="metadata">Metadata for the request.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Diagnostics.IOutgoingRequestContext.RequestMetadata">
+            <summary>
+            Gets metadata for outgoing requests to be used for telemetry purposes.
+            </summary>
+            <returns>request metadata.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Diagnostics.RequestMetadata">
+            <summary>
+            Holds request metadata for use by the telemetry system.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Diagnostics.RequestMetadata.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Http.Diagnostics.RequestMetadata"/> class.
+            </summary>
+            <remarks>
+            This constructor initializes <see cref="P:Microsoft.Extensions.Http.Diagnostics.RequestMetadata.MethodType"/> to <c>GET</c>, and all other properties to <c>"unknown"</c>.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Http.Diagnostics.RequestMetadata.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Http.Diagnostics.RequestMetadata"/> class.
+            </summary>
+            <param name="methodType">HTTP method type of the request.</param>
+            <param name="requestRoute">Route of the request.</param>
+            <param name="requestName">Name of the request.</param>
+            <remarks>
+            The <see cref="P:Microsoft.Extensions.Http.Diagnostics.RequestMetadata.DependencyName"/> property is initialized to <c>"unknown"</c>.
+            </remarks>
+            <exception cref="T:System.ArgumentNullException">Any argument is <see langword="null"/>.</exception>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Diagnostics.RequestMetadata.RequestRoute">
+            <summary>
+            Gets or sets request's route template.
+            </summary>
+            <remarks>
+            Request Route is used for multiple use cases:
+            <list type="bullet">
+              <item>
+              For outgoing request metrics, it is used as the request name dimension (if RequestName is not provided).
+              </item>
+              <item>
+              For Logs and traces, it is used to identify sensitive parameters from the path and redact them in the exported path, so sensitive data leakage can be avoided.
+              If you are using redaction, the template should be accurate for the request else redaction won't be applied to sensitive parameters.
+              For example, the template would look something like /v1/users/{userId}/chats/{chatId}/messages. For parameters to be redacted, the sensitive parameter names should match exactly as provided
+              in configuration for outgoing tracing and outgoing logging autocollectors.
+              </item>
+            </list>
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Diagnostics.RequestMetadata.RequestName">
+            <summary>
+            Gets or sets name to be logged for the request.
+            </summary>
+            <remarks>
+            RequestName is used in the following manner by outgoing HTTP request auto collectors:
+            <list type="bullet">
+              <item>
+              For outgoing request metrics: RequestName is used as the request name dimension if present. If not provided, the RequestRoute value is used instead.
+              </item>
+              <item>
+              For outgoing request traces: RequestName is used as the Display name for the activity. That is, when looking at the E2E trace flow, this name is used in the Tree view of traces.
+              </item>
+              <item>
+              If RequestName isn't provided, the RequestRoute value is used instead.
+              </item>
+              <item>
+              For outgoing request logs: When present, RequestName is added as an additional tag to logs.
+              </item>
+            </list>
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Diagnostics.RequestMetadata.DependencyName">
+            <summary>
+            Gets or sets name of the dependency to which the outgoing request is being made.
+            </summary>
+            <remarks>
+            DependencyName is used in the following manner by outgoing http request auto collectors:
+            <list type="bullet">
+              <item>
+              For outgoing request metrics: This is added as dependency name dimension so metrics can be pivoted based on the dependency.
+              </item>
+              <item>
+              For outgoing request traces and logs: This is added as dependency name dimension for better diagnosability.
+              </item>
+            </list>
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Extensions.Http.Diagnostics.RequestMetadata.MethodType">
+            <summary>
+            Gets or sets the HTTP method type of the request.
+            </summary>
+            <remarks>
+            Supported types are GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, and TRACE.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Extensions.Http.Diagnostics.TelemetryConstants">
+            <summary>
+            Common telemetry constants used by various telemetry libraries.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Diagnostics.TelemetryConstants.RequestMetadataKey">
+            <summary>
+            Request metadata key that is used when storing request metadata object.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Diagnostics.TelemetryConstants.Unknown">
+            <summary>
+            Represents the placeholder text for an unknown request name or dependency name in telemetry.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Diagnostics.TelemetryConstants.Redacted">
+            <summary>
+            Represents the placeholder text used for redacted data where needed.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Diagnostics.TelemetryConstants.ClientApplicationNameHeader">
+            <summary>
+            Represents the header for client application name, sent on an outgoing HTTP call.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Extensions.Http.Diagnostics.TelemetryConstants.ServerApplicationNameHeader">
+            <summary>
+            Represents the header for server application name, sent on a HTTP request.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.ITagCollector">
+            <summary>
+            Interface given to custom tag providers, enabling them to emit tags.
+            </summary>
+            <remarks>
+            See <see cref="T:Microsoft.Extensions.Logging.TagProviderAttribute"/> for details on how this interface is used.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ITagCollector.Add(System.String,System.Object)">
+            <summary>
+            Adds a tag.
+            </summary>
+            <param name="tagName">The name of the tag to add.</param>
+            <param name="tagValue">The value of the tag to add.</param>
+            <exception cref="T:System.ArgumentNullException"><paramref name="tagName"/> is <see langword="null"/>.</exception>
+            <exception cref="T:System.ArgumentException"><paramref name="tagName" /> is empty or contains exclusively whitespace,
+            or when a tag of the same name has already been added.
+            </exception>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.ITagCollector.Add(System.String,System.Object,Microsoft.Extensions.Compliance.Classification.DataClassificationSet)">
+            <summary>
+            Adds a tag.
+            </summary>
+            <param name="tagName">The name of the tag to add.</param>
+            <param name="tagValue">The value of the tag to add.</param>
+            <param name="classifications">The data classifications of the tag value.</param>
+            <exception cref="T:System.ArgumentNullException"><paramref name="tagName"/> is <see langword="null"/>.</exception>
+            <exception cref="T:System.ArgumentException"><paramref name="tagName" /> is empty or contains exclusively whitespace,
+            or when a tag of the same name has already been added.
+            </exception>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.LoggerMessageHelper">
+            <summary>
+            Utility type to support generated logging methods.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.LoggerMessageHelper.ThreadLocalState">
+            <summary>
+            Gets a thread-local instance of this type.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.LoggerMessageHelper.Stringify(System.Collections.IEnumerable)">
+            <summary>
+            Enumerates an enumerable into a string.
+            </summary>
+            <param name="enumerable">The enumerable object.</param>
+            <returns>
+            A string representation of the enumerable.
+            </returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.LoggerMessageHelper.Stringify``2(System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{``0,``1}})">
+            <summary>
+            Enumerates an enumerable of key/value pairs into a string.
+            </summary>
+            <typeparam name="TKey">Type of keys.</typeparam>
+            <typeparam name="TValue">Type of values.</typeparam>
+            <param name="enumerable">The enumerable object.</param>
+            <returns>
+            A string representation of the enumerable.
+            </returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.LoggerMessageState">
+            <summary>
+            Additional state to use with <see cref="M:Microsoft.Extensions.Logging.ILogger.Log``1(Microsoft.Extensions.Logging.LogLevel,Microsoft.Extensions.Logging.EventId,``0,System.Exception,System.Func{``0,System.Exception,System.String})"/>.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.LoggerMessageState.ClassifiedTag">
+            <summary>
+            Represents a captured tag that needs redaction.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.LoggerMessageState.ClassifiedTag.Name">
+            <summary>
+            Gets the name of the tag.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.LoggerMessageState.ClassifiedTag.Value">
+            <summary>
+            Gets the tag's value.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.LoggerMessageState.ClassifiedTag.Classifications">
+            <summary>
+            Gets the tag's data classification.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.LoggerMessageState.ClassifiedTag.#ctor(System.String,System.Object,Microsoft.Extensions.Compliance.Classification.DataClassificationSet)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Logging.LoggerMessageState.ClassifiedTag"/> struct.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.LoggerMessageState.TagArray">
+            <summary>
+            Gets the array of tags.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.LoggerMessageState.RedactedTagArray">
+            <summary>
+            Gets the array of tags.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.LoggerMessageState.ClassifiedTagArray">
+            <summary>
+            Gets the array of classified tags.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.LoggerMessageState.ReserveTagSpace(System.Int32)">
+            <summary>
+            Allocates some room to put some tags.
+            </summary>
+            <param name="count">The amount of space to allocate.</param>
+            <returns>The index in the <see cref="P:Microsoft.Extensions.Logging.LoggerMessageState.TagArray"/> where to store the tags.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.LoggerMessageState.ReserveClassifiedTagSpace(System.Int32)">
+            <summary>
+            Allocates some room to put some tags.
+            </summary>
+            <param name="count">The amount of space to allocate.</param>
+            <returns>The index in the <see cref="P:Microsoft.Extensions.Logging.LoggerMessageState.ClassifiedTagArray"/> where to store the classified tags.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.LoggerMessageState.AddTag(System.String,System.Object)">
+            <summary>
+            Adds a tag to the array.
+            </summary>
+            <param name="name">The name of the tag.</param>
+            <param name="value">The value.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.LoggerMessageState.AddClassifiedTag(System.String,System.Object,Microsoft.Extensions.Compliance.Classification.DataClassificationSet)">
+            <summary>
+            Adds a classified tag to the array.
+            </summary>
+            <param name="name">The name of the tag.</param>
+            <param name="value">The value.</param>
+            <param name="classifications">The data classification of the tag.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.LoggerMessageState.Clear">
+            <summary>
+            Resets the state of this object to its initial condition.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.LoggerMessageState.TagsCount">
+            <summary>
+            Gets the number of unclassified tags currently in this instance.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.LoggerMessageState.ClassifiedTagsCount">
+            <summary>
+            Gets the number of classified tags currently in this instance.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.LoggerMessageState.ToString">
+            <summary>
+            Returns a string representation of this object.
+            </summary>
+            <returns>The string representation of this object.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.LoggerMessageState.Microsoft#Extensions#Diagnostics#Enrichment#IEnrichmentTagCollector#Add(System.String,System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.LoggerMessageState.Item(System.Int32)">
+            <inheritdoc/>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.LoggerMessageState.System#Collections#Generic#IReadOnlyCollection{System#Collections#Generic#KeyValuePair{System#String,System#Object}}#Count">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.LoggerMessageState.System#Collections#Generic#IEnumerable{System#Collections#Generic#KeyValuePair{System#String,System#Object}}#GetEnumerator">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.LoggerMessageState.System#Collections#IEnumerable#GetEnumerator">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.LoggerMessageState.Microsoft#Extensions#Logging#ITagCollector#Add(System.String,System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.LoggerMessageState.Microsoft#Extensions#Logging#ITagCollector#Add(System.String,System.Object,Microsoft.Extensions.Compliance.Classification.DataClassificationSet)">
+            <inheritdoc />
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.LoggerMessageState.TagNamePrefix">
+            <summary>
+            Gets or sets the parameter name that is prepended to all tag names added to this instance using the
+            <see cref="M:Microsoft.Extensions.Logging.ITagCollector.Add(System.String,System.Object)"/> or <see cref="M:Microsoft.Extensions.Logging.ITagCollector.Add(System.String,System.Object,Microsoft.Extensions.Compliance.Classification.DataClassificationSet)"/>
+            methods.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.LogPropertiesAttribute">
+            <summary>
+            Marks a logging method parameter whose public properties need to be logged as log tags.
+            </summary>
+            <seealso cref="T:Microsoft.Extensions.Logging.LoggerMessageAttribute"/>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.LogPropertiesAttribute.SkipNullProperties">
+            <summary>
+            Gets or sets a value indicating whether <see langword="null"/> properties are logged.
+            </summary>
+            <value>
+            Defaults to <see langword="false"/>.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.LogPropertiesAttribute.OmitReferenceName">
+            <summary>
+            Gets or sets a value indicating whether to prefix the name of the parameter or property to the generated name of each tag being logged.
+            </summary>
+            <value>
+            Defaults to <see langword="false"/>.
+            </value>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.LogPropertiesAttribute.Transitive">
+            <summary>
+            Gets or sets a value indicating whether to transitively visit properties which are complex objects.
+            </summary>
+            <remarks>
+            When logging the properties of an object, this property controls the behavior for each encountered property.
+            When this property is <see langword="false"/>, then each property is serialized by calling <see cref="M:System.Object.ToString" /> to
+            generate a string for the property. When this property is <see langword="true"/>, then each property of any complex objects are
+            expanded individually.
+            </remarks>
+            <value>
+            Defaults to <see langword="false"/>.
+            </value>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.LogPropertyIgnoreAttribute">
+            <summary>
+            Indicates that a tag should not be logged.
+            </summary>
+            <seealso cref="T:Microsoft.Extensions.Logging.LoggerMessageAttribute"/>.
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.TagNameAttribute">
+            <summary>
+            Defines the tag name to use for a logged parameter or property.
+            </summary>
+            <remarks>
+            By default, the tag name is the same as the respective parameter or property.
+            You can use this attribute to override the default and provide a custom tag name.
+            </remarks>
+            <example>
+            <code language="csharp">
+            [LoggerMessage(1, LogLevel.Information, "My custom tag name: {my.custom.tagname}")]
+            public static partial void LogMyCustomTagName(
+                this ILogger logger,
+                [TagName("my.custom.tagname")] string name);
+            </code>
+            </example>
+            <seealso cref="T:Microsoft.Extensions.Logging.LoggerMessageAttribute"/>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.TagNameAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Logging.TagNameAttribute"/> class.
+            </summary>
+            <param name="name">The tag name to use when logging the annotated parameter or property.</param>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.TagNameAttribute.Name">
+            <summary>
+            Gets the name of the tag to be used when logging the parameter or property.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.TagProviderAttribute">
+            <summary>
+            Defines a method to invoke to generate logging tags for a referenced object.
+            </summary>
+            <seealso cref="T:Microsoft.Extensions.Logging.LoggerMessageAttribute"/>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.TagProviderAttribute.#ctor(System.Type,System.String)">
+             <summary>
+             Initializes a new instance of the <see cref="T:Microsoft.Extensions.Logging.TagProviderAttribute"/> class with custom tags provider.
+             </summary>
+             <param name="providerType">A type containing a method that provides a custom set of tags to log.</param>
+             <param name="providerMethod">The name of a method on the provider type that generates a custom set of tags to log.</param>
+             <exception cref="T:System.ArgumentNullException">
+               <paramref name="providerMethod"/> or <paramref name="providerType"/> is <see langword="null"/>.
+             </exception>
+             <exception cref="T:System.ArgumentException">
+               <paramref name="providerMethod"/> is either an empty string or contains only whitespace.
+             </exception>
+             <remarks>
+             You can create your own method that will generate the exact set of tags to log
+             for a given input object.
+            
+             The method referenced by this constructor should be non-generic, <c>static</c>, and <c>public</c>, and it should have two parameters:
+             <list type="bullet">
+               <item>
+                 First parameter of type <see cref="T:Microsoft.Extensions.Logging.ITagCollector"/>.
+               </item>
+               <item>
+                 Second parameter of type <c>T?</c>, where <c>T</c> is the type of logging method parameter that you want to log.
+               </item>
+             </list>
+             </remarks>
+             <example>
+             <code language="csharp">
+             [LoggerMessage(1, LogLevel.Warning, "Custom tags for {Param}.")]
+             static partial void LogMethod(ILogger logger,
+                 [TagProvider(typeof(CustomProvider), nameof(CustomProvider.GetTagsToLog))] ClassToLog o);
+            
+             public static class CustomProvider
+             {
+                 public static void GetTagsToLog(ITagCollector collector, ClassToLog? param)
+                 {
+                     collector.Add("Custom_tag_name", param?.MyProperty);
+                     collector.Add(nameof(ClassToLog.AnotherProperty), param?.AnotherProperty);
+                     // ...
+                 }
+             }
+             </code>
+             </example>
+             <seealso cref="T:Microsoft.Extensions.Logging.ITagCollector"/>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.TagProviderAttribute.ProviderType">
+            <summary>
+            Gets the <see cref="T:System.Type"/> containing the method that provides tags to be logged.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.TagProviderAttribute.ProviderMethod">
+            <summary>
+            Gets the name of the method that provides tags to be logged.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.TagProviderAttribute.OmitReferenceName">
+            <summary>
+            Gets or sets a value indicating whether to prefix the name of the parameter or property to the generated name of each tag being logged.
+            </summary>
+            <value>
+            Defaults to <see langword="false"/>.
+            </value>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.LoggingSampler">
+            <summary>
+            Controls the number of samples of log records collected and sent to the backend.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.LoggingSampler.ShouldSample``1(Microsoft.Extensions.Logging.Abstractions.LogEntry{``0}@)">
+            <summary>
+            Makes a sampling decision for the provided <paramref name="logEntry"/>.
+            </summary>
+            <param name="logEntry">The log entry used to make the sampling decision for.</param>
+            <typeparam name="TState">The type of the log entry state.</typeparam>
+            <returns><see langword="true" /> if the log record should be sampled; otherwise, <see langword="false" />.</returns>
+        </member>
+    </members>
+</doc>

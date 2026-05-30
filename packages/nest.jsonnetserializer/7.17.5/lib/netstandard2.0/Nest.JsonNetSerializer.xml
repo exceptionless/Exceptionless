@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Nest.JsonNetSerializer</name>
+    </assembly>
+    <members>
+        <member name="M:Nest.JsonNetSerializer.ConnectionSettingsAwareContractResolver.ApplyPropertyOverrides(System.Reflection.MemberInfo,Newtonsoft.Json.Serialization.JsonProperty)">
+            <summary> Renames/Ignores a property based on the connection settings mapping or custom attributes for the property </summary>
+        </member>
+        <member name="T:Nest.JsonNetSerializer.Converters.TimeSpanToStringConverter">
+            <summary>
+            Included for compatibility reasons
+            </summary>
+        </member>
+        <member name="M:Nest.JsonNetSerializer.JTokenExtensions.ToStream(Newtonsoft.Json.Linq.JToken,Elasticsearch.Net.IMemoryStreamFactory)">
+            <summary>
+            Writes a <see cref="T:Newtonsoft.Json.Linq.JToken" /> to a <see cref="T:System.IO.MemoryStream" /> using <see cref="F:Nest.JsonNetSerializer.ConnectionSettingsAwareSerializerBase.ExpectedEncoding" />
+            </summary>
+        </member>
+    </members>
+</doc>

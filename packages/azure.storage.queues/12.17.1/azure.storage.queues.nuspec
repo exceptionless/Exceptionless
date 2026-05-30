@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Azure.Storage.Queues</id>
+    <version>12.17.1</version>
+    <authors>Microsoft</authors>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>azureicon.png</icon>
+    <readme>README.md</readme>
+    <projectUrl>https://github.com/Azure/azure-sdk-for-net/blob/Azure.Storage.Queues_12.17.1/sdk/storage/Azure.Storage.Queues/README.md</projectUrl>
+    <description>This client library enables working with the Microsoft Azure Storage Queue service for storing messages that may be accessed by a client.
+      For this release see notes - https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/storage/Azure.Storage.Queues/README.md and https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/storage/Azure.Storage.Queues/CHANGELOG.md
+      in addition to the breaking changes https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/storage/Azure.Storage.Queues/BreakingChanges.txt
+      Microsoft Azure Storage quickstarts and tutorials - https://docs.microsoft.com/en-us/azure/storage/
+      Microsoft Azure Storage REST API Reference - https://docs.microsoft.com/en-us/rest/api/storageservices/
+      REST API Reference for Queue Service - https://docs.microsoft.com/en-us/rest/api/storageservices/queue-service-rest-api</description>
+    <releaseNotes>https://github.com/Azure/azure-sdk-for-net/blob/Azure.Storage.Queues_12.17.1/sdk/storage/Azure.Storage.Queues/CHANGELOG.md</releaseNotes>
+    <copyright>© Microsoft Corporation. All rights reserved.</copyright>
+    <tags>Microsoft Azure Storage Queues Microsoft Azure Queues Queue Storage StorageScalable windowsazureofficial azureofficial</tags>
+    <repository type="git" url="https://github.com/Azure/azure-sdk-for-net" commit="675cf1fc091d02e385f4f8455beab2e9a40adc58" />
+    <dependencies>
+      <group targetFramework="net6.0">
+        <dependency id="Azure.Storage.Common" version="12.18.1" exclude="Build,Analyzers" />
+        <dependency id="System.Memory.Data" version="1.0.2" exclude="Build,Analyzers" />
+        <dependency id="System.Text.Json" version="4.7.2" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="Azure.Storage.Common" version="12.18.1" exclude="Build,Analyzers" />
+        <dependency id="System.Memory.Data" version="1.0.2" exclude="Build,Analyzers" />
+        <dependency id="System.Text.Json" version="4.7.2" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.1">
+        <dependency id="Azure.Storage.Common" version="12.18.1" exclude="Build,Analyzers" />
+        <dependency id="System.Memory.Data" version="1.0.2" exclude="Build,Analyzers" />
+        <dependency id="System.Text.Json" version="4.7.2" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

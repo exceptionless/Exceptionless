@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>JsonPointer.Net</id>
+    <version>5.2.0</version>
+    <authors>Greg Dennis</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>json-logo-256.png</icon>
+    <readme>README.md</readme>
+    <projectUrl>https://github.com/json-everything/json-everything</projectUrl>
+    <description>JSON Pointer built on the System.Text.Json namespace</description>
+    <releaseNotes>Release notes can be found at https://docs.json-everything.net/rn-json-pointer/</releaseNotes>
+    <tags>json-pointer json pointer</tags>
+    <repository type="git" url="https://github.com/json-everything/json-everything" branch="refs/heads/master" commit="6ba3c853ebf98e1719314876abb4dfdd51344724" />
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="Json.More.Net" version="2.1.0" exclude="Build,Analyzers" />
+        <dependency id="Humanizer.Core" version="2.14.1" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net9.0">
+        <dependency id="Json.More.Net" version="2.1.0" exclude="Build,Analyzers" />
+        <dependency id="Humanizer.Core" version="2.14.1" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="Json.More.Net" version="2.1.0" exclude="Build,Analyzers" />
+        <dependency id="Humanizer.Core" version="2.14.1" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

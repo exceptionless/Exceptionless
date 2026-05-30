@@ -1,0 +1,536 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Geocoding.Google</name>
+    </assembly>
+    <members>
+        <member name="T:Geocoding.Google.BusinessKey">
+            <summary>
+            Represents Google Maps signed request credentials.
+            </summary>
+            <remarks>
+            https://developers.google.com/maps/documentation/business/webservices/auth#business-specific_parameters
+            </remarks>
+        </member>
+        <member name="P:Geocoding.Google.BusinessKey.ClientId">
+            <summary>
+            Gets or sets the Google Maps client identifier.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.BusinessKey.SigningKey">
+            <summary>
+            Gets or sets the private signing key.
+            </summary>
+        </member>
+        <member name="F:Geocoding.Google.BusinessKey._channel">
+            <summary>
+            More details about channel
+            https://developers.google.com/maps/documentation/directions/get-api-key
+            https://developers.google.com/maps/premium/reports/usage-reports#channels
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.BusinessKey.Channel">
+            <summary>
+            Gets or sets the usage reporting channel.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.BusinessKey.HasChannel">
+            <summary>
+            Gets a value indicating whether a channel has been configured.
+            </summary>
+        </member>
+        <member name="M:Geocoding.Google.BusinessKey.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Geocoding.Google.BusinessKey"/> class.
+            </summary>
+            <param name="clientId">The Google Maps client identifier.</param>
+            <param name="signingKey">The private signing key.</param>
+            <param name="channel">The optional usage channel.</param>
+        </member>
+        <member name="M:Geocoding.Google.BusinessKey.GenerateSignature(System.String)">
+            <summary>
+            Signs a Google Maps URL with the configured business key.
+            </summary>
+            <param name="url">The request URL to sign.</param>
+            <returns>The signed request URL.</returns>
+        </member>
+        <member name="M:Geocoding.Google.BusinessKey.Equals(System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:Geocoding.Google.BusinessKey.Equals(Geocoding.Google.BusinessKey)">
+            <summary>
+            Determines whether this instance and another business key are equal.
+            </summary>
+            <param name="other">The other business key to compare.</param>
+            <returns><c>true</c> if the keys are equal; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="M:Geocoding.Google.BusinessKey.GetHashCode">
+            <inheritdoc />
+        </member>
+        <member name="M:Geocoding.Google.BusinessKey.ToString">
+            <inheritdoc />
+        </member>
+        <member name="T:Geocoding.Google.GoogleAddress">
+            <summary>
+            Represents an address returned by the Google geocoding service.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.GoogleAddress.Type">
+            <summary>
+            Gets the primary Google address type for the result.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.GoogleAddress.LocationType">
+            <summary>
+            Gets the Google location type for the result.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.GoogleAddress.Components">
+            <summary>
+            Gets the Google address components for the result.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.GoogleAddress.IsPartialMatch">
+            <summary>
+            Gets a value indicating whether the result is a partial match.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.GoogleAddress.Viewport">
+            <summary>
+            Gets the viewport returned by Google.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.GoogleAddress.Bounds">
+            <summary>
+            Gets the bounds returned by Google.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.GoogleAddress.PlaceId">
+            <summary>
+            Gets the Google place identifier.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.GoogleAddress.Item(Geocoding.Google.GoogleAddressType)">
+            <summary>
+            Gets the first address component matching the specified type.
+            </summary>
+            <param name="type">The component type to locate.</param>
+            <returns>The matching component, or <c>null</c> if no component matches.</returns>
+        </member>
+        <member name="M:Geocoding.Google.GoogleAddress.#ctor(Geocoding.Google.GoogleAddressType,System.String,Geocoding.Google.GoogleAddressComponent[],Geocoding.Location,Geocoding.Google.GoogleViewport,Geocoding.Bounds,System.Boolean,Geocoding.Google.GoogleLocationType,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Geocoding.Google.GoogleAddress"/> class.
+            </summary>
+            <param name="type">The primary address type.</param>
+            <param name="formattedAddress">The formatted address returned by Google.</param>
+            <param name="components">The parsed address components.</param>
+            <param name="coordinates">The coordinates returned by Google.</param>
+            <param name="viewport">The viewport returned by Google.</param>
+            <param name="bounds">The bounds returned by Google.</param>
+            <param name="isPartialMatch">Whether the result is a partial match.</param>
+            <param name="locationType">The location type returned by Google.</param>
+            <param name="placeId">The Google place identifier.</param>
+        </member>
+        <member name="T:Geocoding.Google.GoogleAddressComponent">
+            <summary>
+            Represents a component within a Google geocoding result.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.GoogleAddressComponent.Types">
+            <summary>
+            Gets the Google address types associated with the component.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.GoogleAddressComponent.LongName">
+            <summary>
+            Gets the long name for the component.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.GoogleAddressComponent.ShortName">
+            <summary>
+            Gets the short name for the component.
+            </summary>
+        </member>
+        <member name="M:Geocoding.Google.GoogleAddressComponent.#ctor(Geocoding.Google.GoogleAddressType[],System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Geocoding.Google.GoogleAddressComponent"/> class.
+            </summary>
+            <param name="types">The Google address types for the component.</param>
+            <param name="longName">The long component name.</param>
+            <param name="shortName">The short component name.</param>
+        </member>
+        <member name="M:Geocoding.Google.GoogleAddressComponent.ToString">
+            <inheritdoc />
+        </member>
+        <member name="T:Geocoding.Google.GoogleAddressType">
+            <summary>
+            Represents the address type returned by the Google geocoding service.
+            </summary>
+            <remarks>
+            https://developers.google.com/maps/documentation/geocoding/requests-geocoding#Types
+            </remarks>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.Unknown">
+            <summary>The Unknown value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.StreetAddress">
+            <summary>The StreetAddress value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.Route">
+            <summary>The Route value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.Intersection">
+            <summary>The Intersection value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.Political">
+            <summary>The Political value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.Country">
+            <summary>The Country value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.AdministrativeAreaLevel1">
+            <summary>The AdministrativeAreaLevel1 value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.AdministrativeAreaLevel2">
+            <summary>The AdministrativeAreaLevel2 value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.AdministrativeAreaLevel3">
+            <summary>The AdministrativeAreaLevel3 value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.AdministrativeAreaLevel4">
+            <summary>The AdministrativeAreaLevel4 value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.AdministrativeAreaLevel5">
+            <summary>The AdministrativeAreaLevel5 value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.AdministrativeAreaLevel6">
+            <summary>The AdministrativeAreaLevel6 value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.AdministrativeAreaLevel7">
+            <summary>The AdministrativeAreaLevel7 value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.ColloquialArea">
+            <summary>The ColloquialArea value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.Locality">
+            <summary>The Locality value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.SubLocality">
+            <summary>The SubLocality value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.Neighborhood">
+            <summary>The Neighborhood value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.Premise">
+            <summary>The Premise value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.Subpremise">
+            <summary>The Subpremise value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.PostalCode">
+            <summary>The PostalCode value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.NaturalFeature">
+            <summary>The NaturalFeature value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.Airport">
+            <summary>The Airport value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.Park">
+            <summary>The Park value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.PointOfInterest">
+            <summary>The PointOfInterest value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.PostBox">
+            <summary>The PostBox value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.StreetNumber">
+            <summary>The StreetNumber value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.Floor">
+            <summary>The Floor value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.Room">
+            <summary>The Room value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.PostalTown">
+            <summary>The PostalTown value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.Establishment">
+            <summary>The Establishment value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.SubLocalityLevel1">
+            <summary>The SubLocalityLevel1 value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.SubLocalityLevel2">
+            <summary>The SubLocalityLevel2 value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.SubLocalityLevel3">
+            <summary>The SubLocalityLevel3 value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.SubLocalityLevel4">
+            <summary>The SubLocalityLevel4 value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.SubLocalityLevel5">
+            <summary>The SubLocalityLevel5 value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.PostalCodeSuffix">
+            <summary>The PostalCodeSuffix value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.PostalCodePrefix">
+            <summary>The PostalCodePrefix value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.PlusCode">
+            <summary>The PlusCode value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.Landmark">
+            <summary>The Landmark value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.Parking">
+            <summary>The Parking value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.BusStation">
+            <summary>The BusStation value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.TrainStation">
+            <summary>The TrainStation value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleAddressType.TransitStation">
+            <summary>The TransitStation value.</summary>
+        </member>
+        <member name="T:Geocoding.Google.GoogleComponentFilter">
+            <summary>
+            Represents a Google component filter for geocoding requests.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.GoogleComponentFilter.ComponentFilter">
+            <summary>
+            Gets or sets the serialized component filter string.
+            </summary>
+        </member>
+        <member name="M:Geocoding.Google.GoogleComponentFilter.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Geocoding.Google.GoogleComponentFilter"/> class.
+            </summary>
+            <param name="component">The Google component filter name.</param>
+            <param name="value">The component filter value.</param>
+        </member>
+        <member name="T:Geocoding.Google.GoogleComponentFilterType">
+            <summary>
+            Defines supported Google component filter names.
+            </summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleComponentFilterType.Route">
+            <summary>The route component filter.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleComponentFilterType.Locality">
+            <summary>The locality component filter.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleComponentFilterType.AdministrativeArea">
+            <summary>The administrative area component filter.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleComponentFilterType.PostalCode">
+            <summary>The postal code component filter.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleComponentFilterType.Country">
+            <summary>The country component filter.</summary>
+        </member>
+        <member name="T:Geocoding.Google.GoogleGeocoder">
+            <summary>
+            Provides geocoding and reverse geocoding through the Google Maps geocoding API.
+            </summary>
+            <remarks>
+            https://developers.google.com/maps/documentation/geocoding/overview
+            </remarks>
+        </member>
+        <member name="M:Geocoding.Google.GoogleGeocoder.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Geocoding.Google.GoogleGeocoder"/> class.
+            </summary>
+        </member>
+        <member name="M:Geocoding.Google.GoogleGeocoder.#ctor(Geocoding.Google.BusinessKey)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Geocoding.Google.GoogleGeocoder"/> class.
+            </summary>
+            <param name="businessKey">The Google business key used to sign requests.</param>
+        </member>
+        <member name="M:Geocoding.Google.GoogleGeocoder.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Geocoding.Google.GoogleGeocoder"/> class.
+            </summary>
+            <param name="apiKey">The Google Maps API key.</param>
+        </member>
+        <member name="P:Geocoding.Google.GoogleGeocoder.ApiKey">
+            <summary>
+            Gets or sets the Google Maps API key.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.GoogleGeocoder.BusinessKey">
+            <summary>
+            Gets or sets the Google business key used to sign requests.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.GoogleGeocoder.Proxy">
+            <summary>
+            Gets or sets the proxy used for Google requests.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.GoogleGeocoder.Language">
+            <summary>
+            Gets or sets the language used for results.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.GoogleGeocoder.RegionBias">
+            <summary>
+            Gets or sets the regional bias used for requests.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.GoogleGeocoder.BoundsBias">
+            <summary>
+            Gets or sets the bounds bias used for requests.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.GoogleGeocoder.ComponentFilters">
+            <summary>
+            Gets or sets the Google component filters used for requests.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.GoogleGeocoder.ServiceUrl">
+            <summary>
+            Gets the base Google service URL including configured request options.
+            </summary>
+        </member>
+        <member name="M:Geocoding.Google.GoogleGeocoder.GeocodeAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Geocoding.Google.GoogleGeocoder.ReverseGeocodeAsync(Geocoding.Location,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Geocoding.Google.GoogleGeocoder.ReverseGeocodeAsync(System.Double,System.Double,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Geocoding.Google.GoogleGeocoder.BuildClient">
+            <summary>
+            Builds the HTTP client used for Google requests.
+            </summary>
+            <returns>The configured HTTP client.</returns>
+        </member>
+        <member name="M:Geocoding.Google.GoogleGeocoder.EvaluateStatus(System.String)">
+            <remarks>
+            https://developers.google.com/maps/documentation/geocoding/requests-geocoding#StatusCodes
+            </remarks>
+        </member>
+        <member name="M:Geocoding.Google.GoogleGeocoder.EvaluateType(System.String)">
+            <remarks>
+            https://developers.google.com/maps/documentation/geocoding/requests-geocoding#Types
+            </remarks>
+        </member>
+        <member name="M:Geocoding.Google.GoogleGeocoder.EvaluateLocationType(System.String)">
+            <remarks>
+            https://developers.google.com/maps/documentation/geocoding/?csw=1#Results
+            </remarks>
+        </member>
+        <member name="T:Geocoding.Google.GoogleGeocodingException">
+            <summary>
+            Represents an error returned by the Google geocoding provider.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.GoogleGeocodingException.Status">
+            <summary>
+            Gets the Google status associated with the failure.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.GoogleGeocodingException.ProviderMessage">
+            <summary>
+            Gets the provider-supplied error message when Google returns one.
+            </summary>
+        </member>
+        <member name="M:Geocoding.Google.GoogleGeocodingException.#ctor(Geocoding.Google.GoogleStatus)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Geocoding.Google.GoogleGeocodingException"/> class.
+            </summary>
+            <param name="status">The Google status associated with the failure.</param>
+        </member>
+        <member name="M:Geocoding.Google.GoogleGeocodingException.#ctor(Geocoding.Google.GoogleStatus,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Geocoding.Google.GoogleGeocodingException"/> class.
+            </summary>
+            <param name="status">The Google status associated with the failure.</param>
+            <param name="providerMessage">The optional Google provider message.</param>
+        </member>
+        <member name="M:Geocoding.Google.GoogleGeocodingException.#ctor(System.Exception)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Geocoding.Google.GoogleGeocodingException"/> class.
+            </summary>
+            <param name="innerException">The underlying provider exception.</param>
+        </member>
+        <member name="T:Geocoding.Google.GoogleLocationType">
+            <summary>
+            Represents the location type returned by the Google geocoding service.
+            </summary>
+            <remarks>
+            https://developers.google.com/maps/documentation/geocoding/requests-geocoding#GeocodingResults
+            </remarks>
+        </member>
+        <member name="F:Geocoding.Google.GoogleLocationType.Unknown">
+            <summary>The Unknown value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleLocationType.Rooftop">
+            <summary>The Rooftop value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleLocationType.RangeInterpolated">
+            <summary>The RangeInterpolated value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleLocationType.GeometricCenter">
+            <summary>The GeometricCenter value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleLocationType.Approximate">
+            <summary>The Approximate value.</summary>
+        </member>
+        <member name="T:Geocoding.Google.GoogleStatus">
+            <summary>
+            Represents the status returned by the Google geocoding service.
+            </summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleStatus.Error">
+            <summary>The Error value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleStatus.Ok">
+            <summary>The Ok value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleStatus.ZeroResults">
+            <summary>The ZeroResults value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleStatus.OverQueryLimit">
+            <summary>The OverQueryLimit value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleStatus.RequestDenied">
+            <summary>The RequestDenied value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleStatus.InvalidRequest">
+            <summary>The InvalidRequest value.</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleStatus.OverDailyLimit">
+            <summary>The OverDailyLimit value (billing or API key issue).</summary>
+        </member>
+        <member name="F:Geocoding.Google.GoogleStatus.UnknownError">
+            <summary>The UnknownError value (server-side error).</summary>
+        </member>
+        <member name="T:Geocoding.Google.GoogleViewport">
+            <summary>
+            Represents a viewport returned by the Google geocoding service.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.GoogleViewport.Northeast">
+            <summary>
+            Gets or sets the northeast corner of the viewport.
+            </summary>
+        </member>
+        <member name="P:Geocoding.Google.GoogleViewport.Southwest">
+            <summary>
+            Gets or sets the southwest corner of the viewport.
+            </summary>
+        </member>
+    </members>
+</doc>

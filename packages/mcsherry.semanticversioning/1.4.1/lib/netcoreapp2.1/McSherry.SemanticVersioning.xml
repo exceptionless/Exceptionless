@@ -1,0 +1,2876 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>McSherry.SemanticVersioning</name>
+    </assembly>
+    <members>
+        <member name="T:McSherry.SemanticVersioning.Helper">
+            <summary>
+            <para>
+            An internal class providing helper methods.
+            </para>
+            </summary>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Helper.IsMetadataChar(System.Char)">
+            <summary>
+            <para>
+            Determines whether a specified character is valid in a metadata item
+            or pre-release identifier.
+            </para>
+            </summary>
+            <param name="c">
+            The character to check.
+            </param>
+            <returns>
+            True if <paramref name="c"/> is valid in a metadata item or pre-release
+            identifier, false if otherwise.
+            </returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Helper.IsValidIdentifier(System.String)">
+            <summary>
+            <para>
+            Checks whether a provided <see cref="T:System.String"/> is a valid
+            pre-release identifier.
+            </para>
+            </summary>
+            <param name="identifier">
+            The pre-release identifier to check.
+            </param>
+            <returns>
+            True if <paramref name="identifier"/> is a valid pre-release
+            identifier, false if otherwise.
+            </returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Helper.IsValidMetadata(System.String)">
+            <summary>
+            <para>
+            Checks whether a provided <see cref="T:System.String"/> is a valid
+            build metadata item.
+            </para>
+            </summary>
+            <param name="metadata">
+            The build metadata item to check.
+            </param>
+            <returns>
+            True if <paramref name="metadata"/> is a valid pre-release
+            identifier, false if otherwise.
+            </returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Helper.IsNumber(System.Char)">
+            <summary>
+            <para>
+            Determines whether a given character is a number.
+            </para>
+            </summary>
+            <param name="c">
+            The character to check.
+            </param>
+            <returns>
+            True if <paramref name="c"/> is a number, false if
+            otherwise.
+            </returns>
+            <remarks>
+            <para>
+            This method differs from <see cref="M:System.Char.IsNumber(System.Char)"/> in
+            that it only considers numbers between 0 and 9 valid.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Helper.IsRangeWildcard(System.Char)">
+            <summary>
+            <para>
+            Determines whether a given character is a wildcard character that
+            can be used in a <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange"/>.
+            </para>
+            </summary>
+            <param name="c">
+            The character to check.
+            </param>
+            <returns>
+            True if <paramref name="c"/> is a version range wildcard character,
+            false if otherwise.
+            </returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Helper.AsReadOnly``2(System.Collections.Generic.IDictionary{``0,``1})">
+            <summary>
+            <para>
+            Returns a read-only <see cref="T:System.Collections.Generic.IReadOnlyDictionary`2"/>
+            wrapper of the specified <see cref="T:System.Collections.Generic.IDictionary`2"/>.
+            </para>
+            </summary>
+            <typeparam name="K">
+            The type of the dictionary's keys.
+            </typeparam>
+            <typeparam name="V">
+            The type of the dictionary's values.
+            </typeparam>
+            <param name="dictionary">
+            The <see cref="T:System.Collections.Generic.IDictionary`2"/> to wrap.
+            </param>
+            <returns>
+            A read-only wrapper of <paramref name="dictionary"/>.
+            </returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Helper.ComparableTo(McSherry.SemanticVersioning.SemanticVersion,McSherry.SemanticVersioning.SemanticVersion)">
+            <summary>
+            <para>
+            Determines whether a specified <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> can
+            satisfy a <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange"/> comparator using another
+            specified <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>.
+            </para>
+            </summary>
+            <param name="comparator">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> representing the comparator.
+            </param>
+            <param name="comparand">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> which is to be compared against
+            the comparator.
+            </param>
+            <returns>
+            True if, based on the rules for version range comparisons, the
+            comparator can be satisfied by the comparand.
+            </returns>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.Internals.PseudoBigInt">
+            <summary>
+            <para>
+            Compares two strings based on the positive integer values they represent.
+            </para>
+            </summary>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Internals.PseudoBigInt.Compare(System.String,System.String)">
+            <summary>
+            <para>
+            Compares two strings based on the positive integer values they represent.
+            </para>
+            </summary>
+            <param name="subject">
+            The string to compare to <paramref name="against"/>.
+            </param>
+            <param name="against">
+            The string against which <paramref name="subject"/> is compared.
+            </param>
+            <returns>
+            Returns <see langword="true"/> if <paramref name="subject"/> is greater
+            than <paramref name="against"/>, <see langword="null"/> if the two are
+            equal, and <see langword="false"/> if <paramref name="subject"/> is lesser.
+            </returns>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown if either the parameter is null.
+            </exception>
+            <exception cref="T:System.FormatException">
+            Thrown if either parameter is not a valid positive decimal integer
+            without leading zeroes.
+            </exception>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.Monotonic.MonotonicComparer">
+            <summary>
+            <para>
+            Represents a semantic version comparison operation using
+            monotonic versioning comparison rules.
+            </para>
+            </summary>
+            <remarks>
+            This class compares monotonic versions as set out by the
+            Monotonic Versioning Manifesto 1.2.
+            </remarks>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.Monotonic.MonotonicComparer.Standard">
+            <summary>
+            <para>
+            A <see cref="T:McSherry.SemanticVersioning.Monotonic.MonotonicComparer"/> which compares using the
+            standard rules for monotonic versions.
+            </para>
+            </summary>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Monotonic.MonotonicComparer.Compare(McSherry.SemanticVersioning.SemanticVersion,McSherry.SemanticVersioning.SemanticVersion)">
+            <summary>
+            <para>
+            Compares two monotonic versions and returns an indication
+            of their relative order.
+            </para>
+            </summary>
+            <param name="x">
+            A monotonic version to compare to <paramref name="y"/>.
+            </param>
+            <param name="y">
+            A monotonic version to compare to <paramref name="x"/>.
+            </param>
+            <returns>
+            <para>
+            A value less than zero if <paramref name="x"/> precedes
+            <paramref name="y"/> in sort order, or if
+            <paramref name="x"/> is null and <paramref name="y"/>
+            is not null.
+            </para>
+            <para>
+            Zero if <paramref name="x"/> is equal to <paramref name="y"/>,
+            including if both are null.
+            </para>
+            <para>
+            A value greater than zero if <paramref name="x"/> follows
+            <paramref name="y"/> in sort order, or if <paramref name="y"/>
+            is null and <paramref name="x"/> is not null.
+            </para>
+            </returns>
+            <exception cref="T:System.ArgumentException">
+            <paramref name="x"/> or <paramref name="y"/> is not a valid
+            monotonic version.
+            </exception>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.Monotonic.MonotonicExtensions">
+            <summary>
+            <para>
+            Provides extension methods related to treating 
+            <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>s as monotonic versions.
+            </para>
+            </summary>
+            <remarks>
+            The methods this class provides are based on the
+            Monotonic Versioning Manifesto 1.2.
+            </remarks>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Monotonic.MonotonicExtensions.IsMonotonic(McSherry.SemanticVersioning.SemanticVersion)">
+            <summary>
+            <para>
+            Determines whether a <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> is a valid
+            monotonic version.
+            </para>
+            </summary>
+            <param name="version">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> to be checked.
+            </param>
+            <returns>
+            True if <paramref name="version"/> is a valid monotonic version,
+            false if otherwise.
+            </returns>
+            <remarks>
+            <para>
+            A <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> is considered a valid monotonic
+            version if it: has no <see cref="P:McSherry.SemanticVersioning.SemanticVersion.Patch"/> component;
+            and has no <see cref="P:McSherry.SemanticVersioning.SemanticVersion.Identifiers"/>.
+            </para>
+            </remarks>
+            <exception cref="T:System.ArgumentNullException">
+            <paramref name="version"/> is null.
+            </exception>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.Monotonic.MonotonicChange">
+            <summary>
+            <para>
+            The types of change which may be made to a monotonic-versioned
+            software package.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Monotonic.MonotonicChange.Compatible">
+            <summary>
+            <para>
+            A backwards-compatible change, where the change would not
+            break existing uses of the software package's API.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Monotonic.MonotonicChange.Breaking">
+            <summary>
+            <para>
+            A breaking change, where the change will break existing uses
+            of the software package's API.
+            </para>
+            </summary>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner">
+            <summary>
+            <para>
+            Provides a method of working with <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>s as
+            monotonic versions.
+            </para>
+            </summary>
+            <remarks>
+            <para>
+            Monotonic Versioning is a simplified versioning scheme that
+            is compatible with Semantic Versioning 2.0.0. The scheme uses
+            two components: compatibility, indicating a "line of compatibility"
+            where all versions with the same component are compatible; and
+            release, which is incremented with every release, regardless of
+            the line of compatibility.
+            </para>
+            <para>
+            For example, a first release would be "1.0". A backwards-compatible
+            update to this would be "1.1". If a breaking change was made, that
+            release would be "2.2". However, if the first line of compatibility
+            was updated again, it would be "1.3".
+            </para>
+            <para>
+            The full manifesto is available from the Applied Computer Science
+            Lab website. This class is based on the 1.2 manifesto.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.#ctor">
+            <summary>
+            <para>
+            Creates a new <see cref="T:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner"/> instance.
+            </para>
+            </summary>
+            <remarks>
+            The <see cref="P:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.Compatibility"/> number sequence produced
+            by an instance which was created using this constructor
+            starts at one. If a zero-based sequence is required, use
+            <see cref="M:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.#ctor(System.Boolean)"/>.
+            </remarks>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.#ctor(System.Boolean)">
+            <summary>
+            <para>
+            Creates a new <see cref="T:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner"/> instance
+            with the specified initial compatibility line.
+            </para>
+            </summary>
+            <param name="startAtOne">
+            If true, the produced <see cref="P:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.Compatibility"/> number
+            sequence starts at one. If false, zero.
+            </param>
+            <remarks>
+            <para>
+            The Monotonic Versioning Manifesto 1.2 does not specify
+            whether the <see cref="P:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.Compatibility"/> component of versions 
+            are to start at one or zero. It is assumed that either is valid 
+            as neither is specifically recommended nor prohibited.
+            </para>
+            <para>
+            If the <see cref="P:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.Compatibility"/> components are to start at
+            one, <see cref="M:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.#ctor"/> may be used.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.#ctor(System.Boolean,System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            <para>
+            Creates a new <see cref="T:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner"/> instance with
+            the specified initial compatibility line and metadata.
+            </para>
+            </summary>
+            <param name="startAtOne">
+            If true, the produced <see cref="P:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.Compatibility"/> number
+            sequence starts at one. If false, zero.
+            </param>
+            <param name="metadata">
+            Any metadata items to be included as part of the
+            initial version number.
+            </param>
+            <remarks>
+            <para>
+            The Monotonic Versioning Manifesto 1.2 does not specify
+            whether the <see cref="P:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.Compatibility"/> component of versions 
+            are to start at one or zero. It is assumed that either is valid 
+            as neither is specifically recommended nor prohibited.
+            </para>
+            </remarks>
+            <exception cref="T:System.ArgumentNullException">
+            <paramref name="metadata"/> or an item thereof is null.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            One or more of the items in <paramref name="metadata"/> is not
+            a valid metadata item.
+            </exception>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.#ctor(System.Collections.Generic.IEnumerable{McSherry.SemanticVersioning.SemanticVersion})">
+            <summary>
+            <para>
+            Creates a new <see cref="T:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner"/> with the
+            specified version number history.
+            </para>
+            </summary>
+            <param name="chronology">
+            A collection of version numbers providing the version
+            history to use for this instance.
+            </param>
+            <remarks>
+            <paramref name="chronology"/> is not required to be
+            in order.
+            </remarks>
+            <exception cref="T:System.ArgumentNullException">
+            <paramref name="chronology"/> or an item thereof is null.
+            </exception>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            <paramref name="chronology"/> contains a version which is
+            not a valid monotonic version.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            <para>
+            <paramref name="chronology"/> provides an incomplete
+            version history. The chronology may:
+            </para>
+            <list type="bullet">
+                <item>
+                <description>
+                Not provide a contiguous sequence of <see cref="P:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.Compatibility"/>
+                numbers;
+                </description>
+                </item>
+                <item>
+                <description>
+                Not provide a contiguous sequence of <see cref="P:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.Release"/>
+                numbers;
+                </description>
+                </item>
+                <item>
+                <description>
+                Not contain a <see cref="P:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.Compatibility"/> starting at either
+                zero or one; or
+                </description>
+                </item>
+                <item>
+                <description>
+                Be empty.
+                </description>
+                </item>
+            </list>
+            </exception>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.Next(McSherry.SemanticVersioning.Monotonic.MonotonicChange)">
+            <summary>
+            <para>
+            Returns the next version number when a specified change is
+            made to the latest version.
+            </para>
+            </summary>
+            <param name="change">
+            The type of change being made to the latest version.
+            </param>
+            <returns>
+            <para>
+            The next version number produced when the specified change
+            is made to the latest version.
+            </para>
+            <para>
+            If <paramref name="change"/> is equal to
+            <see cref="F:McSherry.SemanticVersioning.Monotonic.MonotonicChange.Compatible"/>, the release number
+            is incremented but the compatibility number remains the same.
+            </para>
+            <para>
+            If <paramref name="change"/> is equal to
+            <see cref="F:McSherry.SemanticVersioning.Monotonic.MonotonicChange.Breaking"/>, both the release and
+            compatibility numbers are incremented.
+            </para>
+            </returns>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            <para>
+            <paramref name="change"/> is not a recognised type of change.
+            </para>
+            </exception>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.Next(McSherry.SemanticVersioning.Monotonic.MonotonicChange,System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            <para>
+            Returns the next version number when a specified change is
+            made to the latest version.
+            </para>
+            </summary>
+            <param name="change">
+            The type of change being made to the latest version.
+            </param>
+            <param name="metadata">
+            The metadata to be included with the new version.
+            </param>
+            <returns>
+            <para>
+            The next version number produced when the specified change
+            is made to the latest version, with the specified metadata.
+            </para>
+            <para>
+            If <paramref name="change"/> is equal to
+            <see cref="F:McSherry.SemanticVersioning.Monotonic.MonotonicChange.Compatible"/>, the release number
+            is incremented but the compatibility number remains the same.
+            </para>
+            <para>
+            If <paramref name="change"/> is equal to
+            <see cref="F:McSherry.SemanticVersioning.Monotonic.MonotonicChange.Breaking"/>, both the release and
+            compatibility numbers are incremented.
+            </para>
+            </returns>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            <para>
+            <paramref name="change"/> is not a recognised type of change.
+            </para>
+            </exception>        
+            <exception cref="T:System.ArgumentNullException">
+            <paramref name="metadata"/> or an item therein is null.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            One or more items within <paramref name="metadata"/> is not a
+            valid metadata string.
+            </exception>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.Next(System.Int32,McSherry.SemanticVersioning.Monotonic.MonotonicChange)">
+            <summary>
+            <para>
+            Returns the next version number when a specified change is
+            made to a given line of compatibility.
+            </para>
+            </summary>
+            <param name="line">
+            The line of compatibility to which the change is being
+            made.
+            </param>
+            <param name="change">
+            The type of change being made to <paramref name="line"/>.
+            </param>
+            <returns>
+            <para>
+            The next version number produced when the specified change
+            is made to the specified line of compatibility.
+            </para>
+            <para>
+            If <paramref name="change"/> is equal to
+            <see cref="F:McSherry.SemanticVersioning.Monotonic.MonotonicChange.Compatible"/>, the release number
+            is incremented but the compatibility number remains the same.
+            </para>
+            <para>
+            If <paramref name="change"/> is equal to
+            <see cref="F:McSherry.SemanticVersioning.Monotonic.MonotonicChange.Breaking"/>, both the release and
+            compatibility numbers are incremented.
+            </para>
+            </returns>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            <para>
+            <paramref name="line"/> is negative.
+            </para>
+            <para>
+            <paramref name="change"/> is not a recognised type of change.
+            </para>
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            <paramref name="line"/> is not a current line of compatibility.
+            </exception>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.Next(System.Int32,McSherry.SemanticVersioning.Monotonic.MonotonicChange,System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            <para>
+            Returns the next version number when a specified change is
+            made to a given line of compatibility with the specified
+            metadata.
+            </para>
+            </summary>
+            <param name="line">
+            The line of compatibility to which the change is being
+            made.
+            </param>
+            <param name="change">
+            The type of change being made to <paramref name="line"/>.
+            </param>
+            <param name="metadata">
+            The metadata to be included with the new version.
+            </param>
+            <returns>
+            <para>
+            The next version number produced when the specified change
+            is made to the specified line of compatibility.
+            </para>
+            <para>
+            If <paramref name="change"/> is equal to
+            <see cref="F:McSherry.SemanticVersioning.Monotonic.MonotonicChange.Compatible"/>, the release number
+            is incremented but the compatibility number remains the same.
+            </para>
+            <para>
+            If <paramref name="change"/> is equal to
+            <see cref="F:McSherry.SemanticVersioning.Monotonic.MonotonicChange.Breaking"/>, both the release and
+            compatibility numbers are incremented.
+            </para>
+            </returns>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            <para>
+            <paramref name="line"/> is negative.
+            </para>
+            <para>
+            <paramref name="change"/> is not a recognised type of change.
+            </para>
+            </exception>
+            <exception cref="T:System.ArgumentNullException">
+            <paramref name="metadata"/> or an item therein is null.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            <para>
+            One or more items within <paramref name="metadata"/> is not a
+            valid metadata string.
+            </para>
+            <para>
+            <paramref name="line"/> is not a current line of compatibility.
+            </para>
+            </exception>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.Clone">
+            <summary>
+            <para>
+            Returns a <see cref="T:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner"/> with an identical
+            chronology, but which can advance its versions separately.
+            </para>
+            </summary>
+            <returns>
+            A <see cref="T:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner"/> with an identical chronology
+            up to the moment this method was called, but which is able
+            to separately advance its version numbers.
+            </returns>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.Latest">
+            <summary>
+            <para>
+            The chronologically-latest version number in this versioning
+            sequence.
+            </para>
+            </summary>
+            <remarks>
+            <para>
+            The chronologically-latest version is the version with the
+            greatest value as its release component, regardless of the
+            line of compatibility.
+            </para>
+            </remarks>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.LatestVersions">
+            <summary>
+            <para>
+            The latest versions in each line of compatibility, where the
+            key is the line of compatibility.
+            </para>
+            </summary>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.Compatibility">
+            <summary>
+            <para>
+            The highest compatibility number. This component indicates which
+            releases are compatible with each other.
+            </para>
+            </summary>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.Release">
+            <summary>
+            <para>
+            The current release number. This component indicates when a release
+            was made relative to other releases.
+            </para>
+            </summary>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.Monotonic.MonotonicVersioner.Chronology">
+            <summary>
+            <para>
+            The monotonic versions this instance has produced, in 
+            chronological order.
+            </para>
+            </summary>
+            <remarks>
+            <para>
+            For monotonic versions, chronological order means that the
+            versions are ordered by ascending release number.
+            </para>
+            </remarks>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.Ranges.VersionRange">
+            <summary>
+            <para>
+            Represents a range of acceptable versions. This class cannot
+            be inherited.
+            </para>
+            </summary>
+            <remarks>
+            <para>
+            A version range specifies a set of semantic versions that are
+            acceptable, and is used to check that a given semantic version
+            fits within this set.
+            </para>
+            <para>
+            Version ranges use the <c>node-semver</c> syntax for ranges.
+            Specifically, ranges are based on the specification as it was
+            written for the v6.0.0 release of <c>node-semver</c>.
+            </para>
+            <para>
+            The full basic and advanced range syntaxes are supported, but
+            there are minor differences in how 'X-ranges' are handled. Unlike
+            with <c>node-semver</c>, this class will reject ranges where the
+            wildcard (<c>x</c>, <c>X</c>, or <c>*</c> character) is followed
+            by another version component or by pre-release identifiers or
+            metadata. As <c>node-semver</c> appears to ignore anything that
+            follows a wildcard, this has no real impact on functionality.
+            </para>
+            <para>
+            In addition, for backwards compatibility, an empty version range
+            will be considered invalid. <c>node-semver</c> treats this as
+            equivalent to <c>*</c>.
+            </para>
+            </remarks>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.Ranges.VersionRange.IComparator">
+            <summary>
+            <para>
+            Represents an implementation of a comparator.
+            </para>
+            </summary>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Ranges.VersionRange.IComparator.SatisfiedBy(McSherry.SemanticVersioning.SemanticVersion)">
+            <summary>
+            <para>
+            Determines whether the comparator is satisfied
+            by a specified <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>.
+            </para>
+            </summary>
+            <param name="comparand">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> to check
+            against the comparator.
+            </param>
+            <returns>
+            True if the comparator is satisfied by the
+            specified semantic version, false if otherwise.
+            </returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Ranges.VersionRange.IComparator.ComparableTo(McSherry.SemanticVersioning.SemanticVersion)">
+            <summary>
+            Whether a <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> with the pre-release
+            identifers of the specified version can satisfy the comparator.
+            </summary>
+            <param name="comparand">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> of the kind to test.
+            </param>
+            <returns>
+            True if, in line with version range comparison rules for
+            versions with pre-release identifiers, the comparand is capable
+            of satisfying the comparator. False if otherwise.
+            </returns>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.Ranges.VersionRange.UnaryComparator">
+            <summary>
+            <para>
+            Provides the <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange.Parser"/> with implementations for unary
+            operators.
+            </para>
+            </summary>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.Ranges.VersionRange.UnaryComparator.ComparatorImpl">
+            <summary>
+            <para>
+            Represents a method implementing a unary comparator.
+            </para>
+            </summary>
+            <param name="comparand">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> that is being compared
+            against the version specified in the range string.
+            </param>
+            <param name="comparator">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> that the version being
+            checked is compared against. This is the version that is
+            extracted from the range string by the parser.
+            </param>
+            <returns>
+            True if the comparator is satisfied, false if otherwise.
+            </returns>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.Ranges.VersionRange.UnaryComparator.ComparatorFactory">
+            <summary>
+            <para>
+            Represents a method capable of generating a delegate which
+            implements a unary comparator.
+            </para>
+            </summary>
+            <param name="comparator">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> that the version being checked
+            is compared against. This is the version that is extracted from
+            the range string by the parser.
+            </param>
+            <returns>
+            A delegate which implements the comparison.
+            </returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Ranges.VersionRange.UnaryComparator.Create(McSherry.SemanticVersioning.Ranges.VersionRange.Operator,McSherry.SemanticVersioning.SemanticVersion)">
+            <summary>
+            <para>
+            Creates a new <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange.IComparator"/> using the specified
+            version and unary operator.
+            </para>
+            </summary>
+            <param name="op">
+            The operator to create an equivalent <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange.IComparator"/>
+            for.
+            </param>
+            <param name="semver">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> the operator is associated with.
+            </param>
+            <returns>
+            An <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange.IComparator"/> instance that implements the
+            comparison function represented by the specified
+            <see cref="P:McSherry.SemanticVersioning.Ranges.VersionRange.UnaryComparator.Operator"/>.
+            </returns>
+            <exception cref="T:System.ArgumentException">
+            Thrown when <paramref name="op"/> is not a recognised
+            <see cref="P:McSherry.SemanticVersioning.Ranges.VersionRange.UnaryComparator.Operator"/> value, or is not a unary operator.
+            </exception>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Ranges.VersionRange.UnaryComparator.#ctor(System.Predicate{McSherry.SemanticVersioning.SemanticVersion})">
+            <summary>
+            <para>
+            Creates a new <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange.UnaryComparator"/> with the specified
+            function as its comparison function.
+            </para>
+            </summary>
+            <param name="impl">
+            The function to use as the comparison function.
+            </param>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.Ranges.VersionRange.UnaryComparator.Operator">
+            <summary>
+            The operator the comparator implements.
+            </summary>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.Ranges.VersionRange.UnaryComparator.Version">
+            <summary>
+            <para>
+            The version against which the comparator compares.
+            </para>
+            </summary>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.Ranges.VersionRange.BinaryComparator">
+            <summary>
+            <para>
+            Provides the parser with implementations for binary operators.
+            </para>
+            </summary>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.Ranges.VersionRange.BinaryComparator.Factory">
+            <summary>
+            <para>
+            Represents a method capable of generating a delegate which
+            implements a binary comparator.
+            </para>
+            </summary>
+            <param name="lhs">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> which appears on the left
+            hand side of the operator.
+            </param>
+            <param name="rhs">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> which appears on the right
+            hand side of the operator.
+            </param>
+            <returns></returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Ranges.VersionRange.BinaryComparator.Create(McSherry.SemanticVersioning.Ranges.VersionRange.Operator,McSherry.SemanticVersioning.SemanticVersion,McSherry.SemanticVersioning.SemanticVersion)">
+            <summary>
+            <para>
+            Creates a new <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange.IComparator"/> using the specified
+            versions and binary operator.
+            </para>
+            </summary>
+            <param name="op">
+            The operator to create an equivalent <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange.IComparator"/>
+            for.
+            </param>
+            <param name="lhs">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> that appears on the left-hand
+            side of the operator.
+            </param>
+            <param name="rhs">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> that appears on the right-hand
+            side of the operator.
+            </param>
+            <returns>
+            An <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange.IComparator"/> that implements the comparison
+            function represented by <paramref name="op"/>.
+            </returns>
+            <exception cref="T:System.ArgumentException">
+            Thrown when <paramref name="op"/> is not a recognised
+            <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange.Operator"/> value, or is not a binary operator.
+            </exception>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.Ranges.VersionRange.BinaryComparator.LeftVersion">
+            <summary>
+            <para>
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> on the left-hand side of the
+            operator.
+            </para>
+            </summary>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.Ranges.VersionRange.BinaryComparator.RightVersion">
+            <summary>
+            <para>
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> on the right-hand side of the
+            operator.
+            </para>
+            </summary>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Ranges.VersionRange.#ctor(System.Collections.Generic.IEnumerable{System.Collections.Generic.IEnumerable{McSherry.SemanticVersioning.Ranges.VersionRange.IComparator}})">
+            <summary>
+            <para>
+            Creates a new <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange"/> instance from a set
+            of comparator sets.
+            </para>
+            </summary>
+            <param name="cmps">
+            The set of comparator sets to create an instance from.
+            </param>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="cmps"/> or any of its members are
+            null or contain null values.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            Thrown when <paramref name="cmps"/> is empty, or contains an
+            empty set.
+            </exception>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Ranges.VersionRange.#ctor(System.String)">
+            <summary>
+            <para>
+            Creates a version range from a string representing the range.
+            </para>
+            </summary>
+            <param name="range">
+            The version range string from which to create an instance.
+            </param>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="range"/> is null, empty,
+            or contains only whitespace characters.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            Thrown when <paramref name="range"/> is invalid for any
+            reason unrelated to an invalid semantic version string.
+            </exception>
+            <exception cref="T:System.FormatException">
+            Thrown when <paramref name="range"/> contains an invalid
+            semantic version string.
+            </exception>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.Ranges.VersionRange.MemoizationAgent">
+            <summary>
+            The cache to use to memoize the results of <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange"/>
+            satisfaction methods.
+            </summary>
+            <remarks>
+            <para>
+            Assign <see langword="null"/> to disable memoization. The value of this
+            property is <see langword="null"/> by default.
+            </para>
+            <para>
+            Accesses by <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange"/> to the memoization agent
+            are surrounded by <c><see langword="lock"/> (<see cref="P:McSherry.SemanticVersioning.Ranges.VersionRange.SynchronizationObject"/>)</c>.
+            </para>
+            </remarks>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.Ranges.VersionRange.SynchronizationObject">
+            <summary>
+            The object used in synchronising accesses to the
+            <see cref="P:McSherry.SemanticVersioning.Ranges.VersionRange.MemoizationAgent"/>.
+            </summary>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Ranges.VersionRange.SatisfiedBy(McSherry.SemanticVersioning.SemanticVersion)">
+            <summary>
+            <para>
+            Determines whether the current version range is
+            satisfied by a specified <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>.
+            </para>
+            </summary>
+            <param name="semver">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> to check against the
+            current version range.
+            </param>
+            <returns>
+            True if the current version range is satisfied by
+            <paramref name="semver"/>, false if otherwise.
+            </returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Ranges.VersionRange.SatisfiedBy(McSherry.SemanticVersioning.SemanticVersion[])">
+            <summary>
+            <para>
+            Determines whether the current version range is satisfied
+            by all specified <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> instances.
+            </para>
+            </summary>
+            <param name="semvers">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> instances to check
+            against the current version range.
+            </param>
+            <returns>
+            True if all <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> instances in
+            <paramref name="semvers"/> satisfy the current version
+            range, false if otherwise.
+            </returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Ranges.VersionRange.SatisfiedBy(System.Collections.Generic.IEnumerable{McSherry.SemanticVersioning.SemanticVersion})">
+            <summary>
+            <para>
+            Determines whether the current version range is satisfied
+            by all specified <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> instances.
+            </para>
+            </summary>
+            <param name="semvers">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> instances to check
+            against the current version range.
+            </param>
+            <returns>
+            True if all <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> instances in
+            <paramref name="semvers"/> satisfy the current version
+            range, false if otherwise.
+            </returns>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.Ranges.VersionRange.Operator">
+            <summary>
+            <para>
+            Represents the operators that the <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange"/>
+            parser recognises.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.Operator.Equal">
+            <summary>
+            <para>
+            Used to check version equality. Assumed when no operator
+            is specified.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.Operator.Caret">
+            <summary>
+            <para>
+            Used to check that the leftmost non-zero trio component of a
+            version does not change.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.Operator.Tilde">
+            <summary>
+            <para>
+            If a minor version is specified, used to check that only patch-level
+            changes are made. Otherwise, used to check that only minor-level
+            changes are made.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.Operator.LessThan">
+            <summary>
+            <para>
+            Used in checking that a <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> has
+            lesser precedence than the specified version.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.Operator.GreaterThan">
+            <summary>
+            <para>
+            Used in checking that a <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> has
+            greater precedence than the specified version.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.Operator.LessThanOrEqual">
+            <summary>
+            <para>
+            Used in checking that a <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> is
+            equal or has lesser precedence than the specified version.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.Operator.GreaterThanOrEqual">
+            <summary>
+            <para>
+            Used in checking that a <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> is
+            equal or has greater precedence than the specified version.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.Operator.Hyphen">
+            <summary>
+            <para>
+            Checks that a <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> falls within an
+            inclusive range of versions.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.Operator.Wildcard">
+            <summary>
+            <para>
+            Checks that only changes of the same level as the wildcard version
+            component, or of a subordinate level, are made.
+            </para>
+            </summary>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResultType">
+            <summary>
+            <para>
+            Represents the various possible return statuses of the
+            <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange"/> parser.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResultType.Success">
+            <summary>
+            <para>
+            Parsing completed without issue.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResultType.NullString">
+            <summary>
+            <para>
+            The version range string is null, empty, or contains
+            only whitespace characters.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResultType.InvalidCharacter">
+            <summary>
+            <para>
+            There are one or more invalid characters in the
+            version range string.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResultType.EmptySet">
+            <summary>
+            <para>
+            One or more comparator sets contain no comparators.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResultType.OrphanedOperator">
+            <summary>
+            <para>
+            An operator is present with no attached version.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResultType.InvalidVersion">
+            <summary>
+            <para>
+            The version range string contains an invalid
+            semantic version string.
+            </para>
+            </summary>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResult">
+            <summary>
+            <para>
+            Represents the result produced by the <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange"/>
+            parser.
+            </para>
+            </summary>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResult.VerifyResult``1(``0)">
+            <summary>
+            <para>
+            Checks the <see cref="F:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResult._successfulCreation"/> field,
+            and throws if it is false.
+            </para>
+            </summary>
+            <typeparam name="T">
+            The type of the value to be returned on success.
+            </typeparam>
+            <param name="passthrough">
+            A value to be returned from the function if the
+            <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResult"/> was successfully constructed.
+            </param>
+            <returns>
+            If <see cref="F:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResult._successfulCreation"/> is true, returns
+            <paramref name="passthrough"/>.
+            </returns>
+            <exception cref="T:System.InvalidOperationException">
+            Thrown when <see cref="F:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResult._successfulCreation"/> is false.
+            </exception>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResult.#ctor(System.Collections.Generic.IEnumerable{System.Collections.Generic.IEnumerable{McSherry.SemanticVersioning.Ranges.VersionRange.IComparator}})">
+            <summary>
+            <para>
+            Creates a parse result indicating success and
+            containing the specified results.
+            </para>
+            </summary>
+            <param name="results">
+            The results for the <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResult"/>
+            to contain.
+            </param>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="results"/> or
+            any of its items are null.
+            </exception>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResult.#ctor(McSherry.SemanticVersioning.Ranges.VersionRange.ParseResultType)">
+            <summary>
+            <para>
+            Creates a parse result indicating failure and
+            with the specified result code.
+            </para>
+            </summary>
+            <param name="error">
+            The result code for the <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResult"/>
+            to report.
+            </param>
+            <exception cref="T:System.ArgumentException">
+            Thrown when <paramref name="error"/> is invalid
+            or unrecognised.
+            </exception>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResult.#ctor(McSherry.SemanticVersioning.Ranges.VersionRange.ParseResultType,System.Lazy{System.Exception})">
+            <summary>
+            <para>
+            Creates a parse result indicating failure and with
+            the specified error code and inner exception.
+            </para>
+            </summary>
+            <param name="error">
+            The result code for the <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResult"/>
+            to report.
+            </param>
+            <param name="innerException">
+            The inner exception to store in the parse result.
+            </param>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="innerException"/> is null.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            Thrown when <paramref name="error"/> is invalid
+            or unrecognised.
+            </exception>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResult.Type">
+            <summary>
+            <para>
+            The result code describing the parse result.
+            </para>
+            </summary>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResult.ComparatorSets">
+            <summary>
+            <para>
+            The collection of comparator sets produced by the
+            parser.
+            </para>
+            </summary>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResult.InnerException">
+            <summary>
+            <para>
+            The exception that is stored in the parse result to
+            provide additional error information.
+            </para>
+            </summary>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResult.GetErrorMessage">
+            <summary>
+            <para>
+            Retrieves a human-friendly error message describing the
+            error represented by the current <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResult"/>.
+            </para>
+            </summary>
+            <returns>
+            A string representing the error represented by the
+            current <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResult"/>.
+            </returns>
+            <exception cref="T:System.InvalidOperationException">
+            Thrown when <see cref="P:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResult.Type"/> has the
+            value <see cref="F:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResultType.Success"/>.
+            </exception>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResult.CreateException">
+            <summary>
+            <para>
+            Creates an <see cref="T:System.Exception"/> instance appropriate
+            for the status represented by the current instance.
+            </para>
+            </summary>
+            <returns>
+            An <see cref="T:System.Exception"/> instance appropriate for the
+            status represented by the current instance.
+            </returns>
+            <exception cref="T:System.InvalidOperationException">
+            Thrown when <see cref="P:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResult.Type"/> has the
+            value <see cref="F:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResultType.Success"/>.
+            </exception>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.Ranges.VersionRange.Parser">
+            <summary>
+            <para>
+            Implements parsing for version ranges.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.Parser.State.Start">
+            <summary>
+            <para>
+            Initialises version range parsing.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.Parser.State.Consume">
+            <summary>
+            <para>
+            Consumes a character from the input and transitions to the
+            next queued state.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.Parser.State.Identify">
+            <summary>
+            <para>
+            Attempts to identify the state most appropriate parse state
+            to transition to.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.Parser.State.CollapseWhitespace">
+            <summary>
+            <para>
+            Consumes all whitespace characters it encounters until it
+            reaches a non-whitespace character.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.Parser.State.UnarySimple">
+            <summary>
+            <para>
+            Parses a simple unary-operator comparator.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.Parser.State.UnaryComplex">
+            <summary>
+            <para>
+            Parses a complex unary-operator comparator.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.Parser.State.LogicalOR">
+            <summary>
+            <para>
+            Parses a logical OR operator. This operator is special as it
+            indicates the start of a new comparator set rather than
+            operating on version strings.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.Parser.State.TentativeBinary">
+            <summary>
+            <para>
+            Attempts to parse a binary infix comparator.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.Parser.State.VersionString">
+            <summary>
+            <para>
+            Parses a version string.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.Parser.State.CollectSet">
+            <summary>
+            <para>
+            Attempts to identify the end of a comparator set, collect its
+            comparators, and begin a new set.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.Ranges.VersionRange.Parser.State.Terminate">
+            <summary>
+            <para>
+            Terminates version range parsing if parsing was successful.
+            </para>
+            </summary>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Ranges.VersionRange.Parser._parseString(System.String)">
+            <summary>
+            <para>
+            Parses a set of comparator sets from a version range string.
+            </para>
+            </summary>
+            <param name="rangeString">
+            The string representing one or more comparator sets.
+            </param>
+            <returns>
+            An <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResult"/> indicating whether parsing
+            was successful and containing the result if it was.
+            </returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Ranges.VersionRange.Parser.Parse(System.String)">
+            <summary>
+            <para>
+            Implements <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange"/> parsing.
+            </para>
+            </summary>
+            <param name="rangeString">
+            The string representing the version range to be parsed.
+            </param>
+            <returns>
+            A <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange.ParseResult"/> indicating whether parsing
+            was successful and, if it was, containing a 
+            <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange"/> equivalent to the value of
+            <paramref name="rangeString"/>.
+            </returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Ranges.VersionRange.Parse(System.String)">
+            <summary>
+            <para>
+            Parses a version range from a string.
+            </para>
+            </summary>
+            <param name="range">
+            The string representing the version range.
+            </param>
+            <returns>
+            A <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange"/> equivalent to the
+            value of <paramref name="range"/>.
+            </returns>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="range"/> is null, empty,
+            or contains only whitespace characters.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            Thrown when <paramref name="range"/> is invalid for any
+            reason unrelated to an invalid semantic version string.
+            </exception>
+            <exception cref="T:System.FormatException">
+            Thrown when <paramref name="range"/> contains an invalid
+            semantic version string.
+            </exception>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.Ranges.VersionRange.TryParse(System.String,McSherry.SemanticVersioning.Ranges.VersionRange@)">
+            <summary>
+            <para>
+            Attempts to parse a version range from a string.
+            </para>
+            </summary>
+            <param name="range">
+            The string representing the version range.
+            </param>
+            <param name="result">
+            The <see cref="T:McSherry.SemanticVersioning.Ranges.VersionRange"/> that, on success, is
+            given a value equivalent to <paramref name="range"/>.
+            </param>
+            <returns>
+            True on success, false on failure.
+            </returns>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.SemanticVersion">
+            <summary>
+            <para>
+            Represents an immutable Semantic Version. This class cannot be inherited.
+            </para>
+            </summary>
+            <remarks>
+            <para>
+            This class represents a Semantic Version compliant with version
+            2.0.0 of the Semantic Versioning specification.
+            </para>
+            <para>
+            Although the specification itself imposes no limit on version
+            numbers, this class has the following limitations:
+            </para>
+            <list type="bullet">
+                <item>
+                    <description>
+                        The major, minor, and patch versions are represented
+                        using an <see cref="T:System.Int32"/>, and so each component's
+                        maximum value is 2,147,483,647.
+                    </description>
+                </item>
+            </list>
+            </remarks>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.op_Equality(McSherry.SemanticVersioning.SemanticVersion,McSherry.SemanticVersioning.SemanticVersion)">
+            <summary>
+            <para>
+            Determines whether the two specified <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>s
+            are equal in value.
+            </para>
+            </summary>
+            <param name="l">
+            The first <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> to compare.
+            </param>
+            <param name="r">
+            The second <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> to compare.
+            </param>
+            <returns>
+            True if the provided <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>s are
+            equal in value. False if otherwise.
+            </returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.op_Inequality(McSherry.SemanticVersioning.SemanticVersion,McSherry.SemanticVersioning.SemanticVersion)">
+            <summary>
+            <para>
+            Determines whether the two specified <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>s
+            are not equal in value.
+            </para>
+            </summary>
+            <param name="l">
+            The first <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> to compare.
+            </param>
+            <param name="r">
+            The second <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> to compare.
+            </param>
+            <returns>
+            True if the provided <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>s are
+            not equal in value. False if otherwise.
+            </returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.op_GreaterThan(McSherry.SemanticVersioning.SemanticVersion,McSherry.SemanticVersioning.SemanticVersion)">
+            <summary>
+            <para>
+            Determines whether one <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> has greater
+            precedence than another.
+            </para>
+            </summary>
+            <param name="l">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> to check for greater precedence.
+            </param>
+            <param name="r">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> to compare against.
+            </param>
+            <returns>
+            True if <paramref name="l"/> has greater precedence than
+            <paramref name="r"/>. False if otherwise.
+            </returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.op_LessThan(McSherry.SemanticVersioning.SemanticVersion,McSherry.SemanticVersioning.SemanticVersion)">
+            <summary>
+            <para>
+            Determines whether one <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> has lesser
+            precedence than another.
+            </para>
+            </summary>
+            <param name="l">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> to check for lesser precedence.
+            </param>
+            <param name="r">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> to compare against.
+            </param>
+            <returns>
+            True if <paramref name="l"/> has lesser precedence than
+            <paramref name="r"/>. False if otherwise.
+            </returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.op_GreaterThanOrEqual(McSherry.SemanticVersioning.SemanticVersion,McSherry.SemanticVersioning.SemanticVersion)">
+            <summary>
+            <para>
+            Determines whether the precedence of one <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>
+            is equal to or greater than the precedence of another.
+            </para>
+            </summary>
+            <param name="l">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> to check for equal or greater
+            precedence.
+            </param>
+            <param name="r">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> to compare against.
+            </param>
+            <returns>
+            True if the precedence of <paramref name="l"/> is equal to or
+            greater than the precedence of <paramref name="r"/>. False if
+            otherwise.
+            </returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.op_LessThanOrEqual(McSherry.SemanticVersioning.SemanticVersion,McSherry.SemanticVersioning.SemanticVersion)">
+            <summary>
+            <para>
+            Determines whether the precedence of one <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>
+            is equal to or less than the precedence of another.
+            </para>
+            </summary>
+            <param name="l">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> to check for equal or lesser
+            precedence.
+            </param>
+            <param name="r">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> to compare against.
+            </param>
+            <returns>
+            True if the precedence of <paramref name="l"/> is equal to or less
+            than the precedence of <paramref name="r"/>. False if otherwise.
+            </returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.op_Explicit(System.String)~McSherry.SemanticVersioning.SemanticVersion">
+            <summary>
+            <para>
+            Converts a version string to a <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>,
+            with all <see cref="T:McSherry.SemanticVersioning.ParseMode"/> modifiers active.
+            </para>
+            </summary>
+            <param name="version">
+            The version string to convert to a <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>.
+            </param>
+            <exception cref="T:System.InvalidCastException">
+            Thrown when <paramref name="version"/> is invalid and cannot be
+            cast to a <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>. This wraps the exceptions
+            thrown by <see cref="M:McSherry.SemanticVersioning.SemanticVersion.Parse(System.String)"/> and
+            <see cref="M:McSherry.SemanticVersioning.SemanticVersion.Parse(System.String,McSherry.SemanticVersioning.ParseMode)"/>.
+            </exception>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.SemanticVersion.ParseInfo">
+            <summary>
+            <para>
+            Provides metadata about how this <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> was
+            parsed or, if this instance wasn't parsed, null.
+            </para>
+            </summary>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.#ctor(System.Int32,System.Int32)">
+            <summary>
+            <para>
+            Creates a new <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> using the
+            provided version components, with <see cref="P:McSherry.SemanticVersioning.SemanticVersion.Patch"/>
+            set to zero.
+            </para>
+            </summary>
+            <param name="major">
+            The semantic version's major version.
+            </param>
+            <param name="minor">
+            The semantic version's minor version.
+            </param>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            Thrown when <paramref name="major"/> or 
+            <paramref name="minor"/> is negative.
+            </exception>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.#ctor(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            <para>
+            Creates a new <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> using the
+            provided version components.
+            </para>
+            </summary>
+            <param name="major">
+            The semantic version's major version.
+            </param>
+            <param name="minor">
+            The semantic version's minor version.
+            </param>
+            <param name="patch">
+            The semantic version's patch version.
+            </param>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            Thrown when any of <paramref name="major"/>,
+            <paramref name="minor"/>, and <paramref name="patch"/>
+            is negative.
+            </exception>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.#ctor(System.Int32,System.Int32,System.Int32,System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            <para>
+            Creates a new <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> using the
+            provided version components and pre-release identifiers.
+            </para>
+            </summary>
+            <param name="major">
+            The semantic version's major version.
+            </param>
+            <param name="minor">
+            The semantic version's minor version.
+            </param>
+            <param name="patch">
+            The semantic version's patch version.
+            </param>
+            <param name="identifiers">
+            The semantic version's pre-release identifiers.
+            </param>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            Thrown when any of <paramref name="major"/>,
+            <paramref name="minor"/>, and <paramref name="patch"/>
+            is negative.
+            </exception>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="identifiers"/> or any of its
+            items are null.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            Thrown when any of the items in <paramref name="identifiers"/>
+            are not valid pre-release identifiers.
+            </exception>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.#ctor(System.Int32,System.Int32,System.Int32,System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            <para>
+            Creates a new <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> using the
+            provided version components, pre-release identifiers,
+            and metadata items.
+            </para>
+            </summary>
+            <param name="major">
+            The semantic version's major version.
+            </param>
+            <param name="minor">
+            The semantic version's minor version.
+            </param>
+            <param name="patch">
+            The semantic version's patch version.
+            </param>
+            <param name="identifiers">
+            The semantic version's pre-release identifiers.
+            </param>
+            <param name="metadata">
+            The semantic version's build metadata items.
+            </param>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            Thrown when any of <paramref name="major"/>,
+            <paramref name="minor"/>, and <paramref name="patch"/>
+            is negative.
+            </exception>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when any of the items in <paramref name="identifiers"/>
+            or <paramref name="metadata"/> are null, or if the collections
+            themselves are null.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            Thrown when any of the items in <paramref name="identifiers"/>
+            are not valid pre-release identifiers, or when any of the items
+            in <paramref name="metadata"/> are not valid build metadata items.
+            </exception>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.SemanticVersion.Major">
+            <summary>
+            <para>
+            The semantic version's major version component.
+            </para>
+            </summary>
+            <remarks>
+            <para>
+            This version component is incremented each time a version with
+            a breaking change in it is released. If this is zero, then the
+            version number represents an unstable, pre-release version that
+            may have breaking changes made at any time without an increment.
+            </para>
+            </remarks>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.SemanticVersion.Minor">
+            <summary>
+            <para>
+            The semantic version's minor version component.
+            </para>
+            </summary>
+            <remarks>
+            <para>
+            This version component is incremented each time a version with at
+            least one new feature in it is released. This component is reset
+            to zero with every <see cref="P:McSherry.SemanticVersioning.SemanticVersion.Major"/> version increment.
+            </para>
+            </remarks>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.SemanticVersion.Patch">
+            <summary>
+            <para>
+            The semantic version's patch version component.
+            </para>
+            </summary>
+            <remarks>
+            <para>
+            This version component is incremented each time a version with a
+            backwards-compatible bug fix is released. This component is reset
+            to zero with every <see cref="P:McSherry.SemanticVersioning.SemanticVersion.Major"/> or <see cref="P:McSherry.SemanticVersioning.SemanticVersion.Minor"/>
+            version increment.
+            </para>
+            </remarks>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.SemanticVersion.Identifiers">
+            <summary>
+            <para>
+            The pre-release identifier components of the semantic
+            version.
+            </para>
+            </summary>
+            <remarks>
+            <para>
+            Pre-release identifiers are used to indicate a release that
+            is a pre-release. For example, <c>1.1.0-rc.1</c> for a release
+            candidate.
+            </para>
+            </remarks>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.SemanticVersion.Metadata">
+            <summary>
+            <para>
+            The build metadata components of the semantic version.
+            </para>
+            </summary>
+            <remarks>
+            <para>
+            Build metadata components provide additional information about
+            a release, such as the time and date it was built and the commit
+            identifier of the commit the release was built from.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.EquivalentTo(McSherry.SemanticVersioning.SemanticVersion)">
+            <summary>
+            <para>
+            Determines whether the specified <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>
+            is equivalent to the current version.
+            </para>
+            </summary>
+            <param name="semver">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> to compare against.
+            </param>
+            <returns>
+            True if the current <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> is equivalent
+            to <paramref name="semver"/>.
+            </returns>
+            <remarks>
+            <para>
+            This differs from <see cref="M:McSherry.SemanticVersioning.SemanticVersion.Equals(McSherry.SemanticVersioning.SemanticVersion)"/> in that
+            the value of <see cref="P:McSherry.SemanticVersioning.SemanticVersion.Metadata"/> is ignored.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.CompatibleWith(McSherry.SemanticVersioning.SemanticVersion)">
+            <summary>
+            <para>
+            Determines whether the specified <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> is
+            backwards-compatible with the current version. 
+            </para>
+            </summary>
+            <param name="semver">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> to test for backwards
+            compatibility.
+            </param>
+            <returns>
+            True if <paramref name="semver"/> is backwards-compatible with
+            the current version. False if otherwise.
+            </returns>
+            <remarks>
+            <para>
+            The following situations will always produce a false result:
+            </para>
+            <list type="bullet">
+                <item>
+                    <description>
+                        The <see cref="P:McSherry.SemanticVersioning.SemanticVersion.Major"/> versions of the compared
+                        <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>s differ.
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        The <see cref="P:McSherry.SemanticVersioning.SemanticVersion.Major"/> versions of either of the
+                        compared versions are equal to zero (unless the
+                        two versions are equivalent).
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        The parameter <paramref name="semver"/> is null.
+                    </description>
+                </item>
+            </list>
+            <para>
+            If none of the above conditions are met, compatibility is determined
+            through simple precedence comparison, where a version will only ever
+            be considered compatible if it is of equal or greater precedence.
+            </para>
+            <para>
+            It should be noted that a <paramref name="semver"/> value with
+            pre-release identifiers will be considered backwards-compatible 
+            provided its
+            <see cref="P:McSherry.SemanticVersioning.SemanticVersion.Major"/>-<see cref="P:McSherry.SemanticVersioning.SemanticVersion.Minor"/>-<see cref="P:McSherry.SemanticVersioning.SemanticVersion.Patch"/>
+            trio is greater than the trio of this version and the
+            <see cref="P:McSherry.SemanticVersioning.SemanticVersion.Major"/> versions are equal. This is because, even
+            though it is a pre-release version, it is within the same
+            major version, and so should, if the Semantic Versioning
+            specification is being properly adhered to, be backwards-compatible.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.Deconstruct(System.Int32@,System.Int32@,System.Int32@)">
+            <summary>
+            Deconstructs the current version.
+            </summary>
+            <param name="major">
+            The <see cref="P:McSherry.SemanticVersioning.SemanticVersion.Major"/> component of the current version.
+            </param>
+            <param name="minor">
+            The <see cref="P:McSherry.SemanticVersioning.SemanticVersion.Minor"/> component of the current version.
+            </param>
+            <param name="patch">
+            The <see cref="P:McSherry.SemanticVersioning.SemanticVersion.Patch"/> component of the current version.
+            </param>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.Deconstruct(System.Int32@,System.Int32@)">
+            <summary>
+            Deconstructs the current version.
+            </summary>
+            <param name="major">
+            The <see cref="P:McSherry.SemanticVersioning.SemanticVersion.Major"/> component of the current version.
+            </param>
+            <param name="minor">
+            The <see cref="P:McSherry.SemanticVersioning.SemanticVersion.Minor"/> component of the current version.
+            </param>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.Equals(System.Object)">
+            <summary>
+            <para>
+            Determines whether the specified object is equal to
+            the current object.
+            </para>
+            </summary>
+            <param name="obj">
+            The object to compare with the current object.
+            </param>
+            <returns>
+            True if the specified and current objects are equal,
+            false if otherwise.
+            </returns>
+            <remarks>
+            <para>
+            This method takes build metadata items into account when comparing,
+            and so may return false for equivalent versions with differing build
+            metadata.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.GetHashCode">
+            <summary>
+            <para>
+            Returns the hash code for this instance.
+            </para>
+            </summary>
+            <returns>
+            The hash code for this instance.
+            </returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.ToString">
+            <summary>
+            <para>
+            Returns a string that represents the current 
+            <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>.
+            </para>
+            </summary>
+            <returns>
+            A string representing the current <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>.
+            </returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.Equals(McSherry.SemanticVersioning.SemanticVersion)">
+            <summary>
+            <para>
+            Determines whether the specified <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>
+            is equal to the current version.
+            </para>
+            </summary>
+            <param name="semver">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> to compare with the current
+            version.
+            </param>
+            <returns>
+            True if the specified and current <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>s
+            are equal, false if otherwise.
+            </returns>
+            <remarks>
+            <para>
+            This method takes build metadata items into account when comparing,
+            and so may return false for equivalent versions with differing build
+            metadata.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.CompareTo(McSherry.SemanticVersioning.SemanticVersion)">
+            <summary>
+            <para>
+            Compares the current <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> with
+            another version to determine relative precedence.
+            </para>
+            </summary>
+            <param name="semver">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> to compare to the current
+            version.
+            </param>
+            <returns>
+            <list type="table">
+                <listheader>
+                    <term>Value</term>
+                    <term>Meaning</term>
+                </listheader>
+                <item>
+                    <term>Less than zero</term>
+                    <term>
+                        The current <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> has
+                        lesser precedence than <paramref name="semver"/>.
+                    </term>
+                </item>
+                <item>
+                    <term>Zero</term>
+                    <term>
+                        The current <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> is
+                        of equal precedence to <paramref name="semver"/>.
+                    </term>
+                </item>
+                <item>
+                    <term>Greater than zero</term>
+                    <term>
+                        The current <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> has
+                        greater precedence than <paramref name="semver"/>.
+                    </term>
+                </item>
+            </list>
+            </returns>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.SemanticVersion.Formatter">
+            <summary>
+            <para>
+            Encapsulates the formatting routines provided by the
+            <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> class.
+            </para>
+            </summary>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.Formatter.Format(McSherry.SemanticVersioning.SemanticVersion,System.String)">
+            <summary>
+            <para>
+            Exposes the formatter for <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>
+            instances.
+            </para>
+            </summary>
+            <param name="semver">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> to be formatted.
+            </param>
+            <param name="format">
+            The format string specifying how the <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>
+            should be formatted.
+            </param>
+            <returns></returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.System#IFormattable#ToString(System.String,System.IFormatProvider)">
+            <summary>
+            <para>
+            Formats the value of the current <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>
+            as specified.
+            </para>
+            </summary>
+            <param name="format">
+            The format pattern to use, or null for the general format.
+            </param>
+            <param name="provider">
+            The format provider to use, or null for the default provider. 
+            This parameter is ignored.
+            </param>
+            <returns>
+            A string representation of the current <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>,
+            formatted as specified.
+            </returns>
+            <exception cref="T:System.FormatException">
+            Thrown when the format pattern given in <paramref name="format"/>
+            is not recognised or is invalid.
+            </exception>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.ToString(System.String)">
+            <summary>
+            <para>
+            Formats the value of the current <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>
+            as specified.
+            </para>
+            </summary>
+            <param name="format">
+            The format pattern to use, or null for the general format.
+            </param>
+            <returns>
+            A string representation of the current <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>,
+            formatted as specified.
+            </returns>
+            <exception cref="T:System.FormatException">
+            Thrown when the format pattern given in <paramref name="format"/>
+            is not recognised or is invalid.
+            </exception>
+            <remarks>
+            <para>
+            For information on the acceptable format specifiers, see the
+            Remarks section of the 
+            <see cref="M:System.IFormattable.ToString(System.String,System.IFormatProvider)"/>
+            implementation for <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>.
+            </para>
+            </remarks>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.SemanticVersion.ParseResultType">
+            <summary>
+            <para>
+            Represents the possible results of the <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>
+            parser.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.SemanticVersion.ParseResultType.Success">
+            <summary>
+            <para>
+            Parsing completed with no issues.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.SemanticVersion.ParseResultType.NullString">
+            <summary>
+            <para>
+            The string to parse was null or empty.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.SemanticVersion.ParseResultType.PreTrioInvalidChar">
+            <summary>
+            <para>
+            An invalid character is present before the
+            major-minor-patch trio.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.SemanticVersion.ParseResultType.TrioInvalidChar">
+            <summary>
+            <para>
+            One or more items in the major-minor-patch
+            trio contains an invalid character.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.SemanticVersion.ParseResultType.TrioItemLeadingZero">
+            <summary>
+            <para>
+            One or more of the items in the major-minor-patch
+            trio has a leading zero.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.SemanticVersion.ParseResultType.TrioItemMissing">
+            <summary>
+            <para>
+            One or more of the items in the major-minor-patch
+            trio is missing.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.SemanticVersion.ParseResultType.TrioItemOverflow">
+            <summary>
+            <para>
+            One of the major, minor, or patch version components
+            represents a number greater than <see cref="F:System.Int32.MaxValue"/>.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.SemanticVersion.ParseResultType.TrioItemUnexpected">
+            <summary>
+            One of the major, minor, or patch version components was
+            encountered when none was expected.
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.SemanticVersion.ParseResultType.IdentifierMissing">
+            <summary>
+            <para>
+            An pre-release identifier was expected but not 
+            found.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.SemanticVersion.ParseResultType.IdentifierInvalid">
+            <summary>
+            <para>
+            The version contains one or more invalid
+            pre-release identifiers.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.SemanticVersion.ParseResultType.MetadataMissing">
+            <summary>
+            <para>
+            A build metadata item was expected but
+            not found.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.SemanticVersion.ParseResultType.MetadataInvalid">
+            <summary>
+            <para>
+            The version contains one or more invalid 
+            build metadata items.
+            </para>
+            </summary>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.SemanticVersion.ComponentState">
+            <summary>
+            <para>
+            Represents the different ways a major-minor-patch trio component
+            can be specified in a version string.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.SemanticVersion.ComponentState.Present">
+            <summary>
+            <para>
+            The component was present in the version string.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.SemanticVersion.ComponentState.Omitted">
+            <summary>
+            <para>
+            The component was omitted and the omission was acceptable due
+            to the provided <see cref="T:McSherry.SemanticVersioning.ParseMode"/>.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.SemanticVersion.ComponentState.Wildcard">
+            <summary>
+            <para>
+            A wildcard was present in the place of the component and this
+            substitution was acceptable due to the provided
+            <see cref="T:McSherry.SemanticVersioning.ParseMode"/>.
+            </para>
+            </summary>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.SemanticVersion.InternalModes">
+            <summary>
+            <para>
+            Represents internal <see cref="T:McSherry.SemanticVersioning.ParseMode"/> values which don't make
+            sense to expose to users.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.SemanticVersion.InternalModes.Mask">
+            <summary>
+            <para>
+            A mask for the bits the internal mode bits occupy.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.SemanticVersion.InternalModes.Enabled">
+            <summary>
+            <para>
+            The internal parser modes are enabled.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.SemanticVersion.InternalModes.OptionalMinor">
+            <summary>
+            <para>
+            The parser will accept versions with the <see cref="P:McSherry.SemanticVersioning.SemanticVersion.Minor"/>
+            version component omitted. Has no effect if
+            <see cref="F:McSherry.SemanticVersioning.ParseMode.OptionalPatch"/> is not also specified.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.SemanticVersion.InternalModes.AllowWildcard">
+            <summary>
+            <para>
+            The parser will accept a wildcard in place of the major, minor,
+            or patch version component.
+            </para>
+            </summary>
+            <remarks>
+            If a wildcard is specified, any subordinate components must be
+            omitted for the version to be considered valid. This parse mode
+            will allow their omission without <see cref="F:McSherry.SemanticVersioning.SemanticVersion.InternalModes.OptionalMinor"/>
+            or <see cref="F:McSherry.SemanticVersioning.ParseMode.OptionalPatch"/> being specified, and
+            will set their <see cref="T:McSherry.SemanticVersioning.SemanticVersion.ComponentState"/> in
+            <see cref="T:McSherry.SemanticVersioning.SemanticVersion.ParseMetadata"/> to <see cref="F:McSherry.SemanticVersioning.SemanticVersion.ComponentState.Wildcard"/>.
+            </remarks>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.InternalModes.Has(McSherry.SemanticVersioning.ParseMode,McSherry.SemanticVersioning.ParseMode)">
+            <summary>
+            <para>
+            Determines whether an internal parse mode is present.
+            </para>
+            </summary>
+            <param name="target">
+            The <see cref="T:McSherry.SemanticVersioning.ParseMode"/> to check for the specified flags.
+            </param>
+            <param name="mode">
+            The flags to check for.
+            </param>
+            <returns>
+            True if the specified internal parse modes are present.
+            </returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.InternalModes.HasAny(McSherry.SemanticVersioning.ParseMode)">
+            <summary>
+            <para>
+            Determines whether any internal parse mode is present.
+            </para>
+            </summary>
+            <param name="mode">
+            The <see cref="T:McSherry.SemanticVersioning.ParseMode"/> to check for internal modes.
+            </param>
+            <returns></returns>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.SemanticVersion.ParseResult">
+            <summary>
+            <para>
+            Represents the result produced by the <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>
+            parser.
+            </para>
+            </summary>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.ParseResult.#ctor(McSherry.SemanticVersioning.SemanticVersion)">
+            <summary>
+            <para>
+            Creates a new successful <see cref="T:McSherry.SemanticVersioning.SemanticVersion.ParseResult"/> with
+            the specified <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> as its payload.
+            </para>
+            </summary>
+            <param name="version">
+            The <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> to provide as the result.
+            </param>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="version"/> is null.
+            </exception>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.ParseResult.#ctor(McSherry.SemanticVersioning.SemanticVersion.ParseResultType)">
+            <summary>
+            <para>
+            Creates a new failure-state <see cref="T:McSherry.SemanticVersioning.SemanticVersion.ParseResult"/> with
+            the specified <see cref="T:McSherry.SemanticVersioning.SemanticVersion.ParseResultType"/> as its payload.
+            </para>
+            </summary>
+            <param name="error">
+            The error code to provide to consuming code.
+            </param>
+            <exception cref="T:System.ArgumentException">
+            Thrown when <paramref name="error"/> is equal to
+            <see cref="F:McSherry.SemanticVersioning.SemanticVersion.ParseResultType.Success"/>, or is unrecognised.
+            </exception>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.SemanticVersion.ParseResult.Type">
+            <summary>
+            <para>
+            The result code describing the parse result.
+            </para>
+            </summary>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.SemanticVersion.ParseResult.Version">
+            <summary>
+            <para>
+            The produced <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>, if
+            the parsing was successful.
+            </para>
+            </summary>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.ParseResult.CreateException">
+            <summary>
+            <para>
+            Creates the appropriate exception for the current
+            instance's <see cref="P:McSherry.SemanticVersioning.SemanticVersion.ParseResult.Type"/> value.
+            </para>
+            </summary>
+            <returns>
+            An <see cref="T:System.Exception"/> appropriate for the value
+            of the current instance's <see cref="P:McSherry.SemanticVersioning.SemanticVersion.ParseResult.Type"/> field.
+            </returns>
+            <exception cref="T:System.InvalidOperationException">
+            Thrown when <see cref="P:McSherry.SemanticVersioning.SemanticVersion.ParseResult.Type"/> has the value
+            <see cref="F:McSherry.SemanticVersioning.SemanticVersion.ParseResultType.Success"/>.
+            </exception>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.ParseResult.GetErrorMessage">
+            <summary>
+            <para>
+            Retrieves a human-friendly error message describing the
+            value of <see cref="P:McSherry.SemanticVersioning.SemanticVersion.ParseResult.Type"/>.
+            </para>
+            </summary>
+            <returns>
+            A human-friendly error message describing the value of
+            <see cref="P:McSherry.SemanticVersioning.SemanticVersion.ParseResult.Type"/>.
+            </returns>
+            <exception cref="T:System.InvalidOperationException">
+            Thrown when <see cref="P:McSherry.SemanticVersioning.SemanticVersion.ParseResult.Type"/> has the value
+            <see cref="F:McSherry.SemanticVersioning.SemanticVersion.ParseResultType.Success"/>.
+            </exception>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.SemanticVersion.ParseMetadata">
+            <summary>
+            <para>
+            Provides information about the semantic version that was parsed.
+            </para>
+            </summary>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.SemanticVersion.ParseMetadata.MajorState">
+            <summary>
+            <para>
+            The state of the <see cref="P:McSherry.SemanticVersioning.SemanticVersion.Major"/> component
+            in the parsed version string.
+            </para>
+            </summary>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.SemanticVersion.ParseMetadata.MinorState">
+            <summary>
+            <para>
+            The state of the <see cref="P:McSherry.SemanticVersioning.SemanticVersion.Minor"/> component
+            in the parsed version string.
+            </para>
+            </summary>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.SemanticVersion.ParseMetadata.PatchState">
+            <summary>
+            <para>
+            The state of the <see cref="P:McSherry.SemanticVersioning.SemanticVersion.Patch"/> component
+            in the parsed version string.
+            </para>
+            </summary>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.SemanticVersion.ParseMetadata.Enumerator">
+            <summary>
+            <para>
+            The enumerator used internally by the parser, which finishes on
+            the last character in the version string.
+            </para>
+            </summary>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.SemanticVersion.Parser">
+            <summary>
+            <para>
+            Encapsulates the parser for the <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> class.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.SemanticVersion.Parser.IdentifierStart">
+            <summary>
+            <para>
+            The character used to start the sequence of pre-release
+            identifiers (a hyphen).
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.SemanticVersion.Parser.MetadataStart">
+            <summary>
+            <para>
+            The character used to start the sequence of build metadata
+            items (a plus sign).
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.SemanticVersion.Parser.ComponentSeparator">
+            <summary>
+            <para>
+            The character used to separate various version
+            compoents (a period).
+            </para>
+            </summary>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.Parser.Normalise(System.String@,McSherry.SemanticVersioning.ParseMode)">
+            <summary>
+            <para>
+            Attempts to normalise the version string provided as input
+            to the parser.
+            </para>
+            </summary>
+            <param name="input">
+            The version string to normalise.
+            </param>
+            <param name="mode">
+            Modes augmenting how parsing is performed.
+            </param>
+            <returns>
+            A <see cref="T:McSherry.SemanticVersioning.SemanticVersion.ParseResult"/> indicating whether normalisation
+            was successful or, if it wasn't successful, why it failed.
+            </returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.Parser._parseVersion(System.String,McSherry.SemanticVersioning.ParseMode)">
+            <summary>
+            <para>
+            Implements <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> parsing.
+            </para>
+            </summary>
+            <param name="versionString">
+            The string representing the semantic version.
+            </param>
+            <param name="mode">
+            Modes augmenting how parsing is performed.
+            </param>
+            <returns>
+            A <see cref="T:McSherry.SemanticVersioning.SemanticVersion.ParseResult"/> describing whether the
+            parse succeeded.
+            </returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.Parser.Parse(System.String,McSherry.SemanticVersioning.ParseMode)">
+            <summary>
+            <para>
+            Implements <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> parsing and
+            input preprocessing.
+            </para>
+            </summary>
+            <param name="input">
+            The string representing the semantic version.
+            </param>
+            <param name="mode">
+            Modes augmenting how parsing is performed.
+            </param>
+            <returns>
+            A <see cref="T:McSherry.SemanticVersioning.SemanticVersion.ParseResult"/> describing whether the
+            parse succeeded.
+            </returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.Parse(System.String,McSherry.SemanticVersioning.ParseMode,System.Collections.Generic.IEnumerator{System.Char}@)">
+            <summary>
+            <para>
+            Converts a version string to a <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>, taking
+            into account a set of flags.
+            </para>
+            </summary>
+            <param name="version">
+            The version string to be converted to a <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>.
+            </param>
+            <param name="mode">
+            A set of flags that augment how the version string is parsed.
+            </param>
+            <param name="enumerator">
+            An enumerator over <paramref name="version"/>, positioned after the
+            last character of the <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> parsed from
+            <paramref name="version"/>, or null if the parser reached the end
+            of the string.
+            </param>
+            <returns>
+            A <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> equivalent to the provided version
+            string.
+            </returns>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="version"/> is null or empty.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            Thrown when a component in the version string was expected but not
+            found (for example, a missing minor or patch version).
+            </exception>
+            <exception cref="T:System.FormatException">
+            Thrown when an invalid character or character sequence is encountered.
+            </exception>
+            <exception cref="T:System.OverflowException">
+            Thrown when an attempt to convert the major, minor, or patch version
+            into an <see cref="T:System.Int32"/> resulted in an overflow.
+            </exception>
+            <remarks>
+            <para>
+            The parameter <paramref name="enumerator"/> exposes the enumerator
+            used internally by the parser to walk <paramref name="version"/>. Its
+            intended use is where <see cref="F:McSherry.SemanticVersioning.ParseMode.Greedy"/> is specified in
+            <paramref name="mode"/>, where it enables the caller to implement
+            further parsing (for example, if the caller has a meaningful way to
+            convert a <see cref="T:System.Version"/> to a <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>).
+            </para>
+            <para>
+            On success, the value of <paramref name="enumerator"/> depends on
+            whether the end of <paramref name="version"/> was reached. If it was,
+            <paramref name="enumerator"/> will be null. Otherwise, it will have
+            a value and its <see cref="P:System.Collections.Generic.IEnumerator`1.Current"/> property will
+            be positioned after the last character of <paramref name="version"/>
+            that the parser processed. If <see cref="F:McSherry.SemanticVersioning.ParseMode.Greedy"/> is
+            specified and <c>1.0.0.0</c> is provided as input, the returned
+            enumerator will be on the third <c>.</c>.
+            </para>
+            <para>
+            As part of pre-processing before parsing, leading and trailing
+            whitespace is stripped. Anything returned in <paramref name="enumerator"/>
+            will, accordingly, not include leading or trailing whitespace.
+            </para>
+            <para>
+            On failure, the value of <paramref name="enumerator"/> is undefined.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.Parse(System.String,McSherry.SemanticVersioning.ParseMode)">
+            <summary>
+            <para>
+            Converts a version string to a <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>,
+            taking into account a set of flags.
+            </para>
+            </summary>
+            <param name="version">
+            The version string to be converted to a <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>.
+            </param>
+            <param name="mode">
+            A set of flags that augment how the version string is parsed.
+            </param>
+            <returns>
+            A <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> equivalent to the provided version
+            string.
+            </returns>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="version"/> is null or empty.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            Thrown when a component in the version string was expected but not
+            found (for example, a missing minor or patch version).
+            </exception>
+            <exception cref="T:System.FormatException">
+            Thrown when an invalid character or character sequence is encountered.
+            </exception>
+            <exception cref="T:System.OverflowException">
+            Thrown when an attempt to convert the major, minor, or patch version
+            into an <see cref="T:System.Int32"/> resulted in an overflow.
+            </exception>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.Parse(System.String)">
+            <summary>
+            <para>
+            Converts a version string to a <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>, only
+            accepting the format given in the Semantic Versioning specification.
+            </para>
+            </summary>
+            <param name="version">
+            The version string to be converted to a <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>.
+            </param>
+            <returns>
+            A <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> equivalent to the provided version
+            string.
+            </returns>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="version"/> is null or empty.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            Thrown when a component in the version string was expected but not
+            found (for example, a missing minor or patch version).
+            </exception>
+            <exception cref="T:System.FormatException">
+            Thrown when an invalid character or character sequence is encountered.
+            </exception>
+            <exception cref="T:System.OverflowException">
+            Thrown when an attempt to convert the major, minor, or patch version
+            into an <see cref="T:System.Int32"/> resulted in an overflow.
+            </exception>
+            <remarks>
+            This method is equivalent to calling 
+            <see cref="M:McSherry.SemanticVersioning.SemanticVersion.Parse(System.String,McSherry.SemanticVersioning.ParseMode)"/> and passing the value
+            <see cref="F:McSherry.SemanticVersioning.ParseMode.Strict"/>.
+            </remarks>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.TryParse(System.String,McSherry.SemanticVersioning.ParseMode,McSherry.SemanticVersioning.SemanticVersion@,System.Collections.Generic.IEnumerator{System.Char}@)">
+            <summary>
+            <para>
+            Attempts to convert a version string to a <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>,
+            taking into account a set of flags.
+            </para>
+            </summary>
+            <param name="version">
+            The version string to be converted to a <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>.
+            </param>
+            <param name="mode">
+            A set of flags that augment how the version string is parsed.
+            </param>
+            <param name="semver">
+            When the method returns, this parameter is either set to the created
+            <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> (if parsing was successful), or is given
+            an undefined value (if parsing was unsuccessful).
+            </param>
+            <param name="enumerator">
+            On success, either null (if the parser reached the end of <paramref name="version"/>)
+            or an <see cref="T:System.Collections.Generic.IEnumerator`1"/> positioned after the last character of the
+            <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> parsed from <paramref name="version"/>. On
+            failure, undefined.
+            </param>
+            <returns>
+            True if parsing succeeded, false if otherwise.
+            </returns>
+            <remarks>
+            <para>
+            For information about <paramref name="enumerator"/>, see the
+            remarks for <see cref="M:McSherry.SemanticVersioning.SemanticVersion.Parse(System.String,McSherry.SemanticVersioning.ParseMode,System.Collections.Generic.IEnumerator{System.Char}@)"/>.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.TryParse(System.String,McSherry.SemanticVersioning.ParseMode,McSherry.SemanticVersioning.SemanticVersion@)">
+            <summary>
+            <para>
+            Attempts to convert a version string to a 
+            <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>, taking into account a set of flags.
+            </para>
+            </summary>
+            <param name="version">
+            The version string to be converted to a <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>.
+            </param>
+            <param name="mode">
+            A set of flags that augment how the version string is parsed.
+            </param>
+            <param name="semver">
+            When the method returns, this parameter is either set to the created
+            <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> (if parsing was sucessful), or is given
+            an undefined value (if parsing was unsuccessful).
+            </param>
+            <returns>
+            True if parsing succeeded, false if otherwise.
+            </returns>
+        </member>
+        <member name="M:McSherry.SemanticVersioning.SemanticVersion.TryParse(System.String,McSherry.SemanticVersioning.SemanticVersion@)">
+            <summary>
+            <para>
+            Attempts to convert a version string to a 
+            <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>.
+            </para>
+            </summary>
+            <param name="version">
+            The version string to be converted to a <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>.
+            </param>
+            <param name="semver">
+            When the method returns, this parameter is either set to the created
+            <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> (if parsing was sucessful), or is given
+            an undefined value (if parsing was unsuccessful).
+            </param>
+            <returns>
+            True if parsing succeeded, false if otherwise.
+            </returns>
+            <remarks>
+            This method is equivalent to calling
+            <see cref="M:McSherry.SemanticVersioning.SemanticVersion.TryParse(System.String,McSherry.SemanticVersioning.ParseMode,McSherry.SemanticVersioning.SemanticVersion@)"/> and
+            passing the value <see cref="F:McSherry.SemanticVersioning.ParseMode.Strict"/>.
+            </remarks>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.SemanticVersion.MemoizationAgent">
+            <summary>
+            <para>
+            The cache to use to memoize the results of the 
+            <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> parsing methods.
+            </para>
+            </summary>
+            <remarks>
+            <para>
+            Assign <see langword="null"/> to disable memoization. The value of this
+            property is <see langword="null"/> by default.
+            </para>
+            <para>
+            Accesses by the parser to the memoization agent are surrounded
+            by <c><see langword="lock"/> (MemoizationAgent)</c>.
+            </para>
+            </remarks>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.SemanticVersionFormat">
+            <summary>
+            <para>
+            Lists the format identifiers accepted by the 
+            <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> class's implementation of
+            <see cref="T:System.IFormattable"/>.
+            </para>
+            </summary>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.SemanticVersionFormat.Default">
+            <summary>
+            <para>
+            The default way to format a semantic version.
+            </para>
+            </summary>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.SemanticVersionFormat.PrefixedDefault">
+            <summary>
+            <para>
+            The default way to format a semantic version, prefixed
+            with a letter "v".
+            </para>
+            </summary>
+            <remarks>
+            <para>
+            For details on how this option formats a semantic version,
+            see <see cref="P:McSherry.SemanticVersioning.SemanticVersionFormat.Default"/>. Standard format specifiers that include a
+            prefix have been deprecated in favour of using custom format patterns,
+            which can include any prefix desired.
+            </para>
+            <para>
+            See remarks for <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>'s implementation of
+            <see cref="M:System.IFormattable.ToString(System.String,System.IFormatProvider)"/> for
+            further information.
+            </para>
+            </remarks>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.SemanticVersionFormat.Concise">
+            <summary>
+            <para>
+            A way to concisely format a semantic version. Omits metadata
+            and only includes the <see cref="P:McSherry.SemanticVersioning.SemanticVersion.Patch"/> version 
+            if it is non-zero.
+            </para>
+            </summary>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.SemanticVersionFormat.PrefixedConcise">
+            <summary>
+            <para>
+            A concise way to format a semantic version, prefixed with a
+            letter "v".
+            </para>
+            </summary>
+            <remarks>
+            <para>
+            For details on how this option formats a semantic version, see
+            <see cref="P:McSherry.SemanticVersioning.SemanticVersionFormat.Concise"/>. Standard format specifiers that include a
+            prefix have been deprecated in favour of using custom format patterns,
+            which can include any prefix desired.
+            </para>
+            <para>
+            See remarks for <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>'s implementation of
+            <see cref="M:System.IFormattable.ToString(System.String,System.IFormatProvider)"/> for
+            further information.
+            </para>
+            </remarks>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.SemanticVersionFormat.Monotonic">
+            <summary>
+            <para>
+            The format used for monotonic version strings.
+            </para>
+            </summary>
+            <remarks>
+            This property aliases <see cref="P:McSherry.SemanticVersioning.SemanticVersionFormat.Concise"/>.
+            </remarks>
+        </member>
+        <member name="P:McSherry.SemanticVersioning.SemanticVersionFormat.PrefixedMonotonic">
+            <summary>
+            <para>
+            The format used for monotonic version strings, prefixed
+            with a letter "v". 
+            </para>
+            </summary>
+            <remarks>
+            <para>
+            This property aliases <see cref="P:McSherry.SemanticVersioning.SemanticVersionFormat.PrefixedConcise"/>. Standard format
+            specifiers that include a prefix have been deprecated in favour of
+            using custom format patterns, which can include any prefix desired.
+            </para>
+            <para>
+            See remarks for <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>'s implementation of
+            <see cref="M:System.IFormattable.ToString(System.String,System.IFormatProvider)"/> for
+            further information.
+            </para>
+            </remarks>
+        </member>
+        <member name="T:McSherry.SemanticVersioning.ParseMode">
+            <summary>
+            <para>
+            Represents the parsing modes that the <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/>
+            parser may be configured to use.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.ParseMode.Strict">
+            <summary>
+            <para>
+            The default parser behaviour, with no set flags. This forces
+            specification compliance.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.ParseMode.Lenient">
+            <summary>
+            <para>
+            The opposite of <see cref="F:McSherry.SemanticVersioning.ParseMode.Strict"/>, with all parser flags
+            set except <see cref="F:McSherry.SemanticVersioning.ParseMode.Greedy"/>.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.ParseMode.AllowPrefix">
+            <summary>
+            <para>
+            The parser will accept a version prefixed with "v" or "V".
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.ParseMode.OptionalPatch">
+            <summary>
+            <para>
+            The parser will accept versions with the 
+            <see cref="P:McSherry.SemanticVersioning.SemanticVersion.Patch"/> version component omitted.
+            </para>
+            </summary>
+        </member>
+        <member name="F:McSherry.SemanticVersioning.ParseMode.Greedy">
+            <summary>
+            <para>
+            The parser will, if it encounters an error, attempt to return a valid
+            <see cref="T:McSherry.SemanticVersioning.SemanticVersion"/> instance instead of an error.
+            </para>
+            </summary>
+            <remarks>
+            <para>
+            The effect of other <see cref="T:McSherry.SemanticVersioning.ParseMode"/>s must be considered
+            when specifying <see cref="F:McSherry.SemanticVersioning.ParseMode.Greedy"/>. For example, <c>1.2</c> will
+            produce the expected result with either or both of <see cref="F:McSherry.SemanticVersioning.ParseMode.Greedy"/>
+            and <see cref="F:McSherry.SemanticVersioning.ParseMode.OptionalPatch"/>, but <c>v1.2</c> with <see cref="F:McSherry.SemanticVersioning.ParseMode.Greedy"/>
+            will result in failure unless <see cref="F:McSherry.SemanticVersioning.ParseMode.AllowPrefix"/> is also specified.
+            </para>
+            </remarks>
+        </member>
+    </members>
+</doc>

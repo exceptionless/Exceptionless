@@ -1,0 +1,3342 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doc>
+    <assembly>
+        <name>Azure.Provisioning.KeyVault</name>
+    </assembly>
+    <members>
+        <member name="T:Azure.Provisioning.KeyVault.KeyVaultBuiltInRole">
+            <summary>
+            Built-in KeyVault roles that you can assign to users, groups, service
+            principals, and managed identities.
+            </summary>
+            <param name="value">The ID value of the role.</param>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultBuiltInRole.#ctor(System.String)">
+            <summary>
+            Built-in KeyVault roles that you can assign to users, groups, service
+            principals, and managed identities.
+            </summary>
+            <param name="value">The ID value of the role.</param>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultBuiltInRole.KeyVaultAdministrator">
+            <summary>
+            Perform all data plane operations on a key vault and all objects in it,
+            including certificates, keys, and secrets. Cannot manage key vault
+            resources or manage role assignments. Only works for key vaults that
+            use the 'Azure role-based access control' permission model.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultBuiltInRole.KeyVaultCertificateUser">
+            <summary>
+            Read certificate contents. Only works for key vaults that use the
+            'Azure role-based access control' permission model.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultBuiltInRole.KeyVaultCertificatesOfficer">
+            <summary>
+            Perform any action on the certificates of a key vault, except manage
+            permissions. Only works for key vaults that use the 'Azure
+            role-based access control' permission model.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultBuiltInRole.KeyVaultContributor">
+            <summary>
+            Manage key vaults, but does not allow you to assign roles in Azure
+            RBAC, and does not allow you to access secrets, keys, or certificates.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultBuiltInRole.KeyVaultCryptoOfficer">
+            <summary>
+            Perform any action on the keys of a key vault, except manage
+            permissions. Only works for key vaults that use the 'Azure
+            role-based access control' permission model.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultBuiltInRole.KeyVaultCryptoServiceEncryptionUser">
+            <summary>
+            Read metadata of keys and perform wrap/unwrap operations. Only works
+            for key vaults that use the 'Azure role-based access
+            control' permission model.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultBuiltInRole.KeyVaultCryptoServiceReleaseUser">
+            <summary>
+            Release keys. Only works for key vaults that use the 'Azure
+            role-based access control' permission model.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultBuiltInRole.KeyVaultCryptoUser">
+            <summary>
+            Perform cryptographic operations using keys. Only works for key vaults
+            that use the 'Azure role-based access control' permission
+            model.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultBuiltInRole.KeyVaultDataAccessAdministrator">
+            <summary>
+            Manage access to Azure Key Vault by adding or removing role assignments
+            for the Key Vault Administrator, Key Vault Certificates Officer, Key
+            Vault Crypto Officer, Key Vault Crypto Service Encryption User, Key
+            Vault Crypto User, Key Vault Reader, Key Vault Secrets Officer, or Key
+            Vault Secrets User roles. Includes an ABAC condition to constrain role
+            assignments.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultBuiltInRole.KeyVaultReader">
+            <summary>
+            Read metadata of key vaults and its certificates, keys, and secrets.
+            Cannot read sensitive values such as secret contents or key material.
+            Only works for key vaults that use the 'Azure role-based access
+            control' permission model.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultBuiltInRole.KeyVaultSecretsOfficer">
+            <summary>
+            Perform any action on the secrets of a key vault, except manage
+            permissions. Only works for key vaults that use the 'Azure
+            role-based access control' permission model.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultBuiltInRole.KeyVaultSecretsUser">
+            <summary>
+            Read secret contents. Only works for key vaults that use the
+            'Azure role-based access control' permission model.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultBuiltInRole.ManagedHsmContributor">
+            <summary>
+            Lets you manage managed HSM pools, but not access to them.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultBuiltInRole.GetBuiltInRoleName(Azure.Provisioning.KeyVault.KeyVaultBuiltInRole)">
+            <summary>
+            Try to get the name of a built-in KeyVault role from its ID value.
+            </summary>
+            <param name="value">The role value.</param>
+            <returns>
+            The name of the built-in KeyVault role if known, otherwise the ID will be returned.
+            </returns>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultBuiltInRole.op_Equality(Azure.Provisioning.KeyVault.KeyVaultBuiltInRole,Azure.Provisioning.KeyVault.KeyVaultBuiltInRole)">
+            <summary>
+            Determines if two KeyVaultBuiltInRole values are the same.
+            </summary>
+            <param name="left">The first KeyVaultBuiltInRole to compare.</param>
+            <param name="right">The second KeyVaultBuiltInRole to compare.</param>
+            <returns>True if <paramref name="left" /> and <paramref name="right" /> are the same; otherwise, false.</returns>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultBuiltInRole.op_Inequality(Azure.Provisioning.KeyVault.KeyVaultBuiltInRole,Azure.Provisioning.KeyVault.KeyVaultBuiltInRole)">
+            <summary>
+            Determines if two KeyVaultBuiltInRole values are different.
+            </summary>
+            <param name="left">The first KeyVaultBuiltInRole to compare.</param>
+            <param name="right">The second KeyVaultBuiltInRole to compare.</param>
+            <returns>True if <paramref name="left" /> and <paramref name="right" /> are different; otherwise, false.</returns>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultBuiltInRole.op_Implicit(System.String)~Azure.Provisioning.KeyVault.KeyVaultBuiltInRole">
+            <summary>
+            Converts a string to a KeyVaultBuiltInRole.
+            </summary>
+            <param name="value">The string value to convert.</param>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultBuiltInRole.Equals(System.Object)">
+            <summary>Indicates whether this instance and a specified object are equal.</summary><param name="obj">The object to compare with the current instance.</param><returns><see langword="true" /> if <paramref name="obj" /> and this instance are the same type and represent the same value; otherwise, <see langword="false" />.</returns>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultBuiltInRole.Equals(Azure.Provisioning.KeyVault.KeyVaultBuiltInRole)">
+            <summary>Indicates whether the current object is equal to another object of the same type.</summary><param name="other">An object to compare with this object.</param><returns><see langword="true" /> if the current object is equal to the <paramref name="other" /> parameter; otherwise, <see langword="false" />.</returns>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultBuiltInRole.GetHashCode">
+            <summary>Returns the hash code for this instance.</summary><returns>A 32-bit signed integer that is the hash code for this instance.</returns>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultBuiltInRole.ToString">
+            <summary>Returns the fully qualified type name of this instance.</summary><returns>The fully qualified type name.</returns>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection">
+            <summary>
+            KeyVaultPrivateEndpointConnection.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.Name">
+            <summary>
+            Name of the private endpoint connection associated with the key vault.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.ConnectionState">
+            <summary>
+            Approval state of the private link connection.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.ETag">
+            <summary>
+            Modified whenever there is a change in the state of private endpoint
+            connection.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.Id">
+            <summary>
+            Gets the Id.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.Location">
+            <summary>
+            Azure location of the key vault resource.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.PrivateEndpointId">
+            <summary>
+            Gets Id.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.ProvisioningState">
+            <summary>
+            Provisioning state of the private endpoint connection.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.SystemData">
+            <summary>
+            Gets the SystemData.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.Tags">
+            <summary>
+            Tags assigned to the key vault resource.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.Parent">
+            <summary>
+            Gets or sets a reference to the parent KeyVaultService.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.#ctor(System.String,System.String)">
+            <summary>
+            Creates a new KeyVaultPrivateEndpointConnection.
+            </summary>
+            <param name="bicepIdentifier">
+            The the Bicep identifier name of the KeyVaultPrivateEndpointConnection
+            resource.  This can be used to refer to the resource in expressions,
+            but is not the Azure name of the resource.  This value can contain
+            letters, numbers, and underscores.
+            </param>
+            <param name="resourceVersion">Version of the KeyVaultPrivateEndpointConnection.</param>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of
+            KeyVaultPrivateEndpointConnection.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.ResourceVersions">
+            <summary>
+            Supported KeyVaultPrivateEndpointConnection resource versions.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.ResourceVersions.V2024_11_01">
+            <summary>
+            2024-11-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.ResourceVersions.V2023_07_01">
+            <summary>
+            2023-07-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.ResourceVersions.V2023_02_01">
+            <summary>
+            2023-02-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.ResourceVersions.V2022_11_01">
+            <summary>
+            2022-11-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.ResourceVersions.V2022_07_01">
+            <summary>
+            2022-07-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.ResourceVersions.V2021_10_01">
+            <summary>
+            2021-10-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.ResourceVersions.V2019_09_01">
+            <summary>
+            2019-09-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.ResourceVersions.V2018_02_14">
+            <summary>
+            2018-02-14.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.ResourceVersions.V2016_10_01">
+            <summary>
+            2016-10-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.ResourceVersions.V2015_06_01">
+            <summary>
+            2015-06-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.ResourceVersions.V2023_08_01_PREVIEW">
+            <summary>
+            2023-08-01-PREVIEW.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnection.FromExisting(System.String,System.String)">
+            <summary>
+            Creates a reference to an existing KeyVaultPrivateEndpointConnection.
+            </summary>
+            <param name="bicepIdentifier">
+            The the Bicep identifier name of the KeyVaultPrivateEndpointConnection
+            resource.  This can be used to refer to the resource in expressions,
+            but is not the Azure name of the resource.  This value can contain
+            letters, numbers, and underscores.
+            </param>
+            <param name="resourceVersion">Version of the KeyVaultPrivateEndpointConnection.</param>
+            <returns>The existing KeyVaultPrivateEndpointConnection resource.</returns>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.KeyVaultSecret">
+            <summary>
+            KeyVaultSecret.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultSecret.Name">
+            <summary>
+            Name of the secret. The value you provide may be copied globally for
+            the purpose of running the service. The value provided should not
+            include personally identifiable or sensitive information.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultSecret.Properties">
+            <summary>
+            Properties of the secret.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultSecret.Tags">
+            <summary>
+            The tags that will be assigned to the secret.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultSecret.Id">
+            <summary>
+            Gets the Id.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultSecret.Location">
+            <summary>
+            Azure location of the key vault resource.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultSecret.SystemData">
+            <summary>
+            Gets the SystemData.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultSecret.Parent">
+            <summary>
+            Gets or sets a reference to the parent KeyVaultService.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultSecret.#ctor(System.String,System.String)">
+            <summary>
+            Creates a new KeyVaultSecret.
+            </summary>
+            <param name="bicepIdentifier">
+            The the Bicep identifier name of the KeyVaultSecret resource.  This can
+            be used to refer to the resource in expressions, but is not the Azure
+            name of the resource.  This value can contain letters, numbers, and
+            underscores.
+            </param>
+            <param name="resourceVersion">Version of the KeyVaultSecret.</param>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultSecret.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of KeyVaultSecret.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.KeyVaultSecret.ResourceVersions">
+            <summary>
+            Supported KeyVaultSecret resource versions.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultSecret.ResourceVersions.V2024_11_01">
+            <summary>
+            2024-11-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultSecret.ResourceVersions.V2023_07_01">
+            <summary>
+            2023-07-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultSecret.ResourceVersions.V2023_02_01">
+            <summary>
+            2023-02-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultSecret.ResourceVersions.V2022_11_01">
+            <summary>
+            2022-11-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultSecret.ResourceVersions.V2022_07_01">
+            <summary>
+            2022-07-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultSecret.ResourceVersions.V2021_10_01">
+            <summary>
+            2021-10-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultSecret.ResourceVersions.V2019_09_01">
+            <summary>
+            2019-09-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultSecret.ResourceVersions.V2018_02_14">
+            <summary>
+            2018-02-14.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultSecret.ResourceVersions.V2016_10_01">
+            <summary>
+            2016-10-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultSecret.ResourceVersions.V2015_06_01">
+            <summary>
+            2015-06-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultSecret.ResourceVersions.V2023_08_01_PREVIEW">
+            <summary>
+            2023-08-01-PREVIEW.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultSecret.FromExisting(System.String,System.String)">
+            <summary>
+            Creates a reference to an existing KeyVaultSecret.
+            </summary>
+            <param name="bicepIdentifier">
+            The the Bicep identifier name of the KeyVaultSecret resource.  This can
+            be used to refer to the resource in expressions, but is not the Azure
+            name of the resource.  This value can contain letters, numbers, and
+            underscores.
+            </param>
+            <param name="resourceVersion">Version of the KeyVaultSecret.</param>
+            <returns>The existing KeyVaultSecret resource.</returns>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultSecret.GetResourceNameRequirements">
+            <summary>
+            Get the requirements for naming this KeyVaultSecret resource.
+            </summary>
+            <returns>Naming requirements.</returns>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.KeyVaultService">
+            <summary>
+            KeyVaultService.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultService.Name">
+            <summary>
+            Name of the vault.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultService.Location">
+            <summary>
+            The supported Azure location where the key vault should be created.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultService.Properties">
+            <summary>
+            Properties of the vault.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultService.Tags">
+            <summary>
+            The tags that will be assigned to the key vault.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultService.Id">
+            <summary>
+            Gets the Id.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultService.SystemData">
+            <summary>
+            Gets the SystemData.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultService.#ctor(System.String,System.String)">
+            <summary>
+            Creates a new KeyVaultService.
+            </summary>
+            <param name="bicepIdentifier">
+            The the Bicep identifier name of the KeyVaultService resource.  This
+            can be used to refer to the resource in expressions, but is not the
+            Azure name of the resource.  This value can contain letters, numbers,
+            and underscores.
+            </param>
+            <param name="resourceVersion">Version of the KeyVaultService.</param>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultService.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of KeyVaultService.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.KeyVaultService.ResourceVersions">
+            <summary>
+            Supported KeyVaultService resource versions.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultService.ResourceVersions.V2024_11_01">
+            <summary>
+            2024-11-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultService.ResourceVersions.V2023_07_01">
+            <summary>
+            2023-07-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultService.ResourceVersions.V2023_02_01">
+            <summary>
+            2023-02-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultService.ResourceVersions.V2022_11_01">
+            <summary>
+            2022-11-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultService.ResourceVersions.V2022_07_01">
+            <summary>
+            2022-07-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultService.ResourceVersions.V2021_10_01">
+            <summary>
+            2021-10-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultService.ResourceVersions.V2019_09_01">
+            <summary>
+            2019-09-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultService.ResourceVersions.V2018_02_14">
+            <summary>
+            2018-02-14.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultService.ResourceVersions.V2016_10_01">
+            <summary>
+            2016-10-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultService.ResourceVersions.V2015_06_01">
+            <summary>
+            2015-06-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultService.ResourceVersions.V2023_08_01_PREVIEW">
+            <summary>
+            2023-08-01-PREVIEW.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultService.FromExisting(System.String,System.String)">
+            <summary>
+            Creates a reference to an existing KeyVaultService.
+            </summary>
+            <param name="bicepIdentifier">
+            The the Bicep identifier name of the KeyVaultService resource.  This
+            can be used to refer to the resource in expressions, but is not the
+            Azure name of the resource.  This value can contain letters, numbers,
+            and underscores.
+            </param>
+            <param name="resourceVersion">Version of the KeyVaultService.</param>
+            <returns>The existing KeyVaultService resource.</returns>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultService.GetResourceNameRequirements">
+            <summary>
+            Get the requirements for naming this KeyVaultService resource.
+            </summary>
+            <returns>Naming requirements.</returns>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultService.CreateRoleAssignment(Azure.Provisioning.KeyVault.KeyVaultBuiltInRole,Azure.Provisioning.Roles.UserAssignedIdentity)">
+            <summary>
+            Creates a role assignment for a user-assigned identity that grants
+            access to this KeyVaultService.
+            </summary>
+            <param name="role">The role to grant.</param>
+            <param name="identity">The <see cref="T:Azure.Provisioning.Roles.UserAssignedIdentity" />.</param>
+            <returns>The <see cref="T:Azure.Provisioning.Authorization.RoleAssignment" />.</returns>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultService.CreateRoleAssignment(Azure.Provisioning.KeyVault.KeyVaultBuiltInRole,Azure.Provisioning.BicepValue{Azure.Provisioning.Authorization.RoleManagementPrincipalType},Azure.Provisioning.BicepValue{System.Guid},System.String)">
+            <summary>
+            Creates a role assignment for a principal that grants access to this
+            KeyVaultService.
+            </summary>
+            <param name="role">The role to grant.</param>
+            <param name="principalType">The type of the principal to assign to.</param>
+            <param name="principalId">The principal to assign to.</param>
+            <param name="bicepIdentifierSuffix">Optional role assignment identifier name suffix.</param>
+            <returns>The <see cref="T:Azure.Provisioning.Authorization.RoleAssignment" />.</returns>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHsm">
+            <summary>
+            ManagedHsm.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsm.Name">
+            <summary>
+            Name of the managed HSM Pool.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsm.Location">
+            <summary>
+            Gets or sets the Location.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsm.Identity">
+            <summary>
+            Managed service identity (system assigned and/or user assigned
+            identities).
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsm.Properties">
+            <summary>
+            Properties of the managed HSM.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsm.Sku">
+            <summary>
+            SKU details.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsm.Tags">
+            <summary>
+            Gets or sets the Tags.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsm.Id">
+            <summary>
+            Gets the Id.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsm.SystemData">
+            <summary>
+            Gets the SystemData.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.ManagedHsm.#ctor(System.String,System.String)">
+            <summary>
+            Creates a new ManagedHsm.
+            </summary>
+            <param name="bicepIdentifier">
+            The the Bicep identifier name of the ManagedHsm resource.  This can be
+            used to refer to the resource in expressions, but is not the Azure
+            name of the resource.  This value can contain letters, numbers, and
+            underscores.
+            </param>
+            <param name="resourceVersion">Version of the ManagedHsm.</param>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.ManagedHsm.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of ManagedHsm.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHsm.ResourceVersions">
+            <summary>
+            Supported ManagedHsm resource versions.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsm.ResourceVersions.V2024_11_01">
+            <summary>
+            2024-11-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsm.ResourceVersions.V2023_07_01">
+            <summary>
+            2023-07-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsm.ResourceVersions.V2023_02_01">
+            <summary>
+            2023-02-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsm.ResourceVersions.V2022_11_01">
+            <summary>
+            2022-11-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsm.ResourceVersions.V2022_07_01">
+            <summary>
+            2022-07-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsm.ResourceVersions.V2021_10_01">
+            <summary>
+            2021-10-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsm.ResourceVersions.V2023_08_01_PREVIEW">
+            <summary>
+            2023-08-01-PREVIEW.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.ManagedHsm.FromExisting(System.String,System.String)">
+            <summary>
+            Creates a reference to an existing ManagedHsm.
+            </summary>
+            <param name="bicepIdentifier">
+            The the Bicep identifier name of the ManagedHsm resource.  This can be
+            used to refer to the resource in expressions, but is not the Azure
+            name of the resource.  This value can contain letters, numbers, and
+            underscores.
+            </param>
+            <param name="resourceVersion">Version of the ManagedHsm.</param>
+            <returns>The existing ManagedHsm resource.</returns>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnection">
+            <summary>
+            ManagedHsmPrivateEndpointConnection.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnection.Name">
+            <summary>
+            Name of the private endpoint connection associated with the managed hsm
+            pool.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnection.Location">
+            <summary>
+            Gets or sets the Location.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnection.ETag">
+            <summary>
+            Modified whenever there is a change in the state of private endpoint
+            connection.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnection.Identity">
+            <summary>
+            Managed service identity (system assigned and/or user assigned
+            identities).
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnection.PrivateLinkServiceConnectionState">
+            <summary>
+            Approval state of the private link connection.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnection.Sku">
+            <summary>
+            SKU details.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnection.Tags">
+            <summary>
+            Gets or sets the Tags.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnection.Id">
+            <summary>
+            Gets the Id.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnection.PrivateEndpointId">
+            <summary>
+            Gets Id.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnection.ProvisioningState">
+            <summary>
+            Provisioning state of the private endpoint connection.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnection.SystemData">
+            <summary>
+            Gets the SystemData.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnection.Parent">
+            <summary>
+            Gets or sets a reference to the parent ManagedHsm.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnection.#ctor(System.String,System.String)">
+            <summary>
+            Creates a new ManagedHsmPrivateEndpointConnection.
+            </summary>
+            <param name="bicepIdentifier">
+            The the Bicep identifier name of the
+            ManagedHsmPrivateEndpointConnection resource.  This can be used to
+            refer to the resource in expressions, but is not the Azure name of the
+            resource.  This value can contain letters, numbers, and underscores.
+            </param>
+            <param name="resourceVersion">Version of the ManagedHsmPrivateEndpointConnection.</param>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnection.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of
+            ManagedHsmPrivateEndpointConnection.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnection.ResourceVersions">
+            <summary>
+            Supported ManagedHsmPrivateEndpointConnection resource versions.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnection.ResourceVersions.V2024_11_01">
+            <summary>
+            2024-11-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnection.ResourceVersions.V2023_07_01">
+            <summary>
+            2023-07-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnection.ResourceVersions.V2023_02_01">
+            <summary>
+            2023-02-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnection.ResourceVersions.V2022_11_01">
+            <summary>
+            2022-11-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnection.ResourceVersions.V2022_07_01">
+            <summary>
+            2022-07-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnection.ResourceVersions.V2021_10_01">
+            <summary>
+            2021-10-01.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnection.ResourceVersions.V2023_08_01_PREVIEW">
+            <summary>
+            2023-08-01-PREVIEW.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnection.FromExisting(System.String,System.String)">
+            <summary>
+            Creates a reference to an existing ManagedHsmPrivateEndpointConnection.
+            </summary>
+            <param name="bicepIdentifier">
+            The the Bicep identifier name of the
+            ManagedHsmPrivateEndpointConnection resource.  This can be used to
+            refer to the resource in expressions, but is not the Azure name of the
+            resource.  This value can contain letters, numbers, and underscores.
+            </param>
+            <param name="resourceVersion">Version of the ManagedHsmPrivateEndpointConnection.</param>
+            <returns>The existing ManagedHsmPrivateEndpointConnection resource.</returns>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.IdentityAccessCertificatePermission">
+            <summary>
+            The IdentityAccessCertificatePermission.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessCertificatePermission.All">
+            <summary>
+            all.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessCertificatePermission.Get">
+            <summary>
+            get.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessCertificatePermission.List">
+            <summary>
+            list.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessCertificatePermission.Delete">
+            <summary>
+            delete.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessCertificatePermission.Create">
+            <summary>
+            create.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessCertificatePermission.Import">
+            <summary>
+            import.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessCertificatePermission.Update">
+            <summary>
+            update.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessCertificatePermission.ManageContacts">
+            <summary>
+            managecontacts.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessCertificatePermission.GetIssuers">
+            <summary>
+            getissuers.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessCertificatePermission.ListIssuers">
+            <summary>
+            listissuers.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessCertificatePermission.SetIssuers">
+            <summary>
+            setissuers.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessCertificatePermission.DeleteIssuers">
+            <summary>
+            deleteissuers.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessCertificatePermission.ManageIssuers">
+            <summary>
+            manageissuers.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessCertificatePermission.Recover">
+            <summary>
+            recover.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessCertificatePermission.Purge">
+            <summary>
+            purge.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessCertificatePermission.Backup">
+            <summary>
+            backup.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessCertificatePermission.Restore">
+            <summary>
+            restore.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.IdentityAccessKeyPermission">
+            <summary>
+            The IdentityAccessKeyPermission.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessKeyPermission.All">
+            <summary>
+            all.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessKeyPermission.Encrypt">
+            <summary>
+            encrypt.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessKeyPermission.Decrypt">
+            <summary>
+            decrypt.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessKeyPermission.WrapKey">
+            <summary>
+            wrapKey.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessKeyPermission.UnwrapKey">
+            <summary>
+            unwrapKey.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessKeyPermission.Sign">
+            <summary>
+            sign.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessKeyPermission.Verify">
+            <summary>
+            verify.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessKeyPermission.Get">
+            <summary>
+            get.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessKeyPermission.List">
+            <summary>
+            list.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessKeyPermission.Create">
+            <summary>
+            create.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessKeyPermission.Update">
+            <summary>
+            update.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessKeyPermission.Import">
+            <summary>
+            import.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessKeyPermission.Delete">
+            <summary>
+            delete.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessKeyPermission.Backup">
+            <summary>
+            backup.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessKeyPermission.Restore">
+            <summary>
+            restore.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessKeyPermission.Recover">
+            <summary>
+            recover.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessKeyPermission.Purge">
+            <summary>
+            purge.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessKeyPermission.Release">
+            <summary>
+            release.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessKeyPermission.Rotate">
+            <summary>
+            rotate.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessKeyPermission.Getrotationpolicy">
+            <summary>
+            getrotationpolicy.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessKeyPermission.Setrotationpolicy">
+            <summary>
+            setrotationpolicy.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.IdentityAccessPermissions">
+            <summary>
+            Permissions the identity has for keys, secrets, certificates and storage.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.IdentityAccessPermissions.Keys">
+            <summary>
+            Permissions to keys.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.IdentityAccessPermissions.Secrets">
+            <summary>
+            Permissions to secrets.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.IdentityAccessPermissions.Certificates">
+            <summary>
+            Permissions to certificates.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.IdentityAccessPermissions.Storage">
+            <summary>
+            Permissions to storage accounts.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.IdentityAccessPermissions.#ctor">
+            <summary>
+            Creates a new IdentityAccessPermissions.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.IdentityAccessPermissions.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of IdentityAccessPermissions.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.IdentityAccessSecretPermission">
+            <summary>
+            The IdentityAccessSecretPermission.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessSecretPermission.All">
+            <summary>
+            all.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessSecretPermission.Get">
+            <summary>
+            get.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessSecretPermission.List">
+            <summary>
+            list.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessSecretPermission.Set">
+            <summary>
+            set.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessSecretPermission.Delete">
+            <summary>
+            delete.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessSecretPermission.Backup">
+            <summary>
+            backup.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessSecretPermission.Restore">
+            <summary>
+            restore.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessSecretPermission.Recover">
+            <summary>
+            recover.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessSecretPermission.Purge">
+            <summary>
+            purge.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.IdentityAccessStoragePermission">
+            <summary>
+            The IdentityAccessStoragePermission.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessStoragePermission.All">
+            <summary>
+            all.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessStoragePermission.Get">
+            <summary>
+            get.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessStoragePermission.List">
+            <summary>
+            list.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessStoragePermission.Delete">
+            <summary>
+            delete.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessStoragePermission.Set">
+            <summary>
+            set.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessStoragePermission.Update">
+            <summary>
+            update.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessStoragePermission.RegenerateKey">
+            <summary>
+            regeneratekey.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessStoragePermission.Recover">
+            <summary>
+            recover.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessStoragePermission.Purge">
+            <summary>
+            purge.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessStoragePermission.Backup">
+            <summary>
+            backup.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessStoragePermission.Restore">
+            <summary>
+            restore.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessStoragePermission.SetSas">
+            <summary>
+            setsas.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessStoragePermission.ListSas">
+            <summary>
+            listsas.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessStoragePermission.GetSas">
+            <summary>
+            getsas.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.IdentityAccessStoragePermission.DeleteSas">
+            <summary>
+            deletesas.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.KeyVaultAccessPolicy">
+            <summary>
+            An identity that have access to the key vault. All identities in the array
+            must use the same tenant ID as the key vault's tenant ID.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultAccessPolicy.TenantId">
+            <summary>
+            The Azure Active Directory tenant ID that should be used for
+            authenticating requests to the key vault.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultAccessPolicy.ObjectId">
+            <summary>
+            The object ID of a user, service principal or security group in the
+            Azure Active Directory tenant for the vault. The object ID must be
+            unique for the list of access policies.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultAccessPolicy.ApplicationId">
+            <summary>
+            Application ID of the client making request on behalf of a principal.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultAccessPolicy.Permissions">
+            <summary>
+            Permissions the identity has for keys, secrets and certificates.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultAccessPolicy.#ctor">
+            <summary>
+            Creates a new KeyVaultAccessPolicy.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultAccessPolicy.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of KeyVaultAccessPolicy.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.KeyVaultActionsRequiredMessage">
+            <summary>
+            A message indicating if changes on the service provider require any updates
+            on the consumer.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultActionsRequiredMessage.None">
+            <summary>
+            None.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.KeyVaultCreateMode">
+            <summary>
+            The vault's create mode to indicate whether the vault need to be
+            recovered or not.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultCreateMode.Default">
+            <summary>
+            default.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultCreateMode.Recover">
+            <summary>
+            recover.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.KeyVaultIPRule">
+            <summary>
+            A rule governing the accessibility of a vault from a specific ip address or
+            ip range.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultIPRule.AddressRange">
+            <summary>
+            An IPv4 address range in CIDR notation, such as
+            '124.56.78.91' (simple IP address) or
+            '124.56.78.0/24' (all addresses that start with 124.56.78).
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultIPRule.#ctor">
+            <summary>
+            Creates a new KeyVaultIPRule.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultIPRule.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of KeyVaultIPRule.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.KeyVaultNetworkRuleAction">
+            <summary>
+            The default action when no rule from ipRules and from virtualNetworkRules
+            match. This is only used after the bypass property has been evaluated.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultNetworkRuleAction.Allow">
+            <summary>
+            Allow.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultNetworkRuleAction.Deny">
+            <summary>
+            Deny.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.KeyVaultNetworkRuleBypassOption">
+            <summary>
+            Tells what traffic can bypass network rules. This can be
+            'AzureServices' or 'None'.  If not specified the
+            default is 'AzureServices'.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultNetworkRuleBypassOption.AzureServices">
+            <summary>
+            AzureServices.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultNetworkRuleBypassOption.None">
+            <summary>
+            None.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.KeyVaultNetworkRuleSet">
+            <summary>
+            A set of rules governing the network accessibility of a vault.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultNetworkRuleSet.Bypass">
+            <summary>
+            Tells what traffic can bypass network rules. This can be
+            'AzureServices' or 'None'.  If not specified the
+            default is 'AzureServices'.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultNetworkRuleSet.DefaultAction">
+            <summary>
+            The default action when no rule from ipRules and from
+            virtualNetworkRules match. This is only used after the bypass property
+            has been evaluated.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultNetworkRuleSet.IPRules">
+            <summary>
+            The list of IP address rules.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultNetworkRuleSet.VirtualNetworkRules">
+            <summary>
+            The list of virtual network rules.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultNetworkRuleSet.#ctor">
+            <summary>
+            Creates a new KeyVaultNetworkRuleSet.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultNetworkRuleSet.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of KeyVaultNetworkRuleSet.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnectionItemData">
+            <summary>
+            Private endpoint connection item.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnectionItemData.Id">
+            <summary>
+            Id of private endpoint connection.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnectionItemData.ETag">
+            <summary>
+            Modified whenever there is a change in the state of private endpoint
+            connection.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnectionItemData.PrivateEndpointId">
+            <summary>
+            Gets Id.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnectionItemData.ConnectionState">
+            <summary>
+            Approval state of the private link connection.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnectionItemData.ProvisioningState">
+            <summary>
+            Provisioning state of the private endpoint connection.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnectionItemData.#ctor">
+            <summary>
+            Creates a new KeyVaultPrivateEndpointConnectionItemData.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnectionItemData.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of
+            KeyVaultPrivateEndpointConnectionItemData.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnectionProvisioningState">
+            <summary>
+            The current provisioning state.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnectionProvisioningState.Succeeded">
+            <summary>
+            Succeeded.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnectionProvisioningState.Creating">
+            <summary>
+            Creating.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnectionProvisioningState.Updating">
+            <summary>
+            Updating.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnectionProvisioningState.Deleting">
+            <summary>
+            Deleting.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnectionProvisioningState.Failed">
+            <summary>
+            Failed.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointConnectionProvisioningState.Disconnected">
+            <summary>
+            Disconnected.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointServiceConnectionStatus">
+            <summary>
+            The private endpoint connection status.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointServiceConnectionStatus.Pending">
+            <summary>
+            Pending.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointServiceConnectionStatus.Approved">
+            <summary>
+            Approved.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointServiceConnectionStatus.Rejected">
+            <summary>
+            Rejected.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultPrivateEndpointServiceConnectionStatus.Disconnected">
+            <summary>
+            Disconnected.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.KeyVaultPrivateLinkServiceConnectionState">
+            <summary>
+            An object that represents the approval state of the private link connection.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultPrivateLinkServiceConnectionState.Status">
+            <summary>
+            Indicates whether the connection has been approved, rejected or removed
+            by the key vault owner.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultPrivateLinkServiceConnectionState.Description">
+            <summary>
+            The reason for approval or rejection.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultPrivateLinkServiceConnectionState.ActionsRequired">
+            <summary>
+            A message indicating if changes on the service provider require any
+            updates on the consumer.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultPrivateLinkServiceConnectionState.#ctor">
+            <summary>
+            Creates a new KeyVaultPrivateLinkServiceConnectionState.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultPrivateLinkServiceConnectionState.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of
+            KeyVaultPrivateLinkServiceConnectionState.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.KeyVaultProperties">
+            <summary>
+            Properties of the vault.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultProperties.TenantId">
+            <summary>
+            The Azure Active Directory tenant ID that should be used for
+            authenticating requests to the key vault.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultProperties.Sku">
+            <summary>
+            SKU details.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultProperties.AccessPolicies">
+            <summary>
+            An array of 0 to 1024 identities that have access to the key vault. All
+            identities in the array must use the same tenant ID as the key
+            vault's tenant ID. When `createMode` is set to `recover`, access
+            policies are not required. Otherwise, access policies are required.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultProperties.VaultUri">
+            <summary>
+            The URI of the vault for performing operations on keys and secrets.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultProperties.HsmPoolResourceId">
+            <summary>
+            The resource id of HSM Pool.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultProperties.EnabledForDeployment">
+            <summary>
+            Property to specify whether Azure Virtual Machines are permitted to
+            retrieve certificates stored as secrets from the key vault.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultProperties.EnabledForDiskEncryption">
+            <summary>
+            Property to specify whether Azure Disk Encryption is permitted to
+            retrieve secrets from the vault and unwrap keys.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultProperties.EnabledForTemplateDeployment">
+            <summary>
+            Property to specify whether Azure Resource Manager is permitted to
+            retrieve secrets from the key vault.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultProperties.EnableSoftDelete">
+            <summary>
+            Property to specify whether the 'soft delete' functionality
+            is enabled for this key vault. If it's not set to any value(true
+            or false) when creating new key vault, it will be set to true by
+            default. Once set to true, it cannot be reverted to false.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultProperties.SoftDeleteRetentionInDays">
+            <summary>
+            softDelete data retention days. It accepts &gt;=7 and &lt;=90.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultProperties.EnableRbacAuthorization">
+            <summary>
+            Property that controls how data actions are authorized. When true, the
+            key vault will use Role Based Access Control (RBAC) for authorization
+            of data actions, and the access policies specified in vault properties
+            will be  ignored. When false, the key vault will use the access
+            policies specified in vault properties, and any policy stored on Azure
+            Resource Manager will be ignored. If null or not specified, the vault
+            is created with the default value of false. Note that management
+            actions are always authorized with RBAC.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultProperties.CreateMode">
+            <summary>
+            The vault's create mode to indicate whether the vault need to be
+            recovered or not.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultProperties.EnablePurgeProtection">
+            <summary>
+            Property specifying whether protection against purge is enabled for
+            this vault. Setting this property to true activates protection against
+            purge for this vault and its content - only the Key Vault service may
+            initiate a hard, irrecoverable deletion. The setting is effective only
+            if soft delete is also enabled. Enabling this functionality is
+            irreversible - that is, the property does not accept false as its
+            value.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultProperties.NetworkRuleSet">
+            <summary>
+            Rules governing the accessibility of the key vault from specific
+            network locations.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultProperties.ProvisioningState">
+            <summary>
+            Provisioning state of the vault.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultProperties.PrivateEndpointConnections">
+            <summary>
+            List of private endpoint connections associated with the key vault.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultProperties.PublicNetworkAccess">
+            <summary>
+            Property to specify whether the vault will accept traffic from public
+            internet. If set to 'disabled' all traffic except private
+            endpoint traffic and that that originates from trusted services will
+            be blocked. This will override the set firewall rules, meaning that
+            even if the firewall rules are present we will not honor the rules.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultProperties.#ctor">
+            <summary>
+            Creates a new KeyVaultProperties.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultProperties.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of KeyVaultProperties.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.KeyVaultProvisioningState">
+            <summary>
+            Provisioning state of the vault.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultProvisioningState.Succeeded">
+            <summary>
+            Succeeded.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultProvisioningState.RegisteringDns">
+            <summary>
+            RegisteringDns.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.KeyVaultSku">
+            <summary>
+            SKU details.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultSku.Family">
+            <summary>
+            SKU family name.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultSku.Name">
+            <summary>
+            SKU name to specify whether the key vault is a standard vault or a
+            premium vault.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultSku.#ctor">
+            <summary>
+            Creates a new KeyVaultSku.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultSku.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of KeyVaultSku.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.KeyVaultSkuFamily">
+            <summary>
+            SKU family name.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultSkuFamily.A">
+            <summary>
+            A.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.KeyVaultSkuName">
+            <summary>
+            SKU name to specify whether the key vault is a standard vault or a premium
+            vault.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultSkuName.Standard">
+            <summary>
+            standard.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.KeyVaultSkuName.Premium">
+            <summary>
+            premium.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.KeyVaultVirtualNetworkRule">
+            <summary>
+            A rule governing the accessibility of a vault from a specific virtual
+            network.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultVirtualNetworkRule.Id">
+            <summary>
+            Full resource id of a vnet subnet, such as
+            '/subscriptions/subid/resourceGroups/rg1/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/subnet1'.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.KeyVaultVirtualNetworkRule.IgnoreMissingVnetServiceEndpoint">
+            <summary>
+            Property to specify whether NRP will ignore the check if parent subnet
+            has serviceEndpoints configured.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultVirtualNetworkRule.#ctor">
+            <summary>
+            Creates a new KeyVaultVirtualNetworkRule.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.KeyVaultVirtualNetworkRule.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of KeyVaultVirtualNetworkRule.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHsmActionsRequiredMessage">
+            <summary>
+            A message indicating if changes on the service provider require any updates
+            on the consumer.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmActionsRequiredMessage.None">
+            <summary>
+            None.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHsmCreateMode">
+            <summary>
+            The create mode to indicate whether the resource is being created or is
+            being recovered from a deleted resource.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmCreateMode.Default">
+            <summary>
+            Create a new managed HSM pool. This is the default option.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmCreateMode.Recover">
+            <summary>
+            Recover the managed HSM pool from a soft-deleted resource.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHsmGeoReplicatedRegion">
+            <summary>
+            A region that this managed HSM Pool has been extended to.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmGeoReplicatedRegion.Name">
+            <summary>
+            Name of the geo replicated region.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmGeoReplicatedRegion.ProvisioningState">
+            <summary>
+            Provisioning state of the geo replicated region.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmGeoReplicatedRegion.IsPrimary">
+            <summary>
+            A boolean value that indicates whether the region is the primary region
+            or a secondary region.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.ManagedHsmGeoReplicatedRegion.#ctor">
+            <summary>
+            Creates a new ManagedHsmGeoReplicatedRegion.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.ManagedHsmGeoReplicatedRegion.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of
+            ManagedHsmGeoReplicatedRegion.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHsmGeoReplicatedRegionProvisioningState">
+            <summary>
+            The current provisioning state.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmGeoReplicatedRegionProvisioningState.Preprovisioning">
+            <summary>
+            Preprovisioning.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmGeoReplicatedRegionProvisioningState.Provisioning">
+            <summary>
+            Provisioning.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmGeoReplicatedRegionProvisioningState.Succeeded">
+            <summary>
+            Succeeded.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmGeoReplicatedRegionProvisioningState.Failed">
+            <summary>
+            Failed.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmGeoReplicatedRegionProvisioningState.Deleting">
+            <summary>
+            Deleting.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmGeoReplicatedRegionProvisioningState.Cleanup">
+            <summary>
+            Cleanup.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHsmIPRule">
+            <summary>
+            A rule governing the accessibility of a managed HSM pool from a specific IP
+            address or IP range.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmIPRule.AddressRange">
+            <summary>
+            An IPv4 address range in CIDR notation, such as
+            '124.56.78.91' (simple IP address) or
+            '124.56.78.0/24' (all addresses that start with 124.56.78).
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.ManagedHsmIPRule.#ctor">
+            <summary>
+            Creates a new ManagedHsmIPRule.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.ManagedHsmIPRule.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of ManagedHsmIPRule.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHsmNetworkRuleAction">
+            <summary>
+            The default action when no rule from ipRules and from virtualNetworkRules
+            match. This is only used after the bypass property has been evaluated.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmNetworkRuleAction.Allow">
+            <summary>
+            Allow.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmNetworkRuleAction.Deny">
+            <summary>
+            Deny.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHsmNetworkRuleBypassOption">
+            <summary>
+            Tells what traffic can bypass network rules. This can be
+            'AzureServices' or 'None'.  If not specified the
+            default is 'AzureServices'.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmNetworkRuleBypassOption.AzureServices">
+            <summary>
+            AzureServices.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmNetworkRuleBypassOption.None">
+            <summary>
+            None.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHsmNetworkRuleSet">
+            <summary>
+            A set of rules governing the network accessibility of a managed hsm pool.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmNetworkRuleSet.Bypass">
+            <summary>
+            Tells what traffic can bypass network rules. This can be
+            'AzureServices' or 'None'.  If not specified the
+            default is 'AzureServices'.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmNetworkRuleSet.DefaultAction">
+            <summary>
+            The default action when no rule from ipRules and from
+            virtualNetworkRules match. This is only used after the bypass property
+            has been evaluated.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmNetworkRuleSet.IPRules">
+            <summary>
+            The list of IP address rules.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmNetworkRuleSet.VirtualNetworkRules">
+            <summary>
+            The list of virtual network rules.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.ManagedHsmNetworkRuleSet.#ctor">
+            <summary>
+            Creates a new ManagedHsmNetworkRuleSet.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.ManagedHsmNetworkRuleSet.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of ManagedHsmNetworkRuleSet.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnectionItemData">
+            <summary>
+            Private endpoint connection item.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnectionItemData.Id">
+            <summary>
+            Id of private endpoint connection.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnectionItemData.ETag">
+            <summary>
+            Modified whenever there is a change in the state of private endpoint
+            connection.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnectionItemData.PrivateEndpointId">
+            <summary>
+            Gets Id.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnectionItemData.PrivateLinkServiceConnectionState">
+            <summary>
+            Approval state of the private link connection.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnectionItemData.ProvisioningState">
+            <summary>
+            Provisioning state of the private endpoint connection.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnectionItemData.#ctor">
+            <summary>
+            Creates a new ManagedHsmPrivateEndpointConnectionItemData.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnectionItemData.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of
+            ManagedHsmPrivateEndpointConnectionItemData.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnectionProvisioningState">
+            <summary>
+            The current provisioning state.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnectionProvisioningState.Succeeded">
+            <summary>
+            Succeeded.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnectionProvisioningState.Creating">
+            <summary>
+            Creating.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnectionProvisioningState.Updating">
+            <summary>
+            Updating.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnectionProvisioningState.Deleting">
+            <summary>
+            Deleting.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnectionProvisioningState.Failed">
+            <summary>
+            Failed.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointConnectionProvisioningState.Disconnected">
+            <summary>
+            Disconnected.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointServiceConnectionStatus">
+            <summary>
+            The private endpoint connection status.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointServiceConnectionStatus.Pending">
+            <summary>
+            Pending.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointServiceConnectionStatus.Approved">
+            <summary>
+            Approved.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointServiceConnectionStatus.Rejected">
+            <summary>
+            Rejected.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmPrivateEndpointServiceConnectionStatus.Disconnected">
+            <summary>
+            Disconnected.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHsmPrivateLinkServiceConnectionState">
+            <summary>
+            An object that represents the approval state of the private link connection.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmPrivateLinkServiceConnectionState.Status">
+            <summary>
+            Indicates whether the connection has been approved, rejected or removed
+            by the key vault owner.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmPrivateLinkServiceConnectionState.Description">
+            <summary>
+            The reason for approval or rejection.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmPrivateLinkServiceConnectionState.ActionsRequired">
+            <summary>
+            A message indicating if changes on the service provider require any
+            updates on the consumer.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.ManagedHsmPrivateLinkServiceConnectionState.#ctor">
+            <summary>
+            Creates a new ManagedHsmPrivateLinkServiceConnectionState.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.ManagedHsmPrivateLinkServiceConnectionState.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of
+            ManagedHsmPrivateLinkServiceConnectionState.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHsmProperties">
+            <summary>
+            Properties of the managed HSM Pool.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmProperties.TenantId">
+            <summary>
+            The Azure Active Directory tenant ID that should be used for
+            authenticating requests to the managed HSM pool.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmProperties.InitialAdminObjectIds">
+            <summary>
+            Array of initial administrators object ids for this managed hsm pool.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmProperties.HsmUri">
+            <summary>
+            The URI of the managed hsm pool for performing operations on keys.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmProperties.EnableSoftDelete">
+            <summary>
+            Property to specify whether the 'soft delete' functionality
+            is enabled for this managed HSM pool. Soft delete is enabled by
+            default for all managed HSMs and is immutable.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmProperties.SoftDeleteRetentionInDays">
+            <summary>
+            Soft deleted data retention days. When you delete an HSM or a key, it
+            will remain recoverable for the configured retention period or for a
+            default period of 90 days. It accepts values between 7 and 90.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmProperties.EnablePurgeProtection">
+            <summary>
+            Property specifying whether protection against purge is enabled for
+            this managed HSM pool. Setting this property to true activates
+            protection against purge for this managed HSM pool and its content -
+            only the Managed HSM service may initiate a hard, irrecoverable
+            deletion. Enabling this functionality is irreversible.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmProperties.CreateMode">
+            <summary>
+            The create mode to indicate whether the resource is being created or is
+            being recovered from a deleted resource.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmProperties.StatusMessage">
+            <summary>
+            Resource Status Message.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmProperties.ProvisioningState">
+            <summary>
+            Provisioning state.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmProperties.NetworkRuleSet">
+            <summary>
+            Rules governing the accessibility of the key vault from specific
+            network locations.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmProperties.Regions">
+            <summary>
+            List of all regions associated with the managed hsm pool.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmProperties.PrivateEndpointConnections">
+            <summary>
+            List of private endpoint connections associated with the managed hsm
+            pool.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmProperties.PublicNetworkAccess">
+            <summary>
+            Control permission to the managed HSM from public networks.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmProperties.ScheduledPurgeOn">
+            <summary>
+            The scheduled purge date in UTC.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmProperties.SecurityDomainProperties">
+            <summary>
+            Managed HSM security domain properties.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.ManagedHsmProperties.#ctor">
+            <summary>
+            Creates a new ManagedHsmProperties.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.ManagedHsmProperties.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of ManagedHsmProperties.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHsmProvisioningState">
+            <summary>
+            Provisioning state.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmProvisioningState.Succeeded">
+            <summary>
+            The managed HSM Pool has been full provisioned.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmProvisioningState.Provisioning">
+            <summary>
+            The managed HSM Pool is currently being provisioned.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmProvisioningState.Failed">
+            <summary>
+            Provisioning of the managed HSM Pool has failed.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmProvisioningState.Updating">
+            <summary>
+            The managed HSM Pool is currently being updated.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmProvisioningState.Deleting">
+            <summary>
+            The managed HSM Pool is currently being deleted.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmProvisioningState.Activated">
+            <summary>
+            The managed HSM pool is ready for normal use.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmProvisioningState.SecurityDomainRestore">
+            <summary>
+            The managed HSM pool is waiting for a security domain restore action.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmProvisioningState.Restoring">
+            <summary>
+            The managed HSM pool is being restored from full HSM backup.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHsmPublicNetworkAccess">
+            <summary>
+            Control permission to the managed HSM from public networks.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmPublicNetworkAccess.Enabled">
+            <summary>
+            Enabled.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmPublicNetworkAccess.Disabled">
+            <summary>
+            Disabled.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHSMSecurityDomainActivationStatus">
+            <summary>
+            Activation Status.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHSMSecurityDomainActivationStatus.Active">
+            <summary>
+            The managed HSM Pool is active.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHSMSecurityDomainActivationStatus.NotActivated">
+            <summary>
+            The managed HSM Pool is not yet activated.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHSMSecurityDomainActivationStatus.Unknown">
+            <summary>
+            An unknown error occurred while activating managed hsm.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHSMSecurityDomainActivationStatus.Failed">
+            <summary>
+            Failed to activate managed hsm.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHSMSecurityDomainProperties">
+            <summary>
+            The security domain properties of the managed hsm.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHSMSecurityDomainProperties.ActivationStatus">
+            <summary>
+            Activation Status.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHSMSecurityDomainProperties.ActivationStatusMessage">
+            <summary>
+            Activation Status Message.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.ManagedHSMSecurityDomainProperties.#ctor">
+            <summary>
+            Creates a new ManagedHSMSecurityDomainProperties.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.ManagedHSMSecurityDomainProperties.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of
+            ManagedHSMSecurityDomainProperties.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHsmSku">
+            <summary>
+            SKU details.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmSku.Family">
+            <summary>
+            SKU Family of the managed HSM Pool.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmSku.Name">
+            <summary>
+            SKU of the managed HSM Pool.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.ManagedHsmSku.#ctor">
+            <summary>
+            Creates a new ManagedHsmSku.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.ManagedHsmSku.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of ManagedHsmSku.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHsmSkuFamily">
+            <summary>
+            SKU Family of the managed HSM Pool.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmSkuFamily.B">
+            <summary>
+            B.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmSkuFamily.C">
+            <summary>
+            C.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHsmSkuName">
+            <summary>
+            SKU of the managed HSM Pool.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmSkuName.StandardB1">
+            <summary>
+            Standard_B1.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmSkuName.CustomB32">
+            <summary>
+            Custom_B32.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmSkuName.CustomB6">
+            <summary>
+            Custom_B6.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmSkuName.CustomC42">
+            <summary>
+            Custom_C42.
+            </summary>
+        </member>
+        <member name="F:Azure.Provisioning.KeyVault.ManagedHsmSkuName.CustomC10">
+            <summary>
+            Custom_C10.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.ManagedHsmVirtualNetworkRule">
+            <summary>
+            A rule governing the accessibility of a managed hsm pool from a specific
+            virtual network.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.ManagedHsmVirtualNetworkRule.SubnetId">
+            <summary>
+            Full resource id of a vnet subnet, such as
+            '/subscriptions/subid/resourceGroups/rg1/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/subnet1'.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.ManagedHsmVirtualNetworkRule.#ctor">
+            <summary>
+            Creates a new ManagedHsmVirtualNetworkRule.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.ManagedHsmVirtualNetworkRule.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of ManagedHsmVirtualNetworkRule.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.SecretAttributes">
+            <summary>
+            The secret management attributes.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.SecretAttributes.Enabled">
+            <summary>
+            Determines whether the object is enabled.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.SecretAttributes.NotBefore">
+            <summary>
+            Not before date in seconds since 1970-01-01T00:00:00Z.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.SecretAttributes.Expires">
+            <summary>
+            Expiry date in seconds since 1970-01-01T00:00:00Z.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.SecretAttributes.Created">
+            <summary>
+            Creation time in seconds since 1970-01-01T00:00:00Z.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.SecretAttributes.Updated">
+            <summary>
+            Last updated time in seconds since 1970-01-01T00:00:00Z.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.SecretAttributes.#ctor">
+            <summary>
+            Creates a new SecretAttributes.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.SecretAttributes.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of SecretAttributes.
+            </summary>
+        </member>
+        <member name="T:Azure.Provisioning.KeyVault.SecretProperties">
+            <summary>
+            Properties of the secret.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.SecretProperties.Value">
+            <summary>
+            The value of the secret. NOTE: 'value' will never be returned
+            from the service, as APIs using this model are is intended for
+            internal use in ARM deployments. Users should use the data-plane REST
+            service for interaction with vault secrets.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.SecretProperties.ContentType">
+            <summary>
+            The content type of the secret.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.SecretProperties.Attributes">
+            <summary>
+            The attributes of the secret.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.SecretProperties.SecretUri">
+            <summary>
+            The URI to retrieve the current version of the secret.
+            </summary>
+        </member>
+        <member name="P:Azure.Provisioning.KeyVault.SecretProperties.SecretUriWithVersion">
+            <summary>
+            The URI to retrieve the specific version of the secret.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.SecretProperties.#ctor">
+            <summary>
+            Creates a new SecretProperties.
+            </summary>
+        </member>
+        <member name="M:Azure.Provisioning.KeyVault.SecretProperties.DefineProvisionableProperties">
+            <summary>
+            Define all the provisionable properties of SecretProperties.
+            </summary>
+        </member>
+        <member name="T:Azure.Core.AppContextSwitchHelper">
+            <summary>
+            Helper for interacting with AppConfig settings and their related Environment variable settings.
+            </summary>
+        </member>
+        <member name="M:Azure.Core.AppContextSwitchHelper.GetConfigValue(System.String,System.String)">
+            <summary>
+            Determines if either an AppContext switch or its corresponding Environment Variable is set
+            </summary>
+            <param name="appContexSwitchName">Name of the AppContext switch.</param>
+            <param name="environmentVariableName">Name of the Environment variable.</param>
+            <returns>If the AppContext switch has been set, returns the value of the switch.
+            If the AppContext switch has not been set, returns the value of the environment variable.
+            False if neither is set.
+            </returns>
+        </member>
+        <member name="T:Azure.Core.AsyncLockWithValue`1">
+            <summary>
+            Primitive that combines async lock and value cache
+            </summary>
+            <typeparam name="T"></typeparam>
+        </member>
+        <member name="M:Azure.Core.AsyncLockWithValue`1.GetLockOrValueAsync(System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Method that either returns cached value or acquire a lock.
+            If one caller has acquired a lock, other callers will be waiting for the lock to be released.
+            If value is set, lock is released and all waiters get that value.
+            If value isn't set, the next waiter in the queue will get the lock.
+            </summary>
+            <param name="async"></param>
+            <param name="cancellationToken"></param>
+            <returns></returns>
+        </member>
+        <member name="P:Azure.Core.AsyncLockWithValue`1.LockOrValue.HasValue">
+            <summary>
+            Returns true if lock contains the cached value. Otherwise false.
+            </summary>
+        </member>
+        <member name="P:Azure.Core.AsyncLockWithValue`1.LockOrValue.Value">
+            <summary>
+            Returns cached value if it was set when lock has been created. Throws exception otherwise.
+            </summary>
+            <exception cref="T:System.InvalidOperationException">Value isn't set.</exception>
+        </member>
+        <member name="M:Azure.Core.AsyncLockWithValue`1.LockOrValue.SetValue(`0)">
+            <summary>
+            Set value to the cache and to all the waiters.
+            </summary>
+            <param name="value"></param>
+            <exception cref="T:System.InvalidOperationException">Value is set already.</exception>
+        </member>
+        <member name="M:Azure.Core.Pipeline.ClientDiagnostics.#ctor(Azure.Core.ClientOptions,System.Nullable{System.Boolean})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Azure.Core.Pipeline.ClientDiagnostics" /> class.
+            </summary>
+            <param name="options">The customer provided client options object.</param>
+            <param name="suppressNestedClientActivities">Flag controlling if <see cref="T:System.Diagnostics.Activity" />
+             created by this <see cref="T:Azure.Core.Pipeline.ClientDiagnostics" /> for client method calls should be suppressed when called
+             by other Azure SDK client methods.  It's recommended to set it to true for new clients; use default (null)
+             for backward compatibility reasons, or set it to false to explicitly disable suppression for specific cases.
+             The default value could change in the future, the flag should be only set to false if suppression for the client
+             should never be enabled.</param>
+        </member>
+        <member name="M:Azure.Core.Pipeline.ClientDiagnostics.#ctor(System.String,System.String,Azure.Core.DiagnosticsOptions,System.Nullable{System.Boolean})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Azure.Core.Pipeline.ClientDiagnostics" /> class.
+            </summary>
+            <param name="optionsNamespace">Namespace of the client class, such as Azure.Storage or Azure.AppConfiguration.</param>
+            <param name="providerNamespace">Azure Resource Provider namespace of the Azure service SDK is primarily used for.</param>
+            <param name="diagnosticsOptions">The customer provided client diagnostics options.</param>
+            <param name="suppressNestedClientActivities">Flag controlling if <see cref="T:System.Diagnostics.Activity" />
+             created by this <see cref="T:Azure.Core.Pipeline.ClientDiagnostics" /> for client method calls should be suppressed when called
+             by other Azure SDK client methods.  It's recommended to set it to true for new clients, use default (null) for old clients
+             for backward compatibility reasons, or set it to false to explicitly disable suppression for specific cases.
+             The default value could change in the future, the flag should be only set to false if suppression for the client
+             should never be enabled.</param>
+        </member>
+        <member name="M:Azure.Core.Pipeline.DiagnosticScope.AddLink(System.String,System.String,System.Collections.Generic.IDictionary{System.String,System.Object})">
+            <summary>
+            Adds a link to the scope. This must be called before <see cref="M:Azure.Core.Pipeline.DiagnosticScope.Start" /> has been called for the DiagnosticScope.
+            </summary>
+            <param name="traceparent">The traceparent for the link.</param>
+            <param name="tracestate">The tracestate for the link.</param>
+            <param name="attributes">Optional attributes to associate with the link.</param>
+        </member>
+        <member name="M:Azure.Core.Pipeline.DiagnosticScope.SetTraceContext(System.String,System.String)">
+            <summary>
+            Sets the trace context for the current scope.
+            </summary>
+            <param name="traceparent">The trace parent to set for the current scope.</param>
+            <param name="tracestate">The trace state to set for the current scope.</param>
+        </member>
+        <member name="M:Azure.Core.Pipeline.DiagnosticScope.Failed(System.Exception)">
+            <summary>
+            Marks the scope as failed.
+            </summary>
+            <param name="exception">The exception to associate with the failed scope.</param>
+        </member>
+        <member name="M:Azure.Core.Pipeline.DiagnosticScope.Failed(System.String)">
+            <summary>
+            Marks the scope as failed with low-cardinality error.type attribute.
+            </summary>
+            <param name="errorCode">Error code to associate with the failed scope.</param>
+        </member>
+        <member name="T:Azure.Core.Pipeline.ActivityExtensions">
+            <summary>
+            Until Activity Source is no longer considered experimental.
+            </summary>
+        </member>
+        <member name="M:Azure.Core.Pipeline.DiagnosticScopeFactory.#ctor(System.String,System.String,System.Boolean,System.Boolean,System.Boolean)">
+            <summary>
+            Creates diagnostic scope factory.
+            </summary>
+            <param name="clientNamespace">The namespace which is used as a prefix for all ActivitySources created by the factory and the name of DiagnosticSource (when used).</param>
+            <param name="resourceProviderNamespace">Azure resource provider namespace.</param>
+            <param name="isActivityEnabled">Flag indicating if distributed tracing is enabled.</param>
+            <param name="suppressNestedClientActivities">Flag indicating if nested Azure SDK activities describing public API calls should be suppressed.</param>
+            <param name="isStable">Whether instrumentation is considered stable. When false, experimental feature flag controls if tracing is enabled.</param>
+        </member>
+        <member name="T:Azure.Core.Pipeline.TaskExtensions.Enumerable`1">
+            <summary>
+            Both <see cref="T:Azure.Core.Pipeline.TaskExtensions.Enumerable`1" /> and <see cref="T:Azure.Core.Pipeline.TaskExtensions.Enumerator`1" /> are defined as public structs so that foreach can use duck typing
+            to call <see cref="M:Azure.Core.Pipeline.TaskExtensions.Enumerable`1.GetEnumerator" /> and avoid heap memory allocation.
+            Please don't delete this method and don't make these types private.
+            </summary>
+            <typeparam name="T"></typeparam>
+        </member>
+        <member name="T:Azure.Core.FixedDelayWithNoJitterStrategy">
+            <summary>
+            A delay strategy that uses a fixed delay with no jitter applied. This is used by data plane LROs.
+            </summary>
+        </member>
+        <member name="T:Azure.Core.OperationInternal">
+            <summary>
+            A helper class used to build long-running operation instances. In order to use this helper:
+            <list type="number">
+              <item>Make sure your LRO implements the <see cref="T:Azure.Core.IOperation" /> interface.</item>
+              <item>Add a private <see cref="T:Azure.Core.OperationInternal" /> field to your LRO, and instantiate it during construction.</item>
+              <item>Delegate method calls to the <see cref="T:Azure.Core.OperationInternal" /> implementations.</item>
+            </list>
+            Supported members:
+            <list type="bullet">
+              <item>
+                <description><see cref="P:Azure.Core.OperationInternalBase.HasCompleted" /></description>
+              </item>
+              <item>
+                <description><see cref="P:Azure.Core.OperationInternalBase.RawResponse" />, used for <see cref="M:Azure.Operation.GetRawResponse" /></description>
+              </item>
+              <item>
+                <description><see cref="M:Azure.Core.OperationInternalBase.UpdateStatus(System.Threading.CancellationToken)" /></description>
+              </item>
+              <item>
+                <description><see cref="M:Azure.Core.OperationInternalBase.UpdateStatusAsync(System.Threading.CancellationToken)" /></description>
+              </item>
+              <item>
+                <description><see cref="M:Azure.Core.OperationInternalBase.WaitForCompletionResponseAsync(System.Threading.CancellationToken)" /></description>
+              </item>
+              <item>
+                <description><see cref="M:Azure.Core.OperationInternalBase.WaitForCompletionResponseAsync(System.TimeSpan,System.Threading.CancellationToken)" /></description>
+              </item>
+            </list>
+            </summary>
+        </member>
+        <member name="M:Azure.Core.OperationInternal.Succeeded(Azure.Response)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Azure.Core.OperationInternal" /> class in a final successful state.
+            </summary>
+            <param name="rawResponse">The final value of <see cref="P:Azure.Core.OperationInternalBase.RawResponse" />.</param>
+        </member>
+        <member name="M:Azure.Core.OperationInternal.Failed(Azure.Response,Azure.RequestFailedException)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Azure.Core.OperationInternal" /> class in a final failed state.
+            </summary>
+            <param name="rawResponse">The final value of <see cref="P:Azure.Core.OperationInternalBase.RawResponse" />.</param>
+            <param name="operationFailedException">The exception that will be thrown by <c>UpdateStatusAsync</c>.</param>
+        </member>
+        <member name="M:Azure.Core.OperationInternal.#ctor(Azure.Core.IOperation,Azure.Core.Pipeline.ClientDiagnostics,Azure.Response,System.String,System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,System.String}},Azure.Core.DelayStrategy)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Azure.Core.OperationInternal" /> class.
+            </summary>
+            <param name="operation">The long-running operation making use of this class. Passing "<c>this</c>" is expected.</param>
+            <param name="clientDiagnostics">Used for diagnostic scope and exception creation. This is expected to be the instance created during the construction of your main client.</param>
+            <param name="rawResponse">
+                The initial value of <see cref="P:Azure.Core.OperationInternalBase.RawResponse" />. Usually, long-running operation objects can be instantiated in two ways:
+                <list type="bullet">
+                    <item>
+                        When calling a client's "<c>Start&lt;OperationName&gt;</c>" method, a service call is made to start the operation, and an <see cref="T:Azure.Operation" /> instance is returned.
+                        In this case, the response received from this service call can be passed here.
+                    </item>
+                    <item>
+                        When a user instantiates an <see cref="T:Azure.Operation" /> directly using a public constructor, there's no previous service call. In this case, passing <c>null</c> is expected.
+                    </item>
+                </list>
+            </param>
+            <param name="operationTypeName">
+                The type name of the long-running operation making use of this class. Used when creating diagnostic scopes. If left <c>null</c>, the type name will be inferred based on the
+                parameter <paramref name="operation" />.
+            </param>
+            <param name="scopeAttributes">The attributes to use during diagnostic scope creation.</param>
+            <param name="fallbackStrategy"> The delay strategy to use. Default is <see cref="T:Azure.Core.FixedDelayWithNoJitterStrategy" />.</param>
+        </member>
+        <member name="T:Azure.Core.IOperation">
+            <summary>
+            An interface used by <see cref="T:Azure.Core.OperationInternal" /> for making service calls and updating state. It's expected that
+            your long-running operation classes implement this interface.
+            </summary>
+        </member>
+        <member name="M:Azure.Core.IOperation.UpdateStateAsync(System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Calls the service and updates the state of the long-running operation. Properties directly handled by the
+            <see cref="T:Azure.Core.OperationInternal" /> class, such as <see cref="P:Azure.Core.OperationInternalBase.RawResponse" />
+            don't need to be updated. Operation-specific properties, such as "<c>CreateOn</c>" or "<c>LastModified</c>",
+            must be manually updated by the operation implementing this method.
+            <example>Usage example:
+            <code>
+              async ValueTask&lt;OperationState&gt; IOperation.UpdateStateAsync(bool async, CancellationToken cancellationToken)<br />
+              {<br />
+                Response&lt;R&gt; response = async ? &lt;async service call&gt; : &lt;sync service call&gt;;<br />
+                if (&lt;operation succeeded&gt;) return OperationState.Success(response.GetRawResponse(), &lt;parse response&gt;);<br />
+                if (&lt;operation failed&gt;) return OperationState.Failure(response.GetRawResponse());<br />
+                return OperationState.Pending(response.GetRawResponse());<br />
+              }
+            </code>
+            </example>
+            </summary>
+            <param name="async"><c>true</c> if the call should be executed asynchronously. Otherwise, <c>false</c>.</param>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> controlling the request lifetime.</param>
+            <returns>
+            A structure indicating the current operation state. The <see cref="T:Azure.Core.OperationState" /> structure must be instantiated by one of
+            its static methods:
+            <list type="bullet">
+              <item>Use <see cref="M:Azure.Core.OperationState.Success(Azure.Response)" /> when the operation has completed successfully.</item>
+              <item>Use <see cref="M:Azure.Core.OperationState.Failure(Azure.Response,Azure.RequestFailedException)" /> when the operation has completed with failures.</item>
+              <item>Use <see cref="M:Azure.Core.OperationState.Pending(Azure.Response)" /> when the operation has not completed yet.</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Azure.Core.IOperation.GetRehydrationToken">
+            <summary>
+            Get a token that can be used to rehydrate the operation.
+            </summary>
+        </member>
+        <member name="T:Azure.Core.OperationState">
+            <summary>
+            A helper structure passed to <see cref="T:Azure.Core.OperationInternal" /> to indicate the current operation state. This structure must be
+            instantiated by one of its static methods, depending on the operation state:
+            <list type="bullet">
+              <item>Use <see cref="M:Azure.Core.OperationState.Success(Azure.Response)" /> when the operation has completed successfully.</item>
+              <item>Use <see cref="M:Azure.Core.OperationState.Failure(Azure.Response,Azure.RequestFailedException)" /> when the operation has completed with failures.</item>
+              <item>Use <see cref="M:Azure.Core.OperationState.Pending(Azure.Response)" /> when the operation has not completed yet.</item>
+            </list>
+            </summary>
+        </member>
+        <member name="M:Azure.Core.OperationState.Success(Azure.Response)">
+            <summary>
+            Instantiates an <see cref="T:Azure.Core.OperationState" /> indicating the operation has completed successfully.
+            </summary>
+            <param name="rawResponse">The HTTP response obtained during the status update.</param>
+            <returns>A new <see cref="T:Azure.Core.OperationState" /> instance.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="rawResponse" /> is <c>null</c>.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationState.Failure(Azure.Response,Azure.RequestFailedException)">
+            <summary>
+            Instantiates an <see cref="T:Azure.Core.OperationState" /> indicating the operation has completed with failures.
+            </summary>
+            <param name="rawResponse">The HTTP response obtained during the status update.</param>
+            <param name="operationFailedException">
+            The exception to throw from <c>UpdateStatus</c> because of the operation failure. If left <c>null</c>,
+            a default exception is created based on the <paramref name="rawResponse" /> parameter.
+            </param>
+            <returns>A new <see cref="T:Azure.Core.OperationState" /> instance.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="rawResponse" /> is <c>null</c>.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationState.Pending(Azure.Response)">
+            <summary>
+            Instantiates an <see cref="T:Azure.Core.OperationState" /> indicating the operation has not completed yet.
+            </summary>
+            <param name="rawResponse">The HTTP response obtained during the status update.</param>
+            <returns>A new <see cref="T:Azure.Core.OperationState" /> instance.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="rawResponse" /> is <c>null</c>.</exception>
+        </member>
+        <member name="P:Azure.Core.OperationInternalBase.RawResponse">
+            <summary>
+            The last HTTP response received from the server. Its update already handled in calls to "<c>UpdateStatus</c>" and
+            "<c>WaitForCompletionAsync</c>", but custom methods not supported by this class, such as "<c>CancelOperation</c>",
+            must update it as well.
+            <example>Usage example:
+            <code>
+              public Response GetRawResponse() =&gt; _operationInternal.RawResponse;
+            </code>
+            </example>
+            </summary>
+        </member>
+        <member name="P:Azure.Core.OperationInternalBase.HasCompleted">
+            <summary>
+            Returns <c>true</c> if the long-running operation has completed.
+            <example>Usage example:
+            <code>
+              public bool HasCompleted =&gt; _operationInternal.HasCompleted;
+            </code>
+            </example>
+            </summary>
+        </member>
+        <member name="M:Azure.Core.OperationInternalBase.UpdateStatusAsync(System.Threading.CancellationToken)">
+            <summary>
+            Calls the server to get the latest status of the long-running operation, handling diagnostic scope creation for distributed
+            tracing. The default scope name can be changed with the "<c>operationTypeName</c>" parameter passed to the constructor.
+            <example>Usage example:
+            <code>
+              public async ValueTask&lt;Response&gt; UpdateStatusAsync(CancellationToken cancellationToken) =&gt;
+                await _operationInternal.UpdateStatusAsync(cancellationToken).ConfigureAwait(false);
+            </code>
+            </example>
+            </summary>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> controlling the request lifetime.</param>
+            <returns>The HTTP response received from the server.</returns>
+            <remarks>
+            After a successful run, this method will update <see cref="P:Azure.Core.OperationInternalBase.RawResponse" /> and might update <see cref="P:Azure.Core.OperationInternalBase.HasCompleted" />.
+            </remarks>
+            <exception cref="T:Azure.RequestFailedException">Thrown if there's been any issues during the connection, or if the operation has completed with failures.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationInternalBase.UpdateStatus(System.Threading.CancellationToken)">
+            <summary>
+            Calls the server to get the latest status of the long-running operation, handling diagnostic scope creation for distributed
+            tracing. The default scope name can be changed with the "<c>operationTypeName</c>" parameter passed to the constructor.
+            <example>Usage example:
+            <code>
+              public Response UpdateStatus(CancellationToken cancellationToken) =&gt; _operationInternal.UpdateStatus(cancellationToken);
+            </code>
+            </example>
+            </summary>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> controlling the request lifetime.</param>
+            <returns>The HTTP response received from the server.</returns>
+            <remarks>
+            After a successful run, this method will update <see cref="P:Azure.Core.OperationInternalBase.RawResponse" /> and might update <see cref="P:Azure.Core.OperationInternalBase.HasCompleted" />.
+            </remarks>
+            <exception cref="T:Azure.RequestFailedException">Thrown if there's been any issues during the connection, or if the operation has completed with failures.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationInternalBase.WaitForCompletionResponseAsync(System.Threading.CancellationToken)">
+            <summary>
+            Periodically calls <see cref="M:Azure.Core.OperationInternalBase.UpdateStatusAsync(System.Threading.CancellationToken)" /> until the long-running operation completes.
+            After each service call, a retry-after header may be returned to communicate that there is no reason to poll
+            for status change until the specified time has passed.  The maximum of the retry after value and the fallback strategy
+            is then used as the wait interval.
+            Headers supported are: "Retry-After", "retry-after-ms", and "x-ms-retry-after-ms",
+            <example>Usage example:
+            <code>
+              public async ValueTask&lt;Response&lt;T&gt;&gt; WaitForCompletionAsync(CancellationToken cancellationToken) =&gt;
+                await _operationInternal.WaitForCompletionAsync(cancellationToken).ConfigureAwait(false);
+            </code>
+            </example>
+            </summary>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> controlling the request lifetime.</param>
+            <returns>The last HTTP response received from the server, including the final result of the long-running operation.</returns>
+            <exception cref="T:Azure.RequestFailedException">Thrown if there's been any issues during the connection, or if the operation has completed with failures.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationInternalBase.WaitForCompletionResponseAsync(System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>
+            Periodically calls <see cref="M:Azure.Core.OperationInternalBase.UpdateStatusAsync(System.Threading.CancellationToken)" /> until the long-running operation completes. The interval
+            between calls is defined by the parameter <paramref name="pollingInterval" />, but it can change based on information returned
+            from the server. After each service call, a retry-after header may be returned to communicate that there is no reason to poll
+            for status change until the specified time has passed. In this case, the maximum value between the <paramref name="pollingInterval" />
+            parameter and the retry-after header is chosen as the wait interval. Headers supported are: "Retry-After", "retry-after-ms",
+            and "x-ms-retry-after-ms".
+            <example>Usage example:
+            <code>
+              public async ValueTask&lt;Response&lt;T&gt;&gt; WaitForCompletionAsync(TimeSpan pollingInterval, CancellationToken cancellationToken) =&gt;
+                await _operationInternal.WaitForCompletionAsync(pollingInterval, cancellationToken).ConfigureAwait(false);
+            </code>
+            </example>
+            </summary>
+            <param name="pollingInterval">The interval between status requests to the server. <strong></strong></param>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> controlling the request lifetime.</param>
+            <returns>The last HTTP response received from the server, including the final result of the long-running operation.</returns>
+            <exception cref="T:Azure.RequestFailedException">Thrown if there's been any issues during the connection, or if the operation has completed with failures.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationInternalBase.WaitForCompletionResponse(System.Threading.CancellationToken)">
+            <summary>
+            Periodically calls <see cref="M:Azure.Core.OperationInternalBase.UpdateStatus(System.Threading.CancellationToken)" /> until the long-running operation completes.
+            After each service call, a retry-after header may be returned to communicate that there is no reason to poll
+            for status change until the specified time has passed.  The maximum of the retry after value and the fallback strategy
+            is then used as the wait interval.
+            Headers supported are: "Retry-After", "retry-after-ms", and "x-ms-retry-after-ms",
+            and "x-ms-retry-after-ms".
+            <example>Usage example:
+            <code>
+              public async ValueTask&lt;Response&lt;T&gt;&gt; WaitForCompletionAsync(TimeSpan pollingInterval, CancellationToken cancellationToken) =&gt;
+                await _operationInternal.WaitForCompletionAsync(pollingInterval, cancellationToken).ConfigureAwait(false);
+            </code>
+            </example>
+            </summary>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> controlling the request lifetime.</param>
+            <returns>The last HTTP response received from the server, including the final result of the long-running operation.</returns>
+            <exception cref="T:Azure.RequestFailedException">Thrown if there's been any issues during the connection, or if the operation has completed with failures.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationInternalBase.WaitForCompletionResponse(System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>
+            Periodically calls <see cref="M:Azure.Core.OperationInternalBase.UpdateStatus(System.Threading.CancellationToken)" /> until the long-running operation completes. The interval
+            between calls is defined by the parameter <paramref name="pollingInterval" />, but it can change based on information returned
+            from the server. After each service call, a retry-after header may be returned to communicate that there is no reason to poll
+            for status change until the specified time has passed. In this case, the maximum value between the <paramref name="pollingInterval" />
+            parameter and the retry-after header is chosen as the wait interval. Headers supported are: "Retry-After", "retry-after-ms",
+            and "x-ms-retry-after-ms".
+            <example>Usage example:
+            <code>
+              public async ValueTask&lt;Response&lt;T&gt;&gt; WaitForCompletionAsync(TimeSpan pollingInterval, CancellationToken cancellationToken) =&gt;
+                await _operationInternal.WaitForCompletionAsync(pollingInterval, cancellationToken).ConfigureAwait(false);
+            </code>
+            </example>
+            </summary>
+            <param name="pollingInterval">The interval between status requests to the server.</param>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> controlling the request lifetime.</param>
+            <returns>The last HTTP response received from the server, including the final result of the long-running operation.</returns>
+            <exception cref="T:Azure.RequestFailedException">Thrown if there's been any issues during the connection, or if the operation has completed with failures.</exception>
+        </member>
+        <member name="T:Azure.Core.OperationInternal`1">
+            <summary>
+            A helper class used to build long-running operation instances. In order to use this helper:
+            <list type="number">
+              <item>Make sure your LRO implements the <see cref="T:Azure.Core.IOperation`1" /> interface.</item>
+              <item>Add a private <see cref="T:Azure.Core.OperationInternal`1" /> field to your LRO, and instantiate it during construction.</item>
+              <item>Delegate method calls to the <see cref="T:Azure.Core.OperationInternal`1" /> implementations.</item>
+            </list>
+            Supported members:
+            <list type="bullet">
+              <item>
+                <description><see cref="P:Azure.Core.OperationInternal`1.HasValue" /></description>
+              </item>
+              <item>
+                <description><see cref="P:Azure.Core.OperationInternalBase.HasCompleted" /></description>
+              </item>
+              <item>
+                <description><see cref="P:Azure.Core.OperationInternal`1.Value" /></description>
+              </item>
+              <item>
+                <description><see cref="P:Azure.Core.OperationInternalBase.RawResponse" />, used for <see cref="M:Azure.Operation.GetRawResponse" /></description>
+              </item>
+              <item>
+                <description><see cref="M:Azure.Core.OperationInternalBase.UpdateStatus(System.Threading.CancellationToken)" /></description>
+              </item>
+              <item>
+                <description><see cref="M:Azure.Core.OperationInternalBase.UpdateStatusAsync(System.Threading.CancellationToken)" /></description>
+              </item>
+              <item>
+                <description><see cref="M:Azure.Core.OperationInternal`1.WaitForCompletionAsync(System.Threading.CancellationToken)" /></description>
+              </item>
+              <item>
+                <description><see cref="M:Azure.Core.OperationInternal`1.WaitForCompletionAsync(System.TimeSpan,System.Threading.CancellationToken)" /></description>
+              </item>
+            </list>
+            </summary>
+            <typeparam name="T">The final result of the long-running operation. Must match the type used in <see cref="T:Azure.Operation`1" />.</typeparam>
+        </member>
+        <member name="M:Azure.Core.OperationInternal`1.Succeeded(Azure.Response,`0)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Azure.Core.OperationInternal" /> class in a final successful state.
+            </summary>
+            <param name="rawResponse">The final value of <see cref="P:Azure.Core.OperationInternalBase.RawResponse" />.</param>
+            <param name="value">The final result of the long-running operation.</param>
+        </member>
+        <member name="M:Azure.Core.OperationInternal`1.Failed(Azure.Response,Azure.RequestFailedException)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Azure.Core.OperationInternal" /> class in a final failed state.
+            </summary>
+            <param name="rawResponse">The final value of <see cref="P:Azure.Core.OperationInternalBase.RawResponse" />.</param>
+            <param name="operationFailedException">The exception that will be thrown by <c>UpdateStatusAsync</c>.</param>
+        </member>
+        <member name="M:Azure.Core.OperationInternal`1.#ctor(Azure.Core.IOperation{`0},Azure.Core.Pipeline.ClientDiagnostics,Azure.Response,System.String,System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,System.String}},Azure.Core.DelayStrategy)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Azure.Core.OperationInternal`1" /> class.
+            </summary>
+            <param name="operation">The long-running operation making use of this class. Passing "<c>this</c>" is expected.</param>
+            <param name="clientDiagnostics">Used for diagnostic scope and exception creation. This is expected to be the instance created during the construction of your main client.</param>
+            <param name="rawResponse">
+                The initial value of <see cref="P:Azure.Core.OperationInternalBase.RawResponse" />. Usually, long-running operation objects can be instantiated in two ways:
+                <list type="bullet">
+                    <item>
+                        When calling a client's "<c>Start&lt;OperationName&gt;</c>" method, a service call is made to start the operation, and an <see cref="T:Azure.Operation`1" /> instance is returned.
+                        In this case, the response received from this service call can be passed here.
+                    </item>
+                    <item>
+                        When a user instantiates an <see cref="T:Azure.Operation`1" /> directly using a public constructor, there's no previous service call. In this case, passing <c>null</c> is expected.
+                    </item>
+                </list>
+            </param>
+            <param name="operationTypeName">
+                The type name of the long-running operation making use of this class. Used when creating diagnostic scopes. If left <c>null</c>, the type name will be inferred based on the
+                parameter <paramref name="operation" />.
+            </param>
+            <param name="scopeAttributes">The attributes to use during diagnostic scope creation.</param>
+            <param name="fallbackStrategy">The delay strategy when Retry-After header is not present.  When it is present, the longer of the two delays will be used.
+                Default is <see cref="T:Azure.Core.FixedDelayWithNoJitterStrategy" />.</param>
+        </member>
+        <member name="P:Azure.Core.OperationInternal`1.HasValue">
+            <summary>
+            Returns <c>true</c> if the long-running operation completed successfully and has produced a final result.
+            <example>Usage example:
+            <code>
+              public bool HasValue =&gt; _operationInternal.HasValue;
+            </code>
+            </example>
+            </summary>
+        </member>
+        <member name="P:Azure.Core.OperationInternal`1.Value">
+            <summary>
+            The final result of the long-running operation.
+            <example>Usage example:
+            <code>
+              public T Value =&gt; _operationInternal.Value;
+            </code>
+            </example>
+            </summary>
+            <exception cref="T:System.InvalidOperationException">Thrown when the operation has not completed yet.</exception>
+            <exception cref="T:Azure.RequestFailedException">Thrown when the operation has completed with failures.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationInternal`1.WaitForCompletionAsync(System.Threading.CancellationToken)">
+            <summary>
+            Periodically calls <see cref="M:Azure.Core.OperationInternalBase.UpdateStatusAsync(System.Threading.CancellationToken)" /> until the long-running operation completes.
+            After each service call, a retry-after header may be returned to communicate that there is no reason to poll
+            for status change until the specified time has passed.
+            Headers supported are: "Retry-After", "retry-after-ms", and "x-ms-retry-after-ms",
+            <example>Usage example:
+            <code>
+              public async ValueTask&lt;Response&lt;T&gt;&gt; WaitForCompletionAsync(CancellationToken cancellationToken) =&gt;
+                await _operationInternal.WaitForCompletionAsync(cancellationToken).ConfigureAwait(false);
+            </code>
+            </example>
+            </summary>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> controlling the request lifetime.</param>
+            <returns>The last HTTP response received from the server, including the final result of the long-running operation.</returns>
+            <exception cref="T:Azure.RequestFailedException">Thrown if there's been any issues during the connection, or if the operation has completed with failures.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationInternal`1.WaitForCompletionAsync(System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>
+            Periodically calls <see cref="M:Azure.Core.OperationInternalBase.UpdateStatusAsync(System.Threading.CancellationToken)" /> until the long-running operation completes. The interval
+            between calls is defined by the parameter <paramref name="pollingInterval" />, but it can change based on information returned
+            from the server. After each service call, a retry-after header may be returned to communicate that there is no reason to poll
+            for status change until the specified time has passed. In this case, the maximum value between the <paramref name="pollingInterval" />
+            parameter and the retry-after header is chosen as the wait interval. Headers supported are: "Retry-After", "retry-after-ms",
+            and "x-ms-retry-after-ms".
+            <example>Usage example:
+            <code>
+              public async ValueTask&lt;Response&lt;T&gt;&gt; WaitForCompletionAsync(TimeSpan pollingInterval, CancellationToken cancellationToken) =&gt;
+                await _operationInternal.WaitForCompletionAsync(pollingInterval, cancellationToken).ConfigureAwait(false);
+            </code>
+            </example>
+            </summary>
+            <param name="pollingInterval">The interval between status requests to the server.</param>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> controlling the request lifetime.</param>
+            <returns>The last HTTP response received from the server, including the final result of the long-running operation.</returns>
+            <exception cref="T:Azure.RequestFailedException">Thrown if there's been any issues during the connection, or if the operation has completed with failures.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationInternal`1.WaitForCompletion(System.Threading.CancellationToken)">
+            <summary>
+            Periodically calls <see cref="M:Azure.Core.OperationInternalBase.UpdateStatus(System.Threading.CancellationToken)" /> until the long-running operation completes.
+            After each service call, a retry-after header may be returned to communicate that there is no reason to poll
+            for status change until the specified time has passed.
+            Headers supported are: "Retry-After", "retry-after-ms", and "x-ms-retry-after-ms",
+            <example>Usage example:
+            <code>
+              public async ValueTask&lt;Response&lt;T&gt;&gt; WaitForCompletionAsync(CancellationToken cancellationToken) =&gt;
+                await _operationInternal.WaitForCompletionAsync(cancellationToken).ConfigureAwait(false);
+            </code>
+            </example>
+            </summary>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> controlling the request lifetime.</param>
+            <returns>The last HTTP response received from the server, including the final result of the long-running operation.</returns>
+            <exception cref="T:Azure.RequestFailedException">Thrown if there's been any issues during the connection, or if the operation has completed with failures.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationInternal`1.WaitForCompletion(System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>
+            Periodically calls <see cref="M:Azure.Core.OperationInternalBase.UpdateStatus(System.Threading.CancellationToken)" /> until the long-running operation completes. The interval
+            between calls is defined by the <see cref="T:Azure.Core.FixedDelayWithNoJitterStrategy" />, which takes into account any retry-after header that is returned
+            from the server.
+            <example>Usage example:
+            <code>
+              public async ValueTask&lt;Response&lt;T&gt;&gt; WaitForCompletionAsync(CancellationToken cancellationToken) =&gt;
+                await _operationInternal.WaitForCompletionAsync(cancellationToken).ConfigureAwait(false);
+            </code>
+            </example>
+            </summary>
+            <param name="pollingInterval">The interval between status requests to the server.</param>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> controlling the request lifetime.</param>
+            <returns>The last HTTP response received from the server, including the final result of the long-running operation.</returns>
+            <exception cref="T:Azure.RequestFailedException">Thrown if there's been any issues during the connection, or if the operation has completed with failures.</exception>
+        </member>
+        <member name="T:Azure.Core.IOperation`1">
+            <summary>
+            An interface used by <see cref="T:Azure.Core.OperationInternal`1" /> for making service calls and updating state. It's expected that
+            your long-running operation classes implement this interface.
+            </summary>
+            <typeparam name="T">The final result of the long-running operation. Must match the type used in <see cref="T:Azure.Operation`1" />.</typeparam>
+        </member>
+        <member name="M:Azure.Core.IOperation`1.UpdateStateAsync(System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Calls the service and updates the state of the long-running operation. Properties directly handled by the
+            <see cref="T:Azure.Core.OperationInternal`1" /> class, such as <see cref="P:Azure.Core.OperationInternalBase.RawResponse" /> or
+            <see cref="P:Azure.Core.OperationInternal`1.Value" />, don't need to be updated. Operation-specific properties, such
+            as "<c>CreateOn</c>" or "<c>LastModified</c>", must be manually updated by the operation implementing this
+            method.
+            <example>Usage example:
+            <code>
+              async ValueTask&lt;OperationState&lt;T&gt;&gt; IOperation&lt;T&gt;.UpdateStateAsync(bool async, CancellationToken cancellationToken)<br />
+              {<br />
+                Response&lt;R&gt; response = async ? &lt;async service call&gt; : &lt;sync service call&gt;;<br />
+                if (&lt;operation succeeded&gt;) return OperationState&lt;T&gt;.Success(response.GetRawResponse(), &lt;parse response&gt;);<br />
+                if (&lt;operation failed&gt;) return OperationState&lt;T&gt;.Failure(response.GetRawResponse());<br />
+                return OperationState&lt;T&gt;.Pending(response.GetRawResponse());<br />
+              }
+            </code>
+            </example>
+            </summary>
+            <param name="async"><c>true</c> if the call should be executed asynchronously. Otherwise, <c>false</c>.</param>
+            <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> controlling the request lifetime.</param>
+            <returns>
+            A structure indicating the current operation state. The <see cref="T:Azure.Core.OperationState`1" /> structure must be instantiated by one of
+            its static methods:
+            <list type="bullet">
+              <item>Use <see cref="M:Azure.Core.OperationState`1.Success(Azure.Response,`0)" /> when the operation has completed successfully.</item>
+              <item>Use <see cref="M:Azure.Core.OperationState`1.Failure(Azure.Response,Azure.RequestFailedException)" /> when the operation has completed with failures.</item>
+              <item>Use <see cref="M:Azure.Core.OperationState`1.Pending(Azure.Response)" /> when the operation has not completed yet.</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Azure.Core.IOperation`1.GetRehydrationToken">
+            <summary>
+            Get a token that can be used to rehydrate the operation.
+            </summary>
+        </member>
+        <member name="T:Azure.Core.OperationState`1">
+            <summary>
+            A helper structure passed to <see cref="T:Azure.Core.OperationInternal`1" /> to indicate the current operation state. This structure must be
+            instantiated by one of its static methods, depending on the operation state:
+            <list type="bullet">
+              <item>Use <see cref="M:Azure.Core.OperationState`1.Success(Azure.Response,`0)" /> when the operation has completed successfully.</item>
+              <item>Use <see cref="M:Azure.Core.OperationState`1.Failure(Azure.Response,Azure.RequestFailedException)" /> when the operation has completed with failures.</item>
+              <item>Use <see cref="M:Azure.Core.OperationState`1.Pending(Azure.Response)" /> when the operation has not completed yet.</item>
+            </list>
+            </summary>
+            <typeparam name="T">The final result of the long-running operation. Must match the type used in <see cref="T:Azure.Operation`1" />.</typeparam>
+        </member>
+        <member name="M:Azure.Core.OperationState`1.Success(Azure.Response,`0)">
+            <summary>
+            Instantiates an <see cref="T:Azure.Core.OperationState`1" /> indicating the operation has completed successfully.
+            </summary>
+            <param name="rawResponse">The HTTP response obtained during the status update.</param>
+            <param name="value">The final result of the long-running operation.</param>
+            <returns>A new <see cref="T:Azure.Core.OperationState`1" /> instance.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="rawResponse" /> or <paramref name="value" /> is <c>null</c>.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationState`1.Failure(Azure.Response,Azure.RequestFailedException)">
+            <summary>
+            Instantiates an <see cref="T:Azure.Core.OperationState`1" /> indicating the operation has completed with failures.
+            </summary>
+            <param name="rawResponse">The HTTP response obtained during the status update.</param>
+            <param name="operationFailedException">
+            The exception to throw from <c>UpdateStatus</c> because of the operation failure. The same exception will be thrown when
+            <see cref="P:Azure.Core.OperationInternal`1.Value" /> is called. If left <c>null</c>, a default exception is created based on the
+            <paramref name="rawResponse" /> parameter.
+            </param>
+            <returns>A new <see cref="T:Azure.Core.OperationState`1" /> instance.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="rawResponse" /> is <c>null</c>.</exception>
+        </member>
+        <member name="M:Azure.Core.OperationState`1.Pending(Azure.Response)">
+            <summary>
+            Instantiates an <see cref="T:Azure.Core.OperationState`1" /> indicating the operation has not completed yet.
+            </summary>
+            <param name="rawResponse">The HTTP response obtained during the status update.</param>
+            <returns>A new <see cref="T:Azure.Core.OperationState`1" /> instance.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="rawResponse" /> is <c>null</c>.</exception>
+        </member>
+        <member name="T:Azure.Core.OperationPoller">
+            <summary>
+            Implementation of LRO polling logic.
+            </summary>
+        </member>
+        <member name="P:Azure.Core.ProtocolOperation`1.Id">
+            <summary>
+            Gets an ID representing the operation that can be used to poll for
+            the status of the long-running operation.
+            There are cases that operation id is not available, we return "NOT_SET" for unavailable operation id.
+            </summary>
+        </member>
+        <member name="M:Azure.Core.ProtocolOperation`1.GetRehydrationToken">
+            <summary>
+            Get a token that can be used to rehydrate the operation.
+            </summary>
+        </member>
+        <member name="P:Azure.Core.ProtocolOperation`1.Value">
+            <summary>
+            Final result of the long-running operation.
+            </summary><remarks>
+            This property can be accessed only after the operation completes successfully (HasValue is true).
+            </remarks>
+        </member>
+        <member name="P:Azure.Core.ProtocolOperation`1.HasCompleted">
+            <summary>
+            Returns true if the long-running operation completed.
+            </summary>
+        </member>
+        <member name="P:Azure.Core.ProtocolOperation`1.HasValue">
+            <summary>
+            Returns true if the long-running operation completed successfully and has produced final result (accessible by Value property).
+            </summary>
+        </member>
+        <member name="M:Azure.Core.ProtocolOperation`1.GetRawResponse">
+            <summary>
+            The last HTTP response received from the server.
+            </summary><remarks>
+            The last response returned from the server during the lifecycle of this instance.
+            An instance of <see cref="T:Azure.Operation`1" /> sends requests to a server in UpdateStatusAsync, UpdateStatus, and other methods.
+            Responses from these requests can be accessed using GetRawResponse.
+            </remarks>
+        </member>
+        <member name="M:Azure.Core.ProtocolOperation`1.UpdateStatus(System.Threading.CancellationToken)">
+            <summary>
+            Calls the server to get updated status of the long-running operation.
+            </summary><param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> used for the service call.</param><returns>The HTTP response received from the server.</returns><remarks>
+            This operation will update the value returned from GetRawResponse and might update HasCompleted.
+            </remarks>
+        </member>
+        <member name="M:Azure.Core.ProtocolOperation`1.UpdateStatusAsync(System.Threading.CancellationToken)">
+            <summary>
+            Calls the server to get updated status of the long-running operation.
+            </summary><param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> used for the service call.</param><returns>The HTTP response received from the server.</returns><remarks>
+            This operation will update the value returned from GetRawResponse and might update HasCompleted.
+            </remarks>
+        </member>
+        <member name="M:Azure.Core.ProtocolOperation`1.WaitForCompletionAsync(System.Threading.CancellationToken)">
+            <summary>
+            Periodically calls the server till the long-running operation completes.
+            </summary><param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> used for the periodical service calls.</param><returns>The last HTTP response received from the server.</returns><remarks>
+            This method will periodically call UpdateStatusAsync till HasCompleted is true, then return the final result of the operation.
+            </remarks>
+        </member>
+        <member name="M:Azure.Core.ProtocolOperation`1.WaitForCompletionAsync(System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>
+            Periodically calls the server till the long-running operation completes.
+            </summary><param name="pollingInterval">
+            The interval between status requests to the server.
+            The interval can change based on information returned from the server.
+            For example, the server might communicate to the client that there is not reason to poll for status change sooner than some time.
+            </param><param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> used for the periodical service calls.</param><returns>The last HTTP response received from the server.</returns><remarks>
+            This method will periodically call UpdateStatusAsync till HasCompleted is true, then return the final result of the operation.
+            </remarks>
+        </member>
+        <member name="T:Azure.Core.SequentialDelayStrategy">
+            <summary>
+            A delay strategy that uses a fixed sequence of delays with no jitter applied. This is used by management LROs.
+            </summary>
+        </member>
+        <member name="T:Azure.Core.ArrayBufferWriter`1">
+            <summary>
+            Represents a heap-based, array-backed output sink into which <typeparam name="T" /> data can be written.
+            </summary>
+        </member>
+        <member name="M:Azure.Core.ArrayBufferWriter`1.#ctor">
+            <summary>
+            Creates an instance of an <see cref="T:Azure.Core.ArrayBufferWriter`1" />, in which data can be written to,
+            with the default initial capacity.
+            </summary>
+        </member>
+        <member name="M:Azure.Core.ArrayBufferWriter`1.#ctor(System.Int32)">
+            <summary>
+            Creates an instance of an <see cref="T:Azure.Core.ArrayBufferWriter`1" />, in which data can be written to,
+            with an initial capacity specified.
+            </summary>
+            <param name="initialCapacity">The minimum capacity with which to initialize the underlying buffer.</param>
+            <exception cref="T:System.ArgumentException">
+            Thrown when <paramref name="initialCapacity" /> is not positive (i.e. less than or equal to 0).
+            </exception>
+        </member>
+        <member name="P:Azure.Core.ArrayBufferWriter`1.WrittenMemory">
+            <summary>
+            Returns the data written to the underlying buffer so far, as a <see cref="T:System.ReadOnlyMemory`1" />.
+            </summary>
+        </member>
+        <member name="P:Azure.Core.ArrayBufferWriter`1.WrittenSpan">
+            <summary>
+            Returns the data written to the underlying buffer so far, as a <see cref="T:System.ReadOnlySpan`1" />.
+            </summary>
+        </member>
+        <member name="P:Azure.Core.ArrayBufferWriter`1.WrittenCount">
+            <summary>
+            Returns the amount of data written to the underlying buffer so far.
+            </summary>
+        </member>
+        <member name="P:Azure.Core.ArrayBufferWriter`1.Capacity">
+            <summary>
+            Returns the total amount of space within the underlying buffer.
+            </summary>
+        </member>
+        <member name="P:Azure.Core.ArrayBufferWriter`1.FreeCapacity">
+            <summary>
+            Returns the amount of space available that can still be written into without forcing the underlying buffer to grow.
+            </summary>
+        </member>
+        <member name="M:Azure.Core.ArrayBufferWriter`1.Clear">
+            <summary>
+            Clears the data written to the underlying buffer.
+            </summary>
+            <remarks>
+            You must clear the <see cref="T:Azure.Core.ArrayBufferWriter`1" /> before trying to re-use it.
+            </remarks>
+        </member>
+        <member name="M:Azure.Core.ArrayBufferWriter`1.Advance(System.Int32)">
+            <summary>
+            Notifies <see cref="T:System.Buffers.IBufferWriter`1" /> that <paramref name="count" /> amount of data was written to the output <see cref="T:System.Span`1" />/<see cref="T:System.Memory`1" />.
+            </summary>
+            <exception cref="T:System.ArgumentException">
+            Thrown when <paramref name="count" /> is negative.
+            </exception>
+            <exception cref="T:System.InvalidOperationException">
+            Thrown when attempting to advance past the end of the underlying buffer.
+            </exception>
+            <remarks>
+            You must request a new buffer after calling Advance to continue writing more data and cannot write to a previously acquired buffer.
+            </remarks>
+        </member>
+        <member name="M:Azure.Core.ArrayBufferWriter`1.GetMemory(System.Int32)">
+            <summary>
+            Returns a <see cref="T:System.Memory`1" /> to write to that is at least the requested length (specified by <paramref name="sizeHint" />).
+            If no <paramref name="sizeHint" /> is provided (or it's equal to <code>0</code>), some non-empty buffer is returned.
+            </summary>
+            <exception cref="T:System.ArgumentException">
+            Thrown when <paramref name="sizeHint" /> is negative.
+            </exception>
+            <remarks>
+            This will never return an empty <see cref="T:System.Memory`1" />.
+            </remarks>
+            <remarks>
+            There is no guarantee that successive calls will return the same buffer or the same-sized buffer.
+            </remarks>
+            <remarks>
+            You must request a new buffer after calling Advance to continue writing more data and cannot write to a previously acquired buffer.
+            </remarks>
+        </member>
+        <member name="M:Azure.Core.ArrayBufferWriter`1.GetSpan(System.Int32)">
+            <summary>
+            Returns a <see cref="T:System.Span`1" /> to write to that is at least the requested length (specified by <paramref name="sizeHint" />).
+            If no <paramref name="sizeHint" /> is provided (or it's equal to <code>0</code>), some non-empty buffer is returned.
+            </summary>
+            <exception cref="T:System.ArgumentException">
+            Thrown when <paramref name="sizeHint" /> is negative.
+            </exception>
+            <remarks>
+            This will never return an empty <see cref="T:System.Span`1" />.
+            </remarks>
+            <remarks>
+            There is no guarantee that successive calls will return the same buffer or the same-sized buffer.
+            </remarks>
+            <remarks>
+            You must request a new buffer after calling Advance to continue writing more data and cannot write to a previously acquired buffer.
+            </remarks>
+        </member>
+        <member name="T:Azure.Core.AzureResourceProviderNamespaceAttribute">
+            <summary>
+            This attribute should be set on all client assemblies with value of one of the resource providers
+            from the https://docs.microsoft.com/azure/azure-resource-manager/management/azure-services-resource-providers list.
+            </summary>
+        </member>
+        <member name="T:Azure.Core.ForwardsClientCallsAttribute">
+            <summary>
+            Marks methods that call methods on other client and don't need their diagnostics verified.
+            </summary>
+        </member>
+        <member name="M:Azure.Core.ForwardsClientCallsAttribute.#ctor">
+            <summary>
+            Creates a new instance of <see cref="T:Azure.Core.ForwardsClientCallsAttribute" />.
+            </summary>
+        </member>
+        <member name="M:Azure.Core.ForwardsClientCallsAttribute.#ctor(System.Boolean)">
+            <summary>
+            Creates a new instance of <see cref="T:Azure.Core.ForwardsClientCallsAttribute" />.
+            </summary>
+            <param name="skipChecks"> Sets whether or not diagnostic scope validation should happen. </param>
+        </member>
+        <member name="P:Azure.Core.ForwardsClientCallsAttribute.SkipChecks">
+            <summary>
+            Gets whether or not we should validate DiagnosticScope for this API.
+            In the case where there is an internal API that makes the Azure API call and a public API that uses it we need ForwardsClientCalls.
+            If the public API will cache the results then the diagnostic scope will not always be created because an Azure API is not always called.
+            In this case we need to turn off this validation for this API only.
+            </summary>
+        </member>
+        <member name="P:Azure.NoValueResponse`1.HasValue">
+            <summary>
+            Gets a value indicating whether the current instance has a valid value of its underlying type.
+            </summary>
+        </member>
+        <member name="M:Azure.Core.Pipeline.TaskExtensions.Enumerable`1.System#Collections#Generic#IEnumerable{T}#GetEnumerator">
+            <summary>Returns an enumerator that iterates through the collection.</summary><returns>An enumerator that can be used to iterate through the collection.</returns>
+        </member>
+        <member name="M:Azure.Core.Pipeline.TaskExtensions.Enumerable`1.System#Collections#IEnumerable#GetEnumerator">
+            <summary>Returns an enumerator that iterates through a collection.</summary><returns>An <see cref="T:System.Collections.IEnumerator" /> object that can be used to iterate through the collection.</returns>
+        </member>
+        <member name="P:Azure.Core.Pipeline.TaskExtensions.Enumerator`1.System#Collections#IEnumerator#Current">
+            <summary>Gets the element in the collection at the current position of the enumerator.</summary><returns>The element in the collection at the current position of the enumerator.</returns>
+        </member>
+    </members>
+</doc>

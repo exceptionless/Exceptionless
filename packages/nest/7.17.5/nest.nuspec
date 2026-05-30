@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>NEST</id>
+    <version>7.17.5</version>
+    <title>NEST - Elasticsearch .NET high level client</title>
+    <authors>Elastic and contributors</authors>
+    <license type="expression">Apache-2.0</license>
+    <licenseUrl>https://licenses.nuget.org/Apache-2.0</licenseUrl>
+    <icon>nuget-icon.png</icon>
+    <projectUrl>https://github.com/elastic/elasticsearch-net</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/elastic/elasticsearch-net/master/build/nuget-icon.png</iconUrl>
+    <description>Strongly typed interface to Elasticsearch. Fluent and classic object initializer mappings of requests and 
+      responses. Uses and exposes Elasticsearch.Net.</description>
+    <releaseNotes>See https://github.com/elastic/elasticsearch-net/releases</releaseNotes>
+    <copyright>Elasticsearch BV</copyright>
+    <tags>elasticsearch elastic search lucene nest</tags>
+    <repository type="git" url="https://github.com/elastic/elasticsearch-net.git" commit="34f1b0b42ae4e0227fb1ad9ebeb7ae3406a998ec" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.6.1">
+        <dependency id="Elasticsearch.Net" version="7.17.5" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="Elasticsearch.Net" version="7.17.5" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

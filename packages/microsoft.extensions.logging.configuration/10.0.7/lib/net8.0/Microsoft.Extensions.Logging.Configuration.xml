@@ -1,0 +1,90 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Extensions.Logging.Configuration</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.Extensions.Logging.Configuration.ILoggerProviderConfiguration`1">
+            <summary>
+            Allows access to configuration section associated with logger provider.
+            </summary>
+            <typeparam name="T">The type of logger provider to get configuration for.</typeparam>
+        </member>
+        <member name="P:Microsoft.Extensions.Logging.Configuration.ILoggerProviderConfiguration`1.Configuration">
+            <summary>
+            Gets the configuration section for the requested logger provider.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Configuration.ILoggerProviderConfigurationFactory">
+            <summary>
+            Allows access to configuration section associated with logger provider
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Configuration.ILoggerProviderConfigurationFactory.GetConfiguration(System.Type)">
+            <summary>
+            Returns the configuration section associated with the logger provider.
+            </summary>
+            <param name="providerType">The logger provider type.</param>
+            <returns>The <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> for the given <paramref name="providerType" />.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Configuration.LoggerProviderOptions">
+            <summary>
+            Provides a set of helpers to initialize options objects from logger provider configuration.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Configuration.LoggerProviderOptions.RegisterProviderOptions``2(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Indicates that settings for <typeparamref name="TProvider"/> should be loaded into <typeparamref name="TOptions"/> type.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to register on.</param>
+            <typeparam name="TOptions">The options class.</typeparam>
+            <typeparam name="TProvider">The provider class.</typeparam>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Configuration.LoggerProviderConfigureOptions`2">
+            <summary>
+            Loads settings for <typeparamref name="TProvider"/> into <typeparamref name="TOptions"/> type.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Configuration.LoggerProviderOptionsChangeTokenSource`2">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Configuration.LoggerProviderOptionsChangeTokenSource`2.#ctor(Microsoft.Extensions.Logging.Configuration.ILoggerProviderConfiguration{`1})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Logging.Configuration.LoggerProviderOptionsChangeTokenSource`2"/> class.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.Configuration.LoggingBuilderConfigurationExtensions">
+            <summary>
+            Extension methods for setting up logging services in an <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder" />.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.Configuration.LoggingBuilderConfigurationExtensions.AddConfiguration(Microsoft.Extensions.Logging.ILoggingBuilder)">
+            <summary>
+            Adds services required to consume <see cref="T:Microsoft.Extensions.Logging.Configuration.ILoggerProviderConfigurationFactory"/> or <see cref="T:Microsoft.Extensions.Logging.Configuration.ILoggerProviderConfiguration`1"/>
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> to register services on.</param>
+        </member>
+        <member name="T:Microsoft.Extensions.Logging.LoggingBuilderExtensions">
+            <summary>
+            Extension methods for setting up logging services in an <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder" />.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Logging.LoggingBuilderExtensions.AddConfiguration(Microsoft.Extensions.Logging.ILoggingBuilder,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Configures <see cref="T:Microsoft.Extensions.Logging.LoggerFilterOptions" /> from an instance of <see cref="T:Microsoft.Extensions.Configuration.IConfiguration" />.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.Logging.ILoggingBuilder"/> to use.</param>
+            <param name="configuration">The <see cref="T:Microsoft.Extensions.Configuration.IConfiguration" /> to add.</param>
+            <returns>The builder.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.GetValue``1(Microsoft.Extensions.Configuration.IConfiguration,System.String,``0)">
+            <summary>Extracts the value with the specified key and converts it to the specified type.</summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Configuration.Binder.SourceGeneration.BindingExtensions.TryGetConfigurationValue(Microsoft.Extensions.Configuration.IConfiguration,System.String,System.String@)">
+            <summary>Tries to get the configuration value for the specified key.</summary>
+        </member>
+        <member name="P:System.SR.ValueNotSupported">
+            <summary>Configuration value '{0}' is not supported.</summary>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,97 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Serilog.AspNetCore</id>
+    <version>10.0.0</version>
+    <authors>Microsoft,Serilog Contributors</authors>
+    <license type="expression">Apache-2.0</license>
+    <licenseUrl>https://licenses.nuget.org/Apache-2.0</licenseUrl>
+    <icon>icon.png</icon>
+    <readme>README.md</readme>
+    <projectUrl>https://github.com/serilog/serilog-aspnetcore</projectUrl>
+    <description>Serilog support for ASP.NET Core logging</description>
+    <tags>serilog aspnet aspnetcore</tags>
+    <repository type="git" url="https://github.com/serilog/serilog-aspnetcore" branch="refs/heads/main" commit="0ddce6f80a805da7a982a912f5dde9998644f103" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.6.2">
+        <dependency id="Microsoft.AspNetCore.Hosting.Abstractions" version="2.3.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.AspNetCore.Http.Abstractions" version="2.3.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog" version="4.3.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Extensions.Hosting" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Formatting.Compact" version="3.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Settings.Configuration" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Sinks.Console" version="6.1.1" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Sinks.Debug" version="3.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Sinks.File" version="7.0.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net8.0">
+        <dependency id="Serilog" version="4.3.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Extensions.Hosting" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Formatting.Compact" version="3.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Settings.Configuration" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Sinks.Console" version="6.1.1" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Sinks.Debug" version="3.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Sinks.File" version="7.0.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net9.0">
+        <dependency id="Serilog" version="4.3.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Extensions.Hosting" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Formatting.Compact" version="3.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Settings.Configuration" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Sinks.Console" version="6.1.1" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Sinks.Debug" version="3.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Sinks.File" version="7.0.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net10.0">
+        <dependency id="Serilog" version="4.3.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Extensions.Hosting" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Formatting.Compact" version="3.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Settings.Configuration" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Sinks.Console" version="6.1.1" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Sinks.Debug" version="3.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Sinks.File" version="7.0.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="Microsoft.AspNetCore.Hosting.Abstractions" version="2.3.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.AspNetCore.Http.Abstractions" version="2.3.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog" version="4.3.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Extensions.Hosting" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Formatting.Compact" version="3.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Settings.Configuration" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Sinks.Console" version="6.1.1" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Sinks.Debug" version="3.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Sinks.File" version="7.0.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.1">
+        <dependency id="Microsoft.AspNetCore.Hosting.Abstractions" version="2.3.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.AspNetCore.Http.Abstractions" version="2.3.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog" version="4.3.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Extensions.Hosting" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Formatting.Compact" version="3.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Settings.Configuration" version="10.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Sinks.Console" version="6.1.1" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Sinks.Debug" version="3.0.0" exclude="Build,Analyzers" />
+        <dependency id="Serilog.Sinks.File" version="7.0.0" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+    <frameworkReferences>
+      <group targetFramework="net8.0">
+        <frameworkReference name="Microsoft.AspNetCore.App" />
+      </group>
+      <group targetFramework="net9.0">
+        <frameworkReference name="Microsoft.AspNetCore.App" />
+      </group>
+      <group targetFramework="net10.0">
+        <frameworkReference name="Microsoft.AspNetCore.App" />
+      </group>
+      <group targetFramework=".NETFramework4.6.2" />
+      <group targetFramework=".NETStandard2.0" />
+      <group targetFramework=".NETStandard2.1" />
+    </frameworkReferences>
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="Microsoft.CSharp" targetFramework=".NETFramework4.6.2" />
+      <frameworkAssembly assemblyName="System.Core" targetFramework=".NETFramework4.6.2" />
+      <frameworkAssembly assemblyName="System" targetFramework=".NETFramework4.6.2" />
+    </frameworkAssemblies>
+  </metadata>
+</package>

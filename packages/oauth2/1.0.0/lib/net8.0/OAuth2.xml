@@ -1,0 +1,1936 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>OAuth2</name>
+    </assembly>
+    <members>
+        <member name="T:OAuth2.Client.BeforeAfterRequestArgs">
+            <summary>
+            Contains context passed to before/after request hooks during the OAuth authentication flow.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.BeforeAfterRequestArgs.Client">
+            <summary>
+            Client instance.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.BeforeAfterRequestArgs.Request">
+            <summary>
+            Request instance.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.BeforeAfterRequestArgs.Response">
+            <summary>
+            Response instance.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.BeforeAfterRequestArgs.Parameters">
+            <summary>
+            Values received from service.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.BeforeAfterRequestArgs.Configuration">
+            <summary>
+            Client configuration.
+            </summary>
+        </member>
+        <member name="T:OAuth2.Client.Endpoint">
+            <summary>
+            Defines endpoint URI (service address).
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Endpoint.BaseUri">
+            <summary>
+            Base URI (service host address).
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Endpoint.Resource">
+            <summary>
+            Resource URI (service method).
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Endpoint.Uri">
+            <summary>
+            Complete URI of endpoint (base URI combined with resource URI).
+            </summary>
+        </member>
+        <member name="T:OAuth2.Client.IClient">
+            <summary>
+            Defines API for doing user authentication using certain third-party service.
+            </summary>
+            <remarks>
+            Standard flow is:
+            - client is used to generate login link (<see cref="M:OAuth2.Client.IClient.GetLoginLinkUriAsync(System.String,System.Threading.CancellationToken)"/>)
+            - hosting app renders page with generated login link
+            - user clicks login link - this leads to redirect to third-party service site
+            - user authenticates and allows app access their basic information
+            - third-party service redirects user to hosting app
+            - hosting app reads user information using <see cref="M:OAuth2.Client.IClient.GetUserInfoAsync(System.Collections.Specialized.NameValueCollection,System.Threading.CancellationToken)"/> method
+            </remarks>
+        </member>
+        <member name="P:OAuth2.Client.IClient.Name">
+            <summary>
+            Friendly name of provider (third-party authentication service). 
+            Defined by client implementation developer and supposed to be unique.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.IClient.GetLoginLinkUriAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Returns URI of service which should be called in order to start authentication process. 
+            You should use this URI when rendering login link.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.IClient.State">
+            <summary>
+            State which was posted as additional parameter 
+            to service and then received along with main answer.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.IClient.GetUserInfoAsync(System.Collections.Specialized.NameValueCollection,System.Threading.CancellationToken)">
+            <summary>
+            Obtains user information using third-party authentication service using data provided via callback request.
+            </summary>
+            <param name="parameters">Callback request payload (parameters).</param>
+            <param name="cancellationToken">Optional cancellation token</param>
+            <returns></returns>
+        </member>
+        <member name="P:OAuth2.Client.IClient.Configuration">
+            <summary>
+            Client configuration object.
+            </summary>
+        </member>
+        <member name="T:OAuth2.Client.Impl.AsanaClient">
+            <summary>
+            Asana authentication client.
+            </summary>
+            <seealso href="https://developers.asana.com/docs/oauth">Asana OAuth Documentation</seealso>
+        </member>
+        <member name="M:OAuth2.Client.Impl.AsanaClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.Impl.AsanaClient"/> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.AsanaClient.AccessCodeServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access code.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.AsanaClient.AccessTokenServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access token.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.AsanaClient.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which allows to obtain information about user which is currently logged in.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.AsanaClient.BeforeGetUserInfo(OAuth2.Client.BeforeAfterRequestArgs)">
+            <summary>
+            Called just before issuing request to third-party service when everything is ready.
+            Allows to add extra parameters to request or do any other needed preparations.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.AsanaClient.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo"/> from content received from third-party service.
+            </summary>
+            <param name="content">The content which is received from third-party service.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.AsanaClient.Name">
+            <summary>
+            Friendly name of provider (OAuth2 service).
+            </summary>
+        </member>
+        <member name="T:OAuth2.Client.Impl.DigitalOceanClient">
+            <summary>
+            DigitalOcean authentication client.
+            </summary>
+            <seealso href="https://docs.digitalocean.com/reference/api/oauth-api/">DigitalOcean OAuth Documentation</seealso>
+        </member>
+        <member name="M:OAuth2.Client.Impl.DigitalOceanClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.Impl.DigitalOceanClient"/> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.DigitalOceanClient.Name">
+            <summary>
+            Friendly name of provider (OAuth2 service).
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.DigitalOceanClient.AccessCodeServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access code.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.DigitalOceanClient.AfterGetAccessToken(OAuth2.Client.BeforeAfterRequestArgs)">
+            <summary>
+            Called after the access token is obtained. Stores the raw response for later user info parsing.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.DigitalOceanClient.AccessTokenServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access token.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.DigitalOceanClient.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which allows to obtain information about user which is currently logged in.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.DigitalOceanClient.GetUserInfoAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:OAuth2.Client.Impl.DigitalOceanClient.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo"/> from content received from third-party service.
+            </summary>
+            <param name="content">The content which is received from third-party service.</param>
+        </member>
+        <member name="T:OAuth2.Client.Impl.ExactOnlineClient">
+            <summary>
+            Exact Online authentication client.
+            </summary>
+            <seealso href="https://developers.exactonline.com/">Exact Online Developer Documentation</seealso>
+        </member>
+        <member name="M:OAuth2.Client.Impl.ExactOnlineClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.Impl.ExactOnlineClient"/> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.ExactOnlineClient.Name">
+            <summary>
+            Exact Online client name
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.ExactOnlineClient.AccessCodeServiceEndpoint">
+            <summary>
+            The access code service endpoint
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.ExactOnlineClient.AccessTokenServiceEndpoint">
+            <summary>
+            The acess token service endpoint
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.ExactOnlineClient.BeforeGetUserInfo(OAuth2.Client.BeforeAfterRequestArgs)">
+            <summary>
+            Called just before issuing request to third-party service when everything is ready.
+            Allows to add extra parameters to request or do any other needed preparations.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.ExactOnlineClient.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which allows to obtain information about user which is currently logged in.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.ExactOnlineClient.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo"/> from content received from third-party service.
+            </summary>
+            <param name="content">The content which is received from third-party service.</param>
+        </member>
+        <member name="T:OAuth2.Client.Impl.FacebookClient">
+            <summary>
+            Facebook authentication client.
+            </summary>
+            <seealso href="https://developers.facebook.com/docs/facebook-login/guides/advanced/manual-flow">Facebook OAuth Documentation</seealso>
+        </member>
+        <member name="M:OAuth2.Client.Impl.FacebookClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.Impl.FacebookClient"/> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.FacebookClient.AccessCodeServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access code.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.FacebookClient.AccessTokenServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access token.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.FacebookClient.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which allows to obtain information about user which is currently logged in.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.FacebookClient.BeforeGetUserInfo(OAuth2.Client.BeforeAfterRequestArgs)">
+            <summary>
+            Called just before issuing request to third-party service when everything is ready.
+            Allows to add extra parameters to request or do any other needed preparations.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.FacebookClient.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo"/> from content received from third-party service.
+            </summary>
+            <param name="content">The content which is received from third-party service.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.FacebookClient.Name">
+            <summary>
+            Friendly name of provider (OAuth2 service).
+            </summary>
+        </member>
+        <member name="T:OAuth2.Client.Impl.FitbitClient">
+            <summary>
+            Fitbit authentication client.
+            </summary>
+            <seealso href="https://dev.fitbit.com/build/reference/web-api/authorization/">Fitbit OAuth Documentation</seealso>
+        </member>
+        <member name="M:OAuth2.Client.Impl.FitbitClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.Impl.FitbitClient"/> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.FitbitClient.AccessCodeServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access code.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.FitbitClient.AccessTokenServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access token.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.FitbitClient.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which allows to obtain information about user which is currently logged in.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.FitbitClient.BeforeGetAccessToken(OAuth2.Client.BeforeAfterRequestArgs)">
+            <inheritdoc />
+        </member>
+        <member name="M:OAuth2.Client.Impl.FitbitClient.BeforeGetUserInfo(OAuth2.Client.BeforeAfterRequestArgs)">
+            <inheritdoc />
+        </member>
+        <member name="M:OAuth2.Client.Impl.FitbitClient.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo"/> from content received from third-party service.
+            </summary>
+            <param name="content">The content which is received from third-party service.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.FitbitClient.Name">
+            <summary>
+            Friendly name of provider (OAuth2 service).
+            </summary>
+        </member>
+        <member name="T:OAuth2.Client.Impl.FoursquareClient">
+            <summary>
+            Foursquare authentication client.
+            </summary>
+            <remarks>
+            <para>Warning: Foursquare deprecated the v2 consumer API, including the /v2/users/self endpoint
+            used by this client. New applications should use the Foursquare Places API (v3) with API keys.</para>
+            </remarks>
+            <seealso href="https://docs.foursquare.com/">Foursquare Developer Documentation</seealso>
+        </member>
+        <member name="M:OAuth2.Client.Impl.FoursquareClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.Impl.FoursquareClient"/> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.FoursquareClient.AccessCodeServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access code.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.FoursquareClient.AccessTokenServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access token.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.FoursquareClient.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which allows to obtain information about user which is currently logged in.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.FoursquareClient.BeforeGetUserInfo(OAuth2.Client.BeforeAfterRequestArgs)">
+            <summary>
+            Called just before issuing request to third-party service when everything is ready.
+            Allows to add extra parameters to request or do any other needed preparations.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.FoursquareClient.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo"/> from content received from third-party service.
+            </summary>
+            <param name="content">The content which is received from third-party service.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.FoursquareClient.Name">
+            <inheritdoc />
+        </member>
+        <member name="T:OAuth2.Client.Impl.GitHubClient">
+            <summary>
+            GitHub authentication client.
+            </summary>
+            <seealso href="https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps">GitHub OAuth Documentation</seealso>
+        </member>
+        <member name="M:OAuth2.Client.Impl.GitHubClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.Impl.GitHubClient"/> class.
+            </summary>
+            <param name="factory">The factory used to create HTTP requests.</param>
+            <param name="configuration">The client configuration.</param>
+        </member>
+        <member name="M:OAuth2.Client.Impl.GitHubClient.BeforeGetAccessToken(OAuth2.Client.BeforeAfterRequestArgs)">
+            <inheritdoc />
+        </member>
+        <member name="M:OAuth2.Client.Impl.GitHubClient.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo"/> from content received from third-party service.
+            </summary>
+            <param name="content">The content which is received from third-party service.</param>
+        </member>
+        <member name="M:OAuth2.Client.Impl.GitHubClient.BeforeGetUserInfo(OAuth2.Client.BeforeAfterRequestArgs)">
+            <inheritdoc />
+        </member>
+        <member name="M:OAuth2.Client.Impl.GitHubClient.GetUserInfoAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:OAuth2.Client.Impl.GitHubClient.ParseEmailAddresses(System.String)">
+            <summary>
+            Parses the email addresses from the GitHub user emails API response.
+            </summary>
+            <param name="content">The JSON content returned from the user emails endpoint.</param>
+            <returns>A list of <see cref="T:OAuth2.Client.Impl.GitHubClient.UserEmails"/> representing the user's email addresses.</returns>
+        </member>
+        <member name="P:OAuth2.Client.Impl.GitHubClient.Name">
+            <summary>
+            Friendly name of provider (OAuth2 service).
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.GitHubClient.AccessCodeServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access code.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.GitHubClient.AccessTokenServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access token.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.GitHubClient.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which allows to obtain information about user which is currently logged in.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.GitHubClient.UserEmailServiceEndpoint">
+            <summary>
+            Defines URI of service which allows to obtain email addresses of user which is currently logged in.
+            </summary>
+        </member>
+        <member name="T:OAuth2.Client.Impl.GitHubClient.UserEmails">
+            <summary>
+            Represents an email address returned by the GitHub user emails API.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.GitHubClient.UserEmails.Email">
+            <summary>
+            Gets or sets the email address.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.GitHubClient.UserEmails.Primary">
+            <summary>
+            Gets or sets a value indicating whether this is the user's primary email.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.GitHubClient.UserEmails.Verified">
+            <summary>
+            Gets or sets a value indicating whether the email address has been verified.
+            </summary>
+        </member>
+        <member name="T:OAuth2.Client.Impl.GoogleClient">
+            <summary>
+            Google authentication client.
+            </summary>
+            <seealso href="https://developers.google.com/identity/protocols/oauth2/web-server">Google OAuth 2.0 Documentation</seealso>
+        </member>
+        <member name="M:OAuth2.Client.Impl.GoogleClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.Impl.GoogleClient"/> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.GoogleClient.AccessCodeServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access code.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.GoogleClient.AccessTokenServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access token.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.GoogleClient.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which allows to obtain information about user which is currently logged in.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.GoogleClient.Name">
+            <summary>
+            Friendly name of provider (OAuth2 service).
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.GoogleClient.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo"/> from content received from third-party service.
+            </summary>
+            <param name="content">The content which is received from third-party service.</param>
+        </member>
+        <member name="T:OAuth2.Client.Impl.LinkedInClient">
+            <summary>
+            LinkedIn authentication client using OpenID Connect (Sign In with LinkedIn v2).
+            </summary>
+            <remarks>
+            <para>Updated from deprecated v1 API (<c>/uas/oauth2/</c>, <c>/v1/people/~</c> XML)
+            to current v2 OAuth 2.0 with OpenID Connect (<c>/oauth/v2/</c>, <c>/v2/userinfo</c> JSON).
+            Requires <c>openid profile email</c> scopes.</para>
+            </remarks>
+            <seealso href="https://learn.microsoft.com/en-us/linkedin/consumer/integrations/self-serve/sign-in-with-linkedin-v2">Sign In with LinkedIn using OpenID Connect</seealso>
+            <seealso href="https://learn.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow">LinkedIn OAuth 2.0 Authorization Code Flow</seealso>
+        </member>
+        <member name="M:OAuth2.Client.Impl.LinkedInClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.Impl.LinkedInClient"/> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.LinkedInClient.AccessCodeServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access code.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.LinkedInClient.AccessTokenServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access token.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.LinkedInClient.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which allows to obtain information about user which is currently logged in.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.LinkedInClient.GetLoginLinkUriAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:OAuth2.Client.Impl.LinkedInClient.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo"/> from content received from third-party service.
+            </summary>
+            <param name="content">The content which is received from third-party service.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.LinkedInClient.Name">
+            <summary>
+            Friendly name of provider (OAuth service).
+            </summary>
+        </member>
+        <member name="T:OAuth2.Client.Impl.LoginCidadaoClient">
+            <summary>
+            Login Cidadão OAuth2 authentication client.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.LoginCidadaoClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.Impl.LoginCidadaoClient"/> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.LoginCidadaoClient.AccessCodeServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access code.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.LoginCidadaoClient.AccessTokenServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access token.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.LoginCidadaoClient.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which allows to obtain information about user which is currently logged in.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.LoginCidadaoClient.GetUserInfoAsync(System.Threading.CancellationToken)">
+            <summary>
+            Obtains user information using provider API.
+            </summary>
+            <param name="cancellationToken">Optional cancellationtoken</param>
+        </member>
+        <member name="M:OAuth2.Client.Impl.LoginCidadaoClient.BeforeGetUserInfo(OAuth2.Client.BeforeAfterRequestArgs)">
+            <summary>
+            Called just before issuing request to third-party service when everything is ready.
+            Allows to add extra parameters to request or do any other needed preparations.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.LoginCidadaoClient.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo"/> from content received from third-party service.
+            </summary>
+            <param name="content">The content which is received from third-party service.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.LoginCidadaoClient.Name">
+            <summary>
+            Friendly name of provider (OAuth2 service).
+            </summary>
+        </member>
+        <member name="T:OAuth2.Client.Impl.LoginCidadaoClient.Cidadao">
+            <summary>
+            Represents a Login Cidadão user with additional Brazilian citizen information.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.LoginCidadaoClient.Cidadao.Cpf">
+            <summary>
+            Gets or sets the CPF (Cadastro de Pessoas Físicas) number.
+            </summary>
+        </member>
+        <member name="T:OAuth2.Client.Impl.MailRuClient">
+            <summary>
+            Mail.Ru authentication client.
+            </summary>
+            <seealso href="https://api.mail.ru/docs/guides/oauth/">Mail.Ru OAuth Documentation</seealso>
+        </member>
+        <member name="M:OAuth2.Client.Impl.MailRuClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.Impl.MailRuClient"/> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.MailRuClient.AccessCodeServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access code.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.MailRuClient.AccessTokenServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access token.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.MailRuClient.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which allows to obtain information about user which is currently logged in.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.MailRuClient.BeforeGetUserInfo(OAuth2.Client.BeforeAfterRequestArgs)">
+            <summary>
+            Called just before issuing request to third-party service when everything is ready.
+            Allows to add extra parameters to request or do any other needed preparations.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.MailRuClient.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo"/> from content received from third-party service.
+            </summary>
+            <param name="content">The content which is received from third-party service.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.MailRuClient.Name">
+            <summary>
+            Friendly name of provider (OAuth2 service).
+            </summary>
+        </member>
+        <member name="T:OAuth2.Client.Impl.MicrosoftClient">
+            <summary>
+            Microsoft authentication client using Microsoft Identity Platform (v2.0) and Microsoft Graph.
+            </summary>
+            <remarks>
+            This client uses the current Microsoft Identity Platform (login.microsoftonline.com) and
+            Microsoft Graph API (graph.microsoft.com). It is the modern alternative to
+            <see cref="T:OAuth2.Client.Impl.WindowsLiveClient"/> for new integrations, but is <b>not</b> a drop-in replacement —
+            user IDs and supported scopes differ between the two platforms.
+            </remarks>
+            <seealso href="https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow">Microsoft Identity Platform OAuth 2.0 Documentation</seealso>
+        </member>
+        <member name="M:OAuth2.Client.Impl.MicrosoftClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.Impl.MicrosoftClient"/> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.MicrosoftClient.AccessCodeServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access code.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.MicrosoftClient.AccessTokenServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access token.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.MicrosoftClient.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which allows to obtain information about user which is currently logged in.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.MicrosoftClient.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo"/> from content received from third-party service.
+            </summary>
+            <param name="content">The content which is received from third-party service.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.MicrosoftClient.Name">
+            <inheritdoc />
+        </member>
+        <member name="T:OAuth2.Client.Impl.OdnoklassnikiClient">
+            <summary>
+            Odnoklassniki authentication client.
+            </summary>
+            <seealso href="https://apiok.ru/en/ext/oauth/">Odnoklassniki OAuth Documentation</seealso>
+        </member>
+        <member name="M:OAuth2.Client.Impl.OdnoklassnikiClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.Impl.OdnoklassnikiClient"/> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.OdnoklassnikiClient.AccessCodeServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access code.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.OdnoklassnikiClient.AccessTokenServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access token.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.OdnoklassnikiClient.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which allows to obtain information about user which is currently logged in.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.OdnoklassnikiClient.BeforeGetUserInfo(OAuth2.Client.BeforeAfterRequestArgs)">
+            <summary>
+            Called just before issuing request to third-party service when everything is ready.
+            Allows to add extra parameters to request or do any other needed preparations.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.OdnoklassnikiClient.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo"/> from content received from third-party service.
+            </summary>
+            <param name="content">The content which is received from third-party service.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.OdnoklassnikiClient.Name">
+            <summary>
+            Friendly name of provider (OAuth2 service).
+            </summary>
+        </member>
+        <member name="T:OAuth2.Client.Impl.SalesforceClient">
+            <summary>
+            Salesforce authentication client.
+            </summary>
+            <seealso href="https://help.salesforce.com/s/articleView?id=sf.remoteaccess_oauth_web_server_flow.htm">Salesforce OAuth Documentation</seealso>
+        </member>
+        <member name="M:OAuth2.Client.Impl.SalesforceClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.Impl.SalesforceClient"/> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.SalesforceClient.AccessCodeServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access code.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.SalesforceClient.AccessTokenServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access token.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.SalesforceClient.SalesforceProfileUrl">
+            <summary>
+            Gets or sets the Salesforce user profile URL returned in the token response.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.SalesforceClient.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which allows to obtain information about user which is currently logged in.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.SalesforceClient.Name">
+            <summary>
+            Friendly name of provider (OAuth2 service).
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.SalesforceClient.ParseTokenResponse(System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:OAuth2.Client.Impl.SalesforceClient.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo"/> from content received from third-party service.
+            </summary>
+            <param name="content">The content which is received from third-party service.</param>
+        </member>
+        <member name="T:OAuth2.Client.Impl.SpotifyClient">
+            <summary>
+            Spotify authentication client.
+            </summary>
+            <seealso href="https://developer.spotify.com/documentation/web-api/tutorials/code-flow">Spotify OAuth Documentation</seealso>
+        </member>
+        <member name="M:OAuth2.Client.Impl.SpotifyClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.Impl.SpotifyClient"/> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.SpotifyClient.Name">
+            <summary>
+            Spotify client name
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.SpotifyClient.AccessCodeServiceEndpoint">
+            <summary>
+            The access code service endpoint
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.SpotifyClient.AccessTokenServiceEndpoint">
+            <summary>
+            The acess token service endpoint
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.SpotifyClient.BeforeGetUserInfo(OAuth2.Client.BeforeAfterRequestArgs)">
+            <summary>
+            Called just before issuing request to third-party service when everything is ready.
+            Allows to add extra parameters to request or do any other needed preparations.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.SpotifyClient.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which allows to obtain information about user which is currently logged in.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.SpotifyClient.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo"/> from content received from third-party service.
+            </summary>
+            <param name="content">The content which is received from third-party service.</param>
+        </member>
+        <member name="T:OAuth2.Client.Impl.TodoistClient">
+            <summary>
+            Todoist authentication client.
+            </summary>
+            <remarks>
+            <para>Updated from deprecated Sync API v6 to the current Todoist API v1 (unified).
+            Uses <c>GET /api/v1/user</c> with Bearer token for user info instead of the
+            old <c>API/v6/sync</c> endpoint.</para>
+            </remarks>
+            <seealso href="https://developer.todoist.com/api/v1/#tag/Authorization/OAuth">Todoist OAuth Documentation</seealso>
+            <seealso href="https://developer.todoist.com/api/v1/#tag/User/operation/user_info_api_v1_user_get">Todoist User Info API</seealso>
+        </member>
+        <member name="M:OAuth2.Client.Impl.TodoistClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.Impl.TodoistClient"/> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.TodoistClient.AccessCodeServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access code.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.TodoistClient.AccessTokenServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access token.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.TodoistClient.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which allows to obtain information about user which is currently logged in.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.TodoistClient.Name">
+            <summary>
+            Friendly name of provider (OAuth2 service).
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.TodoistClient.BeforeGetUserInfo(OAuth2.Client.BeforeAfterRequestArgs)">
+            <inheritdoc />
+        </member>
+        <member name="M:OAuth2.Client.Impl.TodoistClient.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo"/> from content received from third-party service.
+            </summary>
+            <param name="content">The content which is received from third-party service.</param>
+        </member>
+        <member name="T:OAuth2.Client.Impl.TwitterClient">
+            <summary>
+            Obsolete. Use <see cref="T:OAuth2.Client.Impl.XClient"/> instead. Twitter has been rebranded to X.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.TwitterClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.Impl.TwitterClient"/> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="T:OAuth2.Client.Impl.UberClient">
+            <summary>
+            Uber authentication client.
+            </summary>
+            <seealso href="https://developer.uber.com/docs/riders/guides/authentication/introduction">Uber OAuth Documentation</seealso>
+        </member>
+        <member name="M:OAuth2.Client.Impl.UberClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.Impl.UberClient"/> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.UberClient.Name">
+            <summary>
+            The provider name
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.UberClient.AccessCodeServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access code.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.UberClient.AccessTokenServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access token.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.UberClient.BeforeGetUserInfo(OAuth2.Client.BeforeAfterRequestArgs)">
+            <summary>
+            Called just before issuing request to third-party service when everything is ready.
+            Allows to add extra parameters to request or do any other needed preparations.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.UberClient.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which allows to obtain information about user which is currently logged in.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.UberClient.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo"/> from content received from third-party service.
+            </summary>
+            <param name="content">The content which is received from third-party service.</param>
+        </member>
+        <member name="T:OAuth2.Client.Impl.VkClient">
+            <summary>
+            VK (Vkontakte) authentication client.
+            </summary>
+            <remarks>
+            <para>Updated to VK API v5.131 (previous v5.74 was deprecated). See issue #146.</para>
+            </remarks>
+            <seealso href="https://dev.vk.com/en/api/access-token/authcode-flow-user">VK OAuth Documentation</seealso>
+        </member>
+        <member name="M:OAuth2.Client.Impl.VkClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.Impl.VkClient"/> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.VkClient.AccessCodeServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access code.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.VkClient.AccessTokenServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access token.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.VkClient.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which allows to obtain information about user which is currently logged in.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.VkClient.Name">
+            <inheritdoc />
+        </member>
+        <member name="M:OAuth2.Client.Impl.VkClient.AfterGetAccessToken(OAuth2.Client.BeforeAfterRequestArgs)">
+            <summary>
+            Called just after obtaining response with access token from third-party service.
+            Allows to read extra data returned along with access token.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.VkClient.BeforeGetUserInfo(OAuth2.Client.BeforeAfterRequestArgs)">
+            <summary>
+            Called just before issuing request to third-party service when everything is ready.
+            Allows to add extra parameters to request or do any other needed preparations.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.VkClient.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo"/> from content received from third-party service.
+            </summary>
+            <param name="content">The content which is received from third-party service.</param>
+        </member>
+        <member name="T:OAuth2.Client.Impl.VSTSClient">
+            <summary>
+            Visual Studio Team Services (VSTS) / Azure DevOps authentication client.
+            </summary>
+            <seealso href="https://learn.microsoft.com/en-us/azure/devops/integrate/get-started/authentication/oauth">Azure DevOps OAuth Documentation</seealso>
+        </member>
+        <member name="M:OAuth2.Client.Impl.VSTSClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.Impl.VSTSClient"/> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.VSTSClient.AccessCodeServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access code.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.VSTSClient.BeforeGetAccessToken(OAuth2.Client.BeforeAfterRequestArgs)">
+            <inheritdoc />
+        </member>
+        <member name="P:OAuth2.Client.Impl.VSTSClient.AccessTokenServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access token.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.VSTSClient.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which allows to obtain information about user which is currently logged in.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.VSTSClient.BeforeGetUserInfo(OAuth2.Client.BeforeAfterRequestArgs)">
+            <summary>
+            Called just before issuing request to third-party service when everything is ready.
+            Allows to add extra parameters to request or do any other needed preparations.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.VSTSClient.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo"/> from content received from third-party service.
+            For more information see https://learn.microsoft.com/en-us/rest/api/azure/devops/profile/profiles/get
+            </summary>
+            <param name="content">The content which is received from third-party service.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.VSTSClient.Name">
+            <inheritdoc />
+        </member>
+        <member name="T:OAuth2.Client.Impl.WindowsLiveClient">
+            <summary>
+            Windows Live authentication client.
+            </summary>
+            <remarks>
+            <para>
+            This client uses the legacy Windows Live / Live Connect endpoints (login.live.com
+            and apis.live.net/v5.0). Although Microsoft officially retired the Live SDK in
+            November 2018, these endpoints continue to function in practice and are actively
+            used in production (e.g. Exceptionless with <c>wl.emails</c> scope).
+            </para>
+            <para>
+            For new integrations, consider using <see cref="T:OAuth2.Client.Impl.MicrosoftClient"/> instead, which
+            targets the Microsoft Identity Platform (v2.0) and Microsoft Graph API. Note that
+            user IDs differ between the two platforms.
+            </para>
+            </remarks>
+            <seealso href="https://learn.microsoft.com/en-us/onedrive/developer/rest-api/concepts/migrating-from-live-sdk">Migrating from Live SDK to Microsoft Graph</seealso>
+        </member>
+        <member name="M:OAuth2.Client.Impl.WindowsLiveClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.Impl.WindowsLiveClient"/> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.WindowsLiveClient.AccessCodeServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access code.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.WindowsLiveClient.AccessTokenServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access token.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.WindowsLiveClient.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which allows to obtain information about user which is currently logged in.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.WindowsLiveClient.BeforeGetUserInfo(OAuth2.Client.BeforeAfterRequestArgs)">
+            <summary>
+            Called just before issuing request to third-party service when everything is ready.
+            Allows to add extra parameters to request or do any other needed preparations.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.WindowsLiveClient.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo"/> from content received from third-party service.
+            </summary>
+            <param name="content">The content which is received from third-party service.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.WindowsLiveClient.Name">
+            <inheritdoc />
+        </member>
+        <member name="T:OAuth2.Client.Impl.XClient">
+            <summary>
+            X (formerly Twitter) authentication client using OAuth 1.0a.
+            </summary>
+            <remarks>
+            <para>X (formerly Twitter) uses OAuth 1.0a for authentication. The API endpoints at
+            api.twitter.com are still operational but require at minimum Basic API access tier
+            ($100/month) for read endpoints. The free tier only supports posting.</para>
+            <para>Requests user email via <c>include_email=true</c> parameter.
+            Requires the "Request email address from users" permission enabled in the
+            X Developer Portal app settings.</para>
+            </remarks>
+            <seealso href="https://developer.x.com/en/docs/authentication/oauth-1-0a">X OAuth 1.0a Documentation</seealso>
+        </member>
+        <member name="M:OAuth2.Client.Impl.XClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.Impl.XClient"/> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.XClient.RequestTokenServiceEndpoint">
+            <summary>
+            Defines URI of service which is called for obtaining request token.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.XClient.LoginServiceEndpoint">
+            <summary>
+            Defines URI of service which should be called to initiate authentication process.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.XClient.AccessTokenServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access token.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.XClient.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which is called to obtain user information.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.XClient.Name">
+            <summary>
+            Friendly name of provider (OAuth service).
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.XClient.BeforeGetUserInfo(OAuth2.Client.BeforeAfterRequestArgs)">
+            <summary>
+            Called just before issuing request to service when everything is ready.
+            Adds <c>include_email=true</c> to request the user's email address.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.XClient.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo" /> using content of callback issued by service.
+            </summary>
+        </member>
+        <member name="T:OAuth2.Client.Impl.YahooClient">
+            <summary>
+            Yahoo authentication client.
+            </summary>
+            <seealso href="https://developer.yahoo.com/oauth2/guide/">Yahoo OAuth 2.0 Documentation</seealso>
+        </member>
+        <member name="P:OAuth2.Client.Impl.YahooClient.UserProfileGUID">
+            <summary>
+            Gets the Yahoo user profile GUID obtained from the token response.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.YahooClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.Impl.YahooClient"/> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.YahooClient.Name">
+            <summary>
+            Yahoo client name
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.YahooClient.AccessCodeServiceEndpoint">
+            <summary>
+            The access code service endpoint
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.YahooClient.AccessTokenServiceEndpoint">
+            <summary>
+            The acess token service endpoint
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.YahooClient.AfterGetAccessToken(OAuth2.Client.BeforeAfterRequestArgs)">
+            <summary>
+            It's required to store the User GUID obtained in the response for further usage
+            https://developer.yahoo.com/oauth2/guide/flows_authcode/
+            </summary>
+            <param name="args"></param>
+        </member>
+        <member name="M:OAuth2.Client.Impl.YahooClient.BeforeGetUserInfo(OAuth2.Client.BeforeAfterRequestArgs)">
+             <summary>
+             Called just before issuing request to third-party service when everything is ready.
+             Allows to add extra parameters to request or do any other needed preparations.
+            
+             We have to reformat the Url adding the user guid for accessing their information
+             https://developer.yahoo.com/oauth2/guide/apirequests/
+             </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.YahooClient.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which allows to obtain information about user which is currently logged in.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.YahooClient.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo"/> from content received from third-party service.
+            </summary>
+            <param name="content">The content which is received from third-party service.</param>
+        </member>
+        <member name="T:OAuth2.Client.Impl.YandexClient">
+            <summary>
+            Yandex authentication client.
+            </summary>
+            <seealso href="https://yandex.com/dev/id/doc/en/codes/code-url">Yandex OAuth Documentation</seealso>
+        </member>
+        <member name="M:OAuth2.Client.Impl.YandexClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.Impl.YandexClient"/> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.YandexClient.AccessCodeServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access code.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.YandexClient.AccessTokenServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access token.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.Impl.YandexClient.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which allows to obtain information about user which is currently logged in.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.YandexClient.BeforeGetUserInfo(OAuth2.Client.BeforeAfterRequestArgs)">
+            <summary>
+            Called just before issuing request to third-party service when everything is ready.
+            Allows to add extra parameters to request or do any other needed preparations.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.Impl.YandexClient.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo"/> from content received from third-party service.
+            </summary>
+            <param name="content">The content which is received from third-party service.</param>
+        </member>
+        <member name="P:OAuth2.Client.Impl.YandexClient.Name">
+            <inheritdoc />
+        </member>
+        <member name="T:OAuth2.Client.OAuth2Client">
+            <summary>
+            Base class for OAuth2 client implementation.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.OAuth2Client.Configuration">
+            <summary>
+            Client configuration object.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.OAuth2Client.Name">
+            <summary>
+            Friendly name of provider (OAuth2 service).
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.OAuth2Client.State">
+            <summary>
+            State (any additional information that was provided by application and is posted back by service).
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.OAuth2Client.AccessToken">
+            <summary>
+            Access token returned by provider. Can be used for further calls of provider API.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.OAuth2Client.RefreshToken">
+            <summary>
+            Refresh token returned by provider. Can be used for further calls of provider API.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.OAuth2Client.TokenType">
+            <summary>
+            Token type returned by provider. Can be used for further calls of provider API.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.OAuth2Client.ExpiresAt">
+            <summary>
+            Seconds till the token expires returned by provider. Can be used for further calls of provider API.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.OAuth2Client.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.OAuth2Client"/> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="M:OAuth2.Client.OAuth2Client.GetLoginLinkUriAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Returns URI of service which should be called in order to start authentication process.
+            This URI should be used for rendering login link.
+            </summary>
+            <param name="state">
+            Any additional information that will be posted back by service.
+            </param>
+            <param name="cancellationToken"></param>
+        </member>
+        <member name="M:OAuth2.Client.OAuth2Client.GetTokenAsync(System.Collections.Specialized.NameValueCollection,System.Threading.CancellationToken)">
+            <summary>
+            Issues query for access token and returns access token.
+            </summary>
+            <param name="parameters">Callback request payload (parameters).</param>
+            <param name="cancellationToken">Optional cancellation token</param>
+        </member>
+        <member name="M:OAuth2.Client.OAuth2Client.GetCurrentTokenAsync(System.String,System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Returns a valid access token, refreshing it if expired or forced.
+            </summary>
+            <param name="refreshToken">Optional refresh token to use. Falls back to the stored refresh token.</param>
+            <param name="forceUpdate">When <c>true</c>, forces a token refresh even if the current token has not expired.</param>
+            <param name="cancellationToken">Optional cancellation token.</param>
+            <returns>The current access token.</returns>
+        </member>
+        <member name="P:OAuth2.Client.OAuth2Client.AccessCodeServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access code.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.OAuth2Client.AccessTokenServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access token.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.OAuth2Client.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which allows to obtain information about user
+            who is currently logged in.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.OAuth2Client.QueryAccessTokenAsync(System.Collections.Specialized.NameValueCollection,System.Threading.CancellationToken)">
+            <summary>
+            Issues query for access token and parses response.
+            </summary>
+            <param name="parameters">Callback request payload (parameters).</param>
+            <param name="cancellationToken">Optional cancellation token</param>
+        </member>
+        <member name="M:OAuth2.Client.OAuth2Client.ParseTokenResponse(System.String,System.String)">
+            <summary>
+            Parses a value from the access token response by key, supporting both JSON and query-string formats.
+            </summary>
+            <param name="content">The raw response content.</param>
+            <param name="key">The key to look up in the response.</param>
+            <returns>The value associated with <paramref name="key"/>, or <c>null</c> if not found.</returns>
+        </member>
+        <member name="M:OAuth2.Client.OAuth2Client.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo"/> using content received from provider.
+            </summary>
+            <param name="content">The content which is received from provider.</param>
+        </member>
+        <member name="M:OAuth2.Client.OAuth2Client.BeforeGetAccessToken(OAuth2.Client.BeforeAfterRequestArgs)">
+            <summary>
+            Called just before issuing request to obtain access token.
+            Allows to add extra parameters to request or do any other needed preparations.
+            </summary>
+            <param name="args">Request context containing client, request, parameters, and configuration.</param>
+        </member>
+        <member name="M:OAuth2.Client.OAuth2Client.AfterGetAccessToken(OAuth2.Client.BeforeAfterRequestArgs)">
+            <summary>
+            Called just after obtaining response with access token from service.
+            Allows to read extra data returned along with access token.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.OAuth2Client.BeforeGetUserInfo(OAuth2.Client.BeforeAfterRequestArgs)">
+            <summary>
+            Called just before issuing request to service when everything is ready.
+            Allows to add extra parameters to request or do any other needed preparations.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.OAuth2Client.GetUserInfoAsync(System.Threading.CancellationToken)">
+            <summary>
+            Obtains user information using provider API.
+            </summary>
+            <param name="cancellationToken">Optional cancellationtoken</param>
+        </member>
+        <member name="M:OAuth2.Client.OAuth2Client.GetUserInfoAsync(System.Collections.Specialized.NameValueCollection,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:OAuth2.Client.OAuthClient">
+            <summary>
+            Base class for OAuth (version 1) client implementation.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.OAuthClient.Configuration">
+            <summary>
+            Client configuration object.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.OAuthClient.Name">
+            <summary>
+            Friendly name of provider (OAuth service).
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.OAuthClient.State">
+            <summary>
+            State which was posted as additional parameter
+            to service and then received along with main answer.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.OAuthClient.AccessToken">
+            <summary>
+            Access token received from service. Can be used for further service API calls.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.OAuthClient.AccessTokenSecret">
+            <summary>
+            Access token secret received from service. Can be used for further service API calls.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.OAuthClient.#ctor(OAuth2.Infrastructure.IRequestFactory,OAuth2.Configuration.IClientConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.OAuthClient" /> class.
+            </summary>
+            <param name="factory">The factory.</param>
+            <param name="configuration">The configuration.</param>
+        </member>
+        <member name="M:OAuth2.Client.OAuthClient.GetLoginLinkUriAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Returns URI of service which should be called in order to start authentication process.
+            You should use this URI when rendering login link.
+            </summary>
+            <param name="state">Any additional information needed by application.</param>
+            <param name="cancellationToken">Optional cancellation token</param>
+            <returns>Login link URI.</returns>
+        </member>
+        <member name="P:OAuth2.Client.OAuthClient.RequestTokenServiceEndpoint">
+            <summary>
+            Defines URI of service which is called for obtaining request token.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.OAuthClient.LoginServiceEndpoint">
+            <summary>
+            Defines URI of service which should be called to initiate authentication process.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.OAuthClient.AccessTokenServiceEndpoint">
+            <summary>
+            Defines URI of service which issues access token.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.OAuthClient.UserInfoServiceEndpoint">
+            <summary>
+            Defines URI of service which is called to obtain user information.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.OAuthClient.ParseUserInfo(System.String)">
+            <summary>
+            Should return parsed <see cref="T:OAuth2.Models.UserInfo"/> using content of callback issued by service.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.OAuthClient.QueryRequestTokenAsync(System.Threading.CancellationToken)">
+            <summary>
+            Issues request for request token and returns result.
+            </summary>
+            <param name="cancellationToken">Optional cancellation token</param>
+        </member>
+        <member name="M:OAuth2.Client.OAuthClient.GetLoginRequestUri(System.String)">
+            <summary>
+            Composes login link URI.
+            </summary>
+            <param name="state">Any additional information needed by application.</param>
+        </member>
+        <member name="M:OAuth2.Client.OAuthClient.QueryAccessTokenAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Obtains access token by calling corresponding service.
+            </summary>
+            <param name="verifier">Verifier posted with callback issued by provider.</param>
+            <param name="cancellationToken">Optional cancellation token</param>
+            <returns>Access token and other extra info.</returns>
+        </member>
+        <member name="M:OAuth2.Client.OAuthClient.BeforeGetAccessToken(OAuth2.Client.BeforeAfterRequestArgs)">
+            <summary>
+            Called just before issuing request to obtain access token.
+            Allows to add extra parameters to request or do any other needed preparations.
+            </summary>
+            <param name="args">Request context containing client, request, and configuration.</param>
+        </member>
+        <member name="M:OAuth2.Client.OAuthClient.AfterGetAccessToken(OAuth2.Client.BeforeAfterRequestArgs)">
+            <summary>
+            Called just after obtaining response with access token from service.
+            Allows to read extra data returned along with access token.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.OAuthClient.BeforeGetUserInfo(OAuth2.Client.BeforeAfterRequestArgs)">
+            <summary>
+            Called just before issuing request to service when everything is ready.
+            Allows to add extra parameters to request or do any other needed preparations.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.OAuthClient.QueryUserInfoAsync(System.Threading.CancellationToken)">
+            <summary>
+            Queries user info using corresponding service and data received by access token request.
+            </summary>
+            <param name="cancellationToken">Optional cancellationtoken</param>
+        </member>
+        <member name="M:OAuth2.Client.OAuthClient.GetUserInfoAsync(System.Collections.Specialized.NameValueCollection,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:OAuth2.Client.UnexpectedResponseException">
+            <summary>
+            Indicates unexpected response from service.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.UnexpectedResponseException.FieldName">
+            <summary>
+            Name of field which contains unexpected (GET) response.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.UnexpectedResponseException.ErrorCode">
+            <summary>
+            OAuth error code returned by the provider (e.g. "access_denied", "invalid_request").
+            Populated when the error originates from an OAuth callback per RFC 6749 §4.1.2.1.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.UnexpectedResponseException.ErrorDescription">
+            <summary>
+            Human-readable error description returned by the provider.
+            Populated when the error originates from an OAuth callback per RFC 6749 §4.1.2.1.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Client.UnexpectedResponseException.Response">
+            <summary>
+            Unexpected response itself (can be null, if error occurred later in the response processing pipeline).
+            </summary>
+        </member>
+        <member name="M:OAuth2.Client.UnexpectedResponseException.#ctor(RestSharp.RestResponse)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.UnexpectedResponseException"/> class.
+            </summary>
+            <param name="response">The response.</param>
+        </member>
+        <member name="M:OAuth2.Client.UnexpectedResponseException.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.UnexpectedResponseException"/> class.
+            </summary>
+            <param name="fieldName">Name of the field.</param>
+        </member>
+        <member name="M:OAuth2.Client.UnexpectedResponseException.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Client.UnexpectedResponseException"/> class
+            with OAuth error details from the provider callback.
+            </summary>
+            <param name="fieldName">Name of the field.</param>
+            <param name="errorCode">OAuth error code (e.g. "access_denied").</param>
+            <param name="errorDescription">Human-readable error description from the provider.</param>
+        </member>
+        <member name="T:OAuth2.Configuration.ClientConfiguration">
+            <summary>
+            Runtime client configuration. 
+            Use instead of <see cref="T:OAuth2.Configuration.ClientConfiguration"/> when you need manually create client configuration in runtime.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Configuration.ClientConfiguration.ClientTypeName">
+            <summary>
+            Name of client type.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Configuration.ClientConfiguration.IsEnabled">
+            <summary>
+            Client state: enabled or disabled.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Configuration.ClientConfiguration.ClientId">
+            <summary>
+            Client ID (ID of your application).
+            </summary>
+        </member>
+        <member name="P:OAuth2.Configuration.ClientConfiguration.ClientSecret">
+            <summary>
+            Client secret.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Configuration.ClientConfiguration.ClientPublic">
+            <summary>
+            Public key.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Configuration.ClientConfiguration.Scope">
+            <summary>
+            Scope - contains set of permissions which user should give to your application.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Configuration.ClientConfiguration.RedirectUri">
+            <summary>
+            Redirect URI (URI user will be redirected to
+            after authentication using third-party service).
+            </summary>
+        </member>
+        <member name="T:OAuth2.Configuration.IClientConfiguration">
+            <summary>
+            Configuration of third-party authentication service client.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Configuration.IClientConfiguration.ClientTypeName">
+            <summary>
+            Name of client type.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Configuration.IClientConfiguration.IsEnabled">
+            <summary>
+            Client state: enabled or disabled.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Configuration.IClientConfiguration.ClientId">
+            <summary>
+            Client ID (ID of your application).
+            </summary>
+        </member>
+        <member name="P:OAuth2.Configuration.IClientConfiguration.ClientSecret">
+            <summary>
+            Client secret.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Configuration.IClientConfiguration.ClientPublic">
+            <summary>
+            Public key.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Configuration.IClientConfiguration.Scope">
+            <summary>
+            Scope - contains set of permissions which user should give to your application.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Configuration.IClientConfiguration.RedirectUri">
+            <summary>
+            Redirect URI (URI user will be redirected to 
+            after authentication using third-party service).
+            </summary>
+        </member>
+        <member name="T:OAuth2.Configuration.IOAuth2Configuration">
+            <summary>
+            OAuth2 library configuration.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Configuration.IOAuth2Configuration.Item(System.String)">
+            <summary>
+            Returns settings for service client with given name.
+            </summary>
+        </member>
+        <member name="T:OAuth2.Extensions.SerializerExtensions">
+            <summary>
+            Extension methods for <see cref="T:System.Text.Json.JsonElement"/> to simplify JSON navigation and value extraction.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Extensions.SerializerExtensions.GetStringValue(System.Text.Json.JsonElement)">
+            <summary>
+            Converts a <see cref="T:System.Text.Json.JsonElement"/> of any type to its string representation.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Extensions.SerializerExtensions.GetStringOrDefault(System.Text.Json.JsonElement,System.String)">
+            <summary>
+            Gets a string value from a named property, returning <c>null</c> if the property does not exist or is null.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Extensions.SerializerExtensions.SelectToken(System.Text.Json.JsonElement,System.String)">
+            <summary>
+            Navigates a dot-separated path with optional array indexing (e.g. <c>"images[0].url"</c>).
+            Returns <c>null</c> if any segment is missing.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Extensions.SerializerExtensions.TryGetPropertyIgnoreCase(System.Text.Json.JsonElement,System.String,System.Text.Json.JsonElement@)">
+            <summary>
+            Tries to get a property by name using case-insensitive comparison.
+            </summary>
+        </member>
+        <member name="T:OAuth2.Infrastructure.EnumerableExtensions">
+            <summary>
+            Extension methods for <see cref="T:System.Collections.Generic.IEnumerable`1"/>.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Infrastructure.EnumerableExtensions.ForEach``1(System.Collections.Generic.IEnumerable{``0},System.Action{``0})">
+            <summary>
+            Allows processing of each item using arbitrary action.
+            </summary>
+            <param name="enumerable">The enumerable.</param>
+            <param name="action">The action.</param>
+        </member>
+        <member name="T:OAuth2.Infrastructure.IRequestFactory">
+            <summary>
+            Intended for REST client/request creation.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Infrastructure.IRequestFactory.CreateClient(System.String)">
+            <summary>
+            Returns new REST client instance with the specified base URL.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Infrastructure.IRequestFactory.CreateRequest(System.String)">
+            <summary>
+            Returns new REST request instance.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Infrastructure.IRequestFactory.CreateRequest(System.String,RestSharp.Method)">
+            <summary>
+            Returns new REST request instance with the specified HTTP method.
+            </summary>
+        </member>
+        <member name="T:OAuth2.Infrastructure.NameValueCollectionExtensions">
+            <summary>
+            Provides extension methods for <see cref="T:System.Collections.Specialized.NameValueCollection"/>.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Infrastructure.NameValueCollectionExtensions.GetOrThrowUnexpectedResponse(System.Collections.Specialized.NameValueCollection,System.String)">
+            <summary>
+            Retrieves the value associated with the specified key, or throws an <see cref="T:OAuth2.Client.UnexpectedResponseException"/> if the value is empty.
+            </summary>
+            <param name="collection">The collection to search.</param>
+            <param name="key">The key whose value to retrieve.</param>
+            <returns>The non-empty value associated with the specified key.</returns>
+            <exception cref="T:OAuth2.Client.UnexpectedResponseException">Thrown when the value for <paramref name="key"/> is null or empty.</exception>
+        </member>
+        <member name="T:OAuth2.Infrastructure.ObjectExtensions">
+            <summary>
+            Common extensions.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Infrastructure.ObjectExtensions.AllPropertiesAreEqualTo(System.Object,System.Object)">
+            <summary>
+            Returns true if all equally named and typed properties have 
+            same values on two different objects (types of objects can be different).
+            </summary>
+        </member>
+        <member name="T:OAuth2.Infrastructure.RequestFactory">
+            <summary>
+            Default implementation of <see cref="T:OAuth2.Infrastructure.IRequestFactory"/>.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Infrastructure.RequestFactory.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Infrastructure.RequestFactory"/> class.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Infrastructure.RequestFactory.#ctor(OAuth2.Infrastructure.RequestOptions)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OAuth2.Infrastructure.RequestFactory"/> class with transport options.
+            </summary>
+            <param name="options">Transport-level options applied to every client created by this factory.</param>
+        </member>
+        <member name="M:OAuth2.Infrastructure.RequestFactory.CreateClient(System.String)">
+            <summary>
+            Returns new REST client instance with the specified base URL.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Infrastructure.RequestFactory.CreateRequest(System.String)">
+            <summary>
+            Returns new REST request instance.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Infrastructure.RequestFactory.CreateRequest(System.String,RestSharp.Method)">
+            <summary>
+            Returns new REST request instance with the specified HTTP method.
+            </summary>
+        </member>
+        <member name="T:OAuth2.Infrastructure.RequestFactoryExtensions">
+            <summary>
+            Provides convenience extension methods for <see cref="T:OAuth2.Infrastructure.IRequestFactory"/> using <see cref="T:OAuth2.Client.Endpoint"/> instances.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Infrastructure.RequestFactoryExtensions.CreateClient(OAuth2.Infrastructure.IRequestFactory,OAuth2.Client.Endpoint)">
+            <summary>
+            Creates a <see cref="T:RestSharp.RestClient"/> configured with the base URI of the specified endpoint.
+            </summary>
+            <param name="factory">The request factory.</param>
+            <param name="endpoint">The endpoint whose base URI is used.</param>
+            <returns>A configured <see cref="T:RestSharp.RestClient"/> instance.</returns>
+        </member>
+        <member name="M:OAuth2.Infrastructure.RequestFactoryExtensions.CreateRequest(OAuth2.Infrastructure.IRequestFactory,OAuth2.Client.Endpoint)">
+            <summary>
+            Creates a <see cref="T:RestSharp.RestRequest"/> for the specified endpoint using <see cref="F:RestSharp.Method.Get"/>.
+            </summary>
+            <param name="factory">The request factory.</param>
+            <param name="endpoint">The endpoint whose resource path is used.</param>
+            <returns>A <see cref="T:RestSharp.RestRequest"/> configured for a GET request.</returns>
+        </member>
+        <member name="M:OAuth2.Infrastructure.RequestFactoryExtensions.CreateRequest(OAuth2.Infrastructure.IRequestFactory,OAuth2.Client.Endpoint,RestSharp.Method)">
+            <summary>
+            Creates a <see cref="T:RestSharp.RestRequest"/> for the specified endpoint using the given HTTP method.
+            </summary>
+            <param name="factory">The request factory.</param>
+            <param name="endpoint">The endpoint whose resource path is used.</param>
+            <param name="method">The HTTP method for the request.</param>
+            <returns>A <see cref="T:RestSharp.RestRequest"/> configured with the specified method.</returns>
+        </member>
+        <member name="T:OAuth2.Infrastructure.RequestOptions">
+            <summary>
+            Transport-level options for HTTP requests made by OAuth clients.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Infrastructure.RequestOptions.Timeout">
+            <summary>
+            Maximum time to wait for a response. When <c>null</c>, the HTTP client default is used.
+            </summary>
+        </member>
+        <member name="T:OAuth2.Infrastructure.RestClientExtensions">
+            <summary>
+            Provides extension methods for <see cref="T:RestSharp.RestClient"/> with response verification.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Infrastructure.RestClientExtensions.ExecuteAndVerifyAsync(RestSharp.RestClient,RestSharp.RestRequest,System.Threading.CancellationToken)">
+            <summary>
+            Executes the request and verifies that the response has content and a success status code.
+            </summary>
+            <param name="client">The REST client.</param>
+            <param name="request">The request to execute.</param>
+            <param name="cancellationToken">A token to cancel the operation.</param>
+            <returns>The verified <see cref="T:RestSharp.RestResponse"/>.</returns>
+            <exception cref="T:OAuth2.Client.UnexpectedResponseException">Thrown when the response is empty or has a non-success status code.</exception>
+        </member>
+        <member name="T:OAuth2.Infrastructure.SafeExtensions">
+            <summary>
+            Set of extension methods for safe operation on nullable types.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Infrastructure.SafeExtensions.SafeGet``2(``0,System.Func{``0,``1})">
+            <summary>
+            Executes selector on instance and returns result or returns default value of target type if given instance is null.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Infrastructure.SafeExtensions.SafeGetAsync``2(``0,System.Func{``0,System.Threading.Tasks.Task{``1}})">
+            <summary>
+            Executes selector on instance and returns result or returns default value of target type if given instance is null.
+            </summary>
+        </member>
+        <member name="T:OAuth2.Infrastructure.StringExtensions">
+            <summary>
+            Set of extension methods for <see cref="T:System.String"/>.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Infrastructure.StringExtensions.Fill(System.String,System.Object[])">
+            <summary>
+            Alias for <code>string.Format</code>.
+            </summary>
+            <param name="format">The format.</param>
+            <param name="args">The args.</param>
+        </member>
+        <member name="M:OAuth2.Infrastructure.StringExtensions.Join``1(System.Collections.Generic.IEnumerable{``0},System.String)">
+            <summary>
+            Alias for <code>string.Join</code>.
+            </summary>
+            <param name="enumerable">The enumerable.</param>
+            <param name="separator">The separator.</param>
+        </member>
+        <member name="M:OAuth2.Infrastructure.StringExtensions.IsEmpty(System.String)">
+            <summary>
+            Returns true if given line is null, empty or contains only whitespaces.
+            </summary>
+            <param name="line">The line.</param>
+        </member>
+        <member name="M:OAuth2.Infrastructure.StringExtensions.GetMd5Hash(System.String)">
+            <summary>
+            Returns MD5 Hash of input.
+            </summary>
+            <param name="input">The line.</param>
+        </member>
+        <member name="T:OAuth2.Models.AvatarInfo">
+            <summary>
+            Contains URIs for different sizes of a user's avatar image.
+            </summary>
+        </member>
+        <member name="F:OAuth2.Models.AvatarInfo.SmallSize">
+            <summary>
+            Image size constants.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Models.AvatarInfo.Small">
+            <summary>
+            Uri of small photo.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Models.AvatarInfo.Normal">
+            <summary>
+            Uri of normal photo.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Models.AvatarInfo.Large">
+            <summary>
+            Uri of large photo.
+            </summary>
+        </member>
+        <member name="T:OAuth2.Models.UserInfo">
+            <summary>
+            Contains information about user who is being authenticated.
+            </summary>
+        </member>
+        <member name="M:OAuth2.Models.UserInfo.#ctor">
+            <summary>
+            Constructor.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Models.UserInfo.Id">
+            <summary>
+            Unique identifier.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Models.UserInfo.ProviderName">
+            <summary>
+            Friendly name of <see cref="T:OAuth2.Models.UserInfo"/> provider (which is, in its turn, the client of OAuth/OAuth2 provider).
+            </summary>
+            <remarks>
+            Supposed to be unique per OAuth/OAuth2 client.
+            </remarks>
+        </member>
+        <member name="P:OAuth2.Models.UserInfo.Email">
+            <summary>
+            Email address.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Models.UserInfo.FirstName">
+            <summary>
+            First name.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Models.UserInfo.LastName">
+            <summary>
+            Last name.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Models.UserInfo.PhotoUri">
+            <summary>
+            Photo URI.
+            </summary>
+        </member>
+        <member name="P:OAuth2.Models.UserInfo.AvatarUri">
+            <summary>
+            Contains URIs of different sizes of avatar.
+            </summary>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Project>
+  <ItemGroup>
+    <!-- For VS Test Explorer -->
+    <ProjectCapability Include="TestingPlatformServer.ExitOnProcessExitCapability">
+      <Description>--exit-on-process-exit: Close the test process if specific process exits. Process PID must be provided.</Description>
+    </ProjectCapability>
+    <ProjectCapability Include="TestingPlatformServer.UseListTestsOptionForDiscoveryCapability">
+      <Description>The implementation handle the --list-tests in --server [jsonrpc] during discovery</Description>
+    </ProjectCapability>
+  </ItemGroup>
+</Project>

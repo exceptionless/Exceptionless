@@ -1,0 +1,82 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "Microsoft.Build.Tasks.Git/10.0.300": {
+        "dependencies": {
+          "System.IO.Hashing": "10.0.8"
+        },
+        "runtime": {
+          "Microsoft.Build.Tasks.Git.dll": {}
+        },
+        "resources": {
+          "cs/Microsoft.Build.Tasks.Git.resources.dll": {
+            "locale": "cs"
+          },
+          "de/Microsoft.Build.Tasks.Git.resources.dll": {
+            "locale": "de"
+          },
+          "es/Microsoft.Build.Tasks.Git.resources.dll": {
+            "locale": "es"
+          },
+          "fr/Microsoft.Build.Tasks.Git.resources.dll": {
+            "locale": "fr"
+          },
+          "it/Microsoft.Build.Tasks.Git.resources.dll": {
+            "locale": "it"
+          },
+          "ja/Microsoft.Build.Tasks.Git.resources.dll": {
+            "locale": "ja"
+          },
+          "ko/Microsoft.Build.Tasks.Git.resources.dll": {
+            "locale": "ko"
+          },
+          "pl/Microsoft.Build.Tasks.Git.resources.dll": {
+            "locale": "pl"
+          },
+          "pt-BR/Microsoft.Build.Tasks.Git.resources.dll": {
+            "locale": "pt-BR"
+          },
+          "ru/Microsoft.Build.Tasks.Git.resources.dll": {
+            "locale": "ru"
+          },
+          "tr/Microsoft.Build.Tasks.Git.resources.dll": {
+            "locale": "tr"
+          },
+          "zh-Hans/Microsoft.Build.Tasks.Git.resources.dll": {
+            "locale": "zh-Hans"
+          },
+          "zh-Hant/Microsoft.Build.Tasks.Git.resources.dll": {
+            "locale": "zh-Hant"
+          }
+        }
+      },
+      "System.IO.Hashing/10.0.8": {
+        "runtime": {
+          "lib/net8.0/System.IO.Hashing.dll": {
+            "assemblyVersion": "10.0.0.8",
+            "fileVersion": "10.0.826.23019"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Microsoft.Build.Tasks.Git/10.0.300": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "System.IO.Hashing/10.0.8": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-+dJsbPJ3FyUbTZNplFj0RCKePFizmv6ewDV46JE9q/IVH4c3xTCftHfHelLsAKf0jryIPqgMb5GpS0x7TAY3mg==",
+      "path": "system.io.hashing/10.0.8",
+      "hashPath": "system.io.hashing.10.0.8.nupkg.sha512"
+    }
+  }
+}

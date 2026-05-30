@@ -1,0 +1,150 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>OpenTelemetry.Instrumentation.Runtime</name>
+    </assembly>
+    <members>
+        <member name="T:OpenTelemetry.Metrics.MeterProviderBuilderExtensions">
+            <summary>
+            Extension methods to simplify registering of dependency instrumentation.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Metrics.MeterProviderBuilderExtensions.AddRuntimeInstrumentation(OpenTelemetry.Metrics.MeterProviderBuilder)">
+            <summary>
+            Enables runtime instrumentation.
+            </summary>
+            <param name="builder"><see cref="T:OpenTelemetry.Metrics.MeterProviderBuilder"/> being configured.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Metrics.MeterProviderBuilder"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Metrics.MeterProviderBuilderExtensions.AddRuntimeInstrumentation(OpenTelemetry.Metrics.MeterProviderBuilder,System.Action{OpenTelemetry.Instrumentation.Runtime.RuntimeInstrumentationOptions})">
+            <summary>
+            Enables runtime instrumentation.
+            </summary>
+            <param name="builder"><see cref="T:OpenTelemetry.Metrics.MeterProviderBuilder"/> being configured.</param>
+            <param name="configure">Runtime metrics options.</param>
+            <returns>The instance of <see cref="T:OpenTelemetry.Metrics.MeterProviderBuilder"/> to chain the calls.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Metrics.MeterFactory.Create``1(System.Version,System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,System.Object}})">
+            <summary>
+            Creates a new <see cref="T:System.Diagnostics.Metrics.Meter"/> for the assembly associated
+            with the specified type and semantic conventions version.
+            </summary>
+            <typeparam name="T">The type for which the <see cref="T:System.Diagnostics.Metrics.Meter"/> is created for its assembly.</typeparam>
+            <param name="semanticConventionsVersion">The version of the semantic conventions.</param>
+            <param name="tags">The optional tags to associate with the created <see cref="T:System.Diagnostics.Metrics.Meter"/>.</param>
+            <returns>A new <see cref="T:System.Diagnostics.Metrics.Meter"/> instance.</returns>
+        </member>
+        <member name="M:OpenTelemetry.Metrics.MeterFactory.Create(System.Type,System.Version,System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,System.Object}},System.String)">
+            <summary>
+            Creates a new <see cref="T:System.Diagnostics.Metrics.Meter"/> for the assembly associated
+            with the specified type and semantic conventions version.
+            </summary>
+            <param name="type">The type for which the <see cref="T:System.Diagnostics.Metrics.Meter"/> is created for its assembly.</param>
+            <param name="semanticConventionsVersion">The version of the semantic conventions.</param>
+            <param name="tags">The optional tags to associate with the created <see cref="T:System.Diagnostics.Metrics.Meter"/>.</param>
+            <param name="name">The optional name to use for the <see cref="T:System.Diagnostics.Metrics.Meter"/> instead of the assembly name associated with <paramref name="type"/>.</param>
+            <returns>A new <see cref="T:System.Diagnostics.Metrics.Meter"/> instance.</returns>
+        </member>
+        <member name="T:OpenTelemetry.Instrumentation.Runtime.RuntimeInstrumentationOptions">
+            <summary>
+            Options to define the runtime metrics.
+            </summary>
+        </member>
+        <member name="T:OpenTelemetry.Instrumentation.Runtime.RuntimeMetrics">
+            <summary>
+            .NET runtime instrumentation.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Instrumentation.Runtime.RuntimeMetrics.#ctor(OpenTelemetry.Instrumentation.Runtime.RuntimeInstrumentationOptions)">
+            <summary>
+            Initializes a new instance of the <see cref="T:OpenTelemetry.Instrumentation.Runtime.RuntimeMetrics"/> class.
+            </summary>
+            <param name="_1">The options to define the metrics.</param>
+        </member>
+        <member name="M:OpenTelemetry.Instrumentation.Runtime.RuntimeMetrics.Dispose">
+            <inheritdoc/>
+        </member>
+        <member name="T:OpenTelemetry.Internal.Guard">
+            <summary>
+            Methods for guarding against exception throwing values.
+            </summary>
+        </member>
+        <member name="M:OpenTelemetry.Internal.Guard.ThrowIfNull(System.Object,System.String)">
+            <summary>
+            Throw an exception if the value is null.
+            </summary>
+            <param name="value">The value to check.</param>
+            <param name="paramName">The parameter name to use in the thrown exception.</param>
+        </member>
+        <member name="M:OpenTelemetry.Internal.Guard.ThrowIfNullOrEmpty(System.String,System.String)">
+            <summary>
+            Throw an exception if the value is null or empty.
+            </summary>
+            <param name="value">The value to check.</param>
+            <param name="paramName">The parameter name to use in the thrown exception.</param>
+        </member>
+        <member name="M:OpenTelemetry.Internal.Guard.ThrowIfNullOrWhitespace(System.String,System.String)">
+            <summary>
+            Throw an exception if the value is null or whitespace.
+            </summary>
+            <param name="value">The value to check.</param>
+            <param name="paramName">The parameter name to use in the thrown exception.</param>
+        </member>
+        <member name="M:OpenTelemetry.Internal.Guard.ThrowIfZero(System.Int32,System.String,System.String)">
+            <summary>
+            Throw an exception if the value is zero.
+            </summary>
+            <param name="value">The value to check.</param>
+            <param name="message">The message to use in the thrown exception.</param>
+            <param name="paramName">The parameter name to use in the thrown exception.</param>
+        </member>
+        <member name="M:OpenTelemetry.Internal.Guard.ThrowIfInvalidTimeout(System.Int32,System.String)">
+            <summary>
+            Throw an exception if the value is not considered a valid timeout.
+            </summary>
+            <param name="value">The value to check.</param>
+            <param name="paramName">The parameter name to use in the thrown exception.</param>
+        </member>
+        <member name="M:OpenTelemetry.Internal.Guard.ThrowIfOutOfRange(System.Int32,System.String,System.Int32,System.Int32,System.String,System.String,System.String)">
+            <summary>
+            Throw an exception if the value is not within the given range.
+            </summary>
+            <param name="value">The value to check.</param>
+            <param name="paramName">The parameter name to use in the thrown exception.</param>
+            <param name="min">The inclusive lower bound.</param>
+            <param name="max">The inclusive upper bound.</param>
+            <param name="minName">The name of the lower bound.</param>
+            <param name="maxName">The name of the upper bound.</param>
+            <param name="message">An optional custom message to use in the thrown exception.</param>
+        </member>
+        <member name="M:OpenTelemetry.Internal.Guard.ThrowIfOutOfRange(System.Double,System.String,System.Double,System.Double,System.String,System.String,System.String)">
+            <summary>
+            Throw an exception if the value is not within the given range.
+            </summary>
+            <param name="value">The value to check.</param>
+            <param name="paramName">The parameter name to use in the thrown exception.</param>
+            <param name="min">The inclusive lower bound.</param>
+            <param name="max">The inclusive upper bound.</param>
+            <param name="minName">The name of the lower bound.</param>
+            <param name="maxName">The name of the upper bound.</param>
+            <param name="message">An optional custom message to use in the thrown exception.</param>
+        </member>
+        <member name="M:OpenTelemetry.Internal.Guard.ThrowIfNotOfType``1(System.Object,System.String)">
+            <summary>
+            Throw an exception if the value is not of the expected type.
+            </summary>
+            <param name="value">The value to check.</param>
+            <param name="paramName">The parameter name to use in the thrown exception.</param>
+            <typeparam name="T">The type attempted to convert to.</typeparam>
+            <returns>The value casted to the specified type.</returns>
+        </member>
+        <member name="T:System.Runtime.CompilerServices.CallerArgumentExpressionAttribute">
+            <summary>Allows capturing of the expressions passed to a method.</summary>
+        </member>
+        <member name="T:System.Diagnostics.CodeAnalysis.NotNullAttribute">
+            <summary>Specifies that an output is not <see langword="null"/> even if
+            the corresponding type allows it. Specifies that an input argument was
+            not <see langword="null"/> when the call returns.</summary>
+        </member>
+    </members>
+</doc>
