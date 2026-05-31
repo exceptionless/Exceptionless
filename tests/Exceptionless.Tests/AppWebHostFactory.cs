@@ -4,12 +4,17 @@ using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Configuration;
+using Foundatio.Resilience;
+using Foundatio.Serializer;
+using Foundatio.Storage;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace Exceptionless.Tests;
@@ -132,7 +137,45 @@ public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program
             services.AddSingleton(sp => sp.GetRequiredService<AppOptions>().SlackOptions);
             services.AddSingleton(sp => sp.GetRequiredService<AppOptions>().StripeOptions);
             services.AddSingleton(sp => sp.GetRequiredService<AppOptions>().AuthOptions);
+
+            // Storage is registered before ConfigureAppConfiguration's AppScope override is applied.
+            // Recreate it from the final test AppOptions so parallel test factories don't delete each
+            // other's queued event payloads while ResetDataAsync clears scoped storage.
+            services.ReplaceSingleton<IFileStorage>(CreateScopedFileStorage);
         });
+    }
+
+    private static IFileStorage CreateScopedFileStorage(IServiceProvider serviceProvider)
+    {
+        var options = serviceProvider.GetRequiredService<AppOptions>().StorageOptions;
+        IFileStorage storage;
+
+        if (String.Equals(options.Provider, "folder", StringComparison.OrdinalIgnoreCase))
+        {
+            string path = options.Data.GetString("path", "|DataDirectory|\\storage");
+            storage = new FolderFileStorage(new FolderFileStorageOptions
+            {
+                Folder = PathHelper.ExpandPath(path),
+                Serializer = serviceProvider.GetRequiredService<ITextSerializer>(),
+                TimeProvider = serviceProvider.GetRequiredService<TimeProvider>(),
+                ResiliencePolicyProvider = serviceProvider.GetRequiredService<IResiliencePolicyProvider>(),
+                LoggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>()
+            });
+        }
+        else
+        {
+            storage = new InMemoryFileStorage(new InMemoryFileStorageOptions
+            {
+                Serializer = serviceProvider.GetRequiredService<ITextSerializer>(),
+                TimeProvider = serviceProvider.GetRequiredService<TimeProvider>(),
+                ResiliencePolicyProvider = serviceProvider.GetRequiredService<IResiliencePolicyProvider>(),
+                LoggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>()
+            });
+        }
+
+        return !String.IsNullOrWhiteSpace(options.Scope)
+            ? new ScopedFileStorage(storage, options.Scope)
+            : storage;
     }
 
     public override ValueTask DisposeAsync()
