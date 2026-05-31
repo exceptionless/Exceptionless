@@ -4,17 +4,20 @@
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
     import { Muted } from '$comp/typography';
+    import { Badge } from '$comp/ui/badge';
     import { Button, buttonVariants } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
     import { Spinner } from '$comp/ui/spinner';
+    import { Switch } from '$comp/ui/switch';
     import { deleteOrganization, getOrganizationQuery, patchOrganization } from '$features/organizations/api.svelte';
     import RemoveOrganizationDialog from '$features/organizations/components/dialogs/remove-organization-dialog.svelte';
     import { type NewOrganizationFormData, NewOrganizationSchema } from '$features/organizations/schemas';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import Stacks from '@lucide/svelte/icons/layers';
+    import Plus from '@lucide/svelte/icons/plus';
     import X from '@lucide/svelte/icons/x';
     import { createForm } from '@tanstack/svelte-form';
     import { toast } from 'svelte-sonner';
@@ -70,7 +73,7 @@
             onSubmitAsync: async ({ value }) => {
                 toast.dismiss(toastId);
                 try {
-                    await update.mutateAsync(value);
+                    await update.mutateAsync({ name: value.name });
                     toastId = toast.success('Successfully updated Organization name');
                     return null;
                 } catch (error: unknown) {
@@ -87,10 +90,68 @@
 
     const debouncedFormSubmit = debounce(1000, () => form.handleSubmit());
 
+    // Budget alert settings state
+    const budgetSettings = $derived(organizationQuery.data?.budget_alert_settings);
+    let budgetEnabled = $state(false);
+    let thresholds = $state<number[]>([]);
+    let newThreshold = $state('');
+    let budgetSaving = $state(false);
+    let thresholdError = $state('');
+
+    $effect(() => {
+        budgetEnabled = budgetSettings?.enabled ?? false;
+        thresholds = [...(budgetSettings?.thresholds ?? [])].sort((a, b) => a - b);
+    });
+
+    async function saveBudgetSettings() {
+        toast.dismiss(toastId);
+        budgetSaving = true;
+        try {
+            await update.mutateAsync({
+                budget_alert_settings: {
+                    enabled: budgetEnabled,
+                    thresholds: [...thresholds].sort((a, b) => a - b)
+                }
+            });
+            toastId = toast.success('Budget alert settings saved.');
+        } catch (error: unknown) {
+            const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
+            toastId = toast.error(`Error saving budget settings: ${message}`);
+        } finally {
+            budgetSaving = false;
+        }
+    }
+
+    function addThreshold() {
+        thresholdError = '';
+        const val = parseInt(newThreshold, 10);
+        if (isNaN(val) || val < 1 || val > 100) {
+            thresholdError = 'Enter a percentage between 1 and 100.';
+            return;
+        }
+        if (thresholds.includes(val)) {
+            thresholdError = 'That threshold is already added.';
+            return;
+        }
+        thresholds = [...thresholds, val].sort((a, b) => a - b);
+        newThreshold = '';
+    }
+
+    function removeThreshold(val: number) {
+        thresholds = thresholds.filter((t) => t !== val);
+    }
+
+    function handleThresholdKeydown(e: KeyboardEvent) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addThreshold();
+        }
+    }
+
     // TODO: Add Skeleton
 </script>
 
-<div class="space-y-6">
+<div class="space-y-8">
     <Muted>General organization settings</Muted>
 
     <form
@@ -129,6 +190,86 @@
         </form.Field>
     </form>
 
+    <section class="space-y-4" aria-labelledby="budget-alert-heading">
+        <div class="space-y-1">
+            <h2 id="budget-alert-heading" class="text-sm font-medium">Budget alerts</h2>
+            <Muted class="text-xs">Send email alerts when monthly event usage crosses percentage thresholds.</Muted>
+        </div>
+
+        <div class="bg-card space-y-4 rounded-lg border p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-sm font-medium">Enable budget alerts</div>
+                    <Muted class="text-xs">Receive email notifications when usage thresholds are crossed.</Muted>
+                </div>
+                <Switch
+                    id="budget-enabled"
+                    checked={budgetEnabled}
+                    onCheckedChange={(checked) => (budgetEnabled = checked)}
+                    aria-label="Enable budget alerts"
+                />
+            </div>
+
+            {#if budgetEnabled}
+                <div class="space-y-3">
+                    <div class="text-sm font-medium">Alert thresholds</div>
+                    <div class="flex flex-wrap gap-2" aria-label="Current thresholds">
+                        {#each thresholds as threshold (threshold)}
+                            <Badge variant="secondary" class="gap-1 pr-1">
+                                {threshold}%
+                                <button
+                                    type="button"
+                                    class="ml-1 rounded-full p-0.5 hover:bg-white/20"
+                                    onclick={() => removeThreshold(threshold)}
+                                    aria-label="Remove {threshold}% threshold"
+                                >
+                                    <X class="size-3" />
+                                </button>
+                            </Badge>
+                        {:else}
+                            <Muted class="text-xs italic">No thresholds set. Add at least one below.</Muted>
+                        {/each}
+                    </div>
+
+                    <div class="flex gap-2">
+                        <div class="w-28">
+                            <Field.Field>
+                                <Field.Label for="new-threshold" class="sr-only">New threshold percentage</Field.Label>
+                                <Input
+                                    id="new-threshold"
+                                    type="number"
+                                    min="1"
+                                    max="100"
+                                    placeholder="e.g. 80"
+                                    bind:value={newThreshold}
+                                    onkeydown={handleThresholdKeydown}
+                                    aria-invalid={thresholdError ? 'true' : undefined}
+                                    aria-describedby={thresholdError ? 'threshold-error' : undefined}
+                                />
+                                {#if thresholdError}
+                                    <p id="threshold-error" class="text-destructive text-xs">{thresholdError}</p>
+                                {/if}
+                            </Field.Field>
+                        </div>
+                        <Button type="button" variant="secondary" size="sm" class="mt-0 self-start" onclick={addThreshold} aria-label="Add threshold">
+                            <Plus class="mr-1 size-4" />
+                            Add
+                        </Button>
+                    </div>
+                </div>
+            {/if}
+
+            <div class="flex justify-end border-t pt-3">
+                <Button type="button" onclick={saveBudgetSettings} disabled={budgetSaving || update.isPending} size="sm">
+                    {#if budgetSaving || update.isPending}
+                        <Spinner class="mr-2 size-4" />
+                    {/if}
+                    Save budget settings
+                </Button>
+            </div>
+        </div>
+    </section>
+
     <div class="flex w-full items-center justify-between">
         <Button variant="secondary" href={resolve('/(app)/stacks')}>
             <Stacks class="mr-2 size-4" /> Go To Stacks
@@ -161,3 +302,4 @@
 {#if organizationQuery.isSuccess}
     <RemoveOrganizationDialog bind:open={showRemoveDialog} name={organizationQuery.data.name} {remove} />
 {/if}
+
