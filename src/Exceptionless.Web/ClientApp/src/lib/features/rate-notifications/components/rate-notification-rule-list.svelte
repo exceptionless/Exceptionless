@@ -93,11 +93,10 @@
     }
 
     function formatWindow(isoWindow: string): string {
-        // Parse HH:MM:SS to friendly string
         const parts = isoWindow.split(':');
         if (parts.length < 3) return isoWindow;
-        const h = parseInt(parts[0], 10);
-        const m = parseInt(parts[1], 10);
+        const h = parseInt(parts[0] ?? '0', 10);
+        const m = parseInt(parts[1] ?? '0', 10);
         if (h > 0) return `${h}h`;
         if (m === 1) return '1 min';
         return `${m} min`;

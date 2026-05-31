@@ -15,6 +15,7 @@
     import { createRateNotificationRule, updateRateNotificationRule } from '$features/rate-notifications/api.svelte';
     import { SIGNAL_LABELS, WINDOW_OPTIONS } from '$features/rate-notifications/types';
     import type { RateNotificationSignal, RateNotificationSubject } from '$features/rate-notifications/types';
+    // NOTE: mutations must be created at initialization, not inside event handlers (Svelte/TanStack context requirement)
 
     interface Props {
         hasPremiumFeatures?: boolean;
@@ -47,10 +48,12 @@
     const thresholdError = $derived(threshold < 1 ? 'Threshold must be at least 1.' : undefined);
     const stackIdError = $derived(subject === 'Stack' && !stackId.trim() ? 'Stack ID is required when subject is Stack.' : undefined);
 
-    // Check cooldown >= window
     function parseSeconds(iso: string): number {
-        const [h, m, s] = iso.split(':').map(Number);
-        return (h || 0) * 3600 + (m || 0) * 60 + (s || 0);
+        const parts = iso.split(':');
+        const h = parseInt(parts[0] ?? '0', 10);
+        const m = parseInt(parts[1] ?? '0', 10);
+        const s = parseInt(parts[2] ?? '0', 10);
+        return h * 3600 + m * 60 + s;
     }
     const cooldownError = $derived(
         parseSeconds(cooldown) < parseSeconds(window) ? 'Cooldown must be at least as long as the window.' : undefined
@@ -72,6 +75,21 @@
         }
     });
 
+    const createMutation = createRateNotificationRule({
+        route: {
+            get projectId() { return projectId; },
+            get userId() { return userId; }
+        }
+    });
+
+    const updateMutation = updateRateNotificationRule({
+        route: {
+            get projectId() { return rule?.project_id; },
+            get ruleId() { return rule?.id; },
+            get userId() { return rule?.user_id; }
+        }
+    });
+
     async function handleSubmit() {
         if (hasErrors || saving) return;
 
@@ -90,9 +108,7 @@
                     threshold,
                     window
                 };
-                const updated = await updateRateNotificationRule({
-                    route: { projectId: rule.project_id, ruleId: rule.id, userId: rule.user_id }
-                }).mutateAsync(body);
+                const updated = await updateMutation.mutateAsync(body);
                 toast.success('Rule updated.');
                 onSaved?.(updated);
             } else {
@@ -106,7 +122,7 @@
                     threshold,
                     window
                 };
-                const created = await createRateNotificationRule({ route: { projectId, userId } }).mutateAsync(body);
+                const created = await createMutation.mutateAsync(body);
                 toast.success('Rule created.');
                 onSaved?.(created);
             }
@@ -130,7 +146,7 @@
         </Alert.Root>
     {/if}
 
-    <Alert.Root variant="warning">
+    <Alert.Root variant="information">
         <AlertTriangleIcon />
         <Alert.Title>This rule may be noisy. Use a cooldown to avoid repeated emails.</Alert.Title>
     </Alert.Root>
@@ -155,7 +171,7 @@
     <!-- Signal -->
     <div class="space-y-1.5">
         <Label for="rule-signal">Signal</Label>
-        <Select.Root bind:value={signal}>
+        <Select.Root type="single" bind:value={signal}>
             <Select.Trigger id="rule-signal" class="w-full" disabled={saving}>
                 {SIGNAL_LABELS[signal]}
             </Select.Trigger>
@@ -170,7 +186,7 @@
     <!-- Subject -->
     <div class="space-y-1.5">
         <Label for="rule-subject">Subject</Label>
-        <Select.Root bind:value={subject}>
+        <Select.Root type="single" bind:value={subject}>
             <Select.Trigger id="rule-subject" class="w-full" disabled={saving}>
                 {subject}
             </Select.Trigger>
@@ -220,7 +236,7 @@
     <!-- Window -->
     <div class="space-y-1.5">
         <Label for="rule-window">Window</Label>
-        <Select.Root bind:value={window}>
+        <Select.Root type="single" bind:value={window}>
             <Select.Trigger id="rule-window" class="w-full" disabled={saving}>
                 {WINDOW_OPTIONS.find((o) => o.value === window)?.label ?? window}
             </Select.Trigger>
@@ -235,7 +251,7 @@
     <!-- Cooldown -->
     <div class="space-y-1.5">
         <Label for="rule-cooldown">Cooldown</Label>
-        <Select.Root bind:value={cooldown}>
+        <Select.Root type="single" bind:value={cooldown}>
             <Select.Trigger id="rule-cooldown" class="w-full" disabled={saving}>
                 {WINDOW_OPTIONS.find((o) => o.value === cooldown)?.label ?? cooldown}
             </Select.Trigger>
