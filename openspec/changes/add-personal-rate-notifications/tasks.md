@@ -33,15 +33,19 @@
 
 - [ ] **Add UpdateRateCountersAction (event pipeline)**
   - Priority after stack assignment (e.g., 75)
+  - Exit fast if organization lacks premium features
   - Load rule index for project; exit fast if no enabled rules
+  - Skip events on stacks where `AllowNotifications` is false
+  - Skip canceled/discarded events and requests already marked as bots
   - Match event against compiled counter definitions (signal matching)
   - Increment matching counters; add to active bucket set
   - Never query Elasticsearch per event; never send notifications directly
 
 - [ ] **Add RateNotificationEvaluatorJob**
   - Periodic job (60s interval) with distributed lock
+  - Skip organizations without premium features
   - Inspect recently active counters
-  - Sum buckets for each rule's window
+  - Sum buckets for each rule's window using a fresh baseline after snooze/unsnooze
   - Skip disabled/snoozed rules
   - Compare observed ≥ threshold; enforce cooldown per rule+subject
   - Enqueue `RateNotification` work item on threshold crossing
@@ -59,6 +63,7 @@
 
 - [ ] **Add RateNotificationsJob (delivery)**
   - Load rule, project, user
+  - Load stack for stack-scoped rules
   - Validate: rule exists, enabled, version compatible, user in org, email verified, notifications enabled, project/org exists
   - Send email via `IMailer.SendRateNotificationAsync`
   - Skip with structured logs on validation failure
@@ -78,6 +83,7 @@
   - Routes: GET list, POST create, GET by id, PUT update, DELETE, POST snooze, POST unsnooze
   - Authorization: current user manages own rules; global admin manages any user's rules; user must access project org
   - Validation: threshold > 0, supported windows, cooldown ≥ window, subject/stack consistency, max 20 rules per user per project, name non-empty and ≤ 100 chars
+  - Preserve persisted rules across plan downgrade, but do not allow the runtime or Svelte UI to treat non-premium orgs as active rate-notification senders
 
 - [ ] **Add request/response DTOs**
   - Create/update request models with validation attributes
@@ -96,6 +102,7 @@
 - [ ] **Add rate notification rule list component**
   - List rules for current user/project
   - Show enable/disable toggle, snooze status
+  - Show premium-gated disabled state / upgrade messaging when org lacks premium features
   - Delete confirmation
 
 - [ ] **Add rate notification rule form component**
@@ -114,8 +121,11 @@
   - Counter key builder
   - Counter increments and bucket summing
   - Signal matching logic
+  - Premium gating
+  - `AllowNotifications` / bot suppression
   - Cooldown behavior
   - Snooze behavior
+  - Fresh-baseline behavior after snooze/unsnooze
   - Evaluator threshold crossing
 
 - [ ] **Add integration tests**
@@ -123,14 +133,24 @@
   - User cannot manage another user's rules
   - Global admin can manage another user's rules
   - Stack rule rejects stack from another project
+  - Non-premium organizations do not counter, evaluate, or deliver rate notifications
+  - Events on stacks with `AllowNotifications = false` do not increment rate counters
+  - Bot-marked requests do not increment rate counters
   - Evaluator enqueues when threshold crossed
   - Evaluator does not enqueue below threshold
   - Evaluator respects cooldown
   - Evaluator respects snooze
+  - Activity gathered during snooze does not fire immediately when the rule resumes
   - Delivery skips disabled rule
   - Delivery skips unverified email
   - Delivery skips user not in org
   - Delivery sends email for valid rule
+  - Delivery loads stack context for stack-scoped emails
+  - Membership/project/org cleanup removes orphaned rules
+
+- [ ] **Add lifecycle cleanup**
+  - Remove/invalidate rules when user membership changes
+  - Remove/invalidate rules when project or organization is deleted
 
 ## Validation
 

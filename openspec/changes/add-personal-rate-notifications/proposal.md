@@ -13,6 +13,8 @@ The implementation is intentionally small and focused:
 - Asynchronous evaluator job
 - Email delivery
 - Cooldown and snooze to reduce noise
+- Premium-gated runtime behavior that matches existing occurrence notifications
+- Existing notification suppression semantics so muted traffic does not reappear as rate noise
 
 This feature is informed by [issue #177](https://github.com/exceptionless/Exceptionless/issues/177), but intentionally does not implement the full notification wishlist. Issue #177's core goal — notifications should keep users informed without overwhelming them — is addressed through mandatory cooldowns, snooze support, and cache-only hot paths.
 
@@ -42,8 +44,11 @@ This feature is informed by [issue #177](https://github.com/exceptionless/Except
 - Reduce notification noise versus per-event email streams.
 - Keep event ingestion cheap.
 - Support horizontal scaling with distributed cache and queues.
+- Preserve current premium-only occurrence-notification behavior.
+- Honor existing notification suppression so ignored, snoozed, discarded, and fixed stacks — and bot traffic already excluded from occurrence emails — do not generate rate alerts.
 - Validate user/project/org state before sending.
 - Support snoozing a noisy rule.
+- Resume from a fresh baseline after snooze instead of back-alerting on traffic that happened while the rule was muted.
 - Provide enough logging, metrics, and tests to trust the system.
 
 ## Non-goals
@@ -103,9 +108,13 @@ The first release should prove the cheap counter architecture and noise-control 
 | Existing `EventNotificationsJob` behavior remains unchanged | Rate counters are a new pipeline action; existing notification queueing is unaffected |
 | Existing `DailySummaryJob` behavior remains unchanged | No changes to daily summary logic |
 | Existing Slack/webhook integrations are not changed | New delivery path is email-only; existing `WebHookNotification` queue untouched |
+| Existing premium-only occurrence notification behavior could drift | Countering, evaluation, delivery, and Svelte enablement follow the same premium gating model as existing occurrence notifications |
 | Rate counters depend on distributed cache in production | In-memory cache/queues remain development-only; production requires Redis/Azure providers |
+| Muted stacks or bot traffic could reappear as new rate noise | Countering honors `Stack.AllowNotifications`, canceled/discarded contexts, and request-info bot markers before incrementing counters |
+| Snooze could defer a notification instead of suppressing it | Evaluation resumes from a fresh baseline using the snooze boundary so activity gathered during snooze does not fire immediately on resume |
 | Notification noise could increase if defaults are bad | Mandatory cooldowns, validation, and max rules per project (20) |
 | Rules may become stale if user/project/org state changes | Delivery job re-validates rule, user, project, and org state before sending |
+| Orphaned rules could be indexed and evaluated forever | Add cleanup on user membership changes and project/org deletion, plus cache invalidation for removed rules |
 
 ## Rollback Plan
 

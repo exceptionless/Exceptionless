@@ -12,7 +12,7 @@
 
 ## Scope
 
-v1 is personal rate notifications only. No organization-level rules, no webhooks, no digests.
+v1 is personal rate notifications only. No organization-level rules, no webhooks, no digests. It also follows the existing premium-only occurrence-notification model instead of introducing a new free notification channel.
 
 ## Data Model
 
@@ -65,6 +65,7 @@ public enum RateNotificationSubject
 - Rules are stored separately from `Project.NotificationSettings`.
 - Existing `NotificationSettings` should not be expanded because rate rules are richer and independently mutable.
 - No tag/environment/time-of-day/external-recipient fields in v1.
+- `SnoozedUntilUtc` is also the rule's resume boundary. Manual unsnooze sets it to the current UTC time instead of clearing it so the evaluator can ignore activity gathered during the muted period.
 
 ## Repository
 
@@ -103,6 +104,11 @@ Elasticsearch-backed repository following existing patterns (e.g., `StackReposit
 - Global admin can manage any user's rules.
 - User must have access to the project's organization.
 - External recipients are not supported in v1.
+
+### Premium gating
+
+- Rate notifications follow the current occurrence-notification premium model.
+- Rules may remain persisted across plan downgrade, but countering, evaluation, delivery, and Svelte create/enable controls MUST treat the feature as unavailable until premium is restored.
 
 ### Validation
 
@@ -182,8 +188,12 @@ project:{projectId}:stack:{stackId}:signal:AllEvents
 ### UpdateRateCountersAction
 
 - Runs after stack assignment (priority > 70, e.g., 75)
+- Exits fast when the organization does not have premium features
 - Loads `RateNotificationRuleIndex` for project
 - Exits fast if no enabled rules
+- Skips events on stacks where `!ctx.Stack.AllowNotifications`
+- Skips canceled/discarded events that would not produce occurrence notifications
+- Skips requests already marked as bots by request-info enrichment
 - Matches event against compiled counter definitions
 - Increments matching counters via `RateCounterService`
 - Adds counter key to active bucket list/set
@@ -197,7 +207,9 @@ project:{projectId}:stack:{stackId}:signal:AllEvents
 - Runs periodically (recommended: every 60 seconds)
 - Acquires distributed lock so only one evaluator runs per cluster
 - Inspects recently active counters from active bucket sets
+- Skips organizations without premium features
 - Sums buckets for each rule's configured window
+- Uses `max(windowStartUtc, rule.SnoozedUntilUtc)` as the lower bound when a snooze boundary falls inside the evaluation window so a rule resumes from a fresh baseline
 - Skips disabled rules
 - Skips snoozed rules (where `SnoozedUntilUtc > now`)
 - Compares observed count ≥ threshold
@@ -207,6 +219,12 @@ project:{projectId}:stack:{stackId}:signal:AllEvents
 - Logs fired/skipped reasons with structured context
 
 This v1 does NOT need a full Normal/Pending/Firing/Recovering state machine. Simple threshold + cooldown + snooze is sufficient.
+
+### Snooze semantics
+
+- Snooze suppresses delivery immediately.
+- When a snooze expires or a user manually unsnoozes a rule, the rule resumes from a fresh baseline.
+- Activity observed entirely during the snooze window MUST NOT trigger an immediate post-snooze alert, even when another enabled rule kept the shared counter hot.
 
 ## Queue Model
 
@@ -236,6 +254,7 @@ public class RateNotification
 - Loads rule by ID
 - Loads project
 - Loads user
+- Loads stack for stack-scoped rules so email copy can include stack title and deep link
 - Validates:
   - Rule still exists
   - Rule is enabled
@@ -247,6 +266,13 @@ public class RateNotification
 - Sends email through `IMailer`
 - Skips with structured logs when validation fails
 - Does not send Slack/webhooks in v1 (marked as future work)
+
+## Lifecycle cleanup
+
+- Remove rate notification rules when a user loses organization access.
+- Remove rate notification rules when a project or organization is deleted.
+- Invalidate cached rule indexes when cleanup runs so orphaned rules stop consuming evaluator work immediately.
+- Reuse the same work-item cleanup pattern already used for `Project.NotificationSettings` updates where practical.
 
 ## Email
 
@@ -294,6 +320,7 @@ UI supports:
 - Delete rule
 - Enable/disable rule
 - Snooze/unsnooze rule
+- Disabled/upgrade state when the organization lacks premium features
 
 ### Form fields
 
@@ -363,8 +390,11 @@ Display when creating/editing: "This rule may be noisy. Use a cooldown to avoid 
 - Counter increments
 - Bucket summing
 - Signal matching
+- Premium gating
+- `AllowNotifications` / bot suppression checks
 - Cooldown behavior
 - Snooze behavior
+- Fresh-baseline behavior after snooze expiry or manual unsnooze
 - Evaluator threshold crossing logic
 
 ### Integration tests
@@ -373,14 +403,20 @@ Display when creating/editing: "This rule may be noisy. Use a cooldown to avoid 
 - User cannot manage another user's rules
 - Global admin can manage another user's rules
 - Stack rule rejects stack from another project
+- Non-premium organizations do not counter, evaluate, or deliver rate notifications
+- Events on stacks with `AllowNotifications = false` do not increment rate counters
+- Bot-marked requests do not increment rate counters
 - Evaluator enqueues notification when threshold crossed
 - Evaluator does not enqueue below threshold
 - Evaluator respects cooldown
 - Evaluator respects snooze
+- Activity gathered during snooze does not fire immediately when the rule resumes
 - Delivery skips disabled rule
 - Delivery skips unverified email
 - Delivery skips user not in org
 - Delivery sends email for valid rule
+- Delivery loads stack context for stack-scoped emails
+- Membership/project/org cleanup removes orphaned rules
 
 ### Not tested in v1
 

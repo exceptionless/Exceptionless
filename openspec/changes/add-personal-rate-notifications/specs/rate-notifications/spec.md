@@ -135,6 +135,18 @@ Given no enabled rate notification rules for project
 When event is processed
 Then no rate counter is incremented.
 
+### Requirement: Rate notifications honor premium feature gating
+
+Rate notifications MUST follow the existing premium-only occurrence-notification model and MUST NOT become a free notification channel.
+
+#### Scenario: Non-premium organizations do not activate rate notifications
+
+Given project organization does not have premium features
+When matching events are processed or the evaluator runs
+Then no rate counters are incremented
+And no rate notification work item is enqueued
+And no rate notification email is sent.
+
 ### Requirement: Event pipeline increments only required counters
 
 The pipeline MUST only increment counters that are required by at least one enabled rule, not all possible signal counters.
@@ -155,6 +167,22 @@ Stack-scoped counters MUST only be incremented by events on the specific stack r
 Given stack rule exists for stack A
 When event occurs on stack B
 Then stack A counter is not incremented.
+
+### Requirement: Rate notifications honor existing occurrence-notification suppression
+
+Rate notifications MUST respect existing occurrence-notification suppression semantics so muted traffic does not reappear as rate noise.
+
+#### Scenario: Events on muted stacks do not increment counters
+
+Given the event stack has `AllowNotifications = false`
+When the event is processed
+Then no rate counter is incremented for that event.
+
+#### Scenario: Bot-marked requests do not increment counters
+
+Given request enrichment has marked the event request as a bot
+When the event is processed
+Then no rate counter is incremented for that event.
 
 ### Requirement: Evaluator enqueues notification when threshold is crossed
 
@@ -198,6 +226,24 @@ The evaluator MUST NOT fire a snoozed rule until the snooze period expires.
 Given rule snoozed_until_utc is in the future
 When threshold is crossed
 Then no work item is enqueued.
+
+### Requirement: Snooze resumes from a fresh baseline
+
+When a snoozed rule resumes, the evaluator MUST ignore activity observed entirely during the snooze window so the rule does not back-alert immediately after unsnooze or natural expiry.
+
+#### Scenario: Unsnoozing does not immediately fire on snoozed activity
+
+Given a rule was snoozed while matching events continued
+And the shared subject counter remained active for another enabled rule
+When the user unsnoozes the rule
+Then the evaluator does not enqueue a rate notification until new post-unsnooze activity crosses the threshold.
+
+#### Scenario: Snooze expiry does not immediately fire on snoozed activity
+
+Given a rule remained snoozed until its snooze window expired
+And matching activity during the snooze window crossed the threshold
+When the evaluator next runs after the snooze expires
+Then the evaluator does not enqueue a rate notification until new post-expiry activity crosses the threshold.
 
 ### Requirement: Disabled rules do not fire
 
@@ -287,6 +333,12 @@ Rate notification emails MUST include all information the user needs to understa
 Given notification email is queued
 Then email includes rule name, project name, observed count, threshold, window, subject type, stack title (when applicable), link to project or stack, and cooldown explanation.
 
+#### Scenario: Stack-scoped email includes stack context
+
+Given a stack-scoped rate notification email is queued
+When the delivery job loads the stack context
+Then the email includes the stack title and a deep link to the stack.
+
 ### Requirement: User can manage project rate rules in Svelte UI
 
 The Svelte UI MUST provide a full CRUD interface for rate notification rules within project settings.
@@ -295,6 +347,13 @@ The Svelte UI MUST provide a full CRUD interface for rate notification rules wit
 
 Given user opens project notification settings
 Then they can list, create, edit, delete, enable/disable, snooze, and unsnooze rate rules.
+
+#### Scenario: Non-premium organizations show rate notifications as unavailable
+
+Given the organization does not have premium features
+When the user opens project notification settings
+Then the UI shows the feature as unavailable
+And the user cannot create or enable active rate notification rules.
 
 ### Requirement: UI avoids advanced/deferred features
 
@@ -331,3 +390,21 @@ Disabling rate notification components MUST NOT impact existing event notificati
 
 Given rate notification evaluator/action is disabled
 Then existing event notifications and daily summaries continue to operate unchanged.
+
+### Requirement: Rule lifecycle cleanup removes orphaned rules
+
+The system MUST remove or invalidate orphaned rate notification rules when the owning membership, project, or organization is deleted.
+
+#### Scenario: Membership removal cleans up user rules
+
+Given a user is removed from the organization
+When cleanup runs
+Then that user's rate notification rules for the organization are removed or invalidated
+And cached rule indexes are invalidated.
+
+#### Scenario: Project deletion cleans up project rules
+
+Given a project is deleted
+When cleanup runs
+Then rate notification rules for that project are removed or invalidated
+And cached rule indexes are invalidated.
