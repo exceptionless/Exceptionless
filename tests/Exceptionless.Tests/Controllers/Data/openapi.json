@@ -8832,7 +8832,7 @@
             "type": "string"
           },
           "budget_alert_settings": {
-            "type": "object"
+            "$ref": "#/components/schemas/OrganizationBudgetAlertSettings"
           }
         },
         "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
@@ -8847,7 +8847,7 @@
             "type": "boolean"
           },
           "ingest_limit": {
-            "type": "object"
+            "$ref": "#/components/schemas/ProjectIngestLimit"
           }
         },
         "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."

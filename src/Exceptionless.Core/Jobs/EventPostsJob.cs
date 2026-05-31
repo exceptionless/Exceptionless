@@ -189,7 +189,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
 
         // Apply smart throttling: sample events from projects consuming disproportionate resources
         var throttleResult = await _usageService.GetSmartThrottleRateAsync(organization.Id, project.Id);
-        if (throttleResult.IsThrottled && events.Count > 1)
+        if (throttleResult.IsThrottled)
         {
             int sampled = (int)Math.Max(1, Math.Ceiling(events.Count * throttleResult.SampleRate));
             if (sampled < events.Count)
@@ -197,7 +197,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
                 int discarded = events.Count - sampled;
                 // Use deterministic sampling to keep a representative sample
                 events = events.Take(sampled).ToList();
-                await _usageService.IncrementDiscardedAsync(organization.Id, project.Id, discarded);
+                await _usageService.RecordSmartThrottleAsync(organization.Id, project.Id, discarded, throttleResult);
 
                 if (!isInternalProject)
                     _logger.LogInformation("Smart throttling applied to EventPost {FilePath}: Accepted {Sampled}/{Total} events (rate={SampleRate:F2})", payloadPath, sampled, sampled + discarded, throttleResult.SampleRate);

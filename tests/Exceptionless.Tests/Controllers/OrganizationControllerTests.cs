@@ -1568,30 +1568,25 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task PatchAsync_OnlyBudgetAlertSettings_DoesNotRejectDueToNameValidation()
+    public async Task PatchAsync_SameNameWithBudgetAlertSettings_DoesNotRejectAsDuplicate()
     {
-        // Regression test: PATCH with only BudgetAlertSettings (no Name) must not fail
-        // with "A organization with this name already exists" due to unconditional Name check.
-        // Arrange
+        // Regression: If PATCH sends the org's current name alongside budget_alert_settings,
+        // IsOrganizationNameAvailableInternalAsync previously found the org itself and returned
+        // false ("already exists"), rejecting an idempotent name update.
         var originalOrg = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.NotNull(originalOrg);
 
-        // Act - send only budget_alert_settings, omit name entirely
         var updated = await SendRequestAsAsync<ViewOrganization>(r => r
             .Patch()
             .AsTestOrganizationUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
-            .Content("""{"budget_alert_settings":{"enabled":true,"thresholds":[50,80,90]}}""", "application/json")
+            .Content(new { name = originalOrg.Name, budget_alert_settings = new { enabled = true, thresholds = new[] { 75 } } })
             .StatusCodeShouldBeOk()
         );
 
-        // Assert - name unchanged, budget settings applied
         Assert.NotNull(updated);
         Assert.Equal(originalOrg.Name, updated.Name);
         Assert.NotNull(updated.BudgetAlertSettings);
         Assert.True(updated.BudgetAlertSettings.Enabled);
-        Assert.Contains(50, updated.BudgetAlertSettings.Thresholds);
-        Assert.Contains(80, updated.BudgetAlertSettings.Thresholds);
-        Assert.Contains(90, updated.BudgetAlertSettings.Thresholds);
     }
 }

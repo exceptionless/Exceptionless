@@ -268,4 +268,59 @@ public class EventPostJobTests : IntegrationTestsBase
         occurrenceDate ??= DateTimeOffset.Now;
         return _eventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: occurrenceDate, userIdentity: userIdentity, type: type, source: source, sessionId: sessionId);
     }
+
+    [Fact]
+    public async Task CanRunJob_WhenProjectOverLimit_BlocksEvents()
+    {
+        var project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
+        Assert.NotNull(project);
+        project.IngestLimit = new ProjectIngestLimit { Type = ProjectIngestLimitType.Fixed, FixedLimit = 0 };
+        await _projectRepository.SaveAsync(project, o => o.ImmediateConsistency().Cache());
+
+        Assert.NotNull(await EnqueueEventPostAsync(GenerateEvent()));
+        Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
+
+        var result = await _job.RunAsync(TestCancellationToken);
+        Assert.True(result.IsSuccess);
+
+        await RefreshDataAsync();
+        Assert.Equal(0, await _eventRepository.CountAsync());
+
+        var usage = await _usageService.GetUsageAsync(TestConstants.OrganizationId, TestConstants.ProjectId);
+        Assert.Equal(1, usage.CurrentUsage.Blocked);
+    }
+
+    [Fact]
+    public async Task CanRunJob_WhenSmartThrottleApplied_DiscardsEvents()
+    {
+        // Add a second project so smart throttle's projectCount > 1 condition is met
+        var secondProject = _projectData.GenerateProject(generateId: true, organizationId: TestConstants.OrganizationId);
+        await _projectRepository.AddAsync(secondProject, o => o.ImmediateConsistency().Cache());
+
+        var organization = await _organizationRepository.GetByIdAsync(TestConstants.OrganizationId);
+        Assert.NotNull(organization);
+        // Set a finite plan limit so smart throttle can activate (UnlimitedPlan has -1 which bypasses throttle)
+        organization.MaxEventsPerMonth = 750;
+        // usageRatio = 650/750 = 0.867 > 0.8 — triggers smart throttle evaluation
+        organization.GetCurrentUsage(TimeProvider).Total = 650;
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
+
+        var project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
+        Assert.NotNull(project);
+        // fairShare = 750/2 = 375; fairShareRatio = 800/375 = 2.13 > 2.0 — throttle applies
+        project.GetCurrentUsage(TimeProvider).Total = 800;
+        await _projectRepository.SaveAsync(project, o => o.ImmediateConsistency().Cache());
+
+        var events = Enumerable.Range(0, 5).Select(_ => GenerateEvent()).ToList();
+        Assert.NotNull(await EnqueueEventPostAsync(events));
+
+        var result = await _job.RunAsync(TestCancellationToken);
+        Assert.True(result.IsSuccess);
+
+        var usage = await _usageService.GetUsageAsync(TestConstants.OrganizationId, TestConstants.ProjectId);
+        Assert.True(usage.CurrentUsage.Discarded > 0);
+
+        await RefreshDataAsync();
+        Assert.True(await _eventRepository.CountAsync() < 5);
+    }
 }

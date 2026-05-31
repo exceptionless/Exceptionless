@@ -876,14 +876,16 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         return StatusCode(StatusCodes.Status201Created);
     }
 
-    private async Task<bool> IsOrganizationNameAvailableInternalAsync(string name)
+    private async Task<bool> IsOrganizationNameAvailableInternalAsync(string name, string? excludeOrganizationId = null)
     {
         if (String.IsNullOrWhiteSpace(name))
             return false;
 
         string decodedName = Uri.UnescapeDataString(name).Trim().ToLowerInvariant();
         var results = await _repository.GetByIdsAsync(GetAssociatedOrganizationIds().ToArray(), o => o.Cache());
-        return !results.Any(o => String.Equals(o.Name.Trim().ToLowerInvariant(), decodedName, StringComparison.OrdinalIgnoreCase));
+        return !results.Any(o =>
+            o.Id != excludeOrganizationId &&
+            String.Equals(o.Name.Trim().ToLowerInvariant(), decodedName, StringComparison.OrdinalIgnoreCase));
     }
 
     protected override async Task<PermissionResult> CanAddAsync(Organization value)
@@ -925,7 +927,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     protected override async Task<PermissionResult> CanUpdateAsync(Organization original, Delta<UpdateOrganization> changes)
     {
         var changed = changes.GetEntity();
-        if (changes.ContainsChangedProperty(p => p.Name) && !await IsOrganizationNameAvailableInternalAsync(changed.Name))
+        if (changes.ContainsChangedProperty(p => p.Name) && !await IsOrganizationNameAvailableInternalAsync(changed.Name, original.Id))
             return PermissionResult.DenyWithMessage("A organization with this name already exists.");
 
         return await base.CanUpdateAsync(original, changes);

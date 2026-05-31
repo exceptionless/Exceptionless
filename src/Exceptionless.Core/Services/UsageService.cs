@@ -445,9 +445,18 @@ public class UsageService
             if (monthTotal >= maxEventsPerMonth && monthTotal - maxEventsPerMonth < eventCount)
                 await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId });
 
-            // Check budget alert thresholds
+            // Check budget alert thresholds — non-fatal: alert failures must not break event ingestion
             if (maxEventsPerMonth > 0)
-                await CheckBudgetAlertThresholdsAsync(organizationId, (int)monthTotal, maxEventsPerMonth);
+            {
+                try
+                {
+                    await CheckBudgetAlertThresholdsAsync(organizationId, (int)monthTotal, maxEventsPerMonth);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to check budget alert thresholds for organization {OrganizationId}", organizationId);
+                }
+            }
         }
 
         if (bucketTotal >= bucketLimit && bucketTotal - bucketLimit < eventCount)
@@ -553,7 +562,7 @@ public class UsageService
             if (usagePercent < threshold)
                 break;
 
-            int thresholdEventCount = (int)((double)threshold / 100 * maxEventsPerMonth);
+            int thresholdEventCount = (int)Math.Ceiling((double)threshold / 100 * maxEventsPerMonth);
 
             // Check if we just crossed this threshold (within the current event batch)
             string alertSentKey = GetBudgetAlertSentKey(utcNow, organizationId, threshold);
@@ -596,7 +605,7 @@ public class UsageService
         if (maxEventsPerMonth < 0)
             return -1;
 
-        return (int)(maxEventsPerMonth * (double)percent.Value / 100);
+        return (int)Math.Ceiling(maxEventsPerMonth * (double)percent.Value / 100);
     }
 
     private async Task<int> GetProjectMonthTotalAsync(DateTime utcNow, string organizationId, string projectId)
@@ -666,6 +675,42 @@ public class UsageService
         await _cache.ListAddAsync(GetProjectSetKey(utcNow), projectId, TimeSpan.FromHours(8));
 
         AppDiagnostics.EventsDiscarded.Add(eventCount);
+    }
+
+    /// <summary>
+    /// Records smart throttle discard and publishes a deduped notification (once per billing period per project).
+    /// </summary>
+    public async Task RecordSmartThrottleAsync(string organizationId, string projectId, int discardedCount, SmartThrottleResult throttleResult)
+    {
+        await IncrementDiscardedAsync(organizationId, projectId, discardedCount);
+
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        string notifyKey = $"usage:smart-throttle-notified:{utcNow:yyyy-MM}:{organizationId}:{projectId}";
+        if (await _cache.GetAsync<bool>(notifyKey) is { HasValue: true, Value: true })
+            return;
+
+        await _cache.SetAsync(notifyKey, true, TimeSpan.FromDays(32));
+
+        int projectTotal = await GetProjectMonthTotalAsync(utcNow, organizationId, projectId);
+        int maxEventsPerMonth = await GetMaxEventsPerMonthAsync(organizationId);
+        int projectCount = await GetOrganizationProjectCountAsync(organizationId);
+        int fairShareLimit = maxEventsPerMonth > 0 ? (int)(maxEventsPerMonth / Math.Max(1, projectCount)) : 0;
+
+        try
+        {
+            await _messagePublisher.PublishAsync(new ProjectSmartThrottleApplied
+            {
+                OrganizationId = organizationId,
+                ProjectId = projectId,
+                SampleRate = throttleResult.SampleRate,
+                CurrentEventCount = projectTotal,
+                EventLimit = fairShareLimit
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to publish smart throttle notification for project {ProjectId}", projectId);
+        }
     }
 
     public async Task IncrementTooBigAsync(string organizationId, string? projectId)
