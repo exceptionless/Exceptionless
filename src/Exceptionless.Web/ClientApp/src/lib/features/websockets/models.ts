@@ -33,6 +33,7 @@ export interface ReleaseNotification {
 
 export interface SystemNotification {
     date: string;
+    level?: 'Error' | 'Info' | 'Warning';
     message?: string;
 }
 

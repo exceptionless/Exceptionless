@@ -12,13 +12,28 @@
     const fallbackMessage = env.PUBLIC_SYSTEM_NOTIFICATION_MESSAGE || null;
 
     let systemMessage = $state<null | string>(null);
+    let systemLevel = $state<'Error' | 'Info' | 'Warning'>('Info');
     let releaseMessage = $state<null | string>(null);
 
     const displayMessage = $derived(systemMessage || currentNotificationQuery.data?.message || fallbackMessage);
+    const displayLevel = $derived<'Error' | 'Info' | 'Warning'>(systemMessage ? systemLevel : (currentNotificationQuery.data?.level ?? 'Info'));
+
+    const levelVariantMap = {
+        Error: 'destructive',
+        Info: 'information',
+        Warning: 'warning'
+    } as const;
+
+    const levelIconMap = {
+        Error: AlertTriangle,
+        Info: Info,
+        Warning: AlertTriangle
+    } as const;
 
     useEventListener(document, 'SystemNotification', (event: Event) => {
         const detail = (event as CustomEvent<SystemNotification>).detail;
         systemMessage = detail?.message || null;
+        systemLevel = detail?.level ?? 'Info';
     });
 
     useEventListener(document, 'ReleaseNotification', (event: Event) => {
@@ -33,9 +48,10 @@
 </script>
 
 {#if displayMessage}
-    <Notification variant="destructive" role="alert" aria-live="assertive" class="mb-4">
+    {@const LevelIcon = levelIconMap[displayLevel]}
+    <Notification variant={levelVariantMap[displayLevel]} role="alert" aria-live="assertive" class="mb-4">
         {#snippet icon()}
-            <AlertTriangle class="size-4" />
+            <LevelIcon class="size-4" />
         {/snippet}
         <NotificationDescription>{displayMessage}</NotificationDescription>
     </Notification>

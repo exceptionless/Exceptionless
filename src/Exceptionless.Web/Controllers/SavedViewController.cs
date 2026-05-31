@@ -25,7 +25,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
 {
     private const int MaxViewsPerOrganization = 100;
     private const string PredefinedSavedViewsDataKey = "@@PredefinedSavedViewsVersion";
-    private const int PredefinedSavedViewsVersion = 4;
+    private const int PredefinedSavedViewsVersion = 1;
 
     private readonly IOrganizationRepository _organizationRepository;
     private readonly ILockProvider _lockProvider;
@@ -52,11 +52,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
 
     protected override ViewSavedView MapToViewModel(SavedView model)
     {
-        var viewModel = _mapper.MapToViewSavedView(model);
-        if (String.IsNullOrWhiteSpace(viewModel.Slug))
-            viewModel.Slug = ToFallbackSlug(viewModel.Name, viewModel.Id);
-
-        return viewModel;
+        return _mapper.MapToViewSavedView(model);
     }
 
     protected override List<ViewSavedView> MapToViewModels(IEnumerable<SavedView> models) => models.Select(MapToViewModel).ToList();
@@ -405,7 +401,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
             original.Slug = ToSlug(original.Slug);
 
         if (String.IsNullOrWhiteSpace(original.Slug))
-            original.Slug = ToFallbackSlug(original.Name, original.Id);
+            original.Slug = ToSlug(original.Name);
 
         original.UpdatedByUserId = CurrentUser.Id;
 
@@ -757,7 +753,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         var candidate = baseSlug;
         var suffix = 2;
 
-        while (existingViews.Any(view => view.Id != excludingId && String.Equals(ToFallbackSlug(String.IsNullOrWhiteSpace(view.Slug) ? view.Name : view.Slug, view.Id), candidate, StringComparison.OrdinalIgnoreCase)))
+        while (existingViews.Any(view => view.Id != excludingId && String.Equals(view.Slug, candidate, StringComparison.OrdinalIgnoreCase)))
         {
             var suffixText = $"-{suffix}";
             var maxBaseLength = 100 - suffixText.Length;
@@ -771,7 +767,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
     private async Task<bool> SlugExistsAsync(string organizationId, string viewType, string slug, string? excludingId)
     {
         var results = await _repository.GetByViewForUserAsync(organizationId, viewType, CurrentUser.Id, o => o.PageLimit(1000));
-        return results.Documents.Any(view => view.Id != excludingId && String.Equals(ToFallbackSlug(String.IsNullOrWhiteSpace(view.Slug) ? view.Name : view.Slug, view.Id), slug, StringComparison.OrdinalIgnoreCase));
+        return results.Documents.Any(view => view.Id != excludingId && String.Equals(view.Slug, slug, StringComparison.OrdinalIgnoreCase));
     }
 
     private async Task<bool> NameExistsAsync(string organizationId, string viewType, string name, string? excludingId)
@@ -795,15 +791,6 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         var slug = Regex.Replace(value.Trim().ToLowerInvariant(), "[^a-z0-9]+", "-").Trim('-');
         slug = Regex.Replace(slug, "-+", "-");
         return slug;
-    }
-
-    private static string ToFallbackSlug(string value, string id)
-    {
-        var slug = ToSlug(value);
-        if (!String.IsNullOrWhiteSpace(slug))
-            return slug;
-
-        return String.IsNullOrWhiteSpace(id) ? "saved-view" : $"saved-view-{id}";
     }
 
 }

@@ -50,12 +50,13 @@ export function sendReleaseNotificationMutation() {
 
 export function setSystemNotificationMutation() {
     const queryClient = useQueryClient();
-    return createMutation<SystemNotification, ProblemDetails, { message: string; publish?: boolean }>(() => ({
-        mutationFn: async (params: { message: string; publish?: boolean }) => {
+    return createMutation<SystemNotification, ProblemDetails, { level?: 'Error' | 'Info' | 'Warning'; message: string; publish?: boolean }>(() => ({
+        mutationFn: async (params: { level?: 'Error' | 'Info' | 'Warning'; message: string; publish?: boolean }) => {
             const client = useFetchClient();
             const publish = params.publish !== false;
             const response = await client.postJSON<SystemNotification>(`notifications/system?publish=${publish}`, {
-                value: params.message
+                level: params.level ?? 'Info',
+                message: params.message
             });
 
             return response.data!;

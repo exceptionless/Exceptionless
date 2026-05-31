@@ -206,11 +206,11 @@
                 class={['relative', !hasFilters && 'gap-x-1 px-3']}
                 size={hasFilters ? 'icon-lg' : 'lg'}
                 variant="outline"
-                title="Add and Manage Filters"
-                aria-label={hiddenFilterCount > 0 ? `Add and Manage Filters. ${hiddenFilterLabel}.` : 'Add and Manage Filters'}
+                title={hiddenFilterCount > 0 && !showHiddenFilters ? `Manage filters (${hiddenFilterCount} hidden)` : 'Manage filters'}
+                aria-label={hiddenFilterCount > 0 && !showHiddenFilters ? `Manage filters. ${hiddenFilterLabel}.` : 'Manage filters'}
             >
                 <Circle class={[hasFilters ? 'size-4' : 'mr-2 size-4']} aria-hidden="true" />
-                {#if hiddenFilterCount > 0}
+                {#if hiddenFilterCount > 0 && !showHiddenFilters}
                     <Badge
                         variant="secondary"
                         class="absolute -top-1 -right-1 h-4 min-w-4 rounded-full px-1 text-[10px] leading-none shadow-sm"

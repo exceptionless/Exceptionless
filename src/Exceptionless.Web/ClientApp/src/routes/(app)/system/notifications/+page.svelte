@@ -5,6 +5,7 @@
     import { Checkbox } from '$comp/ui/checkbox';
     import * as Dialog from '$comp/ui/dialog';
     import { Label } from '$comp/ui/label';
+    import * as Select from '$comp/ui/select';
     import { Textarea } from '$comp/ui/textarea';
     import {
         clearSystemNotificationMutation,
@@ -29,6 +30,7 @@
 
     // Form state
     let systemMessage = $state('');
+    let systemLevel = $state<'Error' | 'Info' | 'Warning'>('Info');
     let systemPublish = $state(true);
     let clearPublish = $state(true);
     let releaseMessage = $state('');
@@ -36,10 +38,11 @@
 
     async function handleSetSystemNotification() {
         try {
-            await setSystemNotification.mutateAsync({ message: systemMessage, publish: systemPublish });
+            await setSystemNotification.mutateAsync({ level: systemLevel, message: systemMessage, publish: systemPublish });
             toast.success('System notification set successfully.');
             showSetDialog = false;
             systemMessage = '';
+            systemLevel = 'Info';
             systemPublish = true;
         } catch {
             toast.error('Failed to set system notification.');
@@ -89,7 +92,7 @@
                     {currentNotificationQuery.data.message}
                 </P>
                 <Muted>
-                    Set {new Date(currentNotificationQuery.data.date).toLocaleString()}
+                    Level: {currentNotificationQuery.data.level ?? 'Info'} &middot; Set {new Date(currentNotificationQuery.data.date).toLocaleString()}
                 </Muted>
             {:else}
                 <Muted>(no active notification)</Muted>
@@ -150,6 +153,19 @@
             <div class="space-y-2">
                 <Label for="system-message">Message</Label>
                 <Textarea id="system-message" bind:value={systemMessage} placeholder="Enter notification message..." rows={3} />
+            </div>
+            <div class="space-y-2">
+                <Label>Level</Label>
+                <Select.Root type="single" bind:value={systemLevel}>
+                    <Select.Trigger class="w-32">
+                        {systemLevel}
+                    </Select.Trigger>
+                    <Select.Content>
+                        <Select.Item value="Info">Info</Select.Item>
+                        <Select.Item value="Warning">Warning</Select.Item>
+                        <Select.Item value="Error">Error</Select.Item>
+                    </Select.Content>
+                </Select.Root>
             </div>
             <div class="flex items-center gap-2">
                 <Checkbox id="system-publish" bind:checked={systemPublish} />

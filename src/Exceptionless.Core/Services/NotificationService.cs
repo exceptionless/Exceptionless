@@ -18,9 +18,9 @@ public class NotificationService(ICacheClient cacheClient, IMessagePublisher mes
         return result.HasValue ? result.Value : null;
     }
 
-    public async Task<SystemNotification> SetSystemNotificationAsync(string message, bool publish = true)
+    public async Task<SystemNotification> SetSystemNotificationAsync(string message, SystemNotificationLevel level = SystemNotificationLevel.Info, bool publish = true)
     {
-        var notification = new SystemNotification { Date = timeProvider.GetUtcNow().UtcDateTime, Message = message };
+        var notification = new SystemNotification { Date = timeProvider.GetUtcNow().UtcDateTime, Message = message, Level = level };
         await cacheClient.SetAsync(SystemNotificationCacheKey, notification);
         if (publish)
             await messagePublisher.PublishAsync(notification);

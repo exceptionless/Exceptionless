@@ -128,12 +128,12 @@ public class StatusController : ExceptionlessApiController
     [HttpPost("notifications/system")]
     [Consumes("application/json")]
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-    public async Task<ActionResult<SystemNotification>> PostSystemNotificationAsync(ValueFromBody<string> message, bool publish = true)
+    public async Task<ActionResult<SystemNotification>> PostSystemNotificationAsync(SetSystemNotificationRequest request, bool publish = true)
     {
-        if (String.IsNullOrWhiteSpace(message?.Value))
+        if (String.IsNullOrWhiteSpace(request.Message))
             return NotFound();
 
-        var notification = await _notificationService.SetSystemNotificationAsync(message.Value, publish);
+        var notification = await _notificationService.SetSystemNotificationAsync(request.Message, request.Level, publish);
 
         return Ok(notification);
     }
@@ -146,4 +146,10 @@ public class StatusController : ExceptionlessApiController
 
         return Ok();
     }
+}
+
+public record SetSystemNotificationRequest
+{
+    public string? Message { get; set; }
+    public SystemNotificationLevel Level { get; set; } = SystemNotificationLevel.Info;
 }
