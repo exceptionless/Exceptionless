@@ -172,6 +172,83 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
     }
 
     /// <summary>
+    /// Get an organization's saved views exported as predefined definitions
+    /// </summary>
+    /// <param name="organizationId">The identifier of the organization to export from.</param>
+    /// <response code="200">The organization's saved views as predefined definitions.</response>
+    /// <response code="404">The organization could not be found.</response>
+    [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/saved-views/export")]
+    [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
+    public async Task<ActionResult<IReadOnlyCollection<PredefinedSavedViewDefinition>>> ExportOrganizationSavedViewsAsync(string organizationId)
+    {
+        if (!CanAccessOrganization(organizationId))
+            return NotFound();
+
+        var definitions = new List<PredefinedSavedViewDefinition>();
+
+        foreach (var viewType in NewSavedView.ValidViewTypes)
+        {
+            var results = await _repository.GetByViewAsync(organizationId, viewType, o => o.PageLimit(1000));
+            foreach (var savedView in results.Documents.Where(v => v.UserId is null))
+            {
+                var key = GetPredefinedKey(savedView);
+                definitions.Add(ToPredefinedSavedView(savedView, key));
+            }
+        }
+
+        return Ok(definitions);
+    }
+
+    /// <summary>
+    /// Replace all predefined saved views with the provided definitions
+    /// </summary>
+    /// <param name="definitions">The full set of predefined saved view definitions.</param>
+    /// <response code="200">The predefined saved views were replaced.</response>
+    [HttpPut("predefined")]
+    [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
+    public async Task<ActionResult<IReadOnlyCollection<PredefinedSavedViewDefinition>>> PutPredefinedAsync([FromBody] IReadOnlyCollection<PredefinedSavedViewDefinition> definitions)
+    {
+        // Remove all existing system predefined views
+        foreach (var viewType in NewSavedView.ValidViewTypes)
+        {
+            var existingViews = await GetSystemPredefinedSavedViewsAsync(viewType);
+            if (existingViews.Count > 0)
+                await _repository.RemoveAsync(existingViews.Select(v => v.Id).ToList(), o => o.ImmediateConsistency());
+        }
+
+        // Create new views from definitions
+        var savedViews = new List<SavedView>();
+        foreach (var definition in definitions)
+        {
+            var savedView = new SavedView
+            {
+                OrganizationId = PredefinedSavedViewsDataSeed.SystemOrganizationId,
+                CreatedByUserId = CurrentUser.Id,
+                PredefinedKey = definition.Key,
+                Name = definition.Name,
+                Slug = definition.Slug,
+                ViewType = definition.ViewType,
+                Filter = definition.Filter,
+                Time = definition.Time,
+                Sort = definition.Sort,
+                FilterDefinitions = definition.FilterDefinitions is { } fd ? JsonSerializer.Serialize(fd) : null,
+                Columns = definition.Columns is { } cols ? new Dictionary<string, bool>(cols) : null,
+                ColumnOrder = definition.ColumnOrder?.ToList(),
+                ShowStats = definition.ShowStats,
+                ShowChart = definition.ShowChart,
+                Version = 1
+            };
+
+            savedViews.Add(savedView);
+        }
+
+        if (savedViews.Count > 0)
+            await _repository.AddAsync(savedViews, o => o.Cache().ImmediateConsistency());
+
+        return Ok(await GetPredefinedSavedViewsAsync());
+    }
+
+    /// <summary>
     /// Save a saved view as a global predefined saved view
     /// </summary>
     /// <param name="id">The identifier of the saved view to promote.</param>
