@@ -37,6 +37,9 @@ public static class JsonPatchValidation
             if (String.IsNullOrWhiteSpace(operation.path) || operation.path == "/")
                 return Result.Invalid(ValidationError.Create("patch", "Path must target a specific property (root path is not allowed)."));
 
+            if (!operation.path.StartsWith('/'))
+                return Result.Invalid(ValidationError.Create("patch", $"Path '{operation.path}' is not valid. JSON Patch paths must start with '/'."));
+
             // Validate path format: must start with / and have exactly one segment
             var normalizedPath = NormalizePath(operation.path);
             var segments = normalizedPath.Split('/');

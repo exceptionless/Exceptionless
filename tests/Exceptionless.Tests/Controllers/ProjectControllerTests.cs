@@ -849,6 +849,50 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PatchAsync_PathWithoutLeadingSlash_ReturnsUnprocessableEntity()
+    {
+        // Arrange
+        var project = await SendRequestAsAsync<ViewProject>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPath("projects")
+            .Content(new NewProject
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Name = "Original RFC Project",
+                DeleteBotDataEnabled = true
+            })
+            .StatusCodeShouldBeCreated()
+        );
+        Assert.NotNull(project);
+
+        /* language=json */
+        const string json = """
+                            [
+                                {
+                                    "op": "replace",
+                                    "path": "name",
+                                    "value": "Should Not Apply"
+                                }
+                            ]
+                            """;
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Patch()
+            .AppendPaths("projects", project.Id)
+            .Content(json, JsonPatchHelper.ContentType)
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+
+        // Assert
+        var persisted = await _projectRepository.GetByIdAsync(project.Id);
+        Assert.NotNull(persisted);
+        Assert.Equal("Original RFC Project", persisted.Name);
+    }
+
+    [Fact]
     public async Task PostAsync_NewProject_MapsAllPropertiesToProject()
     {
         // Arrange - Test Mapping: NewProject -> Project
