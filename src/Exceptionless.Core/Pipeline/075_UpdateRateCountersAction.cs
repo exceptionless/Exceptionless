@@ -81,17 +81,12 @@ public class UpdateRateCountersAction : EventPipelineActionBase
             matchedSignals.Add(RateNotificationSignal.Regressions);
 
         // Increment counters for each matching rule
-        foreach (var rule in rules)
+        foreach (var rule in rules.Where(r => matchedSignals.Contains(r.Signal)))
         {
-            if (!matchedSignals.Contains(rule.Signal))
-                continue;
-
             // For Stack subject, only match if this event belongs to the rule's stack
-            if (rule.Subject == RateNotificationSubject.Stack)
-            {
-                if (String.IsNullOrEmpty(rule.StackId) || !String.Equals(ctx.Event.StackId, rule.StackId, StringComparison.Ordinal))
-                    continue;
-            }
+            if (rule.Subject == RateNotificationSubject.Stack &&
+                (String.IsNullOrEmpty(rule.StackId) || !String.Equals(ctx.Event.StackId, rule.StackId, StringComparison.Ordinal)))
+                continue;
 
             string counterKey = BuildCounterKey(rule);
             await _counterService.IncrementAsync(counterKey);
