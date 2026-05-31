@@ -1,8 +1,8 @@
 import type { WebSocketMessageValue } from '$features/websockets/models';
 
 import { accessToken } from '$features/auth/index.svelte';
-import { ChangeType } from '$features/websockets/models';
 import { jsonPatchRequestOptions, toJsonPatch } from '$features/shared/api/json-patch';
+import { ChangeType } from '$features/websockets/models';
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, type QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
