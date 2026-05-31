@@ -3,11 +3,21 @@
  * Converts partial objects to JSON Patch operations for PATCH API calls.
  */
 
+import type { RequestOptions } from '@exceptionless/fetchclient';
+
 export interface JsonPatchOperation {
     op: 'replace' | 'test';
     path: string;
     value?: unknown;
 }
+
+/** Content-Type required for RFC 6902 JSON Patch requests. */
+export const JSON_PATCH_CONTENT_TYPE = 'application/json-patch+json';
+
+/** RequestOptions preset with the correct JSON Patch content type header. */
+export const jsonPatchRequestOptions: RequestOptions = {
+    headers: { 'Content-Type': JSON_PATCH_CONTENT_TYPE }
+};
 
 /**
  * Converts a partial object into an array of RFC 6902 JSON Patch "replace" operations.

@@ -3,7 +3,7 @@ import type { BillingPlan, ChangePlanRequest, ChangePlanResult } from '$lib/gene
 import type { QueryClient } from '@tanstack/svelte-query';
 
 import { accessToken } from '$features/auth/index.svelte';
-import { toJsonPatch } from '$features/shared/api/json-patch';
+import { jsonPatchRequestOptions, toJsonPatch } from '$features/shared/api/json-patch';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 
@@ -394,7 +394,7 @@ export function patchOrganization(request: PatchOrganizationRequest) {
         enabled: () => !!accessToken.current && !!request.route.id,
         mutationFn: async (data: NewOrganization) => {
             const client = useFetchClient();
-            const response = await client.patchJSON<ViewOrganization>(`organizations/${request.route.id}`, toJsonPatch(data as unknown as Record<string, unknown>));
+            const response = await client.patchJSON<ViewOrganization>(`organizations/${request.route.id}`, toJsonPatch(data as unknown as Record<string, unknown>), jsonPatchRequestOptions);
             return response.data!;
         },
         onError: () => {

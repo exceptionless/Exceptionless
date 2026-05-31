@@ -2,7 +2,7 @@ import type { WebSocketMessageValue } from '$features/websockets/models';
 
 import { setUserIdentity } from '$features/auth/exceptionless-session';
 import { accessToken } from '$features/auth/index.svelte';
-import { toJsonPatch } from '$features/shared/api/json-patch';
+import { jsonPatchRequestOptions, toJsonPatch } from '$features/shared/api/json-patch';
 import { type FetchClientResponse, ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
@@ -118,7 +118,7 @@ export function patchUser(request: PatchUserRequest) {
         enabled: () => !!accessToken.current && !!request.route.id,
         mutationFn: async (data: UpdateUser) => {
             const client = useFetchClient();
-            const response = await client.patchJSON<ViewCurrentUser>(`users/${request.route.id}`, toJsonPatch(data as unknown as Record<string, unknown>));
+            const response = await client.patchJSON<ViewCurrentUser>(`users/${request.route.id}`, toJsonPatch(data as unknown as Record<string, unknown>), jsonPatchRequestOptions);
             return response.data!;
         },
         mutationKey: queryKeys.patchUser(request.route.id),

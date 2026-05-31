@@ -121,7 +121,7 @@
             }
 
             function update(id, project) {
-                return Restangular.one("projects", id).customPATCH(toJsonPatch(project));
+                return Restangular.one("projects", id).customPATCH(toJsonPatch(project), '', {}, { 'Content-Type': 'application/json-patch+json' });
             }
 
             function toJsonPatch(obj) {

@@ -37,7 +37,7 @@
         }
 
         function update(id, token) {
-            return Restangular.one("tokens", id).customPATCH(toJsonPatch(token));
+            return Restangular.one("tokens", id).customPATCH(toJsonPatch(token), '', {}, { 'Content-Type': 'application/json-patch+json' });
         }
 
         function toJsonPatch(obj) {
