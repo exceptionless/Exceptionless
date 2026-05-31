@@ -311,6 +311,10 @@ public class EventPostJobTests : IntegrationTestsBase
         project.GetCurrentUsage(TimeProvider).Total = 800;
         await _projectRepository.SaveAsync(project, o => o.ImmediateConsistency().Cache());
 
+        // Verify smart throttle conditions are met before running the job
+        var throttleResult = await _usageService.GetSmartThrottleRateAsync(TestConstants.OrganizationId, TestConstants.ProjectId);
+        Assert.True(throttleResult.IsThrottled, $"Smart throttle should be active (fairShareRatio={throttleResult.FairShareRatio:F2}, sampleRate={throttleResult.SampleRate:F2})");
+
         var events = Enumerable.Range(0, 5).Select(_ => GenerateEvent()).ToList();
         Assert.NotNull(await EnqueueEventPostAsync(events));
 
@@ -318,7 +322,7 @@ public class EventPostJobTests : IntegrationTestsBase
         Assert.True(result.IsSuccess);
 
         var usage = await _usageService.GetUsageAsync(TestConstants.OrganizationId, TestConstants.ProjectId);
-        Assert.True(usage.CurrentUsage.Discarded > 0);
+        Assert.True(usage.CurrentUsage.Discarded > 0, $"Expected discarded events, but got: total={usage.CurrentUsage.Total}, blocked={usage.CurrentUsage.Blocked}, discarded={usage.CurrentUsage.Discarded}");
 
         await RefreshDataAsync();
         Assert.True(await _eventRepository.CountAsync() < 5);
