@@ -279,15 +279,9 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
                     [nameof(BudgetAlertSettings)]);
             }
 
-            foreach (var threshold in BudgetAlertSettings.Thresholds)
-            {
-                if (threshold <= 0 || threshold >= 100)
-                {
-                    yield return new ValidationResult("Budget alert thresholds must be between 1 and 99.",
-                        [nameof(BudgetAlertSettings)]);
-                    break;
-                }
-            }
+            if (BudgetAlertSettings.Thresholds.Any(t => t <= 0 || t >= 100))
+                yield return new ValidationResult("Budget alert thresholds must be between 1 and 99.",
+                    [nameof(BudgetAlertSettings)]);
         }
     }
 }
