@@ -125,8 +125,8 @@
     function addThreshold() {
         thresholdError = '';
         const val = parseInt(newThreshold, 10);
-        if (isNaN(val) || val < 1 || val > 100) {
-            thresholdError = 'Enter a percentage between 1 and 100.';
+        if (isNaN(val) || val < 1 || val > 99) {
+            thresholdError = 'Enter a percentage between 1 and 99.';
             return;
         }
         if (thresholds.includes(val)) {
@@ -239,7 +239,7 @@
                                     id="new-threshold"
                                     type="number"
                                     min="1"
-                                    max="100"
+                                    max="99"
                                     placeholder="e.g. 80"
                                     bind:value={newThreshold}
                                     onkeydown={handleThresholdKeydown}

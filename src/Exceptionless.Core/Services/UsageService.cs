@@ -564,13 +564,11 @@ public class UsageService
 
             int thresholdEventCount = (int)Math.Ceiling((double)threshold / 100 * maxEventsPerMonth);
 
-            // Check if we just crossed this threshold (within the current event batch)
             string alertSentKey = GetBudgetAlertSentKey(utcNow, organizationId, threshold);
-            if (await _cache.GetAsync<bool>(alertSentKey) is { HasValue: true, Value: true })
+            // Atomically mark as sent for this billing period — only the first writer (increment == 1) sends the alert.
+            long alertCount = await _cache.IncrementAsync(alertSentKey, 1, TimeSpan.FromDays(32));
+            if (alertCount != 1)
                 continue;
-
-            // Mark as sent for this billing period
-            await _cache.SetAsync(alertSentKey, true, TimeSpan.FromDays(32));
 
             await _messagePublisher.PublishAsync(new OrganizationBudgetAlert
             {

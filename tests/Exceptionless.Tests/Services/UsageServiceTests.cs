@@ -1052,6 +1052,47 @@ public sealed class UsageServiceTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task CheckBudgetAlertThresholdsAsync_ConcurrentCalls_PublishesAlertExactlyOnce()
+    {
+        // Regression: non-atomic get-then-set allowed two concurrent workers to both see the
+        // key absent and both publish. The fix uses IncrementAsync (atomic) so only the worker
+        // whose increment returns 1 sends the alert.
+        var messageBus = GetService<IMessageBus>();
+        int alertCount = 0;
+        var firstAlert = new AsyncCountdownEvent(1);
+        await messageBus.SubscribeAsync<OrganizationBudgetAlert>(_ =>
+        {
+            alertCount++;
+            if (alertCount == 1) firstAlert.Signal();
+        }, TestCancellationToken);
+
+        var organization = new Organization
+        {
+            Name = "Test",
+            MaxEventsPerMonth = 1000,
+            PlanId = _plans.SmallPlan.Id,
+            BudgetAlertSettings = new OrganizationBudgetAlertSettings { Enabled = true, Thresholds = new SortedSet<int> { 50 } }
+        };
+        organization.GetCurrentUsage(TimeProvider).Total = 490;
+        organization = await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+
+        // Simulate concurrent workers by calling GetEventsLeftAsync + IncrementTotalAsync
+        // concurrently. Both workers see usage crossing 50%; only one should publish the alert.
+        await _usageService.GetEventsLeftAsync(organization.Id);
+        var tasks = Enumerable.Range(0, 5)
+            .Select(_ => _usageService.IncrementTotalAsync(organization.Id, project.Id, 15))
+            .ToArray();
+        await Task.WhenAll(tasks);
+
+        // Wait for the first (and only) alert, then give extra time for any duplicates.
+        await firstAlert.WaitAsync(TimeSpan.FromSeconds(5));
+        await Task.Delay(300, TestCancellationToken);
+
+        Assert.Equal(1, alertCount);
+    }
+
+    [Fact]
     public async Task IncrementTotalAsync_DisabledAlerts_DoNotPublishMessages()
     {
         var messageBus = GetService<IMessageBus>();
