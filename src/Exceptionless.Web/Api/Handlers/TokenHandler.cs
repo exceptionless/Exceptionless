@@ -3,15 +3,16 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
-using Exceptionless.Web.Utility;
 using Foundatio.Mediator;
 using Foundatio.Repositories;
+using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
 
 namespace Exceptionless.Web.Api.Handlers;
@@ -134,14 +135,29 @@ public class TokenHandler(
         if (original is null)
             return Result.NotFound("Token not found.");
 
-        if (!message.Changes.GetChangedPropertyNames().Any())
+        if (message.PatchDocument.IsEmpty())
             return MapToView(original);
 
-        var error = CanUpdate(original, message.Changes);
+        var validationResult = JsonPatchValidation.ValidateOperations(message.PatchDocument, "/organization_id");
+        if (!validationResult.IsSuccess)
+            return Result<ViewToken>.FromResult(validationResult);
+
+        var dto = new UpdateToken {
+            IsDisabled = original.IsDisabled,
+            Notes = original.Notes
+        };
+
+        var patchResult = JsonPatchValidation.ApplyPatch(message.PatchDocument, dto);
+        if (!patchResult.IsSuccess)
+            return Result<ViewToken>.FromResult(patchResult);
+
+        var error = CanUpdate(original, dto, message.PatchDocument);
         if (error is not null)
             return error;
 
-        message.Changes.Patch(original);
+        original.IsDisabled = dto.IsDisabled;
+        original.Notes = dto.Notes;
+
         await repository.SaveAsync(original, o => o.Cache());
         return MapToView(original);
     }
@@ -368,12 +384,12 @@ public class TokenHandler(
         return Result.Forbidden(permission.Message ?? "Access denied.");
     }
 
-    private Result<ViewToken>? CanUpdate(Token original, Delta<UpdateToken> changes)
+    private Result<ViewToken>? CanUpdate(Token original, UpdateToken dto, JsonPatchDocument<UpdateToken> patch)
     {
         if (!HttpContext.Request.CanAccessOrganization(original.OrganizationId))
             return Result.Invalid(ValidationError.Create("organization_id", "Invalid organization id specified."));
 
-        if (changes.GetChangedPropertyNames().Contains(nameof(Token.OrganizationId)))
+        if (patch.AffectsPath("/organization_id"))
             return Result.Invalid(ValidationError.Create("organization_id", "OrganizationId cannot be modified."));
 
         return null;

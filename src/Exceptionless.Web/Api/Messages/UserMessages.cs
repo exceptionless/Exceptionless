@@ -1,12 +1,12 @@
 using Exceptionless.Web.Models;
-using Exceptionless.Web.Utility;
+using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 
 namespace Exceptionless.Web.Api.Messages;
 
 public record GetCurrentUser;
 public record GetUserById(string Id);
 public record GetUsersByOrganization(string OrganizationId, int Page, int Limit);
-public record UpdateUserMessage(string Id, Delta<UpdateUser> Changes);
+public record UpdateUserMessage(string Id, JsonPatchDocument<UpdateUser> PatchDocument);
 public record DeleteCurrentUser;
 public record DeleteUsers(string[] Ids);
 public record UpdateEmailAddress(string Id, string Email);

@@ -134,7 +134,6 @@ public partial class Program
             builder.Services.ConfigureHttpJsonOptions(o =>
             {
                 o.SerializerOptions.ConfigureExceptionlessDefaults();
-                o.SerializerOptions.Converters.Add(new DeltaJsonConverterFactory());
             });
 
             builder.Services.AddProblemDetails(o => o.CustomizeProblemDetails = CustomizeProblemDetails);
@@ -171,7 +170,7 @@ public partial class Program
                 o.AddOperationTransformer<XmlDocumentationOperationTransformer>();
                 o.AddOperationTransformer<EndpointDocumentationOperationTransformer>();
                 o.AddSchemaTransformer<DataAnnotationsSchemaTransformer>();
-                o.AddSchemaTransformer<DeltaSchemaTransformer>();
+                o.AddSchemaTransformer<JsonPatchDocumentSchemaTransformer>();
                 o.AddSchemaTransformer<DictionarySubclassSchemaTransformer>();
                 o.AddSchemaTransformer<NumericTypeSchemaTransformer>();
                 o.AddSchemaTransformer<ReadOnlyPropertySchemaTransformer>();

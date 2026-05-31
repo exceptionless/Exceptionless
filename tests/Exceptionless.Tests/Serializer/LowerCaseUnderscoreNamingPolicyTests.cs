@@ -2,8 +2,8 @@ using System.Text.Json;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Web.Models;
-using Exceptionless.Web.Utility;
 using Foundatio.Xunit;
+using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 using Xunit;
 
 namespace Exceptionless.Tests.Serializer;
@@ -19,8 +19,7 @@ public class LowerCaseUnderscoreNamingPolicyTests : TestWithLoggingBase
     {
         _jsonSerializerOptions = new()
         {
-            PropertyNamingPolicy = LowerCaseUnderscoreNamingPolicy.Instance,
-            Converters = { new DeltaJsonConverterFactory() }
+            PropertyNamingPolicy = LowerCaseUnderscoreNamingPolicy.Instance
         };
     }
 
@@ -121,38 +120,37 @@ public class LowerCaseUnderscoreNamingPolicyTests : TestWithLoggingBase
     }
 
     [Fact]
-    public void Delta_Deserialize_SnakeCaseJson_SetsPropertyValues()
+    public void JsonPatch_Deserialize_SnakeCasePaths_ResolvesCorrectly()
     {
         // Arrange
         /* language=json */
-        const string json = """{"data": "TestValue", "is_active": true}""";
+        const string json = """[{"op": "replace", "path": "/data", "value": "TestValue"}, {"op": "replace", "path": "/is_active", "value": true}]""";
 
         // Act
-        var delta = JsonSerializer.Deserialize<Delta<SimpleModel>>(json, _jsonSerializerOptions);
+        var patch = JsonSerializer.Deserialize<JsonPatchDocument<SimpleModel>>(json, _jsonSerializerOptions);
 
         // Assert
-        Assert.NotNull(delta);
-        Assert.True(delta.TryGetPropertyValue("Data", out object? dataValue));
-        Assert.Equal("TestValue", dataValue);
-        Assert.True(delta.TryGetPropertyValue("IsActive", out object? isActiveValue));
-        Assert.True(isActiveValue as bool?);
+        Assert.NotNull(patch);
+        Assert.Equal(2, patch.Operations.Count);
+        Assert.Equal("/data", patch.Operations[0].path);
+        Assert.Equal("/is_active", patch.Operations[1].path);
     }
 
     [Fact]
-    public void Delta_Deserialize_PartialUpdate_OnlyTracksProvidedProperties()
+    public void JsonPatch_ApplyTo_SnakeCasePaths_SetsPropertyValues()
     {
         // Arrange
         /* language=json */
-        const string json = """{"is_active": false}""";
+        const string json = """[{"op": "replace", "path": "/is_active", "value": false}]""";
+        var patch = JsonSerializer.Deserialize<JsonPatchDocument<SimpleModel>>(json, _jsonSerializerOptions)!;
+        var model = new SimpleModel { Data = "Original", IsActive = true };
 
         // Act
-        var delta = JsonSerializer.Deserialize<Delta<SimpleModel>>(json, _jsonSerializerOptions);
+        patch.ApplyTo(model, _ => { });
 
         // Assert
-        Assert.NotNull(delta);
-        var changedProperties = delta.GetChangedPropertyNames();
-        Assert.Single(changedProperties);
-        Assert.Contains("IsActive", changedProperties);
+        Assert.False(model.IsActive);
+        Assert.Equal("Original", model.Data); // Unchanged property preserved
     }
 
     [Fact]

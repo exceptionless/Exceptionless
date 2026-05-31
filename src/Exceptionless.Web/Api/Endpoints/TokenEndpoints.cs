@@ -5,8 +5,8 @@ using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
-using Exceptionless.Web.Utility;
 using Foundatio.Mediator;
+using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using TokenMessages = Exceptionless.Web.Api.Messages;
@@ -172,8 +172,8 @@ public static class TokenEndpoints
             }
         });
 
-        group.MapPatch("tokens/{id:tokens}", async (string id, IMediator mediator, [FromBody] Delta<UpdateToken> changes)
-            => (await mediator.InvokeAsync<Result<ViewToken>>(new TokenMessages.UpdateTokenMessage(id, changes))).ToHttpResult())
+        group.MapPatch("tokens/{id:tokens}", async (string id, IMediator mediator, JsonPatchDocument<UpdateToken> patchDocument)
+            => (await mediator.InvokeAsync<Result<ViewToken>>(new TokenMessages.UpdateTokenMessage(id, patchDocument))).ToHttpResult())
         .Produces<ViewToken>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -189,8 +189,8 @@ public static class TokenEndpoints
             }
         });
 
-        group.MapPut("tokens/{id:tokens}", async (string id, IMediator mediator, [FromBody] Delta<UpdateToken> changes)
-            => (await mediator.InvokeAsync<Result<ViewToken>>(new TokenMessages.UpdateTokenMessage(id, changes))).ToHttpResult())
+        group.MapPut("tokens/{id:tokens}", async (string id, IMediator mediator, JsonPatchDocument<UpdateToken> patchDocument)
+            => (await mediator.InvokeAsync<Result<ViewToken>>(new TokenMessages.UpdateTokenMessage(id, patchDocument))).ToHttpResult())
         .Produces<ViewToken>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)

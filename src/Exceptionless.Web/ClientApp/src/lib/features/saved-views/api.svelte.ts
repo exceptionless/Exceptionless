@@ -2,6 +2,7 @@ import type { WebSocketMessageValue } from '$features/websockets/models';
 
 import { accessToken } from '$features/auth/index.svelte';
 import { ChangeType } from '$features/websockets/models';
+import { toJsonPatch } from '$features/shared/api/json-patch';
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, type QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
@@ -141,7 +142,7 @@ export function patchSavedView(request: { route: { id: string | undefined } }) {
         enabled: () => !!accessToken.current && !!request.route.id,
         mutationFn: async (data: UpdateSavedView) => {
             const client = useFetchClient();
-            const response = await client.patchJSON<SavedView>(`saved-views/${request.route.id}`, data);
+            const response = await client.patchJSON<SavedView>(`saved-views/${request.route.id}`, toJsonPatch(data as unknown as Record<string, unknown>));
             return response.data!;
         },
         onSuccess: (savedView: SavedView) => {

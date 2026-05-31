@@ -640,9 +640,13 @@ public sealed class SerializationAuditTests : IntegrationTestsBase
         const string testName = "organizations-patch-snake-case";
         /* language=json */
         const string requestJson = """
-        {
-            "name": "Updated Org Name (snake_case audit)"
-        }
+        [
+            {
+                "op": "replace",
+                "path": "/name",
+                "value": "Updated Org Name (snake_case audit)"
+            }
+        ]
         """;
 
         await SaveAuditFileAsync(testName, "request.json", requestJson);
@@ -652,7 +656,7 @@ public sealed class SerializationAuditTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath("organizations")
             .AppendPath(SampleDataService.TEST_ORG_ID)
-            .Content(requestJson, "application/json")
+            .Content(requestJson, "application/json-patch+json")
             .StatusCodeShouldBeOk()
         );
 
@@ -670,9 +674,13 @@ public sealed class SerializationAuditTests : IntegrationTestsBase
         const string testName = "organizations-patch-camel-case";
         /* language=json */
         const string requestJson = """
-        {
-            "Name": "Updated Org Name (CamelCase audit)"
-        }
+        [
+            {
+                "op": "replace",
+                "path": "/name",
+                "value": "Updated Org Name (CamelCase audit)"
+            }
+        ]
         """;
 
         await SaveAuditFileAsync(testName, "request.json", requestJson);
@@ -682,7 +690,7 @@ public sealed class SerializationAuditTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath("organizations")
             .AppendPath(SampleDataService.TEST_ORG_ID)
-            .Content(requestJson, "application/json")
+            .Content(requestJson, "application/json-patch+json")
             .StatusCodeShouldBeOk()
         );
 
@@ -721,10 +729,18 @@ public sealed class SerializationAuditTests : IntegrationTestsBase
         const string testName = "projects-patch-snake-case";
         /* language=json */
         const string requestJson = """
-        {
-            "name": "Updated Project (snake_case audit)",
-            "delete_bot_data_enabled": true
-        }
+        [
+            {
+                "op": "replace",
+                "path": "/name",
+                "value": "Updated Project (snake_case audit)"
+            },
+            {
+                "op": "replace",
+                "path": "/delete_bot_data_enabled",
+                "value": true
+            }
+        ]
         """;
 
         await SaveAuditFileAsync(testName, "request.json", requestJson);
@@ -734,7 +750,7 @@ public sealed class SerializationAuditTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath("projects")
             .AppendPath(SampleDataService.TEST_PROJECT_ID)
-            .Content(requestJson, "application/json")
+            .Content(requestJson, "application/json-patch+json")
             .StatusCodeShouldBeOk()
         );
 

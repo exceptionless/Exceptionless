@@ -25,6 +25,7 @@ using Exceptionless.Web.Utility;
 using Foundatio.Caching;
 using Foundatio.Mediator;
 using Foundatio.Queues;
+using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Extensions;
@@ -355,19 +356,47 @@ public class EventHandler(
     public async Task<Result> Handle(LegacyPatchEvent message)
     {
         var httpContext = message.Context;
-        if (message.Changes is null)
+        if (message.PatchDocument.IsEmpty())
             return Result.Success();
 
-        var changes = message.Changes;
-        if (changes.UnknownProperties.TryGetValue("UserEmail", out object? value))
-            changes.TrySetPropertyValue("EmailAddress", value);
-        if (changes.UnknownProperties.TryGetValue("UserDescription", out value))
-            changes.TrySetPropertyValue("Description", value);
+        NormalizeLegacyUpdateEventPatch(message.PatchDocument);
 
-        var userDescription = new UserDescription();
-        changes.Patch(userDescription);
+        var validationResult = JsonPatchValidation.ValidateOperations(message.PatchDocument);
+        if (!validationResult.IsSuccess)
+            return validationResult;
 
+        // Apply patch to a blank DTO — v1 clients send full values for user description fields
+        var dto = new UpdateEvent();
+        var patchResult = JsonPatchValidation.ApplyPatch(message.PatchDocument, dto);
+        if (!patchResult.IsSuccess)
+            return patchResult;
+
+        var userDescription = new UserDescription {
+            EmailAddress = dto.EmailAddress,
+            Description = dto.Description
+        };
+
+        // The id from v1 URL (/api/v1/error/{id}) is a reference_id, not an event ID
         return await Handle(new SetEventUserDescription(message.Id, userDescription, null, httpContext));
+    }
+
+    private static void NormalizeLegacyUpdateEventPatch(JsonPatchDocument<UpdateEvent> patchDocument)
+    {
+        foreach (var operation in patchDocument.Operations)
+        {
+            if (String.Equals(operation.path, "/UserEmail", StringComparison.OrdinalIgnoreCase)
+                || String.Equals(operation.path, "/user_email", StringComparison.OrdinalIgnoreCase))
+            {
+                operation.path = "/email_address";
+                continue;
+            }
+
+            if (String.Equals(operation.path, "/UserDescription", StringComparison.OrdinalIgnoreCase)
+                || String.Equals(operation.path, "/user_description", StringComparison.OrdinalIgnoreCase))
+            {
+                operation.path = "/description";
+            }
+        }
     }
 
     public async Task<Result> Handle(RecordEventHeartbeat message)

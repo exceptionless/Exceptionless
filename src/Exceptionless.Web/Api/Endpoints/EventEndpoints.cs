@@ -2,16 +2,19 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Web.Api.Filters;
+using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
-using Exceptionless.Web.Utility;
 using Foundatio.Repositories.Models;
 using Exceptionless.Web.Api.Results;
 using Foundatio.Mediator;
+using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Exceptionless.Web.Utility.OpenApi;
+using System.Text.Json;
 using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Exceptionless.Web.Api.Endpoints;
@@ -453,9 +456,15 @@ public static class EventEndpoints
             }
         });
 
-        // Legacy patch (v1)
-        endpoints.MapPatch("api/v1/error/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, [FromBody] Delta<UpdateEvent> changes)
-            => (await mediator.InvokeAsync<Result>(new LegacyPatchEvent(id, changes, httpContext))).ToHttpResult())
+        // Legacy patch (v1) — accepts partial JSON objects from old clients and converts to JSON Patch
+        endpoints.MapPatch("api/v1/error/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, [FromBody] JsonElement body) =>
+        {
+            var options = httpContext.RequestServices.GetRequiredService<IOptions<Microsoft.AspNetCore.Http.Json.JsonOptions>>().Value.SerializerOptions;
+            var patch = JsonPatchValidation.FromPartialObject<UpdateEvent>(body, options);
+            if (patch is null)
+                return Microsoft.AspNetCore.Http.Results.Problem("Invalid request body. Expected a JSON object.", statusCode: StatusCodes.Status400BadRequest);
+            return (await mediator.InvokeAsync<Result>(new LegacyPatchEvent(id, patch, httpContext))).ToHttpResult();
+        })
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .WithTags("Event")

@@ -1,8 +1,8 @@
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Web.Models;
-using Exceptionless.Web.Utility;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 
 namespace Exceptionless.Web.Api.Messages;
 
@@ -11,7 +11,7 @@ public record GetAdminOrganizations(string? Criteria, bool? Paid, bool? Suspende
 public record GetOrganizationPlanStats(HttpContext Context);
 public record GetOrganizationById(string Id, string? Mode, HttpContext Context);
 public record CreateOrganization(NewOrganization Organization, HttpContext Context);
-public record UpdateOrganizationMessage(string Id, Delta<NewOrganization> Changes, HttpContext Context);
+public record UpdateOrganizationMessage(string Id, JsonPatchDocument<NewOrganization> PatchDocument, HttpContext Context);
 public record DeleteOrganizations(string[] Ids, HttpContext Context);
 public record GetInvoice(string Id, HttpContext Context);
 public record GetInvoices(string Id, string? Before, string? After, int Limit, HttpContext Context);

@@ -6,16 +6,17 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Seed;
+using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
-using Exceptionless.Web.Utility;
 using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Mediator;
+using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
@@ -132,15 +133,45 @@ public class SavedViewHandler(
         if (original is null)
             return Result.NotFound("Saved view not found.");
 
-        if (!message.Changes.GetChangedPropertyNames().Any())
+        if (message.PatchDocument.IsEmpty())
             return MapToViewModel(original);
 
-        var error = await CanUpdateAsync(original, message.Changes);
+        var validationResult = JsonPatchValidation.ValidateOperations(message.PatchDocument);
+        if (!validationResult.IsSuccess)
+            return Result<ViewSavedView>.FromResult(validationResult);
+
+        var dto = new UpdateSavedView {
+            Name = original.Name,
+            Filter = original.Filter,
+            Time = original.Time,
+            Sort = original.Sort,
+            Slug = original.Slug,
+            FilterDefinitions = original.FilterDefinitions,
+            Columns = original.Columns is not null ? new Dictionary<string, bool>(original.Columns) : null,
+            ColumnOrder = original.ColumnOrder is not null ? [.. original.ColumnOrder] : null,
+            ShowStats = original.ShowStats,
+            ShowChart = original.ShowChart
+        };
+
+        var patchResult = JsonPatchValidation.ApplyPatch(message.PatchDocument, dto);
+        if (!patchResult.IsSuccess)
+            return Result<ViewSavedView>.FromResult(patchResult);
+
+        var error = await CanUpdateAsync(original, dto, message.PatchDocument);
         if (error is not null)
             return error;
 
-        var changedNames = message.Changes.GetChangedPropertyNames();
-        message.Changes.Patch(original);
+        var changedNames = message.PatchDocument.GetAffectedPropertyNames();
+        original.Name = dto.Name!;
+        original.Filter = dto.Filter;
+        original.Time = dto.Time;
+        original.Sort = dto.Sort;
+        original.Slug = dto.Slug!;
+        original.FilterDefinitions = dto.FilterDefinitions;
+        original.Columns = dto.Columns is not null ? new Dictionary<string, bool>(dto.Columns) : null;
+        original.ColumnOrder = dto.ColumnOrder is not null ? [.. dto.ColumnOrder] : null;
+        original.ShowStats = dto.ShowStats;
+        original.ShowChart = dto.ShowChart;
 
         if (changedNames.Contains(nameof(UpdateSavedView.Slug)))
             original.Slug = ToSlug(original.Slug);
@@ -239,47 +270,47 @@ public class SavedViewHandler(
         return null;
     }
 
-    private async Task<Result<ViewSavedView>?> CanUpdateAsync(SavedView original, Delta<UpdateSavedView> changes)
+    private async Task<Result<ViewSavedView>?> CanUpdateAsync(SavedView original, UpdateSavedView dto, JsonPatchDocument<UpdateSavedView> patch)
     {
         if (original.UserId is not null && original.UserId != GetCurrentUserId() && !HttpContext.User.IsInRole(AuthorizationRoles.GlobalAdmin))
             return Result.NotFound("Saved view not found.");
 
-        var changedNames = changes.GetChangedPropertyNames();
+        var changedNames = patch.GetAffectedPropertyNames();
 
-        if (changedNames.Contains(nameof(UpdateSavedView.Name))
-            && changes.TryGetPropertyValue(nameof(UpdateSavedView.Name), out object? nameValue)
-            && nameValue is string name && String.IsNullOrWhiteSpace(name))
-        {
+        if (changedNames.Contains(nameof(UpdateSavedView.Name)) && String.IsNullOrWhiteSpace(dto.Name))
             return Result.Invalid(ValidationError.Create("name", "Name cannot be empty or whitespace."));
-        }
 
-        if (changedNames.Contains(nameof(UpdateSavedView.Slug))
-            && changes.TryGetPropertyValue(nameof(UpdateSavedView.Slug), out object? slugValue)
-            && (slugValue is not string slug || String.IsNullOrWhiteSpace(slug)))
-        {
+        if (changedNames.Contains(nameof(UpdateSavedView.Slug)) && String.IsNullOrWhiteSpace(dto.Slug))
             return Result.Invalid(ValidationError.Create("slug", "URL name cannot be empty. Use at least one letter or number."));
-        }
 
-        var lengthResult = ValidateStringLength(changes, changedNames, nameof(UpdateSavedView.Name), 100)
-            ?? ValidateStringLength(changes, changedNames, nameof(UpdateSavedView.Slug), 100)
-            ?? ValidateStringLength(changes, changedNames, nameof(UpdateSavedView.Filter), 2000)
-            ?? ValidateStringLength(changes, changedNames, nameof(UpdateSavedView.Time), 100)
-            ?? ValidateStringLength(changes, changedNames, nameof(UpdateSavedView.Sort), 100)
-            ?? ValidateStringLength(changes, changedNames, nameof(UpdateSavedView.FilterDefinitions), SavedView.MaxFilterDefinitionsLength);
-        if (lengthResult is not null)
-            return Result<ViewSavedView>.FromResult(lengthResult);
+        if (dto.Name is { Length: > 100 })
+            return Result.Invalid(ValidationError.Create("name", "Name cannot exceed 100 characters."));
+
+        if (dto.Slug is { Length: > 100 })
+            return Result.Invalid(ValidationError.Create("slug", "Slug cannot exceed 100 characters."));
+
+        if (dto.Filter is { Length: > 2000 })
+            return Result.Invalid(ValidationError.Create("filter", "Filter cannot exceed 2000 characters."));
+
+        if (dto.Time is { Length: > 100 })
+            return Result.Invalid(ValidationError.Create("time", "Time cannot exceed 100 characters."));
+
+        if (dto.Sort is { Length: > 100 })
+            return Result.Invalid(ValidationError.Create("sort", "Sort cannot exceed 100 characters."));
+
+        if (dto.FilterDefinitions is { Length: > SavedView.MaxFilterDefinitionsLength })
+        {
+            return Result.Invalid(ValidationError.Create("filter_definitions", $"FilterDefinitions cannot exceed {SavedView.MaxFilterDefinitionsLength} characters."));
+        }
 
         if (changedNames.Contains(nameof(UpdateSavedView.Name))
-            && changes.TryGetPropertyValue(nameof(UpdateSavedView.Name), out nameValue)
-            && nameValue is string changedName
+            && dto.Name is string changedName
             && await NameExistsAsync(original.OrganizationId, original.ViewType, changedName, original.Id))
         {
             return Result.Conflict($"A saved view named '{changedName.Trim()}' already exists.");
         }
 
-        if (changedNames.Contains(nameof(UpdateSavedView.Slug))
-            && changes.TryGetPropertyValue(nameof(UpdateSavedView.Slug), out slugValue)
-            && slugValue is string changedSlug)
+        if (changedNames.Contains(nameof(UpdateSavedView.Slug)) && dto.Slug is string changedSlug)
         {
             var normalizedSlug = ToSlug(changedSlug);
             if (IsReservedSlug(normalizedSlug))
@@ -293,8 +324,7 @@ public class SavedViewHandler(
         }
 
         if (changedNames.Contains(nameof(UpdateSavedView.FilterDefinitions))
-            && changes.TryGetPropertyValue(nameof(UpdateSavedView.FilterDefinitions), out object? filterDefsValue)
-            && filterDefsValue is string filterDefs
+            && dto.FilterDefinitions is { Length: > 0 } filterDefs
             && !NewSavedView.IsValidJsonArray(filterDefs))
         {
             return Result.Invalid(ValidationError.Create("filter_definitions", "FilterDefinitions must be a valid JSON array."));
@@ -302,21 +332,13 @@ public class SavedViewHandler(
 
         if (changedNames.Contains(nameof(UpdateSavedView.Columns)) || changedNames.Contains(nameof(UpdateSavedView.ColumnOrder)))
         {
-            var patchedChanges = new UpdateSavedView();
-            changes.Patch(patchedChanges);
-
-            var validationError = ValidateColumns(original.ViewType, patchedChanges);
+            var validationError = ValidateColumns(original.ViewType, dto);
             if (validationError is not null)
-            {
                 return Result.Invalid(ValidationError.Create("columns", validationError.ErrorMessage ?? "Invalid column keys."));
-            }
         }
 
         if (!HttpContext.Request.CanAccessOrganization(original.OrganizationId))
             return Result.Invalid(ValidationError.Create("organization_id", "Invalid organization id specified."));
-
-        if (changedNames.Contains("OrganizationId"))
-            return Result.Invalid(ValidationError.Create("organization_id", "OrganizationId cannot be modified."));
 
         return null;
     }
@@ -391,18 +413,6 @@ public class SavedViewHandler(
             return Result.Invalid(ValidationError.Create("general", permission.Message ?? "Validation failed."));
 
         return Result.Forbidden(permission.Message ?? "Access denied.");
-    }
-
-    private static Result? ValidateStringLength(Delta<UpdateSavedView> changes, IEnumerable<string> changedNames, string propertyName, int maxLength)
-    {
-        if (changedNames.Contains(propertyName)
-            && changes.TryGetPropertyValue(propertyName, out object? value)
-            && value is string s && s.Length > maxLength)
-        {
-            return Result.Invalid(ValidationError.Create(propertyName.ToLowerInvariant(), $"{propertyName} cannot exceed {maxLength} characters."));
-        }
-
-        return null;
     }
 
     private static ValidationResult? ValidateColumns(string viewType, UpdateSavedView changes)

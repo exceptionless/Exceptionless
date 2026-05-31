@@ -7,8 +7,8 @@ using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
-using Exceptionless.Web.Utility;
 using Foundatio.Mediator;
+using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using ProjectMessages = Exceptionless.Web.Api.Messages;
@@ -101,10 +101,9 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPatch("projects/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, [FromBody] Delta<UpdateProject> changes)
-            => (await mediator.InvokeAsync<Result<ViewProject>>(new ProjectMessages.UpdateProjectMessage(id, changes, httpContext))).ToHttpResult())
+        group.MapPatch("projects/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, JsonPatchDocument<UpdateProject> patchDocument)
+            => (await mediator.InvokeAsync<Result<ViewProject>>(new ProjectMessages.UpdateProjectMessage(id, patchDocument, httpContext))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
-        .Accepts<Delta<UpdateProject>>("application/json")
         .Produces<ViewProject>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -121,10 +120,9 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPut("projects/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, [FromBody] Delta<UpdateProject> changes)
-            => (await mediator.InvokeAsync<Result<ViewProject>>(new ProjectMessages.UpdateProjectMessage(id, changes, httpContext))).ToHttpResult())
+        group.MapPut("projects/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, JsonPatchDocument<UpdateProject> patchDocument)
+            => (await mediator.InvokeAsync<Result<ViewProject>>(new ProjectMessages.UpdateProjectMessage(id, patchDocument, httpContext))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
-        .Accepts<Delta<UpdateProject>>("application/json")
         .Produces<ViewProject>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)

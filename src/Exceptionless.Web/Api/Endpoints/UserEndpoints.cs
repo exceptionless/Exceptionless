@@ -4,8 +4,8 @@ using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
-using Exceptionless.Web.Utility;
 using Foundatio.Mediator;
+using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 using Microsoft.AspNetCore.Mvc;
 using UserMessages = Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Utility.OpenApi;
@@ -63,8 +63,8 @@ public static class UserEndpoints
             }
         });
 
-        group.MapPatch("users/{id:objectid}", async (string id, IMediator mediator, [FromBody] Delta<UpdateUser> changes)
-            => (await mediator.InvokeAsync<Result<object>>(new UserMessages.UpdateUserMessage(id, changes))).ToHttpResult())
+        group.MapPatch("users/{id:objectid}", async (string id, IMediator mediator, JsonPatchDocument<UpdateUser> patchDocument)
+            => (await mediator.InvokeAsync<Result<object>>(new UserMessages.UpdateUserMessage(id, patchDocument))).ToHttpResult())
         .Produces<ViewUser>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -80,8 +80,8 @@ public static class UserEndpoints
             }
         });
 
-        group.MapPut("users/{id:objectid}", async (string id, IMediator mediator, [FromBody] Delta<UpdateUser> changes)
-            => (await mediator.InvokeAsync<Result<object>>(new UserMessages.UpdateUserMessage(id, changes))).ToHttpResult())
+        group.MapPut("users/{id:objectid}", async (string id, IMediator mediator, JsonPatchDocument<UpdateUser> patchDocument)
+            => (await mediator.InvokeAsync<Result<object>>(new UserMessages.UpdateUserMessage(id, patchDocument))).ToHttpResult())
         .Produces<ViewUser>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)

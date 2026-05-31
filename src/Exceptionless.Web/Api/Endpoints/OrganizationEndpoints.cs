@@ -8,8 +8,8 @@ using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
-using Exceptionless.Web.Utility;
 using Foundatio.Mediator;
+using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using OrganizationMessages = Exceptionless.Web.Api.Messages;
@@ -89,9 +89,8 @@ public static class OrganizationEndpoints
             }
         });
 
-        group.MapPatch("organizations/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, [FromBody] Delta<NewOrganization> changes)
-            => (await mediator.InvokeAsync<Result<ViewOrganization>>(new OrganizationMessages.UpdateOrganizationMessage(id, changes, httpContext))).ToHttpResult())
-        .Accepts<Delta<NewOrganization>>("application/json")
+        group.MapPatch("organizations/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, JsonPatchDocument<NewOrganization> patchDocument)
+            => (await mediator.InvokeAsync<Result<ViewOrganization>>(new OrganizationMessages.UpdateOrganizationMessage(id, patchDocument, httpContext))).ToHttpResult())
         .Produces<ViewOrganization>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -108,9 +107,8 @@ public static class OrganizationEndpoints
             }
         });
 
-        group.MapPut("organizations/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, [FromBody] Delta<NewOrganization> changes)
-            => (await mediator.InvokeAsync<Result<ViewOrganization>>(new OrganizationMessages.UpdateOrganizationMessage(id, changes, httpContext))).ToHttpResult())
-        .Accepts<Delta<NewOrganization>>("application/json")
+        group.MapPut("organizations/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, JsonPatchDocument<NewOrganization> patchDocument)
+            => (await mediator.InvokeAsync<Result<ViewOrganization>>(new OrganizationMessages.UpdateOrganizationMessage(id, patchDocument, httpContext))).ToHttpResult())
         .Produces<ViewOrganization>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
