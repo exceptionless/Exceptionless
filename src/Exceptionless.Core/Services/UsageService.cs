@@ -498,7 +498,7 @@ public class UsageService
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
 
         int maxEventsPerMonth = await GetMaxEventsPerMonthAsync(organizationId);
-        if (maxEventsPerMonth < 0)
+        if (maxEventsPerMonth <= 0)
             return SmartThrottleResult.NoThrottle;
 
         // Calculate fair share: what percentage of events has this project been using?

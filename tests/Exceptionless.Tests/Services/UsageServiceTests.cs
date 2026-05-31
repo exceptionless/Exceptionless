@@ -655,4 +655,20 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         sw.Stop();
         _logger.LogInformation("Time: {Duration:g}, Avg: ({AverageTickDuration:g}ticks | {AverageDuration}ms)", sw.Elapsed, sw.ElapsedTicks / iterations, sw.ElapsedMilliseconds / iterations);
     }
+
+    [Fact]
+    public async Task GetSmartThrottleRateAsync_OrganizationNotFound_ReturnsNoThrottle()
+    {
+        // Regression test: When the organization does not exist, GetMaxEventsPerMonthAsync
+        // returns 0 (default). GetSmartThrottleRateAsync must not divide by zero.
+        string nonExistentOrgId = "000000000000000000000099";
+        string nonExistentProjectId = "000000000000000000000098";
+
+        // Act - this would divide by zero before the fix (maxEventsPerMonth=0 returned for missing org)
+        var result = await _usageService.GetSmartThrottleRateAsync(nonExistentOrgId, nonExistentProjectId);
+
+        // Assert - should return NoThrottle since maxEventsPerMonth <= 0 means unlimited/invalid
+        Assert.False(result.IsThrottled);
+        Assert.Equal(1.0, result.SampleRate);
+    }
 }

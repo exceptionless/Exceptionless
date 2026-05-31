@@ -925,7 +925,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     protected override async Task<PermissionResult> CanUpdateAsync(Organization original, Delta<UpdateOrganization> changes)
     {
         var changed = changes.GetEntity();
-        if (!await IsOrganizationNameAvailableInternalAsync(changed.Name))
+        if (changes.ContainsChangedProperty(p => p.Name) && !await IsOrganizationNameAvailableInternalAsync(changed.Name))
             return PermissionResult.DenyWithMessage("A organization with this name already exists.");
 
         return await base.CanUpdateAsync(original, changes);
