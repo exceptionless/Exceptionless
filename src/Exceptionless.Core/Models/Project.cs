@@ -64,6 +64,11 @@ public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISup
     public bool DeleteBotDataEnabled { get; set; }
 
     /// <summary>
+    /// Optional project-level event budget configuration. Null means no project-specific cap.
+    /// </summary>
+    public ProjectIngestLimit? IngestLimit { get; set; }
+
+    /// <summary>
     /// The tick count that represents the next time the daily summary job should run. This time is set to midnight of the
     /// projects local time.
     /// </summary>
