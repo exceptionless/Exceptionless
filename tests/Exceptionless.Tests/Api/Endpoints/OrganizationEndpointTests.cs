@@ -1538,6 +1538,12 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         var item = Assert.Single(subscription.Items);
         Assert.Equal(_plans.SmallPlan.Id, item.Price);
         Assert.Equal("coupon_10", Assert.Single(subscription.Discounts).Coupon);
+        Assert.Equal("create_prorations", subscription.ProrationBehavior);
+        Assert.NotNull(subscription.BillingCycleAnchorConfig);
+        Assert.Equal(1, subscription.BillingCycleAnchorConfig.DayOfMonth);
+        Assert.Equal(0, subscription.BillingCycleAnchorConfig.Hour);
+        Assert.Equal(0, subscription.BillingCycleAnchorConfig.Minute);
+        Assert.Equal(0, subscription.BillingCycleAnchorConfig.Second);
 
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
         Assert.NotNull(organization);
@@ -1592,6 +1598,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         Assert.Equal("si_active", item.Id);
         Assert.Equal(_plans.SmallPlan.Id, item.Price);
         Assert.Equal("coupon_10", Assert.Single(updatedSubscription.Options.Discounts).Coupon);
+        Assert.Equal("create_prorations", updatedSubscription.Options.ProrationBehavior);
         Assert.Empty(StripeBillingClient.CreatedSubscriptionOptions);
 
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
