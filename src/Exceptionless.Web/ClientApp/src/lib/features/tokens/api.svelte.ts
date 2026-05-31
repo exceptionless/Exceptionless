@@ -150,7 +150,11 @@ export function patchToken(request: PatchTokenRequest) {
     return createMutation<ViewToken, ProblemDetails, UpdateToken>(() => ({
         mutationFn: async (data: UpdateToken) => {
             const client = useFetchClient();
-            const response = await client.patchJSON<ViewToken>(`tokens/${request.route.id}`, toJsonPatch(data as unknown as Record<string, unknown>), jsonPatchRequestOptions);
+            const response = await client.patchJSON<ViewToken>(
+                `tokens/${request.route.id}`,
+                toJsonPatch(data as unknown as Record<string, unknown>),
+                jsonPatchRequestOptions
+            );
             return response.data!;
         },
         mutationKey: queryKeys.id(request.route.id),

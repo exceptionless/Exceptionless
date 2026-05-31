@@ -394,7 +394,11 @@ export function patchOrganization(request: PatchOrganizationRequest) {
         enabled: () => !!accessToken.current && !!request.route.id,
         mutationFn: async (data: NewOrganization) => {
             const client = useFetchClient();
-            const response = await client.patchJSON<ViewOrganization>(`organizations/${request.route.id}`, toJsonPatch(data as unknown as Record<string, unknown>), jsonPatchRequestOptions);
+            const response = await client.patchJSON<ViewOrganization>(
+                `organizations/${request.route.id}`,
+                toJsonPatch(data as unknown as Record<string, unknown>),
+                jsonPatchRequestOptions
+            );
             return response.data!;
         },
         onError: () => {

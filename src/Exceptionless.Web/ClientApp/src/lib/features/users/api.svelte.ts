@@ -118,7 +118,11 @@ export function patchUser(request: PatchUserRequest) {
         enabled: () => !!accessToken.current && !!request.route.id,
         mutationFn: async (data: UpdateUser) => {
             const client = useFetchClient();
-            const response = await client.patchJSON<ViewCurrentUser>(`users/${request.route.id}`, toJsonPatch(data as unknown as Record<string, unknown>), jsonPatchRequestOptions);
+            const response = await client.patchJSON<ViewCurrentUser>(
+                `users/${request.route.id}`,
+                toJsonPatch(data as unknown as Record<string, unknown>),
+                jsonPatchRequestOptions
+            );
             return response.data!;
         },
         mutationKey: queryKeys.patchUser(request.route.id),

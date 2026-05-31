@@ -142,7 +142,11 @@ export function patchSavedView(request: { route: { id: string | undefined } }) {
         enabled: () => !!accessToken.current && !!request.route.id,
         mutationFn: async (data: UpdateSavedView) => {
             const client = useFetchClient();
-            const response = await client.patchJSON<SavedView>(`saved-views/${request.route.id}`, toJsonPatch(data as unknown as Record<string, unknown>), jsonPatchRequestOptions);
+            const response = await client.patchJSON<SavedView>(
+                `saved-views/${request.route.id}`,
+                toJsonPatch(data as unknown as Record<string, unknown>),
+                jsonPatchRequestOptions
+            );
             return response.data!;
         },
         onSuccess: (savedView: SavedView) => {
