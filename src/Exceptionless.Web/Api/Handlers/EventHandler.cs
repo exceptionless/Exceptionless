@@ -56,6 +56,7 @@ public class EventHandler(
     private readonly ILogger _logger = loggerFactory.CreateLogger<EventHandler>();
     private static readonly ICollection<string> _allowedDateFields = new List<string> { EventIndex.Alias.Date };
     private const string DefaultDateField = EventIndex.Alias.Date;
+    private static Result<T> PlanLimitResult<T>(string message) => Result.Invalid(ValidationError.Create("plan_limit", message));
 
     public async Task<Result<CountResult>> Handle(GetEventCount message)
     {
@@ -77,7 +78,7 @@ public class EventHandler(
             return Result.NotFound("Organization not found.");
 
         if (organization.IsSuspended)
-            return Result.Forbidden("Unable to view event occurrences for the suspended organization.");
+            return PlanLimitResult<CountResult>("Unable to view event occurrences for the suspended organization.");
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organization);
@@ -96,7 +97,7 @@ public class EventHandler(
             return Result.NotFound("Organization not found.");
 
         if (organization.IsSuspended)
-            return Result.Forbidden("Unable to view event occurrences for the suspended organization.");
+            return PlanLimitResult<CountResult>("Unable to view event occurrences for the suspended organization.");
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
@@ -115,7 +116,7 @@ public class EventHandler(
             return Result.NotFound("Organization not found.");
 
         if (organization.IsSuspended || organization.RetentionDays > 0 && model.Date.UtcDateTime < timeProvider.GetUtcNow().UtcDateTime.SubtractDays(organization.RetentionDays))
-            return Result.Forbidden("Unable to view event occurrence due to plan limits.");
+            return PlanLimitResult<PersistentEvent>("Unable to view event occurrence due to plan limits.");
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organization);
@@ -154,7 +155,7 @@ public class EventHandler(
             return Result.NotFound("Organization not found.");
 
         if (organization.IsSuspended)
-            return Result.Forbidden("Unable to view event occurrences for the suspended organization.");
+            return PlanLimitResult<PagedResult<object>>("Unable to view event occurrences for the suspended organization.");
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organization);
@@ -173,7 +174,7 @@ public class EventHandler(
             return Result.NotFound("Organization not found.");
 
         if (organization.IsSuspended)
-            return Result.Forbidden("Unable to view event occurrences for the suspended organization.");
+            return PlanLimitResult<PagedResult<object>>("Unable to view event occurrences for the suspended organization.");
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
@@ -192,7 +193,7 @@ public class EventHandler(
             return Result.NotFound("Organization not found.");
 
         if (organization.IsSuspended)
-            return Result.Forbidden("Unable to view event occurrences for the suspended organization.");
+            return PlanLimitResult<PagedResult<object>>("Unable to view event occurrences for the suspended organization.");
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(stack, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(stack, organization);
@@ -223,7 +224,7 @@ public class EventHandler(
             return Result.NotFound("Organization not found.");
 
         if (organization.IsSuspended)
-            return Result.Forbidden("Unable to view event occurrences for the suspended organization.");
+            return PlanLimitResult<PagedResult<object>>("Unable to view event occurrences for the suspended organization.");
 
         var ti = TimeRangeParser.GetTimeInfo(null, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
@@ -254,7 +255,7 @@ public class EventHandler(
             return Result.NotFound("Organization not found.");
 
         if (organization.IsSuspended)
-            return Result.Forbidden("Unable to view event occurrences for the suspended organization.");
+            return PlanLimitResult<PagedResult<object>>("Unable to view event occurrences for the suspended organization.");
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
@@ -281,7 +282,7 @@ public class EventHandler(
             return Result.NotFound("Organization not found.");
 
         if (organization.IsSuspended)
-            return Result.Forbidden("Unable to view event occurrences for the suspended organization.");
+            return PlanLimitResult<PagedResult<object>>("Unable to view event occurrences for the suspended organization.");
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organization);
@@ -300,7 +301,7 @@ public class EventHandler(
             return Result.NotFound("Organization not found.");
 
         if (organization.IsSuspended)
-            return Result.Forbidden("Unable to view event occurrences for the suspended organization.");
+            return PlanLimitResult<PagedResult<object>>("Unable to view event occurrences for the suspended organization.");
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
@@ -610,7 +611,7 @@ public class EventHandler(
         var list = items.Where(model => httpContext.Request.CanAccessOrganization(model.OrganizationId)).ToList();
 
         if (list.Count == 0)
-            return results.Failure.Count == 1 ? PermissionToResult(results.Failure.First()) : Result.BadRequest("One or more events could not be deleted.");
+            return results.Failure.Count == 1 ? PermissionToResult(results.Failure.First()) : results;
 
         var currentUser = httpContext.Request.GetUser();
         var projectGroups = list.GroupBy(ev => new { ev.OrganizationId, ev.ProjectId }).ToList();
@@ -643,7 +644,7 @@ public class EventHandler(
             return new WorkInProgressResult();
 
         results.Success.AddRange(list.Select(i => i.Id));
-        return Result.BadRequest("Some events could not be deleted.");
+        return results;
     }
 
     #region Private Helpers

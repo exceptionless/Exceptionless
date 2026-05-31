@@ -49,6 +49,7 @@ public class StackHandler(
     private readonly ILogger _logger = loggerFactory.CreateLogger<StackHandler>();
     private static readonly ICollection<string> _allowedDateFields = new List<string> { StackIndex.Alias.FirstOccurrence, StackIndex.Alias.LastOccurrence };
     private const string DefaultDateField = StackIndex.Alias.LastOccurrence;
+    private static Result<T> PlanLimitResult<T>(string message) => Result.Invalid(ValidationError.Create("plan_limit", message));
 
     public async Task<Result<Stack>> Handle(GetStackById message)
     {
@@ -330,7 +331,7 @@ public class StackHandler(
         var list = items.Except(denied).ToList();
 
         if (list.Count == 0)
-            return results.Failure.Count == 1 ? PermissionToResult(results.Failure.First()) : Result.BadRequest("One or more stacks could not be deleted.");
+            return results.Failure.Count == 1 ? PermissionToResult(results.Failure.First()) : results;
 
         var currentUser = httpContext.Request.GetUser();
         foreach (var projectStacks in list.GroupBy(ev => ev.ProjectId))
@@ -347,7 +348,7 @@ public class StackHandler(
             return new WorkInProgressResult();
 
         results.Success.AddRange(list.Select(i => i.Id));
-        return Result.BadRequest("Some stacks could not be deleted.");
+        return results;
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetAllStacks message)
@@ -370,7 +371,7 @@ public class StackHandler(
             return Result.NotFound("Organization not found.");
 
         if (organization.IsSuspended)
-            return Result.Forbidden("Unable to view stack occurrences for the suspended organization.");
+            return PlanLimitResult<PagedResult<object>>("Unable to view stack occurrences for the suspended organization.");
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(options.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organization);
@@ -389,7 +390,7 @@ public class StackHandler(
             return Result.NotFound("Organization not found.");
 
         if (organization.IsSuspended)
-            return Result.Forbidden("Unable to view stack occurrences for the suspended organization.");
+            return PlanLimitResult<PagedResult<object>>("Unable to view stack occurrences for the suspended organization.");
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, options.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
