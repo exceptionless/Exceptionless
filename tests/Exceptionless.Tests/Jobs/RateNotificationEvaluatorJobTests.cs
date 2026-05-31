@@ -5,6 +5,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Foundatio.Queues;
+using Foundatio.Repositories;
 using Xunit;
 
 namespace Exceptionless.Tests.Jobs;
@@ -67,7 +68,7 @@ public class RateNotificationEvaluatorJobTests : IntegrationTestsBase
         var now = new DateTime(2024, 6, 1, 12, 0, 0, DateTimeKind.Utc);
         TimeProvider.SetUtcNow(now.AddMinutes(-2));
 
-        var rule = await _ruleRepository.AddAsync(BuildRule(threshold: 5));
+        var rule = await _ruleRepository.AddAsync(BuildRule(threshold: 5), o => o.ImmediateConsistency());
         string counterKey = BuildCounterKey(rule);
 
         // Simulate 10 events within the 5-minute window
@@ -92,7 +93,7 @@ public class RateNotificationEvaluatorJobTests : IntegrationTestsBase
         var now = new DateTime(2024, 6, 1, 12, 0, 0, DateTimeKind.Utc);
         TimeProvider.SetUtcNow(now.AddMinutes(-2));
 
-        var rule = await _ruleRepository.AddAsync(BuildRule(threshold: 50));
+        var rule = await _ruleRepository.AddAsync(BuildRule(threshold: 50), o => o.ImmediateConsistency());
         string counterKey = BuildCounterKey(rule);
 
         // Only 5 events — well below threshold of 50
@@ -118,7 +119,7 @@ public class RateNotificationEvaluatorJobTests : IntegrationTestsBase
         var now = new DateTime(2024, 6, 1, 12, 0, 0, DateTimeKind.Utc);
         TimeProvider.SetUtcNow(now.AddMinutes(-2));
 
-        var rule = await _ruleRepository.AddAsync(BuildRule(threshold: 5));
+        var rule = await _ruleRepository.AddAsync(BuildRule(threshold: 5), o => o.ImmediateConsistency());
         string counterKey = BuildCounterKey(rule);
         string subjectKey = $"project:{rule.ProjectId}";
 
@@ -151,7 +152,7 @@ public class RateNotificationEvaluatorJobTests : IntegrationTestsBase
 
         var ruleData = BuildRule(threshold: 5);
         ruleData.SnoozedUntilUtc = now.AddHours(2);  // snoozed for 2 more hours
-        var rule = await _ruleRepository.AddAsync(ruleData);
+        var rule = await _ruleRepository.AddAsync(ruleData, o => o.ImmediateConsistency());
         string counterKey = BuildCounterKey(rule);
 
         // Add events above threshold
@@ -191,10 +192,10 @@ public class RateNotificationEvaluatorJobTests : IntegrationTestsBase
         // Rule A: snoozed until T-2min (snooze has just expired at "now")
         var ruleAData = BuildRule(threshold: 10);
         ruleAData.SnoozedUntilUtc = now.AddMinutes(-2);
-        var ruleA = await _ruleRepository.AddAsync(ruleAData);
+        var ruleA = await _ruleRepository.AddAsync(ruleAData, o => o.ImmediateConsistency());
 
         // Rule B: not snoozed — should fire normally
-        var ruleB = await _ruleRepository.AddAsync(BuildRule(threshold: 10));
+        var ruleB = await _ruleRepository.AddAsync(BuildRule(threshold: 10), o => o.ImmediateConsistency());
 
         // Both rules watch the same signal/counter key
         string counterKey = BuildCounterKey(ruleA);

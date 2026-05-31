@@ -145,7 +145,7 @@ public class RateNotificationRuleController : ExceptionlessApiController
             UpdatedUtc = now
         };
 
-        rule = await _ruleRepository.AddAsync(rule, o => o.Cache());
+        rule = await _ruleRepository.AddAsync(rule, o => o.Cache().ImmediateConsistency());
         await _ruleCache.InvalidateAsync(projectId);
 
         return Created(new Uri(Url.Link("GetRateNotificationRuleById", new { userId, projectId, ruleId = rule.Id })!, UriKind.RelativeOrAbsolute), MapToView(rule));
