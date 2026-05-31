@@ -44,6 +44,7 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
         AddIndex(Migrations = new MigrationIndex(this, _appOptions.ElasticsearchOptions.ScopePrefix + "migrations", appOptions.ElasticsearchOptions.NumberOfReplicas));
         AddIndex(Organizations = new OrganizationIndex(this));
         AddIndex(Projects = new ProjectIndex(this));
+        AddIndex(RateNotificationRules = new RateNotificationRuleIndex(this));
         AddIndex(SavedViews = new SavedViewIndex(this));
         AddIndex(Tokens = new TokenIndex(this));
         AddIndex(Users = new UserIndex(this));
@@ -72,6 +73,7 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
     public MigrationIndex Migrations { get; }
     public OrganizationIndex Organizations { get; }
     public ProjectIndex Projects { get; }
+    public RateNotificationRuleIndex RateNotificationRules { get; }
     public SavedViewIndex SavedViews { get; }
     public TokenIndex Tokens { get; }
     public UserIndex Users { get; }
