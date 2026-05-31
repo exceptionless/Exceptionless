@@ -505,7 +505,15 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 var subscriptionOptions = new SubscriptionCreateOptions
                 {
                     Customer = customer.Id,
-                    Items = [new SubscriptionItemOptions { Price = model.PlanId }]
+                    Items = [new SubscriptionItemOptions { Price = model.PlanId }],
+                    BillingCycleAnchorConfig = new SubscriptionBillingCycleAnchorConfigOptions
+                    {
+                        DayOfMonth = 1,
+                        Hour = 0,
+                        Minute = 0,
+                        Second = 0
+                    },
+                    ProrationBehavior = "create_prorations"
                 };
 
                 if (isPaymentMethod)
@@ -522,8 +530,24 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             // Existing customer: update (or create) their Stripe subscription and optionally swap payment method.
             else
             {
-                var update = new SubscriptionUpdateOptions { Items = [] };
-                var create = new SubscriptionCreateOptions { Customer = organization.StripeCustomerId, Items = [] };
+                var update = new SubscriptionUpdateOptions
+                {
+                    Items = [],
+                    ProrationBehavior = "create_prorations"
+                };
+                var create = new SubscriptionCreateOptions
+                {
+                    Customer = organization.StripeCustomerId,
+                    Items = [],
+                    BillingCycleAnchorConfig = new SubscriptionBillingCycleAnchorConfigOptions
+                    {
+                        DayOfMonth = 1,
+                        Hour = 0,
+                        Minute = 0,
+                        Second = 0
+                    },
+                    ProrationBehavior = "create_prorations"
+                };
                 bool cardUpdated = false;
 
                 var customerUpdateOptions = new CustomerUpdateOptions { Description = organization.Name };
