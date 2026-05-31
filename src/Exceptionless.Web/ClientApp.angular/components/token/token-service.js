@@ -44,7 +44,7 @@
             return Object.keys(obj).filter(function(key) {
                 return obj[key] !== undefined;
             }).map(function(key) {
-                return { op: 'replace', path: '/' + key, value: obj[key] };
+                return { op: "replace", path: "/" + key, value: obj[key] };
             });
         }
 
