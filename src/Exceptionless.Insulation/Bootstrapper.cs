@@ -89,6 +89,7 @@ public class Bootstrapper
             .AddAutoNamedCheck<QueueHealthCheck<EventUserDescription>>("EventUserDescriptions", "AllJobs")
             .AddAutoNamedCheck<QueueHealthCheck<EventNotification>>("EventNotifications", "AllJobs")
             .AddAutoNamedCheck<QueueHealthCheck<WebHookNotification>>("WebHooks", "AllJobs")
+            .AddAutoNamedCheck<QueueHealthCheck<RateNotification>>("RateNotifications", "AllJobs")
             .AddAutoNamedCheck<QueueHealthCheck<MailMessage>>("AllJobs")
             .AddAutoNamedCheck<QueueHealthCheck<WorkItemData>>("WorkItem", "AllJobs")
 
@@ -159,6 +160,7 @@ public class Bootstrapper
             container.ReplaceSingleton(s => CreateAzureStorageQueue<EventUserDescription>(s, options));
             container.ReplaceSingleton(s => CreateAzureStorageQueue<EventNotification>(s, options));
             container.ReplaceSingleton(s => CreateAzureStorageQueue<WebHookNotification>(s, options));
+            container.ReplaceSingleton(s => CreateAzureStorageQueue<RateNotification>(s, options));
             container.ReplaceSingleton(s => CreateAzureStorageQueue<MailMessage>(s, options));
             container.ReplaceSingleton(s => CreateAzureStorageQueue<WorkItemData>(s, options, workItemTimeout: TimeSpan.FromHours(1)));
         }
@@ -168,6 +170,7 @@ public class Bootstrapper
             container.ReplaceSingleton(s => CreateRedisQueue<EventUserDescription>(s, options, runMaintenanceTasks));
             container.ReplaceSingleton(s => CreateRedisQueue<EventNotification>(s, options, runMaintenanceTasks));
             container.ReplaceSingleton(s => CreateRedisQueue<WebHookNotification>(s, options, runMaintenanceTasks));
+            container.ReplaceSingleton(s => CreateRedisQueue<RateNotification>(s, options, runMaintenanceTasks));
             container.ReplaceSingleton(s => CreateRedisQueue<MailMessage>(s, options, runMaintenanceTasks));
             container.ReplaceSingleton(s => CreateRedisQueue<WorkItemData>(s, options, runMaintenanceTasks, workItemTimeout: TimeSpan.FromHours(1)));
         }
@@ -177,6 +180,7 @@ public class Bootstrapper
             container.ReplaceSingleton(s => CreateSQSQueue<EventUserDescription>(s, options));
             container.ReplaceSingleton(s => CreateSQSQueue<EventNotification>(s, options));
             container.ReplaceSingleton(s => CreateSQSQueue<WebHookNotification>(s, options));
+            container.ReplaceSingleton(s => CreateSQSQueue<RateNotification>(s, options));
             container.ReplaceSingleton(s => CreateSQSQueue<MailMessage>(s, options));
             container.ReplaceSingleton(s => CreateSQSQueue<WorkItemData>(s, options, workItemTimeout: TimeSpan.FromHours(1)));
         }
