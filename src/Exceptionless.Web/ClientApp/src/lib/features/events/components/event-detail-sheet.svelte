@@ -17,7 +17,7 @@
 
     let { detailsHref, eventId = $bindable(), filterChanged, onClose, onError }: Props = $props();
 
-    const resolvedHref = $derived(detailsHref ?? (eventId ? resolve('/(app)/events/[eventId=objectid]', { eventId }) : '#'));
+    const resolvedHref = $derived(detailsHref ?? (eventId ? resolve('/(app)/event/[eventId=objectid]', { eventId }) : '#'));
 
     function handleError(problem: ProblemDetails) {
         if (onError) {

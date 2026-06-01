@@ -39,7 +39,7 @@
         :&nbsp;
     {/if}
 
-    <A class="inline" href={`${resolve('/(app)/events')}?filter=stack:${source.id}`}>
+    <A class="inline" href={`${resolve('/(app)/event')}?filter=stack:${source.id}`}>
         {source.title}
     </A>
 </div>

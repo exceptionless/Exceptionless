@@ -17,7 +17,7 @@
     watch(
         () => organization.current,
         () => {
-            goto(resolve('/(app)/events'));
+            goto(resolve('/(app)/event'));
         },
         { lazy: true }
     );
@@ -32,7 +32,7 @@
         }
 
         toast.error(`The event "${page.params.eventId}" could not be found.`);
-        await goto(resolve('/(app)/events'));
+        await goto(resolve('/(app)/event'));
     }
 
     $effect(() => {
@@ -44,5 +44,5 @@
     {filterChanged}
     id={page.params.eventId || ''}
     {handleError}
-    onNavigate={(newId) => goto(resolve('/(app)/events/[eventId=objectid]', { eventId: newId }))}
+    onNavigate={(newId) => goto(resolve('/(app)/event/[eventId=objectid]', { eventId: newId }))}
 />

@@ -226,13 +226,13 @@
 
             if (isKeyboardShortcut(e, appKeyboardShortcuts.allEvents)) {
                 e.preventDefault();
-                void goto(resolve('/(app)/events'));
+                void goto(resolve('/(app)/event'));
                 return;
             }
 
             if (isKeyboardShortcut(e, appKeyboardShortcuts.stacks)) {
                 e.preventDefault();
-                void goto(resolve('/(app)/stacks'));
+                void goto(resolve('/(app)/stack'));
                 return;
             }
 
@@ -357,8 +357,8 @@
     });
 
     const viewToHref: Record<string, string> = {
-        events: resolve('/(app)/events'),
-        stacks: resolve('/(app)/stacks'),
+        events: resolve('/(app)/event'),
+        stacks: resolve('/(app)/stack'),
         stream: resolve('/(app)/stream')
     };
 

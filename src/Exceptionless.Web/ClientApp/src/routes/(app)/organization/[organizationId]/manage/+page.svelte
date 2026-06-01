@@ -14,6 +14,7 @@
     import { type NewOrganizationFormData, NewOrganizationSchema } from '$features/organizations/schemas';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@exceptionless/fetchclient';
+    import Projects from '@lucide/svelte/icons/folder-open';
     import Stacks from '@lucide/svelte/icons/layers';
     import X from '@lucide/svelte/icons/x';
     import { createForm } from '@tanstack/svelte-form';
@@ -129,10 +130,15 @@
         </form.Field>
     </form>
 
-    <div class="flex w-full items-center justify-between">
-        <Button variant="secondary" href={resolve('/(app)/stacks')}>
-            <Stacks class="mr-2 size-4" /> Go To Stacks
-        </Button>
+    <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex flex-wrap gap-3">
+            <Button variant="secondary" href={resolve('/(app)/stack')}>
+                <Stacks class="mr-2 size-4" /> Go To Stacks
+            </Button>
+            <Button variant="secondary" href={resolve('/(app)/organization/[organizationId]/projects', { organizationId })}>
+                <Projects class="mr-2 size-4" /> Go To Projects
+            </Button>
+        </div>
 
         <DropdownMenu.Root>
             <DropdownMenu.Trigger class={buttonVariants({ variant: 'destructive' })}>

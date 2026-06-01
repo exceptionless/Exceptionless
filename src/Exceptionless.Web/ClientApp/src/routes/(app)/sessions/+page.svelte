@@ -50,7 +50,7 @@
     }
 
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
-        return resolve('/(app)/events/[eventId=objectid]', { eventId: row.id });
+        return resolve('/(app)/event/[eventId=objectid]', { eventId: row.id });
     }
 
     // Register this page as requiring premium features (layout auto-resets on navigation)

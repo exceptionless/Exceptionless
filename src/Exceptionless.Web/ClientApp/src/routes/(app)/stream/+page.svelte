@@ -53,7 +53,7 @@
     }
 
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
-        return resolve('/(app)/events/[eventId=objectid]', { eventId: row.id });
+        return resolve('/(app)/event/[eventId=objectid]', { eventId: row.id });
     }
 
     const DEFAULT_FILTERS = [new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];

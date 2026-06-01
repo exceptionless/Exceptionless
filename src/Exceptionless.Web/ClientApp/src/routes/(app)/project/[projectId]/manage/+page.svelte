@@ -169,7 +169,7 @@
 
     <div class="flex w-full items-center justify-between">
         <div class="flex gap-2">
-            <Button variant="secondary" href={`${resolve('/(app)/stacks')}?filter=project:${projectId}`}>
+            <Button variant="secondary" href={`${resolve('/(app)/stack')}?filter=project:${projectId}`}>
                 <Stacks class="mr-2 size-4" /> Go To Stacks
             </Button>
             <Button variant="secondary" href={resolve('/(app)/project/[projectId]/configure', { projectId })}>

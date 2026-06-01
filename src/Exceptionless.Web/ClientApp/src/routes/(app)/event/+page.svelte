@@ -60,7 +60,7 @@
     }
 
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
-        return resolve('/(app)/events/[eventId=objectid]', { eventId: row.id });
+        return resolve('/(app)/event/[eventId=objectid]', { eventId: row.id });
     }
 
     const DEFAULT_TIME_RANGE = '[now-7d TO now]';
@@ -117,7 +117,7 @@
     let showStats = $state(true);
     let showChart = $state(true);
     const savedViewsState = useSavedViews({
-        baseHref: resolve('/(app)/events'),
+        baseHref: resolve('/(app)/event'),
         defaultColumnVisibility: defaultEventColumnVisibility,
         filterCacheKey,
         getColumnOrder: () => table.state.columnOrder,

@@ -18,7 +18,7 @@
     watch(
         () => organization.current,
         () => {
-            goto(resolve('/(app)/stacks'));
+            goto(resolve('/(app)/stack'));
         },
         { lazy: true }
     );
