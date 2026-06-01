@@ -819,6 +819,37 @@ public class EventControllerTests : IntegrationTestsBase
         });
     }
 
+    [Fact]
+    public async Task GetEvents_StackFrequentMode_IncludesProjectNameFields()
+    {
+        // Arrange
+        await CreateStacksAndEventsAsync();
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("filter", "status:open")
+            .QueryString("mode", "stack_frequent")
+            .StatusCodeShouldBeOk()
+        );
+
+        string json = await response.Content.ReadAsStringAsync(TestCancellationToken);
+        using var document = JsonDocument.Parse(json);
+
+        // Assert
+        Assert.Equal(JsonValueKind.Array, document.RootElement.ValueKind);
+        Assert.NotEqual(0, document.RootElement.GetArrayLength());
+
+        foreach (var item in document.RootElement.EnumerateArray())
+        {
+            Assert.True(item.TryGetProperty("project_id", out var projectId), "Expected project_id field in stack summary payload.");
+            Assert.True(item.TryGetProperty("project_name", out var projectName), "Expected project_name field in stack summary payload.");
+            Assert.False(string.IsNullOrWhiteSpace(projectId.GetString()));
+            Assert.False(string.IsNullOrWhiteSpace(projectName.GetString()));
+        }
+    }
+
     [InlineData(null)]
     [InlineData("")]
     [InlineData("@!")]

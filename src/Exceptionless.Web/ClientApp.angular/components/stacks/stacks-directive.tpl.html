@@ -19,6 +19,7 @@
                     </label>
                 </th>
                 <th>{{::'Summary' | translate}}</th>
+                <th class="hidden-xs" ng-if="vm.settings.showProjectName">{{::'Project' | translate}}</th>
                 <th class="percentage">{{::'UserRatio' | translate}}</th>
                 <th class="number">{{::'Events' | translate}}</th>
                 <th class="date hidden-xs">{{::'First' | translate}}</th>
@@ -34,6 +35,9 @@
                 </td>
                 <td ng-click="vm.open(stack.id, $event)">
                     <summary source="stack" show-type="vm.showType" show-status="vm.showStatus"></summary>
+                </td>
+                <td class="hidden-xs" ng-click="vm.open(stack.id, $event)" ng-if="vm.settings.showProjectName">
+                    {{::stack.project_name}}
                 </td>
                 <td ng-click="vm.open(stack.id, $event)" class="number">
                     <abbr title="{{stack.users | number:0}} of {{stack.total_users | number:0}} users"
@@ -57,7 +61,7 @@
                 <td class="hidden-xs">
                     <label class="checks m-b-none"><input type="checkbox" disabled /><i></i></label>
                 </td>
-                <td colspan="5" class="hidden-xs">
+                <td colspan="{{vm.settings.showProjectName ? 6 : 5}}" class="hidden-xs">
                     <strong ng-if="vm.loading">{{::'Loading...' | translate}}</strong>
                     <strong ng-if="!vm.loading"
                         >{{vm.hasFilter() ? 'No stacks were found with the current filter.': 'No stacks were found.' |

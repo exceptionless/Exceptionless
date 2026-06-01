@@ -217,6 +217,7 @@
                             limit: 15,
                             mode: "stack_users",
                         },
+                        showProjectName: !$stateParams.projectId,
                         source: vm._source + ".Events",
                     };
                     vm.stats = {
