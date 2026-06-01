@@ -1,4 +1,4 @@
-import type { ReleaseNotification, SystemNotification } from '$features/websockets/models';
+import type { SystemNotification } from '$features/websockets/models';
 
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
@@ -9,11 +9,10 @@ export const queryKeys = {
 
 export function clearSystemNotificationMutation() {
     const queryClient = useQueryClient();
-    return createMutation<void, ProblemDetails, { publish?: boolean }>(() => ({
-        mutationFn: async (params: { publish?: boolean }) => {
+    return createMutation<void, ProblemDetails>(() => ({
+        mutationFn: async () => {
             const client = useFetchClient();
-            const publish = params.publish !== false;
-            await client.delete(`notifications/system?publish=${publish}`);
+            await client.delete('notifications/system');
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.current });
@@ -34,29 +33,15 @@ export function getCurrentSystemNotificationQuery() {
     }));
 }
 
-export function sendReleaseNotificationMutation() {
-    return createMutation<ReleaseNotification, ProblemDetails, { critical?: boolean; message?: string }>(() => ({
-        mutationFn: async (params: { critical?: boolean; message?: string }) => {
-            const client = useFetchClient();
-            const critical = params.critical ?? false;
-            const response = await client.postJSON<ReleaseNotification>(`notifications/release?critical=${critical}`, {
-                value: params.message ?? null
-            });
-
-            return response.data!;
-        }
-    }));
-}
-
 export function setSystemNotificationMutation() {
     const queryClient = useQueryClient();
-    return createMutation<SystemNotification, ProblemDetails, { level?: 'Error' | 'Info' | 'Warning'; message: string; publish?: boolean }>(() => ({
-        mutationFn: async (params: { level?: 'Error' | 'Info' | 'Warning'; message: string; publish?: boolean }) => {
+    return createMutation<SystemNotification, ProblemDetails, { level?: 'Error' | 'Info' | 'Warning'; message: string; target?: 'Both' | 'Legacy' | 'Modern' }>(() => ({
+        mutationFn: async (params: { level?: 'Error' | 'Info' | 'Warning'; message: string; target?: 'Both' | 'Legacy' | 'Modern' }) => {
             const client = useFetchClient();
-            const publish = params.publish !== false;
-            const response = await client.postJSON<SystemNotification>(`notifications/system?publish=${publish}`, {
+            const response = await client.postJSON<SystemNotification>('notifications/system', {
                 level: params.level ?? 'Info',
-                message: params.message
+                message: params.message,
+                target: params.target ?? 'Both'
             });
 
             return response.data!;

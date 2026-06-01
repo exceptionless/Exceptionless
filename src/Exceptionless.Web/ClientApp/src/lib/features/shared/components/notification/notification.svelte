@@ -6,18 +6,18 @@
     import { tv, type VariantProps } from 'tailwind-variants';
 
     export const notificationVariants = tv({
-        base: 'relative flex w-full items-start gap-3 rounded-lg border border-l-4 px-4 py-3 text-sm',
+        base: 'relative flex w-full items-start gap-3 rounded-lg border px-4 py-3 text-sm',
         defaultVariants: {
             variant: 'default'
         },
         variants: {
             variant: {
-                default: 'border-l-border bg-background text-foreground',
-                destructive: 'border-l-red-500 bg-red-50 text-red-900 dark:bg-red-900/30 dark:text-red-200',
-                impersonation: 'border-l-violet-500 bg-violet-50 text-violet-900 dark:bg-violet-900/30 dark:text-violet-200',
-                information: 'border-l-primary bg-[#dff0d8] text-[#3c763d] dark:bg-[#dff0d8] dark:text-[#3c763d]',
-                success: 'border-l-green-500 bg-green-50 text-green-900 dark:bg-green-900/30 dark:text-green-200',
-                warning: 'border-l-yellow-500 bg-yellow-50 text-yellow-900 dark:bg-yellow-900/30 dark:text-yellow-200'
+                default: 'border-border bg-card text-card-foreground',
+                destructive: 'border-[#cf222e]/40 bg-[#ffebe9] text-[#1f2328] [&_svg]:text-[#cf222e] dark:border-[#f85149]/55 dark:bg-[#f85149]/12 dark:text-foreground dark:[&_svg]:text-[#ff7b72]',
+                impersonation: 'border-[#8250df]/40 bg-[#fbefff] text-[#1f2328] [&_svg]:text-[#8250df] dark:border-[#8957e5]/50 dark:bg-[#211637] dark:text-foreground dark:[&_svg]:text-[#d2a8ff]',
+                information: 'border-[#1a7f37]/40 bg-[#dafbe1] text-[#1f2328] [&_svg]:text-[#1a7f37] dark:border-[#238636]/60 dark:bg-[#12261a] dark:text-foreground dark:[&_svg]:text-[#3fb950]',
+                success: 'border-[#1a7f37]/40 bg-[#dafbe1] text-[#1f2328] [&_svg]:text-[#1a7f37] dark:border-[#238636]/60 dark:bg-[#12261a] dark:text-foreground dark:[&_svg]:text-[#3fb950]',
+                warning: 'border-[#9a6700]/40 bg-[#fff8c5] text-[#1f2328] [&_svg]:text-[#9a6700] dark:border-[#9e6a03]/60 dark:bg-[#2b2111] dark:text-foreground dark:[&_svg]:text-[#d29922]'
             }
         }
     });

@@ -133,7 +133,7 @@ public class StatusController : ExceptionlessApiController
         if (String.IsNullOrWhiteSpace(request.Message))
             return NotFound();
 
-        var notification = await _notificationService.SetSystemNotificationAsync(request.Message, request.Level, publish);
+        var notification = await _notificationService.SetSystemNotificationAsync(request.Message, request.Level, request.Target, publish);
 
         return Ok(notification);
     }
@@ -152,4 +152,5 @@ public record SetSystemNotificationRequest
 {
     public string? Message { get; set; }
     public SystemNotificationLevel Level { get; set; } = SystemNotificationLevel.Info;
+    public SystemNotificationTarget Target { get; set; } = SystemNotificationTarget.Both;
 }

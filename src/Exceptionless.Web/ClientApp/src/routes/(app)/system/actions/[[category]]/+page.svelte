@@ -4,22 +4,13 @@
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
     import { Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
-    import * as Dialog from '$comp/ui/dialog';
     import { Input } from '$comp/ui/input';
-    import * as Select from '$comp/ui/select';
-    import { Spinner } from '$comp/ui/spinner';
-    import * as Tabs from '$comp/ui/tabs';
-    import { Textarea } from '$comp/ui/textarea';
-    import { getOrgSavedViewsExportMutation, getPredefinedSavedViewsMutation, putPredefinedSavedViewsMutation, runMaintenanceJobMutation } from '$features/admin/api.svelte';
+    import { runMaintenanceJobMutation } from '$features/admin/api.svelte';
     import RunMaintenanceJobDialog from '$features/admin/components/dialogs/run-maintenance-job-dialog.svelte';
     import { maintenanceActions } from '$features/admin/models';
-    import { getOrganizationsQuery } from '$features/organizations/api.svelte';
-    import { organization } from '$features/organizations/context.svelte';
     import { ProblemDetails } from '@exceptionless/fetchclient';
-    import FileJson from '@lucide/svelte/icons/file-json';
     import Play from '@lucide/svelte/icons/play';
     import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
     import { toast } from 'svelte-sonner';
@@ -30,21 +21,10 @@
 
     let searchQuery = $state(page.url.searchParams.get('q') ?? '');
     let selectedAction = $state<MaintenanceAction | undefined>();
-    let runningActionName = $state<string>();
     let openDialog = $state(false);
-    let openPredefinedDialog = $state(false);
     let toastId = $state<number | string>();
 
-    // Predefined saved views dialog state
-    let predefinedJson = $state('');
-    let predefinedTab = $state('config');
-    let selectedOrgId = $state(organization.current ?? '');
-
     const runJob = runMaintenanceJobMutation();
-    const predefinedSavedViews = getPredefinedSavedViewsMutation();
-    const orgExport = getOrgSavedViewsExportMutation();
-    const savePredefined = putPredefinedSavedViewsMutation();
-    const orgsQuery = getOrganizationsQuery({ params: { mode: null } });
 
     $effect(() => {
         const query = searchQuery.trim();
@@ -85,51 +65,9 @@
 
     const destructiveCount = $derived(filteredActions.filter((a) => a.dangerous).length);
 
-    async function handleRun(action: MaintenanceAction) {
-        if (action.kind === 'predefined-saved-views') {
-            await showPredefinedSavedViews(action);
-            return;
-        }
-
+    function handleRun(action: MaintenanceAction) {
         selectedAction = action;
         openDialog = true;
-    }
-
-    async function showPredefinedSavedViews(action: MaintenanceAction) {
-        toast.dismiss(toastId);
-        runningActionName = action.name;
-
-        try {
-            predefinedJson = await predefinedSavedViews.mutateAsync();
-            predefinedTab = 'config';
-            openPredefinedDialog = true;
-        } catch (error: unknown) {
-            const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
-            toastId = toast.error(`An error occurred while loading predefined saved views: ${message}`);
-        } finally {
-            runningActionName = undefined;
-        }
-    }
-
-    async function handleLoadOrgViews() {
-        if (!selectedOrgId) return;
-
-        try {
-            predefinedJson = await orgExport.mutateAsync(selectedOrgId);
-        } catch (error: unknown) {
-            const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
-            toastId = toast.error(`An error occurred while exporting org views: ${message}`);
-        }
-    }
-
-    async function handleSavePredefined() {
-        try {
-            predefinedJson = await savePredefined.mutateAsync(predefinedJson);
-            toastId = toast.success('Predefined saved views updated successfully.');
-        } catch (error: unknown) {
-            const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
-            toastId = toast.error(`An error occurred while saving predefined saved views: ${message}`);
-        }
     }
 
     async function handleConfirm(params: Parameters<typeof runJob.mutateAsync>[0]) {
@@ -206,25 +144,14 @@
                 </div>
                 <Button
                     class="shrink-0"
-                    disabled={action.kind === 'predefined-saved-views' && predefinedSavedViews.isPending}
                     onclick={() => {
-                        void handleRun(action);
+                        handleRun(action);
                     }}
                     size="sm"
                     variant={action.dangerous ? 'destructive' : 'outline'}
                 >
-                    {#if action.kind === 'predefined-saved-views'}
-                        {#if predefinedSavedViews.isPending && runningActionName === action.name}
-                            <Spinner />
-                            Loading...
-                        {:else}
-                            <FileJson class="size-3.5" aria-hidden="true" />
-                            View
-                        {/if}
-                    {:else}
-                        <Play class="size-3.5" aria-hidden="true" />
-                        Run
-                    {/if}
+                    <Play class="size-3.5" aria-hidden="true" />
+                    Run
                 </Button>
             </div>
         {/each}
@@ -236,81 +163,4 @@
 
 {#if selectedAction && openDialog}
     <RunMaintenanceJobDialog bind:open={openDialog} action={selectedAction} onConfirm={handleConfirm} />
-{/if}
-
-{#if openPredefinedDialog}
-    <Dialog.Root bind:open={openPredefinedDialog}>
-        <Dialog.Content class="max-h-[90vh] gap-3 sm:max-w-4xl">
-            <Dialog.Header>
-                <Dialog.Title>Predefined Saved Views</Dialog.Title>
-                <Dialog.Description>View, edit, or replace the predefined saved views configuration.</Dialog.Description>
-            </Dialog.Header>
-            <Tabs.Root bind:value={predefinedTab}>
-                <Tabs.List>
-                    <Tabs.Trigger value="config">Current Config</Tabs.Trigger>
-                    <Tabs.Trigger value="org">Load from Org</Tabs.Trigger>
-                </Tabs.List>
-                <Tabs.Content value="config">
-                    <Muted class="mb-2">The current predefined saved views served by the API.</Muted>
-                </Tabs.Content>
-                <Tabs.Content value="org">
-                    <div class="mb-2 flex items-end gap-2">
-                        <div class="flex-1">
-                            <Select.Root type="single" bind:value={selectedOrgId}>
-                                <Select.Trigger class="w-full">
-                                    {orgsQuery.data?.data?.find((o) => o.id === selectedOrgId)?.name ?? 'Select organization...'}
-                                </Select.Trigger>
-                                <Select.Content>
-                                    {#each orgsQuery.data?.data ?? [] as org (org.id)}
-                                        <Select.Item value={org.id}>{org.name}</Select.Item>
-                                    {/each}
-                                </Select.Content>
-                            </Select.Root>
-                        </div>
-                        <Button
-                            disabled={!selectedOrgId || orgExport.isPending}
-                            onclick={() => { void handleLoadOrgViews(); }}
-                            size="sm"
-                            variant="outline"
-                        >
-                            {#if orgExport.isPending}
-                                <Spinner />
-                                Loading...
-                            {:else}
-                                Export Org Views
-                            {/if}
-                        </Button>
-                    </div>
-                    <Muted class="mb-2">Export an organization's saved views as predefined definitions, then save below.</Muted>
-                </Tabs.Content>
-            </Tabs.Root>
-            <div class="flex justify-end gap-2">
-                <CopyToClipboardButton value={predefinedJson} size="sm" variant="outline">Copy JSON</CopyToClipboardButton>
-            </div>
-            <Textarea
-                bind:value={predefinedJson}
-                class="font-mono text-xs max-h-[50vh] min-h-50 overflow-auto"
-                rows={20}
-            />
-            <Dialog.Footer>
-                <Button
-                    variant="outline"
-                    onclick={() => { openPredefinedDialog = false; }}
-                >
-                    Close
-                </Button>
-                <Button
-                    disabled={savePredefined.isPending || !predefinedJson.trim()}
-                    onclick={() => { void handleSavePredefined(); }}
-                >
-                    {#if savePredefined.isPending}
-                        <Spinner />
-                        Saving...
-                    {:else}
-                        Save as Predefined
-                    {/if}
-                </Button>
-            </Dialog.Footer>
-        </Dialog.Content>
-    </Dialog.Root>
 {/if}
