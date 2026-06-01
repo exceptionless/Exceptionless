@@ -109,6 +109,8 @@ public class Bootstrapper
             handlers.Register<FixStackStatsWorkItem>(s.GetRequiredService<FixStackStatsWorkItemHandler>);
             handlers.Register<OrganizationMaintenanceWorkItem>(s.GetRequiredService<OrganizationMaintenanceWorkItemHandler>);
             handlers.Register<OrganizationNotificationWorkItem>(s.GetRequiredService<OrganizationNotificationWorkItemHandler>);
+            handlers.Register<OrganizationBudgetAlertWorkItem>(s.GetRequiredService<OrganizationBudgetAlertWorkItemHandler>);
+            handlers.Register<ProjectSmartThrottleWorkItem>(s.GetRequiredService<ProjectSmartThrottleWorkItemHandler>);
             handlers.Register<ProjectMaintenanceWorkItem>(s.GetRequiredService<ProjectMaintenanceWorkItemHandler>);
             handlers.Register<ReindexWorkItem>(s.GetRequiredService<ReindexWorkItemHandler>);
             handlers.Register<RemoveBotEventsWorkItem>(s.GetRequiredService<RemoveBotEventsWorkItemHandler>);

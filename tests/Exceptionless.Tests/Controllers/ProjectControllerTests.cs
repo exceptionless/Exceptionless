@@ -1116,4 +1116,93 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.Equal(newStacks.Count, project.StackCount);
         Assert.Equal(newEvents.Count, project.EventCount);
     }
+
+    [Fact]
+    public async Task PatchAsync_WithFixedIngestLimit_SavesCorrectly()
+    {
+        var updated = await SendRequestAsAsync<ViewProject>(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID)
+            .Content("""{"ingest_limit":{"type":0,"fixed_limit":500}}""", "application/json")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(updated);
+        Assert.NotNull(updated.IngestLimit);
+        Assert.Equal(ProjectIngestLimitType.Fixed, updated.IngestLimit.Type);
+        Assert.Equal(500, updated.IngestLimit.FixedLimit);
+
+        var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+        Assert.NotNull(project.IngestLimit);
+        Assert.Equal(ProjectIngestLimitType.Fixed, project.IngestLimit.Type);
+        Assert.Equal(500, project.IngestLimit.FixedLimit);
+    }
+
+    [Fact]
+    public async Task PatchAsync_WithPercentageIngestLimit_SavesCorrectly()
+    {
+        var updated = await SendRequestAsAsync<ViewProject>(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID)
+            .Content("""{"ingest_limit":{"type":1,"percent_of_organization_limit":75.0}}""", "application/json")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(updated);
+        Assert.NotNull(updated.IngestLimit);
+        Assert.Equal(ProjectIngestLimitType.PercentOfOrganizationLimit, updated.IngestLimit.Type);
+        Assert.Equal(75.0m, updated.IngestLimit.PercentOfOrganizationLimit);
+
+        var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+        Assert.NotNull(project.IngestLimit);
+        Assert.Equal(75.0m, project.IngestLimit.PercentOfOrganizationLimit);
+    }
+
+    [Fact]
+    public async Task PatchAsync_RemoveIngestLimit_SavesNull()
+    {
+        var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+        project.IngestLimit = new ProjectIngestLimit { Type = ProjectIngestLimitType.Fixed, FixedLimit = 100 };
+        await _projectRepository.SaveAsync(project, o => o.ImmediateConsistency().Cache());
+
+        var updated = await SendRequestAsAsync<ViewProject>(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID)
+            .Content("""{"ingest_limit":null}""", "application/json")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(updated);
+        Assert.Null(updated.IngestLimit);
+
+        var saved = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(saved);
+        Assert.Null(saved.IngestLimit);
+    }
+
+    [Fact]
+    public async Task PatchAsync_OnlyIngestLimit_NoNameValidationError()
+    {
+        var original = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(original);
+
+        var updated = await SendRequestAsAsync<ViewProject>(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID)
+            .Content("""{"ingest_limit":{"type":0,"fixed_limit":200}}""", "application/json")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(updated);
+        Assert.Equal(original.Name, updated.Name);
+        Assert.NotNull(updated.IngestLimit);
+        Assert.Equal(200, updated.IngestLimit.FixedLimit);
+    }
 }

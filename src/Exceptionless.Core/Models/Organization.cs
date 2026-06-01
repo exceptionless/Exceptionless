@@ -171,6 +171,11 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     /// </summary>
     public DataDictionary? Data { get; set; }
 
+    /// <summary>
+    /// Budget alert settings for this organization. Null means disabled.
+    /// </summary>
+    public OrganizationBudgetAlertSettings? BudgetAlertSettings { get; set; }
+
     public DateTime CreatedUtc { get; set; }
     public DateTime UpdatedUtc { get; set; }
     public bool IsDeleted { get; set; }
@@ -264,6 +269,19 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
                 yield return new ValidationResult("The suspended by user id cannot be set while an organization is not suspended.",
                     [nameof(SuspendedByUserId)]);
             }
+        }
+
+        if (BudgetAlertSettings is { Enabled: true })
+        {
+            if (BudgetAlertSettings.Thresholds.Count == 0)
+            {
+                yield return new ValidationResult("At least one threshold is required when budget alerts are enabled.",
+                    [nameof(BudgetAlertSettings)]);
+            }
+
+            if (BudgetAlertSettings.Thresholds.Any(t => t <= 0 || t >= 100))
+                yield return new ValidationResult("Budget alert thresholds must be between 1 and 99.",
+                    [nameof(BudgetAlertSettings)]);
         }
     }
 }

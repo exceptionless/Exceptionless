@@ -1566,4 +1566,27 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         Assert.Equal(originalOrganization.Name, updated.Name);
         Assert.Equal(originalOrganization.UpdatedUtc, updated.UpdatedUtc);
     }
+
+    [Fact]
+    public async Task PatchAsync_SameNameWithBudgetAlertSettings_DoesNotRejectAsDuplicate()
+    {
+        // Regression: If PATCH sends the org's current name alongside budget_alert_settings,
+        // IsOrganizationNameAvailableInternalAsync previously found the org itself and returned
+        // false ("already exists"), rejecting an idempotent name update.
+        var originalOrg = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(originalOrg);
+
+        var updated = await SendRequestAsAsync<ViewOrganization>(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
+            .Content(new { name = originalOrg.Name, budget_alert_settings = new { enabled = true, thresholds = new[] { 75 } } })
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(updated);
+        Assert.Equal(originalOrg.Name, updated.Name);
+        Assert.NotNull(updated.BudgetAlertSettings);
+        Assert.True(updated.BudgetAlertSettings.Enabled);
+    }
 }

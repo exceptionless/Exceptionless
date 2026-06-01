@@ -763,6 +763,17 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
             currentHourUsage.Discarded = realTimeUsage.CurrentHourUsage.Discarded;
             currentHourUsage.TooBig = realTimeUsage.CurrentHourUsage.TooBig;
             currentHourUsage.Deleted = realTimeUsage.CurrentHourUsage.Deleted;
+
+            // Populate computed budget/throttle properties
+            if (viewProject.IngestLimit is not null)
+            {
+                var allowance = await _usageService.GetEventIngestAllowanceAsync(organization.Id, viewProject.Id);
+                viewProject.EffectiveIngestLimit = allowance.EffectiveProjectLimit > 0 ? allowance.EffectiveProjectLimit : null;
+            }
+
+            var throttleResult = await _usageService.GetSmartThrottleRateAsync(organization.Id, viewProject.Id);
+            viewProject.IsSmartThrottled = throttleResult.IsThrottled;
+            viewProject.SmartThrottleSampleRate = throttleResult.IsThrottled ? throttleResult.SampleRate : null;
         }
     }
 

@@ -673,7 +673,7 @@
           "Token"
         ],
         "summary": "Create for organization",
-        "description": "This is a helper action that makes it easier to create a token for a specific organization.\r\nYou may also specify a scope when creating a token. There are three valid scopes: client, user and admin.",
+        "description": "This is a helper action that makes it easier to create a token for a specific organization.\nYou may also specify a scope when creating a token. There are three valid scopes: client, user and admin.",
         "parameters": [
           {
             "name": "organizationId",
@@ -797,7 +797,7 @@
           "Token"
         ],
         "summary": "Create for project",
-        "description": "This is a helper action that makes it easier to create a token for a specific project.\r\nYou may also specify a scope when creating a token. There are three valid scopes: client, user and admin.",
+        "description": "This is a helper action that makes it easier to create a token for a specific project.\nYou may also specify a scope when creating a token. There are three valid scopes: client, user and admin.",
         "parameters": [
           {
             "name": "projectId",
@@ -1304,7 +1304,7 @@
           "Auth"
         ],
         "summary": "Login",
-        "description": "Log in with your email address and password to generate a token scoped with your users roles.\r\n\r\n```{ \"email\": \"noreply@exceptionless.io\", \"password\": \"exceptionless\" }```\r\n\r\nThis token can then be used to access the api. You can use this token in the header (bearer authentication)\r\nor append it onto the query string: ?access_token=MY_TOKEN\r\n\r\nPlease note that you can also use this token on the documentation site by placing it in the\r\nheaders api_key input box.",
+        "description": "Log in with your email address and password to generate a token scoped with your users roles.\n\n```{ \"email\": \"noreply@exceptionless.io\", \"password\": \"exceptionless\" }```\n\nThis token can then be used to access the api. You can use this token in the header (bearer authentication)\nor append it onto the query string: ?access_token=MY_TOKEN\n\nPlease note that you can also use this token on the documentation site by placing it in the\nheaders api_key input box.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2161,7 +2161,7 @@
           "Event"
         ],
         "summary": "Submit event by POST",
-        "description": "      You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it\r\n      we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON\r\n      object into the events data collection.\r\n\r\n      You can also post a multi-line string. We automatically split strings by the \\n character and create a new log event for every line.\r\n\r\n      Simple event:\r\n      ```{ \"message\": \"Exceptionless is amazing!\" }```\r\n\r\n      Simple log event with user identity:\r\n      ```{\r\n    \"type\": \"log\",\r\n    \"message\": \"Exceptionless is amazing!\",\r\n    \"date\":\"2030-01-01T12:00:00.0000000-05:00\",\r\n    \"@user\":{ \"identity\":\"123456789\", \"name\": \"Test User\" }\r\n}```\r\n\r\n      Multiple events from string content:\r\n      ```Exceptionless is amazing!\r\nExceptionless is really amazing!```\r\n\r\n      Simple error:\r\n      ```{\r\n    \"type\": \"error\",\r\n    \"date\":\"2030-01-01T12:00:00.0000000-05:00\",\r\n    \"@simple_error\": {\r\n        \"message\": \"Simple Exception\",\r\n        \"type\": \"System.Exception\",\r\n        \"stack_trace\": \"   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77\"\r\n    }\r\n}```",
+        "description": "      You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it\n      we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON\n      object into the events data collection.\n\n      You can also post a multi-line string. We automatically split strings by the \\n character and create a new log event for every line.\n\n      Simple event:\n      ```{ \"message\": \"Exceptionless is amazing!\" }```\n\n      Simple log event with user identity:\n      ```{\n    \"type\": \"log\",\n    \"message\": \"Exceptionless is amazing!\",\n    \"date\":\"2030-01-01T12:00:00.0000000-05:00\",\n    \"@user\":{ \"identity\":\"123456789\", \"name\": \"Test User\" }\n}```\n\n      Multiple events from string content:\n      ```Exceptionless is amazing!\nExceptionless is really amazing!```\n\n      Simple error:\n      ```{\n    \"type\": \"error\",\n    \"date\":\"2030-01-01T12:00:00.0000000-05:00\",\n    \"@simple_error\": {\n        \"message\": \"Simple Exception\",\n        \"type\": \"System.Exception\",\n        \"stack_trace\": \"   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77\"\n    }\n}```",
         "parameters": [
           {
             "name": "userAgent",
@@ -2447,7 +2447,7 @@
           "Event"
         ],
         "summary": "Submit event by POST for a specific project",
-        "description": "      You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it\r\n      we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON\r\n      object into the events data collection.\r\n\r\n      You can also post a multi-line string. We automatically split strings by the \\n character and create a new log event for every line.\r\n\r\n      Simple event:\r\n      ```{ \"message\": \"Exceptionless is amazing!\" }```\r\n\r\n      Simple log event with user identity:\r\n      ```{\r\n    \"type\": \"log\",\r\n    \"message\": \"Exceptionless is amazing!\",\r\n    \"date\":\"2030-01-01T12:00:00.0000000-05:00\",\r\n    \"@user\":{ \"identity\":\"123456789\", \"name\": \"Test User\" }\r\n}```\r\n\r\n      Multiple events from string content:\r\n      ```Exceptionless is amazing!\r\nExceptionless is really amazing!```\r\n\r\n      Simple error:\r\n      ```{\r\n    \"type\": \"error\",\r\n    \"date\":\"2030-01-01T12:00:00.0000000-05:00\",\r\n    \"@simple_error\": {\r\n        \"message\": \"Simple Exception\",\r\n        \"type\": \"System.Exception\",\r\n        \"stack_trace\": \"   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77\"\r\n    }\r\n}```",
+        "description": "      You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it\n      we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON\n      object into the events data collection.\n\n      You can also post a multi-line string. We automatically split strings by the \\n character and create a new log event for every line.\n\n      Simple event:\n      ```{ \"message\": \"Exceptionless is amazing!\" }```\n\n      Simple log event with user identity:\n      ```{\n    \"type\": \"log\",\n    \"message\": \"Exceptionless is amazing!\",\n    \"date\":\"2030-01-01T12:00:00.0000000-05:00\",\n    \"@user\":{ \"identity\":\"123456789\", \"name\": \"Test User\" }\n}```\n\n      Multiple events from string content:\n      ```Exceptionless is amazing!\nExceptionless is really amazing!```\n\n      Simple error:\n      ```{\n    \"type\": \"error\",\n    \"date\":\"2030-01-01T12:00:00.0000000-05:00\",\n    \"@simple_error\": {\n        \"message\": \"Simple Exception\",\n        \"type\": \"System.Exception\",\n        \"stack_trace\": \"   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77\"\n    }\n}```",
         "parameters": [
           {
             "name": "projectId",
@@ -3780,7 +3780,7 @@
           "Event"
         ],
         "summary": "Submit event by GET",
-        "description": "You can submit an event using an HTTP GET and query string parameters. Any unknown query string parameters will be added to the extended data of the event.\r\n\r\nFeature usage named build with a duration of 10:\r\n```/events/submit?access_token=YOUR_API_KEY&amp;type=usage&amp;source=build&amp;value=10```\r\n\r\nLog with message, geo and extended data\r\n```/events/submit?access_token=YOUR_API_KEY&amp;type=log&amp;message=Hello World&amp;source=server01&amp;geo=32.85,-96.9613&amp;randomproperty=true```",
+        "description": "You can submit an event using an HTTP GET and query string parameters. Any unknown query string parameters will be added to the extended data of the event.\n\nFeature usage named build with a duration of 10:\n```/events/submit?access_token=YOUR_API_KEY&amp;type=usage&amp;source=build&amp;value=10```\n\nLog with message, geo and extended data\n```/events/submit?access_token=YOUR_API_KEY&amp;type=log&amp;message=Hello World&amp;source=server01&amp;geo=32.85,-96.9613&amp;randomproperty=true```",
         "parameters": [
           {
             "name": "type",
@@ -3914,7 +3914,7 @@
           "Event"
         ],
         "summary": "Submit event type by GET",
-        "description": "You can submit an event using an HTTP GET and query string parameters.\r\n\r\nFeature usage event named build with a value of 10:\r\n```/events/submit/usage?access_token=YOUR_API_KEY&amp;source=build&amp;value=10```\r\n\r\nLog event with message, geo and extended data\r\n```/events/submit/log?access_token=YOUR_API_KEY&amp;message=Hello World&amp;source=server01&amp;geo=32.85,-96.9613&amp;randomproperty=true```",
+        "description": "You can submit an event using an HTTP GET and query string parameters.\n\nFeature usage event named build with a value of 10:\n```/events/submit/usage?access_token=YOUR_API_KEY&amp;source=build&amp;value=10```\n\nLog event with message, geo and extended data\n```/events/submit/log?access_token=YOUR_API_KEY&amp;message=Hello World&amp;source=server01&amp;geo=32.85,-96.9613&amp;randomproperty=true```",
         "parameters": [
           {
             "name": "type",
@@ -4050,7 +4050,7 @@
           "Event"
         ],
         "summary": "Submit event type by GET for a specific project",
-        "description": "You can submit an event using an HTTP GET and query string parameters.\r\n\r\nFeature usage named build with a duration of 10:\r\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&amp;type=usage&amp;source=build&amp;value=10```\r\n\r\nLog with message, geo and extended data\r\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&amp;type=log&amp;message=Hello World&amp;source=server01&amp;geo=32.85,-96.9613&amp;randomproperty=true```",
+        "description": "You can submit an event using an HTTP GET and query string parameters.\n\nFeature usage named build with a duration of 10:\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&amp;type=usage&amp;source=build&amp;value=10```\n\nLog with message, geo and extended data\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&amp;type=log&amp;message=Hello World&amp;source=server01&amp;geo=32.85,-96.9613&amp;randomproperty=true```",
         "parameters": [
           {
             "name": "projectId",
@@ -4186,7 +4186,7 @@
           "Event"
         ],
         "summary": "Submit event type by GET for a specific project",
-        "description": "You can submit an event using an HTTP GET and query string parameters.\r\n\r\nFeature usage named build with a duration of 10:\r\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&amp;type=usage&amp;source=build&amp;value=10```\r\n\r\nLog with message, geo and extended data\r\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&amp;type=log&amp;message=Hello World&amp;source=server01&amp;geo=32.85,-96.9613&amp;randomproperty=true```",
+        "description": "You can submit an event using an HTTP GET and query string parameters.\n\nFeature usage named build with a duration of 10:\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&amp;type=usage&amp;source=build&amp;value=10```\n\nLog with message, geo and extended data\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&amp;type=log&amp;message=Hello World&amp;source=server01&amp;geo=32.85,-96.9613&amp;randomproperty=true```",
         "parameters": [
           {
             "name": "projectId",
@@ -4648,12 +4648,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NewOrganization"
+                "$ref": "#/components/schemas/UpdateOrganization"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/NewOrganization"
+                "$ref": "#/components/schemas/UpdateOrganization"
               }
             }
           },
@@ -4700,12 +4700,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NewOrganization"
+                "$ref": "#/components/schemas/UpdateOrganization"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/NewOrganization"
+                "$ref": "#/components/schemas/UpdateOrganization"
               }
             }
           },
@@ -4916,7 +4916,7 @@
           "Organization"
         ],
         "summary": "Change plan",
-        "description": "Upgrades or downgrades the organization's plan.\r\nAccepts parameters via JSON body (preferred) or query string (legacy).",
+        "description": "Upgrades or downgrades the organization's plan.\nAccepts parameters via JSON body (preferred) or query string (legacy).",
         "parameters": [
           {
             "name": "id",
@@ -8091,6 +8091,16 @@
           },
           "delete_bot_data_enabled": {
             "type": "boolean"
+          },
+          "ingest_limit": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProjectIngestLimit"
+              }
+            ]
           }
         }
       },
@@ -8341,6 +8351,27 @@
           }
         }
       },
+      "OrganizationBudgetAlertSettings": {
+        "required": [
+          "enabled",
+          "thresholds"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "thresholds": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "description": "Percentage thresholds of the organization's effective monthly event allowance.\nExample: [50, 80, 90]."
+          }
+        }
+      },
       "PersistentEvent": {
         "required": [
           "organization_id",
@@ -8406,7 +8437,7 @@
               "null",
               "string"
             ],
-            "description": "The event type (ie. error, log message, feature usage). Check KnownTypes for standard event types.\r\nNullable in transit; the pipeline infers a default before save. Validated as required on repository save."
+            "description": "The event type (ie. error, log message, feature usage). Check KnownTypes for standard event types.\nNullable in transit; the pipeline infers a default before save. Validated as required on repository save."
           },
           "source": {
             "maxLength": 2000,
@@ -8562,6 +8593,42 @@
             ]
           }
         }
+      },
+      "ProjectIngestLimit": {
+        "required": [
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/ProjectIngestLimitType"
+          },
+          "fixed_limit": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "percent_of_organization_limit": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "ProjectIngestLimitType": {
+        "enum": [
+          0,
+          1
+        ],
+        "type": "integer",
+        "x-enumNames": [
+          "Fixed",
+          "PercentOfOrganizationLimit"
+        ]
       },
       "ResetPasswordModel": {
         "required": [
@@ -8863,6 +8930,18 @@
         },
         "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
       },
+      "UpdateOrganization": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "budget_alert_settings": {
+            "$ref": "#/components/schemas/OrganizationBudgetAlertSettings"
+          }
+        },
+        "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
+      },
       "UpdateProject": {
         "type": "object",
         "properties": {
@@ -8871,6 +8950,9 @@
           },
           "delete_bot_data_enabled": {
             "type": "boolean"
+          },
+          "ingest_limit": {
+            "$ref": "#/components/schemas/ProjectIngestLimit"
           }
         },
         "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
@@ -9455,6 +9537,16 @@
           },
           "is_over_request_limit": {
             "type": "boolean"
+          },
+          "budget_alert_settings": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OrganizationBudgetAlertSettings"
+              }
+            ]
           }
         }
       },
@@ -9471,6 +9563,7 @@
           "event_count",
           "has_premium_features",
           "has_slack_integration",
+          "is_smart_throttled",
           "usage_hours",
           "usage"
         ],
@@ -9534,6 +9627,33 @@
           },
           "has_slack_integration": {
             "type": "boolean"
+          },
+          "ingest_limit": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProjectIngestLimit"
+              }
+            ]
+          },
+          "effective_ingest_limit": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "is_smart_throttled": {
+            "type": "boolean"
+          },
+          "smart_throttle_sample_rate": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
           },
           "usage_hours": {
             "type": "array",

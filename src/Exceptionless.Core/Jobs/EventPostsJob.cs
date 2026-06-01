@@ -175,6 +175,38 @@ public class EventPostsJob : QueueJobBase<EventPost>
             return JobResult.Success;
         }
 
+        // Check project-specific ingest limits
+        var ingestAllowance = await _usageService.GetEventIngestAllowanceAsync(organization.Id, project.Id);
+        if (ingestAllowance.EventsLeft < 1)
+        {
+            if (!isInternalProject)
+                _logger.LogDebug("Unable to process EventPost {FilePath}: Over project ingest limit", payloadPath);
+
+            await _usageService.IncrementBlockedAsync(organization.Id, project.Id, events.Count);
+            await CompleteEntryAsync(entry, ep, _timeProvider.GetUtcNow().UtcDateTime);
+            return JobResult.Success;
+        }
+
+        // Apply smart throttling: sample events from projects consuming disproportionate resources
+        var throttleResult = await _usageService.GetSmartThrottleRateAsync(organization.Id, project.Id);
+        if (throttleResult.IsThrottled)
+        {
+            int sampled = (int)Math.Max(1, Math.Ceiling(events.Count * throttleResult.SampleRate));
+            if (sampled < events.Count)
+            {
+                int discarded = events.Count - sampled;
+                // Use deterministic sampling to keep a representative sample
+                events = events.Take(sampled).ToList();
+                await _usageService.RecordSmartThrottleAsync(organization.Id, project.Id, discarded, throttleResult);
+
+                if (!isInternalProject)
+                    _logger.LogInformation("Smart throttling applied to EventPost {FilePath}: Accepted {Sampled}/{Total} events (rate={SampleRate:F2})", payloadPath, sampled, sampled + discarded, throttleResult.SampleRate);
+            }
+        }
+
+        // Use the more restrictive of org and project limits
+        eventsToProcess = Math.Min(eventsToProcess, ingestAllowance.EventsLeft);
+
         // Keep track of the original event payload size, we can save some processing for retries in the case it was a massive batch.
         bool isSingleEvent = events.Count == 1;
 

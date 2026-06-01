@@ -7,6 +7,11 @@ export enum StackStatus {
   Discarded = "discarded",
 }
 
+export enum ProjectIngestLimitType {
+  Fixed = 0,
+  PercentOfOrganizationLimit = 1,
+}
+
 export enum BillingStatus {
   Trialing = 0,
   Active = 1,
@@ -112,6 +117,8 @@ export interface InvoiceLineItem {
   amount: number;
 }
 
+export type JsonElement = any;
+
 export interface Login {
   /** The email address or domain username */
   email: string;
@@ -128,6 +135,7 @@ export interface NewProject {
   organization_id: string;
   name: string;
   delete_bot_data_enabled: boolean;
+  ingest_limit?: null | ProjectIngestLimit;
 }
 
 export interface NewSavedView {
@@ -137,6 +145,7 @@ export interface NewSavedView {
   filter?: null | string;
   time?: null | string;
   sort?: null | string;
+  /** @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$ */
   slug?: null | string;
   view_type: string;
   filter_definitions?: null | string;
@@ -190,6 +199,15 @@ export interface OAuthAccount {
   provider_user_id: string;
   username: string;
   extra_data: Record<string, string>;
+}
+
+export interface OrganizationBudgetAlertSettings {
+  enabled: boolean;
+  /**
+   * Percentage thresholds of the organization's effective monthly event allowance.
+   * Example: [50, 80, 90].
+   */
+  thresholds: number[];
 }
 
 export interface PersistentEvent {
@@ -254,6 +272,29 @@ export interface PersistentEvent {
   data?: null | Record<string, unknown>;
   /** An optional identifier to be used for referencing this event instance at a later time. */
   reference_id?: null | string;
+}
+
+export interface PredefinedSavedViewDefinition {
+  key: string;
+  name: string;
+  slug: string;
+  viewType: string;
+  filter?: null | string;
+  time?: null | string;
+  sort?: null | string;
+  filterDefinitions?: null | JsonElement;
+  columns?: null | Record<string, boolean>;
+  columnOrder?: string[] | null;
+  showStats?: null | boolean;
+  showChart?: null | boolean;
+}
+
+export interface ProjectIngestLimit {
+  type: ProjectIngestLimitType;
+  /** @format int32 */
+  fixed_limit?: null | number;
+  /** @format double */
+  percent_of_organization_limit?: null | number;
 }
 
 export interface ResetPasswordModel {
@@ -365,9 +406,16 @@ export interface UpdateEvent {
 }
 
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
+export interface UpdateOrganization {
+  name: string;
+  budget_alert_settings: object;
+}
+
+/** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
 export interface UpdateProject {
   name: string;
   delete_bot_data_enabled: boolean;
+  ingest_limit: object;
 }
 
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
@@ -538,6 +586,7 @@ export interface ViewOrganization {
   is_throttled: boolean;
   is_over_monthly_limit: boolean;
   is_over_request_limit: boolean;
+  budget_alert_settings?: null | OrganizationBudgetAlertSettings;
 }
 
 export interface ViewProject {
@@ -559,6 +608,12 @@ export interface ViewProject {
   event_count: number;
   has_premium_features: boolean;
   has_slack_integration: boolean;
+  ingest_limit?: null | ProjectIngestLimit;
+  /** @format int32 */
+  effective_ingest_limit?: null | number;
+  is_smart_throttled: boolean;
+  /** @format double */
+  smart_throttle_sample_rate?: null | number;
   usage_hours: UsageHourInfo[];
   usage: UsageInfo[];
 }

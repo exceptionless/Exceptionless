@@ -6,7 +6,7 @@ import { accessToken } from '$features/auth/index.svelte';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 
-import type { Invoice, InvoiceGridModel, NewOrganization, SuspensionCode, ViewOrganization } from './models';
+import type { Invoice, InvoiceGridModel, NewOrganization, SuspensionCode, UpdateOrganization, ViewOrganization } from './models';
 
 export async function invalidateOrganizationQueries(queryClient: QueryClient, message: WebSocketMessageValue<'OrganizationChanged'>) {
     const { id } = message;
@@ -389,9 +389,9 @@ export function getPlansQuery(request: GetPlansRequest) {
 export function patchOrganization(request: PatchOrganizationRequest) {
     const queryClient = useQueryClient();
 
-    return createMutation<ViewOrganization, ProblemDetails, NewOrganization>(() => ({
+    return createMutation<ViewOrganization, ProblemDetails, UpdateOrganization>(() => ({
         enabled: () => !!accessToken.current && !!request.route.id,
-        mutationFn: async (data: NewOrganization) => {
+        mutationFn: async (data: UpdateOrganization) => {
             const client = useFetchClient();
             const response = await client.patchJSON<ViewOrganization>(`organizations/${request.route.id}`, data);
             return response.data!;

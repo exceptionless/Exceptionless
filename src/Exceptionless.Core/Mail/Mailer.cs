@@ -195,6 +195,57 @@ public class Mailer : IMailer
         }, template);
     }
 
+    public Task SendOrganizationBudgetAlertAsync(User user, Organization organization, int threshold, int thresholdEventCount, int currentEventCount, int eventLimit)
+    {
+        const string template = "organization-budget-alert";
+        string subject = $"[{organization.Name}] Budget Alert: {threshold}% of monthly event allowance used";
+
+        var data = new Dictionary<string, object?> {
+                { "Subject", subject },
+                { "BaseUrl", _appOptions.BaseURL },
+                { "OrganizationId", organization.Id },
+                { "OrganizationName", organization.Name },
+                { "Threshold", threshold },
+                { "ThresholdEventCount", thresholdEventCount },
+                { "CurrentEventCount", currentEventCount },
+                { "EventLimit", eventLimit },
+                { "RemainingEventCount", Math.Max(0, eventLimit - currentEventCount) }
+            };
+
+        return QueueMessageAsync(new MailMessage
+        {
+            To = user.EmailAddress,
+            Subject = subject,
+            Body = RenderTemplate(template, data)
+        }, template);
+    }
+
+    public Task SendProjectThrottledNoticeAsync(User user, Organization organization, Project project, double sampleRate, int currentEventCount, int eventLimit)
+    {
+        const string template = "project-smart-throttle";
+        string subject = $"[{organization.Name}] Smart Throttling Active: {project.Name}";
+
+        var data = new Dictionary<string, object?> {
+                { "Subject", subject },
+                { "BaseUrl", _appOptions.BaseURL },
+                { "OrganizationId", organization.Id },
+                { "OrganizationName", organization.Name },
+                { "ProjectId", project.Id },
+                { "ProjectName", project.Name },
+                { "SampleRate", sampleRate },
+                { "SamplePercent", (int)(sampleRate * 100) },
+                { "CurrentEventCount", currentEventCount },
+                { "EventLimit", eventLimit }
+            };
+
+        return QueueMessageAsync(new MailMessage
+        {
+            To = user.EmailAddress,
+            Subject = subject,
+            Body = RenderTemplate(template, data)
+        }, template);
+    }
+
     public Task SendProjectDailySummaryAsync(User user, Project project, IEnumerable<Stack>? mostFrequent, IEnumerable<Stack>? newest, DateTime startDate, bool hasSubmittedEvents, double count, double uniqueCount, double newCount, double fixedCount, int blockedCount, int tooBigCount, bool isFreePlan)
     {
         const string template = "project-daily-summary";
