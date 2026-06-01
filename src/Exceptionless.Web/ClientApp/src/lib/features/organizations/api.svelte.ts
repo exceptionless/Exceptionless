@@ -1,5 +1,5 @@
 import type { WebSocketMessageValue } from '$features/websockets/models';
-import type { BillingPlan, ChangePlanRequest, ChangePlanResult } from '$lib/generated/api';
+import type { BillingPlan, ChangePlanRequest, ChangePlanResult, StringValueFromBody } from '$lib/generated/api';
 import type { QueryClient } from '@tanstack/svelte-query';
 
 import { accessToken } from '$features/auth/index.svelte';
@@ -26,6 +26,7 @@ export async function invalidateOrganizationQueries(queryClient: QueryClient, me
 export const queryKeys = {
     adminSearch: (params: GetAdminSearchOrganizationsParams) => [...queryKeys.list(params.mode), 'admin', { ...params }] as const,
     changePlan: (id: string | undefined) => [...queryKeys.type, id, 'change-plan'] as const,
+    data: (id: string | undefined) => [...queryKeys.type, id, 'data'] as const,
     deleteOrganization: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'delete'] as const,
     icon: (id: string | undefined) => [...queryKeys.id(id, undefined), 'icon'] as const,
     id: (id: string | undefined, mode: 'stats' | undefined) => (mode ? ([...queryKeys.type, id, { mode }] as const) : ([...queryKeys.type, id] as const)),
@@ -51,6 +52,16 @@ export interface AddOrganizationUserRequest {
 export interface ChangePlanMutationRequest {
     route: {
         organizationId: string;
+    };
+}
+
+export interface DeleteOrganizationDataParams {
+    key: string;
+}
+
+export interface DeleteOrganizationDataRequest {
+    route: {
+        id: string | undefined;
     };
 }
 
@@ -139,6 +150,17 @@ export interface OrganizationIconRequest {
 export interface PatchOrganizationRequest {
     route: {
         id: string;
+    };
+}
+
+export interface PostOrganizationDataParams {
+    key: string;
+    value: string;
+}
+
+export interface PostOrganizationDataRequest {
+    route: {
+        id: string | undefined;
     };
 }
 
@@ -240,6 +262,34 @@ export function deleteOrganizationIcon(request: OrganizationIconRequest) {
     }));
 }
 
+export function deleteOrganizationData(request: DeleteOrganizationDataRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<boolean, ProblemDetails, DeleteOrganizationDataParams>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async ({ key }: DeleteOrganizationDataParams) => {
+            const client = useFetchClient();
+            const response = await client.delete(`organizations/${request.route.id}/data/${encodeURIComponent(key)}`);
+            return response.ok;
+        },
+        mutationKey: queryKeys.data(request.route.id),
+        onError: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
+        },
+        onSuccess: (_, { key }) => {
+            updateOrganizationQueryData(queryClient, request.route.id, (organization) => {
+                if (!organization.data) {
+                    return organization;
+                }
+
+                const data = { ...organization.data };
+                delete data[key];
+
+                return { ...organization, data };
+            });
+        }
+    }));
+}
 export function deleteOrganizationUser(request: DeleteOrganizationUserRequest) {
     const queryClient = useQueryClient();
     return createMutation<void, ProblemDetails, void>(() => ({
@@ -462,6 +512,32 @@ export function postOrganization() {
     }));
 }
 
+export function postOrganizationData(request: PostOrganizationDataRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<boolean, ProblemDetails, PostOrganizationDataParams>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async ({ key, value }: PostOrganizationDataParams) => {
+            const client = useFetchClient();
+            const response = await client.post(`organizations/${request.route.id}/data/${encodeURIComponent(key)}`, <StringValueFromBody>{ value });
+            return response.ok;
+        },
+        mutationKey: queryKeys.data(request.route.id),
+        onError: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
+        },
+        onSuccess: (_, { key, value }) => {
+            updateOrganizationQueryData(queryClient, request.route.id, (organization) => ({
+                ...organization,
+                data: {
+                    ...(organization.data ?? {}),
+                    [key]: value
+                }
+            }));
+        }
+    }));
+}
+
 export function postSetBonusOrganization() {
     const queryClient = useQueryClient();
 
@@ -593,4 +669,14 @@ function updateOrganizationCache(queryClient: QueryClient, id: string | undefine
             })
         };
     });
+}
+
+function updateOrganizationQueryData(
+    queryClient: ReturnType<typeof useQueryClient>,
+    id: string | undefined,
+    updater: (organization: ViewOrganization) => ViewOrganization
+) {
+    for (const mode of [undefined, 'stats'] as const) {
+        queryClient.setQueryData<undefined | ViewOrganization>(queryKeys.id(id, mode), (organization) => (organization ? updater(organization) : organization));
+    }
 }
