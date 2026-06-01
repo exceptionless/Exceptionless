@@ -216,11 +216,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
                 await _repository.RemoveAsync(existingViews.Select(v => v.Id).ToList(), o => o.ImmediateConsistency());
         }
 
-        // Create new views from definitions
-        var savedViews = new List<SavedView>();
-        foreach (var definition in definitions)
-        {
-            var savedView = new SavedView
+        var savedViews = definitions.Select(definition => new SavedView
             {
                 OrganizationId = PredefinedSavedViewsDataSeed.SystemOrganizationId,
                 CreatedByUserId = CurrentUser.Id,
@@ -237,10 +233,8 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
                 ShowStats = definition.ShowStats,
                 ShowChart = definition.ShowChart,
                 Version = 1
-            };
-
-            savedViews.Add(savedView);
-        }
+            })
+            .ToList();
 
         if (savedViews.Count > 0)
             await _repository.AddAsync(savedViews, o => o.Cache().ImmediateConsistency());

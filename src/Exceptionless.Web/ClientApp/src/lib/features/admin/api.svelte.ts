@@ -77,22 +77,22 @@ export function getMigrationsQuery() {
     }));
 }
 
-export function getPredefinedSavedViewsMutation() {
-    return createMutation<string, ProblemDetails, void>(() => ({
-        mutationFn: async () => {
+export function getOrgSavedViewsExportMutation() {
+    return createMutation<string, ProblemDetails, string>(() => ({
+        mutationFn: async (organizationId: string) => {
             const client = useFetchClient();
-            const response = await client.getJSON<PredefinedSavedViewDefinition[]>('saved-views/predefined');
+            const response = await client.getJSON<PredefinedSavedViewDefinition[]>(`organizations/${organizationId}/saved-views/export`);
 
             return JSON.stringify(response.data ?? [], null, 2);
         }
     }));
 }
 
-export function getOrgSavedViewsExportMutation() {
-    return createMutation<string, ProblemDetails, string>(() => ({
-        mutationFn: async (organizationId: string) => {
+export function getPredefinedSavedViewsMutation() {
+    return createMutation<string, ProblemDetails, void>(() => ({
+        mutationFn: async () => {
             const client = useFetchClient();
-            const response = await client.getJSON<PredefinedSavedViewDefinition[]>(`organizations/${organizationId}/saved-views/export`);
+            const response = await client.getJSON<PredefinedSavedViewDefinition[]>('saved-views/predefined');
 
             return JSON.stringify(response.data ?? [], null, 2);
         }

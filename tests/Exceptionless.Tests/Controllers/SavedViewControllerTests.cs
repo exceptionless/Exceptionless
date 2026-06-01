@@ -44,7 +44,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         Assert.True(await _organizationRepository.CountAsync() > 0);
 
         var existingSystemViews = await GetSystemPredefinedSavedViewsAsync();
-        Assert.Equal(5, existingSystemViews.Count);
+        Assert.Equal(6, existingSystemViews.Count);
 
         foreach (var savedView in existingSystemViews)
             await _savedViewRepository.RemoveAsync(savedView.Id, o => o.ImmediateConsistency());
@@ -57,7 +57,8 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
 
         // Assert
         var seededSystemViews = await GetSystemPredefinedSavedViewsAsync();
-        Assert.Equal(5, seededSystemViews.Count);
+        Assert.Equal(6, seededSystemViews.Count);
+        Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "events", "All"));
         Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "events", "Logs"));
         Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "events", "Errors"));
         Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "stacks", "Most Frequent Errors"));

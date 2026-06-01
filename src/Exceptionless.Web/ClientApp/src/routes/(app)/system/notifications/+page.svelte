@@ -10,11 +10,11 @@
     import { clearSystemNotificationMutation, getCurrentSystemNotificationQuery, setSystemNotificationMutation } from '$features/notifications/api.svelte';
     import { Notification, NotificationDescription } from '$features/shared/components/notification';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
-    import DOMPurify from 'dompurify';
     import Info from '@lucide/svelte/icons/info';
     import Trash2 from '@lucide/svelte/icons/trash-2';
     import X from '@lucide/svelte/icons/x';
     import XCircle from '@lucide/svelte/icons/x-circle';
+    import DOMPurify from 'dompurify';
     import { toast } from 'svelte-sonner';
 
     const currentNotificationQuery = getCurrentSystemNotificationQuery();
@@ -32,7 +32,14 @@
     const hasPreviewNotification = $derived(!!systemMessage.trim());
     const previewNotificationHtml = $derived(systemMessage.trim() ? purify.sanitize(systemMessage) : '');
     const currentNotificationKey = $derived(
-        currentNotification ? JSON.stringify([currentNotification.date, currentNotification.level ?? 'Info', currentNotification.target ?? 'Both', currentNotification.message ?? '']) : null
+        currentNotification
+            ? JSON.stringify([
+                  currentNotification.date,
+                  currentNotification.level ?? 'Info',
+                  currentNotification.target ?? 'Both',
+                  currentNotification.message ?? ''
+              ])
+            : null
     );
 
     const levelVariantMap = {
@@ -54,8 +61,9 @@
     } as const;
 
     $effect(() => {
-        if (loadedNotificationKey === currentNotificationKey)
+        if (loadedNotificationKey === currentNotificationKey) {
             return;
+        }
 
         loadedNotificationKey = currentNotificationKey;
 
@@ -112,7 +120,17 @@
                                 <LevelIcon class="size-4" />
                             {/snippet}
                             {#snippet action()}
-                                <Button type="button" variant="ghost" size="icon" class="size-5 rounded-sm p-0 opacity-70 hover:opacity-100" onclick={(event) => { event.preventDefault(); }} aria-label="Dismiss alert" title="Dismiss alert">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    class="size-5 rounded-sm p-0 opacity-70 hover:opacity-100"
+                                    onclick={(event) => {
+                                        event.preventDefault();
+                                    }}
+                                    aria-label="Dismiss alert"
+                                    title="Dismiss alert"
+                                >
                                     <X class="size-4" aria-hidden="true" />
                                 </Button>
                             {/snippet}

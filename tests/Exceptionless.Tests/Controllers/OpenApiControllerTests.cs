@@ -25,6 +25,16 @@ public class OpenApiControllerTests : IntegrationTestsBase
 
         string actualJson = await response.Content.ReadAsStringAsync(TestCancellationToken);
 
+        // Set UPDATE_SNAPSHOTS=true to regenerate the baseline file.
+        if (String.Equals(Environment.GetEnvironmentVariable("UPDATE_SNAPSHOTS"), "true", StringComparison.OrdinalIgnoreCase))
+        {
+            // Write to the source tree so the change produces a real git diff.
+            string sourcePath = Path.GetFullPath(Path.Join(AppContext.BaseDirectory, "..", "..", "..", "Controllers", "Data", "openapi.json"));
+            await File.WriteAllTextAsync(sourcePath, actualJson, TestCancellationToken);
+
+            return;
+        }
+
         // Assert
         string expectedJson = (await File.ReadAllTextAsync(baselinePath, TestCancellationToken)).Replace("\\r\\n", "\\n");
         actualJson = actualJson.Replace("\\r\\n", "\\n");

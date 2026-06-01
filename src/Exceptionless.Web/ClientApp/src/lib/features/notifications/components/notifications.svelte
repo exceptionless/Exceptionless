@@ -8,10 +8,10 @@
     import { getCurrentSystemNotificationQuery } from '$features/notifications/api.svelte';
     import { Notification, NotificationDescription } from '$features/shared/components/notification';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
-    import DOMPurify from 'dompurify';
     import Info from '@lucide/svelte/icons/info';
     import X from '@lucide/svelte/icons/x';
     import XCircle from '@lucide/svelte/icons/x-circle';
+    import DOMPurify from 'dompurify';
     import { useEventListener } from 'runed';
 
     const currentNotificationQuery = getCurrentSystemNotificationQuery();
@@ -24,18 +24,33 @@
     function normalizeSystemNotificationTarget(target: null | string | undefined): SystemNotificationTarget {
         const normalizedTarget = (target ?? 'Both').replace(/[^a-z]/gi, '').toLowerCase();
 
-        if (normalizedTarget === 'legacy' || normalizedTarget === 'legacyui' || normalizedTarget === 'oldui' || normalizedTarget === 'old' || normalizedTarget === 'angular')
+        if (
+            normalizedTarget === 'legacy' ||
+            normalizedTarget === 'legacyui' ||
+            normalizedTarget === 'oldui' ||
+            normalizedTarget === 'old' ||
+            normalizedTarget === 'angular'
+        ) {
             return 'Legacy';
+        }
 
-        if (normalizedTarget === 'modern' || normalizedTarget === 'modernui' || normalizedTarget === 'newui' || normalizedTarget === 'new' || normalizedTarget === 'svelte')
+        if (
+            normalizedTarget === 'modern' ||
+            normalizedTarget === 'modernui' ||
+            normalizedTarget === 'newui' ||
+            normalizedTarget === 'new' ||
+            normalizedTarget === 'svelte'
+        ) {
             return 'Modern';
+        }
 
         return 'Both';
     }
 
     function getDismissedSystemNotificationKey() {
-        if (typeof localStorage === 'undefined')
+        if (typeof localStorage === 'undefined') {
             return null;
+        }
 
         try {
             return localStorage.getItem(dismissedSystemNotificationStorageKey);
@@ -45,8 +60,9 @@
     }
 
     function getSystemNotificationDateKey(date: null | string | undefined) {
-        if (!date)
+        if (!date) {
             return null;
+        }
 
         const parsedDate = new Date(date);
         return Number.isNaN(parsedDate.getTime()) ? date : parsedDate.toISOString();
@@ -59,8 +75,9 @@
     function setDismissedSystemNotificationKey(key: null | string) {
         dismissedSystemNotificationKey = key;
 
-        if (!key || typeof localStorage === 'undefined')
+        if (!key || typeof localStorage === 'undefined') {
             return;
+        }
 
         try {
             localStorage.setItem(dismissedSystemNotificationStorageKey, key);
@@ -82,7 +99,9 @@
     const effectiveTarget = $derived(hasRealtimeSystemNotification ? systemTarget : queryTarget);
     const showForModern = $derived(effectiveTarget === 'Both' || effectiveTarget === 'Modern');
 
-    const displayMessage = $derived(hasRealtimeSystemNotification ? systemMessage || fallbackMessage : currentNotificationQuery.data?.message || fallbackMessage);
+    const displayMessage = $derived(
+        hasRealtimeSystemNotification ? systemMessage || fallbackMessage : currentNotificationQuery.data?.message || fallbackMessage
+    );
     const displayHtml = $derived(displayMessage ? purify.sanitize(displayMessage) : '');
     const displayLevel = $derived<'Error' | 'Info' | 'Warning'>(hasRealtimeSystemNotification ? systemLevel : (currentNotificationQuery.data?.level ?? 'Info'));
     const displayDate = $derived(hasRealtimeSystemNotification ? systemDate : (currentNotificationQuery.data?.date ?? null));
@@ -128,7 +147,15 @@
             <LevelIcon class="size-4" />
         {/snippet}
         {#snippet action()}
-            <Button type="button" variant="ghost" size="icon" class="size-5 rounded-sm p-0 opacity-70 hover:opacity-100" onclick={() => setDismissedSystemNotificationKey(systemNotificationKey)} aria-label="Dismiss alert" title="Dismiss alert">
+            <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                class="size-5 rounded-sm p-0 opacity-70 hover:opacity-100"
+                onclick={() => setDismissedSystemNotificationKey(systemNotificationKey)}
+                aria-label="Dismiss alert"
+                title="Dismiss alert"
+            >
                 <X class="size-4" aria-hidden="true" />
             </Button>
         {/snippet}
@@ -142,7 +169,15 @@
             <Info class="size-4" />
         {/snippet}
         {#snippet action()}
-            <Button type="button" variant="ghost" size="icon" class="size-5 rounded-sm p-0 opacity-70 hover:opacity-100" onclick={() => (releaseDismissed = true)} aria-label="Dismiss alert" title="Dismiss alert">
+            <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                class="size-5 rounded-sm p-0 opacity-70 hover:opacity-100"
+                onclick={() => (releaseDismissed = true)}
+                aria-label="Dismiss alert"
+                title="Dismiss alert"
+            >
                 <X class="size-4" aria-hidden="true" />
             </Button>
         {/snippet}

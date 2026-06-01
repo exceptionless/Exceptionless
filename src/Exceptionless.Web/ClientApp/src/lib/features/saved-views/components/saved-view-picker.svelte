@@ -26,13 +26,7 @@
 
     import type { NewSavedView, SavedView, UpdateSavedView } from '../models';
 
-    import {
-        deleteSavedView,
-        markSavedViewDeleted,
-        patchSavedView,
-        postSavedView,
-        restoreDeletedSavedView
-    } from '../api.svelte';
+    import { deleteSavedView, markSavedViewDeleted, patchSavedView, postSavedView, restoreDeletedSavedView } from '../api.svelte';
     import ColumnManagementDialog from './column-management-dialog.svelte';
     import DeleteViewDialog from './delete-view-dialog.svelte';
     import RenameViewDialog from './rename-view-dialog.svelte';
@@ -118,11 +112,7 @@
         }
     });
 
-    const saving = $derived(
-        createMutation.isPending ||
-            updateMutation.isPending ||
-            removeMutation.isPending
-    );
+    const saving = $derived(createMutation.isPending || updateMutation.isPending || removeMutation.isPending);
 
     const currentFilterString = $derived(toFilter(filters.filter((f) => f.type !== 'date')));
 

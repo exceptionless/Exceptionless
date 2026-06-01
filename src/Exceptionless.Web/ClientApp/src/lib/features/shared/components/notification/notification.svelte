@@ -13,11 +13,16 @@
         variants: {
             variant: {
                 default: 'border-border bg-card text-card-foreground',
-                destructive: 'border-[#cf222e]/40 bg-[#ffebe9] text-[#1f2328] [&_svg]:text-[#cf222e] dark:border-[#f85149]/55 dark:bg-[#f85149]/12 dark:text-foreground dark:[&_svg]:text-[#ff7b72]',
-                impersonation: 'border-[#8250df]/40 bg-[#fbefff] text-[#1f2328] [&_svg]:text-[#8250df] dark:border-[#8957e5]/50 dark:bg-[#211637] dark:text-foreground dark:[&_svg]:text-[#d2a8ff]',
-                information: 'border-[#1a7f37]/40 bg-[#dafbe1] text-[#1f2328] [&_svg]:text-[#1a7f37] dark:border-[#238636]/60 dark:bg-[#12261a] dark:text-foreground dark:[&_svg]:text-[#3fb950]',
-                success: 'border-[#1a7f37]/40 bg-[#dafbe1] text-[#1f2328] [&_svg]:text-[#1a7f37] dark:border-[#238636]/60 dark:bg-[#12261a] dark:text-foreground dark:[&_svg]:text-[#3fb950]',
-                warning: 'border-[#9a6700]/40 bg-[#fff8c5] text-[#1f2328] [&_svg]:text-[#9a6700] dark:border-[#9e6a03]/60 dark:bg-[#2b2111] dark:text-foreground dark:[&_svg]:text-[#d29922]'
+                destructive:
+                    'border-[#cf222e]/40 bg-[#ffebe9] text-[#1f2328] [&_svg]:text-[#cf222e] dark:border-[#f85149]/55 dark:bg-[#f85149]/12 dark:text-foreground dark:[&_svg]:text-[#ff7b72]',
+                impersonation:
+                    'border-[#8250df]/40 bg-[#fbefff] text-[#1f2328] [&_svg]:text-[#8250df] dark:border-[#8957e5]/50 dark:bg-[#211637] dark:text-foreground dark:[&_svg]:text-[#d2a8ff]',
+                information:
+                    'border-[#1a7f37]/40 bg-[#dafbe1] text-[#1f2328] [&_svg]:text-[#1a7f37] dark:border-[#238636]/60 dark:bg-[#12261a] dark:text-foreground dark:[&_svg]:text-[#3fb950]',
+                success:
+                    'border-[#1a7f37]/40 bg-[#dafbe1] text-[#1f2328] [&_svg]:text-[#1a7f37] dark:border-[#238636]/60 dark:bg-[#12261a] dark:text-foreground dark:[&_svg]:text-[#3fb950]',
+                warning:
+                    'border-[#9a6700]/40 bg-[#fff8c5] text-[#1f2328] [&_svg]:text-[#9a6700] dark:border-[#9e6a03]/60 dark:bg-[#2b2111] dark:text-foreground dark:[&_svg]:text-[#d29922]'
             }
         }
     });
