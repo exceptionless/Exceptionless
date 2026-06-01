@@ -174,6 +174,34 @@ public class CleanupDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task CanDeleteOnlyRecentOrphanedEventsByStack()
+    {
+        var organization = await _organizationRepository.AddAsync(_organizationData.GenerateSampleOrganization(_billingManager, _plans), o => o.ImmediateConsistency());
+        var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
+        var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
+
+        var validEvent = _eventData.GenerateEvent(organization.Id, project.Id, stack.Id);
+        var recentOrphanedEvent = _eventData.GenerateEvent(organization.Id, project.Id);
+        var olderOrphanedEvent = _eventData.GenerateEvent(organization.Id, project.Id);
+
+        string missingStackId = ObjectId.GenerateNewId().ToString();
+        recentOrphanedEvent.StackId = missingStackId;
+        recentOrphanedEvent.CreatedUtc = DateTime.UtcNow;
+        olderOrphanedEvent.StackId = missingStackId;
+        olderOrphanedEvent.CreatedUtc = DateTime.UtcNow.AddDays(-4);
+
+        await _eventRepository.AddAsync([validEvent, recentOrphanedEvent, olderOrphanedEvent], o => o.ImmediateConsistency());
+
+        await GetService<CleanupOrphanedDataJob>().RunAsync(TestCancellationToken);
+
+        var events = await _eventRepository.GetAllAsync(o => o.PageLimit(10).ImmediateConsistency());
+        Assert.Equal(2, events.Total);
+        Assert.Contains(events.Documents, e => e.Id == validEvent.Id);
+        Assert.Contains(events.Documents, e => e.Id == olderOrphanedEvent.Id);
+        Assert.DoesNotContain(events.Documents, e => e.Id == recentOrphanedEvent.Id);
+    }
+
+    [Fact]
     public async Task RemoveProjectsAsync_SoftDeletedProjectWithEvents_IncrementsDeletedUsage()
     {
         // Arrange
