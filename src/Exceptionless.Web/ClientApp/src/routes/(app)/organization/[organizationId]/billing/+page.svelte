@@ -68,7 +68,7 @@
     });
 
     let changePlanDialogOpen = $state(!!params.changePlan);
-    let activeToastId = $state<number | string>();
+    let currentToastId = $state<number | string>();
     let billingName = $state('');
     let billingAddress = $state('');
     let billingVatNumber = $state('');
@@ -98,7 +98,7 @@
     }
 
     async function updateOrRemoveOrganizationBillingInformation(key: string, value: string, label: string) {
-        toast.dismiss(activeToastId);
+        toast.dismiss(currentToastId);
 
         try {
             const normalizedValue = normalizeOrganizationBillingInformationValue(value);
@@ -108,9 +108,9 @@
                 await removeOrganizationData.mutateAsync({ key });
             }
 
-            activeToastId = toast.success(`Successfully updated ${label}.`);
+            currentToastId = toast.success(`Successfully updated ${label}.`);
         } catch {
-            activeToastId = toast.error(`Error updating ${label}. Please try again.`);
+            currentToastId = toast.error(`Error updating ${label}. Please try again.`);
         }
     }
 
@@ -199,7 +199,7 @@
                     </div>
 
                     <div class="space-y-2">
-                        <Large>VAT No</Large>
+                        <Large>VAT Number</Large>
                         <Input type="text" placeholder="Example: 123456789" bind:value={billingVatNumber} oninput={debouncedSaveBillingVatNumber} />
                     </div>
                 </div>
