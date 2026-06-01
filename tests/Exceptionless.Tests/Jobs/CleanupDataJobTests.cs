@@ -186,9 +186,9 @@ public class CleanupDataJobTests : IntegrationTestsBase
 
         string missingStackId = ObjectId.GenerateNewId().ToString();
         recentOrphanedEvent.StackId = missingStackId;
-        recentOrphanedEvent.CreatedUtc = DateTime.UtcNow;
+        recentOrphanedEvent.CreatedUtc = TimeProvider.GetUtcNow().UtcDateTime;
         olderOrphanedEvent.StackId = missingStackId;
-        olderOrphanedEvent.CreatedUtc = DateTime.UtcNow.AddDays(-4);
+        olderOrphanedEvent.CreatedUtc = TimeProvider.GetUtcNow().SubtractDays(4).UtcDateTime;
 
         await _eventRepository.AddAsync([validEvent, recentOrphanedEvent, olderOrphanedEvent], o => o.ImmediateConsistency());
 
