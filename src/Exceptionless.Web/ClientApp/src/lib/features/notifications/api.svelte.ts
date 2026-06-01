@@ -35,19 +35,21 @@ export function getCurrentSystemNotificationQuery() {
 
 export function setSystemNotificationMutation() {
     const queryClient = useQueryClient();
-    return createMutation<SystemNotification, ProblemDetails, { level?: 'Error' | 'Info' | 'Warning'; message: string; target?: 'Both' | 'Legacy' | 'Modern' }>(() => ({
-        mutationFn: async (params: { level?: 'Error' | 'Info' | 'Warning'; message: string; target?: 'Both' | 'Legacy' | 'Modern' }) => {
-            const client = useFetchClient();
-            const response = await client.postJSON<SystemNotification>('notifications/system', {
-                level: params.level ?? 'Info',
-                message: params.message,
-                target: params.target ?? 'Both'
-            });
+    return createMutation<SystemNotification, ProblemDetails, { level?: 'Error' | 'Info' | 'Warning'; message: string; target?: 'Both' | 'Legacy' | 'Modern' }>(
+        () => ({
+            mutationFn: async (params: { level?: 'Error' | 'Info' | 'Warning'; message: string; target?: 'Both' | 'Legacy' | 'Modern' }) => {
+                const client = useFetchClient();
+                const response = await client.postJSON<SystemNotification>('notifications/system', {
+                    level: params.level ?? 'Info',
+                    message: params.message,
+                    target: params.target ?? 'Both'
+                });
 
-            return response.data!;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.current });
-        }
-    }));
+                return response.data!;
+            },
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: queryKeys.current });
+            }
+        })
+    );
 }
