@@ -113,6 +113,33 @@ public partial class EventControllerTests : IntegrationTestsBase
         Assert.Equal(referenceId, ev.ReferenceId);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task GetByReferenceIdAsync_WithOnlyParentReference_ReturnsMatchingEvents(bool projectScoped)
+    {
+        // Arrange
+        string referenceId = Guid.NewGuid().ToString("N");
+        await CreateDataAsync(d => d.Event().TestProject().Reference("parent", referenceId).Message("parent reference route"));
+        await RefreshDataAsync();
+
+        string[] paths = projectScoped
+            ? ["projects", SampleDataService.TEST_PROJECT_ID, "events", "by-ref", referenceId]
+            : ["events", "by-ref", referenceId];
+
+        // Act
+        var events = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths(paths)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(events);
+        var ev = Assert.Single(events);
+        Assert.Equal(referenceId, ev.GetEventReference("parent"));
+    }
+
     [Fact]
     public async Task GetCountByOrganizationAsync_WithExistingEvents_ReturnsOrganizationCount()
     {

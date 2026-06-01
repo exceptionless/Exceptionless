@@ -580,7 +580,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var ti = GetTimeInfo(null, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-        return await GetInternalAsync(sf, ti, String.Concat("reference:", referenceId), null, mode, page, limit, before, after, includeTotal: ShouldIncludeTotal(include));
+        return await GetInternalAsync(sf, ti, $"(reference:{referenceId} OR ref.parent:{referenceId})", null, mode, page, limit, before, after, includeTotal: ShouldIncludeTotal(include));
     }
 
     /// <summary>
@@ -618,7 +618,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var ti = GetTimeInfo(null, offset, organization.GetRetentionUtcCutoff(project, _appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(project, organization);
-        return await GetInternalAsync(sf, ti, String.Concat("reference:", referenceId), null, mode, page, limit, before, after, includeTotal: ShouldIncludeTotal(include));
+        return await GetInternalAsync(sf, ti, $"(reference:{referenceId} OR ref.parent:{referenceId})", null, mode, page, limit, before, after, includeTotal: ShouldIncludeTotal(include));
     }
 
     /// <summary>
