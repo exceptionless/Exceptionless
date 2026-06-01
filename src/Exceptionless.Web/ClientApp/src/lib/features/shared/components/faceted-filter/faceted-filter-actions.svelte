@@ -22,8 +22,8 @@
         <Tooltip.Root>
             <Tooltip.Trigger>
                 {#snippet child({ props })}
-                    <Button {...props} variant="ghost" size="icon-sm" onclick={clear}>
-                        <Eraser class="text-muted-foreground size-3.5" />
+                    <Button {...props} variant="ghost" size="icon-sm" onclick={clear} aria-label="Clear filter value">
+                        <Eraser class="text-muted-foreground size-4" />
                     </Button>
                 {/snippet}
             </Tooltip.Trigger>
@@ -34,11 +34,11 @@
         <Tooltip.Root>
             <Tooltip.Trigger>
                 {#snippet child({ props })}
-                    <Button {...props} variant="ghost" size="icon-sm" onclick={toggleHidden}>
+                    <Button {...props} variant="ghost" size="icon-sm" onclick={toggleHidden} aria-label={hidden ? 'Show filter' : 'Hide filter'}>
                         {#if hidden}
-                            <Eye class="text-muted-foreground size-3.5" />
+                            <Eye class="text-muted-foreground size-4" />
                         {:else}
-                            <EyeOff class="text-muted-foreground size-3.5" />
+                            <EyeOff class="text-muted-foreground size-4" />
                         {/if}
                     </Button>
                 {/snippet}
@@ -49,8 +49,8 @@
     <Tooltip.Root>
         <Tooltip.Trigger>
             {#snippet child({ props })}
-                <Button {...props} variant="ghost" size="icon-sm" onclick={remove}>
-                    <Trash2 class="text-muted-foreground size-3.5" />
+                <Button {...props} variant="ghost" size="icon-sm" onclick={remove} aria-label="Remove filter">
+                    <Trash2 class="text-muted-foreground size-4" />
                 </Button>
             {/snippet}
         </Tooltip.Trigger>

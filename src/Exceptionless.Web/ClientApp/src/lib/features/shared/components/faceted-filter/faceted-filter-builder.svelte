@@ -250,12 +250,26 @@
                 <Tooltip.Root>
                     <Tooltip.Trigger>
                         {#snippet child({ props })}
-                            <Button {...props} variant="ghost" size="icon-sm" onclick={toggleHiddenFilters}>
+                            <Button
+                                {...props}
+                                class="relative"
+                                variant="ghost"
+                                size="icon-sm"
+                                onclick={toggleHiddenFilters}
+                                aria-label={`Toggle hidden filters. ${hiddenFilterLabel}.`}
+                            >
                                 {#if showHiddenFilters}
-                                    <EyeOff class="text-muted-foreground size-3.5" />
+                                    <EyeOff class="text-muted-foreground size-4" />
                                 {:else}
-                                    <Eye class="text-muted-foreground size-3.5" />
+                                    <Eye class="text-muted-foreground size-4" />
                                 {/if}
+                                <Badge
+                                    variant="secondary"
+                                    class="absolute -top-1 -right-1 h-4 min-w-4 rounded-full px-1 text-[10px] leading-none shadow-sm"
+                                    aria-hidden="true"
+                                >
+                                    {hiddenFilterCount}
+                                </Badge>
                             </Button>
                         {/snippet}
                     </Tooltip.Trigger>
@@ -266,8 +280,8 @@
                 <Tooltip.Root>
                     <Tooltip.Trigger>
                         {#snippet child({ props })}
-                            <Button {...props} variant="ghost" size="icon-sm" onclick={onRemoveAll}>
-                                <Eraser class="text-muted-foreground size-3.5" />
+                            <Button {...props} variant="ghost" size="icon-sm" onclick={onRemoveAll} aria-label="Clear all filters">
+                                <Eraser class="text-muted-foreground size-4" />
                             </Button>
                         {/snippet}
                     </Tooltip.Trigger>
