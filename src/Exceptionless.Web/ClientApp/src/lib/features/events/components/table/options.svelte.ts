@@ -305,7 +305,6 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                     renderComponent(NumberFormatter, {
                         value: prop.getValue<number>()
                     }),
-                enableSorting: false,
                 header: 'Events',
                 id: 'events',
                 maxSize: 320,
@@ -321,7 +320,6 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                     renderComponent(TimeAgo, {
                         value: prop.getValue<string>()
                     }),
-                enableSorting: false,
                 header: 'First',
                 id: 'first',
                 maxSize: 480,
@@ -337,7 +335,6 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                     renderComponent(TimeAgo, {
                         value: prop.getValue<string>()
                     }),
-                enableSorting: false,
                 header: 'Last',
                 id: 'last',
                 maxSize: 480,

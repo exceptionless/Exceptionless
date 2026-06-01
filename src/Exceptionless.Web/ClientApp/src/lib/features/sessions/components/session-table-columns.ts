@@ -51,7 +51,6 @@ export function getSessionColumns(): ColumnDef<StockFeatures, EventSummaryModel<
         },
         {
             cell: (prop) => renderComponent(SessionDurationCell, { summary: prop.row.original }),
-            enableSorting: false,
             header: 'Duration',
             id: 'duration',
             maxSize: 320,
