@@ -172,7 +172,7 @@ public class RandomEventGenerator
 
     private static string GenerateReferenceId()
     {
-        return $"ref-{ObjectId.GenerateNewId()}";
+        return Guid.NewGuid().ToString("N").Substring(0, 10);
     }
 
     private List<Error>? _randomErrors;

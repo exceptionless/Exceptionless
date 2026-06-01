@@ -51,7 +51,9 @@ public class RandomEventGeneratorTests
         var events = generator.Generate("organization", "project", 10);
 
         // Assert
-        Assert.Contains(events, generatedEvent => !String.IsNullOrEmpty(generatedEvent.ReferenceId));
+        Assert.Contains(events, generatedEvent =>
+            generatedEvent.ReferenceId is { Length: 10 } referenceId &&
+            referenceId.All(Char.IsLetterOrDigit));
     }
 
     private static string? GetErrorSignature(Event ev)
