@@ -676,6 +676,7 @@ function updateOrganizationQueryData(
     id: string | undefined,
     updater: (organization: ViewOrganization) => ViewOrganization
 ) {
+    // Keep both cached variants in sync because the same organization can be loaded with or without stats mode.
     for (const mode of [undefined, 'stats'] as const) {
         queryClient.setQueryData<undefined | ViewOrganization>(queryKeys.id(id, mode), (organization) => (organization ? updater(organization) : organization));
     }

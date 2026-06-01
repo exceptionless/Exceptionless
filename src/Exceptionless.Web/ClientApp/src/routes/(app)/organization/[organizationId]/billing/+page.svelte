@@ -68,7 +68,7 @@
     });
 
     let changePlanDialogOpen = $state(!!params.changePlan);
-    let toastId = $state<number | string>();
+    let activeToastId = $state<number | string>();
     let billingName = $state('');
     let billingAddress = $state('');
     let billingVatNumber = $state('');
@@ -98,7 +98,7 @@
     }
 
     async function updateOrRemoveOrganizationBillingInformation(key: string, value: string, label: string) {
-        toast.dismiss(toastId);
+        toast.dismiss(activeToastId);
 
         try {
             const normalizedValue = normalizeOrganizationBillingInformationValue(value);
@@ -108,9 +108,9 @@
                 await removeOrganizationData.mutateAsync({ key });
             }
 
-            toastId = toast.success(`Successfully updated ${label}.`);
+            activeToastId = toast.success(`Successfully updated ${label}.`);
         } catch {
-            toastId = toast.error(`Error updating ${label}. Please try again.`);
+            activeToastId = toast.error(`Error updating ${label}. Please try again.`);
         }
     }
 
@@ -180,12 +180,12 @@
                 <div class="grid gap-4 md:grid-cols-2">
                     <div class="space-y-2">
                         <Large>Organization name</Large>
-                        <Input type="text" placeholder="Example: Acme, Inc." bind:value={billingName} onchange={debouncedSaveBillingName} />
+                        <Input type="text" placeholder="Example: Acme, Inc." bind:value={billingName} oninput={debouncedSaveBillingName} />
                     </div>
 
                     <div class="space-y-2">
                         <Large>VAT ID</Large>
-                        <Input type="text" placeholder="Example: DE123456789" bind:value={billingVatId} onchange={debouncedSaveBillingVatId} />
+                        <Input type="text" placeholder="Example: DE123456789" bind:value={billingVatId} oninput={debouncedSaveBillingVatId} />
                     </div>
 
                     <div class="space-y-2 md:col-span-2">
@@ -194,13 +194,13 @@
                             rows={4}
                             placeholder="Example: 123 Main Street&#10;Anytown, ST 12345&#10;United States"
                             bind:value={billingAddress}
-                            onchange={debouncedSaveBillingAddress}
+                            oninput={debouncedSaveBillingAddress}
                         />
                     </div>
 
                     <div class="space-y-2">
                         <Large>VAT No</Large>
-                        <Input type="text" placeholder="Example: 123456789" bind:value={billingVatNumber} onchange={debouncedSaveBillingVatNumber} />
+                        <Input type="text" placeholder="Example: 123456789" bind:value={billingVatNumber} oninput={debouncedSaveBillingVatNumber} />
                     </div>
                 </div>
             </section>
