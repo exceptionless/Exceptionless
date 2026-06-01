@@ -1395,6 +1395,22 @@
   },
   {
     "Controller": "SavedViewController",
+    "Action": "ExportOrganizationSavedViewsAsync",
+    "HttpMethod": "GET",
+    "Route": "/api/v2/organizations/{organizationId:objectid}/saved-views/export",
+    "Authorization": [
+      "Authorize(Policy=GlobalAdminPolicy)",
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "SavedViewController",
     "Action": "PostPredefinedAsync",
     "HttpMethod": "POST",
     "Route": "/api/v2/organizations/{organizationId:objectid}/saved-views/predefined",
@@ -2149,6 +2165,22 @@
     "Controller": "SavedViewController",
     "Action": "GetPredefinedAsync",
     "HttpMethod": "GET",
+    "Route": "/api/v2/saved-views/predefined",
+    "Authorization": [
+      "Authorize(Policy=GlobalAdminPolicy)",
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "SavedViewController",
+    "Action": "PutPredefinedAsync",
+    "HttpMethod": "PUT",
     "Route": "/api/v2/saved-views/predefined",
     "Authorization": [
       "Authorize(Policy=GlobalAdminPolicy)",
