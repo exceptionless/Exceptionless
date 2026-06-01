@@ -39,6 +39,7 @@ public sealed class UsageFormattingPlugin : FormattingPluginBase
 
         var data = new Dictionary<string, object?> { { "Source", ev.Source } };
         AddUserIdentitySummaryData(data, ev.GetUserIdentity(_jsonOptions));
+        AddVersionSummaryData(data, ev);
 
         return new SummaryData { Id = ev.Id, TemplateKey = "event-feature-summary", Data = data };
     }

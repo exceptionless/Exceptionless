@@ -65,6 +65,8 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase
         if (!String.IsNullOrEmpty(requestInfo?.Path))
             data.Add("Path", requestInfo.Path);
 
+        AddVersionSummaryData(data, ev);
+
         return new SummaryData { Id = ev.Id, TemplateKey = "event-simple-summary", Data = data };
     }
 

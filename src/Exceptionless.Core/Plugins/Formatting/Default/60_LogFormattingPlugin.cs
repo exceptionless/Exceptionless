@@ -65,6 +65,8 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
         if (!String.IsNullOrWhiteSpace(level))
             data.Add("Level", level.Trim());
 
+        AddVersionSummaryData(data, ev);
+
         return new SummaryData { Id = ev.Id, TemplateKey = "event-log-summary", Data = data };
     }
 

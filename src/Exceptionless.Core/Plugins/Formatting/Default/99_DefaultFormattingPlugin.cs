@@ -38,6 +38,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
             };
 
         AddUserIdentitySummaryData(data, ev.GetUserIdentity(_jsonOptions));
+        AddVersionSummaryData(data, ev);
 
         return new SummaryData { Id = ev.Id, TemplateKey = "event-summary", Data = data };
     }

@@ -90,4 +90,11 @@ public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin
         if (!String.IsNullOrEmpty(identity.Name))
             data.Add("Name", identity.Name);
     }
+
+    protected void AddVersionSummaryData(Dictionary<string, object?> data, PersistentEvent ev)
+    {
+        string? version = ev.GetVersion();
+        if (!String.IsNullOrEmpty(version))
+            data.Add("Version", version);
+    }
 }

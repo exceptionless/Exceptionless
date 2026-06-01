@@ -8,6 +8,7 @@ export interface EventErrorSummaryData {
     Path?: string;
     Type?: string;
     TypeFullName?: string;
+    Version?: string;
 }
 
 export interface EventFeatureSummaryData {
@@ -15,6 +16,7 @@ export interface EventFeatureSummaryData {
     IpAddress?: string[];
     Name?: string;
     Source?: string;
+    Version?: string;
 }
 
 export interface EventLogSummaryData {
@@ -24,12 +26,14 @@ export interface EventLogSummaryData {
     Name?: string;
     Source?: string;
     SourceShortName?: string;
+    Version?: string;
 }
 
 export interface EventNotFoundSummaryData {
     Identity?: string;
     Name?: string;
     Source?: string;
+    Version?: string;
 }
 
 export interface EventSessionSummaryData {
@@ -39,6 +43,7 @@ export interface EventSessionSummaryData {
     SessionId?: string;
     Type?: 'heartbeat' | 'session' | 'sessionend';
     Value?: string;
+    Version?: string;
 }
 
 export interface EventSimpleSummaryData {
@@ -46,6 +51,7 @@ export interface EventSimpleSummaryData {
     Path?: string;
     Type?: string;
     TypeFullName?: string;
+    Version?: string;
 }
 
 export interface EventSummaryData {
@@ -54,6 +60,7 @@ export interface EventSummaryData {
     Name?: string;
     Source?: string;
     Type?: string;
+    Version?: string;
 }
 
 export interface EventSummaryModel<T extends SummaryTemplateKeys> extends SummaryModel<T> {

@@ -5,6 +5,7 @@
   "data": {
     "Message": "custom Event",
     "Source": null,
-    "Type": "custom"
+    "Type": "custom",
+    "Version": "1.0.0.0"
   }
 }

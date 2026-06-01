@@ -4,6 +4,7 @@
   "template_key": "event-log-summary",
   "data": {
     "Message": "Row not found or changed.",
-    "Source": "TestController"
+    "Source": "TestController",
+    "Version": "1.2.2"
   }
 }

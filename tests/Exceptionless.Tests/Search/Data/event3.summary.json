@@ -9,6 +9,7 @@
     "Type": "NullReferenceException",
     "TypeFullName": "System.NullReferenceException",
     "Method": "AssociateWithCurrentThread",
-    "MethodFullName": "System.Web.ThreadContext.AssociateWithCurrentThread"
+    "MethodFullName": "System.Web.ThreadContext.AssociateWithCurrentThread",
+    "Version": "4.0.1039 6f929bbe18"
   }
 }

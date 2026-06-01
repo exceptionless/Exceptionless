@@ -52,6 +52,8 @@ public sealed class SessionFormattingPlugin : FormattingPluginBase
                 data.Add("SessionEnd", endTime);
         }
 
+        AddVersionSummaryData(data, ev);
+
         return new SummaryData { Id = ev.Id, TemplateKey = "event-session-summary", Data = data };
     }
 }

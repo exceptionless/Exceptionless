@@ -44,6 +44,8 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase
         if (ips.Count > 0)
             data.Add("IpAddress", ips);
 
+        AddVersionSummaryData(data, ev);
+
         return new SummaryData { Id = ev.Id, TemplateKey = "event-notfound-summary", Data = data };
     }
 

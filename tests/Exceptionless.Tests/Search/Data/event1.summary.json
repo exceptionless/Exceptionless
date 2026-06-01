@@ -7,6 +7,7 @@
     "Identity": "My-User-Identity",
     "Name": "test user",
     "Source": "GET /Print",
-    "Level": "Error"
+    "Level": "Error",
+    "Version": "1.2.3.0"
   }
 }
