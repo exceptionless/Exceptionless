@@ -70,7 +70,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
 
     public async Task DeleteOrphanedEventsByStackAsync(JobContext context)
     {
-        var orphanedEventCutoffUtc = TimeProvider.GetUtcNow().UtcDateTime.Subtract(OrphanedEventLookback);
+        var orphanedEventCutoffUtc = _timeProvider.GetUtcNow().UtcDateTime.Subtract(OrphanedEventLookback);
 
         // get approximate number of unique stack ids
         var stackCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s
@@ -130,7 +130,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
 
     public async Task DeleteOrphanedEventsByProjectAsync(JobContext context)
     {
-        var orphanedEventCutoffUtc = TimeProvider.GetUtcNow().UtcDateTime.Subtract(OrphanedEventLookback);
+        var orphanedEventCutoffUtc = _timeProvider.GetUtcNow().UtcDateTime.Subtract(OrphanedEventLookback);
 
         // get approximate number of unique project ids
         var projectCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s
@@ -190,7 +190,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
 
     public async Task DeleteOrphanedEventsByOrganizationAsync(JobContext context)
     {
-        var orphanedEventCutoffUtc = TimeProvider.GetUtcNow().UtcDateTime.Subtract(OrphanedEventLookback);
+        var orphanedEventCutoffUtc = _timeProvider.GetUtcNow().UtcDateTime.Subtract(OrphanedEventLookback);
 
         // get approximate number of unique organization ids
         var organizationCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s
