@@ -1546,9 +1546,8 @@ public class EventControllerTests : IntegrationTestsBase
     }
 
     /// <summary>
-    /// Tests that when a parent event has a ReferenceId set, child events that reference it
-    /// via ref.parent can be properly linked, and the parent can be found via the /events/by-ref endpoint.
-    /// This validates the expected behavior for parent-child event relationships.
+    /// Tests that /events/by-ref returns both events with the reference id and events that
+    /// reference that value via ref.parent, enabling parent-child navigation.
     /// </summary>
     [Fact]
     public async Task GetByReferenceId_WithParentAndChildEvents_ReturnsParentAndChildren()
@@ -1582,19 +1581,18 @@ public class EventControllerTests : IntegrationTestsBase
 
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
 
-        // Test 1: Verify we can find the parent event by its ReferenceId using /events/by-ref endpoint
-        var parentResults = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
+        var byReferenceResults = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
             .AsGlobalAdminUser()
             .AppendPaths("events", "by-ref", parentReferenceId)
             .StatusCodeShouldBeOk()
         );
 
-        Assert.NotNull(parentResults);
-        Assert.Single(parentResults);
-        Assert.Equal("Parent Event", parentResults.First().Message);
-        Assert.Equal(parentReferenceId, parentResults.First().ReferenceId);
+        Assert.NotNull(byReferenceResults);
+        Assert.Equal(3, byReferenceResults.Count);
+        Assert.Contains(byReferenceResults, e => e.Message == "Parent Event" && e.ReferenceId == parentReferenceId);
+        Assert.Equal(2, byReferenceResults.Count(e => e.Message?.StartsWith("Child Event") == true));
 
-        // Test 2: Verify we can find child events that reference this parent using ref.parent filter
+        // Verify we can still find child events that reference this parent using ref.parent filter
         var childResults = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
             .AsGlobalAdminUser()
             .AppendPath("events")
@@ -1616,11 +1614,11 @@ public class EventControllerTests : IntegrationTestsBase
 
     /// <summary>
     /// Tests the scenario from issue #1287 where child events have ref.parent set,
-    /// but there is no parent event with a matching ReferenceId.
-    /// The /events/by-ref endpoint should return empty in this case (current expected behavior).
+    /// but there is no parent event with a matching ReferenceId. /events/by-ref should
+    /// still return the related child events for navigation.
     /// </summary>
     [Fact]
-    public async Task GetByReferenceId_WhenNoParentEventExists_ReturnsEmpty()
+    public async Task GetByReferenceId_WhenNoParentEventExists_ReturnsChildren()
     {
         const string orphanedParentRef = "orphan-parent-ref-1234";
 
@@ -1644,34 +1642,22 @@ public class EventControllerTests : IntegrationTestsBase
 
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
 
-        // Searching for the parent by reference ID should return empty
-        // because no event has ReferenceId = orphanedParentRef
-        var parentResults = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
+        var byReferenceResults = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
             .AsGlobalAdminUser()
             .AppendPaths("events", "by-ref", orphanedParentRef)
             .StatusCodeShouldBeOk()
         );
 
-        Assert.NotNull(parentResults);
-        Assert.Empty(parentResults);
-
-        // However, we CAN find the children using ref.parent filter
-        var childResults = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
-            .AsGlobalAdminUser()
-            .AppendPath("events")
-            .QueryString("filter", $"ref.parent:{orphanedParentRef}")
-            .StatusCodeShouldBeOk()
-        );
-
-        Assert.NotNull(childResults);
-        Assert.Equal(2, childResults.Count);
+        Assert.NotNull(byReferenceResults);
+        Assert.Equal(2, byReferenceResults.Count);
+        Assert.All(byReferenceResults, e => Assert.Contains("Orphaned Child", e.Message));
     }
 
     /// <summary>
-    /// Tests the project-scoped by-ref endpoint works correctly for parent reference navigation.
+    /// Tests the project-scoped by-ref endpoint works for parent reference navigation.
     /// </summary>
     [Fact]
-    public async Task GetByReferenceId_ProjectScoped_ReturnsParent()
+    public async Task GetByReferenceId_ProjectScoped_ReturnsParentAndChildren()
     {
         const string parentReferenceId = "project-scoped-parent-123";
 
@@ -1691,15 +1677,16 @@ public class EventControllerTests : IntegrationTestsBase
         });
 
         // Test project-scoped by-ref endpoint
-        var parentResults = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
+        var byReferenceResults = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
             .AsTestOrganizationUser()
             .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "events", "by-ref", parentReferenceId)
             .StatusCodeShouldBeOk()
         );
 
-        Assert.NotNull(parentResults);
-        Assert.Single(parentResults);
-        Assert.Equal("Parent Event", parentResults.First().Message);
+        Assert.NotNull(byReferenceResults);
+        Assert.Equal(2, byReferenceResults.Count);
+        Assert.Contains(byReferenceResults, e => e.Message == "Parent Event");
+        Assert.Contains(byReferenceResults, e => e.Message == "Child Event");
     }
 
     [Fact(Skip = "Foundatio bug with not passing in time provider to extension methods.")]
