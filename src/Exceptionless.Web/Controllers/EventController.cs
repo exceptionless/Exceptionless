@@ -241,6 +241,8 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
             return BadRequest(far.Message);
 
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || far.UsesPremiumFeatures;
+        if (sf.UsesPremiumFeatures && sf.Organizations.Any(o => !o.HasPremiumFeatures))
+            return PlanLimitReached("Please upgrade your plan to use premium search features.");
 
         if (mode == "stack_new")
             filter = AddFirstOccurrenceFilter(ti.Range, filter);
@@ -297,6 +299,8 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
             return BadRequest(pr.Message);
 
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || usesPremiumFeatures;
+        if (sf.UsesPremiumFeatures && sf.Organizations.Any(o => !o.HasPremiumFeatures))
+            return PlanLimitReached("Please upgrade your plan to use premium search features.");
 
         try
         {

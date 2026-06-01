@@ -520,6 +520,36 @@ public class EventControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetCountByProjectAsync_WithPremiumFilterOnFreeOrganization_ReturnsUpgradeRequired()
+    {
+        // Arrange
+        await CreateDataAsync(d => d.Event().FreeProject().Tag("premium-tag"));
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .AsFreeOrganizationUser()
+            .AppendPaths("projects", SampleDataService.FREE_PROJECT_ID, "events", "count")
+            .QueryString("filter", "tags:premium-tag")
+            .StatusCodeShouldBeUpgradeRequired()
+        );
+    }
+
+    [Fact]
+    public async Task GetByProjectAsync_WithPremiumFilterOnFreeOrganization_ReturnsUpgradeRequired()
+    {
+        // Arrange
+        await CreateDataAsync(d => d.Event().FreeProject().Tag("premium-tag"));
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .AsFreeOrganizationUser()
+            .AppendPaths("projects", SampleDataService.FREE_PROJECT_ID, "events")
+            .QueryString("filter", "tags:premium-tag")
+            .StatusCodeShouldBeUpgradeRequired()
+        );
+    }
+
+    [Fact]
     public async Task CanGetNewStackMode()
     {
         await CreateStacksAndEventsAsync();
