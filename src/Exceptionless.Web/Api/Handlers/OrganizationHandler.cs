@@ -468,13 +468,7 @@ public class OrganizationHandler(
                 {
                     Customer = customer.Id,
                     Items = [new SubscriptionItemOptions { Price = model.PlanId }],
-                    BillingCycleAnchorConfig = new SubscriptionBillingCycleAnchorConfigOptions
-                    {
-                        DayOfMonth = 1,
-                        Hour = 0,
-                        Minute = 0,
-                        Second = 0
-                    },
+                    BillingCycleAnchorConfig = CreateMonthlyBillingCycleAnchorConfig(),
                     ProrationBehavior = "create_prorations"
                 };
 
@@ -501,13 +495,7 @@ public class OrganizationHandler(
                 {
                     Customer = organization.StripeCustomerId,
                     Items = [],
-                    BillingCycleAnchorConfig = new SubscriptionBillingCycleAnchorConfigOptions
-                    {
-                        DayOfMonth = 1,
-                        Hour = 0,
-                        Minute = 0,
-                        Second = 0
-                    },
+                    BillingCycleAnchorConfig = CreateMonthlyBillingCycleAnchorConfig(),
                     ProrationBehavior = "create_prorations"
                 };
                 bool cardUpdated = false;
@@ -646,6 +634,17 @@ public class OrganizationHandler(
         }
 
         return new ChangePlanResult { Success = true };
+    }
+
+    private static SubscriptionBillingCycleAnchorConfigOptions CreateMonthlyBillingCycleAnchorConfig()
+    {
+        return new SubscriptionBillingCycleAnchorConfigOptions
+        {
+            DayOfMonth = 1,
+            Hour = 0,
+            Minute = 0,
+            Second = 0
+        };
     }
 
     public async Task<Result<User>> Handle(AddOrganizationUser message)
