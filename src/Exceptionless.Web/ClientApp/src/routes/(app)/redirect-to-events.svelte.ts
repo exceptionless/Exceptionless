@@ -3,12 +3,13 @@ import type { IFilter } from '$comp/faceted-filter';
 import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
-
-type ListPage = 'events' | 'stacks';
+import { SvelteURLSearchParams } from 'svelte/reactivity';
 
 interface ListNavigationOptions {
     time?: null | string;
 }
+
+type ListPage = 'events' | 'stacks';
 
 const listPagePaths = {
     events: '/(app)/event',
@@ -20,7 +21,7 @@ export function buildListPageHref(page: ListPage, _organizationId: string | unde
     const filtersForNavigation = options.time === null ? filters.filter((filter) => filter.type !== 'date') : filters;
     const serializedFilters = serializeFilters(filtersForNavigation);
 
-    const queryParams = new URLSearchParams({ filters: serializedFilters });
+    const queryParams = new SvelteURLSearchParams({ filters: serializedFilters });
 
     const dateFilter = filters.find((filter): filter is IFilter & { value: unknown } => filter.type === 'date' && 'value' in filter);
     const time = options.time ?? dateFilter?.value;

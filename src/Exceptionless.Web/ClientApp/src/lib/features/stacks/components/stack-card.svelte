@@ -1,6 +1,7 @@
 <script lang="ts">
-    import { type IFilter } from '$comp/faceted-filter';
     import type { ProblemDetails } from '@exceptionless/fetchclient';
+
+    import { type IFilter } from '$comp/faceted-filter';
     import DateTime from '$comp/formatters/date-time.svelte';
     import Number from '$comp/formatters/number.svelte';
     import Percentage from '$comp/formatters/percentage.svelte';
