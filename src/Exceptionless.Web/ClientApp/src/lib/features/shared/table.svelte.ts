@@ -111,10 +111,20 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
     const [rowSelection, setRowSelection] = createTableState<RowSelectionState>({});
 
     const onPaginationChange = (updaterOrValue: Updater<PaginationState>) => {
-        const previousPageIndex = pagination().pageIndex;
+        const previousPageInfo = pagination();
+        const previousPageIndex = previousPageInfo.pageIndex;
 
         setPagination(updaterOrValue);
-        const currentPageInfo = pagination();
+        let currentPageInfo = pagination();
+        const pageSizeChanged = previousPageInfo.pageSize !== currentPageInfo.pageSize;
+
+        if (pageSizeChanged && currentPageInfo.pageIndex !== 0) {
+            currentPageInfo = {
+                ...currentPageInfo,
+                pageIndex: 0
+            };
+            setPagination(currentPageInfo);
+        }
 
         if (configuration.queryParameters.limit !== currentPageInfo.pageSize) {
             configuration.queryParameters.limit = currentPageInfo.pageSize;
@@ -130,9 +140,9 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
             const previousLink = queryMeta?.links?.previous?.before;
 
             const parameters = configuration.queryParameters as TableCursorPagingParameters;
-            parameters.after = currentPageInfo.pageIndex > previousPageIndex ? nextLink : undefined;
+            parameters.after = !pageSizeChanged && currentPageInfo.pageIndex > previousPageIndex ? nextLink : undefined;
             // Ensure previousLink is only used when actually moving back and not on the first page
-            parameters.before = currentPageInfo.pageIndex < previousPageIndex && currentPageInfo.pageIndex > 0 ? previousLink : undefined;
+            parameters.before = !pageSizeChanged && currentPageInfo.pageIndex < previousPageIndex && currentPageInfo.pageIndex > 0 ? previousLink : undefined;
         } else if (isOffsetPaging || isMemoryPaging) {
             (configuration.queryParameters as TableMemoryPagingParameters | TableOffsetPagingParameters).page = currentPageInfo.pageIndex + 1; // API uses 1-based index
         }
@@ -214,6 +224,21 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
     // NOTE: Two different effects are used here to avoid circular dependency issues with in memory paging.
     $effect(() => setDataImpl(configuration.queryData ?? []));
     $effect(() => setMetaImpl(configuration.queryMeta));
+    $effect(() => {
+        const nextPageSize = configuration.queryParameters.limit ?? DEFAULT_LIMIT;
+        const nextPageIndex =
+            isOffsetPaging || isMemoryPaging
+                ? Math.max(0, (((configuration.queryParameters as TableMemoryPagingParameters | TableOffsetPagingParameters).page ?? 1) as number) - 1)
+                : pagination().pageIndex;
+        const currentPageInfo = pagination();
+
+        if (currentPageInfo.pageSize !== nextPageSize || currentPageInfo.pageIndex !== nextPageIndex) {
+            setPagination({
+                pageIndex: nextPageIndex,
+                pageSize: nextPageSize
+            });
+        }
+    });
     $effect(() => {
         if (!hasSortQueryParameter(configuration.queryParameters)) {
             return;

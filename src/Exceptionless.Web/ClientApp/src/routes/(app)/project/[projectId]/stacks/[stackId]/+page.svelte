@@ -24,7 +24,8 @@
     );
 
     async function filterChanged(addedOrUpdated: IFilter) {
-        await redirectToEventsWithFilter(organization.current, addedOrUpdated);
+        const options = addedOrUpdated.type === 'string' && addedOrUpdated.key === 'string-stack' ? { time: null } : undefined;
+        await redirectToEventsWithFilter(organization.current, addedOrUpdated, options);
     }
 
     function handleError(problem: ProblemDetails) {
@@ -35,9 +36,13 @@
         toast.error('Unable to load stack event details.');
     }
 
+    async function handleDeleted() {
+        await goto(resolve('/(app)/project/[projectId]/stacks', { projectId: page.params.projectId || '' }));
+    }
+
     $effect(() => {
         document.title = 'Stack Details - Exceptionless';
     });
 </script>
 
-<StackDetails {filterChanged} {handleError} {stackId} />
+<StackDetails {filterChanged} {handleError} onDeleted={handleDeleted} {stackId} />

@@ -23,7 +23,8 @@
     );
 
     async function filterChanged(addedOrUpdated: FacetedFilter.IFilter) {
-        await redirectToEventsWithFilter(organization.current, addedOrUpdated);
+        const options = addedOrUpdated.type === 'string' && addedOrUpdated.key === 'string-stack' ? { time: null } : undefined;
+        await redirectToEventsWithFilter(organization.current, addedOrUpdated, options);
     }
 
     async function handleError(problem: ProblemDetails) {

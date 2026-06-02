@@ -29,6 +29,6 @@
 
 <DetailSheet detailsHref={resolvedHref} {onClose} open={!!stackId} title="Stack">
     {#if stackId}
-        <StackDetails {filterChanged} {handleError} {stackId} />
+        <StackDetails {filterChanged} {handleError} onDeleted={onClose} {stackId} />
     {/if}
 </DetailSheet>

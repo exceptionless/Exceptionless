@@ -37,6 +37,8 @@ export function applyTimeFilter(filters: IFilter[], time: null | string): IFilte
         if (time) {
             const dateFilter = filters[dateFilterIndex] as DateFilter;
             dateFilter.value = time;
+        } else {
+            filters.splice(dateFilterIndex, 1);
         }
     } else if (time) {
         filters.push(new DateFilter('date', time));
@@ -220,6 +222,11 @@ export function toFilter(filters: IFilter[]): string {
         .filter(Boolean)
         .join(' ')
         .trim();
+}
+
+export function toFilterFromSerializedFilters(json: string): null | string {
+    const filter = toFilter(deserializeFilters(json).filter((f) => f.type !== 'date'));
+    return filter || null;
 }
 
 export function updateFilterCache(cacheKey: string, filters: IFilter[]) {

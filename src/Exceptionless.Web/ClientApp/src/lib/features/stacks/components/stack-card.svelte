@@ -1,5 +1,6 @@
 <script lang="ts">
     import { type IFilter } from '$comp/faceted-filter';
+    import type { ProblemDetails } from '@exceptionless/fetchclient';
     import DateTime from '$comp/formatters/date-time.svelte';
     import Number from '$comp/formatters/number.svelte';
     import Percentage from '$comp/formatters/percentage.svelte';
@@ -33,9 +34,12 @@
     interface Props {
         filterChanged: (filter: IFilter) => void;
         id: string | undefined;
+        onDeleted?: () => void;
+        onError?: (problem: ProblemDetails) => void;
     }
 
-    let { filterChanged, id }: Props = $props();
+    let { filterChanged, id, onDeleted, onError }: Props = $props();
+    let handledErrorForStackId = $state<string>();
 
     const stackQuery = getStackQuery({
         route: {
@@ -117,6 +121,15 @@
 
         return recentBuckets;
     });
+
+    $effect(() => {
+        if (!stackQuery.isError || handledErrorForStackId === id) {
+            return;
+        }
+
+        handledErrorForStackId = id;
+        onError?.(stackQuery.error);
+    });
 </script>
 
 {#if stackQuery.isSuccess}
@@ -134,7 +147,7 @@
                     <StackLogLevel {stack} />
                     <ButtonGroup.Root>
                         <StackStatusDropdownMenu {stack} />
-                        <StackOptionsDropdownMenu {stack} />
+                        <StackOptionsDropdownMenu {onDeleted} {stack} />
                     </ButtonGroup.Root>
                 </div>
             </Card.Title>

@@ -11,13 +11,15 @@
     interface Props {
         filterChanged: (filter: IFilter) => void;
         handleError: (problem: ProblemDetails) => void;
+        onDeleted?: () => void;
         stackId: string;
     }
 
-    let { filterChanged, handleError, stackId }: Props = $props();
+    let { filterChanged, handleError, onDeleted, stackId }: Props = $props();
 
     let eventId = $state<null | string>(null);
     let lastStackId = $state('');
+    let handledEventsErrorForStackId = $state('');
 
     const stackEventsQuery = getStackEventsQuery({
         params: {
@@ -34,6 +36,7 @@
     $effect(() => {
         if (stackId !== lastStackId) {
             lastStackId = stackId;
+            handledEventsErrorForStackId = '';
             eventId = null;
         }
     });
@@ -41,6 +44,13 @@
     $effect(() => {
         if (stackEventsQuery.isSuccess) {
             eventId = stackEventsQuery.data?.[0]?.id ?? null;
+        }
+    });
+
+    $effect(() => {
+        if (stackEventsQuery.isError && handledEventsErrorForStackId !== stackId) {
+            handledEventsErrorForStackId = stackId;
+            handleError(stackEventsQuery.error);
         }
     });
 
@@ -54,7 +64,7 @@
 {:else if stackEventsQuery.isSuccess}
     <section>
         <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
-        <StackCard {filterChanged} id={stackId} />
+        <StackCard {filterChanged} id={stackId} {onDeleted} onError={handleError} />
     </section>
     <Muted class="mt-4">No events available for this stack.</Muted>
 {/if}

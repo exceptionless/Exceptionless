@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { deserializeFilters, quoteIfSpecialCharacters, serializeFilters, toFilter } from './helpers.svelte';
+import { applyTimeFilter, deserializeFilters, quoteIfSpecialCharacters, serializeFilters, toFilter, toFilterFromSerializedFilters } from './helpers.svelte';
 import {
     BooleanFilter,
     DateFilter,
@@ -60,6 +60,19 @@ describe('helpers.svelte', () => {
             expect(quoteIfSpecialCharacters(char)).toBe(`"${char}"`);
             expect(quoteIfSpecialCharacters(`foo${char}bar`)).toBe(`"foo${char}bar"`);
         }
+    });
+});
+
+describe('applyTimeFilter', () => {
+    it('removes an existing date filter when time is explicitly empty', () => {
+        // Arrange
+        const filters = [new DateFilter('date', '[now-7d TO now]'), new StringFilter('stack', 'stack-1')];
+
+        // Act
+        const result = applyTimeFilter(filters, null);
+
+        // Assert
+        expect(result.map((filter) => filter.key)).toEqual(['string-stack']);
     });
 });
 
@@ -183,6 +196,30 @@ describe('serializeFilters', () => {
         expect(result[0].type).toBe('keyword');
         expect(result[1].type).toBe('status');
         expect(result[2].type).toBe('boolean');
+    });
+});
+
+describe('toFilterFromSerializedFilters', () => {
+    it('derives the filter expression from serialized filter controls', () => {
+        // Arrange
+        const serialized = serializeFilters([new DateFilter('date', '[now-7d TO now]'), new StringFilter('stack', 'stack-1')]);
+
+        // Act
+        const result = toFilterFromSerializedFilters(serialized);
+
+        // Assert
+        expect(result).toBe('stack:"stack-1"');
+    });
+
+    it('returns null when serialized filters contain only date controls', () => {
+        // Arrange
+        const serialized = serializeFilters([new DateFilter('date', '[now-7d TO now]')]);
+
+        // Act
+        const result = toFilterFromSerializedFilters(serialized);
+
+        // Assert
+        expect(result).toBeNull();
     });
 });
 

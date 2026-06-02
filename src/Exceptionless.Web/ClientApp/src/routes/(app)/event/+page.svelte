@@ -25,6 +25,7 @@
         serializeFilters,
         shouldRefreshPersistentEventChanged,
         toFilter,
+        toFilterFromSerializedFilters,
         updateFilterCache
     } from '$features/events/components/filters/helpers.svelte';
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
@@ -69,6 +70,7 @@
     const DEFAULT_FILTERS = [new DateFilter('date', DEFAULT_TIME_RANGE), new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
     const DEFAULT_PARAMS = {
         filter: undefined as string | undefined,
+        filters: undefined as string | undefined,
         limit: DEFAULT_LIMIT,
         sort: undefined as string | undefined,
         time: undefined as string | undefined
@@ -87,6 +89,10 @@
     }
 
     function getEffectiveFilter(): null | string {
+        if (queryParams.filters != null) {
+            return toFilterFromSerializedFilters(queryParams.filters);
+        }
+
         if (queryParams.filter != null) {
             return queryParams.filter;
         }
@@ -108,6 +114,7 @@
         pushHistory: true,
         schema: {
             filter: 'string',
+            filters: 'string',
             limit: 'number',
             sort: 'string',
             time: 'string'
@@ -166,6 +173,10 @@
         const filter = getEffectiveFilter();
         const savedView = savedViewsState.activeSavedView;
 
+        if (queryParams.filters != null) {
+            return applyTimeFilter(deserializeFilters(queryParams.filters), getQueryTime());
+        }
+
         if (queryParams.filter == null && savedView?.filter_definitions && filter === (savedView.filter ?? null)) {
             const hydrated = deserializeFilters(savedView.filter_definitions);
             return applyTimeFilter(hydrated, getQueryTime());
@@ -214,19 +225,21 @@
     function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
         const filter = toFilter(updatedFilters.filter((f) => f.type !== 'date'));
         const time = ((updatedFilters.find((f) => f.type === 'date') as DateFilter | undefined)?.value as string | undefined) ?? null;
-        const baseFilter = savedViewsState.activeSavedView?.filter ?? DEFAULT_FILTER;
         const baseTime = savedViewsState.activeSavedView?.time ?? DEFAULT_TIME_RANGE;
+        const filterDefinitions = serializeFilters(updatedFilters);
 
-        const newFilterParam = filter === baseFilter ? null : filter;
+        const newFilterParam = null;
         const newTimeParam = time === baseTime ? null : (time ?? '');
+        const newFiltersParam = filterDefinitions;
 
         updateFilterCache(filterCacheKey(filter), updatedFilters);
         // Only skip the watch when the URL will actually change from our update.
         // If the URL doesn't change, the watch won't fire and the flag would stay stale.
-        if (newFilterParam !== queryParams.filter || newTimeParam !== queryParams.time) {
+        if (newFilterParam !== queryParams.filter || newTimeParam !== queryParams.time || newFiltersParam !== queryParams.filters) {
             isInternalFilterUpdate = true;
         }
 
+        queryParams.filters = newFiltersParam;
         queryParams.time = newTimeParam;
         queryParams.filter = newFilterParam;
     }
