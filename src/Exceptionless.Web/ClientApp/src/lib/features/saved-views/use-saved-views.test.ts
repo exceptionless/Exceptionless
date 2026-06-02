@@ -5,7 +5,19 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SavedView } from './models';
 
 import { invalidateSavedViewQueries, queryKeys, removeSavedViewFromCaches, SAVED_VIEW_REFRESH_DELAY_MS, syncSavedViewCaches } from './api.svelte';
-import { type SavedViewQueryParams, setSortQueryParam, setTimeQueryParam, supportsSortQueryParam, supportsTimeQueryParam } from './use-saved-views.svelte';
+import {
+    filterDefinitionsEqual,
+    hasMissingSavedViewSlug,
+    type SavedViewQueryParams,
+    setSortQueryParam,
+    setTimeQueryParam,
+    supportsSortQueryParam,
+    supportsTimeQueryParam
+} from './use-saved-views.svelte';
+
+vi.mock('$features/auth/index.svelte', () => ({
+    accessToken: { current: 'token_123' }
+}));
 
 const TEST_ORG_ID = '507f1f77bcf86cd799439011';
 const TEST_USER_ID = '66a1b2c3d4e5f6a7b8c9d0e1';
@@ -45,6 +57,77 @@ function buildSavedView({ id, name, ...overrides }: Partial<SavedView> & Pick<Sa
 }
 
 describe('useSavedViews', () => {
+    describe('saved view slug resolution', () => {
+        it('reports a missing slug after saved views finish loading without a match', () => {
+            // Arrange
+            const savedView = buildSavedView({ id: 'view-1', name: 'My Saved View' });
+
+            // Act
+            const result = hasMissingSavedViewSlug({
+                activeSavedView: undefined,
+                isLoading: false,
+                savedViews: [savedView],
+                slug: 'most-frequent'
+            });
+
+            // Assert
+            expect(result).toBe(true);
+        });
+
+        it('reports a missing slug while cached saved-view data is background fetching', () => {
+            // Act
+            const result = hasMissingSavedViewSlug({
+                activeSavedView: undefined,
+                isLoading: false,
+                savedViews: [],
+                slug: 'most-frequent'
+            });
+
+            // Assert
+            expect(result).toBe(true);
+        });
+
+        it('does not report a missing slug before saved views are available', () => {
+            // Act
+            const result = hasMissingSavedViewSlug({
+                activeSavedView: undefined,
+                isLoading: false,
+                savedViews: undefined,
+                slug: 'most-frequent'
+            });
+
+            // Assert
+            expect(result).toBe(false);
+        });
+
+        it('does not report a missing slug when there is no slug route parameter', () => {
+            // Act
+            const result = hasMissingSavedViewSlug({
+                activeSavedView: undefined,
+                isLoading: false,
+                savedViews: [],
+                slug: undefined
+            });
+
+            // Assert
+            expect(result).toBe(false);
+        });
+    });
+
+    describe('filter definition comparison', () => {
+        it('treats omitted empty filter values as equal to hydrated empty values', () => {
+            // Arrange
+            const seededDefinitions = '[{"type":"date","term":"date","value":"[now-7d TO now]"},{"type":"project"}]';
+            const serializedDefinitions = '[{"type":"date","term":"date","value":"[now-7d TO now]"},{"type":"project","value":[]}]';
+
+            // Act
+            const result = filterDefinitionsEqual(serializedDefinitions, seededDefinitions);
+
+            // Assert
+            expect(result).toBe(true);
+        });
+    });
+
     describe('time parameter detection', () => {
         it('detects when time is not in query params (stream page)', () => {
             // Arrange

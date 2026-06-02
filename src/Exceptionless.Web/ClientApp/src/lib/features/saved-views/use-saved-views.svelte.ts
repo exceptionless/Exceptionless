@@ -2,7 +2,7 @@ import type { IFilter } from '$comp/faceted-filter';
 import type { ColumnOrderState, ColumnVisibilityState } from '@tanstack/svelte-table';
 
 import { goto } from '$app/navigation';
-import { buildFilterCacheKey, deserializeFilters } from '$features/events/components/filters/helpers.svelte';
+import { buildFilterCacheKey, deserializeFilters, serializeFilters } from '$features/events/components/filters/helpers.svelte';
 import { organization } from '$features/organizations/context.svelte';
 
 import type { SavedView } from './models';
@@ -46,8 +46,22 @@ export interface UseSavedViewsReturn {
     handleResetToSaved: () => void;
     isEnabled: boolean;
     isLoading: boolean;
+    isMissing: boolean;
     isModified: boolean;
     savedViews: SavedView[];
+}
+
+export function filterDefinitionsEqual(a: null | string | undefined, b: null | string | undefined): boolean {
+    return normalizeFilterDefinitions(a) === normalizeFilterDefinitions(b);
+}
+
+export function hasMissingSavedViewSlug(options: {
+    activeSavedView: SavedView | undefined;
+    isLoading: boolean;
+    savedViews: SavedView[] | undefined;
+    slug: string | undefined;
+}): boolean {
+    return !!options.slug && !options.activeSavedView && !!options.savedViews && !options.isLoading;
 }
 
 export function setSortQueryParam(queryParams: SavedViewQueryParams, value: null | string): void {
@@ -214,6 +228,15 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         return false;
     });
 
+    const isMissing = $derived(
+        hasMissingSavedViewSlug({
+            activeSavedView,
+            isLoading: savedViewsListQuery.isLoading,
+            savedViews: savedViewsListQuery.data,
+            slug: options.slug
+        })
+    );
+
     function handleLoadView(view: SavedView) {
         if (options.baseHref) {
             goto(savedViewHref(view));
@@ -274,6 +297,9 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         get isLoading() {
             return savedViewsListQuery.isLoading;
         },
+        get isMissing() {
+            return isMissing;
+        },
         get isModified() {
             return isModified;
         },
@@ -314,10 +340,6 @@ function columnsEqual(
     });
 }
 
-function filterDefinitionsEqual(a: null | string | undefined, b: null | string | undefined): boolean {
-    return normalizeFilterDefinitions(a) === normalizeFilterDefinitions(b);
-}
-
 function normalizeFilterDefinitions(value: null | string | undefined): string {
     if (!value) {
         return '[]';
@@ -329,7 +351,7 @@ function normalizeFilterDefinitions(value: null | string | undefined): string {
             return '[]';
         }
 
-        return JSON.stringify(parsed);
+        return serializeFilters(deserializeFilters(value));
     } catch {
         return value;
     }

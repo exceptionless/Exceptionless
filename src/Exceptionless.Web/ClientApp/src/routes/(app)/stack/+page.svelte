@@ -40,6 +40,7 @@
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
     import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+    import { error } from '@sveltejs/kit';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
@@ -137,6 +138,10 @@
     $effect(() => {
         document.title = `${pageTitle} - Exceptionless`;
     });
+
+    function throwSavedViewNotFound(): never {
+        throw error(404, `The saved Stacks view "${page.params.slug}" could not be found.`);
+    }
 
     watch(
         () => organization.current,
@@ -397,6 +402,10 @@
         onFilterChanged(new DateFilter('date', toDateMathRange(start, end)));
     }
 </script>
+
+{#if savedViewsState.isMissing}
+    {throwSavedViewNotFound()}
+{/if}
 
 <div class="flex flex-col">
     <div class="mb-4 flex flex-wrap items-start gap-2">
