@@ -3,6 +3,7 @@ import type { BillingPlan, ChangePlanRequest, ChangePlanResult } from '$lib/gene
 import type { QueryClient } from '@tanstack/svelte-query';
 
 import { accessToken } from '$features/auth/index.svelte';
+import { queryKeys as userQueryKeys } from '$features/users/api.svelte';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 
@@ -408,6 +409,7 @@ export function patchOrganization(request: PatchOrganizationRequest) {
 
 export function postOrganization() {
     const queryClient = useQueryClient();
+    const defaultOrganizationsQueryKey = [...queryKeys.list(undefined), { params: {} }] as const;
 
     return createMutation<ViewOrganization, ProblemDetails, NewOrganization>(() => ({
         enabled: () => !!accessToken.current,
@@ -417,9 +419,25 @@ export function postOrganization() {
             return response.data!;
         },
         mutationKey: queryKeys.postOrganization(),
-        onSuccess: (organization: ViewOrganization) => {
+        onSuccess: async (organization: ViewOrganization) => {
             queryClient.setQueryData(queryKeys.id(organization.id, 'stats'), organization);
             queryClient.setQueryData(queryKeys.id(organization.id, undefined), organization);
+
+            queryClient.setQueryData<FetchClientResponse<ViewOrganization[]> | undefined>(defaultOrganizationsQueryKey, (response) => {
+                if (!response || response.data?.some((existingOrganization) => existingOrganization.id === organization.id)) {
+                    return response;
+                }
+
+                return {
+                    ...response,
+                    data: [...(response.data ?? []), organization]
+                };
+            });
+
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) }),
+                queryClient.invalidateQueries({ queryKey: userQueryKeys.me() })
+            ]);
         }
     }));
 }

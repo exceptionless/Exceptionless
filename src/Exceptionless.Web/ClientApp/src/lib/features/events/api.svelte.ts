@@ -34,6 +34,8 @@ export async function invalidatePersistentEventQueries(queryClient: QueryClient,
 
 export const queryKeys = {
     deleteEvent: (ids: string[] | undefined) => [...queryKeys.type, 'delete', ...(ids ?? [])] as const,
+    eventsByReference: (referenceId: string | undefined, projectId?: string | undefined, params?: GetEventsByReferenceRequest['params']) =>
+        [...queryKeys.type, 'by-ref', referenceId, projectId, params] as const,
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
     organizations: (id: string | undefined) => [...queryKeys.type, 'organizations', id] as const,
     organizationsCount: (id: string | undefined, params?: GetOrganizationCountRequest['params']) => [...queryKeys.organizations(id), 'count', params] as const,
@@ -71,6 +73,21 @@ export interface GetEventRequest {
     };
     route: {
         id: string | undefined;
+    };
+}
+
+export interface GetEventsByReferenceRequest {
+    params?: {
+        after?: string;
+        before?: string;
+        limit?: number;
+        mode?: 'summary';
+        offset?: string;
+        page?: number;
+    };
+    route: {
+        projectId?: string | undefined;
+        referenceId: string | undefined;
     };
 }
 
@@ -208,6 +225,31 @@ export function getEventQuery(request: GetEventRequest) {
             return response.data!;
         },
         queryKey: queryKeys.id(request.route.id)
+    }));
+}
+
+export function getEventsByReferenceQuery(request: GetEventsByReferenceRequest) {
+    return createQuery<EventSummaryModel<SummaryTemplateKeys>[], ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.referenceId,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const path = request.route.projectId
+                ? `projects/${request.route.projectId}/events/by-ref/${encodeURIComponent(request.route.referenceId ?? '')}`
+                : `events/by-ref/${encodeURIComponent(request.route.referenceId ?? '')}`;
+            const response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(path, {
+                params: {
+                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                    limit: 20,
+                    mode: 'summary',
+                    page: 1,
+                    ...request.params
+                },
+                signal
+            });
+
+            return response.data!;
+        },
+        queryKey: queryKeys.eventsByReference(request.route.referenceId, request.route.projectId, request.params)
     }));
 }
 

@@ -31,7 +31,7 @@
 
     const sessionId = $derived(getSessionId(event));
     const isSessionStart = $derived(event.type === 'session');
-    const eventsPath = $derived(resolve('/(app)/events'));
+    const eventsPath = $derived(resolve('/(app)/event'));
     const sessionEventsHref = $derived.by(() => {
         const filter = getSessionFilter();
         if (!filter) {
@@ -64,7 +64,7 @@
     });
 
     function getEventHref(eventId: string): string {
-        return resolve('/(app)/events/[eventId=objectid]', { eventId });
+        return resolve('/(app)/event/[eventId=objectid]', { eventId });
     }
 
     function getSessionFilter(): SessionFilter | undefined {

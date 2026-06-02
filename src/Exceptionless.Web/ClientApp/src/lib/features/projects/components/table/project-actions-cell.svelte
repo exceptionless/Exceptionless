@@ -47,7 +47,7 @@
         {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
-        <DropdownMenu.Item onclick={() => goto(resolve('/(app)/stacks'))}>
+        <DropdownMenu.Item onclick={() => goto(resolve('/(app)/stack'))}>
             <Stacks />
             Stacks
         </DropdownMenu.Item>

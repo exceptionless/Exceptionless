@@ -1,24 +1,35 @@
 <script lang="ts">
+    import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import ErrorMessage from '$comp/error-message.svelte';
     import { A, Muted, Small } from '$comp/typography';
     import * as Avatar from '$comp/ui/avatar';
+    import { Button } from '$comp/ui/button';
     import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
     import * as InputGroup from '$comp/ui/input-group';
     import { Spinner } from '$comp/ui/spinner';
+    import { logout } from '$features/auth/api.svelte';
     import { validateEmailAvailability } from '$features/auth/validators';
-    import { getMeQuery, patchUser, postEmailAddress, resendVerificationEmail } from '$features/users/api.svelte';
+    import { deleteCurrentUser, getMeQuery, patchUser, postEmailAddress, resendVerificationEmail } from '$features/users/api.svelte';
+    import DeleteCurrentUserDialog from '$features/users/components/dialogs/delete-current-user-dialog.svelte';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import { type UpdateUserEmailAddressFormData, UpdateUserEmailAddressSchema, type UpdateUserFormData, UpdateUserSchema } from '$features/users/schemas';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+    import Trash from '@lucide/svelte/icons/trash-2';
     import { createForm } from '@tanstack/svelte-form';
+    import { useQueryClient } from '@tanstack/svelte-query';
     import { toast } from 'svelte-sonner';
     import { debounce } from 'throttle-debounce';
 
     let toastId = $state<number | string>();
+    let showDeleteAccountDialog = $state(false);
+    const client = useFetchClient();
+    const queryClient = useQueryClient();
     const meQuery = getMeQuery();
     const gravatar = getGravatarFromCurrentUser(meQuery);
+    const deleteAccountMutation = deleteCurrentUser();
     const updateUser = patchUser({
         route: {
             get id() {
@@ -102,6 +113,19 @@
             toastId = toast.success('Please check your inbox for the verification email.');
         } catch {
             toastId = toast.error('Error sending verification email. Please try again.');
+        }
+    }
+
+    async function deleteAccount() {
+        toast.dismiss(toastId);
+        try {
+            await deleteAccountMutation.mutateAsync();
+            toastId = toast.success('Successfully queued your account for deletion.');
+            await logout(queryClient, client);
+            await goto(resolve('/(auth)/login'), { replaceState: true });
+        } catch (error: unknown) {
+            const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
+            toastId = toast.error(`An error occurred while trying to delete your account: ${message}`);
         }
     }
 </script>
@@ -205,4 +229,18 @@
             Email not verified. <A class="cursor-pointer" onclick={handleResendVerificationEmail}>Resend</A> verification email.
         </Small>
     {/if}
+
+    <div class="border-t pt-6">
+        <Button variant="destructive" onclick={() => (showDeleteAccountDialog = true)} disabled={deleteAccountMutation.isPending}>
+            {#if deleteAccountMutation.isPending}
+                <Spinner class="mr-2 size-4" />
+                Deleting Account...
+            {:else}
+                <Trash class="mr-2 size-4" />
+                Delete Account
+            {/if}
+        </Button>
+    </div>
 </div>
+
+<DeleteCurrentUserDialog bind:open={showDeleteAccountDialog} remove={deleteAccount} />

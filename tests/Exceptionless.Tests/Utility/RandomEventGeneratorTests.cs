@@ -41,6 +41,21 @@ public class RandomEventGeneratorTests
         Assert.True(signatures.Distinct().Count() < signatures.Count);
     }
 
+    [Fact]
+    public void Generate_WithSampleEvents_IncludesReferenceIds()
+    {
+        // Arrange
+        var generator = new Exceptionless.Core.Utility.RandomEventGenerator(TimeProvider.System);
+
+        // Act
+        var events = generator.Generate("organization", "project", 10);
+
+        // Assert
+        Assert.Contains(events, generatedEvent =>
+            generatedEvent.ReferenceId is { Length: 10 } referenceId &&
+            referenceId.All(Char.IsLetterOrDigit));
+    }
+
     private static string? GetErrorSignature(Event ev)
     {
         if (ev.Data is null)

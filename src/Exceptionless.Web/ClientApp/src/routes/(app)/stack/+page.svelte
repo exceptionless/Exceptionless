@@ -61,7 +61,7 @@
     }
 
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
-        return resolve('/(app)/stacks/[stackId=objectid]', { stackId: row.id });
+        return resolve('/(app)/stack/[stackId=objectid]', { stackId: row.id });
     }
 
     const DEFAULT_TIME_RANGE = '[now-7d TO now]';
@@ -112,7 +112,7 @@
     let showStats = $state(true);
     let showChart = $state(true);
     const savedViewsState = useSavedViews({
-        baseHref: resolve('/(app)/stacks'),
+        baseHref: resolve('/(app)/stack'),
         filterCacheKey,
         getColumnOrder: () => table.state.columnOrder,
         getColumnVisibility: () => table.state.columnVisibility,

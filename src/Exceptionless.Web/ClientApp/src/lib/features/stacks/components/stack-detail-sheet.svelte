@@ -16,7 +16,7 @@
 
     let { filterChanged, onClose, onError, stackId = $bindable() }: Props = $props();
 
-    const resolvedHref = $derived(stackId ? resolve('/(app)/stacks/[stackId=objectid]', { stackId }) : '#');
+    const resolvedHref = $derived(stackId ? resolve('/(app)/stack/[stackId=objectid]', { stackId }) : '#');
 
     function handleError(problem: ProblemDetails) {
         if (onError) {
