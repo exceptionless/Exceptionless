@@ -1,0 +1,118 @@
+name: Preview Command
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  actions: write
+  contents: read
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: dev-preview-command
+  cancel-in-progress: false
+
+jobs:
+  preview:
+    name: Dispatch preview deployment
+    if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '/preview') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch Preview
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const body = context.payload.comment.body.trim();
+            const association = context.payload.comment.author_association;
+            const trustedAssociations = new Set(["OWNER", "MEMBER", "COLLABORATOR"]);
+
+            if (!/^\/preview(?:\s|$)/.test(body)) {
+              core.info("Comment starts with /preview but does not match the command format.");
+              return;
+            }
+
+            if (!trustedAssociations.has(association)) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: context.payload.issue.number,
+                body: "I can only deploy previews when `/preview` is requested by a repository owner, member, or collaborator."
+              });
+              core.setFailed(`Unauthorized preview requester association: ${association}`);
+              return;
+            }
+
+            const { data: pullRequest } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: context.payload.issue.number
+            });
+
+            if (pullRequest.state !== "open") {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: context.payload.issue.number,
+                body: "I can only deploy previews for open pull requests."
+              });
+              core.setFailed(`Pull request #${pullRequest.number} is ${pullRequest.state}.`);
+              return;
+            }
+
+            const headRepository = pullRequest.head.repo.full_name;
+            const headRef = pullRequest.head.ref;
+            const headSha = pullRequest.head.sha;
+            const headLabel = pullRequest.head.label;
+
+            if (headRepository !== `${owner}/${repo}`) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: pullRequest.number,
+                body: "I can only deploy previews for branches in this repository right now. Fork previews need a mirrored branch before the shared dev environment can build and deploy them."
+              });
+              core.setFailed(`Unsupported fork preview source: ${headRepository}`);
+              return;
+            }
+
+            try {
+              await github.request("PATCH /repos/{owner}/{repo}/actions/variables/{name}", {
+                owner,
+                repo,
+                name: "DEV_DEPLOY_BRANCH",
+                value: headRef
+              });
+            } catch (error) {
+              if (error.status !== 404) {
+                throw error;
+              }
+
+              await github.request("POST /repos/{owner}/{repo}/actions/variables", {
+                owner,
+                repo,
+                name: "DEV_DEPLOY_BRANCH",
+                value: headRef
+              });
+            }
+
+            await github.rest.actions.createWorkflowDispatch({
+              owner,
+              repo,
+              workflow_id: "build.yaml",
+              ref: headRef
+            });
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: pullRequest.number,
+              body: [
+                `Preview deployment requested for \`${headLabel}\` at \`${headSha.slice(0, 12)}\`.`,
+                "",
+                `The build workflow was dispatched for \`${headRef}\` and will deploy to https://dev-app.exceptionless.io when it completes.`
+              ].join("\n")
+            });
