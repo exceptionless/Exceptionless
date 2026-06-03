@@ -11,6 +11,8 @@ interface ListNavigationOptions {
 
 type ListPage = 'events' | 'stacks';
 
+export const ALL_TIME_QUERY_VALUE = 'all';
+
 const listPagePaths = {
     events: '/(app)/event',
     stacks: '/(app)/stack'
@@ -24,9 +26,9 @@ export function buildListPageHref(page: ListPage, _organizationId: string | unde
     const queryParams = new SvelteURLSearchParams({ filters: serializedFilters });
 
     const dateFilter = filters.find((filter): filter is IFilter & { value: unknown } => filter.type === 'date' && 'value' in filter);
-    const time = options.time ?? dateFilter?.value;
+    const time = 'time' in options ? options.time : dateFilter?.value;
     if ('time' in options || typeof time === 'string') {
-        queryParams.set('time', typeof time === 'string' ? time : '');
+        queryParams.set('time', typeof time === 'string' ? time : ALL_TIME_QUERY_VALUE);
     }
 
     return `${path}?${queryParams}`;

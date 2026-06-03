@@ -50,7 +50,7 @@
     import { useEventListener, watch } from 'runed';
     import { debounce, throttle } from 'throttle-debounce';
 
-    import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../redirect-to-events.svelte';
+    import { ALL_TIME_QUERY_VALUE, getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../redirect-to-events.svelte';
 
     let selectedEventId: null | string = $state(null);
 
@@ -84,6 +84,10 @@
 
     function getQueryTime(): null | string {
         if (queryParams.time != null) {
+            if (queryParams.time === ALL_TIME_QUERY_VALUE) {
+                return null;
+            }
+
             return queryParams.time || null;
         }
 
@@ -238,7 +242,7 @@
         const filterDefinitions = serializeFilters(updatedFilters);
 
         const newFilterParam = null;
-        const newTimeParam = time === baseTime ? null : (time ?? '');
+        const newTimeParam = time === baseTime ? null : (time ?? ALL_TIME_QUERY_VALUE);
         const newFiltersParam = filterDefinitions;
 
         updateFilterCache(filterCacheKey(filter), updatedFilters);
@@ -279,7 +283,7 @@
             return getQueryTime() ?? undefined;
         },
         set time(value) {
-            queryParams.time = value ?? null;
+            queryParams.time = value ?? ALL_TIME_QUERY_VALUE;
         }
     });
 

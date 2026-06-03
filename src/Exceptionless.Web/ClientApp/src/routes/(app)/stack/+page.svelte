@@ -47,7 +47,7 @@
     import { useEventListener, watch } from 'runed';
     import { throttle } from 'throttle-debounce';
 
-    import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../redirect-to-events.svelte';
+    import { ALL_TIME_QUERY_VALUE, getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../redirect-to-events.svelte';
 
     // TODO: Update this page to use StackSummaryModel instead of EventSummaryModel.
     let selectedStackId = $state<string>();
@@ -86,6 +86,10 @@
 
     function getQueryTime(): null | string {
         if (queryParams.time != null) {
+            if (queryParams.time === ALL_TIME_QUERY_VALUE) {
+                return null;
+            }
+
             return queryParams.time || null;
         }
 
@@ -230,7 +234,7 @@
         const filterDefinitions = serializeFilters(updatedFilters);
 
         const newFilterParam = null;
-        const newTimeParam = time === baseTime ? null : (time ?? '');
+        const newTimeParam = time === baseTime ? null : (time ?? ALL_TIME_QUERY_VALUE);
         const newFiltersParam = filterDefinitions;
 
         updateFilterCache(filterCacheKey(filter), updatedFilters);
@@ -261,11 +265,11 @@
         mode: 'stack_frequent',
         offset: DEFAULT_OFFSET,
         get time() {
-            return getQueryTime()!;
+            return getQueryTime() ?? undefined;
         },
         set time(value) {
             const baseTime = savedViewsState.activeSavedView?.time ?? DEFAULT_TIME_RANGE;
-            queryParams.time = value === baseTime ? null : (value ?? '');
+            queryParams.time = value === baseTime ? null : (value ?? ALL_TIME_QUERY_VALUE);
         }
     });
 
