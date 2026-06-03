@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
   packages: write
   pull-requests: write
 
@@ -17,6 +18,64 @@ env:
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
 
 jobs:
+  preview-context:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == format('refs/heads/{0}', vars.DEV_DEPLOY_BRANCH || 'main') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      pr-number: ${{ steps.pr.outputs.pr-number }}
+      pr-sha: ${{ steps.pr.outputs.pr-sha }}
+      pr-short-sha: ${{ steps.pr.outputs.pr-short-sha }}
+      branch: ${{ steps.pr.outputs.branch }}
+
+    steps:
+      - name: Resolve preview pull request
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const branch = context.ref.replace("refs/heads/", "");
+
+            const { data: pullRequests } = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: "open",
+              head: `${owner}:${branch}`,
+              per_page: 10
+            });
+
+            if (pullRequests.length === 0) {
+              core.info(`No open pull request found for ${owner}:${branch}.`);
+              return;
+            }
+
+            const pullRequest = pullRequests[0];
+            core.setOutput("pr-number", String(pullRequest.number));
+            core.setOutput("pr-sha", pullRequest.head.sha);
+            core.setOutput("pr-short-sha", pullRequest.head.sha.slice(0, 12));
+            core.setOutput("branch", branch);
+
+  preview-comment-running:
+    needs: [preview-context]
+    if: ${{ always() && needs.preview-context.outputs.pr-number != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Post sticky running comment
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          number: ${{ needs.preview-context.outputs.pr-number }}
+          header: exceptionless-preview
+          message: |
+            Preview deploy running - [view progress](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            Building images and deploying the shared dev environment. This comment will update with the dev URL when the deploy finishes.
+
+            - Branch: `${{ needs.preview-context.outputs.branch }}`
+            - Commit: [`${{ needs.preview-context.outputs.pr-short-sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ needs.preview-context.outputs.pr-sha }})
+
   version:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -393,3 +452,37 @@ jobs:
           else
             echo "- **Deployment**: Skipped" >> $GITHUB_STEP_SUMMARY
           fi
+
+  preview-comment-result:
+    needs: [preview-context, version, test-api, test-client, docker-build, docker-publish, deploy]
+    if: ${{ always() && needs.preview-context.outputs.pr-number != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Post sticky deployed comment
+        if: ${{ needs.deploy.result == 'success' }}
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          number: ${{ needs.preview-context.outputs.pr-number }}
+          header: exceptionless-preview
+          message: |
+            Preview deployed
+
+            - **App:** https://dev-app.exceptionless.io
+            - **Collector:** https://dev-collector.exceptionless.io
+            - Commit: [`${{ needs.preview-context.outputs.pr-short-sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ needs.preview-context.outputs.pr-sha }})
+            - Version: `${{ needs.version.outputs.version }}`
+            - Workflow run: [view logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+      - name: Post sticky failed comment
+        if: ${{ needs.deploy.result != 'success' }}
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          number: ${{ needs.preview-context.outputs.pr-number }}
+          header: exceptionless-preview
+          message: |
+            Preview deploy failed or did not complete. See [run logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+
+            - Branch: `${{ needs.preview-context.outputs.branch }}`
+            - Commit: [`${{ needs.preview-context.outputs.pr-short-sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ needs.preview-context.outputs.pr-sha }})
+            - Version: `${{ needs.version.outputs.version || 'not computed' }}`
