@@ -59,7 +59,13 @@
     import { untrack } from 'svelte';
     import { throttle } from 'throttle-debounce';
 
-    import { ALL_TIME_QUERY_VALUE, getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../redirect-to-events.svelte';
+    import {
+        ALL_TIME_QUERY_VALUE,
+        deserializeTimeQueryParam,
+        getEventsNavigationOptionsForFilter,
+        redirectToEventsWithFilter,
+        serializeTimeQueryParam
+    } from '../redirect-to-events.svelte';
 
     // TODO: Update this page to use StackSummaryModel instead of EventSummaryModel.
     let selectedStackId = $state<string>();
@@ -112,7 +118,7 @@
                 return null;
             }
 
-            return queryParams.time || null;
+            return queryParams.time ? deserializeTimeQueryParam(queryParams.time) : null;
         }
 
         return savedViewsState.activeSavedView?.time ?? DEFAULT_TIME_RANGE;
@@ -428,7 +434,7 @@
         const baseExpressionFilterParam = savedViewFilters ? toFilter(savedViewFilters.filter((f) => f.type !== 'date' && !isQueryParamFilter(f))) : baseFilter;
 
         const newFilterParam = filterParam === baseExpressionFilterParam ? null : filterParam || (savedViewFilters && baseExpressionFilterParam ? '' : null);
-        const newTimeParam = time === baseTime ? null : (time ?? ALL_TIME_QUERY_VALUE);
+        const newTimeParam = time === baseTime ? null : time ? serializeTimeQueryParam(time) : ALL_TIME_QUERY_VALUE;
 
         updateFilterCache(filterCacheKey(filter), updatedFilters);
         // Only skip the watch when the URL will actually change from our update.
@@ -565,7 +571,7 @@
         },
         set time(value) {
             const baseTime = savedViewsState.activeSavedView?.time ?? DEFAULT_TIME_RANGE;
-            queryParams.time = value === baseTime ? null : (value ?? ALL_TIME_QUERY_VALUE);
+            queryParams.time = value === baseTime ? null : value ? serializeTimeQueryParam(value) : ALL_TIME_QUERY_VALUE;
         }
     });
 

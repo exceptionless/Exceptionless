@@ -27,6 +27,30 @@ describe('redirect-to-events', () => {
         expect(url.searchParams.has('filters')).toBe(false);
     });
 
+    it('omits date range brackets from time query parameters', async () => {
+        // Arrange
+        const { buildListPageHref, deserializeTimeQueryParam } = await import('./redirect-to-events.svelte');
+
+        // Act
+        const href = buildListPageHref('events', 'org-1', [new DateFilter('date', '[now-1h TO now]')]);
+        const url = new URL(href, 'https://example.test');
+
+        // Assert
+        expect(url.searchParams.get('time')).toBe('now-1h TO now');
+        expect(deserializeTimeQueryParam(url.searchParams.get('time')!)).toBe('[now-1h TO now]');
+    });
+
+    it('accepts existing bracketed time query parameters', async () => {
+        // Arrange
+        const { deserializeTimeQueryParam } = await import('./redirect-to-events.svelte');
+
+        // Act
+        const time = deserializeTimeQueryParam('[now-1h TO now]');
+
+        // Assert
+        expect(time).toBe('[now-1h TO now]');
+    });
+
     it('maps project filters to the project query parameter', async () => {
         // Arrange
         const { buildListPageHref } = await import('./redirect-to-events.svelte');

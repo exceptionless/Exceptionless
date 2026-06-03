@@ -31,10 +31,23 @@ export function buildListPageHref(page: ListPage, _organizationId: string | unde
     const dateFilter = filters.find((filter): filter is IFilter & { value: unknown } => filter.type === 'date' && 'value' in filter);
     const time = 'time' in options ? options.time : dateFilter?.value;
     if ('time' in options || typeof time === 'string') {
-        queryParams.set('time', typeof time === 'string' ? time : ALL_TIME_QUERY_VALUE);
+        queryParams.set('time', typeof time === 'string' ? serializeTimeQueryParam(time) : ALL_TIME_QUERY_VALUE);
     }
 
     return `${path}?${queryParams}`;
+}
+
+export function deserializeTimeQueryParam(time: string): string {
+    const trimmed = time.trim();
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        return trimmed;
+    }
+
+    if (trimmed.includes(' TO ')) {
+        return `[${trimmed}]`;
+    }
+
+    return trimmed;
 }
 
 /**
@@ -63,6 +76,15 @@ export async function redirectToEventsWithFilter(
     options: { time?: null | string } = {}
 ): Promise<void> {
     await navigateToListPage('events', organizationId, [addedOrUpdated], options);
+}
+
+export function serializeTimeQueryParam(time: string): string {
+    const trimmed = time.trim();
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        return trimmed.slice(1, -1);
+    }
+
+    return trimmed;
 }
 
 function trySetRegisteredFilterQueryParam(queryParams: SvelteURLSearchParams, filter: IFilter): boolean {
