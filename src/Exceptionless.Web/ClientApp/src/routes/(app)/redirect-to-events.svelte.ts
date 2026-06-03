@@ -13,6 +13,10 @@ type ListPage = 'events' | 'stacks';
 
 export const ALL_TIME_QUERY_VALUE = 'all';
 
+const DATE_RANGE_PATTERN = /^\[?(?<start>.+?)\s+TO\s+(?<end>.+?)\]?$/i;
+const RELATIVE_TO_NOW_PATTERN = /^now-(?<duration>\d+[Mdhmswy])$/;
+const TIME_SHORTCUT_PATTERN = /^(?<duration>\d+[Mdhmswy])$/;
+
 const listPagePaths = {
     events: '/(app)/event',
     stacks: '/(app)/stack'
@@ -39,6 +43,11 @@ export function buildListPageHref(page: ListPage, _organizationId: string | unde
 
 export function deserializeTimeQueryParam(time: string): string {
     const trimmed = time.trim();
+    const shortcutMatch = TIME_SHORTCUT_PATTERN.exec(trimmed);
+    if (shortcutMatch?.groups?.duration) {
+        return `[now-${shortcutMatch.groups.duration} TO now]`;
+    }
+
     if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
         return trimmed;
     }
@@ -80,8 +89,18 @@ export async function redirectToEventsWithFilter(
 
 export function serializeTimeQueryParam(time: string): string {
     const trimmed = time.trim();
-    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-        return trimmed.slice(1, -1);
+    const rangeMatch = DATE_RANGE_PATTERN.exec(trimmed);
+    const rangeStart = rangeMatch?.groups?.start?.trim();
+    const rangeEnd = rangeMatch?.groups?.end?.trim();
+    if (rangeStart && rangeEnd?.toLowerCase() === 'now') {
+        const shortcutMatch = RELATIVE_TO_NOW_PATTERN.exec(rangeStart);
+        if (shortcutMatch?.groups?.duration) {
+            return shortcutMatch.groups.duration;
+        }
+    }
+
+    if (rangeStart && rangeEnd) {
+        return `${rangeStart} TO ${rangeEnd}`;
     }
 
     return trimmed;

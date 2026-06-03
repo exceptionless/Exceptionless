@@ -27,7 +27,7 @@ describe('redirect-to-events', () => {
         expect(url.searchParams.has('filters')).toBe(false);
     });
 
-    it('omits date range brackets from time query parameters', async () => {
+    it('uses relative duration shortcuts for time query parameters', async () => {
         // Arrange
         const { buildListPageHref, deserializeTimeQueryParam } = await import('./redirect-to-events.svelte');
 
@@ -36,8 +36,32 @@ describe('redirect-to-events', () => {
         const url = new URL(href, 'https://example.test');
 
         // Assert
-        expect(url.searchParams.get('time')).toBe('now-1h TO now');
+        expect(url.searchParams.get('time')).toBe('1h');
         expect(deserializeTimeQueryParam(url.searchParams.get('time')!)).toBe('[now-1h TO now]');
+    });
+
+    it('omits date range brackets from custom time query parameters', async () => {
+        // Arrange
+        const { buildListPageHref, deserializeTimeQueryParam } = await import('./redirect-to-events.svelte');
+
+        // Act
+        const href = buildListPageHref('events', 'org-1', [new DateFilter('date', '[2025-01-01 TO 2025-02-01]')]);
+        const url = new URL(href, 'https://example.test');
+
+        // Assert
+        expect(url.searchParams.get('time')).toBe('2025-01-01 TO 2025-02-01');
+        expect(deserializeTimeQueryParam(url.searchParams.get('time')!)).toBe('[2025-01-01 TO 2025-02-01]');
+    });
+
+    it('accepts existing expanded time query parameters', async () => {
+        // Arrange
+        const { deserializeTimeQueryParam } = await import('./redirect-to-events.svelte');
+
+        // Act
+        const time = deserializeTimeQueryParam('now-1h TO now');
+
+        // Assert
+        expect(time).toBe('[now-1h TO now]');
     });
 
     it('accepts existing bracketed time query parameters', async () => {
