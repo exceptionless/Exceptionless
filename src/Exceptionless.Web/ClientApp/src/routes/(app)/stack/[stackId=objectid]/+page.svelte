@@ -11,7 +11,7 @@
     import { watch } from 'runed';
     import { toast } from 'svelte-sonner';
 
-    import { redirectToEventsWithFilter } from '../../redirect-to-events.svelte.js';
+    import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../../redirect-to-events.svelte.js';
 
     const stackId = $derived(page.params.stackId || '');
 
@@ -24,8 +24,7 @@
     );
 
     async function filterChanged(addedOrUpdated: IFilter) {
-        const options = addedOrUpdated.type === 'string' && addedOrUpdated.key === 'string-stack' ? { time: null } : undefined;
-        await redirectToEventsWithFilter(organization.current, addedOrUpdated, options);
+        await redirectToEventsWithFilter(organization.current, addedOrUpdated, getEventsNavigationOptionsForFilter(addedOrUpdated));
     }
 
     function handleError(problem: ProblemDetails) {

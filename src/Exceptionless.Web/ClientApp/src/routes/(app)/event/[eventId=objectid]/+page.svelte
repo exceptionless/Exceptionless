@@ -11,7 +11,7 @@
     import { watch } from 'runed';
     import { toast } from 'svelte-sonner';
 
-    import { redirectToEventsWithFilter } from '../../redirect-to-events.svelte.js';
+    import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../../redirect-to-events.svelte.js';
 
     // TODO: Have this happen automatically when the organization changes.
     watch(
@@ -23,8 +23,7 @@
     );
 
     async function filterChanged(addedOrUpdated: FacetedFilter.IFilter) {
-        const options = addedOrUpdated.type === 'string' && addedOrUpdated.key === 'string-stack' ? { time: null } : undefined;
-        await redirectToEventsWithFilter(organization.current, addedOrUpdated, options);
+        await redirectToEventsWithFilter(organization.current, addedOrUpdated, getEventsNavigationOptionsForFilter(addedOrUpdated));
     }
 
     async function handleError(problem: ProblemDetails) {

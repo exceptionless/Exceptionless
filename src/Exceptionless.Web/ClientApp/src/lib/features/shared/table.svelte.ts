@@ -112,20 +112,14 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
 
     const onPaginationChange = (updaterOrValue: Updater<PaginationState>) => {
         const previousPageInfo = pagination();
-        const previousPageIndex = previousPageInfo.pageIndex;
 
         setPagination(updaterOrValue);
-        let currentPageInfo = pagination();
-        const pageSizeChanged = previousPageInfo.pageSize !== currentPageInfo.pageSize;
-
-        if (pageSizeChanged && currentPageInfo.pageIndex !== 0) {
-            currentPageInfo = {
-                ...currentPageInfo,
-                pageIndex: 0
-            };
-            setPagination(currentPageInfo);
+        const paginationChange = getPaginationChange(previousPageInfo, pagination());
+        if (paginationChange.pageIndexChanged) {
+            setPagination(paginationChange.currentPageInfo);
         }
 
+        const currentPageInfo = paginationChange.currentPageInfo;
         if (configuration.queryParameters.limit !== currentPageInfo.pageSize) {
             configuration.queryParameters.limit = currentPageInfo.pageSize;
         }
@@ -135,16 +129,9 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
             const start = currentPageInfo.pageIndex * currentPageInfo.pageSize;
             setData(allData().slice(start, start + currentPageInfo.pageSize));
         } else if (isCursorPaging) {
-            const queryMeta = meta();
-            const nextLink = queryMeta?.links?.next?.after;
-            const previousLink = queryMeta?.links?.previous?.before;
-
-            const parameters = configuration.queryParameters as TableCursorPagingParameters;
-            parameters.after = !pageSizeChanged && currentPageInfo.pageIndex > previousPageIndex ? nextLink : undefined;
-            // Ensure previousLink is only used when actually moving back and not on the first page
-            parameters.before = !pageSizeChanged && currentPageInfo.pageIndex < previousPageIndex && currentPageInfo.pageIndex > 0 ? previousLink : undefined;
+            updateCursorPagingParameters(configuration.queryParameters as TableCursorPagingParameters, meta(), paginationChange);
         } else if (isOffsetPaging || isMemoryPaging) {
-            (configuration.queryParameters as TableMemoryPagingParameters | TableOffsetPagingParameters).page = currentPageInfo.pageIndex + 1; // API uses 1-based index
+            updatePageNumberPagingParameters(configuration.queryParameters as TableMemoryPagingParameters | TableOffsetPagingParameters, currentPageInfo);
         }
     };
 
@@ -226,10 +213,7 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
     $effect(() => setMetaImpl(configuration.queryMeta));
     $effect(() => {
         const nextPageSize = configuration.queryParameters.limit ?? DEFAULT_LIMIT;
-        const nextPageIndex =
-            isOffsetPaging || isMemoryPaging
-                ? Math.max(0, (((configuration.queryParameters as TableMemoryPagingParameters | TableOffsetPagingParameters).page ?? 1) as number) - 1)
-                : pagination().pageIndex;
+        const nextPageIndex = getPageIndexFromParameters(configuration.paginationStrategy, configuration.queryParameters, pagination().pageIndex);
         const currentPageInfo = pagination();
 
         if (currentPageInfo.pageSize !== nextPageSize || currentPageInfo.pageIndex !== nextPageIndex) {
@@ -400,6 +384,36 @@ function getColumnIds<TData extends RowData>(columns: ColumnDef<StockFeatures, T
     });
 }
 
+function getPageIndexFromParameters(strategy: PaginationStrategy, parameters: TablePagingParameters, fallbackPageIndex: number): number {
+    if (strategy !== 'offset' && strategy !== 'memory') {
+        return fallbackPageIndex;
+    }
+
+    return Math.max(0, (((parameters as TableMemoryPagingParameters | TableOffsetPagingParameters).page ?? 1) as number) - 1);
+}
+
+function getPaginationChange(previousPageInfo: PaginationState, currentPageInfo: PaginationState) {
+    const pageSizeChanged = previousPageInfo.pageSize !== currentPageInfo.pageSize;
+    if (!pageSizeChanged || currentPageInfo.pageIndex === 0) {
+        return {
+            currentPageInfo,
+            pageIndexChanged: false,
+            pageSizeChanged,
+            previousPageInfo
+        };
+    }
+
+    return {
+        currentPageInfo: {
+            ...currentPageInfo,
+            pageIndex: 0
+        },
+        pageIndexChanged: true,
+        pageSizeChanged,
+        previousPageInfo
+    };
+}
+
 function hasSortQueryParameter(parameters: TablePagingParameters): parameters is TableCursorPagingParameters | TableOffsetPagingParameters {
     return Object.prototype.hasOwnProperty.call(parameters, 'sort');
 }
@@ -434,4 +448,23 @@ function sanitizeColumnOrder<TData extends RowData>(columnOrder: ColumnOrderStat
 
 function serializeSortState(sorting: ColumnSort[]): string | undefined {
     return sorting.length > 0 ? sorting.map((sort) => `${sort.desc ? '-' : ''}${sort.id}`).join(',') : undefined;
+}
+
+function updateCursorPagingParameters(
+    parameters: TableCursorPagingParameters,
+    meta: QueryMeta | undefined,
+    paginationChange: ReturnType<typeof getPaginationChange>
+): void {
+    const movingForward = paginationChange.currentPageInfo.pageIndex > paginationChange.previousPageInfo.pageIndex;
+    const movingBackward = paginationChange.currentPageInfo.pageIndex < paginationChange.previousPageInfo.pageIndex;
+
+    // Cursor tokens are only valid for the current page size and direction.
+    // When the page size changes, clear both tokens and let the first page reload.
+    parameters.after = !paginationChange.pageSizeChanged && movingForward ? meta?.links?.next?.after : undefined;
+    parameters.before =
+        !paginationChange.pageSizeChanged && movingBackward && paginationChange.currentPageInfo.pageIndex > 0 ? meta?.links?.previous?.before : undefined;
+}
+
+function updatePageNumberPagingParameters(parameters: TableMemoryPagingParameters | TableOffsetPagingParameters, currentPageInfo: PaginationState): void {
+    parameters.page = currentPageInfo.pageIndex + 1; // API uses 1-based indexes.
 }

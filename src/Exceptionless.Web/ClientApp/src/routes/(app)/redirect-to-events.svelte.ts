@@ -32,6 +32,18 @@ export function buildListPageHref(page: ListPage, _organizationId: string | unde
     return `${path}?${queryParams}`;
 }
 
+/**
+ * Stack filter drilldowns mean "show every event for this stack".
+ * Clear any active date range so the destination cannot hide older stack events.
+ */
+export function getEventsNavigationOptionsForFilter(filter: IFilter): ListNavigationOptions | undefined {
+    if (filter.type === 'string' && filter.key === 'string-stack') {
+        return { time: null };
+    }
+
+    return undefined;
+}
+
 export async function navigateToListPage(page: ListPage, organizationId: string | undefined, filters: IFilter[], options: ListNavigationOptions = {}) {
     await goto(buildListPageHref(page, organizationId, filters, options));
 }

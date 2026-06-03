@@ -47,7 +47,7 @@
     import { useEventListener, watch } from 'runed';
     import { throttle } from 'throttle-debounce';
 
-    import { redirectToEventsWithFilter } from '../redirect-to-events.svelte';
+    import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../redirect-to-events.svelte';
 
     // TODO: Update this page to use StackSummaryModel instead of EventSummaryModel.
     let selectedStackId = $state<string>();
@@ -200,7 +200,7 @@
     async function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter) {
         // If this is a stack filter, redirect to the Events page
         if (addedOrUpdated.type === 'string' && addedOrUpdated.key === 'string-stack') {
-            await redirectToEventsWithFilter(organization.current, addedOrUpdated, { time: null });
+            await redirectToEventsWithFilter(organization.current, addedOrUpdated, getEventsNavigationOptionsForFilter(addedOrUpdated));
             return;
         }
 
