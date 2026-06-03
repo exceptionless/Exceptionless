@@ -1,6 +1,10 @@
 import type { LogLevel } from '$features/events/models/event-data';
 import type { StackStatus } from '$features/stacks/models';
 
+import { resolve } from '$app/paths';
+import { StringFilter } from '$features/events/components/filters';
+import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
+
 export interface EventErrorSummaryData {
     Message?: string;
     Method?: string;
@@ -146,3 +150,12 @@ export type SummaryTemplateKeys =
     | 'stack-session-summary'
     | 'stack-simple-summary'
     | 'stack-summary';
+
+export function buildStackEventsHref(stackId: string): string {
+    const queryParams = new URLSearchParams({
+        filters: serializeFilters([new StringFilter('stack', stackId)]),
+        time: 'all'
+    });
+
+    return `${resolve('/(app)/event')}?${queryParams}`;
+}
