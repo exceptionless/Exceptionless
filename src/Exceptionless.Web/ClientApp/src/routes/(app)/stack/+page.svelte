@@ -56,6 +56,7 @@
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
+    import { untrack } from 'svelte';
     import { throttle } from 'throttle-debounce';
 
     import { ALL_TIME_QUERY_VALUE, getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../redirect-to-events.svelte';
@@ -466,11 +467,14 @@
     }
 
     $effect(() => {
-        if (!savedViewsState.activeSavedView) {
+        const activeSavedViewId = savedViewsState.activeSavedView?.id;
+        if (!activeSavedViewId) {
             return;
         }
 
-        updateFilters(getCurrentFilters());
+        untrack(() => {
+            updateFilters(getCurrentFilters());
+        });
     });
 
     function getQueryFilterParams(filters: FacetedFilter.IFilter[]) {
