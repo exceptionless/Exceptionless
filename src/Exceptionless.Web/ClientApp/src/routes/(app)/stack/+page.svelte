@@ -118,18 +118,8 @@
     }
 
     function getEffectiveFilter(): null | string {
-        const queryFilters = getQueryFilters();
-        if (queryParams.filter != null) {
-            const queryFilter = toFilter((queryFilters ?? []).filter((f) => f.type !== 'date'));
-            return [queryParams.filter, queryFilter].filter((filter) => filter).join(' ') || null;
-        }
-
-        if (queryFilters != null) {
-            const queryFilter = toFilter(queryFilters.filter((f) => f.type !== 'date'));
-            return queryFilter || null;
-        }
-
-        return savedViewsState.activeSavedView?.filter ?? DEFAULT_FILTER;
+        const filter = toFilter(getCurrentFiltersWithoutTime());
+        return filter || null;
     }
 
     function getQueryFilters(): FacetedFilter.IFilter[] | null {
@@ -275,21 +265,104 @@
     );
 
     function getCurrentFilters(): FacetedFilter.IFilter[] {
-        const filter = getEffectiveFilter();
+        return applyTimeFilter(getCurrentFiltersWithoutTime(), getQueryTime());
+    }
+
+    function getCurrentFiltersWithoutTime(): FacetedFilter.IFilter[] {
+        const savedViewFilters = getSavedViewFilters();
+        const queryFilters = getQueryFilters() ?? [];
+        const expressionFilters = queryParams.filter != null ? getFiltersFromCache(filterCacheKey(queryParams.filter), queryParams.filter) : [];
+
+        if (savedViewFilters) {
+            return mergeFilterOverrides(
+                savedViewFilters.filter((filter) => filter.type !== 'date'),
+                [...expressionFilters, ...queryFilters],
+                getQueryFilterRemovalKeys(savedViewFilters)
+            );
+        }
+
+        if (expressionFilters.length > 0 || queryFilters.length > 0) {
+            return [...expressionFilters, ...queryFilters];
+        }
+
+        const filter = savedViewsState.activeSavedView?.filter ?? DEFAULT_FILTER;
+        return getFiltersFromCache(filterCacheKey(filter), filter);
+    }
+
+    function getSavedViewFilters(): FacetedFilter.IFilter[] | null {
         const savedView = savedViewsState.activeSavedView;
-
-        const queryFilters = getQueryFilters();
-        if (queryFilters != null || queryParams.filter != null) {
-            const expressionFilters = queryParams.filter != null ? getFiltersFromCache(filterCacheKey(queryParams.filter), queryParams.filter) : [];
-            return applyTimeFilter([...expressionFilters, ...(queryFilters ?? [])], getQueryTime());
+        if (!savedView?.filter_definitions) {
+            return null;
         }
 
-        if (queryParams.filter == null && savedView?.filter_definitions && filter === (savedView.filter ?? null)) {
-            const hydrated = deserializeFilters(savedView.filter_definitions);
-            return applyTimeFilter(hydrated, getQueryTime());
+        return deserializeFilters(savedView.filter_definitions);
+    }
+
+    function getQueryFilterRemovalKeys(savedViewFilters: FacetedFilter.IFilter[]): string[] {
+        const removedKeys: string[] = [];
+
+        if (queryParams.bot === '') {
+            removedKeys.push('boolean-bot');
         }
 
-        return applyTimeFilter(getFiltersFromCache(filterCacheKey(filter), filter), getQueryTime());
+        if (queryParams.first === '') {
+            removedKeys.push('boolean-first');
+        }
+
+        if (queryParams.filter === '') {
+            removedKeys.push(...savedViewFilters.filter((filter) => filter.type !== 'date' && !isQueryParamFilter(filter)).map((filter) => filter.key));
+        }
+
+        if (queryParams.level === '') {
+            removedKeys.push('level');
+        }
+
+        if (queryParams.project === '') {
+            removedKeys.push('project');
+        }
+
+        if (queryParams.reference === '') {
+            removedKeys.push('reference');
+        }
+
+        if (queryParams.session === '') {
+            removedKeys.push('session');
+        }
+
+        if (queryParams.stack === '') {
+            removedKeys.push('string-stack');
+        }
+
+        if (queryParams.status === '') {
+            removedKeys.push('status');
+        }
+
+        if (queryParams.tag === '') {
+            removedKeys.push('tag');
+        }
+
+        if (queryParams.type === '') {
+            removedKeys.push('type');
+        }
+
+        if (queryParams.version === '') {
+            removedKeys.push('version-version');
+        }
+
+        return removedKeys;
+    }
+
+    function mergeFilterOverrides(
+        baseFilters: FacetedFilter.IFilter[],
+        overrideFilters: FacetedFilter.IFilter[],
+        removedFilterKeys: string[] = []
+    ): FacetedFilter.IFilter[] {
+        if (overrideFilters.length === 0 && removedFilterKeys.length === 0) {
+            return baseFilters;
+        }
+
+        const overrideKeys = new Set([...overrideFilters.map((filter) => filter.key), ...removedFilterKeys]);
+        return [...baseFilters.filter((filter) => !overrideKeys.has(filter.key)), ...overrideFilters];
     }
 
     let filters = $state(getCurrentFilters());
@@ -345,9 +418,12 @@
         const time = ((updatedFilters.find((f) => f.type === 'date') as DateFilter | undefined)?.value as string | undefined) ?? null;
         const baseTime = savedViewsState.activeSavedView?.time ?? DEFAULT_TIME_RANGE;
         const baseFilter = savedViewsState.activeSavedView?.filter ?? DEFAULT_FILTER;
-        const queryFilterParams = getQueryFilterParams(updatedFilters);
+        const savedViewFilters = getSavedViewFilters();
+        const baseQueryFilterParams = getQueryFilterParams(savedViewFilters ?? []);
+        const queryFilterParams = getQueryFilterParamDeltas(getQueryFilterParams(updatedFilters), baseQueryFilterParams);
+        const baseExpressionFilterParam = savedViewFilters ? toFilter(savedViewFilters.filter((f) => f.type !== 'date' && !isQueryParamFilter(f))) : baseFilter;
 
-        const newFilterParam = filterParam === baseFilter ? null : filterParam || null;
+        const newFilterParam = filterParam === baseExpressionFilterParam ? null : filterParam || (savedViewFilters && baseExpressionFilterParam ? '' : null);
         const newTimeParam = time === baseTime ? null : (time ?? ALL_TIME_QUERY_VALUE);
 
         updateFilterCache(filterCacheKey(filter), updatedFilters);
@@ -386,6 +462,14 @@
         queryParams.filter = newFilterParam;
     }
 
+    $effect(() => {
+        if (!savedViewsState.activeSavedView) {
+            return;
+        }
+
+        updateFilters(getCurrentFilters());
+    });
+
     function getQueryFilterParams(filters: FacetedFilter.IFilter[]) {
         const botFilter = filters.find((f): f is BooleanFilter => f instanceof BooleanFilter && f.term === 'bot');
         const firstFilter = filters.find((f): f is BooleanFilter => f instanceof BooleanFilter && f.term === 'first');
@@ -411,6 +495,30 @@
             tag: tagFilter?.value.length ? tagFilter.value.join(',') : null,
             type: typeFilter?.value.length ? typeFilter.value.join(',') : null,
             version: versionFilter?.value?.trim() ? versionFilter.value : null
+        };
+    }
+
+    function getQueryFilterParamDeltas(currentParams: ReturnType<typeof getQueryFilterParams>, baseParams: ReturnType<typeof getQueryFilterParams>) {
+        const getDelta = (currentValue: null | string, baseValue: null | string): null | string => {
+            if (currentValue === baseValue) {
+                return null;
+            }
+
+            return currentValue ?? (baseValue ? '' : null);
+        };
+
+        return {
+            bot: getDelta(currentParams.bot, baseParams.bot),
+            first: getDelta(currentParams.first, baseParams.first),
+            level: getDelta(currentParams.level, baseParams.level),
+            project: getDelta(currentParams.project, baseParams.project),
+            reference: getDelta(currentParams.reference, baseParams.reference),
+            session: getDelta(currentParams.session, baseParams.session),
+            stack: getDelta(currentParams.stack, baseParams.stack),
+            status: getDelta(currentParams.status, baseParams.status),
+            tag: getDelta(currentParams.tag, baseParams.tag),
+            type: getDelta(currentParams.type, baseParams.type),
+            version: getDelta(currentParams.version, baseParams.version)
         };
     }
 
