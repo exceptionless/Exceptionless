@@ -2,6 +2,7 @@ import type { IFilter } from '$comp/faceted-filter';
 
 import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
+import { toFilter } from '$features/events/components/filters/helpers.svelte';
 import { SvelteURLSearchParams } from 'svelte/reactivity';
 
 interface ListNavigationOptions {
@@ -21,7 +22,11 @@ export function buildListPageHref(page: ListPage, _organizationId: string | unde
     const path = resolve(listPagePaths[page]);
     const filtersForNavigation = options.time === null ? filters.filter((filter) => filter.type !== 'date') : filters;
     const queryParams = new SvelteURLSearchParams();
-    filtersForNavigation.forEach((filter) => trySetRegisteredFilterQueryParam(queryParams, filter));
+    const rawFilters = filtersForNavigation.filter((filter) => filter.type !== 'date' && !trySetRegisteredFilterQueryParam(queryParams, filter));
+    const rawFilter = toFilter(rawFilters);
+    if (rawFilter) {
+        queryParams.set('filter', rawFilter);
+    }
 
     const dateFilter = filters.find((filter): filter is IFilter & { value: unknown } => filter.type === 'date' && 'value' in filter);
     const time = 'time' in options ? options.time : dateFilter?.value;
@@ -66,8 +71,61 @@ function trySetRegisteredFilterQueryParam(queryParams: SvelteURLSearchParams, fi
         return true;
     }
 
-    if (filter.type === 'project' && 'value' in filter && Array.isArray(filter.value) && filter.value.length === 1) {
-        queryParams.set('project', filter.value[0]);
+    if (filter.type === 'project' && 'value' in filter && Array.isArray(filter.value) && filter.value.length > 0) {
+        queryParams.set('project', filter.value.join(','));
+        return true;
+    }
+
+    if (
+        filter.type === 'boolean' &&
+        'term' in filter &&
+        (filter.term === 'bot' || filter.term === 'first') &&
+        'value' in filter &&
+        typeof filter.value === 'boolean'
+    ) {
+        queryParams.set(filter.term, String(filter.value));
+        return true;
+    }
+
+    if (filter.type === 'level' && 'value' in filter && Array.isArray(filter.value) && filter.value.length > 0) {
+        queryParams.set('level', filter.value.join(','));
+        return true;
+    }
+
+    if (filter.type === 'reference' && 'value' in filter && typeof filter.value === 'string' && filter.value.trim()) {
+        queryParams.set('reference', filter.value);
+        return true;
+    }
+
+    if (filter.type === 'session' && 'value' in filter && typeof filter.value === 'string' && filter.value.trim()) {
+        queryParams.set('session', filter.value);
+        return true;
+    }
+
+    if (filter.type === 'status' && 'value' in filter && Array.isArray(filter.value) && filter.value.length > 0) {
+        queryParams.set('status', filter.value.join(','));
+        return true;
+    }
+
+    if (filter.type === 'tag' && 'value' in filter && Array.isArray(filter.value) && filter.value.length > 0) {
+        queryParams.set('tag', filter.value.join(','));
+        return true;
+    }
+
+    if (filter.type === 'type' && 'value' in filter && Array.isArray(filter.value) && filter.value.length > 0) {
+        queryParams.set('type', filter.value.join(','));
+        return true;
+    }
+
+    if (
+        filter.type === 'version' &&
+        'term' in filter &&
+        filter.term === 'version' &&
+        'value' in filter &&
+        typeof filter.value === 'string' &&
+        filter.value.trim()
+    ) {
+        queryParams.set('version', filter.value);
         return true;
     }
 
