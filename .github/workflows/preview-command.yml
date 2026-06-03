@@ -5,8 +5,7 @@ on:
     types: [created]
 
 permissions:
-  actions: write
-  contents: read
+  contents: write
   issues: write
   pull-requests: read
 
@@ -36,12 +35,16 @@ jobs:
               return;
             }
 
-            await github.rest.reactions.createForIssueComment({
-              owner,
-              repo,
-              comment_id: context.payload.comment.id,
-              content: "eyes"
-            });
+            try {
+              await github.rest.reactions.createForIssueComment({
+                owner,
+                repo,
+                comment_id: context.payload.comment.id,
+                content: "eyes"
+              });
+            } catch (error) {
+              core.warning(`Could not add reaction to /preview comment: ${error.message}`);
+            }
 
             if (!trustedAssociations.has(association)) {
               await github.rest.issues.createComment({
@@ -88,25 +91,27 @@ jobs:
               return;
             }
 
+            const previewLabel = "dev-preview";
             try {
-              await github.request("PATCH /repos/{owner}/{repo}/actions/variables/{name}", {
+              await github.rest.issues.createLabel({
                 owner,
                 repo,
-                name: "DEV_DEPLOY_BRANCH",
-                value: headRef
+                name: previewLabel,
+                color: "0E8A16",
+                description: "Deploy this pull request to the shared dev environment."
               });
             } catch (error) {
-              if (error.status !== 404) {
+              if (error.status !== 422) {
                 throw error;
               }
-
-              await github.request("POST /repos/{owner}/{repo}/actions/variables", {
-                owner,
-                repo,
-                name: "DEV_DEPLOY_BRANCH",
-                value: headRef
-              });
             }
+
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: pullRequest.number,
+              labels: [previewLabel]
+            });
 
             core.setOutput("pr-number", String(pullRequest.number));
             core.setOutput("head-ref", headRef);
@@ -127,17 +132,38 @@ jobs:
 
             - Branch: `${{ steps.preview.outputs.head-label }}`
             - Commit: [`${{ steps.preview.outputs.head-short-sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ steps.preview.outputs.head-sha }})
+            - Command run: [view logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
       - name: Dispatch Preview
         if: ${{ steps.preview.outputs.pr-number != '' }}
         uses: actions/github-script@v7
         env:
+          PR_NUMBER: ${{ steps.preview.outputs.pr-number }}
           HEAD_REF: ${{ steps.preview.outputs.head-ref }}
+          HEAD_LABEL: ${{ steps.preview.outputs.head-label }}
+          HEAD_SHA: ${{ steps.preview.outputs.head-sha }}
         with:
           script: |
-            await github.rest.actions.createWorkflowDispatch({
+            await github.rest.repos.createDispatchEvent({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              workflow_id: "build.yaml",
-              ref: process.env.HEAD_REF
+              event_type: "preview",
+              client_payload: {
+                pr_number: Number(process.env.PR_NUMBER),
+                head_ref: process.env.HEAD_REF,
+                head_label: process.env.HEAD_LABEL,
+                head_sha: process.env.HEAD_SHA
+              }
             });
+
+      - name: Post sticky command failure comment
+        if: ${{ failure() && steps.preview.outputs.pr-number != '' }}
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          number: ${{ steps.preview.outputs.pr-number }}
+          header: exceptionless-preview
+          message: |
+            Preview deploy failed before the build workflow started. See [command run logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+
+            - Branch: `${{ steps.preview.outputs.head-label }}`
+            - Commit: [`${{ steps.preview.outputs.head-short-sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ steps.preview.outputs.head-sha }})
