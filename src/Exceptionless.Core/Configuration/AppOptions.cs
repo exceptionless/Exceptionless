@@ -70,6 +70,7 @@ public class AppOptions
     public int BulkBatchSize { get; internal set; }
 
     public CacheOptions CacheOptions { get; internal set; } = null!;
+    public CustomFieldOptions CustomFieldOptions { get; internal set; } = null!;
     public MessageBusOptions MessageBusOptions { get; internal set; } = null!;
     public QueueOptions QueueOptions { get; internal set; } = null!;
     public StorageOptions StorageOptions { get; internal set; } = null!;
@@ -122,6 +123,7 @@ public class AppOptions
         catch { }
 
         options.CacheOptions = CacheOptions.ReadFromConfiguration(config, options);
+        options.CustomFieldOptions = CustomFieldOptions.ReadFromConfiguration(config, options);
         options.MessageBusOptions = MessageBusOptions.ReadFromConfiguration(config, options);
         options.QueueOptions = QueueOptions.ReadFromConfiguration(config, options);
         options.StorageOptions = StorageOptions.ReadFromConfiguration(config, options);

@@ -6,6 +6,7 @@ using Exceptionless.Core.Mail;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
+using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
@@ -15,13 +16,19 @@ using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Caching;
+using Foundatio.Jobs;
 using Foundatio.Messaging;
+using Foundatio.Queues;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch.CustomFields;
+using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Stripe;
+using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 using Invoice = Exceptionless.Web.Models.Invoice;
 using InvoiceLineItem = Exceptionless.Web.Models.InvoiceLineItem;
@@ -33,6 +40,7 @@ namespace Exceptionless.Web.Controllers;
 public class OrganizationController : RepositoryApiController<IOrganizationRepository, Organization, ViewOrganization, NewOrganization, NewOrganization>
 {
     private readonly OrganizationService _organizationService;
+    private readonly EventCustomFieldService _eventCustomFieldService;
     private readonly ICacheClient _cacheClient;
     private readonly IEventRepository _eventRepository;
     private readonly IUserRepository _userRepository;
@@ -43,10 +51,14 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     private readonly IStripeBillingClient _stripeBillingClient;
     private readonly IMailer _mailer;
     private readonly IMessagePublisher _messagePublisher;
+    private readonly ICustomFieldDefinitionRepository _customFieldDefinitionRepository;
+    private readonly ISavedViewRepository _savedViewRepository;
+    private readonly IQueue<WorkItemData> _workItemQueue;
     private readonly AppOptions _options;
 
     public OrganizationController(
         OrganizationService organizationService,
+        EventCustomFieldService eventCustomFieldService,
         IOrganizationRepository organizationRepository,
         ICacheClient cacheClient,
         IEventRepository eventRepository,
@@ -58,6 +70,9 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         IStripeBillingClient stripeBillingClient,
         IMailer mailer,
         IMessagePublisher messagePublisher,
+        ICustomFieldDefinitionRepository customFieldDefinitionRepository,
+        ISavedViewRepository savedViewRepository,
+        IQueue<WorkItemData> workItemQueue,
         ApiMapper mapper,
         IAppQueryValidator validator,
         AppOptions options,
@@ -65,6 +80,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         ILoggerFactory loggerFactory) : base(organizationRepository, mapper, validator, timeProvider, loggerFactory)
     {
         _organizationService = organizationService;
+        _eventCustomFieldService = eventCustomFieldService;
         _cacheClient = cacheClient;
         _eventRepository = eventRepository;
         _userRepository = userRepository;
@@ -75,6 +91,9 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         _stripeBillingClient = stripeBillingClient;
         _mailer = mailer;
         _messagePublisher = messagePublisher;
+        _customFieldDefinitionRepository = customFieldDefinitionRepository;
+        _savedViewRepository = savedViewRepository;
+        _workItemQueue = workItemQueue;
         _options = options;
     }
 
@@ -910,6 +929,8 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
         var organization = await base.AddModelAsync(value);
 
+        await _eventCustomFieldService.EnsureSystemFieldsAsync(organization.Id);
+
         user.OrganizationIds.Add(organization.Id);
         await _userRepository.SaveAsync(user, o => o.Cache());
         await _messagePublisher.PublishAsync(new UserMembershipChanged
@@ -1006,4 +1027,232 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
         return viewOrganizations;
     }
+
+    #region Custom Fields
+
+    /// <summary>
+    /// Get event custom fields
+    /// </summary>
+    /// <param name="id">The identifier of the organization.</param>
+    /// <response code="404">The organization could not be found.</response>
+    [HttpGet("{id:objectid}/event-custom-fields")]
+    public async Task<ActionResult<IReadOnlyCollection<CustomFieldDefinitionResponse>>> GetEventCustomFieldsAsync(string id)
+    {
+        var organization = await GetModelAsync(id, false);
+        if (organization is null)
+            return NotFound();
+
+        var results = await _customFieldDefinitionRepository.FindByTenantAsync(nameof(PersistentEvent), id);
+        var userFields = results.Documents
+            .Where(f => !EventCustomFieldService.IsSystemField(f.Name))
+            .Select(CustomFieldDefinitionResponse.FromDefinition)
+            .ToList();
+        return Ok(userFields);
+    }
+
+    /// <summary>
+    /// Create event custom field
+    /// </summary>
+    /// <param name="id">The identifier of the organization.</param>
+    /// <param name="model">The custom field definition to create.</param>
+    /// <response code="400">An error occurred while creating the custom field.</response>
+    /// <response code="404">The organization could not be found.</response>
+    [HttpPost("{id:objectid}/event-custom-fields")]
+    [Consumes("application/json")]
+    public async Task<ActionResult<CustomFieldDefinitionResponse>> PostEventCustomFieldAsync(string id, NewCustomFieldDefinition model)
+    {
+        var organization = await GetModelAsync(id, false);
+        if (organization is null)
+            return NotFound();
+
+        if (!organization.HasPremiumFeatures)
+            return Problem(
+                detail: "Custom fields require a paid plan. Please upgrade to add custom fields.",
+                statusCode: StatusCodes.Status426UpgradeRequired);
+
+        // Prevent creation of system/reserved fields
+        if (EventCustomFieldService.IsSystemField(model.Name))
+            return Problem(
+                detail: $"'{model.Name}' is a reserved system field and cannot be created manually.",
+                statusCode: StatusCodes.Status400BadRequest);
+
+        // Normalize IndexType to lowercase to match the case-sensitive ConvertValue switch.
+        // Validation already confirmed IndexType is one of the known types (case-insensitive),
+        // so normalizing here ensures the stored value and the runtime switch agree.
+        var normalizedIndexType = model.IndexType.ToLowerInvariant();
+
+        // CreateFieldAsync holds a distributed lock so concurrent requests from the same org
+        // cannot race past the quota check. It returns null on quota exceeded or duplicate name.
+        CustomFieldDefinition? definition;
+        try
+        {
+            definition = await _eventCustomFieldService.CreateFieldAsync(
+                id,
+                model.Name,
+                normalizedIndexType,
+                _options.CustomFieldOptions.MaxFieldsPerOrganization,
+                model.Description,
+                model.DisplayOrder,
+                HttpContext.RequestAborted);
+        }
+        catch (Exception ex) when (ex is ArgumentException or ValidationException or InvalidOperationException or DocumentValidationException)
+        {
+            ModelState.AddModelError("general", ex.Message);
+            return ValidationProblem(ModelState);
+        }
+
+        if (definition is null)
+        {
+            // Determine which error to surface: quota or duplicate.
+            var existingPage = await _customFieldDefinitionRepository.FindByTenantAsync(nameof(PersistentEvent), id);
+            var allActive = new List<CustomFieldDefinition>(existingPage.Documents);
+            while (await existingPage.NextPageAsync())
+                allActive.AddRange(existingPage.Documents);
+
+            if (allActive.Any(f => String.Equals(f.Name, model.Name, StringComparison.OrdinalIgnoreCase)))
+                return Problem(
+                    detail: $"A custom field named '{model.Name}' already exists for this organization.",
+                    statusCode: StatusCodes.Status400BadRequest);
+
+            return Problem(
+                detail: $"Maximum of {_options.CustomFieldOptions.MaxFieldsPerOrganization} custom fields per organization has been reached.",
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        return StatusCode(StatusCodes.Status201Created, CustomFieldDefinitionResponse.FromDefinition(definition));
+    }
+
+    /// <summary>
+    /// Update event custom field
+    /// </summary>
+    /// <param name="id">The identifier of the organization.</param>
+    /// <param name="fieldId">The identifier of the custom field definition.</param>
+    /// <param name="model">The changes to apply.</param>
+    /// <response code="404">The organization or custom field could not be found.</response>
+    [HttpPatch("{id:objectid}/event-custom-fields/{fieldId}")]
+    [Consumes("application/json")]
+    public async Task<ActionResult<CustomFieldDefinitionResponse>> PatchEventCustomFieldAsync(string id, string fieldId, UpdateCustomFieldDefinition model)
+    {
+        var organization = await GetModelAsync(id, false);
+        if (organization is null)
+            return NotFound();
+
+        if (!organization.HasPremiumFeatures)
+            return Problem(
+                detail: "Custom fields require a paid plan. Please upgrade to manage custom fields.",
+                statusCode: StatusCodes.Status426UpgradeRequired);
+
+        var definition = await _customFieldDefinitionRepository.GetByIdAsync(fieldId);
+        if (definition is null || definition.TenantKey != id || definition.EntityType != nameof(PersistentEvent))
+            return NotFound();
+
+        // Soft-deleted definitions are not visible to users; treat as gone.
+        if (definition.IsDeleted)
+            return NotFound();
+
+        // System fields cannot be modified by users.
+        if (EventCustomFieldService.IsSystemField(definition.Name))
+            return Problem(
+                detail: $"'{definition.Name}' is a reserved system field and cannot be modified.",
+                statusCode: StatusCodes.Status400BadRequest);
+
+        bool changed = false;
+        if (model.Description is not null)
+        {
+            // Empty string clears the description; any non-empty value sets it.
+            definition.Description = model.Description.Length == 0 ? null : model.Description;
+            changed = true;
+        }
+
+        if (model.DisplayOrder.HasValue)
+        {
+            definition.DisplayOrder = model.DisplayOrder.Value;
+            changed = true;
+        }
+
+        if (changed)
+            await _customFieldDefinitionRepository.SaveAsync(definition);
+
+        return Ok(CustomFieldDefinitionResponse.FromDefinition(definition));
+    }
+
+    /// <summary>
+    /// Delete event custom field
+    /// </summary>
+    /// <param name="id">The identifier of the organization.</param>
+    /// <param name="fieldId">The identifier of the custom field definition.</param>
+    /// <response code="202">The custom field was queued for soft deletion.</response>
+    /// <response code="404">The organization or custom field could not be found.</response>
+    /// <response code="409">The custom field is currently used in a saved filter and cannot be deleted.</response>
+    [HttpDelete("{id:objectid}/event-custom-fields/{fieldId}")]
+    public async Task<ActionResult> DeleteEventCustomFieldAsync(string id, string fieldId)
+    {
+        var organization = await GetModelAsync(id, false);
+        if (organization is null)
+            return NotFound();
+
+        if (!organization.HasPremiumFeatures)
+            return Problem(
+                detail: "Custom fields require a paid plan. Please upgrade to manage custom fields.",
+                statusCode: StatusCodes.Status426UpgradeRequired);
+
+        var definition = await _customFieldDefinitionRepository.GetByIdAsync(fieldId);
+        if (definition is null || definition.TenantKey != id || definition.EntityType != nameof(PersistentEvent))
+            return NotFound();
+
+        // Soft-deleted definitions are already gone — return 404 rather than 409 to avoid confusion.
+        if (definition.IsDeleted)
+            return NotFound();
+
+        // System/reserved fields cannot be deleted
+        if (EventCustomFieldService.IsSystemField(definition.Name))
+            return Problem(
+                detail: $"'{definition.Name}' is a reserved system field and cannot be deleted.",
+                statusCode: StatusCodes.Status400BadRequest);
+
+        // Check if field is referenced in any saved filters (idx.fieldname or data.fieldname paths).
+        var fieldNamePattern = BuildFieldNameRegex(definition.Name);
+        var savedViews = await _savedViewRepository.GetByOrganizationIdAsync(id, o => o.SearchAfterPaging().PageLimit(1000));
+        var fieldInUse = savedViews.Documents.Any(v => IsCustomFieldUsedInFilter(v.Filter, fieldNamePattern));
+        while (!fieldInUse && await savedViews.NextPageAsync())
+            fieldInUse = savedViews.Documents.Any(v => IsCustomFieldUsedInFilter(v.Filter, fieldNamePattern));
+
+        if (fieldInUse)
+            return Problem(
+                detail: $"Custom field '{definition.Name}' is used in one or more saved filters and cannot be deleted. Remove it from all filters first.",
+                statusCode: StatusCodes.Status409Conflict);
+
+        // Soft-delete: mark as deleted so no new events index to this slot.
+        // The index slot is intentionally NOT freed here. Releasing slots for reuse before the
+        // org's retention window expires would contaminate new-field queries with historical data
+        // from the deleted field (same slot number → same ES field). A future retention-aware
+        // cleanup job will reclaim slots safely after all events using the old slot have aged out.
+        definition.IsDeleted = true;
+        await _customFieldDefinitionRepository.SaveAsync(definition);
+
+        await _workItemQueue.EnqueueAsync(new RemoveCustomFieldWorkItem
+        {
+            OrganizationId = id,
+            CustomFieldDefinitionId = definition.Id,
+            FieldName = definition.Name
+        });
+
+        return Accepted();
+    }
+
+    private static Regex BuildFieldNameRegex(string fieldName)
+    {
+        var escapedName = Regex.Escape(fieldName);
+        // Match both idx.fieldname (the indexed slot path) and data.fieldname (the raw data path).
+        // Both can appear in saved view filters, and both must be cleared before safe deletion.
+        return new Regex($@"(?<![a-zA-Z0-9_.-])(?:idx|data)\.{escapedName}(?![a-zA-Z0-9_.-])",
+            RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
+    }
+
+    private static bool IsCustomFieldUsedInFilter(string? filter, Regex fieldNamePattern)
+    {
+        return !String.IsNullOrWhiteSpace(filter) && fieldNamePattern.IsMatch(filter);
+    }
+
+    #endregion
 }

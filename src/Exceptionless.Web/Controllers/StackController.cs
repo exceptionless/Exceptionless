@@ -490,6 +490,11 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
 
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures;
 
+        if (sf.UsesPremiumFeatures && sf.Organizations.Count > 0 && sf.Organizations.All(o => !o.HasPremiumFeatures))
+            return Problem(
+                detail: "Searching with custom fields requires a paid plan. Please upgrade to use this filter.",
+                statusCode: StatusCodes.Status426UpgradeRequired);
+
         try
         {
             var results = await _repository.FindAsync(q => q.AppFilter(ShouldApplySystemFilter(sf, filter) ? sf : null).FilterExpression(filter).SortExpression(sort).DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field), o => o.PageNumber(page).PageLimit(limit));

@@ -1,8 +1,10 @@
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch.CustomFields;
 using Foundatio.Repositories.Models;
 using Xunit;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
@@ -13,6 +15,7 @@ public sealed class EventIndexTests : IntegrationTestsBase
 {
     private readonly EventData _eventData;
     private readonly IEventRepository _repository;
+    private readonly ICustomFieldDefinitionRepository _customFieldDefinitionRepository;
     private readonly PersistentEventQueryValidator _validator;
 
     public EventIndexTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
@@ -20,12 +23,22 @@ public sealed class EventIndexTests : IntegrationTestsBase
         TimeProvider.SetUtcNow(new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc));
         _eventData = GetService<EventData>();
         _repository = GetService<IEventRepository>();
+        _customFieldDefinitionRepository = GetService<ICustomFieldDefinitionRepository>();
         _validator = GetService<PersistentEventQueryValidator>();
     }
 
     protected override async Task ResetDataAsync()
     {
         await base.ResetDataAsync();
+
+        // Register custom field definitions for the test data fields
+        await _customFieldDefinitionRepository.AddFieldAsync(nameof(PersistentEvent), TestConstants.OrganizationId, "anumber", "double");
+        await _customFieldDefinitionRepository.AddFieldAsync(nameof(PersistentEvent), TestConstants.OrganizationId, "FriendlyErrorIdentifier", "keyword");
+        await _customFieldDefinitionRepository.AddFieldAsync(nameof(PersistentEvent), TestConstants.OrganizationId, "some-date", "date");
+        await _customFieldDefinitionRepository.AddFieldAsync(nameof(PersistentEvent), TestConstants.OrganizationId, "EntityId", "keyword");
+        await _customFieldDefinitionRepository.AddFieldAsync(nameof(PersistentEvent), TestConstants.OrganizationId, "UserId", "keyword");
+        await RefreshDataAsync();
+
         await _eventData.CreateSearchDataAsync();
     }
 
@@ -445,6 +458,6 @@ public sealed class EventIndexTests : IntegrationTestsBase
         var result = await _validator.ValidateQueryAsync(filter);
         Assert.True(result.IsValid);
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
-        return await _repository.FindAsync(q => q.FilterExpression(filter));
+        return await _repository.FindAsync(q => q.Organization(TestConstants.OrganizationId).FilterExpression(filter));
     }
 }

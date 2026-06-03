@@ -1142,6 +1142,70 @@
   },
   {
     "Controller": "OrganizationController",
+    "Action": "GetEventCustomFieldsAsync",
+    "HttpMethod": "GET",
+    "Route": "/api/v2/organizations/{id:objectid}/event-custom-fields",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OrganizationController",
+    "Action": "PostEventCustomFieldAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/organizations/{id:objectid}/event-custom-fields",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [
+      "application/json"
+    ],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OrganizationController",
+    "Action": "DeleteEventCustomFieldAsync",
+    "HttpMethod": "DELETE",
+    "Route": "/api/v2/organizations/{id:objectid}/event-custom-fields/{fieldId}",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OrganizationController",
+    "Action": "PatchEventCustomFieldAsync",
+    "HttpMethod": "PATCH",
+    "Route": "/api/v2/organizations/{id:objectid}/event-custom-fields/{fieldId}",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [
+      "application/json"
+    ],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OrganizationController",
     "Action": "RemoveFeatureAsync",
     "HttpMethod": "DELETE",
     "Route": "/api/v2/organizations/{id:objectid}/features/{feature:minlength(1)}",

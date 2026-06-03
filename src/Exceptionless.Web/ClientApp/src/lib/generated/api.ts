@@ -586,6 +586,7 @@ export interface ViewSavedView {
   sort?: null | string;
   /** @format int32 */
   version: number;
+  uses_premium_features: boolean;
   view_type: string;
   /** @format date-time */
   created_utc: string;

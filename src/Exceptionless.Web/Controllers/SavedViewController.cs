@@ -29,6 +29,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
 
     private readonly IOrganizationRepository _organizationRepository;
     private readonly ILockProvider _lockProvider;
+    private readonly PersistentEventQueryValidator _eventQueryValidator;
 
     public SavedViewController(
         ISavedViewRepository repository,
@@ -36,11 +37,13 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         ILockProvider lockProvider,
         ApiMapper mapper,
         IAppQueryValidator validator,
+        PersistentEventQueryValidator eventQueryValidator,
         TimeProvider timeProvider,
         ILoggerFactory loggerFactory) : base(repository, mapper, validator, timeProvider, loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _lockProvider = lockProvider;
+        _eventQueryValidator = eventQueryValidator;
     }
 
     protected override SavedView MapToModel(NewSavedView newModel)
@@ -455,15 +458,18 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
             .FirstOrDefault();
     }
 
-    protected override Task<SavedView> AddModelAsync(SavedView value)
+    protected override async Task<SavedView> AddModelAsync(SavedView value)
     {
         value.CreatedByUserId = CurrentUser.Id;
         value.Version = 1;
 
-        return base.AddModelAsync(value);
+        var pr = await _eventQueryValidator.ValidateQueryAsync(value.Filter);
+        value.UsesPremiumFeatures = pr.UsesPremiumFeatures;
+
+        return await base.AddModelAsync(value);
     }
 
-    protected override Task<SavedView> UpdateModelAsync(SavedView original, Delta<UpdateSavedView> changes)
+    protected override async Task<SavedView> UpdateModelAsync(SavedView original, Delta<UpdateSavedView> changes)
     {
         var changedNames = changes.GetChangedPropertyNames();
         changes.Patch(original);
@@ -476,7 +482,13 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
 
         original.UpdatedByUserId = CurrentUser.Id;
 
-        return _repository.SaveAsync(original, o => o.Cache());
+        if (changedNames.Contains(nameof(UpdateSavedView.Filter)))
+        {
+            var pr = await _eventQueryValidator.ValidateQueryAsync(original.Filter);
+            original.UsesPremiumFeatures = pr.UsesPremiumFeatures;
+        }
+
+        return await _repository.SaveAsync(original, o => o.Cache());
     }
 
     protected override async Task<PermissionResult> CanDeleteAsync(SavedView value)

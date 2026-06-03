@@ -3,6 +3,7 @@
     import { Code, CodeBlock, H4 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
+    import IndexAsCustomFieldAction from '$features/organizations/custom-fields/components/index-as-custom-field-action.svelte';
     import { isJSONString, isObject, isString, isXmlString } from '$features/shared/typing';
     import { UseClipboard } from '$lib/hooks/use-clipboard.svelte';
     import ArrowDown from '@lucide/svelte/icons/arrow-down';
@@ -33,6 +34,21 @@
         promote = async () => {},
         title
     }: Props = $props();
+
+    function isPrimitiveData(value: unknown): boolean {
+        if (value === null || value === undefined) {
+            return false;
+        }
+
+        const type = typeof value;
+        return type === 'string' || type === 'number' || type === 'boolean';
+    }
+
+    function isIndexableFieldName(name: string): boolean {
+        return !name.startsWith('@') && /^[a-zA-Z0-9_.-]+$/.test(name) && name.length <= 100;
+    }
+
+    const canIndex = $derived(isPrimitiveData(data) && isIndexableFieldName(title));
 
     function transformData(data: unknown): unknown {
         if (isJSONString(data)) {
@@ -148,6 +164,9 @@
                                     Demote Tab
                                 </DropdownMenu.Item>
                             {/if}
+                        {/if}
+                        {#if canIndex}
+                            <IndexAsCustomFieldAction fieldName={title} />
                         {/if}
                     </DropdownMenu.Group>
                 </DropdownMenu.Content>

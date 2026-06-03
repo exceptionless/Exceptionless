@@ -11,6 +11,7 @@
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
     import Settings from '@lucide/svelte/icons/settings-2';
     import Wrench from '@lucide/svelte/icons/wrench';
+    import Zap from '@lucide/svelte/icons/zap';
     import { onDestroy } from 'svelte';
 
     import type { NavigationItem } from '../../../routes.svelte';
@@ -258,6 +259,13 @@
                                         <DropdownMenu.Item>
                                             <A variant="ghost" href={savedItem.href} class="w-full" onclick={onFlyoutLinkClick}>
                                                 {savedItem.title}
+                                                {#if savedItem.usesPremiumFeatures}
+                                                    <Zap
+                                                        class="text-muted-foreground ml-1 inline-block size-3"
+                                                        aria-label="Requires premium plan"
+                                                        title="This view uses premium features"
+                                                    />
+                                                {/if}
                                             </A>
                                         </DropdownMenu.Item>
                                     {/each}
@@ -308,6 +316,13 @@
                                                                 {...subProps}
                                                             >
                                                                 <span class="truncate">{savedItem.title}</span>
+                                                                {#if savedItem.usesPremiumFeatures}
+                                                                    <Zap
+                                                                        class="text-muted-foreground ml-auto size-3 shrink-0"
+                                                                        aria-label="Requires premium plan"
+                                                                        title="This view uses premium features"
+                                                                    />
+                                                                {/if}
                                                             </A>
                                                         {/snippet}
                                                     </Sidebar.MenuSubButton>

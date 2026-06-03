@@ -640,6 +640,7 @@ export const ViewSavedViewSchema = object({
   time: string().min(1, "Time is required").nullable().optional(),
   sort: string().min(1, "Sort is required").nullable().optional(),
   version: int32(),
+  uses_premium_features: boolean(),
   view_type: string().min(1, "View type is required"),
   created_utc: iso.datetime(),
   updated_utc: iso.datetime(),

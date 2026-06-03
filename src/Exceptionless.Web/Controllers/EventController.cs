@@ -242,6 +242,11 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || far.UsesPremiumFeatures;
 
+        if (sf.UsesPremiumFeatures && sf.Organizations.Count > 0 && sf.Organizations.All(o => !o.HasPremiumFeatures))
+            return Problem(
+                detail: "Searching with custom fields requires a paid plan. Please upgrade to use this filter.",
+                statusCode: StatusCodes.Status426UpgradeRequired);
+
         if (mode == "stack_new")
             filter = AddFirstOccurrenceFilter(ti.Range, filter);
 
@@ -297,6 +302,11 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
             return BadRequest(pr.Message);
 
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || usesPremiumFeatures;
+
+        if (sf.UsesPremiumFeatures && sf.Organizations.Count > 0 && sf.Organizations.All(o => !o.HasPremiumFeatures))
+            return Problem(
+                detail: "Searching with custom fields requires a paid plan. Please upgrade to use this filter.",
+                statusCode: StatusCodes.Status426UpgradeRequired);
 
         try
         {

@@ -42,4 +42,5 @@
       Include="..\..\..\..\Foundatio\Foundatio.Repositories\src\Foundatio.Repositories.Elasticsearch\Foundatio.Repositories.Elasticsearch.csproj"
       Condition="'$(ReferenceFoundatioRepositoriesSource)' == 'true'" />
   </ItemGroup>
+
 </Project>
