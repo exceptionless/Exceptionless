@@ -13,7 +13,7 @@
     import EventDetailSheet from '$features/events/components/event-detail-sheet.svelte';
     import EventsDashboardChart from '$features/events/components/events-dashboard-chart.svelte';
     import EventsStatsDashboard from '$features/events/components/events-stats-dashboard.svelte';
-    import { DateFilter, ProjectFilter, StatusFilter } from '$features/events/components/filters';
+    import { DateFilter, ProjectFilter, StatusFilter, StringFilter } from '$features/events/components/filters';
     import {
         applyTimeFilter,
         buildFilterCacheKey,
@@ -25,7 +25,6 @@
         serializeFilters,
         shouldRefreshPersistentEventChanged,
         toFilter,
-        toFilterFromSerializedFilters,
         updateFilterCache
     } from '$features/events/components/filters/helpers.svelte';
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
@@ -74,7 +73,9 @@
         filter: undefined as string | undefined,
         filters: undefined as string | undefined,
         limit: DEFAULT_LIMIT,
+        project: undefined as string | undefined,
         sort: undefined as string | undefined,
+        stack: undefined as string | undefined,
         time: undefined as string | undefined
     };
 
@@ -95,8 +96,10 @@
     }
 
     function getEffectiveFilter(): null | string {
-        if (queryParams.filters != null) {
-            return toFilterFromSerializedFilters(queryParams.filters);
+        const queryFilters = getQueryFilters();
+        if (queryFilters != null) {
+            const filter = toFilter(queryFilters.filter((f) => f.type !== 'date'));
+            return filter || null;
         }
 
         if (queryParams.filter != null) {
@@ -104,6 +107,20 @@
         }
 
         return savedViewsState.activeSavedView?.filter ?? DEFAULT_FILTER;
+    }
+
+    function getQueryFilters(): FacetedFilter.IFilter[] | null {
+        const filters = queryParams.filters != null ? deserializeFilters(queryParams.filters) : [];
+
+        if (queryParams.project) {
+            filters.push(new ProjectFilter([queryParams.project]));
+        }
+
+        if (queryParams.stack) {
+            filters.push(new StringFilter('stack', queryParams.stack));
+        }
+
+        return filters.length > 0 ? filters : null;
     }
 
     function getEffectiveSort(): null | string | undefined {
@@ -122,7 +139,9 @@
             filter: 'string',
             filters: 'string',
             limit: 'number',
+            project: 'string',
             sort: 'string',
+            stack: 'string',
             time: 'string'
         }
     });
@@ -179,8 +198,9 @@
         const filter = getEffectiveFilter();
         const savedView = savedViewsState.activeSavedView;
 
-        if (queryParams.filters != null) {
-            return applyTimeFilter(deserializeFilters(queryParams.filters), getQueryTime());
+        const queryFilters = getQueryFilters();
+        if (queryFilters != null) {
+            return applyTimeFilter(queryFilters, getQueryTime());
         }
 
         if (queryParams.filter == null && savedView?.filter_definitions && filter === (savedView.filter ?? null)) {
@@ -239,20 +259,33 @@
         const filter = toFilter(updatedFilters.filter((f) => f.type !== 'date'));
         const time = ((updatedFilters.find((f) => f.type === 'date') as DateFilter | undefined)?.value as string | undefined) ?? null;
         const baseTime = savedViewsState.activeSavedView?.time ?? DEFAULT_TIME_RANGE;
-        const filterDefinitions = serializeFilters(updatedFilters);
+        const stackFilter = updatedFilters.find((f): f is StringFilter => f.type === 'string' && f.key === 'string-stack');
+        const projectFilter = updatedFilters.find((f): f is ProjectFilter => f.type === 'project');
+        const filtersForDefinitions = updatedFilters.filter((f) => f !== stackFilter && f !== projectFilter);
+        const filterDefinitions = filtersForDefinitions.length > 0 ? serializeFilters(filtersForDefinitions) : null;
 
         const newFilterParam = null;
         const newTimeParam = time === baseTime ? null : (time ?? ALL_TIME_QUERY_VALUE);
         const newFiltersParam = filterDefinitions;
+        const newProjectParam = projectFilter?.value.length === 1 && projectFilter.value[0] ? projectFilter.value[0] : null;
+        const newStackParam = stackFilter?.value?.trim() ? stackFilter.value : null;
 
         updateFilterCache(filterCacheKey(filter), updatedFilters);
         // Only skip the watch when the URL will actually change from our update.
         // If the URL doesn't change, the watch won't fire and the flag would stay stale.
-        if (newFilterParam !== queryParams.filter || newTimeParam !== queryParams.time || newFiltersParam !== queryParams.filters) {
+        if (
+            newFilterParam !== queryParams.filter ||
+            newTimeParam !== queryParams.time ||
+            newFiltersParam !== queryParams.filters ||
+            newProjectParam !== queryParams.project ||
+            newStackParam !== queryParams.stack
+        ) {
             isInternalFilterUpdate = true;
         }
 
         queryParams.filters = newFiltersParam;
+        queryParams.project = newProjectParam;
+        queryParams.stack = newStackParam;
         queryParams.time = newTimeParam;
         queryParams.filter = newFilterParam;
     }

@@ -1,4 +1,4 @@
-import { DateFilter, StringFilter } from '$features/events/components/filters/models.svelte';
+import { DateFilter, ProjectFilter, StringFilter } from '$features/events/components/filters/models.svelte';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('$app/navigation', () => ({
@@ -23,6 +23,21 @@ describe('redirect-to-events', () => {
         // Assert
         expect(url.pathname).toBe('/(app)/event');
         expect(url.searchParams.get('time')).toBe(ALL_TIME_QUERY_VALUE);
-        expect(url.searchParams.get('filters')).toBe('[{"type":"string","term":"stack","value":"stack-1"}]');
+        expect(url.searchParams.get('stack')).toBe('stack-1');
+        expect(url.searchParams.has('filters')).toBe(false);
+    });
+
+    it('maps project filters to the project query parameter', async () => {
+        // Arrange
+        const { buildListPageHref } = await import('./redirect-to-events.svelte');
+
+        // Act
+        const href = buildListPageHref('events', 'org-1', [new ProjectFilter(['project-1'])]);
+        const url = new URL(href, 'https://example.test');
+
+        // Assert
+        expect(url.pathname).toBe('/(app)/event');
+        expect(url.searchParams.get('project')).toBe('project-1');
+        expect(url.searchParams.has('filters')).toBe(false);
     });
 });
