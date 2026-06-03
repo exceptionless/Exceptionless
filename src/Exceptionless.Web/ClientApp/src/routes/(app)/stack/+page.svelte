@@ -271,7 +271,10 @@
     function getCurrentFiltersWithoutTime(): FacetedFilter.IFilter[] {
         const savedViewFilters = getSavedViewFilters();
         const queryFilters = getQueryFilters() ?? [];
-        const expressionFilters = queryParams.filter != null ? getFiltersFromCache(filterCacheKey(queryParams.filter), queryParams.filter) : [];
+        const expressionFilters =
+            queryParams.filter != null
+                ? getFiltersFromCache(filterCacheKey(queryParams.filter), queryParams.filter).filter((filter) => filter.type !== 'date')
+                : [];
 
         if (savedViewFilters) {
             return mergeFilterOverrides(
@@ -286,7 +289,7 @@
         }
 
         const filter = savedViewsState.activeSavedView?.filter ?? DEFAULT_FILTER;
-        return getFiltersFromCache(filterCacheKey(filter), filter);
+        return getFiltersFromCache(filterCacheKey(filter), filter).filter((filter) => filter.type !== 'date');
     }
 
     function getSavedViewFilters(): FacetedFilter.IFilter[] | null {
