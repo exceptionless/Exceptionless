@@ -7,7 +7,7 @@ on:
 permissions:
   contents: write
   issues: write
-  pull-requests: read
+  pull-requests: write
 
 concurrency:
   group: dev-preview-command
@@ -91,6 +91,12 @@ jobs:
               return;
             }
 
+            core.setOutput("pr-number", String(pullRequest.number));
+            core.setOutput("head-ref", headRef);
+            core.setOutput("head-label", headLabel);
+            core.setOutput("head-sha", headSha);
+            core.setOutput("head-short-sha", headShortSha);
+
             const previewLabel = "dev-preview";
             try {
               await github.rest.issues.createLabel({
@@ -112,12 +118,6 @@ jobs:
               issue_number: pullRequest.number,
               labels: [previewLabel]
             });
-
-            core.setOutput("pr-number", String(pullRequest.number));
-            core.setOutput("head-ref", headRef);
-            core.setOutput("head-label", headLabel);
-            core.setOutput("head-sha", headSha);
-            core.setOutput("head-short-sha", headShortSha);
 
       - name: Post sticky queued comment
         if: ${{ steps.preview.outputs.pr-number != '' }}
