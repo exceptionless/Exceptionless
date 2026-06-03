@@ -50,6 +50,8 @@
     import { useEventListener, watch } from 'runed';
     import { debounce, throttle } from 'throttle-debounce';
 
+    import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../redirect-to-events.svelte';
+
     let selectedEventId: null | string = $state(null);
 
     function handleEventError(problem: ProblemDetails) {
@@ -205,7 +207,14 @@
         queryParams.limit ??= DEFAULT_LIMIT;
     });
 
-    function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): void {
+    async function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): Promise<void> {
+        const navigationOptions = getEventsNavigationOptionsForFilter(addedOrUpdated);
+        if (navigationOptions) {
+            selectedEventId = null;
+            await redirectToEventsWithFilter(organization.current, addedOrUpdated, navigationOptions);
+            return;
+        }
+
         const isNew = !filters?.some((f) => f.id === addedOrUpdated.id);
         const updatedFilters = filterChanged(filters ?? [], addedOrUpdated);
         updateFilters(updatedFilters);
