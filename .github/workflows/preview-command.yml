@@ -20,7 +20,8 @@ jobs:
     if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '/preview') }}
     runs-on: ubuntu-latest
     steps:
-      - name: Dispatch Preview
+      - name: Prepare Preview
+        id: preview
         uses: actions/github-script@v7
         with:
           script: |
@@ -34,6 +35,13 @@ jobs:
               core.info("Comment starts with /preview but does not match the command format.");
               return;
             }
+
+            await github.rest.reactions.createForIssueComment({
+              owner,
+              repo,
+              comment_id: context.payload.comment.id,
+              content: "eyes"
+            });
 
             if (!trustedAssociations.has(association)) {
               await github.rest.issues.createComment({
@@ -67,6 +75,7 @@ jobs:
             const headRef = pullRequest.head.ref;
             const headSha = pullRequest.head.sha;
             const headLabel = pullRequest.head.label;
+            const headShortSha = headSha.slice(0, 12);
 
             if (headRepository !== `${owner}/${repo}`) {
               await github.rest.issues.createComment({
@@ -99,20 +108,36 @@ jobs:
               });
             }
 
-            await github.rest.actions.createWorkflowDispatch({
-              owner,
-              repo,
-              workflow_id: "build.yaml",
-              ref: headRef
-            });
+            core.setOutput("pr-number", String(pullRequest.number));
+            core.setOutput("head-ref", headRef);
+            core.setOutput("head-label", headLabel);
+            core.setOutput("head-sha", headSha);
+            core.setOutput("head-short-sha", headShortSha);
 
-            await github.rest.issues.createComment({
-              owner,
-              repo,
-              issue_number: pullRequest.number,
-              body: [
-                `Preview deployment requested for \`${headLabel}\` at \`${headSha.slice(0, 12)}\`.`,
-                "",
-                `The build workflow was dispatched for \`${headRef}\` and will deploy to https://dev-app.exceptionless.io when it completes.`
-              ].join("\n")
+      - name: Post sticky queued comment
+        if: ${{ steps.preview.outputs.pr-number != '' }}
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          number: ${{ steps.preview.outputs.pr-number }}
+          header: exceptionless-preview
+          message: |
+            Preview deploy queued.
+
+            The build workflow will start shortly. This comment will update with a progress link when the run starts and with the dev URL when deployment finishes.
+
+            - Branch: `${{ steps.preview.outputs.head-label }}`
+            - Commit: [`${{ steps.preview.outputs.head-short-sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ steps.preview.outputs.head-sha }})
+
+      - name: Dispatch Preview
+        if: ${{ steps.preview.outputs.pr-number != '' }}
+        uses: actions/github-script@v7
+        env:
+          HEAD_REF: ${{ steps.preview.outputs.head-ref }}
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: "build.yaml",
+              ref: process.env.HEAD_REF
             });
