@@ -384,6 +384,23 @@ function getColumnIds<TData extends RowData>(columns: ColumnDef<StockFeatures, T
     });
 }
 
+function getLinkQueryParameter(link: QueryMeta['links'][string] | undefined, name: string): string | undefined {
+    const value = link?.[name];
+    if (value) {
+        return value;
+    }
+
+    if (!link?.url) {
+        return undefined;
+    }
+
+    try {
+        return new URL(link.url, 'https://example.com').searchParams.get(name) ?? undefined;
+    } catch {
+        return undefined;
+    }
+}
+
 function getPageIndexFromParameters(strategy: PaginationStrategy, parameters: TablePagingParameters, fallbackPageIndex: number): number {
     if (strategy !== 'offset' && strategy !== 'memory') {
         return fallbackPageIndex;
@@ -460,9 +477,11 @@ function updateCursorPagingParameters(
 
     // Cursor tokens are only valid for the current page size and direction.
     // When the page size changes, clear both tokens and let the first page reload.
-    parameters.after = !paginationChange.pageSizeChanged && movingForward ? meta?.links?.next?.after : undefined;
+    parameters.after = !paginationChange.pageSizeChanged && movingForward ? getLinkQueryParameter(meta?.links?.next, 'after') : undefined;
     parameters.before =
-        !paginationChange.pageSizeChanged && movingBackward && paginationChange.currentPageInfo.pageIndex > 0 ? meta?.links?.previous?.before : undefined;
+        !paginationChange.pageSizeChanged && movingBackward && paginationChange.currentPageInfo.pageIndex > 0
+            ? getLinkQueryParameter(meta?.links?.previous, 'before')
+            : undefined;
 }
 
 function updatePageNumberPagingParameters(parameters: TableMemoryPagingParameters | TableOffsetPagingParameters, currentPageInfo: PaginationState): void {

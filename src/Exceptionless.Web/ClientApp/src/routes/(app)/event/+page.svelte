@@ -560,6 +560,8 @@
     }
 
     const eventsQueryParameters: GetEventsParams = $state({
+        after: undefined,
+        before: undefined,
         get filter() {
             return getEffectiveFilter()!;
         },
