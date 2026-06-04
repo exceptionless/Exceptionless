@@ -25,10 +25,6 @@ export class FetchClientStatus {
     }
 }
 
-export function useFetchClientStatus(target?: FetchClient | FetchClientProvider) {
-    return new FetchClientStatus(target);
-}
-
 export async function fetchApiJson<T>(path: string, init: RequestInit): Promise<T> {
     const headers = new Headers(init.headers);
     if (accessToken.current) {
@@ -45,6 +41,10 @@ export async function fetchApiJson<T>(path: string, init: RequestInit): Promise<
     }
 
     return (await response.json()) as T;
+}
+
+export function useFetchClientStatus(target?: FetchClient | FetchClientProvider) {
+    return new FetchClientStatus(target);
 }
 
 async function toProblemDetails(response: Response): Promise<ProblemDetails> {

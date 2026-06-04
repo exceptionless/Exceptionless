@@ -124,15 +124,15 @@ export interface GetOrganizationsRequest {
     params?: GetOrganizationsParams;
 }
 
-export interface OrganizationIconRequest {
-    route: {
-        id: string | undefined;
-    };
-}
-
 export interface GetPlansRequest {
     route: {
         organizationId: string;
+    };
+}
+
+export interface OrganizationIconRequest {
+    route: {
+        id: string | undefined;
     };
 }
 
@@ -222,6 +222,21 @@ export function deleteOrganization(request: DeleteOrganizationRequest) {
         onSuccess: () => {
             request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id, undefined) }));
         }
+    }));
+}
+
+export function deleteOrganizationIcon(request: OrganizationIconRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<ViewOrganization, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async () => {
+            return await fetchApiJson<ViewOrganization>(`organizations/${request.route.id}/icon`, {
+                method: 'DELETE'
+            });
+        },
+        mutationKey: queryKeys.icon(request.route.id),
+        onSuccess: (organization: ViewOrganization) => updateOrganizationCache(queryClient, request.route.id, organization)
     }));
 }
 
@@ -412,56 +427,6 @@ export function patchOrganization(request: PatchOrganizationRequest) {
     }));
 }
 
-export function uploadOrganizationIcon(request: OrganizationIconRequest) {
-    const queryClient = useQueryClient();
-
-    return createMutation<ViewOrganization, ProblemDetails, File>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.id,
-        mutationFn: async (file: File) => {
-            const data = new FormData();
-            data.append('file', file);
-            return await fetchApiJson<ViewOrganization>(`organizations/${request.route.id}/icon`, {
-                body: data,
-                method: 'POST'
-            });
-        },
-        mutationKey: queryKeys.icon(request.route.id),
-        onSuccess: (organization: ViewOrganization) => updateOrganizationCache(queryClient, request.route.id, organization)
-    }));
-}
-
-export function deleteOrganizationIcon(request: OrganizationIconRequest) {
-    const queryClient = useQueryClient();
-
-    return createMutation<ViewOrganization, ProblemDetails, void>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.id,
-        mutationFn: async () => {
-            return await fetchApiJson<ViewOrganization>(`organizations/${request.route.id}/icon`, {
-                method: 'DELETE'
-            });
-        },
-        mutationKey: queryKeys.icon(request.route.id),
-        onSuccess: (organization: ViewOrganization) => updateOrganizationCache(queryClient, request.route.id, organization)
-    }));
-}
-
-function updateOrganizationCache(queryClient: QueryClient, id: string | undefined, organization: ViewOrganization) {
-    queryClient.setQueryData(queryKeys.id(id, 'stats'), organization);
-    queryClient.setQueryData(queryKeys.id(id, undefined), organization);
-    queryClient.setQueriesData<FetchClientResponse<ViewOrganization[]> | undefined>({ queryKey: queryKeys.type }, (response) => {
-        if (!Array.isArray(response?.data) || !response.data.some((existingOrganization) => existingOrganization.id === organization.id)) {
-            return response;
-        }
-
-        return {
-            ...response,
-            data: response.data.map((existingOrganization) => {
-                return existingOrganization.id === organization.id ? organization : existingOrganization;
-            })
-        };
-    });
-}
-
 export function postOrganization() {
     const queryClient = useQueryClient();
     const defaultOrganizationsQueryKey = [...queryKeys.list(undefined), { params: {} }] as const;
@@ -593,4 +558,39 @@ export function setOrganizationFeature(request: SetOrganizationFeatureRequest) {
             queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) });
         }
     }));
+}
+
+export function uploadOrganizationIcon(request: OrganizationIconRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<ViewOrganization, ProblemDetails, File>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async (file: File) => {
+            const data = new FormData();
+            data.append('file', file);
+            return await fetchApiJson<ViewOrganization>(`organizations/${request.route.id}/icon`, {
+                body: data,
+                method: 'POST'
+            });
+        },
+        mutationKey: queryKeys.icon(request.route.id),
+        onSuccess: (organization: ViewOrganization) => updateOrganizationCache(queryClient, request.route.id, organization)
+    }));
+}
+
+function updateOrganizationCache(queryClient: QueryClient, id: string | undefined, organization: ViewOrganization) {
+    queryClient.setQueryData(queryKeys.id(id, 'stats'), organization);
+    queryClient.setQueryData(queryKeys.id(id, undefined), organization);
+    queryClient.setQueriesData<FetchClientResponse<ViewOrganization[]> | undefined>({ queryKey: queryKeys.type }, (response) => {
+        if (!Array.isArray(response?.data) || !response.data.some((existingOrganization) => existingOrganization.id === organization.id)) {
+            return response;
+        }
+
+        return {
+            ...response,
+            data: response.data.map((existingOrganization) => {
+                return existingOrganization.id === organization.id ? organization : existingOrganization;
+            })
+        };
+    });
 }

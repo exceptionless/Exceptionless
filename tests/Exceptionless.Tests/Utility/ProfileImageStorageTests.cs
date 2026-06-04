@@ -15,12 +15,12 @@ public class ProfileImageStorageTests
     public async Task SaveAsync_WithPngImage_StoresImage()
     {
         // Arrange
-        var storage = new InMemoryFileStorage(new InMemoryFileStorageOptions());
+        using var storage = new InMemoryFileStorage(new InMemoryFileStorageOptions());
         var modelState = new ModelStateDictionary();
-        var file = CreateFile([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+        using var file = CreateFile([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
 
         // Act
-        var result = await ProfileImageStorage.SaveAsync(storage, file, "users", UserId, modelState, TestContext.Current.CancellationToken);
+        var result = await ProfileImageStorage.SaveAsync(storage, file.FormFile, "users", UserId, modelState, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result);
@@ -33,12 +33,12 @@ public class ProfileImageStorageTests
     public async Task SaveAsync_WithInvalidImage_AddsModelError()
     {
         // Arrange
-        var storage = new InMemoryFileStorage(new InMemoryFileStorageOptions());
+        using var storage = new InMemoryFileStorage(new InMemoryFileStorageOptions());
         var modelState = new ModelStateDictionary();
-        var file = CreateFile(Encoding.UTF8.GetBytes("not an image"), "text/plain", "avatar.txt");
+        using var file = CreateFile(Encoding.UTF8.GetBytes("not an image"), "text/plain", "avatar.txt");
 
         // Act
-        var result = await ProfileImageStorage.SaveAsync(storage, file, "users", UserId, modelState, TestContext.Current.CancellationToken);
+        var result = await ProfileImageStorage.SaveAsync(storage, file.FormFile, "users", UserId, modelState, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Null(result);
@@ -50,12 +50,12 @@ public class ProfileImageStorageTests
     public async Task SaveAsync_WithOversizedImage_AddsModelError()
     {
         // Arrange
-        var storage = new InMemoryFileStorage(new InMemoryFileStorageOptions());
+        using var storage = new InMemoryFileStorage(new InMemoryFileStorageOptions());
         var modelState = new ModelStateDictionary();
-        var file = CreateFile(new byte[ProfileImageStorage.MaxFileSize + 1]);
+        using var file = CreateFile(new byte[ProfileImageStorage.MaxFileSize + 1]);
 
         // Act
-        var result = await ProfileImageStorage.SaveAsync(storage, file, "users", UserId, modelState, TestContext.Current.CancellationToken);
+        var result = await ProfileImageStorage.SaveAsync(storage, file.FormFile, "users", UserId, modelState, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Null(result);
@@ -67,10 +67,10 @@ public class ProfileImageStorageTests
     public async Task DeleteFromUrlAsync_WithStoredImageUrl_DeletesImage()
     {
         // Arrange
-        var storage = new InMemoryFileStorage(new InMemoryFileStorageOptions());
+        using var storage = new InMemoryFileStorage(new InMemoryFileStorageOptions());
         var modelState = new ModelStateDictionary();
-        var file = CreateFile([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
-        var result = await ProfileImageStorage.SaveAsync(storage, file, "users", UserId, modelState, TestContext.Current.CancellationToken);
+        using var file = CreateFile([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+        var result = await ProfileImageStorage.SaveAsync(storage, file.FormFile, "users", UserId, modelState, TestContext.Current.CancellationToken);
         Assert.NotNull(result);
 
         // Act
@@ -80,13 +80,23 @@ public class ProfileImageStorageTests
         Assert.False(await storage.ExistsAsync(result.Path));
     }
 
-    private static FormFile CreateFile(byte[] bytes, string contentType = "image/png", string fileName = "avatar.png")
+    private static TestFormFile CreateFile(byte[] bytes, string contentType = "image/png", string fileName = "avatar.png")
     {
         var stream = new MemoryStream(bytes);
-        return new FormFile(stream, 0, bytes.Length, "file", fileName)
+        var formFile = new FormFile(stream, 0, bytes.Length, "file", fileName)
         {
             Headers = new HeaderDictionary(),
             ContentType = contentType
         };
+
+        return new TestFormFile(formFile, stream);
+    }
+
+    private sealed record TestFormFile(FormFile FormFile, MemoryStream Stream) : IDisposable
+    {
+        public void Dispose()
+        {
+            Stream.Dispose();
+        }
     }
 }

@@ -54,12 +54,6 @@ export interface PatchUserRequest {
     };
 }
 
-export interface UserAvatarRequest {
-    route: {
-        id: string | undefined;
-    };
-}
-
 export interface PostEmailAddressRequest {
     route: {
         id: string | undefined;
@@ -67,6 +61,12 @@ export interface PostEmailAddressRequest {
 }
 
 export interface ResendVerificationEmailRequest {
+    route: {
+        id: string | undefined;
+    };
+}
+
+export interface UserAvatarRequest {
     route: {
         id: string | undefined;
     };
@@ -81,6 +81,27 @@ export function deleteCurrentUser() {
             return response.data!;
         },
         mutationKey: queryKeys.deleteCurrentUser()
+    }));
+}
+
+export function deleteUserAvatar(request: UserAvatarRequest) {
+    const queryClient = useQueryClient();
+    return createMutation<ViewCurrentUser, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async () => {
+            return await fetchApiJson<ViewCurrentUser>(`users/${request.route.id}/avatar`, {
+                method: 'DELETE'
+            });
+        },
+        mutationKey: queryKeys.avatar(request.route.id),
+        onSuccess: (data) => {
+            queryClient.setQueryData(queryKeys.id(request.route.id), data);
+
+            const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
+            if (currentUser?.id === request.route.id) {
+                queryClient.setQueryData(queryKeys.me(), data);
+            }
+        }
     }));
 }
 
@@ -157,51 +178,6 @@ export function patchUser(request: PatchUserRequest) {
     }));
 }
 
-export function uploadUserAvatar(request: UserAvatarRequest) {
-    const queryClient = useQueryClient();
-    return createMutation<ViewCurrentUser, ProblemDetails, File>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.id,
-        mutationFn: async (file: File) => {
-            const data = new FormData();
-            data.append('file', file);
-            return await fetchApiJson<ViewCurrentUser>(`users/${request.route.id}/avatar`, {
-                body: data,
-                method: 'POST'
-            });
-        },
-        mutationKey: queryKeys.avatar(request.route.id),
-        onSuccess: (data) => {
-            queryClient.setQueryData(queryKeys.id(request.route.id), data);
-
-            const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
-            if (currentUser?.id === request.route.id) {
-                queryClient.setQueryData(queryKeys.me(), data);
-            }
-        }
-    }));
-}
-
-export function deleteUserAvatar(request: UserAvatarRequest) {
-    const queryClient = useQueryClient();
-    return createMutation<ViewCurrentUser, ProblemDetails, void>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.id,
-        mutationFn: async () => {
-            return await fetchApiJson<ViewCurrentUser>(`users/${request.route.id}/avatar`, {
-                method: 'DELETE'
-            });
-        },
-        mutationKey: queryKeys.avatar(request.route.id),
-        onSuccess: (data) => {
-            queryClient.setQueryData(queryKeys.id(request.route.id), data);
-
-            const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
-            if (currentUser?.id === request.route.id) {
-                queryClient.setQueryData(queryKeys.me(), data);
-            }
-        }
-    }));
-}
-
 export function postEmailAddress(request: PostEmailAddressRequest) {
     const queryClient = useQueryClient();
     return createMutation<UpdateEmailAddressResult, ProblemDetails, UpdateUserEmailAddress>(() => ({
@@ -236,5 +212,29 @@ export function resendVerificationEmail(request: ResendVerificationEmailRequest)
             await client.getJSON<void>(`users/${request.route.id}/resend-verification-email`);
         },
         mutationKey: [...queryKeys.id(request.route.id), 'resend-verification-email']
+    }));
+}
+
+export function uploadUserAvatar(request: UserAvatarRequest) {
+    const queryClient = useQueryClient();
+    return createMutation<ViewCurrentUser, ProblemDetails, File>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async (file: File) => {
+            const data = new FormData();
+            data.append('file', file);
+            return await fetchApiJson<ViewCurrentUser>(`users/${request.route.id}/avatar`, {
+                body: data,
+                method: 'POST'
+            });
+        },
+        mutationKey: queryKeys.avatar(request.route.id),
+        onSuccess: (data) => {
+            queryClient.setQueryData(queryKeys.id(request.route.id), data);
+
+            const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
+            if (currentUser?.id === request.route.id) {
+                queryClient.setQueryData(queryKeys.me(), data);
+            }
+        }
     }));
 }
