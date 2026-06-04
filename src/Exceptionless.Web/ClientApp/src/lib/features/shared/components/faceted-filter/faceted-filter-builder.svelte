@@ -96,6 +96,22 @@
         facets.forEach((f) => (f.open = false));
 
         const filter = builder.create();
+        const existingFilter = filters.find((f) => f.key === filter.key);
+        if (existingFilter) {
+            if (existingFilter.hidden) {
+                showHiddenFilters = true;
+            }
+
+            const existingFacet = facets.find((facet) => facet.filter.id === existingFilter.id);
+            if (existingFacet) {
+                existingFacet.open = true;
+            }
+
+            open = false;
+            lastOpenFilterId = existingFilter.id;
+            return;
+        }
+
         changed(filter);
 
         open = false;

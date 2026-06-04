@@ -39,10 +39,11 @@
         filterChanged: (filter: IFilter) => void;
         handleError: (problem: ProblemDetails) => void;
         id: string;
+        onEventLoaded?: (event: PersistentEvent) => void;
         onNavigate?: (eventId: string) => void;
     }
 
-    let { filterChanged, handleError, id, onNavigate }: Props = $props();
+    let { filterChanged, handleError, id, onEventLoaded, onNavigate }: Props = $props();
 
     function getTabs(event?: null | PersistentEvent, project?: ViewProject): TabType[] {
         if (!event) {
@@ -128,6 +129,7 @@
     let tabsListRef = $state<HTMLElement | null>(null);
     let canScrollTabsLeft = $state(false);
     let canScrollTabsRight = $state(false);
+    let notifiedEventId = $state('');
     let showJsonDialog = $state(false);
 
     function updateTabsOverflow(): void {
@@ -177,6 +179,13 @@
 
         if (eventQuery.isError) {
             handleError(eventQuery.error);
+        }
+    });
+
+    $effect(() => {
+        if (event && event.id !== notifiedEventId) {
+            notifiedEventId = event.id;
+            onEventLoaded?.(event);
         }
     });
 
