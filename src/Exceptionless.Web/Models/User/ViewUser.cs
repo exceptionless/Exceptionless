@@ -13,6 +13,7 @@ public record ViewUser : IIdentity
 
     [EmailAddress]
     public string EmailAddress { get; init; } = null!;
+    public string? AvatarUrl { get; init; }
     public bool EmailNotificationsEnabled { get; init; }
     public bool IsEmailAddressVerified { get; init; }
     public bool IsActive { get; init; }

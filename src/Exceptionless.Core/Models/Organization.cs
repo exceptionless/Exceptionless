@@ -31,6 +31,9 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     [Required]
     public string Name { get; set; } = null!;
 
+    [StringLength(2000)]
+    public string? IconUrl { get; set; }
+
     /// <summary>
     /// Stripe customer id that will be charged.
     /// </summary>

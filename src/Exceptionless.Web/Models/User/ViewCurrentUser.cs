@@ -13,6 +13,7 @@ public record ViewCurrentUser : ViewUser
         OrganizationIds = user.OrganizationIds;
         FullName = user.FullName;
         EmailAddress = user.EmailAddress;
+        AvatarUrl = user.AvatarUrl;
         EmailNotificationsEnabled = user.EmailNotificationsEnabled;
         IsEmailAddressVerified = user.IsEmailAddressVerified;
         IsActive = user.IsActive;

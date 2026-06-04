@@ -4,15 +4,23 @@
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
     import { Muted } from '$comp/typography';
+    import * as Avatar from '$comp/ui/avatar';
     import { Button, buttonVariants } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
     import { Spinner } from '$comp/ui/spinner';
-    import { deleteOrganization, getOrganizationQuery, patchOrganization } from '$features/organizations/api.svelte';
+    import {
+        deleteOrganization,
+        deleteOrganizationIcon,
+        getOrganizationQuery,
+        patchOrganization,
+        uploadOrganizationIcon
+    } from '$features/organizations/api.svelte';
     import RemoveOrganizationDialog from '$features/organizations/components/dialogs/remove-organization-dialog.svelte';
     import { type NewOrganizationFormData, NewOrganizationSchema } from '$features/organizations/schemas';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
+    import { getInitials } from '$shared/strings';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import Projects from '@lucide/svelte/icons/folder-open';
     import Stacks from '@lucide/svelte/icons/layers';
@@ -33,6 +41,20 @@
     });
 
     const update = patchOrganization({
+        route: {
+            get id() {
+                return organizationId;
+            }
+        }
+    });
+    const uploadIcon = uploadOrganizationIcon({
+        route: {
+            get id() {
+                return organizationId;
+            }
+        }
+    });
+    const removeIcon = deleteOrganizationIcon({
         route: {
             get id() {
                 return organizationId;
@@ -72,10 +94,10 @@
                 toast.dismiss(toastId);
                 try {
                     await update.mutateAsync(value);
-                    toastId = toast.success('Successfully updated Organization name');
+                    toastId = toast.success('Successfully updated Organization');
                     return null;
                 } catch (error: unknown) {
-                    toastId = toast.error('Error saving organization name. Please try again.');
+                    toastId = toast.error('Error saving organization. Please try again.');
                     if (error instanceof ProblemDetails) {
                         return problemDetailsToFormErrors(error);
                     }
@@ -87,12 +109,78 @@
     }));
 
     const debouncedFormSubmit = debounce(1000, () => form.handleSubmit());
+    const isIconSaving = $derived(uploadIcon.isPending || removeIcon.isPending);
+
+    async function handleIconUpload(file: File) {
+        toast.dismiss(toastId);
+        try {
+            await uploadIcon.mutateAsync(file);
+            toastId = toast.success('Successfully updated organization icon.');
+        } catch (error: unknown) {
+            toastId = toast.error(getProblemMessage(error, 'Error saving organization icon. Please try again.'));
+        }
+    }
+
+    async function handleRemoveIcon() {
+        toast.dismiss(toastId);
+        try {
+            await removeIcon.mutateAsync();
+            toastId = toast.success('Successfully removed organization icon.');
+        } catch (error: unknown) {
+            toastId = toast.error(getProblemMessage(error, 'Error removing organization icon. Please try again.'));
+        }
+    }
+
+    function getProblemMessage(error: unknown, fallback: string) {
+        if (!(error instanceof ProblemDetails)) {
+            return fallback;
+        }
+
+        return error.errors.file?.[0] ?? error.title ?? fallback;
+    }
 
     // TODO: Add Skeleton
 </script>
 
 <div class="space-y-6">
     <Muted>General organization settings</Muted>
+
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <Avatar.Root class="h-20 w-20 rounded-lg" title="Organization Icon">
+            {#if organizationQuery.data?.icon_url}
+                <Avatar.Image alt={`${organizationQuery.data.name} icon`} src={organizationQuery.data.icon_url} />
+            {/if}
+            <Avatar.Fallback class="rounded-lg">{getInitials(organizationQuery.data?.name ?? '?')}</Avatar.Fallback>
+        </Avatar.Root>
+        <div class="space-y-3">
+            <Muted>Upload a custom icon or remove it to use the organization initials.</Muted>
+            <div class="flex flex-col gap-2 sm:flex-row">
+                <Input
+                    aria-label="Upload organization icon"
+                    accept="image/png,image/jpeg,image/gif,image/webp"
+                    disabled={isIconSaving}
+                    type="file"
+                    onchange={(e) => {
+                        const file = e.currentTarget.files?.[0];
+                        if (file) {
+                            void handleIconUpload(file);
+                            e.currentTarget.value = '';
+                        }
+                    }}
+                />
+                {#if organizationQuery.data?.icon_url}
+                    <Button variant="outline" onclick={handleRemoveIcon} disabled={isIconSaving}>
+                        {#if removeIcon.isPending}
+                            <Spinner class="mr-2 size-4" />
+                        {:else}
+                            <X class="mr-2 size-4" />
+                        {/if}
+                        Remove
+                    </Button>
+                {/if}
+            </div>
+        </div>
+    </div>
 
     <form
         onsubmit={(e) => {

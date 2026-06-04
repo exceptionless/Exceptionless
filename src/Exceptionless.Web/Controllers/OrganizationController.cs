@@ -14,10 +14,12 @@ using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
+using Exceptionless.Web.Utility.OpenApi;
 using Foundatio.Caching;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using Foundatio.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -37,6 +39,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     private readonly IEventRepository _eventRepository;
     private readonly IUserRepository _userRepository;
     private readonly IProjectRepository _projectRepository;
+    private readonly IFileStorage _fileStorage;
     private readonly BillingManager _billingManager;
     private readonly UsageService _usageService;
     private readonly BillingPlans _plans;
@@ -52,6 +55,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         IEventRepository eventRepository,
         IUserRepository userRepository,
         IProjectRepository projectRepository,
+        IFileStorage fileStorage,
         BillingManager billingManager,
         BillingPlans plans,
         UsageService usageService,
@@ -69,6 +73,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         _eventRepository = eventRepository;
         _userRepository = userRepository;
         _projectRepository = projectRepository;
+        _fileStorage = fileStorage;
         _billingManager = billingManager;
         _plans = plans;
         _usageService = usageService;
@@ -183,6 +188,75 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     public Task<ActionResult<ViewOrganization>> PatchAsync(string id, Delta<NewOrganization> changes)
     {
         return PatchImplAsync(id, changes);
+    }
+
+    /// <summary>
+    /// Upload icon
+    /// </summary>
+    /// <param name="id">The identifier of the organization.</param>
+    /// <param name="file">The organization icon image file.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <response code="404">The organization could not be found.</response>
+    /// <response code="422">The image file is invalid.</response>
+    [HttpPost("{id:objectid}/icon")]
+    [Consumes("multipart/form-data")]
+    [MultipartFileUpload]
+    public async Task<ActionResult<ViewOrganization>> UploadIconAsync(string id, [FromForm] IFormFile? file, CancellationToken cancellationToken = default)
+    {
+        var organization = await GetModelAsync(id, false);
+        if (organization is null)
+            return NotFound();
+
+        var image = await ProfileImageStorage.SaveAsync(_fileStorage, file, "organizations", organization.Id, ModelState, cancellationToken);
+        if (image is null)
+            return ValidationProblem(ModelState);
+
+        string? oldIconUrl = organization.IconUrl;
+        organization.IconUrl = GetOrganizationIconUrl(organization.Id, image.FileName);
+        await _repository.SaveAsync(organization, o => o.Cache());
+        await ProfileImageStorage.DeleteFromUrlAsync(_fileStorage, oldIconUrl, "organizations", organization.Id, cancellationToken);
+
+        return await OkModelAsync(organization);
+    }
+
+    /// <summary>
+    /// Remove icon
+    /// </summary>
+    /// <param name="id">The identifier of the organization.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <response code="404">The organization could not be found.</response>
+    [HttpDelete("{id:objectid}/icon")]
+    public async Task<ActionResult<ViewOrganization>> DeleteIconAsync(string id, CancellationToken cancellationToken = default)
+    {
+        var organization = await GetModelAsync(id, false);
+        if (organization is null)
+            return NotFound();
+
+        string? oldIconUrl = organization.IconUrl;
+        organization.IconUrl = null;
+        await _repository.SaveAsync(organization, o => o.Cache());
+        await ProfileImageStorage.DeleteFromUrlAsync(_fileStorage, oldIconUrl, "organizations", organization.Id, cancellationToken);
+
+        return await OkModelAsync(organization);
+    }
+
+    /// <summary>
+    /// Get icon
+    /// </summary>
+    /// <param name="id">The identifier of the organization.</param>
+    /// <param name="fileName">The icon file name.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <response code="404">The icon could not be found.</response>
+    [AllowAnonymous]
+    [HttpGet("{id:objectid}/icon/{fileName}", Name = "GetOrganizationIcon")]
+    [ResponseCache(Duration = 31536000, Location = ResponseCacheLocation.Any)]
+    public async Task<IActionResult> GetIconAsync(string id, string fileName, CancellationToken cancellationToken = default)
+    {
+        if (!ProfileImageStorage.TryGetStoragePath(fileName, "organizations", id, out string path) || !ProfileImageStorage.TryGetContentType(fileName, out string contentType))
+            return NotFound();
+
+        var stream = await _fileStorage.GetFileStreamAsync(path, StreamMode.Read, cancellationToken);
+        return stream is null ? NotFound() : File(stream, contentType);
     }
 
     /// <summary>
@@ -1006,4 +1080,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
         return viewOrganizations;
     }
+
+    private string GetOrganizationIconUrl(string id, string fileName)
+        => Url.RouteUrl("GetOrganizationIcon", new { id, fileName }) ?? $"/api/v2/organizations/{id}/icon/{fileName}";
 }

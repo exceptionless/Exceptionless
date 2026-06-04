@@ -33,6 +33,10 @@ public record User : IIdentity, IHaveDates, IValidatableObject
     [Required]
     [EmailAddress]
     public string EmailAddress { get; set; } = null!;
+
+    [StringLength(2000)]
+    public string? AvatarUrl { get; set; }
+
     public bool EmailNotificationsEnabled { get; set; } = true;
     public bool IsEmailAddressVerified { get; set; }
     public string? VerifyEmailAddressToken { get; set; }

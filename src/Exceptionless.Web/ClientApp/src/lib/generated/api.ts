@@ -446,6 +446,8 @@ export interface User {
   full_name: string;
   /** @format email */
   email_address: string;
+  /** @format uri */
+  avatar_url?: null | string;
   email_notifications_enabled: boolean;
   is_email_address_verified: boolean;
   verify_email_address_token?: null | string;
@@ -478,6 +480,8 @@ export interface ViewCurrentUser {
   full_name: string;
   /** @format email */
   email_address: string;
+  /** @format uri */
+  avatar_url?: null | string;
   email_notifications_enabled: boolean;
   is_email_address_verified: boolean;
   is_active: boolean;
@@ -493,6 +497,8 @@ export interface ViewOrganization {
   /** @format date-time */
   updated_utc: string;
   name: string;
+  /** @format uri */
+  icon_url?: null | string;
   plan_id: string;
   plan_name: string;
   plan_description: string;
@@ -623,6 +629,8 @@ export interface ViewUser {
   full_name: string;
   /** @format email */
   email_address: string;
+  /** @format uri */
+  avatar_url?: null | string;
   email_notifications_enabled: boolean;
   is_email_address_verified: boolean;
   is_active: boolean;
