@@ -2,7 +2,7 @@
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import ErrorMessage from '$comp/error-message.svelte';
-    import { A, Muted, Small } from '$comp/typography';
+    import { A, Small } from '$comp/typography';
     import * as Avatar from '$comp/ui/avatar';
     import { Button } from '$comp/ui/button';
     import * as Field from '$comp/ui/field';
@@ -25,6 +25,7 @@
     import { type UpdateUserEmailAddressFormData, UpdateUserEmailAddressSchema, type UpdateUserFormData, UpdateUserSchema } from '$features/users/schemas';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+    import Camera from '@lucide/svelte/icons/camera';
     import Trash from '@lucide/svelte/icons/trash-2';
     import X from '@lucide/svelte/icons/x';
     import { createForm } from '@tanstack/svelte-form';
@@ -34,6 +35,7 @@
 
     let toastId = $state<number | string>();
     let showDeleteAccountDialog = $state(false);
+    let avatarInput = $state<HTMLInputElement | null>(null);
     const client = useFetchClient();
     const queryClient = useQueryClient();
     const meQuery = getMeQuery();
@@ -130,6 +132,18 @@
     const debouncedUpdatedUserFormSubmit = debounce(1000, () => updateUserForm.handleSubmit());
     const isAvatarSaving = $derived(uploadAvatar.isPending || removeAvatar.isPending);
 
+    function openAvatarPicker() {
+        avatarInput?.click();
+    }
+
+    function handleAvatarFileChange(input: HTMLInputElement) {
+        const file = input.files?.[0];
+        if (file) {
+            void handleAvatarUpload(file);
+            input.value = '';
+        }
+    }
+
     async function handleAvatarUpload(file: File) {
         toast.dismiss(toastId);
         try {
@@ -184,43 +198,56 @@
 
 <div class="space-y-6">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <Avatar.Root class="h-24 w-24" title="Profile Image">
-            {#await gravatar.src}
-                <Avatar.Fallback>{gravatar.initials}</Avatar.Fallback>
-            {:then src}
-                {#if src}
-                    <Avatar.Image alt={meQuery.data ? `${meQuery.data.full_name} avatar` : 'avatar'} {src} />
-                {/if}
-            {/await}
-            <Avatar.Fallback>{gravatar.initials}</Avatar.Fallback>
-        </Avatar.Root>
-        <div class="space-y-3">
-            <Muted>Upload a custom avatar or remove it to use your Gravatar.</Muted>
-            <div class="flex flex-col gap-2 sm:flex-row">
-                <Input
-                    aria-label="Upload avatar"
-                    accept="image/png,image/jpeg,image/gif,image/webp"
-                    disabled={isAvatarSaving}
-                    type="file"
-                    onchange={(e) => {
-                        const file = e.currentTarget.files?.[0];
-                        if (file) {
-                            void handleAvatarUpload(file);
-                            e.currentTarget.value = '';
-                        }
-                    }}
-                />
-                {#if meQuery.data?.avatar_url}
-                    <Button variant="outline" onclick={handleRemoveAvatar} disabled={isAvatarSaving}>
-                        {#if removeAvatar.isPending}
-                            <Spinner class="mr-2 size-4" />
-                        {:else}
-                            <X class="mr-2 size-4" />
+        <div class="flex items-center gap-3">
+            <Input
+                bind:ref={avatarInput}
+                aria-label="Upload avatar"
+                accept="image/png,image/jpeg,image/gif,image/webp"
+                class="sr-only"
+                disabled={isAvatarSaving}
+                tabindex={-1}
+                type="file"
+                onchange={(e) => handleAvatarFileChange(e.currentTarget)}
+            />
+            <Button
+                variant="ghost"
+                class="group relative h-24 w-24 overflow-hidden rounded-full p-0"
+                aria-label="Update avatar"
+                onclick={openAvatarPicker}
+                disabled={isAvatarSaving}
+            >
+                <Avatar.Root class="h-full w-full" title="Profile Image">
+                    {#await gravatar.src}
+                        <Avatar.Fallback>{gravatar.initials}</Avatar.Fallback>
+                    {:then src}
+                        {#if src}
+                            <Avatar.Image alt={meQuery.data ? `${meQuery.data.full_name} avatar` : 'avatar'} {src} />
                         {/if}
-                        Remove
-                    </Button>
-                {/if}
-            </div>
+                    {/await}
+                    <Avatar.Fallback>{gravatar.initials}</Avatar.Fallback>
+                </Avatar.Root>
+                <span
+                    class="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/55 text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                    aria-hidden="true"
+                >
+                    {#if uploadAvatar.isPending}
+                        <Spinner class="size-4" />
+                        Updating
+                    {:else}
+                        <Camera class="size-4" />
+                        Update
+                    {/if}
+                </span>
+            </Button>
+            {#if meQuery.data?.avatar_url}
+                <Button variant="outline" size="icon" aria-label="Remove custom avatar" onclick={handleRemoveAvatar} disabled={isAvatarSaving}>
+                    {#if removeAvatar.isPending}
+                        <Spinner class="size-4" />
+                    {:else}
+                        <X class="size-4" />
+                    {/if}
+                </Button>
+            {/if}
         </div>
     </div>
 

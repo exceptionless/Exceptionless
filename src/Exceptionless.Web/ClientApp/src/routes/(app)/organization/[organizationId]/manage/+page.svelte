@@ -22,6 +22,7 @@
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { getInitials } from '$shared/strings';
     import { ProblemDetails } from '@exceptionless/fetchclient';
+    import Camera from '@lucide/svelte/icons/camera';
     import Projects from '@lucide/svelte/icons/folder-open';
     import Stacks from '@lucide/svelte/icons/layers';
     import X from '@lucide/svelte/icons/x';
@@ -30,6 +31,7 @@
     import { debounce } from 'throttle-debounce';
 
     let toastId = $state<number | string>();
+    let iconInput = $state<HTMLInputElement | null>(null);
 
     const organizationId = $derived(page.params.organizationId || '');
     const organizationQuery = getOrganizationQuery({
@@ -111,6 +113,18 @@
     const debouncedFormSubmit = debounce(1000, () => form.handleSubmit());
     const isIconSaving = $derived(uploadIcon.isPending || removeIcon.isPending);
 
+    function openIconPicker() {
+        iconInput?.click();
+    }
+
+    function handleIconFileChange(input: HTMLInputElement) {
+        const file = input.files?.[0];
+        if (file) {
+            void handleIconUpload(file);
+            input.value = '';
+        }
+    }
+
     async function handleIconUpload(file: File) {
         toast.dismiss(toastId);
         try {
@@ -146,39 +160,52 @@
     <Muted>General organization settings</Muted>
 
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <Avatar.Root class="h-20 w-20 rounded-lg" title="Organization Icon">
+        <div class="flex items-center gap-3">
+            <Input
+                bind:ref={iconInput}
+                aria-label="Upload organization icon"
+                accept="image/png,image/jpeg,image/gif,image/webp"
+                class="sr-only"
+                disabled={isIconSaving}
+                tabindex={-1}
+                type="file"
+                onchange={(e) => handleIconFileChange(e.currentTarget)}
+            />
+            <Button
+                variant="ghost"
+                class="group relative h-20 w-20 overflow-hidden rounded-lg p-0"
+                aria-label="Update organization icon"
+                onclick={openIconPicker}
+                disabled={isIconSaving}
+            >
+                <Avatar.Root class="h-full w-full rounded-lg" title="Organization Icon">
+                    {#if organizationQuery.data?.icon_url}
+                        <Avatar.Image alt={`${organizationQuery.data.name} icon`} src={organizationQuery.data.icon_url} />
+                    {/if}
+                    <Avatar.Fallback class="rounded-lg">{getInitials(organizationQuery.data?.name ?? '?')}</Avatar.Fallback>
+                </Avatar.Root>
+                <span
+                    class="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/55 text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                    aria-hidden="true"
+                >
+                    {#if uploadIcon.isPending}
+                        <Spinner class="size-4" />
+                        Updating
+                    {:else}
+                        <Camera class="size-4" />
+                        Update
+                    {/if}
+                </span>
+            </Button>
             {#if organizationQuery.data?.icon_url}
-                <Avatar.Image alt={`${organizationQuery.data.name} icon`} src={organizationQuery.data.icon_url} />
+                <Button variant="outline" size="icon" aria-label="Remove custom organization icon" onclick={handleRemoveIcon} disabled={isIconSaving}>
+                    {#if removeIcon.isPending}
+                        <Spinner class="size-4" />
+                    {:else}
+                        <X class="size-4" />
+                    {/if}
+                </Button>
             {/if}
-            <Avatar.Fallback class="rounded-lg">{getInitials(organizationQuery.data?.name ?? '?')}</Avatar.Fallback>
-        </Avatar.Root>
-        <div class="space-y-3">
-            <Muted>Upload a custom icon or remove it to use the organization initials.</Muted>
-            <div class="flex flex-col gap-2 sm:flex-row">
-                <Input
-                    aria-label="Upload organization icon"
-                    accept="image/png,image/jpeg,image/gif,image/webp"
-                    disabled={isIconSaving}
-                    type="file"
-                    onchange={(e) => {
-                        const file = e.currentTarget.files?.[0];
-                        if (file) {
-                            void handleIconUpload(file);
-                            e.currentTarget.value = '';
-                        }
-                    }}
-                />
-                {#if organizationQuery.data?.icon_url}
-                    <Button variant="outline" onclick={handleRemoveIcon} disabled={isIconSaving}>
-                        {#if removeIcon.isPending}
-                            <Spinner class="mr-2 size-4" />
-                        {:else}
-                            <X class="mr-2 size-4" />
-                        {/if}
-                        Remove
-                    </Button>
-                {/if}
-            </div>
         </div>
     </div>
 
