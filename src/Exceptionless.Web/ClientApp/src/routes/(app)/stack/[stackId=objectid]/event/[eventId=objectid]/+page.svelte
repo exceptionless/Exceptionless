@@ -13,9 +13,10 @@
     import { watch } from 'runed';
     import { toast } from 'svelte-sonner';
 
-    import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../../redirect-to-events.svelte.js';
+    import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../../../../redirect-to-events.svelte.js';
 
     const stackId = $derived(page.params.stackId || '');
+    const eventId = $derived(page.params.eventId || '');
 
     watch(
         () => organization.current,
@@ -42,7 +43,9 @@
     }
 
     async function handleEventLoaded(event: PersistentEvent) {
-        await goto(buildEventDetailsHref(event.id, event.stack_id), { replaceState: true });
+        if (event.id !== eventId || event.stack_id !== stackId) {
+            await goto(buildEventDetailsHref(event.id, event.stack_id), { replaceState: true });
+        }
     }
 
     async function handleNavigate(newEventId: string) {
@@ -50,8 +53,8 @@
     }
 
     $effect(() => {
-        document.title = 'Stack Details - Exceptionless';
+        document.title = 'Stack Event Details - Exceptionless';
     });
 </script>
 
-<StackDetails {filterChanged} {handleError} onDeleted={handleDeleted} onEventLoaded={handleEventLoaded} onNavigate={handleNavigate} {stackId} />
+<StackDetails {eventId} {filterChanged} {handleError} onDeleted={handleDeleted} onEventLoaded={handleEventLoaded} onNavigate={handleNavigate} {stackId} />

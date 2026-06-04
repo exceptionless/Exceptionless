@@ -1,4 +1,5 @@
 <script lang="ts">
+    import type { PersistentEvent } from '$features/events/models';
     import type { ProblemDetails } from '@exceptionless/fetchclient';
 
     import { goto } from '$app/navigation';
@@ -7,6 +8,7 @@
     import * as FacetedFilter from '$comp/faceted-filter';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing';
     import EventsOverview from '$features/events/components/events-overview.svelte';
+    import { buildEventDetailsHref } from '$features/events/components/summary';
     import { organization } from '$features/organizations/context.svelte';
     import { watch } from 'runed';
     import { toast } from 'svelte-sonner';
@@ -35,6 +37,10 @@
         await goto(resolve('/(app)/event'));
     }
 
+    async function handleEventLoaded(event: PersistentEvent) {
+        await goto(buildEventDetailsHref(event.id, event.stack_id), { replaceState: true });
+    }
+
     $effect(() => {
         document.title = 'Event Details - Exceptionless';
     });
@@ -44,5 +50,6 @@
     {filterChanged}
     id={page.params.eventId || ''}
     {handleError}
+    onEventLoaded={handleEventLoaded}
     onNavigate={(newId) => goto(resolve('/(app)/event/[eventId=objectid]', { eventId: newId }))}
 />

@@ -149,6 +149,14 @@ export type SummaryTemplateKeys =
     | 'stack-simple-summary'
     | 'stack-summary';
 
+export function buildEventDetailsHref(eventId: string, stackId?: string): string {
+    if (stackId) {
+        return resolve('/(app)/stack/[stackId=objectid]/event/[eventId=objectid]', { eventId, stackId });
+    }
+
+    return resolve('/(app)/event/[eventId=objectid]', { eventId });
+}
+
 export function buildStackEventsHref(stackId: string): string {
     const queryParams = new URLSearchParams({
         stack: stackId,
