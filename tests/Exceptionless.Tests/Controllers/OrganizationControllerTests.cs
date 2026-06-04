@@ -8,6 +8,7 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Models;
+using Exceptionless.Web.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
 using Microsoft.Extensions.DependencyInjection;
@@ -215,6 +216,26 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         Assert.Equal(SampleDataService.TEST_ORG_ID, viewOrg.Id);
         Assert.NotNull(viewOrg.Usage);
         Assert.NotNull(viewOrg.UsageHours);
+    }
+
+    [Fact]
+    public async Task UploadIconAsync_ImageOverGlobalRequestLimit_ReturnsUpdatedOrganization()
+    {
+        // Arrange
+        using var content = CreateProfileImageContent();
+
+        // Act
+        var organization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "icon")
+            .Content(content)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(organization);
+        Assert.Contains($"/organizations/{SampleDataService.TEST_ORG_ID}/icon/", organization.IconUrl);
     }
 
     [Fact]
@@ -1565,5 +1586,20 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         Assert.NotNull(updated);
         Assert.Equal(originalOrganization.Name, updated.Name);
         Assert.Equal(originalOrganization.UpdatedUtc, updated.UpdatedUtc);
+    }
+
+    private static MultipartFormDataContent CreateProfileImageContent()
+    {
+        var bytes = new byte[256 * 1024];
+        byte[] pngHeader = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+        Array.Copy(pngHeader, bytes, pngHeader.Length);
+        Assert.True(bytes.Length < ProfileImageStorage.MaxFileSize);
+
+        var fileContent = new ByteArrayContent(bytes);
+        fileContent.Headers.ContentType = new("image/png");
+
+        var content = new MultipartFormDataContent();
+        content.Add(fileContent, "file", "icon.png");
+        return content;
     }
 }

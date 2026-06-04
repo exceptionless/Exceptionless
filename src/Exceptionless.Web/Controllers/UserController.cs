@@ -144,6 +144,8 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     [HttpPost("{id:objectid}/avatar")]
     [Consumes("multipart/form-data")]
     [MultipartFileUpload]
+    [RequestSizeLimit(ProfileImageStorage.MaxRequestBodySize)]
+    [RequestFormLimits(MultipartBodyLengthLimit = ProfileImageStorage.MaxFileSize)]
     public async Task<ActionResult<ViewUser>> UploadAvatarAsync(string id, [FromForm] IFormFile? file, CancellationToken cancellationToken = default)
     {
         var user = await GetModelAsync(id, false);

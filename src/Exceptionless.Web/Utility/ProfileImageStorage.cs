@@ -5,7 +5,9 @@ namespace Exceptionless.Web.Utility;
 
 internal static class ProfileImageStorage
 {
-    public const long MaxFileSize = 1024 * 1024;
+    public const long MaxFileSize = 5 * 1024 * 1024;
+    public const long MaxRequestBodySize = MaxFileSize + 64 * 1024;
+    public const string MaxFileSizeDisplayName = "5 MB";
     private const string RootPath = "profile-images";
 
     public static async Task<StoredProfileImage?> SaveAsync(
@@ -24,7 +26,7 @@ internal static class ProfileImageStorage
 
         if (file.Length > MaxFileSize)
         {
-            modelState.AddModelError("file", "Image files must be 1 MB or smaller.");
+            modelState.AddModelError("file", $"Image files must be {MaxFileSizeDisplayName} or smaller.");
             return null;
         }
 

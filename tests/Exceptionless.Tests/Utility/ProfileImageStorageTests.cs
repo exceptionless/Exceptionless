@@ -60,7 +60,7 @@ public class ProfileImageStorageTests
         // Assert
         Assert.Null(result);
         Assert.False(modelState.IsValid);
-        Assert.Contains(modelState["file"]!.Errors, error => error.ErrorMessage.Contains("1 MB", StringComparison.Ordinal));
+        Assert.Contains(modelState["file"]!.Errors, error => error.ErrorMessage.Contains(ProfileImageStorage.MaxFileSizeDisplayName, StringComparison.Ordinal));
     }
 
     [Fact]

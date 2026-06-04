@@ -5,6 +5,7 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
+using Exceptionless.Web.Utility;
 using FluentRest;
 using Foundatio.Repositories;
 using Xunit;
@@ -305,6 +306,32 @@ public sealed class UserControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task UploadAvatarAsync_ImageOverGlobalRequestLimit_ReturnsUpdatedUser()
+    {
+        // Arrange
+        var currentUser = await SendRequestAsAsync<ViewUser>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(currentUser);
+        using var content = CreateProfileImageContent();
+
+        // Act
+        var updatedUser = await SendRequestAsAsync<ViewUser>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("users", currentUser.Id, "avatar")
+            .Content(content)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updatedUser);
+        Assert.Contains($"/users/{currentUser.Id}/avatar/", updatedUser.AvatarUrl);
+    }
+
+    [Fact]
     public async Task PatchAsync_AnonymousUser_ReturnsUnauthorized()
     {
         // Arrange
@@ -543,5 +570,20 @@ public sealed class UserControllerTests : IntegrationTestsBase
         );
         Assert.NotNull(user);
         return user;
+    }
+
+    private static MultipartFormDataContent CreateProfileImageContent()
+    {
+        var bytes = new byte[256 * 1024];
+        byte[] pngHeader = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+        Array.Copy(pngHeader, bytes, pngHeader.Length);
+        Assert.True(bytes.Length < ProfileImageStorage.MaxFileSize);
+
+        var fileContent = new ByteArrayContent(bytes);
+        fileContent.Headers.ContentType = new("image/png");
+
+        var content = new MultipartFormDataContent();
+        content.Add(fileContent, "file", "avatar.png");
+        return content;
     }
 }

@@ -11,6 +11,7 @@
     import { Spinner } from '$comp/ui/spinner';
     import { logout } from '$features/auth/api.svelte';
     import { validateEmailAvailability } from '$features/auth/validators';
+    import { getProfileImageFileError } from '$features/shared/profile-images';
     import {
         deleteCurrentUser,
         deleteUserAvatar,
@@ -146,6 +147,12 @@
 
     async function handleAvatarUpload(file: File) {
         toast.dismiss(toastId);
+        const fileError = getProfileImageFileError(file);
+        if (fileError) {
+            toastId = toast.error(fileError);
+            return;
+        }
+
         try {
             await uploadAvatar.mutateAsync(file);
             toastId = toast.success('Successfully updated avatar.');
@@ -192,7 +199,7 @@
             return fallback;
         }
 
-        return error.errors.file?.[0] ?? error.title ?? fallback;
+        return error.errors.file?.[0] ?? Object.values(error.errors ?? {})[0]?.[0] ?? error.title ?? fallback;
     }
 </script>
 

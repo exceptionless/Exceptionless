@@ -201,6 +201,8 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     [HttpPost("{id:objectid}/icon")]
     [Consumes("multipart/form-data")]
     [MultipartFileUpload]
+    [RequestSizeLimit(ProfileImageStorage.MaxRequestBodySize)]
+    [RequestFormLimits(MultipartBodyLengthLimit = ProfileImageStorage.MaxFileSize)]
     public async Task<ActionResult<ViewOrganization>> UploadIconAsync(string id, [FromForm] IFormFile? file, CancellationToken cancellationToken = default)
     {
         var organization = await GetModelAsync(id, false);

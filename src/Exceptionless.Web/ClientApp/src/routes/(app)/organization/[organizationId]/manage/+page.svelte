@@ -19,6 +19,7 @@
     } from '$features/organizations/api.svelte';
     import RemoveOrganizationDialog from '$features/organizations/components/dialogs/remove-organization-dialog.svelte';
     import { type NewOrganizationFormData, NewOrganizationSchema } from '$features/organizations/schemas';
+    import { getProfileImageFileError } from '$features/shared/profile-images';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { getInitials } from '$shared/strings';
     import { ProblemDetails } from '@exceptionless/fetchclient';
@@ -127,6 +128,12 @@
 
     async function handleIconUpload(file: File) {
         toast.dismiss(toastId);
+        const fileError = getProfileImageFileError(file);
+        if (fileError) {
+            toastId = toast.error(fileError);
+            return;
+        }
+
         try {
             await uploadIcon.mutateAsync(file);
             toastId = toast.success('Successfully updated organization icon.');
@@ -150,7 +157,7 @@
             return fallback;
         }
 
-        return error.errors.file?.[0] ?? error.title ?? fallback;
+        return error.errors.file?.[0] ?? Object.values(error.errors ?? {})[0]?.[0] ?? error.title ?? fallback;
     }
 
     // TODO: Add Skeleton

@@ -49,10 +49,14 @@ export function useFetchClientStatus(target?: FetchClient | FetchClientProvider)
 
 async function toProblemDetails(response: Response): Promise<ProblemDetails> {
     const contentType = response.headers.get('Content-Type') ?? '';
-    if (contentType.startsWith('application/problem+json')) {
-        const problem = Object.assign(new ProblemDetails(), (await response.json()) as Partial<ProblemDetails>);
-        problem.status ??= response.status;
-        return problem;
+    if (contentType.startsWith('application/problem+json') || contentType.startsWith('application/json')) {
+        try {
+            const problem = Object.assign(new ProblemDetails(), (await response.json()) as Partial<ProblemDetails>);
+            problem.status ??= response.status;
+            return problem;
+        } catch {
+            // Fall through to a generic error for non-problem JSON payloads.
+        }
     }
 
     return new ProblemDetails().setErrorMessage(`Unexpected status code: ${response.status}`);
