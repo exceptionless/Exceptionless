@@ -15,7 +15,7 @@
     import Summary from '$features/events/components/summary/summary.svelte';
     import { getSessionId } from '$features/events/utils/index';
     import { organization } from '$features/organizations/context.svelte';
-    import FilterIcon from '@lucide/svelte/icons/filter';
+    import Funnel from '@lucide/svelte/icons/funnel';
     import InfoIcon from '@lucide/svelte/icons/info';
 
     import SessionEventDuration from '../session-event-duration.svelte';
@@ -140,15 +140,15 @@
     <div class="mb-2 flex items-center justify-between gap-2">
         <H3>Session Events</H3>
         <Button
+            aria-label="Open events filtered to this session"
             disabled={!sessionEventsHref}
             href={sessionEventsHref}
             onclick={handleSessionFilterClick}
-            size="sm"
+            size="icon-sm"
             title="Open events filtered to this session"
             variant="outline"
         >
-            <FilterIcon data-icon="inline-start" />
-            Filter
+            <Funnel class="size-4" />
         </Button>
     </div>
 

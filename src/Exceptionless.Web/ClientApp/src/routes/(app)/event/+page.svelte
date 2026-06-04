@@ -13,7 +13,19 @@
     import EventDetailSheet from '$features/events/components/event-detail-sheet.svelte';
     import EventsDashboardChart from '$features/events/components/events-dashboard-chart.svelte';
     import EventsStatsDashboard from '$features/events/components/events-stats-dashboard.svelte';
-    import { DateFilter, ProjectFilter, StatusFilter } from '$features/events/components/filters';
+    import {
+        BooleanFilter,
+        DateFilter,
+        LevelFilter,
+        ProjectFilter,
+        ReferenceFilter,
+        SessionFilter,
+        StatusFilter,
+        StringFilter,
+        TagFilter,
+        TypeFilter,
+        VersionFilter
+    } from '$features/events/components/filters';
     import {
         applyTimeFilter,
         buildFilterCacheKey,
@@ -35,19 +47,28 @@
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
     import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import * as agg from '$features/shared/api/aggregations';
-    import { getSharedTableOptions, isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
+    import { createPageSizePreference, getSharedTableOptions, isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
     import { fillDateSeries } from '$features/shared/utils/charts.js';
     import { toDateMathRange } from '$features/shared/utils/datemath';
     import { parseDateMathRange } from '$features/shared/utils/datemath.js';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
+    import { DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
     import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
     import { error } from '@sveltejs/kit';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
+    import { untrack } from 'svelte';
     import { debounce, throttle } from 'throttle-debounce';
+
+    import {
+        ALL_TIME_QUERY_VALUE,
+        deserializeTimeQueryParam,
+        getEventsNavigationOptionsForFilter,
+        redirectToEventsWithFilter,
+        serializeTimeQueryParam
+    } from '../redirect-to-events.svelte';
 
     let selectedEventId: null | string = $state(null);
 
@@ -67,11 +88,27 @@
     const DEFAULT_TIME_RANGE = '[now-7d TO now]';
     const DEFAULT_FILTER = '(status:open OR status:regressed)';
     const DEFAULT_FILTERS = [new DateFilter('date', DEFAULT_TIME_RANGE), new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
+    const PAGE_SIZE_PREFERENCE_KEY = 'event-stack-list-page-size';
+    const pageSizePreference = createPageSizePreference(PAGE_SIZE_PREFERENCE_KEY);
     const DEFAULT_PARAMS = {
+        after: undefined as string | undefined,
+        before: undefined as string | undefined,
+        bot: undefined as string | undefined,
         filter: undefined as string | undefined,
-        limit: DEFAULT_LIMIT,
+        first: undefined as string | undefined,
+        level: undefined as string | undefined,
+        limit: undefined as number | undefined,
+        page: undefined as number | undefined,
+        project: undefined as string | undefined,
+        reference: undefined as string | undefined,
+        session: undefined as string | undefined,
         sort: undefined as string | undefined,
-        time: undefined as string | undefined
+        stack: undefined as string | undefined,
+        status: undefined as string | undefined,
+        tag: undefined as string | undefined,
+        time: undefined as string | undefined,
+        type: undefined as string | undefined,
+        version: undefined as string | undefined
     };
 
     function filterCacheKey(filter: null | string): string {
@@ -80,18 +117,90 @@
 
     function getQueryTime(): null | string {
         if (queryParams.time != null) {
-            return queryParams.time || null;
+            if (queryParams.time === ALL_TIME_QUERY_VALUE) {
+                return null;
+            }
+
+            return queryParams.time ? deserializeTimeQueryParam(queryParams.time) : null;
         }
 
         return savedViewsState.activeSavedView?.time ?? DEFAULT_TIME_RANGE;
     }
 
     function getEffectiveFilter(): null | string {
-        if (queryParams.filter != null) {
-            return queryParams.filter;
+        const filter = toFilter(getCurrentFiltersWithoutTime());
+        return filter || null;
+    }
+
+    function getQueryFilters(): FacetedFilter.IFilter[] | null {
+        const filters: FacetedFilter.IFilter[] = [];
+
+        if (queryParams.project) {
+            filters.push(new ProjectFilter(splitQueryParam(queryParams.project)));
         }
 
-        return savedViewsState.activeSavedView?.filter ?? DEFAULT_FILTER;
+        if (queryParams.stack) {
+            filters.push(new StringFilter('stack', queryParams.stack));
+        }
+
+        const bot = parseBooleanQueryParam(queryParams.bot);
+        if (bot !== undefined) {
+            filters.push(new BooleanFilter('bot', bot));
+        }
+
+        const first = parseBooleanQueryParam(queryParams.first);
+        if (first !== undefined) {
+            filters.push(new BooleanFilter('first', first));
+        }
+
+        if (queryParams.level) {
+            filters.push(new LevelFilter(splitQueryParam(queryParams.level) as never[]));
+        }
+
+        if (queryParams.reference) {
+            filters.push(new ReferenceFilter(queryParams.reference));
+        }
+
+        if (queryParams.session) {
+            filters.push(new SessionFilter(queryParams.session));
+        }
+
+        if (queryParams.status) {
+            filters.push(new StatusFilter(splitQueryParam(queryParams.status) as never[]));
+        }
+
+        if (queryParams.tag) {
+            filters.push(new TagFilter(splitQueryParam(queryParams.tag) as never[]));
+        }
+
+        if (queryParams.type) {
+            filters.push(new TypeFilter(splitQueryParam(queryParams.type) as never[]));
+        }
+
+        if (queryParams.version) {
+            filters.push(new VersionFilter('version', queryParams.version));
+        }
+
+        return filters.length > 0 ? filters : null;
+    }
+
+    function parseBooleanQueryParam(value: null | string | undefined): boolean | undefined {
+        if (value === 'true') {
+            return true;
+        }
+
+        if (value === 'false') {
+            return false;
+        }
+
+        return undefined;
+    }
+
+    function splitQueryParam(value: string): string[] {
+        return value
+            .split(',')
+            .map((item) => item.trim())
+            .filter((item) => item);
     }
 
     function getEffectiveSort(): null | string | undefined {
@@ -107,10 +216,24 @@
         default: DEFAULT_PARAMS,
         pushHistory: true,
         schema: {
+            after: 'string',
+            before: 'string',
+            bot: 'string',
             filter: 'string',
+            first: 'string',
+            level: 'string',
             limit: 'number',
+            page: 'number',
+            project: 'string',
+            reference: 'string',
+            session: 'string',
             sort: 'string',
-            time: 'string'
+            stack: 'string',
+            status: 'string',
+            tag: 'string',
+            time: 'string',
+            type: 'string',
+            version: 'string'
         }
     });
 
@@ -153,7 +276,11 @@
     // NOTE: This might be applying query string parameters when redirecting away.
     watch(
         () => organization.current,
-        () => {
+        (_currentOrganizationId, previousOrganizationId) => {
+            if (previousOrganizationId === undefined) {
+                return;
+            }
+
             updateFilterCache(filterCacheKey(DEFAULT_FILTER), DEFAULT_FILTERS);
             //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
             Object.assign(queryParams, DEFAULT_PARAMS);
@@ -163,15 +290,107 @@
     );
 
     function getCurrentFilters(): FacetedFilter.IFilter[] {
-        const filter = getEffectiveFilter();
-        const savedView = savedViewsState.activeSavedView;
+        return applyTimeFilter(getCurrentFiltersWithoutTime(), getQueryTime());
+    }
 
-        if (queryParams.filter == null && savedView?.filter_definitions && filter === (savedView.filter ?? null)) {
-            const hydrated = deserializeFilters(savedView.filter_definitions);
-            return applyTimeFilter(hydrated, getQueryTime());
+    function getCurrentFiltersWithoutTime(): FacetedFilter.IFilter[] {
+        const savedViewFilters = getSavedViewFilters();
+        const queryFilters = getQueryFilters() ?? [];
+        const expressionFilters =
+            queryParams.filter != null
+                ? getFiltersFromCache(filterCacheKey(queryParams.filter), queryParams.filter).filter((filter) => filter.type !== 'date')
+                : [];
+
+        if (savedViewFilters) {
+            return mergeFilterOverrides(
+                savedViewFilters.filter((filter) => filter.type !== 'date'),
+                [...expressionFilters, ...queryFilters],
+                getQueryFilterRemovalKeys(savedViewFilters)
+            );
         }
 
-        return applyTimeFilter(getFiltersFromCache(filterCacheKey(filter), filter), getQueryTime());
+        if (expressionFilters.length > 0 || queryFilters.length > 0) {
+            return [...expressionFilters, ...queryFilters];
+        }
+
+        const filter = savedViewsState.activeSavedView?.filter ?? DEFAULT_FILTER;
+        return getFiltersFromCache(filterCacheKey(filter), filter).filter((filter) => filter.type !== 'date');
+    }
+
+    function getSavedViewFilters(): FacetedFilter.IFilter[] | null {
+        const savedView = savedViewsState.activeSavedView;
+        if (!savedView?.filter_definitions) {
+            return null;
+        }
+
+        return deserializeFilters(savedView.filter_definitions);
+    }
+
+    function getQueryFilterRemovalKeys(savedViewFilters: FacetedFilter.IFilter[]): string[] {
+        const removedKeys: string[] = [];
+
+        if (queryParams.bot === '') {
+            removedKeys.push('boolean-bot');
+        }
+
+        if (queryParams.first === '') {
+            removedKeys.push('boolean-first');
+        }
+
+        if (queryParams.filter === '') {
+            removedKeys.push(...savedViewFilters.filter((filter) => filter.type !== 'date' && !isQueryParamFilter(filter)).map((filter) => filter.key));
+        }
+
+        if (queryParams.level === '') {
+            removedKeys.push('level');
+        }
+
+        if (queryParams.project === '') {
+            removedKeys.push('project');
+        }
+
+        if (queryParams.reference === '') {
+            removedKeys.push('reference');
+        }
+
+        if (queryParams.session === '') {
+            removedKeys.push('session');
+        }
+
+        if (queryParams.stack === '') {
+            removedKeys.push('string-stack');
+        }
+
+        if (queryParams.status === '') {
+            removedKeys.push('status');
+        }
+
+        if (queryParams.tag === '') {
+            removedKeys.push('tag');
+        }
+
+        if (queryParams.type === '') {
+            removedKeys.push('type');
+        }
+
+        if (queryParams.version === '') {
+            removedKeys.push('version-version');
+        }
+
+        return removedKeys;
+    }
+
+    function mergeFilterOverrides(
+        baseFilters: FacetedFilter.IFilter[],
+        overrideFilters: FacetedFilter.IFilter[],
+        removedFilterKeys: string[] = []
+    ): FacetedFilter.IFilter[] {
+        if (overrideFilters.length === 0 && removedFilterKeys.length === 0) {
+            return baseFilters;
+        }
+
+        const overrideKeys = new Set([...overrideFilters.map((filter) => filter.key), ...removedFilterKeys]);
+        return [...baseFilters.filter((filter) => !overrideKeys.has(filter.key)), ...overrideFilters];
     }
 
     let filters = $state(getCurrentFilters());
@@ -189,12 +408,14 @@
         { lazy: true }
     );
 
-    $effect(() => {
-        // Handle case where pop state loses the limit
-        queryParams.limit ??= DEFAULT_LIMIT;
-    });
+    async function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): Promise<void> {
+        const navigationOptions = getEventsNavigationOptionsForFilter(addedOrUpdated);
+        if (navigationOptions) {
+            selectedEventId = null;
+            await redirectToEventsWithFilter(organization.current, addedOrUpdated, navigationOptions);
+            return;
+        }
 
-    function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): void {
         const isNew = !filters?.some((f) => f.id === addedOrUpdated.id);
         const updatedFilters = filterChanged(filters ?? [], addedOrUpdated);
         updateFilters(updatedFilters);
@@ -211,27 +432,175 @@
         filters = updatedFilters;
     }
 
-    function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
+    function updateFilters(updatedFilters: FacetedFilter.IFilter[], options: { clearPagination?: boolean } = {}): void {
+        const shouldClearPagination = options.clearPagination ?? true;
         const filter = toFilter(updatedFilters.filter((f) => f.type !== 'date'));
+        const expressionFilters = updatedFilters.filter((f) => f.type !== 'date' && !isQueryParamFilter(f));
+        const filterParam = toFilter(expressionFilters);
         const time = ((updatedFilters.find((f) => f.type === 'date') as DateFilter | undefined)?.value as string | undefined) ?? null;
-        const baseFilter = savedViewsState.activeSavedView?.filter ?? DEFAULT_FILTER;
         const baseTime = savedViewsState.activeSavedView?.time ?? DEFAULT_TIME_RANGE;
+        const baseFilter = savedViewsState.activeSavedView?.filter ?? DEFAULT_FILTER;
+        const savedViewFilters = getSavedViewFilters();
+        const baseQueryFilterParams = getQueryFilterParams(savedViewFilters ?? []);
+        const queryFilterParams = getQueryFilterParamDeltas(getQueryFilterParams(updatedFilters), baseQueryFilterParams);
+        const baseExpressionFilterParam = savedViewFilters ? toFilter(savedViewFilters.filter((f) => f.type !== 'date' && !isQueryParamFilter(f))) : baseFilter;
 
-        const newFilterParam = filter === baseFilter ? null : filter;
-        const newTimeParam = time === baseTime ? null : (time ?? '');
+        const newFilterParam = filterParam === baseExpressionFilterParam ? null : filterParam || (savedViewFilters && baseExpressionFilterParam ? '' : null);
+        const newTimeParam = time === baseTime ? null : time ? serializeTimeQueryParam(time) : ALL_TIME_QUERY_VALUE;
 
         updateFilterCache(filterCacheKey(filter), updatedFilters);
+        if (shouldClearPagination) {
+            clearPaginationQueryParams();
+        }
+
         // Only skip the watch when the URL will actually change from our update.
         // If the URL doesn't change, the watch won't fire and the flag would stay stale.
-        if (newFilterParam !== queryParams.filter || newTimeParam !== queryParams.time) {
+        if (
+            newFilterParam !== queryParams.filter ||
+            newTimeParam !== queryParams.time ||
+            queryFilterParams.bot !== queryParams.bot ||
+            queryFilterParams.first !== queryParams.first ||
+            queryFilterParams.level !== queryParams.level ||
+            queryFilterParams.project !== queryParams.project ||
+            queryFilterParams.reference !== queryParams.reference ||
+            queryFilterParams.session !== queryParams.session ||
+            queryFilterParams.stack !== queryParams.stack ||
+            queryFilterParams.status !== queryParams.status ||
+            queryFilterParams.tag !== queryParams.tag ||
+            queryFilterParams.type !== queryParams.type ||
+            queryFilterParams.version !== queryParams.version
+        ) {
             isInternalFilterUpdate = true;
         }
 
+        queryParams.bot = queryFilterParams.bot;
+        queryParams.first = queryFilterParams.first;
+        queryParams.level = queryFilterParams.level;
+        queryParams.project = queryFilterParams.project;
+        queryParams.reference = queryFilterParams.reference;
+        queryParams.session = queryFilterParams.session;
+        queryParams.stack = queryFilterParams.stack;
+        queryParams.status = queryFilterParams.status;
+        queryParams.tag = queryFilterParams.tag;
+        queryParams.type = queryFilterParams.type;
+        queryParams.version = queryFilterParams.version;
         queryParams.time = newTimeParam;
         queryParams.filter = newFilterParam;
     }
 
+    function clearPaginationQueryParams(): void {
+        queryParams.after = null;
+        queryParams.before = null;
+        queryParams.page = null;
+    }
+
+    $effect(() => {
+        const activeSavedViewId = savedViewsState.activeSavedView?.id;
+        if (!activeSavedViewId) {
+            return;
+        }
+
+        untrack(() => {
+            updateFilters(getCurrentFilters(), { clearPagination: false });
+        });
+    });
+
+    function getQueryFilterParams(filters: FacetedFilter.IFilter[]) {
+        const botFilter = filters.find((f): f is BooleanFilter => f instanceof BooleanFilter && f.term === 'bot');
+        const firstFilter = filters.find((f): f is BooleanFilter => f instanceof BooleanFilter && f.term === 'first');
+        const levelFilter = filters.find((f): f is LevelFilter => f.type === 'level');
+        const projectFilter = filters.find((f): f is ProjectFilter => f.type === 'project');
+        const referenceFilter = filters.find((f): f is ReferenceFilter => f.type === 'reference');
+        const sessionFilter = filters.find((f): f is SessionFilter => f.type === 'session');
+        const stackFilter = filters.find((f): f is StringFilter => f.type === 'string' && f.key === 'string-stack');
+        const statusFilter = filters.find((f): f is StatusFilter => f.type === 'status');
+        const tagFilter = filters.find((f): f is TagFilter => f.type === 'tag');
+        const typeFilter = filters.find((f): f is TypeFilter => f.type === 'type');
+        const versionFilter = filters.find((f): f is VersionFilter => f instanceof VersionFilter && f.term === 'version');
+
+        return {
+            bot: botFilter?.value === undefined ? null : String(botFilter.value),
+            first: firstFilter?.value === undefined ? null : String(firstFilter.value),
+            level: levelFilter?.value.length ? levelFilter.value.join(',') : null,
+            project: projectFilter?.value.length ? projectFilter.value.join(',') : null,
+            reference: referenceFilter?.value?.trim() ? referenceFilter.value : null,
+            session: sessionFilter?.value?.trim() ? sessionFilter.value : null,
+            stack: stackFilter?.value?.trim() ? stackFilter.value : null,
+            status: statusFilter?.value.length ? statusFilter.value.join(',') : null,
+            tag: tagFilter?.value.length ? tagFilter.value.join(',') : null,
+            type: typeFilter?.value.length ? typeFilter.value.join(',') : null,
+            version: versionFilter?.value?.trim() ? versionFilter.value : null
+        };
+    }
+
+    function getQueryFilterParamDeltas(currentParams: ReturnType<typeof getQueryFilterParams>, baseParams: ReturnType<typeof getQueryFilterParams>) {
+        const getDelta = (currentValue: null | string, baseValue: null | string): null | string => {
+            if (currentValue === baseValue) {
+                return null;
+            }
+
+            return currentValue ?? (baseValue ? '' : null);
+        };
+
+        return {
+            bot: getDelta(currentParams.bot, baseParams.bot),
+            first: getDelta(currentParams.first, baseParams.first),
+            level: getDelta(currentParams.level, baseParams.level),
+            project: getDelta(currentParams.project, baseParams.project),
+            reference: getDelta(currentParams.reference, baseParams.reference),
+            session: getDelta(currentParams.session, baseParams.session),
+            stack: getDelta(currentParams.stack, baseParams.stack),
+            status: getDelta(currentParams.status, baseParams.status),
+            tag: getDelta(currentParams.tag, baseParams.tag),
+            type: getDelta(currentParams.type, baseParams.type),
+            version: getDelta(currentParams.version, baseParams.version)
+        };
+    }
+
+    function isQueryParamFilter(filter: FacetedFilter.IFilter): boolean {
+        if (filter.type === 'string' && filter.key === 'string-stack') {
+            return true;
+        }
+
+        if (filter.type === 'boolean' && filter instanceof BooleanFilter && (filter.term === 'bot' || filter.term === 'first') && filter.value !== undefined) {
+            return true;
+        }
+
+        if (filter.type === 'version' && filter instanceof VersionFilter && filter.term !== 'version') {
+            return false;
+        }
+
+        return ['level', 'project', 'reference', 'session', 'status', 'tag', 'type', 'version'].includes(filter.type);
+    }
+
+    function getPageSize(): number {
+        return queryParams.limit ?? pageSizePreference.current;
+    }
+
+    function setPageSize(value: number): void {
+        pageSizePreference.current = value;
+        queryParams.limit = null;
+    }
+
+    $effect(() => {
+        if (queryParams.limit === pageSizePreference.current) {
+            queryParams.limit = null;
+        }
+    });
+
     const eventsQueryParameters: GetEventsParams = $state({
+        get after() {
+            return queryParams.after ?? undefined;
+        },
+        set after(value) {
+            queryParams.after = value ?? null;
+        },
+        get before() {
+            return queryParams.before ?? undefined;
+        },
+        set before(value) {
+            queryParams.before = value ?? null;
+        },
         get filter() {
             return getEffectiveFilter()!;
         },
@@ -239,13 +608,19 @@
             queryParams.filter = value;
         },
         get limit() {
-            return queryParams.limit!;
+            return getPageSize();
         },
         set limit(value) {
-            queryParams.limit = value;
+            setPageSize(value);
         },
         mode: 'summary',
         offset: DEFAULT_OFFSET,
+        get page() {
+            return queryParams.page ?? undefined;
+        },
+        set page(value) {
+            queryParams.page = value ?? null;
+        },
         get sort() {
             return getEffectiveSort() ?? undefined;
         },
@@ -257,7 +632,7 @@
             return getQueryTime() ?? undefined;
         },
         set time(value) {
-            queryParams.time = value ?? null;
+            queryParams.time = value ? serializeTimeQueryParam(value) : ALL_TIME_QUERY_VALUE;
         }
     });
 
@@ -312,9 +687,9 @@
             return;
         }
 
-        clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
-            params: eventsQueryParameters as Record<string, unknown>
-        });
+        const params = { ...eventsQueryParameters };
+        delete params.page;
+        clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, { params });
 
         if (clientResponse.problem) {
             showBillingDialogOnUpgradeProblem(clientResponse.problem, organization.current, () => loadData());
@@ -490,7 +865,7 @@
             <EventsDashboardChart data={chartData()} isLoading={chartDataQuery.isLoading && !chartDataQuery.isSuccess} {onRangeSelect} />
         {/if}
 
-        <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} {rowClick} {rowHref} {table}>
+        <EventsDataTable bind:limit={eventsQueryParameters.limit!} isLoading={clientStatus.isLoading} {rowClick} {rowHref} {table}>
             {#snippet footerChildren()}
                 <div class="h-9 min-w-35">
                     {#if table.getSelectedRowModel().flatRows.length}
@@ -499,7 +874,7 @@
                 </div>
 
                 <DataTable.Selection {table} />
-                <DataTable.PageSize bind:value={queryParams.limit!} {table}></DataTable.PageSize>
+                <DataTable.PageSize bind:value={eventsQueryParameters.limit!} {table}></DataTable.PageSize>
                 <div class="flex items-center space-x-6 lg:space-x-8">
                     <DataTable.PageCount {table} />
                     <DataTable.Pagination {table} />
