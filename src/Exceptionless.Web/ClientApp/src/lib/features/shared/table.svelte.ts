@@ -61,6 +61,19 @@ export type TablePagingParameters<T extends PaginationStrategy = PaginationStrat
         ? TableMemoryPagingParameters
         : never;
 
+export function createPageSizePreference(key: string) {
+    const persistedPageSize = new PersistedState<number>(key, DEFAULT_LIMIT);
+
+    return {
+        get current() {
+            return normalizePageSize(persistedPageSize.current);
+        },
+        set current(value: number) {
+            persistedPageSize.current = normalizePageSize(value);
+        }
+    };
+}
+
 export function getSharedTableOptions<TData extends RowData, TPaginationStrategy extends PaginationStrategy = PaginationStrategy>(
     configuration: TableConfiguration<TData, TPaginationStrategy>
 ): TableOptions<StockFeatures, TData> {
@@ -435,6 +448,10 @@ function getPageIndexFromParameters(strategy: PaginationStrategy, parameters: Ta
 
 function hasSortQueryParameter(parameters: TablePagingParameters): parameters is TableCursorPagingParameters | TableOffsetPagingParameters {
     return Object.prototype.hasOwnProperty.call(parameters, 'sort');
+}
+
+function normalizePageSize(value: number | undefined): number {
+    return value && Number.isFinite(value) && value > 0 ? value : DEFAULT_LIMIT;
 }
 
 function parseSortString(sort: string | undefined): ColumnSort[] {

@@ -43,14 +43,14 @@
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
     import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import * as agg from '$features/shared/api/aggregations';
-    import { getSharedTableOptions, isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
+    import { createPageSizePreference, getSharedTableOptions, isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
     import { fillDateSeries } from '$features/shared/utils/charts';
     import { parseDateMathRange, toDateMathRange } from '$features/shared/utils/datemath';
     import StackDetailSheet from '$features/stacks/components/stack-detail-sheet.svelte';
     import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
+    import { DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
     import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
     import { error } from '@sveltejs/kit';
     import { createTable } from '@tanstack/svelte-table';
@@ -91,12 +91,14 @@
         new TypeFilter(['404', 'error']),
         new StatusFilter([StackStatus.Open, StackStatus.Regressed])
     ];
+    const PAGE_SIZE_PREFERENCE_KEY = 'event-stack-list-page-size';
+    const pageSizePreference = createPageSizePreference(PAGE_SIZE_PREFERENCE_KEY);
     const DEFAULT_PARAMS = {
         bot: undefined as string | undefined,
         filter: undefined as string | undefined,
         first: undefined as string | undefined,
         level: undefined as string | undefined,
-        limit: DEFAULT_LIMIT,
+        limit: undefined as number | undefined,
         page: undefined as number | undefined,
         project: undefined as string | undefined,
         reference: undefined as string | undefined,
@@ -392,11 +394,6 @@
         { lazy: true }
     );
 
-    $effect(() => {
-        // Handle case where pop state loses the limit
-        queryParams.limit ??= DEFAULT_LIMIT;
-    });
-
     async function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter) {
         // If this is a stack filter, redirect to the Events page
         if (addedOrUpdated.type === 'string' && addedOrUpdated.key === 'string-stack') {
@@ -562,6 +559,21 @@
         return ['level', 'project', 'reference', 'session', 'status', 'tag', 'type', 'version'].includes(filter.type);
     }
 
+    function getPageSize(): number {
+        return queryParams.limit ?? pageSizePreference.current;
+    }
+
+    function setPageSize(value: number): void {
+        pageSizePreference.current = value;
+        queryParams.limit = null;
+    }
+
+    $effect(() => {
+        if (queryParams.limit === pageSizePreference.current) {
+            queryParams.limit = null;
+        }
+    });
+
     const eventsQueryParameters: GetEventsParams = $state({
         get filter() {
             return getEffectiveFilter()!;
@@ -570,10 +582,10 @@
             queryParams.filter = value;
         },
         get limit() {
-            return queryParams.limit!;
+            return getPageSize();
         },
         set limit(value) {
-            queryParams.limit = value;
+            setPageSize(value);
         },
         mode: 'stack_frequent',
         offset: DEFAULT_OFFSET,
@@ -800,14 +812,14 @@
             <EventsDashboardChart data={chartData()} isLoading={clientStatus.isLoading || chartDataQuery.isLoading} {onRangeSelect} />
         {/if}
 
-        <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} {rowClick} {rowHref} {table}>
+        <EventsDataTable bind:limit={eventsQueryParameters.limit!} isLoading={clientStatus.isLoading} {rowClick} {rowHref} {table}>
             {#snippet footerChildren()}
                 <div class="h-9 min-w-35">
                     <TableStacksBulkActionsDropdownMenu {table} />
                 </div>
 
                 <DataTable.Selection {table} />
-                <DataTable.PageSize bind:value={queryParams.limit!} {table}></DataTable.PageSize>
+                <DataTable.PageSize bind:value={eventsQueryParameters.limit!} {table}></DataTable.PageSize>
                 <div class="flex items-center space-x-6 lg:space-x-8">
                     <DataTable.PageCount {table} />
                     <DataTable.Pagination {table} />
