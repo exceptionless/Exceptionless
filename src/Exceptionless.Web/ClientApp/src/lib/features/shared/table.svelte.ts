@@ -112,12 +112,9 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
 
     const onPaginationChange = (updaterOrValue: Updater<PaginationState>) => {
         const previousPageInfo = pagination();
-
-        setPagination(updaterOrValue);
-        const paginationChange = getPaginationChange(previousPageInfo, pagination());
-        if (paginationChange.pageIndexChanged) {
-            setPagination(paginationChange.currentPageInfo);
-        }
+        const requestedPageInfo = resolveUpdater(previousPageInfo, updaterOrValue);
+        const paginationChange = resolvePaginationChange(previousPageInfo, requestedPageInfo);
+        setPagination(paginationChange.currentPageInfo);
 
         const currentPageInfo = paginationChange.currentPageInfo;
         if (configuration.queryParameters.limit !== currentPageInfo.pageSize) {
@@ -339,6 +336,28 @@ export function removeTableSelection<TData extends RowData>(table: Table<StockFe
     return false;
 }
 
+export function resolvePaginationChange(previousPageInfo: PaginationState, currentPageInfo: PaginationState) {
+    const pageSizeChanged = previousPageInfo.pageSize !== currentPageInfo.pageSize;
+    if (!pageSizeChanged || currentPageInfo.pageIndex === 0) {
+        return {
+            currentPageInfo,
+            pageIndexChanged: false,
+            pageSizeChanged,
+            previousPageInfo
+        };
+    }
+
+    return {
+        currentPageInfo: {
+            ...currentPageInfo,
+            pageIndex: 0
+        },
+        pageIndexChanged: true,
+        pageSizeChanged,
+        previousPageInfo
+    };
+}
+
 function createPersistedTableState<T>(key: string, initialValue: T): [() => T, (updater: Updater<T>) => void] {
     const persistedValue = new PersistedState<T>(key, initialValue);
 
@@ -409,28 +428,6 @@ function getPageIndexFromParameters(strategy: PaginationStrategy, parameters: Ta
     return Math.max(0, (((parameters as TableMemoryPagingParameters | TableOffsetPagingParameters).page ?? 1) as number) - 1);
 }
 
-function getPaginationChange(previousPageInfo: PaginationState, currentPageInfo: PaginationState) {
-    const pageSizeChanged = previousPageInfo.pageSize !== currentPageInfo.pageSize;
-    if (!pageSizeChanged || currentPageInfo.pageIndex === 0) {
-        return {
-            currentPageInfo,
-            pageIndexChanged: false,
-            pageSizeChanged,
-            previousPageInfo
-        };
-    }
-
-    return {
-        currentPageInfo: {
-            ...currentPageInfo,
-            pageIndex: 0
-        },
-        pageIndexChanged: true,
-        pageSizeChanged,
-        previousPageInfo
-    };
-}
-
 function hasSortQueryParameter(parameters: TablePagingParameters): parameters is TableCursorPagingParameters | TableOffsetPagingParameters {
     return Object.prototype.hasOwnProperty.call(parameters, 'sort');
 }
@@ -459,6 +456,14 @@ function resolveColumnOrder<TData extends RowData>(columnOrder: ColumnOrderState
     return defaultColumnOrder.includes('select') ? ['select', ...nextColumnOrder.filter((columnId) => columnId !== 'select')] : nextColumnOrder;
 }
 
+function resolveUpdater<T>(currentValue: T, updaterOrValue: Updater<T>): T {
+    if (updaterOrValue instanceof Function) {
+        return updaterOrValue(currentValue);
+    }
+
+    return updaterOrValue;
+}
+
 function sanitizeColumnOrder<TData extends RowData>(columnOrder: ColumnOrderState, columns: ColumnDef<StockFeatures, TData, unknown>[]): ColumnOrderState {
     return columnOrder.length === 0 ? columnOrder : resolveColumnOrder(columnOrder, columns);
 }
@@ -470,7 +475,7 @@ function serializeSortState(sorting: ColumnSort[]): string | undefined {
 function updateCursorPagingParameters(
     parameters: TableCursorPagingParameters,
     meta: QueryMeta | undefined,
-    paginationChange: ReturnType<typeof getPaginationChange>
+    paginationChange: ReturnType<typeof resolvePaginationChange>
 ): void {
     const movingForward = paginationChange.currentPageInfo.pageIndex > paginationChange.previousPageInfo.pageIndex;
     const movingBackward = paginationChange.currentPageInfo.pageIndex < paginationChange.previousPageInfo.pageIndex;
