@@ -3,10 +3,12 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
+using Foundatio.Storage;
 using Xunit;
 
 namespace Exceptionless.Tests.Jobs;
@@ -27,6 +29,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
     private readonly TokenData _tokenData;
     private readonly BillingManager _billingManager;
     private readonly BillingPlans _plans;
+    private readonly IFileStorage _fileStorage;
 
     public CleanupDataJobTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
@@ -44,6 +47,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
         _tokenRepository = GetService<ITokenRepository>();
         _billingManager = GetService<BillingManager>();
         _plans = GetService<BillingPlans>();
+        _fileStorage = GetService<IFileStorage>();
     }
 
     [Fact]
@@ -78,6 +82,10 @@ public class CleanupDataJobTests : IntegrationTestsBase
         var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
         var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
         var persistentEvent = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
+        string iconPath = OrganizationStoragePaths.GetProfileImagePath(organization.Id, "icon.png");
+        string legacyIconPath = OrganizationStoragePaths.GetLegacyProfileImagePath(organization.Id, "legacy-icon.png");
+        await _fileStorage.SaveFileAsync(iconPath, new MemoryStream([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]), TestCancellationToken);
+        await _fileStorage.SaveFileAsync(legacyIconPath, new MemoryStream([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]), TestCancellationToken);
 
         await _job.RunAsync(TestCancellationToken);
 
@@ -85,6 +93,8 @@ public class CleanupDataJobTests : IntegrationTestsBase
         Assert.Null(await _projectRepository.GetByIdAsync(project.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await _stackRepository.GetByIdAsync(stack.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await _eventRepository.GetByIdAsync(persistentEvent.Id, o => o.IncludeSoftDeletes()));
+        Assert.False(await _fileStorage.ExistsAsync(iconPath));
+        Assert.False(await _fileStorage.ExistsAsync(legacyIconPath));
     }
 
     [Fact]

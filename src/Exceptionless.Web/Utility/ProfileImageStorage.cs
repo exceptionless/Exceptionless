@@ -1,3 +1,4 @@
+using Exceptionless.Core.Utility;
 using Foundatio.Storage;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
@@ -56,10 +57,11 @@ internal static class ProfileImageStorage
 
     public static async Task DeleteFromUrlAsync(IFileStorage storage, string? imageUrl, string scope, string ownerId, CancellationToken cancellationToken)
     {
-        if (!TryGetStoragePath(imageUrl, scope, ownerId, out string? path))
+        if (!TryGetStoragePaths(imageUrl, scope, ownerId, out var paths))
             return;
 
-        await storage.DeleteFileAsync(path, cancellationToken);
+        foreach (string path in paths)
+            await storage.DeleteFileAsync(path, cancellationToken);
     }
 
     public static bool TryGetStoragePath(string? imageUrl, string scope, string ownerId, out string path)
@@ -75,6 +77,32 @@ internal static class ProfileImageStorage
 
         path = GetStoragePath(scope, ownerId, fileName!);
         return true;
+    }
+
+    public static bool TryGetStoragePaths(string? imageUrl, string scope, string ownerId, out IReadOnlyCollection<string> paths)
+    {
+        paths = [];
+
+        if (!TryGetFileName(imageUrl, out string? fileName) || fileName is null)
+            return false;
+
+        paths = GetStoragePaths(scope, ownerId, fileName).ToList();
+        return true;
+    }
+
+    public static async Task<Stream?> GetFileStreamAsync(IFileStorage storage, string? imageUrl, string scope, string ownerId, CancellationToken cancellationToken)
+    {
+        if (!TryGetStoragePaths(imageUrl, scope, ownerId, out var paths))
+            return null;
+
+        foreach (string path in paths)
+        {
+            var stream = await storage.GetFileStreamAsync(path, StreamMode.Read, cancellationToken);
+            if (stream is not null)
+                return stream;
+        }
+
+        return null;
     }
 
     public static bool TryGetContentType(string fileName, out string contentType)
@@ -93,7 +121,17 @@ internal static class ProfileImageStorage
     }
 
     private static string GetStoragePath(string scope, string ownerId, string fileName)
-        => $"{RootPath}/{scope}/{ownerId}/{fileName}";
+        => String.Equals(scope, "organizations", StringComparison.Ordinal)
+            ? OrganizationStoragePaths.GetProfileImagePath(ownerId, fileName)
+            : $"{RootPath}/{scope}/{ownerId}/{fileName}";
+
+    private static IEnumerable<string> GetStoragePaths(string scope, string ownerId, string fileName)
+    {
+        yield return GetStoragePath(scope, ownerId, fileName);
+
+        if (String.Equals(scope, "organizations", StringComparison.Ordinal))
+            yield return OrganizationStoragePaths.GetLegacyProfileImagePath(ownerId, fileName);
+    }
 
     private static ImageType? DetectImageType(byte[] bytes, int length)
     {
@@ -143,6 +181,17 @@ internal static class ProfileImageStorage
             return false;
 
         return fileName.All(c => Char.IsAsciiLetterOrDigit(c) || c is '.' or '-' or '_');
+    }
+
+    private static bool TryGetFileName(string? imageUrl, out string? fileName)
+    {
+        fileName = null;
+
+        if (String.IsNullOrWhiteSpace(imageUrl))
+            return false;
+
+        fileName = imageUrl.Split('/', StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
+        return IsSafeFileName(fileName);
     }
 
     private sealed record ImageType(string Extension, string ContentType);

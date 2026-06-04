@@ -1,4 +1,5 @@
 using System.Text;
+using Exceptionless.Core.Utility;
 using Exceptionless.Web.Utility;
 using Foundatio.Storage;
 using Microsoft.AspNetCore.Http;
@@ -27,6 +28,23 @@ public class ProfileImageStorageTests
         Assert.EndsWith(".png", result.FileName);
         Assert.True(await storage.ExistsAsync(result.Path));
         Assert.True(modelState.IsValid);
+    }
+
+    [Fact]
+    public async Task SaveAsync_WithOrganizationImage_StoresImageUnderOrganizationPath()
+    {
+        // Arrange
+        using var storage = new InMemoryFileStorage(new InMemoryFileStorageOptions());
+        var modelState = new ModelStateDictionary();
+        using var file = CreateFile([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+
+        // Act
+        var result = await ProfileImageStorage.SaveAsync(storage, file.FormFile, "organizations", UserId, modelState, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.StartsWith(OrganizationStoragePaths.GetProfileImagesPath(UserId), result.Path, StringComparison.Ordinal);
+        Assert.True(await storage.ExistsAsync(result.Path));
     }
 
     [Fact]
@@ -78,6 +96,22 @@ public class ProfileImageStorageTests
 
         // Assert
         Assert.False(await storage.ExistsAsync(result.Path));
+    }
+
+    [Fact]
+    public async Task DeleteFromUrlAsync_WithLegacyOrganizationImageUrl_DeletesImage()
+    {
+        // Arrange
+        using var storage = new InMemoryFileStorage(new InMemoryFileStorageOptions());
+        string fileName = "legacy.png";
+        string path = OrganizationStoragePaths.GetLegacyProfileImagePath(UserId, fileName);
+        await storage.SaveFileAsync(path, new MemoryStream([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]), TestContext.Current.CancellationToken);
+
+        // Act
+        await ProfileImageStorage.DeleteFromUrlAsync(storage, $"/api/v2/organizations/{UserId}/icon/{fileName}", "organizations", UserId, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.False(await storage.ExistsAsync(path));
     }
 
     private static TestFormFile CreateFile(byte[] bytes, string contentType = "image/png", string fileName = "avatar.png")

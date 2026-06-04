@@ -197,10 +197,10 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     [ResponseCache(Duration = 31536000, Location = ResponseCacheLocation.Any)]
     public async Task<IActionResult> GetAvatarAsync(string id, string fileName, CancellationToken cancellationToken = default)
     {
-        if (!ProfileImageStorage.TryGetStoragePath(fileName, "users", id, out string path) || !ProfileImageStorage.TryGetContentType(fileName, out string contentType))
+        if (!ProfileImageStorage.TryGetContentType(fileName, out string contentType))
             return NotFound();
 
-        var stream = await _fileStorage.GetFileStreamAsync(path, StreamMode.Read, cancellationToken);
+        var stream = await ProfileImageStorage.GetFileStreamAsync(_fileStorage, fileName, "users", id, cancellationToken);
         return stream is null ? NotFound() : File(stream, contentType);
     }
 
