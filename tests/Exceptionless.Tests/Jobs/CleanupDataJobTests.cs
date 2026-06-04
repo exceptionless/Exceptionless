@@ -83,9 +83,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
         var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
         var persistentEvent = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
         string iconPath = OrganizationStoragePaths.GetProfileImagePath(organization.Id, "icon.png");
-        string legacyIconPath = OrganizationStoragePaths.GetLegacyProfileImagePath(organization.Id, "legacy-icon.png");
         await _fileStorage.SaveFileAsync(iconPath, new MemoryStream([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]), TestCancellationToken);
-        await _fileStorage.SaveFileAsync(legacyIconPath, new MemoryStream([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]), TestCancellationToken);
 
         await _job.RunAsync(TestCancellationToken);
 
@@ -94,7 +92,6 @@ public class CleanupDataJobTests : IntegrationTestsBase
         Assert.Null(await _stackRepository.GetByIdAsync(stack.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await _eventRepository.GetByIdAsync(persistentEvent.Id, o => o.IncludeSoftDeletes()));
         Assert.False(await _fileStorage.ExistsAsync(iconPath));
-        Assert.False(await _fileStorage.ExistsAsync(legacyIconPath));
     }
 
     [Fact]

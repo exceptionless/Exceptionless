@@ -98,22 +98,6 @@ public class ProfileImageStorageTests
         Assert.False(await storage.ExistsAsync(result.Path));
     }
 
-    [Fact]
-    public async Task DeleteFromUrlAsync_WithLegacyOrganizationImageUrl_DeletesImage()
-    {
-        // Arrange
-        using var storage = new InMemoryFileStorage(new InMemoryFileStorageOptions());
-        string fileName = "legacy.png";
-        string path = OrganizationStoragePaths.GetLegacyProfileImagePath(UserId, fileName);
-        await storage.SaveFileAsync(path, new MemoryStream([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]), TestContext.Current.CancellationToken);
-
-        // Act
-        await ProfileImageStorage.DeleteFromUrlAsync(storage, $"/api/v2/organizations/{UserId}/icon/{fileName}", "organizations", UserId, TestContext.Current.CancellationToken);
-
-        // Assert
-        Assert.False(await storage.ExistsAsync(path));
-    }
-
     private static TestFormFile CreateFile(byte[] bytes, string contentType = "image/png", string fileName = "avatar.png")
     {
         var stream = new MemoryStream(bytes);

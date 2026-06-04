@@ -208,11 +208,8 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         _logger.RemoveOrganizationComplete(organization.Name, organization.Id, removedProjects, removedStacks, removedEvents);
     }
 
-    private async Task RemoveOrganizationFilesAsync(Organization organization, JobContext context)
-    {
-        await RemoveFilesAsync(OrganizationStoragePaths.GetProfileImagesPath(organization.Id), context.CancellationToken);
-        await RemoveFilesAsync(OrganizationStoragePaths.GetLegacyProfileImagesPath(organization.Id), context.CancellationToken);
-    }
+    private Task RemoveOrganizationFilesAsync(Organization organization, JobContext context)
+        => RemoveFilesAsync(OrganizationStoragePaths.GetProfileImagesPath(organization.Id), context.CancellationToken);
 
     private async Task RemoveFilesAsync(string path, CancellationToken cancellationToken)
     {
