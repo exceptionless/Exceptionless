@@ -128,6 +128,7 @@ export interface NewProject {
   organization_id: string;
   name: string;
   delete_bot_data_enabled: boolean;
+  promoted_tabs?: string[] | null;
 }
 
 export interface NewSavedView {
@@ -368,6 +369,7 @@ export interface UpdateEvent {
 export interface UpdateProject {
   name: string;
   delete_bot_data_enabled: boolean;
+  promoted_tabs?: string[] | null;
 }
 
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */

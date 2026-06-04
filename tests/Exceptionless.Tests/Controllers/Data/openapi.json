@@ -8091,6 +8091,15 @@
           },
           "delete_bot_data_enabled": {
             "type": "boolean"
+          },
+          "promoted_tabs": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -8871,6 +8880,15 @@
           },
           "delete_bot_data_enabled": {
             "type": "boolean"
+          },
+          "promoted_tabs": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         },
         "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
