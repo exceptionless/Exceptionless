@@ -5,32 +5,66 @@
 <script generics="TData extends RowData" lang="ts">
     import type { RowData, StockFeatures, Table } from '@tanstack/svelte-table';
 
-    import { Pagination, PaginationContent, PaginationFirstButton, PaginationItem, PaginationNext, PaginationPrevious } from '$comp/ui/pagination';
+    import { Button } from '$comp/ui/button';
+    import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
+    import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+    import ChevronsLeftIcon from '@lucide/svelte/icons/chevrons-left';
 
     interface Props {
         table: Table<StockFeatures, TData>;
     }
 
     let { table }: Props = $props();
-    const page = $derived(table.store.state.pagination.pageIndex + 1);
-
+    const page = $derived((table.options.state?.pagination?.pageIndex ?? table.store.state.pagination.pageIndex) + 1);
     const pageCount = $derived(Math.max(1, table.getPageCount() || 1));
+    const canGoNext = $derived(page < pageCount);
+    const canGoPrevious = $derived(page > 1);
+    const showFirst = $derived(page >= 3);
 
-    function handlePageChange(nextPage: number) {
-        table.setPageIndex(nextPage - 1);
+    function goToFirstPage(): void {
+        table.setPageIndex(0);
+    }
+
+    function goToNextPage(): void {
+        if (canGoNext) {
+            table.setPageIndex(page);
+        }
+    }
+
+    function goToPreviousPage(): void {
+        if (canGoPrevious) {
+            table.setPageIndex(page - 2);
+        }
     }
 </script>
 
-<Pagination count={pageCount} onPageChange={handlePageChange} {page} perPage={1} siblingCount={0} class="mx-0 w-auto justify-start">
-    <PaginationContent class="gap-1">
-        <PaginationItem>
-            <PaginationFirstButton currentPage={page} />
-        </PaginationItem>
-        <PaginationItem>
-            <PaginationPrevious page={{ type: 'page', value: Math.max(1, page - 1) }} isActive={false} />
-        </PaginationItem>
-        <PaginationItem>
-            <PaginationNext page={{ type: 'page', value: Math.min(pageCount, page + 1) }} isActive={false} />
-        </PaginationItem>
-    </PaginationContent>
-</Pagination>
+<nav aria-label="pagination" class="mx-0 flex w-auto justify-start">
+    <ul class="flex flex-row items-center gap-1">
+        <li>
+            <Button
+                aria-hidden={showFirst ? undefined : true}
+                aria-label="Go to first page"
+                class={showFirst ? undefined : 'invisible pointer-events-none'}
+                disabled={!showFirst}
+                onclick={goToFirstPage}
+                title="First page"
+                variant="ghost"
+            >
+                <ChevronsLeftIcon class="size-4" />
+                <span class="sr-only">Go to first page</span>
+            </Button>
+        </li>
+        <li>
+            <Button aria-label="Go to previous page" disabled={!canGoPrevious} onclick={goToPreviousPage} title="Previous page" variant="ghost">
+                <ChevronLeftIcon data-icon="inline-start" />
+                <span class="cn-pagination-previous-text hidden sm:block">Previous</span>
+            </Button>
+        </li>
+        <li>
+            <Button aria-label="Go to next page" disabled={!canGoNext} onclick={goToNextPage} title="Next page" variant="ghost">
+                <span class="cn-pagination-next-text hidden sm:block">Next</span>
+                <ChevronRightIcon data-icon="inline-end" />
+            </Button>
+        </li>
+    </ul>
+</nav>

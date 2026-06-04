@@ -39,7 +39,7 @@
     import { useEventListener, watch } from 'runed';
     import { debounce } from 'throttle-debounce';
 
-    import { redirectToEventsWithFilter } from '../redirect-to-events.svelte';
+    import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../redirect-to-events.svelte';
 
     let selectedEventId: null | string = $state(null);
 
@@ -120,7 +120,7 @@
     async function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter) {
         // If this is a stack filter, redirect to the Events page
         if (addedOrUpdated.type === 'string' && addedOrUpdated.key === 'string-stack') {
-            await redirectToEventsWithFilter(organization.current, addedOrUpdated);
+            await redirectToEventsWithFilter(organization.current, addedOrUpdated, getEventsNavigationOptionsForFilter(addedOrUpdated));
             return;
         }
 

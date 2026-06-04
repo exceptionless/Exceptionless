@@ -174,6 +174,7 @@ export interface GetStackCountRequest {
 }
 
 export interface GetStackEventsRequest {
+    enabled?: () => boolean;
     params?: {
         after?: string;
         before?: string;
@@ -409,7 +410,7 @@ export function getStackEventsQuery(request: GetStackEventsRequest) {
     const queryClient = useQueryClient();
 
     return createQuery<PersistentEvent[], ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.stackId,
+        enabled: () => !!accessToken.current && !!request.route.stackId && (request.enabled?.() ?? true),
         onSuccess: (data: PersistentEvent[]) => {
             data.forEach((event) => {
                 queryClient.setQueryData(queryKeys.id(event.id!), event);

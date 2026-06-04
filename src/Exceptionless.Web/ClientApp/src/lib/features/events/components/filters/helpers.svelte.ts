@@ -37,6 +37,8 @@ export function applyTimeFilter(filters: IFilter[], time: null | string): IFilte
         if (time) {
             const dateFilter = filters[dateFilterIndex] as DateFilter;
             dateFilter.value = time;
+        } else {
+            filters.splice(dateFilterIndex, 1);
         }
     } else if (time) {
         filters.push(new DateFilter('date', time));
@@ -222,6 +224,11 @@ export function toFilter(filters: IFilter[]): string {
         .trim();
 }
 
+export function toFilterFromSerializedFilters(json: string): null | string {
+    const filter = toFilter(deserializeFilters(json).filter((f) => f.type !== 'date'));
+    return filter || null;
+}
+
 export function updateFilterCache(cacheKey: string, filters: IFilter[]) {
     // Prevent unbounded growth
     if (filterCache.size >= 100) {
@@ -233,31 +240,34 @@ export function updateFilterCache(cacheKey: string, filters: IFilter[]) {
     filterCache.set(cacheKey, filters);
 }
 
+function mergeDuplicateFilter(existingFilter: IFilter, filter: IFilter): void {
+    existingFilter.id = filter.id;
+    existingFilter.hidden = filter.hidden;
+
+    if (!('value' in existingFilter) || !('value' in filter)) {
+        return;
+    }
+
+    if (Array.isArray(existingFilter.value) && Array.isArray(filter.value)) {
+        existingFilter.value = [...new Set([...existingFilter.value, ...filter.value])];
+        return;
+    }
+
+    if (filter.value !== undefined) {
+        existingFilter.value = filter.value;
+    }
+}
+
 function processFilterRules(filters: IFilter[]): IFilter[] {
     const uniqueFilters = new SvelteMap<string, IFilter>();
     for (const filter of filters) {
-        const singletonFilterKeys = ['date-date', 'level', 'project', 'string-stack', 'tag', 'type'];
-        if (singletonFilterKeys.includes(filter.key)) {
-            const existingFilter = uniqueFilters.get(filter.key);
-            if (existingFilter) {
-                existingFilter.id = filter.id;
-                if ('value' in existingFilter && 'value' in filter) {
-                    if (Array.isArray(existingFilter.value) && Array.isArray(filter.value)) {
-                        existingFilter.value = [...new Set([...existingFilter.value, ...filter.value])];
-                    } else if (filter.value !== undefined) {
-                        existingFilter.value = filter.value;
-                    }
-
-                    existingFilter.hidden = filter.hidden;
-                } else {
-                    throw new Error('Unable to merge filters');
-                }
-            }
-
-            uniqueFilters.set(filter.key, existingFilter ?? filter);
-        } else {
-            uniqueFilters.set(filter.id, filter);
+        const existingFilter = uniqueFilters.get(filter.key);
+        if (existingFilter) {
+            mergeDuplicateFilter(existingFilter, filter);
+            continue;
         }
+
+        uniqueFilters.set(filter.key, filter);
     }
 
     return Array.from(uniqueFilters.values());

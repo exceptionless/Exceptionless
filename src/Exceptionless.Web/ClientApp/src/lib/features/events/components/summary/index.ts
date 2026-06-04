@@ -1,6 +1,8 @@
 import type { LogLevel } from '$features/events/models/event-data';
 import type { StackStatus } from '$features/stacks/models';
 
+import { resolve } from '$app/paths';
+
 export interface EventErrorSummaryData {
     Message?: string;
     Method?: string;
@@ -146,3 +148,20 @@ export type SummaryTemplateKeys =
     | 'stack-session-summary'
     | 'stack-simple-summary'
     | 'stack-summary';
+
+export function buildEventDetailsHref(eventId: string, stackId?: string): string {
+    if (stackId) {
+        return resolve('/(app)/stack/[stackId=objectid]/event/[eventId=objectid]', { eventId, stackId });
+    }
+
+    return resolve('/(app)/event/[eventId=objectid]', { eventId });
+}
+
+export function buildStackEventsHref(stackId: string): string {
+    const queryParams = new URLSearchParams({
+        stack: stackId,
+        time: 'all'
+    });
+
+    return `${resolve('/(app)/event')}?${queryParams}`;
+}

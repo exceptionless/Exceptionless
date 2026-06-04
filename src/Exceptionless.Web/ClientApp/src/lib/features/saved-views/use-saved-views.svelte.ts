@@ -12,6 +12,7 @@ import { savedViewHref, savedViewResolvedSlug } from './slugs';
 
 export interface SavedViewQueryParams {
     filter: null | string | undefined;
+    filters?: null | string | undefined;
     saved?: null | string | undefined;
     sort?: null | string;
     time?: null | string;
@@ -262,6 +263,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         options.queryParams.filter = null;
+        options.queryParams.filters = null;
         setSortQueryParam(options.queryParams, null);
         setTimeQueryParam(options.queryParams, null);
         applyColumnState(view);
@@ -270,6 +272,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
     function handleClearSavedView() {
         options.queryParams.filter = null;
+        options.queryParams.filters = null;
         setSortQueryParam(options.queryParams, null);
         setTimeQueryParam(options.queryParams, null);
         applyColumnState(undefined);
