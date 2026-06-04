@@ -89,11 +89,14 @@
     const DEFAULT_FILTER = '(status:open OR status:regressed)';
     const DEFAULT_FILTERS = [new DateFilter('date', DEFAULT_TIME_RANGE), new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
     const DEFAULT_PARAMS = {
+        after: undefined as string | undefined,
+        before: undefined as string | undefined,
         bot: undefined as string | undefined,
         filter: undefined as string | undefined,
         first: undefined as string | undefined,
         level: undefined as string | undefined,
         limit: DEFAULT_LIMIT,
+        page: undefined as number | undefined,
         project: undefined as string | undefined,
         reference: undefined as string | undefined,
         session: undefined as string | undefined,
@@ -211,11 +214,14 @@
         default: DEFAULT_PARAMS,
         pushHistory: true,
         schema: {
+            after: 'string',
+            before: 'string',
             bot: 'string',
             filter: 'string',
             first: 'string',
             level: 'string',
             limit: 'number',
+            page: 'number',
             project: 'string',
             reference: 'string',
             session: 'string',
@@ -429,7 +435,8 @@
         filters = updatedFilters;
     }
 
-    function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
+    function updateFilters(updatedFilters: FacetedFilter.IFilter[], options: { clearPagination?: boolean } = {}): void {
+        const shouldClearPagination = options.clearPagination ?? true;
         const filter = toFilter(updatedFilters.filter((f) => f.type !== 'date'));
         const expressionFilters = updatedFilters.filter((f) => f.type !== 'date' && !isQueryParamFilter(f));
         const filterParam = toFilter(expressionFilters);
@@ -445,6 +452,10 @@
         const newTimeParam = time === baseTime ? null : time ? serializeTimeQueryParam(time) : ALL_TIME_QUERY_VALUE;
 
         updateFilterCache(filterCacheKey(filter), updatedFilters);
+        if (shouldClearPagination) {
+            clearPaginationQueryParams();
+        }
+
         // Only skip the watch when the URL will actually change from our update.
         // If the URL doesn't change, the watch won't fire and the flag would stay stale.
         if (
@@ -480,6 +491,12 @@
         queryParams.filter = newFilterParam;
     }
 
+    function clearPaginationQueryParams(): void {
+        queryParams.after = null;
+        queryParams.before = null;
+        queryParams.page = null;
+    }
+
     $effect(() => {
         const activeSavedViewId = savedViewsState.activeSavedView?.id;
         if (!activeSavedViewId) {
@@ -487,7 +504,7 @@
         }
 
         untrack(() => {
-            updateFilters(getCurrentFilters());
+            updateFilters(getCurrentFilters(), { clearPagination: false });
         });
     });
 
@@ -560,8 +577,18 @@
     }
 
     const eventsQueryParameters: GetEventsParams = $state({
-        after: undefined,
-        before: undefined,
+        get after() {
+            return queryParams.after ?? undefined;
+        },
+        set after(value) {
+            queryParams.after = value ?? null;
+        },
+        get before() {
+            return queryParams.before ?? undefined;
+        },
+        set before(value) {
+            queryParams.before = value ?? null;
+        },
         get filter() {
             return getEffectiveFilter()!;
         },
@@ -576,6 +603,12 @@
         },
         mode: 'summary',
         offset: DEFAULT_OFFSET,
+        get page() {
+            return queryParams.page ?? undefined;
+        },
+        set page(value) {
+            queryParams.page = value ?? null;
+        },
         get sort() {
             return getEffectiveSort() ?? undefined;
         },
@@ -642,9 +675,9 @@
             return;
         }
 
-        clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
-            params: eventsQueryParameters as Record<string, unknown>
-        });
+        const params = { ...eventsQueryParameters };
+        delete params.page;
+        clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, { params });
 
         if (clientResponse.problem) {
             showBillingDialogOnUpgradeProblem(clientResponse.problem, organization.current, () => loadData());

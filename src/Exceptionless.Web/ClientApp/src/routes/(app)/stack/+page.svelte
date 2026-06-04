@@ -97,6 +97,7 @@
         first: undefined as string | undefined,
         level: undefined as string | undefined,
         limit: DEFAULT_LIMIT,
+        page: undefined as number | undefined,
         project: undefined as string | undefined,
         reference: undefined as string | undefined,
         session: undefined as string | undefined,
@@ -210,6 +211,7 @@
             first: 'string',
             level: 'string',
             limit: 'number',
+            page: 'number',
             project: 'string',
             reference: 'string',
             session: 'string',
@@ -421,7 +423,8 @@
         filters = updatedFilters;
     }
 
-    function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
+    function updateFilters(updatedFilters: FacetedFilter.IFilter[], options: { clearPagination?: boolean } = {}): void {
+        const shouldClearPagination = options.clearPagination ?? true;
         const filter = toFilter(updatedFilters.filter((f) => f.type !== 'date'));
         const expressionFilters = updatedFilters.filter((f) => f.type !== 'date' && !isQueryParamFilter(f));
         const filterParam = toFilter(expressionFilters);
@@ -437,6 +440,10 @@
         const newTimeParam = time === baseTime ? null : time ? serializeTimeQueryParam(time) : ALL_TIME_QUERY_VALUE;
 
         updateFilterCache(filterCacheKey(filter), updatedFilters);
+        if (shouldClearPagination) {
+            clearPaginationQueryParams();
+        }
+
         // Only skip the watch when the URL will actually change from our update.
         // If the URL doesn't change, the watch won't fire and the flag would stay stale.
         if (
@@ -472,6 +479,10 @@
         queryParams.filter = newFilterParam;
     }
 
+    function clearPaginationQueryParams(): void {
+        queryParams.page = null;
+    }
+
     $effect(() => {
         const activeSavedViewId = savedViewsState.activeSavedView?.id;
         if (!activeSavedViewId) {
@@ -479,7 +490,7 @@
         }
 
         untrack(() => {
-            updateFilters(getCurrentFilters());
+            updateFilters(getCurrentFilters(), { clearPagination: false });
         });
     });
 
@@ -566,6 +577,12 @@
         },
         mode: 'stack_frequent',
         offset: DEFAULT_OFFSET,
+        get page() {
+            return queryParams.page ?? undefined;
+        },
+        set page(value) {
+            queryParams.page = value ?? null;
+        },
         get time() {
             return getQueryTime() ?? undefined;
         },

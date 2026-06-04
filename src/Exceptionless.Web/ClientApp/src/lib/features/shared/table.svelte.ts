@@ -38,6 +38,7 @@ export interface TableCursorPagingParameters {
     after?: string;
     before?: string;
     limit?: number;
+    page?: number;
     sort?: string;
 }
 
@@ -90,12 +91,7 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
     };
 
     // Initialize pagination state from parameters
-    const initialPageIndex =
-        configuration.paginationStrategy === 'offset'
-            ? (configuration.queryParameters as TableOffsetPagingParameters).page !== undefined
-                ? Number((configuration.queryParameters as TableOffsetPagingParameters).page) - 1
-                : 0
-            : 0;
+    const initialPageIndex = getPageIndexFromParameters(configuration.paginationStrategy, configuration.queryParameters, 0);
 
     const [pagination, setPagination] = createTableState<PaginationState>({
         pageIndex: initialPageIndex,
@@ -421,6 +417,15 @@ function getLinkQueryParameter(link: QueryMeta['links'][string] | undefined, nam
 }
 
 function getPageIndexFromParameters(strategy: PaginationStrategy, parameters: TablePagingParameters, fallbackPageIndex: number): number {
+    if (strategy === 'cursor') {
+        const cursorParameters = parameters as TableCursorPagingParameters;
+        if (cursorParameters.page !== undefined) {
+            return Math.max(0, cursorParameters.page - 1);
+        }
+
+        return cursorParameters.after || cursorParameters.before ? fallbackPageIndex : 0;
+    }
+
     if (strategy !== 'offset' && strategy !== 'memory') {
         return fallbackPageIndex;
     }
@@ -487,8 +492,9 @@ function updateCursorPagingParameters(
         !paginationChange.pageSizeChanged && movingBackward && paginationChange.currentPageInfo.pageIndex > 0
             ? getLinkQueryParameter(meta?.links?.previous, 'before')
             : undefined;
+    parameters.page = paginationChange.currentPageInfo.pageIndex > 0 ? paginationChange.currentPageInfo.pageIndex + 1 : undefined;
 }
 
 function updatePageNumberPagingParameters(parameters: TableMemoryPagingParameters | TableOffsetPagingParameters, currentPageInfo: PaginationState): void {
-    parameters.page = currentPageInfo.pageIndex + 1; // API uses 1-based indexes.
+    parameters.page = currentPageInfo.pageIndex > 0 ? currentPageInfo.pageIndex + 1 : undefined; // API uses 1-based indexes.
 }
