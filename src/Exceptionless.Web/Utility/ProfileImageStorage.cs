@@ -69,7 +69,7 @@ internal static class ProfileImageStorage
         {
             await DeleteAsync(storage, fileNameOrUrl, scope, ownerId, cancellationToken);
         }
-        catch
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             // Best-effort cleanup should not hide the original persistence failure.
         }
