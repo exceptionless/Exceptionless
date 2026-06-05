@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { GetEventsParams } from '$features/events/api.svelte';
     import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
+    import type { PersistentEvent } from '$features/events/models';
 
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
@@ -71,18 +72,54 @@
     } from '../redirect-to-events.svelte';
 
     let selectedEventId: null | string = $state(null);
+    let selectedEvent = $state<null | PersistentEvent>(null);
 
     function handleEventError(problem: ProblemDetails) {
         showBillingDialogOnUpgradeProblem(problem, organization.current);
         selectedEventId = null;
+        selectedEvent = null;
     }
 
     function rowClick(row: EventSummaryModel<SummaryTemplateKeys>) {
         selectedEventId = row.id;
+        selectedEvent = toInitialEvent(row);
     }
 
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
         return resolve('/(app)/event/[eventId=objectid]', { eventId: row.id });
+    }
+
+    function toInitialEvent(row: EventSummaryModel<SummaryTemplateKeys>): PersistentEvent {
+        const rowData = row.data as Record<string, unknown>;
+        const rowWithIds = row as EventSummaryModel<SummaryTemplateKeys> & {
+            organization_id?: string;
+            project_id?: string;
+            stack_id?: string;
+        };
+        const type = getString(rowData.Type) ?? (row.template_key === 'event-notfound-summary' ? '404' : undefined);
+        const source = getString(rowData.Source) ?? getString(rowData.Path);
+        const message = getString(rowData.Message) ?? getString(rowData.Name) ?? source ?? type ?? '';
+        const identity = getString(rowData.Identity);
+
+        return {
+            created_utc: row.date,
+            data: {
+                ...(identity ? { '@user': { identity } } : {})
+            },
+            date: row.date,
+            id: row.id,
+            is_first_occurrence: false,
+            message,
+            organization_id: rowWithIds.organization_id ?? organization.current ?? '',
+            project_id: rowWithIds.project_id ?? '',
+            source,
+            stack_id: rowWithIds.stack_id ?? queryParams.stack ?? '',
+            type
+        };
+    }
+
+    function getString(value: unknown): string | undefined {
+        return typeof value === 'string' && value.length > 0 ? value : undefined;
     }
 
     const DEFAULT_TIME_RANGE = '[now-7d TO now]';
@@ -414,6 +451,7 @@
         const navigationOptions = getEventsNavigationOptionsForFilter(addedOrUpdated);
         if (navigationOptions) {
             selectedEventId = null;
+            selectedEvent = null;
             await redirectToEventsWithFilter(organization.current, addedOrUpdated, navigationOptions);
             return;
         }
@@ -426,6 +464,7 @@
         }
 
         selectedEventId = null;
+        selectedEvent = null;
     }
 
     function onFilterRemoved(removed?: FacetedFilter.IFilter): void {
@@ -886,4 +925,13 @@
     </div>
 </div>
 
-<EventDetailSheet eventId={selectedEventId} filterChanged={onFilterChanged} onClose={() => (selectedEventId = null)} onError={handleEventError} />
+<EventDetailSheet
+    eventId={selectedEventId}
+    filterChanged={onFilterChanged}
+    initialEvent={selectedEvent}
+    onClose={() => {
+        selectedEventId = null;
+        selectedEvent = null;
+    }}
+    onError={handleEventError}
+/>

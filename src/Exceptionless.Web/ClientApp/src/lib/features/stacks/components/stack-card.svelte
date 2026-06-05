@@ -39,9 +39,10 @@
         initialStack?: null | Stack;
         onDeleted?: () => void;
         onError?: (problem: ProblemDetails) => void;
+        showPlaceholder?: boolean;
     }
 
-    let { filterChanged, id, initialStack, onDeleted, onError }: Props = $props();
+    let { filterChanged, id, initialStack, onDeleted, onError, showPlaceholder = true }: Props = $props();
     let handledErrorForStackId = $state<string>();
 
     const stackQuery = getStackQuery({
@@ -288,7 +289,7 @@
             <StackReferences {stack} />
         </Card.Content>
     </Card.Root>
-{:else}
+{:else if showPlaceholder}
     <Card.Root class="bg-background">
         <Card.Header>
             <Card.Title class="flex flex-row items-center justify-between text-lg font-semibold">

@@ -45,9 +45,10 @@
         initialStack?: null | Stack;
         onEventLoaded?: (event: PersistentEvent) => void;
         onNavigate?: (eventId: string) => void;
+        showStackPlaceholder?: boolean;
     }
 
-    let { filterChanged, handleError, id, initialEvent, initialStack, onEventLoaded, onNavigate }: Props = $props();
+    let { filterChanged, handleError, id, initialEvent, initialStack, onEventLoaded, onNavigate, showStackPlaceholder = true }: Props = $props();
 
     function getTabs(event?: null | PersistentEvent, project?: ViewProject): TabType[] {
         if (!event) {
@@ -313,7 +314,7 @@
 
 <section>
     <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
-    <StackCard {filterChanged} id={event?.stack_id} {initialStack}></StackCard>
+    <StackCard {filterChanged} id={event?.stack_id} {initialStack} showPlaceholder={showStackPlaceholder}></StackCard>
 </section>
 
 <section class="mt-2">
@@ -366,19 +367,21 @@
                     <Table.Cell class="w-4 pr-0"></Table.Cell>
                     <Table.Cell class="flex items-center"><Skeleton class="h-6 w-full rounded-full" /></Table.Cell>{/if}
             </Table.Row>
-            <Table.Row class="group">
-                {#if projectQuery.isSuccess}
-                    <Table.Head class="w-40 font-semibold whitespace-nowrap">Project</Table.Head>
-                    <Table.Cell class="w-4 pr-0"
-                        ><EventsFacetedFilter.ProjectTrigger changed={filterChanged} class="mr-0" value={[projectQuery.data.id!]} /></Table.Cell
-                    >
-                    <Table.Cell>{projectQuery.data.name}</Table.Cell>
-                {:else}
-                    <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>
-                    <Table.Cell class="w-4 pr-0"></Table.Cell>
-                    <Table.Cell class="flex items-center"><Skeleton class="h-6 w-full rounded-full" /></Table.Cell>
-                {/if}
-            </Table.Row>
+            {#if projectQuery.isSuccess || event?.project_id}
+                <Table.Row class="group">
+                    {#if projectQuery.isSuccess}
+                        <Table.Head class="w-40 font-semibold whitespace-nowrap">Project</Table.Head>
+                        <Table.Cell class="w-4 pr-0"
+                            ><EventsFacetedFilter.ProjectTrigger changed={filterChanged} class="mr-0" value={[projectQuery.data.id!]} /></Table.Cell
+                        >
+                        <Table.Cell>{projectQuery.data.name}</Table.Cell>
+                    {:else}
+                        <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>
+                        <Table.Cell class="w-4 pr-0"></Table.Cell>
+                        <Table.Cell class="flex items-center"><Skeleton class="h-6 w-full rounded-full" /></Table.Cell>
+                    {/if}
+                </Table.Row>
+            {/if}
         </Table.Body>
     </Table.Root>
 

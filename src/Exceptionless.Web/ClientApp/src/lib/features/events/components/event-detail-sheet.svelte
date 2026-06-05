@@ -13,11 +13,12 @@
         detailsHref?: string;
         eventId: null | string;
         filterChanged: (filter: IFilter) => void;
+        initialEvent?: null | PersistentEvent;
         onClose: () => void;
         onError?: (problem: ProblemDetails) => void;
     }
 
-    let { detailsHref, eventId = $bindable(), filterChanged, onClose, onError }: Props = $props();
+    let { detailsHref, eventId = $bindable(), filterChanged, initialEvent, onClose, onError }: Props = $props();
 
     let currentEventDetails = $state<{ eventId: string; stackId: string }>();
 
@@ -40,6 +41,14 @@
 
 <DetailSheet detailsHref={resolvedHref} {onClose} open={!!eventId} title="Event">
     {#if eventId}
-        <EventsOverview {filterChanged} id={eventId} {handleError} onEventLoaded={handleEventLoaded} onNavigate={(newId) => (eventId = newId)} />
+        <EventsOverview
+            {filterChanged}
+            id={eventId}
+            {initialEvent}
+            {handleError}
+            onEventLoaded={handleEventLoaded}
+            onNavigate={(newId) => (eventId = newId)}
+            showStackPlaceholder={false}
+        />
     {/if}
 </DetailSheet>
