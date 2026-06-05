@@ -40,11 +40,12 @@
         filterChanged: (filter: IFilter) => void;
         handleError: (problem: ProblemDetails) => void;
         id: string;
+        initialEvent?: null | PersistentEvent;
         onEventLoaded?: (event: PersistentEvent) => void;
         onNavigate?: (eventId: string) => void;
     }
 
-    let { filterChanged, handleError, id, onEventLoaded, onNavigate }: Props = $props();
+    let { filterChanged, handleError, id, initialEvent, onEventLoaded, onNavigate }: Props = $props();
 
     function getTabs(event?: null | PersistentEvent, project?: ViewProject): TabType[] {
         if (!event) {
@@ -95,6 +96,7 @@
     }
 
     const eventQuery = getEventWithNavigationQuery({
+        placeholderEvent: () => (initialEvent?.id === id ? initialEvent : undefined),
         route: {
             get id() {
                 return id;
@@ -102,7 +104,9 @@
         }
     });
 
-    const event = $derived(eventQuery.data?.event);
+    const queryEvent = $derived(eventQuery.data?.event);
+    let loadedEvent = $state<null | PersistentEvent>(null);
+    const event = $derived(queryEvent ?? (loadedEvent?.id === id ? loadedEvent : null));
     const navigation = $derived(eventQuery.data?.navigation);
 
     const projectQuery = getProjectQuery({
@@ -141,6 +145,14 @@
     let draggedPromotedTab = $state<null | string>(null);
     let notifiedEventId = $state('');
     let showJsonDialog = $state(false);
+
+    $effect(() => {
+        if (initialEvent?.id === id && loadedEvent?.id !== id) {
+            loadedEvent = initialEvent;
+        } else if (!initialEvent && loadedEvent?.id !== id) {
+            loadedEvent = null;
+        }
+    });
 
     function isPromotedTab(tab: TabType): boolean {
         return !!projectQuery.data?.promoted_tabs?.includes(tab);
@@ -255,12 +267,16 @@
             handleError(projectQuery.error);
         }
 
-        if (eventQuery.isError) {
+        if (eventQuery.isError && !event) {
             handleError(eventQuery.error);
         }
     });
 
     $effect(() => {
+        if (queryEvent) {
+            loadedEvent = queryEvent;
+        }
+
         if (event && event.id !== notifiedEventId) {
             notifiedEventId = event.id;
             onEventLoaded?.(event);

@@ -22,6 +22,7 @@
     let { eventId: initialEventId, filterChanged, handleError, onDeleted, onEventLoaded, onNavigate, stackId }: Props = $props();
 
     let selectedEventId = $state<null | string>(null);
+    let selectedEvent = $state<null | PersistentEvent>(null);
     let lastStackId = $state('');
     let handledEventsErrorForStackId = $state('');
 
@@ -41,21 +42,25 @@
     $effect(() => {
         if (initialEventId) {
             selectedEventId = initialEventId;
+            selectedEvent = null;
         } else if (stackId !== lastStackId) {
             lastStackId = stackId;
             handledEventsErrorForStackId = '';
             selectedEventId = null;
+            selectedEvent = null;
         }
     });
 
     $effect(() => {
         if (!initialEventId && stackEventsQuery.isSuccess) {
-            selectedEventId = stackEventsQuery.data?.[0]?.id ?? null;
+            const event = stackEventsQuery.data?.[0] ?? null;
+            selectedEventId = event?.id ?? null;
+            selectedEvent = event;
         }
     });
 
     $effect(() => {
-        if (stackEventsQuery.isError && handledEventsErrorForStackId !== stackId) {
+        if (!selectedEventId && stackEventsQuery.isError && handledEventsErrorForStackId !== stackId) {
             handledEventsErrorForStackId = stackId;
             handleError(stackEventsQuery.error);
         }
@@ -66,12 +71,13 @@
             onNavigate(newEventId);
         } else {
             selectedEventId = newEventId;
+            selectedEvent = null;
         }
     }
 </script>
 
 {#if selectedEventId}
-    <EventsOverview {filterChanged} id={selectedEventId} {handleError} {onEventLoaded} onNavigate={handleNavigate} />
+    <EventsOverview {filterChanged} id={selectedEventId} initialEvent={selectedEvent} {handleError} {onEventLoaded} onNavigate={handleNavigate} />
 {:else if stackEventsQuery.isSuccess}
     <section>
         <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
