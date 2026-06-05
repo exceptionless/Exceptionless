@@ -7,6 +7,8 @@ import type { SavedView } from './models';
 import { invalidateSavedViewQueries, queryKeys, removeSavedViewFromCaches, SAVED_VIEW_REFRESH_DELAY_MS, syncSavedViewCaches } from './api.svelte';
 import {
     filterDefinitionsEqual,
+    getComparableSavedViewFilter,
+    getComparableSavedViewTime,
     hasMissingSavedViewSlug,
     type SavedViewQueryParams,
     setSortQueryParam,
@@ -125,6 +127,32 @@ describe('useSavedViews', () => {
 
             // Assert
             expect(result).toBe(true);
+        });
+
+        it('uses the route default filter when legacy saved views do not have filter definitions', () => {
+            // Act
+            const result = getComparableSavedViewFilter(null, null, '(status:open OR status:regressed)');
+
+            // Assert
+            expect(result).toBe('(status:open OR status:regressed)');
+        });
+
+        it('does not apply the route default filter when saved filter definitions are present', () => {
+            // Act
+            const result = getComparableSavedViewFilter(null, '[]', '(status:open OR status:regressed)');
+
+            // Assert
+            expect(result).toBeNull();
+        });
+    });
+
+    describe('time comparison', () => {
+        it('uses the route default time when legacy saved views do not store time', () => {
+            // Act
+            const result = getComparableSavedViewTime(null, '[now-7d TO now]');
+
+            // Assert
+            expect(result).toBe('[now-7d TO now]');
         });
     });
 

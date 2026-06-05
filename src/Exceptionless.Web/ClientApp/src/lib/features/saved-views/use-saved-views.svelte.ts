@@ -21,6 +21,8 @@ export interface SavedViewQueryParams {
 export interface UseSavedViewsOptions {
     baseHref?: string;
     defaultColumnVisibility?: ColumnVisibilityState;
+    defaultFilter?: null | string;
+    defaultTime?: null | string;
     filterCacheKey: (filter: null | string) => string;
     getColumnOrder?: () => ColumnOrderState;
     getColumnVisibility?: () => ColumnVisibilityState;
@@ -54,6 +56,22 @@ export interface UseSavedViewsReturn {
 
 export function filterDefinitionsEqual(a: null | string | undefined, b: null | string | undefined): boolean {
     return normalizeFilterDefinitions(a) === normalizeFilterDefinitions(b);
+}
+
+export function getComparableSavedViewFilter(
+    filter: null | string | undefined,
+    filterDefinitions: null | string | undefined,
+    defaultFilter: null | string | undefined
+): null | string {
+    if (filter != null) {
+        return filter || null;
+    }
+
+    return filterDefinitions ? null : (defaultFilter ?? null);
+}
+
+export function getComparableSavedViewTime(time: null | string | undefined, defaultTime: null | string | undefined): null | string {
+    return time ?? defaultTime ?? null;
 }
 
 export function hasMissingSavedViewSlug(options: {
@@ -194,11 +212,13 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return false;
         }
 
-        if ((options.getFilter?.() ?? options.queryParams.filter ?? null) !== (view.filter ?? null)) {
+        const savedViewFilter = getComparableSavedViewFilter(view.filter, view.filter_definitions, options.defaultFilter);
+        if ((options.getFilter?.() ?? options.queryParams.filter ?? null) !== savedViewFilter) {
             return true;
         }
 
-        if (supportsTime && (options.getTime?.() ?? options.queryParams.time ?? null) !== (view.time ?? null)) {
+        const savedViewTime = getComparableSavedViewTime(view.time, options.defaultTime);
+        if (supportsTime && (options.getTime?.() ?? options.queryParams.time ?? null) !== savedViewTime) {
             return true;
         }
 

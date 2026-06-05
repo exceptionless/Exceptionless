@@ -231,6 +231,8 @@
     let showChart = $state(true);
     const savedViewsState = useSavedViews({
         baseHref: resolve('/(app)/stack'),
+        defaultFilter: DEFAULT_FILTER,
+        defaultTime: DEFAULT_TIME_RANGE,
         filterCacheKey,
         getColumnOrder: () => table.state.columnOrder,
         getColumnVisibility: () => table.state.columnVisibility,
