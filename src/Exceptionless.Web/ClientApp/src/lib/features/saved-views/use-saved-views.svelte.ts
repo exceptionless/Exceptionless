@@ -83,6 +83,14 @@ export function hasMissingSavedViewSlug(options: {
     return !!options.slug && !options.activeSavedView && !!options.savedViews && !options.isLoading;
 }
 
+export function hasSavedColumnOrder(columnOrder: null | string[] | undefined): columnOrder is string[] {
+    return !!columnOrder?.length;
+}
+
+export function hasSavedColumnVisibility(columns: null | Record<string, boolean> | undefined): columns is Record<string, boolean> {
+    return columns != null;
+}
+
 export function setSortQueryParam(queryParams: SavedViewQueryParams, value: null | string): void {
     if (supportsSortQueryParam(queryParams)) {
         queryParams.sort = value;
@@ -230,11 +238,15 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return true;
         }
 
-        if (options.getColumnVisibility && !columnsEqual(options.getColumnVisibility(), view.columns, options.defaultColumnVisibility)) {
+        if (
+            options.getColumnVisibility &&
+            hasSavedColumnVisibility(view.columns) &&
+            !columnsEqual(options.getColumnVisibility(), view.columns, options.defaultColumnVisibility)
+        ) {
             return true;
         }
 
-        if (options.getColumnOrder && !columnOrderEqual(options.getColumnOrder(), view.column_order)) {
+        if (options.getColumnOrder && hasSavedColumnOrder(view.column_order) && !columnOrderEqual(options.getColumnOrder(), view.column_order)) {
             return true;
         }
 
@@ -374,10 +386,14 @@ function normalizeFilterDefinitions(value: null | string | undefined): string {
             return '[]';
         }
 
-        return serializeFilters(deserializeFilters(value));
+        return serializeFilters(sortFilterDefinitions(deserializeFilters(value)));
     } catch {
         return value;
     }
+}
+
+function sortFilterDefinitions(filters: IFilter[]): IFilter[] {
+    return [...filters].sort((a, b) => a.key.localeCompare(b.key));
 }
 
 function supportsSavedQueryParam(queryParams: SavedViewQueryParams): queryParams is SavedViewQueryParams & { saved: null | string | undefined } {

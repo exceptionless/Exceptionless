@@ -10,6 +10,8 @@ import {
     getComparableSavedViewFilter,
     getComparableSavedViewTime,
     hasMissingSavedViewSlug,
+    hasSavedColumnOrder,
+    hasSavedColumnVisibility,
     type SavedViewQueryParams,
     setSortQueryParam,
     setTimeQueryParam,
@@ -129,6 +131,20 @@ describe('useSavedViews', () => {
             expect(result).toBe(true);
         });
 
+        it('treats equivalent filter definitions in different order as equal', () => {
+            // Arrange
+            const seededDefinitions =
+                '[{"type":"date","term":"date","value":"[now-7d TO now]"},{"type":"project"},{"type":"status","value":["open","regressed"],"hidden":true},{"type":"type","value":["404"],"hidden":true}]';
+            const serializedDefinitions =
+                '[{"type":"project","value":[]},{"type":"status","value":["open","regressed"],"hidden":true},{"type":"type","value":["404"],"hidden":true},{"type":"date","term":"date","value":"[now-7d TO now]"}]';
+
+            // Act
+            const result = filterDefinitionsEqual(serializedDefinitions, seededDefinitions);
+
+            // Assert
+            expect(result).toBe(true);
+        });
+
         it('uses the route default filter when saved views do not have filter definitions', () => {
             // Act
             const result = getComparableSavedViewFilter(null, null, '(status:open OR status:regressed)');
@@ -153,6 +169,32 @@ describe('useSavedViews', () => {
 
             // Assert
             expect(result).toBe('[now-7d TO now]');
+        });
+    });
+
+    describe('column comparison', () => {
+        it('does not compare column visibility when a saved view omits column settings', () => {
+            // Act & Assert
+            expect(hasSavedColumnVisibility(null)).toBe(false);
+            expect(hasSavedColumnVisibility(undefined)).toBe(false);
+        });
+
+        it('compares explicit saved column visibility, including empty settings', () => {
+            // Act & Assert
+            expect(hasSavedColumnVisibility({})).toBe(true);
+            expect(hasSavedColumnVisibility({ events: false })).toBe(true);
+        });
+
+        it('does not compare column order when a saved view omits or clears column order', () => {
+            // Act & Assert
+            expect(hasSavedColumnOrder(null)).toBe(false);
+            expect(hasSavedColumnOrder(undefined)).toBe(false);
+            expect(hasSavedColumnOrder([])).toBe(false);
+        });
+
+        it('compares explicit saved column order', () => {
+            // Act & Assert
+            expect(hasSavedColumnOrder(['summary', 'events'])).toBe(true);
         });
     });
 
