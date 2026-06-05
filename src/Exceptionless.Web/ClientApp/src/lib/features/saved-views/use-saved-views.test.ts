@@ -129,7 +129,7 @@ describe('useSavedViews', () => {
             expect(result).toBe(true);
         });
 
-        it('uses the route default filter when legacy saved views do not have filter definitions', () => {
+        it('uses the route default filter when saved views do not have filter definitions', () => {
             // Act
             const result = getComparableSavedViewFilter(null, null, '(status:open OR status:regressed)');
 
@@ -147,7 +147,7 @@ describe('useSavedViews', () => {
     });
 
     describe('time comparison', () => {
-        it('uses the route default time when legacy saved views do not store time', () => {
+        it('uses the route default time when saved views do not store time', () => {
             // Act
             const result = getComparableSavedViewTime(null, '[now-7d TO now]');
 
