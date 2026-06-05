@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { EventSummaryModel, StackSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
+    import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
@@ -69,18 +69,15 @@
 
     // TODO: Update this page to use StackSummaryModel instead of EventSummaryModel.
     let selectedStackId = $state<string>();
-    let selectedStackSummary = $state<null | StackSummaryModel<SummaryTemplateKeys>>(null);
     const DEFAULT_FILTER = '(type:404 OR type:error) (status:open OR status:regressed)';
 
     function handleStackError(problem: ProblemDetails) {
         showBillingDialogOnUpgradeProblem(problem, organization.current);
         selectedStackId = undefined;
-        selectedStackSummary = null;
     }
 
     function rowClick(row: EventSummaryModel<SummaryTemplateKeys>) {
         selectedStackId = row.id;
-        selectedStackSummary = row as unknown as StackSummaryModel<SummaryTemplateKeys>;
     }
 
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
@@ -417,7 +414,6 @@
         }
 
         selectedStackId = undefined;
-        selectedStackSummary = null;
     }
 
     function onFilterRemoved(removed?: FacetedFilter.IFilter): void {
@@ -673,7 +669,6 @@
         if (message.id && message.change_type === ChangeType.Removed) {
             if (message.id === selectedStackId) {
                 selectedStackId = undefined;
-                selectedStackSummary = null;
             }
 
             removeTableSelection(table, message.id);
@@ -839,10 +834,8 @@
 <StackDetailSheet
     stackId={selectedStackId}
     filterChanged={onFilterChanged}
-    initialStackSummary={selectedStackSummary}
     onClose={() => {
         selectedStackId = undefined;
-        selectedStackSummary = null;
     }}
     onError={handleStackError}
 />

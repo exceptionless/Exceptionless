@@ -1,7 +1,6 @@
 <script lang="ts">
     import type { IFilter } from '$comp/faceted-filter';
     import type { UpdateProject, ViewProject } from '$features/projects/models';
-    import type { Stack } from '$features/stacks/models';
     import type { ProblemDetails } from '@exceptionless/fetchclient';
 
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
@@ -41,14 +40,11 @@
         filterChanged: (filter: IFilter) => void;
         handleError: (problem: ProblemDetails) => void;
         id: string;
-        initialEvent?: null | PersistentEvent;
-        initialStack?: null | Stack;
         onEventLoaded?: (event: PersistentEvent) => void;
         onNavigate?: (eventId: string) => void;
-        showStackPlaceholder?: boolean;
     }
 
-    let { filterChanged, handleError, id, initialEvent, initialStack, onEventLoaded, onNavigate, showStackPlaceholder = true }: Props = $props();
+    let { filterChanged, handleError, id, onEventLoaded, onNavigate }: Props = $props();
 
     function getTabs(event?: null | PersistentEvent, project?: ViewProject): TabType[] {
         if (!event) {
@@ -99,7 +95,6 @@
     }
 
     const eventQuery = getEventWithNavigationQuery({
-        placeholderEvent: () => (initialEvent?.id === id ? initialEvent : undefined),
         route: {
             get id() {
                 return id;
@@ -107,9 +102,7 @@
         }
     });
 
-    const queryEvent = $derived(eventQuery.data?.event);
-    let loadedEvent = $state<null | PersistentEvent>(null);
-    const event = $derived(queryEvent ?? (loadedEvent?.id === id ? loadedEvent : null));
+    const event = $derived(eventQuery.data?.event);
     const navigation = $derived(eventQuery.data?.navigation);
 
     const projectQuery = getProjectQuery({
@@ -148,14 +141,6 @@
     let draggedPromotedTab = $state<null | string>(null);
     let notifiedEventId = $state('');
     let showJsonDialog = $state(false);
-
-    $effect(() => {
-        if (initialEvent?.id === id && loadedEvent?.id !== id) {
-            loadedEvent = initialEvent;
-        } else if (!initialEvent && loadedEvent?.id !== id) {
-            loadedEvent = null;
-        }
-    });
 
     function isPromotedTab(tab: TabType): boolean {
         return !!projectQuery.data?.promoted_tabs?.includes(tab);
@@ -270,16 +255,12 @@
             handleError(projectQuery.error);
         }
 
-        if (eventQuery.isError && !event) {
+        if (eventQuery.isError) {
             handleError(eventQuery.error);
         }
     });
 
     $effect(() => {
-        if (queryEvent) {
-            loadedEvent = queryEvent;
-        }
-
         if (event && event.id !== notifiedEventId) {
             notifiedEventId = event.id;
             onEventLoaded?.(event);
@@ -314,7 +295,7 @@
 
 <section>
     <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
-    <StackCard {filterChanged} id={event?.stack_id} {initialStack} showPlaceholder={showStackPlaceholder}></StackCard>
+    <StackCard {filterChanged} id={event?.stack_id}></StackCard>
 </section>
 
 <section class="mt-2">

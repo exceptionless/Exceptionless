@@ -29,13 +29,12 @@
         await redirectToEventsWithFilter(organization.current, addedOrUpdated, getEventsNavigationOptionsForFilter(addedOrUpdated));
     }
 
-    async function handleError(problem: ProblemDetails) {
+    function handleError(problem: ProblemDetails) {
         if (showBillingDialogOnUpgradeProblem(problem, organization.current)) {
             return;
         }
 
         toast.error('Unable to load stack event details.');
-        await goto(resolve('/(app)/stack'));
     }
 
     async function handleDeleted() {

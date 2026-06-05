@@ -4,7 +4,7 @@ import type { CountResult, WorkInProgressResult } from '$shared/models';
 import { accessToken } from '$features/auth/index.svelte';
 import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
-import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
+import { createMutation, createQuery, keepPreviousData, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
 import type { EventSummaryModel, SummaryTemplateKeys } from './components/summary/index';
 import type { PersistentEvent } from './models';
@@ -71,7 +71,6 @@ export interface GetEventRequest {
         offset?: string;
         time?: string;
     };
-    placeholderEvent?: () => PersistentEvent | undefined;
     route: {
         id: string | undefined;
     };
@@ -259,18 +258,7 @@ export function getEventWithNavigationQuery(request: GetEventRequest) {
     const queryClient = useQueryClient();
     return createQuery<EventWithNavigation, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.id,
-        placeholderData: (previousData) => {
-            const event = request.placeholderEvent?.() ?? queryClient.getQueryData<PersistentEvent>(queryKeys.id(request.route.id));
-            return event
-                ? {
-                      event,
-                      navigation: {
-                          nextId: null,
-                          previousId: null
-                      }
-                  }
-                : previousData;
-        },
+        placeholderData: keepPreviousData,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<PersistentEvent>(`events/${request.route.id}`, {
@@ -280,9 +268,6 @@ export function getEventWithNavigationQuery(request: GetEventRequest) {
                 },
                 signal
             });
-            if (response.problem) {
-                throw response.problem;
-            }
 
             const event = response.data!;
             queryClient.setQueryData(queryKeys.id(request.route.id), event);

@@ -1,5 +1,4 @@
 <script lang="ts">
-    import type { Stack } from '$features/stacks/models';
     import type { ProblemDetails } from '@exceptionless/fetchclient';
 
     import { type IFilter } from '$comp/faceted-filter';
@@ -36,13 +35,11 @@
     interface Props {
         filterChanged: (filter: IFilter) => void;
         id: string | undefined;
-        initialStack?: null | Stack;
         onDeleted?: () => void;
         onError?: (problem: ProblemDetails) => void;
-        showPlaceholder?: boolean;
     }
 
-    let { filterChanged, id, initialStack, onDeleted, onError, showPlaceholder = true }: Props = $props();
+    let { filterChanged, id, onDeleted, onError }: Props = $props();
     let handledErrorForStackId = $state<string>();
 
     const stackQuery = getStackQuery({
@@ -65,7 +62,7 @@
     });
 
     // TODO: Log Level
-    const stack = $derived(stackQuery.data ?? (initialStack?.id === id ? initialStack : null));
+    const stack = $derived(stackQuery.data!);
 
     // TODO: Add stack charts for Occurrences, Average Value, Value Sum
     const stackCountQuery = getStackCountQuery({
@@ -289,7 +286,7 @@
             <StackReferences {stack} />
         </Card.Content>
     </Card.Root>
-{:else if showPlaceholder}
+{:else}
     <Card.Root class="bg-background">
         <Card.Header>
             <Card.Title class="flex flex-row items-center justify-between text-lg font-semibold">
