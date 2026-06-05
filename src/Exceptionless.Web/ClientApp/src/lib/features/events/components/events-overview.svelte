@@ -21,7 +21,6 @@
     import ChevronLeft from '@lucide/svelte/icons/chevron-left';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
     import Funnel from '@lucide/svelte/icons/funnel';
-    import GripVertical from '@lucide/svelte/icons/grip-vertical';
     import { onMount, tick } from 'svelte';
     import { toast } from 'svelte-sonner';
 
@@ -398,8 +397,7 @@
                             ondrop={(event) => handlePromotedTabDrop(event, tab)}
                             ondragend={handlePromotedTabDragEnd}
                             title={isPromotedTab(tab) ? 'Drag to reorder custom tab' : undefined}
-                            value={tab}
-                            >{#if isPromotedTab(tab)}<GripVertical class="text-muted-foreground/70 size-3.5" aria-hidden="true" />{/if}{tab}</Tabs.Trigger
+                            value={tab}>{tab}</Tabs.Trigger
                         >
                     {/each}
                 </Tabs.List>
