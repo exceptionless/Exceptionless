@@ -3,6 +3,7 @@ import type { BillingPlan, ChangePlanRequest, ChangePlanResult } from '$lib/gene
 import type { QueryClient } from '@tanstack/svelte-query';
 
 import { accessToken } from '$features/auth/index.svelte';
+import { fetchApiJson } from '$features/shared/api/api.svelte';
 import { queryKeys as userQueryKeys } from '$features/users/api.svelte';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
@@ -26,6 +27,7 @@ export const queryKeys = {
     adminSearch: (params: GetAdminSearchOrganizationsParams) => [...queryKeys.list(params.mode), 'admin', { ...params }] as const,
     changePlan: (id: string | undefined) => [...queryKeys.type, id, 'change-plan'] as const,
     deleteOrganization: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'delete'] as const,
+    icon: (id: string | undefined) => [...queryKeys.id(id, undefined), 'icon'] as const,
     id: (id: string | undefined, mode: 'stats' | undefined) => (mode ? ([...queryKeys.type, id, { mode }] as const) : ([...queryKeys.type, id] as const)),
     ids: (ids: string[] | undefined) => [...queryKeys.type, ...(ids ?? [])] as const,
     invoice: (id: string | undefined) => [...queryKeys.type, 'invoice', id] as const,
@@ -128,6 +130,12 @@ export interface GetPlansRequest {
     };
 }
 
+export interface OrganizationIconRequest {
+    route: {
+        id: string | undefined;
+    };
+}
+
 export interface PatchOrganizationRequest {
     route: {
         id: string;
@@ -214,6 +222,21 @@ export function deleteOrganization(request: DeleteOrganizationRequest) {
         onSuccess: () => {
             request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id, undefined) }));
         }
+    }));
+}
+
+export function deleteOrganizationIcon(request: OrganizationIconRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<ViewOrganization, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async () => {
+            return await fetchApiJson<ViewOrganization>(`organizations/${request.route.id}/icon`, {
+                method: 'DELETE'
+            });
+        },
+        mutationKey: queryKeys.icon(request.route.id),
+        onSuccess: (organization: ViewOrganization) => updateOrganizationCache(queryClient, request.route.id, organization)
     }));
 }
 
@@ -400,10 +423,7 @@ export function patchOrganization(request: PatchOrganizationRequest) {
         onError: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
         },
-        onSuccess: (organization: ViewOrganization) => {
-            queryClient.setQueryData(queryKeys.id(request.route.id, 'stats'), organization);
-            queryClient.setQueryData(queryKeys.id(request.route.id, undefined), organization);
-        }
+        onSuccess: (organization: ViewOrganization) => updateOrganizationCache(queryClient, request.route.id, organization)
     }));
 }
 
@@ -538,4 +558,39 @@ export function setOrganizationFeature(request: SetOrganizationFeatureRequest) {
             queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) });
         }
     }));
+}
+
+export function uploadOrganizationIcon(request: OrganizationIconRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<ViewOrganization, ProblemDetails, File>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async (file: File) => {
+            const data = new FormData();
+            data.append('file', file);
+            return await fetchApiJson<ViewOrganization>(`organizations/${request.route.id}/icon`, {
+                body: data,
+                method: 'POST'
+            });
+        },
+        mutationKey: queryKeys.icon(request.route.id),
+        onSuccess: (organization: ViewOrganization) => updateOrganizationCache(queryClient, request.route.id, organization)
+    }));
+}
+
+function updateOrganizationCache(queryClient: QueryClient, id: string | undefined, organization: ViewOrganization) {
+    queryClient.setQueryData(queryKeys.id(id, 'stats'), organization);
+    queryClient.setQueryData(queryKeys.id(id, undefined), organization);
+    queryClient.setQueriesData<FetchClientResponse<ViewOrganization[]> | undefined>({ queryKey: queryKeys.type }, (response) => {
+        if (!Array.isArray(response?.data) || !response.data.some((existingOrganization) => existingOrganization.id === organization.id)) {
+            return response;
+        }
+
+        return {
+            ...response,
+            data: response.data.map((existingOrganization) => {
+                return existingOrganization.id === organization.id ? organization : existingOrganization;
+            })
+        };
+    });
 }
