@@ -286,7 +286,7 @@
     const impersonatingOrganizationId = $derived.by(() => {
         // Only consider impersonation if user data is loaded and user has organizations
         const userOrganizationIds = meQuery.data?.organization_ids;
-        if (!userOrganizationIds || userOrganizationIds.length === 0 || !organization.current) {
+        if (!isGlobalAdmin || !userOrganizationIds || userOrganizationIds.length === 0 || !organization.current) {
             return undefined;
         }
 
@@ -341,7 +341,8 @@
         }
 
         const hasSelectedOrganization = !!organization.current && organizations.some((organizationItem) => organizationItem.id === organization.current);
-        if (!hasSelectedOrganization && !impersonatingOrganizationId) {
+        const hasInvalidImpersonatedOrganization = !!impersonatingOrganizationId && impersonatedOrganizationQuery.isError;
+        if ((!hasSelectedOrganization && !impersonatingOrganizationId) || hasInvalidImpersonatedOrganization) {
             organization.current = organizations[0]!.id;
         }
     });
