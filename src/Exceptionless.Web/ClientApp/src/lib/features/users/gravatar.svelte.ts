@@ -9,6 +9,7 @@ export interface Gravatar {
 export function getGravatarFromCurrentUser(query?: ReturnType<typeof getMeQuery>): Gravatar {
     const meQuery = query ?? getMeQuery();
     const fullName = $derived<string | undefined>(meQuery.data?.full_name);
+    const avatarUrl = $derived<null | string | undefined>(meQuery.data?.avatar_url);
     const emailAddress = $derived<string | undefined>(meQuery.data?.email_address);
 
     return {
@@ -16,13 +17,17 @@ export function getGravatarFromCurrentUser(query?: ReturnType<typeof getMeQuery>
             return getInitials(fullName);
         },
         get src() {
+            if (avatarUrl?.trim()) {
+                return Promise.resolve(avatarUrl);
+            }
+
             return emailAddress ? getGravatarSrc(emailAddress) : Promise.resolve(null);
         }
     };
 }
 
 export async function getGravatarSrc(emailAddress: string) {
-    const hash = await getGravatarEmailHash(emailAddress);
+    const hash = await getGravatarEmailHash(emailAddress.trim().toLowerCase());
     return `//www.gravatar.com/avatar/${hash}?default=mm&size=100&d=mp&r=g`;
 }
 

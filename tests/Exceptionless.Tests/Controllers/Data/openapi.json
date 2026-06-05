@@ -4731,6 +4731,138 @@
         }
       }
     },
+    "/api/v2/organizations/{id}/icon": {
+      "post": {
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Upload icon",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the organization.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "description": "The image file to upload.",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewOrganization"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The organization could not be found."
+          },
+          "422": {
+            "description": "The image file is invalid."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Remove icon",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the organization.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewOrganization"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The organization could not be found."
+          }
+        }
+      }
+    },
+    "/api/v2/organizations/{id}/icon/{fileName}": {
+      "get": {
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Get icon",
+        "operationId": "GetOrganizationIcon",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the organization.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "fileName",
+            "in": "path",
+            "description": "The icon file name.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
+          },
+          "404": {
+            "description": "The icon could not be found."
+          }
+        }
+      }
+    },
     "/api/v2/organizations/{ids}": {
       "delete": {
         "tags": [
@@ -7544,6 +7676,138 @@
         }
       }
     },
+    "/api/v2/users/{id}/avatar": {
+      "post": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Upload avatar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the user.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "description": "The image file to upload.",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewUser"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The user could not be found."
+          },
+          "422": {
+            "description": "The image file is invalid."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Remove avatar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the user.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewUser"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The user could not be found."
+          }
+        }
+      }
+    },
+    "/api/v2/users/{id}/avatar/{fileName}": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Get avatar",
+        "operationId": "GetUserAvatar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the user.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "fileName",
+            "in": "path",
+            "description": "The avatar file name.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
+          },
+          "404": {
+            "description": "The avatar could not be found."
+          }
+        }
+      }
+    },
     "/api/v2/users/{ids}": {
       "delete": {
         "tags": [
@@ -9141,6 +9405,14 @@
             "type": "string",
             "format": "email"
           },
+          "avatar_file_name": {
+            "maxLength": 2000,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "email_notifications_enabled": {
             "type": "boolean"
           },
@@ -9255,6 +9527,12 @@
             "type": "string",
             "format": "email"
           },
+          "avatar_url": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "email_notifications_enabled": {
             "type": "boolean"
           },
@@ -9323,6 +9601,12 @@
           },
           "name": {
             "type": "string"
+          },
+          "icon_url": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "plan_id": {
             "type": "string"
@@ -9812,6 +10096,12 @@
           "email_address": {
             "type": "string",
             "format": "email"
+          },
+          "avatar_url": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "email_notifications_enabled": {
             "type": "boolean"

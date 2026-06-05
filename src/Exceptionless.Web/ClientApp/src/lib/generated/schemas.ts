@@ -321,6 +321,24 @@ export const PersistentEventSchema = object({
 });
 export type PersistentEventFormData = Infer<typeof PersistentEventSchema>;
 
+export const PredefinedSavedViewDefinitionSchema = object({
+  key: string().min(1, "Key is required"),
+  name: string().min(1, "Name is required"),
+  slug: string().min(1, "Slug is required"),
+  viewType: string().min(1, "View type is required"),
+  filter: string().min(1, "Filter is required").nullable().optional(),
+  time: string().min(1, "Time is required").nullable().optional(),
+  sort: string().min(1, "Sort is required").nullable().optional(),
+  filterDefinitions: unknown().optional(),
+  columns: record(string(), boolean()).nullable().optional(),
+  columnOrder: array(string()).nullable().optional(),
+  showStats: boolean().nullable().optional(),
+  showChart: boolean().nullable().optional(),
+});
+export type PredefinedSavedViewDefinitionFormData = Infer<
+  typeof PredefinedSavedViewDefinitionSchema
+>;
+
 export const ResetPasswordModelSchema = object({
   password_reset_token: string().length(
     40,
@@ -427,12 +445,7 @@ export const UpdateSavedViewSchema = object({
   filter: string().min(1, "Filter is required").nullable().optional(),
   time: string().min(1, "Time is required").nullable().optional(),
   sort: string().min(1, "Sort is required").nullable().optional(),
-  slug: string()
-    .min(1, "Slug is required")
-    .max(100, "Slug must be at most 100 characters")
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug has invalid format")
-    .nullable()
-    .optional(),
+  slug: string().min(1, "Slug is required").nullable().optional(),
   filter_definitions: string()
     .min(1, "Filter definitions is required")
     .nullable()
@@ -492,6 +505,11 @@ export const UserSchema = object({
   o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
   full_name: string().min(1, "Full name is required"),
   email_address: email(),
+  avatar_file_name: string()
+    .min(1, "Avatar file name is required")
+    .max(2000, "Avatar file name must be at most 2000 characters")
+    .nullable()
+    .optional(),
   email_notifications_enabled: boolean(),
   is_email_address_verified: boolean(),
   verify_email_address_token: string()
@@ -523,6 +541,7 @@ export const ViewCurrentUserSchema = object({
   organization_ids: array(string()),
   full_name: string().min(1, "Full name is required"),
   email_address: email(),
+  avatar_url: url().nullable().optional(),
   email_notifications_enabled: boolean(),
   is_email_address_verified: boolean(),
   is_active: boolean(),
@@ -538,6 +557,7 @@ export const ViewOrganizationSchema = object({
   created_utc: iso.datetime(),
   updated_utc: iso.datetime(),
   name: string().min(1, "Name is required"),
+  icon_url: url().nullable().optional(),
   plan_id: string().min(1, "Plan id is required"),
   plan_name: string().min(1, "Plan name is required"),
   plan_description: string().min(1, "Plan description is required"),
@@ -635,10 +655,7 @@ export const ViewSavedViewSchema = object({
   show_stats: boolean().nullable().optional(),
   show_chart: boolean().nullable().optional(),
   name: string().min(1, "Name is required"),
-  slug: string()
-    .min(1, "Slug is required")
-    .max(100, "Slug must be at most 100 characters")
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug has invalid format"),
+  slug: string().min(1, "Slug is required"),
   time: string().min(1, "Time is required").nullable().optional(),
   sort: string().min(1, "Sort is required").nullable().optional(),
   version: int32(),
@@ -685,6 +702,7 @@ export const ViewUserSchema = object({
   organization_ids: array(string()),
   full_name: string().min(1, "Full name is required"),
   email_address: email(),
+  avatar_url: url().nullable().optional(),
   email_notifications_enabled: boolean(),
   is_email_address_verified: boolean(),
   is_active: boolean(),

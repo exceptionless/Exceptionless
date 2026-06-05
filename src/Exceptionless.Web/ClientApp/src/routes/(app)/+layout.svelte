@@ -74,6 +74,11 @@
         isCommandOpen = false;
         isKeyboardShortcutsOpen = false;
         isUserMenuOpen = false;
+        if (singleOrganization?.id) {
+            await goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: singleOrganization.id }));
+            return;
+        }
+
         await tick();
         isOrganizationSwitcherOpen = true;
     }
@@ -348,6 +353,7 @@
     });
 
     const isImpersonating = $derived(!!impersonatedOrganization);
+    const singleOrganization = $derived(!isGlobalAdmin && !isImpersonating && organizations.length === 1 ? organizations[0] : undefined);
 
     const savedViewsQuery = getSavedViewsQuery({
         route: {
@@ -370,13 +376,25 @@
     const filteredRoutes = $derived.by(() => {
         const context: NavigationItemContext = { authenticated: isAuthenticated, impersonating: isImpersonating, user: meQuery.data };
         const allRoutes = routes().filter((route) => (route.show ? route.show(context) : true));
+        const organizationSettingsHref = singleOrganization?.id
+            ? resolve('/(app)/organization/[organizationId]/manage', { organizationId: singleOrganization.id })
+            : undefined;
 
         const savedViews = (savedViewsQuery.data ?? []).filter((savedView) => !isSavedViewDeleted(savedView));
-        if (savedViews.length === 0) {
-            return allRoutes;
-        }
 
         return allRoutes.map((route) => {
+            if (organizationSettingsHref && route.group === 'Settings' && route.title === 'Organizations') {
+                route = {
+                    ...route,
+                    href: organizationSettingsHref,
+                    title: 'Organization'
+                };
+            }
+
+            if (savedViews.length === 0) {
+                return route;
+            }
+
             if (route.group !== 'Dashboards') {
                 return route;
             }
@@ -443,6 +461,7 @@
                 {impersonatedOrganization}
                 bind:open={isOrganizationSwitcherOpen}
                 bind:currentOrganizationId={organization.current}
+                {isGlobalAdmin}
             />
         {/snippet}
 

@@ -24,6 +24,7 @@
     type Props = HTMLAttributes<HTMLUListElement> & {
         currentOrganizationId: string | undefined;
         impersonatedOrganization: undefined | ViewOrganization;
+        isGlobalAdmin: boolean;
         isLoading: boolean;
         open?: boolean;
         organizations: undefined | ViewOrganization[];
@@ -33,6 +34,7 @@
         class: className,
         currentOrganizationId = $bindable(),
         impersonatedOrganization,
+        isGlobalAdmin,
         isLoading,
         open = $bindable(false),
         organizations = []
@@ -41,6 +43,7 @@
     const sidebar = useSidebar();
     const activeOrganization = $derived(impersonatedOrganization ?? organizations.find((organization) => organization.id === currentOrganizationId));
     const isImpersonating = $derived(!!impersonatedOrganization);
+    const useSingleOrganizationShortcut = $derived(!isGlobalAdmin && !isImpersonating && organizations.length === 1 && !!activeOrganization?.id);
     let menuContentElement = $state<HTMLElement | null>(null);
     let openImpersonateDialog = $state(false);
 
@@ -89,109 +92,136 @@
 {#if organizations.length > 0 || isImpersonating}
     <Sidebar.Menu class={className}>
         <Sidebar.MenuItem>
-            <DropdownMenu.Root bind:open>
-                <DropdownMenu.Trigger>
-                    {#snippet child({ props })}
-                        <Sidebar.MenuButton
-                            {...props}
-                            size="lg"
-                            class={[
-                                'data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground',
-                                isImpersonating && 'bg-violet-100 dark:bg-violet-900/30'
-                            ]}
-                        >
-                            <Avatar.Root class={['size-8 rounded-lg border', isImpersonating && 'border-violet-500']} title="Organization Avatar">
-                                <Avatar.Fallback
-                                    class={['rounded-lg', isImpersonating && 'bg-violet-200 text-violet-900 dark:bg-violet-800 dark:text-violet-100']}
-                                >
-                                    {getInitials(activeOrganization?.name ?? '?')}
-                                </Avatar.Fallback>
-                            </Avatar.Root>
-                            <div class="grid flex-1 text-left text-sm leading-tight">
-                                <span class="truncate font-semibold">
-                                    {activeOrganization?.name ?? 'Select an organization'}
-                                </span>
-                                <span class={['truncate text-xs', isImpersonating && 'text-violet-600 dark:text-violet-400']}>
-                                    {#if isImpersonating}
-                                        Impersonating
-                                    {:else}
-                                        <span class="truncate text-xs">{activeOrganization?.plan_name ?? 'No organization selected'}</span>
-                                    {/if}
-                                </span>
-                            </div>
-                            <ChevronsUpDown class="ml-auto" />
-                        </Sidebar.MenuButton>
-                    {/snippet}
-                </DropdownMenu.Trigger>
-                <DropdownMenu.Content
-                    bind:ref={menuContentElement}
-                    class="w-(--bits-dropdown-menu-anchor-width) min-w-64 rounded-lg"
-                    align="start"
-                    side={sidebar.isMobile ? 'bottom' : 'right'}
-                    sideOffset={4}
+            {#if useSingleOrganizationShortcut && activeOrganization?.id}
+                <Sidebar.MenuButton
+                    size="lg"
+                    class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                    onclick={() => void navigateTo(resolve('/(app)/organization/[organizationId]/manage', { organizationId: activeOrganization.id }))}
                 >
-                    <DropdownMenu.Label class="text-muted-foreground text-xs">Organizations</DropdownMenu.Label>
-                    {#if organizations.length > 0}
-                        {#each organizations as organization (organization.name)}
-                            <DropdownMenu.Item
-                                onSelect={() => onOrganizationSelected(organization)}
-                                data-current-organization={organization.id === currentOrganizationId && !isImpersonating ? 'true' : undefined}
-                                class="gap-2 p-2"
+                    <Avatar.Root class="size-8 rounded-lg border" title="Organization Icon">
+                        {#if activeOrganization.icon_url}
+                            <Avatar.Image alt={`${activeOrganization.name} icon`} src={activeOrganization.icon_url} />
+                        {/if}
+                        <Avatar.Fallback class="rounded-lg">{getInitials(activeOrganization.name)}</Avatar.Fallback>
+                    </Avatar.Root>
+                    <div class="grid flex-1 text-left text-sm leading-tight">
+                        <span class="truncate font-semibold">Organization</span>
+                        <span class="truncate text-xs">{activeOrganization.name}</span>
+                    </div>
+                    <Settings class="ml-auto" />
+                </Sidebar.MenuButton>
+            {:else}
+                <DropdownMenu.Root bind:open>
+                    <DropdownMenu.Trigger>
+                        {#snippet child({ props })}
+                            <Sidebar.MenuButton
+                                {...props}
+                                size="lg"
+                                class={[
+                                    'data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground',
+                                    isImpersonating && 'bg-violet-100 dark:bg-violet-900/30'
+                                ]}
                             >
-                                <Avatar.Root class="size-6 rounded-lg border" title={organization.name}>
-                                    <Avatar.Fallback class="rounded-lg">{getInitials(organization.name)}</Avatar.Fallback>
+                                <Avatar.Root class={['size-8 rounded-lg border', isImpersonating && 'border-violet-500']} title="Organization Avatar">
+                                    {#if activeOrganization?.icon_url}
+                                        <Avatar.Image alt={`${activeOrganization.name} icon`} src={activeOrganization.icon_url} />
+                                    {/if}
+                                    <Avatar.Fallback
+                                        class={['rounded-lg', isImpersonating && 'bg-violet-200 text-violet-900 dark:bg-violet-800 dark:text-violet-100']}
+                                    >
+                                        {getInitials(activeOrganization?.name ?? '?')}
+                                    </Avatar.Fallback>
                                 </Avatar.Root>
-                                {organization.name}
-                            </DropdownMenu.Item>
-                        {/each}
-                    {:else}
-                        <DropdownMenu.Item class="text-muted-foreground gap-2 p-2" disabled>
-                            <div class="bg-background flex size-6 items-center justify-center rounded-md border">
-                                <UserRoundSearch class="size-4" aria-hidden="true" />
-                            </div>
-                            No Organizations Available
-                        </DropdownMenu.Item>
-                    {/if}
-                    <DropdownMenu.Separator />
-                    {#if activeOrganization?.id}
-                        <DropdownMenu.Item
-                            onSelect={() => void navigateTo(resolve('/(app)/organization/[organizationId]/manage', { organizationId: activeOrganization.id }))}
-                        >
-                            <div class="bg-background flex size-6 items-center justify-center rounded-md border">
-                                <Settings class="size-4" aria-hidden="true" />
-                            </div>
-                            <span class="text-muted-foreground font-medium">Manage Organization</span>
-                        </DropdownMenu.Item>
-                    {/if}
-                    <DropdownMenu.Item onSelect={() => void navigateTo(resolve('/(app)/organization/add'))}>
-                        <div class="bg-background flex size-6 items-center justify-center rounded-md border">
-                            <Plus class="size-4" aria-hidden="true" />
-                        </div>
-                        <span class="text-muted-foreground font-medium">Add Organization</span>
-                    </DropdownMenu.Item>
-                    <GlobalUser>
-                        <DropdownMenu.Separator />
-                        <DropdownMenu.Label class="text-muted-foreground text-xs">Admin</DropdownMenu.Label>
-                        {#if isImpersonating}
-                            <DropdownMenu.Item onSelect={stopImpersonating} class="gap-2 p-2 text-violet-600 dark:text-violet-400">
-                                <div
-                                    class="flex size-6 items-center justify-center rounded-md border border-violet-300 bg-violet-100 dark:border-violet-700 dark:bg-violet-900/50"
+                                <div class="grid flex-1 text-left text-sm leading-tight">
+                                    <span class="truncate font-semibold">
+                                        {activeOrganization?.name ?? 'Select an organization'}
+                                    </span>
+                                    <span class={['truncate text-xs', isImpersonating && 'text-violet-600 dark:text-violet-400']}>
+                                        {#if isImpersonating}
+                                            Impersonating
+                                        {:else}
+                                            <span class="truncate text-xs">{activeOrganization?.plan_name ?? 'No organization selected'}</span>
+                                        {/if}
+                                    </span>
+                                </div>
+                                <ChevronsUpDown class="ml-auto" />
+                            </Sidebar.MenuButton>
+                        {/snippet}
+                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Content
+                        bind:ref={menuContentElement}
+                        class="w-(--bits-dropdown-menu-anchor-width) min-w-64 rounded-lg"
+                        align="start"
+                        side={sidebar.isMobile ? 'bottom' : 'right'}
+                        sideOffset={4}
+                    >
+                        <DropdownMenu.Label class="text-muted-foreground text-xs">Organizations</DropdownMenu.Label>
+                        {#if organizations.length > 0}
+                            {#each organizations as organization (organization.name)}
+                                <DropdownMenu.Item
+                                    onSelect={() => onOrganizationSelected(organization)}
+                                    data-current-organization={organization.id === currentOrganizationId && !isImpersonating ? 'true' : undefined}
+                                    class="gap-2 p-2"
                                 >
-                                    <EyeOff class="size-4" aria-hidden="true" />
-                                </div>
-                                <span class="font-medium">Stop Impersonating</span>
-                            </DropdownMenu.Item>
+                                    <Avatar.Root class="size-6 rounded-lg border" title={organization.name}>
+                                        {#if organization.icon_url}
+                                            <Avatar.Image alt={`${organization.name} icon`} src={organization.icon_url} />
+                                        {/if}
+                                        <Avatar.Fallback class="rounded-lg">{getInitials(organization.name)}</Avatar.Fallback>
+                                    </Avatar.Root>
+                                    {organization.name}
+                                </DropdownMenu.Item>
+                            {/each}
                         {:else}
-                            <DropdownMenu.Item onSelect={() => (openImpersonateDialog = true)} class="gap-2 p-2">
+                            <DropdownMenu.Item class="text-muted-foreground gap-2 p-2" disabled>
                                 <div class="bg-background flex size-6 items-center justify-center rounded-md border">
-                                    <Eye class="size-4" aria-hidden="true" />
+                                    <UserRoundSearch class="size-4" aria-hidden="true" />
                                 </div>
-                                <span class="text-muted-foreground font-medium">Impersonate Organization</span>
+                                No Organizations Available
                             </DropdownMenu.Item>
                         {/if}
-                    </GlobalUser>
-                </DropdownMenu.Content>
-            </DropdownMenu.Root>
+                        <DropdownMenu.Separator />
+                        {#if activeOrganization?.id}
+                            <DropdownMenu.Item
+                                onSelect={() =>
+                                    void navigateTo(resolve('/(app)/organization/[organizationId]/manage', { organizationId: activeOrganization.id }))}
+                            >
+                                <div class="bg-background flex size-6 items-center justify-center rounded-md border">
+                                    <Settings class="size-4" aria-hidden="true" />
+                                </div>
+                                <span class="text-muted-foreground font-medium">Manage Organization</span>
+                            </DropdownMenu.Item>
+                        {/if}
+                        <DropdownMenu.Item onSelect={() => void navigateTo(resolve('/(app)/organization/add'))}>
+                            <div class="bg-background flex size-6 items-center justify-center rounded-md border">
+                                <Plus class="size-4" aria-hidden="true" />
+                            </div>
+                            <span class="text-muted-foreground font-medium">Add Organization</span>
+                        </DropdownMenu.Item>
+                        <GlobalUser>
+                            <DropdownMenu.Separator />
+                            <DropdownMenu.Label class="text-muted-foreground text-xs">Admin</DropdownMenu.Label>
+                            {#if isImpersonating}
+                                <DropdownMenu.Item onSelect={stopImpersonating} class="gap-2 p-2 text-violet-600 dark:text-violet-400">
+                                    <div
+                                        class="flex size-6 items-center justify-center rounded-md border border-violet-300 bg-violet-100 dark:border-violet-700 dark:bg-violet-900/50"
+                                    >
+                                        <EyeOff class="size-4" aria-hidden="true" />
+                                    </div>
+                                    <span class="font-medium">Stop Impersonating</span>
+                                </DropdownMenu.Item>
+                            {:else}
+                                <DropdownMenu.Item onSelect={() => (openImpersonateDialog = true)} class="gap-2 p-2">
+                                    <div class="bg-background flex size-6 items-center justify-center rounded-md border">
+                                        <Eye class="size-4" aria-hidden="true" />
+                                    </div>
+                                    <span class="text-muted-foreground font-medium">Impersonate Organization</span>
+                                </DropdownMenu.Item>
+                            {/if}
+                        </GlobalUser>
+                    </DropdownMenu.Content>
+                </DropdownMenu.Root>
+            {/if}
         </Sidebar.MenuItem>
     </Sidebar.Menu>
 {:else if isLoading}

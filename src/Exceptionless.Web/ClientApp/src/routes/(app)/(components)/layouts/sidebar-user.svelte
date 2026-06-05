@@ -124,7 +124,9 @@
                                 {#await gravatar.src}
                                     <Avatar.Fallback class="rounded-lg">{gravatar.initials}</Avatar.Fallback>
                                 {:then src}
-                                    <Avatar.Image alt={user ? `${user.full_name} avatar` : 'avatar'} {src} />
+                                    {#if src}
+                                        <Avatar.Image alt={user ? `${user.full_name} avatar` : 'avatar'} {src} />
+                                    {/if}
                                 {/await}
                                 <Avatar.Fallback class="rounded-lg">{gravatar.initials}</Avatar.Fallback>
                             </Avatar.Root>
@@ -148,7 +150,9 @@
                                 {#await gravatar.src}
                                     <Avatar.Fallback class="rounded-lg">{gravatar.initials}</Avatar.Fallback>
                                 {:then src}
-                                    <Avatar.Image alt={user ? `${user.full_name} avatar` : 'avatar'} {src} />
+                                    {#if src}
+                                        <Avatar.Image alt={user ? `${user.full_name} avatar` : 'avatar'} {src} />
+                                    {/if}
                                 {/await}
                                 <Avatar.Fallback class="rounded-lg">{gravatar.initials}</Avatar.Fallback>
                             </Avatar.Root>

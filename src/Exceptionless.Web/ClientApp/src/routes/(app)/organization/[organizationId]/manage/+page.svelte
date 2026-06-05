@@ -4,16 +4,26 @@
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
     import { Muted } from '$comp/typography';
+    import * as Avatar from '$comp/ui/avatar';
     import { Button, buttonVariants } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
     import { Spinner } from '$comp/ui/spinner';
-    import { deleteOrganization, getOrganizationQuery, patchOrganization } from '$features/organizations/api.svelte';
+    import {
+        deleteOrganization,
+        deleteOrganizationIcon,
+        getOrganizationQuery,
+        patchOrganization,
+        uploadOrganizationIcon
+    } from '$features/organizations/api.svelte';
     import RemoveOrganizationDialog from '$features/organizations/components/dialogs/remove-organization-dialog.svelte';
     import { type NewOrganizationFormData, NewOrganizationSchema } from '$features/organizations/schemas';
+    import { getProfileImageFileError } from '$features/shared/profile-images';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
+    import { getInitials } from '$shared/strings';
     import { ProblemDetails } from '@exceptionless/fetchclient';
+    import Camera from '@lucide/svelte/icons/camera';
     import Projects from '@lucide/svelte/icons/folder-open';
     import Stacks from '@lucide/svelte/icons/layers';
     import X from '@lucide/svelte/icons/x';
@@ -22,6 +32,7 @@
     import { debounce } from 'throttle-debounce';
 
     let toastId = $state<number | string>();
+    let iconInput = $state<HTMLInputElement | null>(null);
 
     const organizationId = $derived(page.params.organizationId || '');
     const organizationQuery = getOrganizationQuery({
@@ -33,6 +44,20 @@
     });
 
     const update = patchOrganization({
+        route: {
+            get id() {
+                return organizationId;
+            }
+        }
+    });
+    const uploadIcon = uploadOrganizationIcon({
+        route: {
+            get id() {
+                return organizationId;
+            }
+        }
+    });
+    const removeIcon = deleteOrganizationIcon({
         route: {
             get id() {
                 return organizationId;
@@ -72,10 +97,10 @@
                 toast.dismiss(toastId);
                 try {
                     await update.mutateAsync(value);
-                    toastId = toast.success('Successfully updated Organization name');
+                    toastId = toast.success('Successfully updated Organization');
                     return null;
                 } catch (error: unknown) {
-                    toastId = toast.error('Error saving organization name. Please try again.');
+                    toastId = toast.error('Error saving organization. Please try again.');
                     if (error instanceof ProblemDetails) {
                         return problemDetailsToFormErrors(error);
                     }
@@ -87,12 +112,109 @@
     }));
 
     const debouncedFormSubmit = debounce(1000, () => form.handleSubmit());
+    const isIconSaving = $derived(uploadIcon.isPending || removeIcon.isPending);
+
+    function openIconPicker() {
+        iconInput?.click();
+    }
+
+    function handleIconFileChange(input: HTMLInputElement) {
+        const file = input.files?.[0];
+        if (file) {
+            void handleIconUpload(file);
+            input.value = '';
+        }
+    }
+
+    async function handleIconUpload(file: File) {
+        toast.dismiss(toastId);
+        const fileError = getProfileImageFileError(file);
+        if (fileError) {
+            toastId = toast.error(fileError);
+            return;
+        }
+
+        try {
+            await uploadIcon.mutateAsync(file);
+            toastId = toast.success('Successfully updated organization icon.');
+        } catch (error: unknown) {
+            toastId = toast.error(getProblemMessage(error, 'Error saving organization icon. Please try again.'));
+        }
+    }
+
+    async function handleRemoveIcon() {
+        toast.dismiss(toastId);
+        try {
+            await removeIcon.mutateAsync();
+            toastId = toast.success('Successfully removed organization icon.');
+        } catch (error: unknown) {
+            toastId = toast.error(getProblemMessage(error, 'Error removing organization icon. Please try again.'));
+        }
+    }
+
+    function getProblemMessage(error: unknown, fallback: string) {
+        if (!(error instanceof ProblemDetails)) {
+            return fallback;
+        }
+
+        return error.errors.file?.[0] ?? Object.values(error.errors ?? {})[0]?.[0] ?? error.title ?? fallback;
+    }
 
     // TODO: Add Skeleton
 </script>
 
 <div class="space-y-6">
     <Muted>General organization settings</Muted>
+
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div class="flex items-center gap-3">
+            <Input
+                bind:ref={iconInput}
+                aria-label="Upload organization icon"
+                accept="image/png,image/jpeg,image/gif,image/webp"
+                class="sr-only"
+                disabled={isIconSaving}
+                tabindex={-1}
+                type="file"
+                onchange={(e) => handleIconFileChange(e.currentTarget)}
+            />
+            <Button
+                variant="ghost"
+                class="group relative h-20 w-20 overflow-hidden rounded-lg p-0"
+                aria-label="Update organization icon"
+                onclick={openIconPicker}
+                disabled={isIconSaving}
+            >
+                <Avatar.Root class="h-full w-full rounded-lg" title="Organization Icon">
+                    {#if organizationQuery.data?.icon_url}
+                        <Avatar.Image alt={`${organizationQuery.data.name} icon`} src={organizationQuery.data.icon_url} />
+                    {/if}
+                    <Avatar.Fallback class="rounded-lg">{getInitials(organizationQuery.data?.name ?? '?')}</Avatar.Fallback>
+                </Avatar.Root>
+                <span
+                    class="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/55 text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                    aria-hidden="true"
+                >
+                    {#if uploadIcon.isPending}
+                        <Spinner class="size-4" />
+                        Updating
+                    {:else}
+                        <Camera class="size-4" />
+                        Update
+                    {/if}
+                </span>
+            </Button>
+            {#if organizationQuery.data?.icon_url}
+                <Button variant="outline" size="icon" aria-label="Remove custom organization icon" onclick={handleRemoveIcon} disabled={isIconSaving}>
+                    {#if removeIcon.isPending}
+                        <Spinner class="size-4" />
+                    {:else}
+                        <X class="size-4" />
+                    {/if}
+                </Button>
+            {/if}
+        </div>
+    </div>
 
     <form
         onsubmit={(e) => {
