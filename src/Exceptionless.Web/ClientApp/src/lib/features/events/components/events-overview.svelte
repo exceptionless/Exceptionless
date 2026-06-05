@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { IFilter } from '$comp/faceted-filter';
     import type { UpdateProject, ViewProject } from '$features/projects/models';
+    import type { Stack } from '$features/stacks/models';
     import type { ProblemDetails } from '@exceptionless/fetchclient';
 
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
@@ -41,11 +42,12 @@
         handleError: (problem: ProblemDetails) => void;
         id: string;
         initialEvent?: null | PersistentEvent;
+        initialStack?: null | Stack;
         onEventLoaded?: (event: PersistentEvent) => void;
         onNavigate?: (eventId: string) => void;
     }
 
-    let { filterChanged, handleError, id, initialEvent, onEventLoaded, onNavigate }: Props = $props();
+    let { filterChanged, handleError, id, initialEvent, initialStack, onEventLoaded, onNavigate }: Props = $props();
 
     function getTabs(event?: null | PersistentEvent, project?: ViewProject): TabType[] {
         if (!event) {
@@ -311,7 +313,7 @@
 
 <section>
     <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
-    <StackCard {filterChanged} id={event?.stack_id}></StackCard>
+    <StackCard {filterChanged} id={event?.stack_id} {initialStack}></StackCard>
 </section>
 
 <section class="mt-2">

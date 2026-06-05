@@ -1,4 +1,5 @@
 <script lang="ts">
+    import type { Stack } from '$features/stacks/models';
     import type { ProblemDetails } from '@exceptionless/fetchclient';
 
     import { type IFilter } from '$comp/faceted-filter';
@@ -35,11 +36,12 @@
     interface Props {
         filterChanged: (filter: IFilter) => void;
         id: string | undefined;
+        initialStack?: null | Stack;
         onDeleted?: () => void;
         onError?: (problem: ProblemDetails) => void;
     }
 
-    let { filterChanged, id, onDeleted, onError }: Props = $props();
+    let { filterChanged, id, initialStack, onDeleted, onError }: Props = $props();
     let handledErrorForStackId = $state<string>();
 
     const stackQuery = getStackQuery({
@@ -62,7 +64,7 @@
     });
 
     // TODO: Log Level
-    const stack = $derived(stackQuery.data!);
+    const stack = $derived(stackQuery.data ?? (initialStack?.id === id ? initialStack : null));
 
     // TODO: Add stack charts for Occurrences, Average Value, Value Sum
     const stackCountQuery = getStackCountQuery({
@@ -133,7 +135,7 @@
     });
 </script>
 
-{#if stackQuery.isSuccess}
+{#if stack}
     <Card.Root
         class="bg-background relative overflow-hidden ring-[color-mix(in_oklab,var(--chart-1)_42%,transparent)] before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-[linear-gradient(90deg,var(--chart-1),var(--chart-2))] before:content-['']"
     >

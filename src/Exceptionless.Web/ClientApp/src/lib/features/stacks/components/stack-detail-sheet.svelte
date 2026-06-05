@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { IFilter } from '$comp/faceted-filter';
+    import type { StackSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary';
     import type { PersistentEvent } from '$features/events/models';
     import type { ProblemDetails } from '@exceptionless/fetchclient';
 
@@ -11,12 +12,13 @@
 
     interface Props {
         filterChanged: (filter: IFilter) => void;
+        initialStackSummary?: null | StackSummaryModel<SummaryTemplateKeys>;
         onClose: () => void;
         onError?: (problem: ProblemDetails) => void;
         stackId: null | string | undefined;
     }
 
-    let { filterChanged, onClose, onError, stackId = $bindable() }: Props = $props();
+    let { filterChanged, initialStackSummary, onClose, onError, stackId = $bindable() }: Props = $props();
 
     let currentEventDetails = $state<{ eventId: string; stackId: string }>();
     let lastStackId = $state<null | string>(null);
@@ -51,6 +53,6 @@
 
 <DetailSheet detailsHref={resolvedHref} {onClose} open={!!stackId} title="Stack">
     {#if stackId}
-        <StackDetails {filterChanged} {handleError} onDeleted={onClose} onEventLoaded={handleEventLoaded} {stackId} />
+        <StackDetails {filterChanged} {handleError} {initialStackSummary} onDeleted={onClose} onEventLoaded={handleEventLoaded} {stackId} />
     {/if}
 </DetailSheet>
