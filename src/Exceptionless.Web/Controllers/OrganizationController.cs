@@ -213,10 +213,10 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         if (image is null)
             return ValidationProblem(ModelState);
 
-        string? oldIconUrl = organization.IconUrl;
-        organization.IconUrl = GetOrganizationIconUrl(organization.Id, image.FileName);
+        string? oldIconFileName = organization.IconFileName;
+        organization.IconFileName = image.FileName;
         await _repository.SaveAsync(organization, o => o.Cache());
-        await ProfileImageStorage.DeleteFromUrlAsync(_fileStorage, oldIconUrl, "organizations", organization.Id, cancellationToken);
+        await ProfileImageStorage.DeleteAsync(_fileStorage, oldIconFileName, "organizations", organization.Id, cancellationToken);
 
         return await OkModelAsync(organization);
     }
@@ -234,10 +234,10 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         if (organization is null)
             return NotFound();
 
-        string? oldIconUrl = organization.IconUrl;
-        organization.IconUrl = null;
+        string? oldIconFileName = organization.IconFileName;
+        organization.IconFileName = null;
         await _repository.SaveAsync(organization, o => o.Cache());
-        await ProfileImageStorage.DeleteFromUrlAsync(_fileStorage, oldIconUrl, "organizations", organization.Id, cancellationToken);
+        await ProfileImageStorage.DeleteAsync(_fileStorage, oldIconFileName, "organizations", organization.Id, cancellationToken);
 
         return await OkModelAsync(organization);
     }
@@ -1027,6 +1027,8 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         var viewOrganizations = models.OfType<ViewOrganization>().ToList();
         foreach (var viewOrganization in viewOrganizations)
         {
+            viewOrganization.IconUrl = GetOrganizationIconUrl(viewOrganization.Id, viewOrganization.IconUrl);
+
             var realTimeUsage = await _usageService.GetUsageAsync(viewOrganization.Id);
 
             // ensure 12 months of usage
@@ -1083,6 +1085,11 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         return viewOrganizations;
     }
 
-    private string GetOrganizationIconUrl(string id, string fileName)
-        => Url.RouteUrl("GetOrganizationIcon", new { id, fileName }) ?? $"/api/v2/organizations/{id}/icon/{fileName}";
+    private string? GetOrganizationIconUrl(string id, string? fileName)
+    {
+        if (String.IsNullOrWhiteSpace(fileName))
+            return null;
+
+        return Url.RouteUrl("GetOrganizationIcon", new { id, fileName }) ?? $"/api/v2/organizations/{id}/icon/{fileName}";
+    }
 }

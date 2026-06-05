@@ -35,7 +35,7 @@ public record User : IIdentity, IHaveDates, IValidatableObject
     public string EmailAddress { get; set; } = null!;
 
     [StringLength(2000)]
-    public string? AvatarUrl { get; set; }
+    public string? AvatarFileName { get; set; }
 
     public bool EmailNotificationsEnabled { get; set; } = true;
     public bool IsEmailAddressVerified { get; set; }

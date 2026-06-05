@@ -329,6 +329,11 @@ public sealed class UserControllerTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(updatedUser);
         Assert.Contains($"/users/{currentUser.Id}/avatar/", updatedUser.AvatarUrl);
+
+        var storedUser = await _userRepository.GetByIdAsync(currentUser.Id);
+        Assert.NotNull(storedUser);
+        Assert.Equal(updatedUser.AvatarUrl?.Split('/').Last(), storedUser.AvatarFileName);
+        Assert.DoesNotContain("/", storedUser.AvatarFileName!);
     }
 
     [Fact]

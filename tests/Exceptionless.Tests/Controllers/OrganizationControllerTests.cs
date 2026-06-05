@@ -236,6 +236,11 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(organization);
         Assert.Contains($"/organizations/{SampleDataService.TEST_ORG_ID}/icon/", organization.IconUrl);
+
+        var storedOrganization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(storedOrganization);
+        Assert.Equal(organization.IconUrl?.Split('/').Last(), storedOrganization.IconFileName);
+        Assert.DoesNotContain("/", storedOrganization.IconFileName!);
     }
 
     [Fact]

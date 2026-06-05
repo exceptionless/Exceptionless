@@ -61,7 +61,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         if (currentUser is null)
             return NotFound();
 
-        return Ok(new ViewCurrentUser(currentUser, _intercomOptions));
+        return Ok(MapToViewCurrentUser(currentUser));
     }
 
     /// <summary>
@@ -156,10 +156,10 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         if (image is null)
             return ValidationProblem(ModelState);
 
-        string? oldAvatarUrl = user.AvatarUrl;
-        user.AvatarUrl = GetUserAvatarUrl(user.Id, image.FileName);
+        string? oldAvatarFileName = user.AvatarFileName;
+        user.AvatarFileName = image.FileName;
         await _repository.SaveAsync(user, o => o.Cache());
-        await ProfileImageStorage.DeleteFromUrlAsync(_fileStorage, oldAvatarUrl, "users", user.Id, cancellationToken);
+        await ProfileImageStorage.DeleteAsync(_fileStorage, oldAvatarFileName, "users", user.Id, cancellationToken);
 
         return await OkModelAsync(user);
     }
@@ -177,10 +177,10 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         if (user is null)
             return NotFound();
 
-        string? oldAvatarUrl = user.AvatarUrl;
-        user.AvatarUrl = null;
+        string? oldAvatarFileName = user.AvatarFileName;
+        user.AvatarFileName = null;
         await _repository.SaveAsync(user, o => o.Cache());
-        await ProfileImageStorage.DeleteFromUrlAsync(_fileStorage, oldAvatarUrl, "users", user.Id, cancellationToken);
+        await ProfileImageStorage.DeleteAsync(_fileStorage, oldAvatarFileName, "users", user.Id, cancellationToken);
 
         return await OkModelAsync(user);
     }
@@ -420,9 +420,17 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     protected override async Task<ActionResult<ViewUser>> OkModelAsync(User model)
     {
         if (String.Equals(CurrentUser.Id, model.Id))
-            return Ok(new ViewCurrentUser(model, _intercomOptions));
+            return Ok(MapToViewCurrentUser(model));
 
         return await base.OkModelAsync(model);
+    }
+
+    protected override async Task AfterResultMapAsync<TDestination>(ICollection<TDestination> models)
+    {
+        await base.AfterResultMapAsync(models);
+
+        foreach (var user in models.OfType<ViewUser>())
+            user.AvatarUrl = GetUserAvatarUrl(user.Id, user.AvatarUrl);
     }
 
     protected override async Task<User?> GetModelAsync(string id, bool useCache = true)
@@ -463,6 +471,14 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         return await base.DeleteModelsAsync(values);
     }
 
-    private string GetUserAvatarUrl(string id, string fileName)
-        => Url.RouteUrl("GetUserAvatar", new { id, fileName }) ?? $"/api/v2/users/{id}/avatar/{fileName}";
+    private ViewCurrentUser MapToViewCurrentUser(User user)
+        => new(user, _intercomOptions) { AvatarUrl = GetUserAvatarUrl(user.Id, user.AvatarFileName) };
+
+    private string? GetUserAvatarUrl(string id, string? fileName)
+    {
+        if (String.IsNullOrWhiteSpace(fileName))
+            return null;
+
+        return Url.RouteUrl("GetUserAvatar", new { id, fileName }) ?? $"/api/v2/users/{id}/avatar/{fileName}";
+    }
 }

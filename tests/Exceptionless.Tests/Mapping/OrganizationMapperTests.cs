@@ -35,7 +35,7 @@ public sealed class OrganizationMapperTests
         {
             Id = "537650f3b77efe23a47914f3",
             Name = "Acme Organization",
-            IconUrl = "https://example.com/icon.png",
+            IconFileName = "icon.png",
             PlanId = "free",
             IsSuspended = false
         };
@@ -46,7 +46,7 @@ public sealed class OrganizationMapperTests
         // Assert
         Assert.Equal("537650f3b77efe23a47914f3", result.Id);
         Assert.Equal("Acme Organization", result.Name);
-        Assert.Equal("https://example.com/icon.png", result.IconUrl);
+        Assert.Equal("icon.png", result.IconUrl);
         Assert.Equal("free", result.PlanId);
         Assert.False(result.IsSuspended);
     }

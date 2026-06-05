@@ -82,7 +82,7 @@ public class ProfileImageStorageTests
     }
 
     [Fact]
-    public async Task DeleteFromUrlAsync_WithStoredImageUrl_DeletesImage()
+    public async Task DeleteAsync_WithStoredImageFileName_DeletesImage()
     {
         // Arrange
         using var storage = new InMemoryFileStorage(new InMemoryFileStorageOptions());
@@ -92,7 +92,7 @@ public class ProfileImageStorageTests
         Assert.NotNull(result);
 
         // Act
-        await ProfileImageStorage.DeleteFromUrlAsync(storage, $"/api/v2/users/{UserId}/avatar/{result.FileName}", "users", UserId, TestContext.Current.CancellationToken);
+        await ProfileImageStorage.DeleteAsync(storage, result.FileName, "users", UserId, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(await storage.ExistsAsync(result.Path));

@@ -55,22 +55,22 @@ internal static class ProfileImageStorage
         return new StoredProfileImage(fileName, path, imageType.ContentType);
     }
 
-    public static async Task DeleteFromUrlAsync(IFileStorage storage, string? imageUrl, string scope, string ownerId, CancellationToken cancellationToken)
+    public static async Task DeleteAsync(IFileStorage storage, string? fileNameOrUrl, string scope, string ownerId, CancellationToken cancellationToken)
     {
-        if (!TryGetStoragePath(imageUrl, scope, ownerId, out string? path))
+        if (!TryGetStoragePath(fileNameOrUrl, scope, ownerId, out string? path))
             return;
 
         await storage.DeleteFileAsync(path, cancellationToken);
     }
 
-    public static bool TryGetStoragePath(string? imageUrl, string scope, string ownerId, out string path)
+    public static bool TryGetStoragePath(string? fileNameOrUrl, string scope, string ownerId, out string path)
     {
         path = String.Empty;
 
-        if (String.IsNullOrWhiteSpace(imageUrl))
+        if (String.IsNullOrWhiteSpace(fileNameOrUrl))
             return false;
 
-        string? fileName = imageUrl.Split('/', StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
+        string? fileName = fileNameOrUrl.Split('/', StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
         if (!IsSafeFileName(fileName))
             return false;
 
@@ -78,9 +78,9 @@ internal static class ProfileImageStorage
         return true;
     }
 
-    public static async Task<Stream?> GetFileStreamAsync(IFileStorage storage, string? imageUrl, string scope, string ownerId, CancellationToken cancellationToken)
+    public static async Task<Stream?> GetFileStreamAsync(IFileStorage storage, string? fileNameOrUrl, string scope, string ownerId, CancellationToken cancellationToken)
     {
-        if (!TryGetStoragePath(imageUrl, scope, ownerId, out string? path))
+        if (!TryGetStoragePath(fileNameOrUrl, scope, ownerId, out string? path))
             return null;
 
         return await storage.GetFileStreamAsync(path, StreamMode.Read, cancellationToken);
