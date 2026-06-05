@@ -57,10 +57,22 @@ internal static class ProfileImageStorage
 
     public static async Task DeleteAsync(IFileStorage storage, string? fileNameOrUrl, string scope, string ownerId, CancellationToken cancellationToken)
     {
-        if (!TryGetStoragePath(fileNameOrUrl, scope, ownerId, out string? path))
+        if (!TryGetStoragePath(fileNameOrUrl, scope, ownerId, out string path))
             return;
 
         await storage.DeleteFileAsync(path, cancellationToken);
+    }
+
+    public static async Task TryDeleteAsync(IFileStorage storage, string? fileNameOrUrl, string scope, string ownerId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await DeleteAsync(storage, fileNameOrUrl, scope, ownerId, cancellationToken);
+        }
+        catch
+        {
+            // Best-effort cleanup should not hide the original persistence failure.
+        }
     }
 
     public static bool TryGetStoragePath(string? fileNameOrUrl, string scope, string ownerId, out string path)
@@ -80,7 +92,7 @@ internal static class ProfileImageStorage
 
     public static async Task<Stream?> GetFileStreamAsync(IFileStorage storage, string? fileNameOrUrl, string scope, string ownerId, CancellationToken cancellationToken)
     {
-        if (!TryGetStoragePath(fileNameOrUrl, scope, ownerId, out string? path))
+        if (!TryGetStoragePath(fileNameOrUrl, scope, ownerId, out string path))
             return null;
 
         return await storage.GetFileStreamAsync(path, StreamMode.Read, cancellationToken);

@@ -9387,7 +9387,7 @@
             "type": "string",
             "format": "email"
           },
-          "avatar_url": {
+          "avatar_file_name": {
             "maxLength": 2000,
             "minLength": 0,
             "type": [

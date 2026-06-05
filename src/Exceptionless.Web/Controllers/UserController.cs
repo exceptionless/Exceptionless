@@ -145,7 +145,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     [Consumes("multipart/form-data")]
     [MultipartFileUpload]
     [RequestSizeLimit(ProfileImageStorage.MaxRequestBodySize)]
-    [RequestFormLimits(MultipartBodyLengthLimit = ProfileImageStorage.MaxFileSize)]
+    [RequestFormLimits(MultipartBodyLengthLimit = ProfileImageStorage.MaxRequestBodySize)]
     public async Task<ActionResult<ViewUser>> UploadAvatarAsync(string id, [FromForm] IFormFile? file, CancellationToken cancellationToken = default)
     {
         var user = await GetModelAsync(id, false);
@@ -158,7 +158,16 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
 
         string? oldAvatarFileName = user.AvatarFileName;
         user.AvatarFileName = image.FileName;
-        await _repository.SaveAsync(user, o => o.Cache());
+        try
+        {
+            await _repository.SaveAsync(user, o => o.Cache());
+        }
+        catch
+        {
+            await ProfileImageStorage.TryDeleteAsync(_fileStorage, image.FileName, "users", user.Id, CancellationToken.None);
+            throw;
+        }
+
         await ProfileImageStorage.DeleteAsync(_fileStorage, oldAvatarFileName, "users", user.Id, cancellationToken);
 
         return await OkModelAsync(user);

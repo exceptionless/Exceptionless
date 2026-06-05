@@ -202,7 +202,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     [Consumes("multipart/form-data")]
     [MultipartFileUpload]
     [RequestSizeLimit(ProfileImageStorage.MaxRequestBodySize)]
-    [RequestFormLimits(MultipartBodyLengthLimit = ProfileImageStorage.MaxFileSize)]
+    [RequestFormLimits(MultipartBodyLengthLimit = ProfileImageStorage.MaxRequestBodySize)]
     public async Task<ActionResult<ViewOrganization>> UploadIconAsync(string id, [FromForm] IFormFile? file, CancellationToken cancellationToken = default)
     {
         var organization = await GetModelAsync(id, false);
@@ -215,7 +215,16 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
         string? oldIconFileName = organization.IconFileName;
         organization.IconFileName = image.FileName;
-        await _repository.SaveAsync(organization, o => o.Cache());
+        try
+        {
+            await _repository.SaveAsync(organization, o => o.Cache());
+        }
+        catch
+        {
+            await ProfileImageStorage.TryDeleteAsync(_fileStorage, image.FileName, "organizations", organization.Id, CancellationToken.None);
+            throw;
+        }
+
         await ProfileImageStorage.DeleteAsync(_fileStorage, oldIconFileName, "organizations", organization.Id, cancellationToken);
 
         return await OkModelAsync(organization);

@@ -83,7 +83,8 @@ public class CleanupDataJobTests : IntegrationTestsBase
         var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
         var persistentEvent = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
         string iconPath = OrganizationStoragePaths.GetProfileImagePath(organization.Id, "icon.png");
-        await _fileStorage.SaveFileAsync(iconPath, new MemoryStream([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]), TestCancellationToken);
+        using var stream = new MemoryStream([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+        await _fileStorage.SaveFileAsync(iconPath, stream, TestCancellationToken);
 
         await _job.RunAsync(TestCancellationToken);
 

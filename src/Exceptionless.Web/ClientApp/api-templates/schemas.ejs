@@ -136,6 +136,10 @@ const typeToZod = (rawType, isRequired, nullable, field) => {
     }
 
     switch (type) {
+        case 'JsonElement':
+        case 'JsonDocument':
+            usedZodFunctions.add('unknown');
+            return 'unknown()';
         case 'string':
             usedZodFunctions.add('string');
             return 'string()';
@@ -172,6 +176,12 @@ const typeToZod = (rawType, isRequired, nullable, field) => {
                 if (contract.typeIdentifier === 'enum') {
                     return type + 'Schema';
                 }
+
+                if ((contract.$content || []).length === 0) {
+                    usedZodFunctions.add('unknown');
+                    return 'unknown()';
+                }
+
                 usedZodFunctions.add('lazy');
                 return 'lazy(() => ' + type + 'Schema)';
             }
