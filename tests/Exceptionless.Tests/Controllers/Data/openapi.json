@@ -9811,7 +9811,6 @@
             "additionalProperties": { }
           },
           "promoted_tabs": {
-            "uniqueItems": true,
             "type": "array",
             "items": {
               "type": "string"
