@@ -322,6 +322,11 @@
     });
     const intercomOrganization = $derived(shouldFetchIntercomOrganization ? currentOrganizationQuery.data : undefined);
 
+    function shouldRedirectToSetup(): boolean {
+        const addOrganizationPath = resolve('/(app)/organization/add');
+        return page.url.pathname !== addOrganizationPath && !page.url.pathname.startsWith(resolve('/(app)/system'));
+    }
+
     // Keep selected organization synchronized with current memberships.
     $effect(() => {
         void page.url.pathname;
@@ -334,12 +339,8 @@
         if (!hasOrganizations) {
             organization.current = undefined;
 
-            // Redirect non-admins to add organization page
-            if (!isGlobalAdmin && !organizationsQuery.isLoading) {
-                const addOrganizationPath = resolve('/(app)/organization/add');
-                if (page.url.pathname !== addOrganizationPath) {
-                    goto(addOrganizationPath);
-                }
+            if (shouldRedirectToSetup()) {
+                goto(resolve('/(app)/organization/add'));
             }
 
             return;

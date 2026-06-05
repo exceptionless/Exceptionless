@@ -268,6 +268,9 @@ export function getEventWithNavigationQuery(request: GetEventRequest) {
                 },
                 signal
             });
+            if (response.problem) {
+                throw response.problem;
+            }
 
             const event = response.data!;
             queryClient.setQueryData(queryKeys.id(request.route.id), event);

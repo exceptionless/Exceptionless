@@ -170,6 +170,9 @@ export function getStackQuery(request: GetStackRequest) {
             const response = await client.getJSON<Stack>(`stacks/${request.route.id}`, {
                 signal
             });
+            if (response.problem) {
+                throw response.problem;
+            }
 
             return response.data!;
         },
