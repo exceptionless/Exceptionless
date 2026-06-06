@@ -2015,6 +2015,13 @@
             }
           },
           {
+            "name": "expected_stack_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "time",
             "in": "query",
             "description": "The time filter that limits the data being returned to a specific date range.",
@@ -2041,6 +2048,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "The event does not belong to the expected stack."
           },
           "404": {
             "description": "The event occurrence could not be found."

@@ -25,6 +25,7 @@ using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
 using Xunit;
 using MediaTypeHeaderValue = System.Net.Http.Headers.MediaTypeHeaderValue;
@@ -637,6 +638,30 @@ public class EventControllerTests : IntegrationTestsBase
 
         Assert.NotNull(result);
         Assert.Equal(3, result.Count);
+    }
+
+    [Fact]
+    public async Task GetEvent_WithMismatchedExpectedStack_ReturnsBadRequest()
+    {
+        var (stacks, events) = await CreateDataAsync(d =>
+        {
+            d.Event().TestProject().StackId("1ecd0826e447a44e78877ab1");
+            d.Event().TestProject().StackId("2ecd0826e447a44e78877ab2");
+        });
+
+        var expectedStackId = stacks.Single(s => s.Id == "2ecd0826e447a44e78877ab2").Id;
+        var actualEvent = events.Single(e => e.StackId == "1ecd0826e447a44e78877ab1");
+        string actualStackId = actualEvent.StackId ?? throw new InvalidOperationException("Expected test event to have a stack id.");
+
+        var problemDetails = await SendRequestAsAsync<ProblemDetails>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("events", actualEvent.Id)
+            .QueryString("expected_stack_id", expectedStackId)
+            .StatusCodeShouldBeBadRequest()
+        ) ?? throw new InvalidOperationException("Expected problem details response.");
+
+        Assert.Equal(StatusCodes.Status400BadRequest, problemDetails.Status);
+        Assert.Equal($"The event \"{actualEvent.Id}\" belongs to stack \"{actualStackId}\", not stack \"{expectedStackId}\". Open the event from its current stack.", problemDetails.Title);
     }
 
     [Fact]

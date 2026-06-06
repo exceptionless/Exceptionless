@@ -37,6 +37,7 @@
     import TraceLog from './views/trace-log.svelte';
 
     interface Props {
+        expectedStackId?: string;
         filterChanged: (filter: IFilter) => void;
         handleError: (problem: ProblemDetails) => void;
         id: string;
@@ -44,7 +45,7 @@
         onNavigate?: (eventId: string) => void;
     }
 
-    let { filterChanged, handleError, id, onEventLoaded, onNavigate }: Props = $props();
+    let { expectedStackId, filterChanged, handleError, id, onEventLoaded, onNavigate }: Props = $props();
 
     function getTabs(event?: null | PersistentEvent, project?: ViewProject): TabType[] {
         if (!event) {
@@ -95,6 +96,11 @@
     }
 
     const eventQuery = getEventWithNavigationQuery({
+        params: {
+            get expected_stack_id() {
+                return expectedStackId;
+            }
+        },
         route: {
             get id() {
                 return id;

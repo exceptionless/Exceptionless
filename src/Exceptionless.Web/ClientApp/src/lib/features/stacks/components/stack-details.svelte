@@ -71,7 +71,7 @@
 </script>
 
 {#if selectedEventId}
-    <EventsOverview {filterChanged} id={selectedEventId} {handleError} {onEventLoaded} onNavigate={handleNavigate} />
+    <EventsOverview expectedStackId={stackId} {filterChanged} id={selectedEventId} {handleError} {onEventLoaded} onNavigate={handleNavigate} />
 {:else if stackEventsQuery.isSuccess}
     <section>
         <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>

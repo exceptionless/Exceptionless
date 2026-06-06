@@ -69,6 +69,7 @@ export interface EventWithNavigation {
 
 export interface GetEventRequest {
     params?: {
+        expected_stack_id?: string;
         offset?: string;
         time?: string;
     };
@@ -285,7 +286,7 @@ export function getEventWithNavigationQuery(request: GetEventRequest) {
                 }
             };
         },
-        queryKey: [...queryKeys.id(request.route.id), 'withNavigation']
+        queryKey: [...queryKeys.id(request.route.id), 'withNavigation', request.params]
     }));
 }
 
