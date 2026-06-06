@@ -4,7 +4,6 @@
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
-    import { H3 } from '$comp/typography';
     import * as Alert from '$comp/ui/alert';
     import { Button } from '$comp/ui/button';
     import { Skeleton } from '$comp/ui/skeleton';
@@ -140,8 +139,7 @@
         </Table.Root>
     {/if}
 
-    <div class="mb-2 flex items-center justify-between gap-2">
-        <H3>Session Events</H3>
+    <div class="mb-2 flex justify-end">
         <Button
             aria-label="Open events filtered to this session"
             disabled={!sessionEventsHref}
