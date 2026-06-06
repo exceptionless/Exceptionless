@@ -2,7 +2,7 @@ import { accessToken } from '$features/auth/index.svelte';
 import { FetchClient, FetchClientProvider, getCurrentProvider, ProblemDetails } from '@exceptionless/fetchclient';
 import { SvelteDate } from 'svelte/reactivity';
 
-export const DEFAULT_LIMIT = 20;
+export { DEFAULT_LIMIT } from './constants';
 
 /**
  * Represents the default timezone offset based on the user's local time.
