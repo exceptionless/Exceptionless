@@ -57,6 +57,9 @@
             return queryParams;
         },
         route: {
+            get projectId() {
+                return event.project_id;
+            },
             get sessionId() {
                 return hasPremiumFeatures ? sessionId : undefined;
             }
