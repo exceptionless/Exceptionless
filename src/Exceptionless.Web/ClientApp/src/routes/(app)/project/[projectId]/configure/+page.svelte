@@ -17,6 +17,7 @@
     import { getProjectDefaultTokenQuery, patchToken } from '$features/tokens/api.svelte';
     import EnableTokenDialog from '$features/tokens/components/dialogs/enable-token-dialog.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
+    import Events from '@lucide/svelte/icons/calendar-days';
     import Database from '@lucide/svelte/icons/database';
     import NotificationSettings from '@lucide/svelte/icons/mail';
     import { queryParamsState } from 'kit-query-params';
@@ -650,7 +651,9 @@ public partial class App : Application {
                 <Database class="mr-2 size-4" aria-hidden="true" /> Generate Sample Data
             {/if}
         </Button>
-        <Button variant="secondary" onclick={goToProjectEvents}>View Events</Button>
+        <Button variant="secondary" onclick={goToProjectEvents}>
+            <Events class="mr-2 size-4" aria-hidden="true" /> View Events
+        </Button>
     </div>
 
     {#if isTokenDisabled}
