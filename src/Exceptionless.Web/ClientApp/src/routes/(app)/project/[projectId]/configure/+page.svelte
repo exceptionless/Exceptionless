@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
     import { Notification, NotificationDescription, NotificationTitle } from '$comp/notification';
@@ -17,6 +18,7 @@
     import EnableTokenDialog from '$features/tokens/components/dialogs/enable-token-dialog.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import Database from '@lucide/svelte/icons/database';
+    import NotificationSettings from '@lucide/svelte/icons/mail';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener } from 'runed';
     import { toast } from 'svelte-sonner';
@@ -638,6 +640,9 @@ public partial class App : Application {
     {/if}
 
     <div class="border-border flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end">
+        <Button variant="secondary" href={`${resolve('/(app)/account/notifications')}?project=${projectId}`}>
+            <NotificationSettings class="mr-2 size-4" aria-hidden="true" /> Notification Settings
+        </Button>
         <Button variant="success" onclick={generateProjectSampleData} disabled={generateSampleDataMutation.isPending}>
             {#if generateSampleDataMutation.isPending}
                 <Spinner /> Generating...

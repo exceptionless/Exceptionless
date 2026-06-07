@@ -3,13 +3,11 @@
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import { A, H3 } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import OrganizationAdminActionsDropdownMenu from '$features/organizations/components/organization-admin-actions-dropdown-menu.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { getProjectQuery } from '$features/projects/api.svelte';
     import GlobalUser from '$features/users/components/global-user.svelte';
-    import NotificationSettings from '@lucide/svelte/icons/mail';
     import { toast } from 'svelte-sonner';
 
     import { routes } from './routes.svelte';
@@ -71,9 +69,6 @@
                     <OrganizationAdminActionsDropdownMenu organization={organizationQuery.data} />
                 </GlobalUser>
             {/if}
-            <Button variant="secondary" size="icon" href={`${resolve('/(app)/account/notifications')}?project=${projectId}`} title="Notification Settings">
-                <NotificationSettings class="size-4" />
-            </Button>
         </div>
     </div>
     <div class="mt-6 space-y-6">

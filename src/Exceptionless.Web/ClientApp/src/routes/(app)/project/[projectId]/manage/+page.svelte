@@ -20,6 +20,7 @@
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
     import Configure from '@lucide/svelte/icons/cloud-download';
     import Database from '@lucide/svelte/icons/database';
+    import NotificationSettings from '@lucide/svelte/icons/mail';
     import Stacks from '@lucide/svelte/icons/layers';
     import X from '@lucide/svelte/icons/x';
     import { createForm } from '@tanstack/svelte-form';
@@ -174,6 +175,9 @@
             </Button>
             <Button variant="secondary" href={resolve('/(app)/project/[projectId]/configure', { projectId })}>
                 <Configure class="mr-2 size-4" /> Configure Project
+            </Button>
+            <Button variant="secondary" href={`${resolve('/(app)/account/notifications')}?project=${projectId}`}>
+                <NotificationSettings class="mr-2 size-4" /> Notification Settings
             </Button>
             <Button variant="secondary" onclick={generateProjectSampleData} disabled={generateSampleDataMutation.isPending}>
                 {#if generateSampleDataMutation.isPending}
