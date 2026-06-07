@@ -45,9 +45,9 @@ If Pass 0 finds security BLOCKERs: **STOP**. Report immediately.
 
 # Pass 1 — Machine Checks
 
-Before running build/check commands, ensure infrastructure is healthy per AGENTS.md "Infrastructure before tests."
+Before running machine checks, ensure infrastructure is healthy per AGENTS.md "Infrastructure before tests."
 
-After Pass 0 clears, run the project's build/check commands (scope-appropriate).
+After Pass 0 clears, run only scope-appropriate machine checks needed for review confidence. For frontend changes, do not run broad `npm run check`, `npm run lint`, or `npm run format` unless the review is explicitly for pre-push/pre-PR readiness or the user requested those commands.
 
 If fails: report as BLOCKERs, **STOP**.
 

@@ -26,7 +26,7 @@ Never render items directly inside the content container.
 
 ```svelte
 <script lang="ts">
-  import * as Select from "$lib/components/ui/select";
+  import * as Select from "$comp/ui/select";
 </script>
 
 <Select.Content>
@@ -39,7 +39,7 @@ Never render items directly inside the content container.
 
 ```svelte
 <script lang="ts">
-  import * as Select from "$lib/components/ui/select";
+  import * as Select from "$comp/ui/select";
 </script>
 
 <Select.Content>
@@ -66,7 +66,7 @@ This applies to all group-based components:
 
 ```svelte
 <script lang="ts">
-  import * as Alert from "$lib/components/ui/alert";
+  import * as Alert from "$comp/ui/alert";
 </script>
 
 <Alert.Root>
@@ -81,8 +81,8 @@ This applies to all group-based components:
 
 ```svelte
 <script lang="ts">
-  import * as Empty from "$lib/components/ui/empty";
-  import { Button } from "$lib/components/ui/button";
+  import * as Empty from "$comp/ui/empty";
+  import { Button } from "$comp/ui/button";
   import FolderIcon from "@lucide/svelte/icons/folder";
 </script>
 
@@ -141,7 +141,7 @@ Mount the `Toaster` from your UI folder once in the app layout (see [Sonner](htt
 
 ```svelte
 <script lang="ts">
-  import * as Dialog from "$lib/components/ui/dialog";
+  import * as Dialog from "$comp/ui/dialog";
 </script>
 
 <Dialog.Content>
@@ -161,8 +161,8 @@ Use full composition — don't dump everything into `Card.Content`:
 
 ```svelte
 <script lang="ts">
-  import * as Card from "$lib/components/ui/card";
-  import { Button } from "$lib/components/ui/button";
+  import * as Card from "$comp/ui/card";
+  import { Button } from "$comp/ui/button";
 </script>
 
 <Card.Root>
@@ -185,8 +185,8 @@ Compose with `Spinner` inside `Button` + `disabled`:
 
 ```svelte
 <script lang="ts">
-  import { Button } from "$lib/components/ui/button";
-  import { Spinner } from "$lib/components/ui/spinner";
+  import { Button } from "$comp/ui/button";
+  import { Spinner } from "$comp/ui/spinner";
 </script>
 
 <Button disabled>
@@ -203,7 +203,7 @@ Never render `Tabs.Trigger` directly inside `Tabs.Root` — always wrap in `Tabs
 
 ```svelte
 <script lang="ts">
-  import * as Tabs from "$lib/components/ui/tabs";
+  import * as Tabs from "$comp/ui/tabs";
   let tab = $state("account");
 </script>
 
@@ -224,7 +224,7 @@ Always include `Avatar.Fallback` for when the image fails to load:
 
 ```svelte
 <script lang="ts">
-  import * as Avatar from "$lib/components/ui/avatar";
+  import * as Avatar from "$comp/ui/avatar";
 </script>
 
 <Avatar.Root>
@@ -239,6 +239,6 @@ Always include `Avatar.Fallback` for when the image fails to load:
 
 | Instead of                                     | Use                                                                                         |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `<hr>` or `<div class="border-t">`             | `<Separator />` (`import { Separator } from "$lib/components/ui/separator"`)                |
-| `<div class="animate-pulse">` with styled divs | `<Skeleton class="h-4 w-3/4" />` (`import { Skeleton } from "$lib/components/ui/skeleton"`) |
-| `<span class="rounded-full bg-green-100 ...">` | `<Badge variant="secondary">` (`import { Badge } from "$lib/components/ui/badge"`)          |
+| `<hr>` or `<div class="border-t">`             | `<Separator />` (`import { Separator } from "$comp/ui/separator"`)                |
+| `<div class="animate-pulse">` with styled divs | `<Skeleton class="h-4 w-3/4" />` (`import { Skeleton } from "$comp/ui/skeleton"`) |
+| `<span class="rounded-full bg-green-100 ...">` | `<Badge variant="secondary">` (`import { Badge } from "$comp/ui/badge"`)          |

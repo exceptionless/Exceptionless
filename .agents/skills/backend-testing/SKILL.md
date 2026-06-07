@@ -98,8 +98,7 @@ TimeProvider.Restore();
 
 ## Test Principles
 
-- **TDD workflow** — Write a failing test first when fixing bugs or adding features
+- **Regression coverage** — Add a focused failing test first when a bug fix can be reproduced cheaply
 - **Use real serializer** — Tests use the same JSON serializer as production
 - **Refresh after writes** — Call `RefreshDataAsync()` after database changes
-- **Clean state** — `ResetDataAsync()` clears data between tests
-- **AAA comments** — Use `// Arrange`, `// Act`, `// Assert` for readability
+- **Clean state** — `ResetDataAsync()` clears data between integration tests

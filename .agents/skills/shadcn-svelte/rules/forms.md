@@ -17,8 +17,8 @@ Always use `Field.FieldGroup` + `Field.Field` — never raw `div` with `space-y-
 
 ```svelte
 <script lang="ts">
-  import * as Field from "$lib/components/ui/field";
-  import { Input } from "$lib/components/ui/input";
+  import * as Field from "$comp/ui/field";
+  import { Input } from "$comp/ui/input";
 </script>
 
 <Field.FieldGroup>
@@ -57,8 +57,8 @@ Never use raw `Input` or `Textarea` inside an `InputGroup.Root`.
 
 ```svelte
 <script lang="ts">
-  import * as InputGroup from "$lib/components/ui/input-group";
-  import { Input } from "$lib/components/ui/input";
+  import * as InputGroup from "$comp/ui/input-group";
+  import { Input } from "$comp/ui/input";
 </script>
 
 <InputGroup.Root>
@@ -70,7 +70,7 @@ Never use raw `Input` or `Textarea` inside an `InputGroup.Root`.
 
 ```svelte
 <script lang="ts">
-  import * as InputGroup from "$lib/components/ui/input-group";
+  import * as InputGroup from "$comp/ui/input-group";
 </script>
 
 <InputGroup.Root>
@@ -88,8 +88,8 @@ Never place a `Button` directly inside or adjacent to an `Input` with custom pos
 
 ```svelte
 <script lang="ts">
-  import { Input } from "$lib/components/ui/input";
-  import { Button } from "$lib/components/ui/button";
+  import { Input } from "$comp/ui/input";
+  import { Button } from "$comp/ui/button";
   import SearchIcon from "@lucide/svelte/icons/search";
 </script>
 
@@ -105,8 +105,8 @@ Never place a `Button` directly inside or adjacent to an `Input` with custom pos
 
 ```svelte
 <script lang="ts">
-  import * as InputGroup from "$lib/components/ui/input-group";
-  import { Button } from "$lib/components/ui/button";
+  import * as InputGroup from "$comp/ui/input-group";
+  import { Button } from "$comp/ui/button";
   import SearchIcon from "@lucide/svelte/icons/search";
 </script>
 
@@ -130,7 +130,7 @@ Don't manually loop `Button` components with active state.
 
 ```svelte
 <script lang="ts">
-  import { Button } from "$lib/components/ui/button";
+  import { Button } from "$comp/ui/button";
   let selected = $state("daily");
 </script>
 
@@ -150,7 +150,7 @@ Don't manually loop `Button` components with active state.
 
 ```svelte
 <script lang="ts">
-  import * as ToggleGroup from "$lib/components/ui/toggle-group";
+  import * as ToggleGroup from "$comp/ui/toggle-group";
   let selected = $state("daily");
 </script>
 
@@ -165,8 +165,8 @@ Combine with `Field` for labelled toggle groups:
 
 ```svelte
 <script lang="ts">
-  import * as Field from "$lib/components/ui/field";
-  import * as ToggleGroup from "$lib/components/ui/toggle-group";
+  import * as Field from "$comp/ui/field";
+  import * as ToggleGroup from "$comp/ui/toggle-group";
 </script>
 
 <Field.Field orientation="horizontal">
@@ -187,8 +187,8 @@ Use `Field.FieldSet` + `Field.FieldLegend` for related checkboxes, radios, or sw
 
 ```svelte
 <script lang="ts">
-  import * as Field from "$lib/components/ui/field";
-  import { Checkbox } from "$lib/components/ui/checkbox";
+  import * as Field from "$comp/ui/field";
+  import { Checkbox } from "$comp/ui/checkbox";
 </script>
 
 <Field.FieldSet>
@@ -213,8 +213,8 @@ Both attributes are needed — `data-invalid`/`data-disabled` styles the field (
 
 ```svelte
 <script lang="ts">
-  import * as Field from "$lib/components/ui/field";
-  import { Input } from "$lib/components/ui/input";
+  import * as Field from "$comp/ui/field";
+  import { Input } from "$comp/ui/input";
 </script>
 
 <!-- Invalid. -->

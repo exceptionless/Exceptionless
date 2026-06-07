@@ -1,15 +1,13 @@
 ---
 name: shadcn-svelte
-description: Manages shadcn-svelte components and projects — adding, updating, fixing, debugging, styling, and composing UI. Provides project context, component docs, and usage examples. Applies when working with shadcn-svelte, the CLI, design-system presets, or any project with a components.json file. Also triggers for "shadcn-svelte init", "add component", or registry URLs.
-user-invocable: false
-allowed-tools: Bash(npx shadcn-svelte@latest *), Bash(pnpm dlx shadcn-svelte@latest *), Bash(bunx --bun shadcn-svelte@latest *)
+description: Manages shadcn-svelte components already used by the Svelte ClientApp. Use when adding/updating shadcn-svelte components, fixing shadcn component composition, consulting shadcn docs, or handling registry/CLI work. For ordinary Exceptionless frontend placement, Svelte, TypeScript, accessibility, or testing guidance, use frontend-architecture first.
 ---
 
 # shadcn-svelte
 
 A framework for building UI, components, and design systems for Svelte. Components are added as source to the user's project via the CLI.
 
-> **IMPORTANT:** Run all CLI commands using the project's package runner: `npx shadcn-svelte@latest`, `pnpm dlx shadcn-svelte@latest`, or `bunx --bun shadcn-svelte@latest` — based on the project's package manager. Examples below use `npx shadcn-svelte@latest` but substitute the correct runner for the project.
+> **IMPORTANT:** This repo uses npm. Run shadcn-svelte CLI commands from `src/Exceptionless.Web/ClientApp` with `npx shadcn-svelte@latest ...`.
 
 ## Current Project Context
 
@@ -19,16 +17,16 @@ Read `components.json` at the project root and, when you need the live file layo
 
 Each component lives in its own folder with an `index.ts` barrel. Match the [installation docs](https://shadcn-svelte.com/docs/installation):
 
-- **Multi-part components** (dialog, select, card, field, tabs, …): `import * as Dialog from "$lib/components/ui/dialog"` then `Dialog.Content`, `Dialog.Title`, `Card.Root`, `Card.Header`, etc. — whatever the barrel exports (short names and/or `Root as …` aliases).
-- **Single-component barrels** (only one meaningful component in the folder): **named imports** — `import { Button } from "$lib/components/ui/button"` and `<Button>`, not `import * as Button` + `Button.Root`. Same pattern for `{ Input }`, `{ Badge }`, `{ Spinner }`, `{ Checkbox }`, `{ Separator }`, `{ Skeleton }`, etc.
+- **Multi-part components** (dialog, select, card, field, tabs, …): `import * as Dialog from "$comp/ui/dialog"` then `Dialog.Content`, `Dialog.Title`, `Card.Root`, `Card.Header`, etc. — whatever the barrel exports (short names and/or `Root as …` aliases).
+- **Single-component barrels** (only one meaningful component in the folder): **named imports** — `import { Button } from "$comp/ui/button"` and `<Button>`, not `import * as Button` + `Button.Root`. Same pattern for `{ Input }`, `{ Badge }`, `{ Spinner }`, `{ Checkbox }`, `{ Separator }`, `{ Skeleton }`, etc.
 
 ```ts
-import * as Dialog from "$lib/components/ui/dialog";
-import { Button } from "$lib/components/ui/button";
-import { Separator } from "$lib/components/ui/separator";
+import * as Dialog from "$comp/ui/dialog";
+import { Button } from "$comp/ui/button";
+import { Separator } from "$comp/ui/separator";
 ```
 
-Use the real aliases from `components.json` (often `$lib/components/ui/...`), not hardcoded paths.
+Use the real aliases from `components.json`; this repo uses `$comp/ui/...`, not `$lib/components/ui/...`.
 
 ## Principles
 
@@ -84,7 +82,7 @@ These rules are **always enforced**. Each links to a file with Incorrect/Correct
 
 - **Icons in `<Button>` use `data-icon`.** `data-icon="inline-start"` or `data-icon="inline-end"` on the icon.
 - **No sizing classes on icons inside components.** Components handle icon sizing via CSS. No `size-4` or `w-4 h-4`.
-- **Pass icons as components.** Import from the configured `iconLibrary` (e.g. `@lucide/svelte`), not string keys.
+- **Pass icons as components.** This repo currently uses `@lucide/svelte` icons; if `components.json` later adds `iconLibrary`, follow that field.
 
 ### CLI
 
@@ -96,12 +94,12 @@ These are the most common patterns that differentiate correct shadcn-svelte code
 
 ```svelte
 <script lang="ts">
-  import * as Field from "$lib/components/ui/field";
-  import { Input } from "$lib/components/ui/input";
-  import { Button } from "$lib/components/ui/button";
+  import * as Field from "$comp/ui/field";
+  import { Input } from "$comp/ui/input";
+  import { Button } from "$comp/ui/button";
   import SearchIcon from "@lucide/svelte/icons/search";
-  import { Badge } from "$lib/components/ui/badge";
-  import * as Avatar from "$lib/components/ui/avatar";
+  import { Badge } from "$comp/ui/badge";
+  import * as Avatar from "$comp/ui/avatar";
 </script>
 
 <!-- Form layout: Field.FieldGroup + Field.Field, not div + Label. -->
@@ -162,8 +160,8 @@ Use `components.json` and the filesystem — not a separate `info` command:
 
 - **`aliases`** → use the actual alias prefix from config (e.g. `$lib/`), never hardcode unrelated projects.
 - **`tailwind.css`** → the global CSS file where theme variables live. Edit this file for theme tweaks; don't add a second globals file unless the user already uses one.
-- **`style`** → visual treatment (e.g. `nova`, `vega`, …) and registry style path.
-- **`iconLibrary`** → determines icon packages (`@lucide/svelte`, `@tabler/icons-svelte`, etc.). Never assume `@lucide/svelte`.
+- **`style`** → visual treatment when present (e.g. `nova`, `vega`, …) and registry style path.
+- **`iconLibrary`** → determines icon packages when present. This repo currently does not set it, so infer from existing imports/package dependencies; current app code uses `@lucide/svelte`.
 - **`registry`** → where the CLI fetches components; default official registry at `shadcn-svelte.com`.
 - **`resolvedPaths`** (conceptual) → the CLI resolves `aliases` to absolute paths; list `aliases.ui` on disk to see installed components.
 
@@ -171,7 +169,7 @@ See [cli.md](./cli.md) for commands and flags.
 
 ## Component Docs, Examples, and Usage
 
-Open `https://shadcn-svelte.com/docs/components/<name>.md` for docs and examples. **When creating, fixing, debugging, or using a component, read the official page first** so you follow the documented APIs.
+Open `https://shadcn-svelte.com/docs/components/<name>.md` when adding a new component, updating one from the registry, or when the local component API is unclear.
 
 ## Workflow
 
@@ -180,7 +178,7 @@ Open `https://shadcn-svelte.com/docs/components/<name>.md` for docs and examples
 3. **Discover components** — `npx shadcn-svelte@latest add` with no arguments (interactive list), or the docs site.
 4. **Install or update** — `npx shadcn-svelte@latest add <name>` or a registry **URL**. To refresh existing files from the registry, use `npx shadcn-svelte@latest update` (see [cli.md](./cli.md)).
 5. **Fix imports in third-party / URL-added items** — After adding from a custom registry URL, check for hardcoded paths that don't match the project's `aliases`. Rewrite imports to use the project's `ui` / `lib` aliases from `components.json`.
-6. **Review added components** — After adding, **read the added files** and verify composition (groups, titles, validation attrs). Align icon imports with `iconLibrary`.
+6. **Review added components** — After adding, read the added files and verify composition (groups, titles, validation attrs). Align icon imports with `components.json` when it specifies an icon library; otherwise follow this repo's existing `@lucide/svelte` imports.
 7. **Remote registry items** — Adding by URL is explicit; if the user wants a component from an unknown source, confirm the registry URL or item before running `add`.
 
 ## Updating Components
