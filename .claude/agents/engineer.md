@@ -62,17 +62,17 @@ When upgrading packages, follow the AGENTS.md "Dependency Upgrades" protocol bef
 
 # Step 3 — Verify
 
-Run the project's build and test commands for the affected code (see AGENTS.md / README).
+Run the smallest relevant verification for the affected code while iterating (see AGENTS.md / README). For frontend work, do not run broad `npm run check`, `npm run lint`, or `npm run format` after each small edit; reserve those broad commands for pre-push/pre-PR verification or an explicit user request.
 
 1. **Infrastructure.** Ensure services are healthy — start if not (see AGENTS.md "Infrastructure before tests").
-2. **Build** the affected code.
+2. **Build** the affected code when the scope or risk justifies it.
 3. **Unit tests first.** If they fail, fix before proceeding.
 4. **Integration tests.** Run after unit tests pass. Start infrastructure if needed.
 5. **API verification.** After changes to API endpoints: start the app locally and verify affected endpoints respond.
 
 **Never skip integration tests.**
 
-**If fail:** Fix and re-verify. Same failure twice → change approach or escalate.
+**If fail:** Fix and re-verify with the smallest command that proves the fix. Same failure twice → change approach or escalate.
 
 # Step 4 — Review — Skip for Micro
 
@@ -112,6 +112,8 @@ git commit -m "<why, not what>"
 Bisectable commits: infrastructure → models → controllers → UI. Each must build.
 
 # Step 7 — Sign-Off
+
+Before asking to push, run required pre-push verification for the touched surface. For frontend changes, this is where broad `npm run check`, `npm run lint`, and `npm run format` belong unless the user explicitly requested them earlier.
 
 **ask_user:** "Changes verified. [summary, review results, QA results]. Ready to push? Anything to adjust?"
 
