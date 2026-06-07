@@ -11,6 +11,7 @@
     import { getIntercom } from '$features/intercom';
     import { openSupportChat } from '$features/intercom/chat';
     import { organization } from '$features/organizations/context.svelte';
+    import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
     import { generateSampleData } from '$features/projects/api.svelte';
     import { getProjectDefaultTokenQuery, patchToken } from '$features/tokens/api.svelte';
     import EnableTokenDialog from '$features/tokens/components/dialogs/enable-token-dialog.svelte';
@@ -21,6 +22,8 @@
     import { toast } from 'svelte-sonner';
 
     import { redirectToEventsWithFilter } from '../../../redirect-to-events.svelte';
+
+    useHideOrganizationNotifications();
 
     // Project ID from route params
     const projectId = $derived(page.params.projectId || '');
