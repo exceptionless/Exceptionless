@@ -258,7 +258,7 @@
                 <Events class="mr-2 size-4" /> View Events
             </Button>
             <Button variant="secondary" href={resolve('/(app)/organization/[organizationId]/projects', { organizationId })}>
-                <Projects class="mr-2 size-4" /> Go To Projects
+                <Projects class="mr-2 size-4" /> View Projects
             </Button>
         </div>
 
