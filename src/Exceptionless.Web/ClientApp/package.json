@@ -15,6 +15,7 @@
         "format": "npm run format:prettier && npm run format:eslint",
         "format:eslint": "eslint . --fix",
         "format:prettier": "prettier --write .",
+        "validate": "npm run format && npm run check && npm run lint",
         "generate-models": "node scripts/generate-api.mjs",
         "generate-templates": "swagger-typescript-api generate-templates -o api-templates",
         "test:e2e": "playwright test",

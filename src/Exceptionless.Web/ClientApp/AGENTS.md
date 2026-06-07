@@ -16,7 +16,7 @@ Run commands from this directory.
 | Storybook           | `npm run storybook`       |
 | Generate API models | `npm run generate-models` |
 
-Use focused verification while iterating. Do not run broad `npm run check`, `npm run lint`, or `npm run format` after every small edit. Run them only for pre-push/pre-PR verification when there are pending unpushed frontend changes in this app, or when the user explicitly asks for them.
+Use focused verification while iterating. Do not run broad Svelte validation after every small edit. Run `npm run validate` only for pre-push/pre-PR verification when there are pending unpushed frontend changes in this app, or when the user explicitly asks for it. This command formats files, so check `git status` afterward and include any formatting changes in the same commit.
 
 ## App Rules
 
