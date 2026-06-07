@@ -62,7 +62,7 @@ When upgrading packages, follow the AGENTS.md "Dependency Upgrades" protocol bef
 
 # Step 3 — Verify
 
-Run the smallest relevant verification for the affected code while iterating (see AGENTS.md / README). For frontend work, do not run broad `npm run check`, `npm run lint`, or `npm run format` after each small edit; reserve those broad commands for pre-push/pre-PR verification or an explicit user request.
+Run the smallest relevant verification for the affected code while iterating (see AGENTS.md / README). For Svelte frontend work, do not run broad validation after each small edit. Run `npm run validate` only before push/PR when there are pending unpushed frontend changes, or when the user explicitly requests it.
 
 1. **Infrastructure.** Ensure services are healthy — start if not (see AGENTS.md "Infrastructure before tests").
 2. **Build** the affected code when the scope or risk justifies it.
@@ -113,7 +113,7 @@ Bisectable commits: infrastructure → models → controllers → UI. Each must 
 
 # Step 7 — Sign-Off
 
-Before asking to push, run required pre-push verification for the touched surface. For frontend changes, this is where broad `npm run check`, `npm run lint`, and `npm run format` belong unless the user explicitly requested them earlier.
+Before asking to push, run required pre-push verification for the touched surface. For Svelte frontend changes, run `npm run validate` only when there are pending unpushed frontend changes unless the user explicitly requested it earlier. This command formats files, so check `git status` afterward and include any formatting changes in the same commit.
 
 **ask_user:** "Changes verified. [summary, review results, QA results]. Ready to push? Anything to adjust?"
 
