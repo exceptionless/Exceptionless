@@ -52,10 +52,17 @@
     <div class="flex flex-wrap items-start justify-between gap-4">
         <div class="flex flex-col gap-1">
             <H3 class="flex flex-wrap items-center gap-x-1">
-                {#if projectQuery.isSuccess}
-                    <span>{projectQuery.data.name}</span>
+                {#if isConfigurePage}
+                    <span>Send Events</span>
+                    {#if projectQuery.isSuccess}
+                        <span>to {projectQuery.data.name}</span>
+                    {/if}
+                {:else}
+                    {#if projectQuery.isSuccess}
+                        <span>{projectQuery.data.name}</span>
+                    {/if}
+                    <span class="shrink-0">Settings</span>
                 {/if}
-                <span class="shrink-0">{isConfigurePage ? 'Configure Client' : 'Settings'}</span>
             </H3>
         </div>
         <div class="flex items-center gap-2">
