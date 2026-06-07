@@ -1,5 +1,5 @@
 import { accessToken } from '$features/auth/index.svelte';
-import { FetchClient, FetchClientProvider, getCurrentProvider, ProblemDetails } from '@exceptionless/fetchclient';
+import { type FetchClient, type FetchClientProvider, getCurrentProvider, ProblemDetails } from '@exceptionless/fetchclient';
 import { SvelteDate } from 'svelte/reactivity';
 
 export { DEFAULT_LIMIT } from './constants';

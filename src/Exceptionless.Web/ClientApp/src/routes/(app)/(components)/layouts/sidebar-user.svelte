@@ -12,7 +12,7 @@
     import * as Sidebar from '$comp/ui/sidebar/index';
     import { useSidebar } from '$comp/ui/sidebar/index';
     import { Skeleton } from '$comp/ui/skeleton';
-    import { logout } from '$features/auth/index.svelte';
+    import { logout } from '$features/auth/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { apiReferenceHref, documentationHref, githubRepositoryHref, supportIssuesHref } from '$features/shared/help-links';
     import { useFetchClient } from '@exceptionless/fetchclient';

@@ -15,6 +15,7 @@
     import { Input } from '$comp/ui/input';
     import * as InputGroup from '$comp/ui/input-group';
     import { Spinner } from '$comp/ui/spinner';
+    import { signup } from '$features/auth/api.svelte';
     import {
         enableOAuthLogin,
         facebookClientId,
@@ -24,8 +25,7 @@
         googleClientId,
         googleLogin,
         liveLogin,
-        microsoftClientId,
-        signup
+        microsoftClientId
     } from '$features/auth/index.svelte';
     import { type SignupFormData, SignupSchema } from '$features/auth/schemas';
     import { validateEmailAvailability } from '$features/auth/validators';
