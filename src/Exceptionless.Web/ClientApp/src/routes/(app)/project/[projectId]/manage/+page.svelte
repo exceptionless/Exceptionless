@@ -177,7 +177,7 @@
                 <Send class="mr-2 size-4" /> Send Events
             </Button>
             <Button variant="secondary" href={`${resolve('/(app)/account/notifications')}?project=${projectId}`}>
-                <NotificationSettings class="mr-2 size-4" /> Notification Settings
+                <NotificationSettings class="mr-2 size-4" /> Notifications
             </Button>
             <Button variant="secondary" onclick={generateProjectSampleData} disabled={generateSampleDataMutation.isPending}>
                 {#if generateSampleDataMutation.isPending}
