@@ -47,7 +47,7 @@ If Pass 0 finds security BLOCKERs: **STOP**. Report immediately.
 
 Before running machine checks, ensure infrastructure is healthy per AGENTS.md "Infrastructure before tests."
 
-After Pass 0 clears, run only scope-appropriate machine checks needed for review confidence. For frontend changes, do not run broad `npm run check`, `npm run lint`, or `npm run format` unless the review is explicitly for pre-push/pre-PR readiness or the user requested those commands.
+After Pass 0 clears, run only scope-appropriate machine checks needed for review confidence. For Svelte frontend changes, do not run broad validation unless the review is explicitly for pre-push/pre-PR readiness with pending unpushed frontend changes, or the user requested it. Use `npm run validate` for that broad check.
 
 If fails: report as BLOCKERs, **STOP**.
 
