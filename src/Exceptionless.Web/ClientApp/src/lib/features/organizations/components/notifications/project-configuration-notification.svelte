@@ -17,6 +17,9 @@
     <NotificationTitle>We haven't received any data!</NotificationTitle>
     <NotificationDescription>
         Please configure your clients for
+        {#if projects.length === 1}
+            the
+        {/if}
         {#each projects as project, index (project.id)}
             {#if index > 0},
             {/if}<A href={resolve('/(app)/project/[projectId]/configure', { projectId: project.id })}>{project.name}</A>
@@ -25,6 +28,6 @@
             project
         {:else}
             projects
-        {/if} and start becoming exceptionless in less than 60 seconds!
+        {/if} and start becoming exceptionless!
     </NotificationDescription>
 </Notification>
