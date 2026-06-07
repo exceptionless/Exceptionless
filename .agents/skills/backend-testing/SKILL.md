@@ -60,7 +60,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, IAsyncLifetime
 
 Key members: `GetService<T>()`, `CreateFluentClient()`, `SendRequestAsync()`, `RefreshDataAsync()`, `ResetDataAsync()`, `TimeProvider` (ProxyTimeProvider).
 
-## FluentClient Pattern
+## HTTP Test Pattern
 
 Use `SendRequestAsync` with `AppSendBuilder` for HTTP testing:
 

@@ -2,12 +2,13 @@
 
 Real-time error monitoring platform on .NET 10, Aspire, and Svelte 5. Keep changes readable, narrow, and backwards compatible.
 
-This file is root-scope agent guidance. Prefer nearby repo skills for detailed backend, frontend, testing, repository, and dogfood workflows.
+This file is root-scope agent guidance. When working in a subtree, read any nested `AGENTS.md` there too. Prefer nearby repo skills for detailed backend, frontend, testing, repository, and dogfood workflows.
 
 ## Start Here
 
 - Use `aspire run` when local runtime verification is needed. The AppHost starts local infrastructure and apps.
 - Do not start Aspire just to read code, edit docs, or make narrow static changes.
+- For Aspire resource state, logs, traces, dashboard, or browser telemetry investigations, use the `aspire-diagnostics` skill.
 - Check `git status --porcelain` before edits. Do not stash, switch branches, reset, or revert user work unless explicitly asked.
 - On PowerShell, quote paths with special characters and prefer `-LiteralPath`.
 
@@ -24,7 +25,7 @@ This file is root-scope agent guidance. Prefer nearby repo skills for detailed b
 | Svelte unit tests | `cd src/Exceptionless.Web/ClientApp; npm run test:unit` |
 | Svelte E2E tests | `cd src/Exceptionless.Web/ClientApp; npm run test:e2e` |
 
-Use focused verification while iterating. Do not run broad Svelte `npm run check`, `npm run lint`, or `npm run format` after every small edit; reserve them for pre-push/pre-PR verification or explicit user requests.
+Use focused verification while iterating. Do not run broad Svelte `npm run check`, `npm run lint`, or `npm run format` after every small edit. Run them only for pre-push/pre-PR verification when there are pending unpushed frontend changes, or when the user explicitly asks for them.
 
 ## Project Map
 
@@ -52,7 +53,8 @@ tests/                         # C# tests and HTTP samples
   - Aspire dashboard: `https://ex.dev.localhost:7101`
   - Svelte app: `https://web-ex.dev.localhost:7131/next/`
   - Legacy Angular app: `https://angular-ex.dev.localhost:7121`
-  - API health: `http://localhost:7110/api/v2/about`
+  - API health: `https://api-ex.dev.localhost:7111/api/v2/about`
+  - API health fallback for command-line tools with local TLS issues: `http://api-ex.dev.localhost:7110/api/v2/about`
 - Dogfood, browser automation, E2E, and API smoke tests must target local URLs only unless the user explicitly provides an external URL and asks to use it.
 - Never use production URLs such as `be.exceptionless.io` in scripts, tests, or browser automation.
 - If infrastructure is required, start or verify Aspire once. If it still blocks verification, report the exact blocker and command output instead of looping.

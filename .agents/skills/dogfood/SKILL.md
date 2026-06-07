@@ -18,13 +18,14 @@ Local targets:
 - Aspire dashboard: `https://ex.dev.localhost:7101`
 - Svelte app: `https://web-ex.dev.localhost:7131/next/`
 - Legacy Angular app: `https://angular-ex.dev.localhost:7121`
-- API health check: `http://localhost:7110/api/v2/about`
+- API health check: `https://api-ex.dev.localhost:7111/api/v2/about`
+- API health fallback for command-line tools with local TLS issues: `http://api-ex.dev.localhost:7110/api/v2/about`
 
 - Start the app with `aspire run` or the AppHost before testing.
 - Probe the API health check before browser work.
 - Store evidence under `./dogfood-output/` unless the user provides another workspace-local path.
 - Use the available browser automation tool for local browser interaction when one is exposed in the session.
-- Do not test `be.exceptionless.io`, `exceptionless.com`, staging URLs, or any other external Exceptionless environment.
+- Test localhost by default. Use an external Exceptionless URL only when the user explicitly provides that URL and confirms external testing for the current task.
 
 If the app is not running, start it or report the infrastructure blocker. Do not skip QA just because infrastructure is initially down.
 
@@ -65,4 +66,4 @@ Prefer 5-10 well-documented issues over a long vague list.
 
 ## Scope
 
-Test the changed surface first, then adjacent critical workflows. Never use production data or production URLs.
+Test the changed surface first, then adjacent critical workflows. Never use production data. Production URLs require an explicit user-provided URL and confirmation.

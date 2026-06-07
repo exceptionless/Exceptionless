@@ -156,13 +156,13 @@ Exceptions auto-convert via `ExceptionToProblemDetailsHandler`: `MiniValidatorEx
 
 After any API change (new endpoint, changed status codes, modified request/response models), **always regenerate the OpenAPI baseline**:
 
-```bash
+```powershell
 # Requires the API to be running (`aspire run` or the AppHost)
-Invoke-WebRequest -Uri "http://localhost:7110/docs/v2/openapi.json" \
-  -OutFile "tests/Exceptionless.Tests/Controllers/Data/openapi.json"
+Invoke-WebRequest -Uri "https://api-ex.dev.localhost:7111/docs/v2/openapi.json" -OutFile "tests/Exceptionless.Tests/Controllers/Data/openapi.json"
 ```
 
 Then include the updated `openapi.json` in the same commit as the API change (or amend). The `OpenApiControllerTests.GetOpenApiJson_Default_ReturnsExpectedBaseline` test will fail if the baseline is stale.
+If local TLS tooling fails, use the Aspire-described HTTP endpoint: `http://api-ex.dev.localhost:7110/docs/v2/openapi.json`.
 
 ## WebSocket Hubs (NOT SignalR)
 

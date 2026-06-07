@@ -4,10 +4,10 @@
 
 - Items always inside their Group component
 - Callouts use Alert
-- Empty states use Empty component
+- Empty states use installed primitives
 - Toast notifications use svelte-sonner
 - Choosing between overlay components
-- Dialog, Sheet, and Drawer always need a Title
+- Dialog and Sheet always need a Title
 - Card structure
 - Button has no isPending or isLoading prop
 - Tabs.Trigger must be inside Tabs.List
@@ -56,7 +56,6 @@ This applies to all group-based components:
 | ------------------------------------------------------------- | -------------------- |
 | `Select.Item`, `Select.Label`                                 | `Select.Group`       |
 | `DropdownMenu.Item`, `DropdownMenu.Label`, `DropdownMenu.Sub` | `DropdownMenu.Group` |
-| `Menubar.Item`                                                | `Menubar.Group`      |
 | `ContextMenu.Item`                                            | `ContextMenu.Group`  |
 | `Command.Item`                                                | `Command.Group`      |
 
@@ -77,28 +76,9 @@ This applies to all group-based components:
 
 ---
 
-## Empty states use Empty component
+## Empty states use installed primitives
 
-```svelte
-<script lang="ts">
-  import * as Empty from "$comp/ui/empty";
-  import { Button } from "$comp/ui/button";
-  import FolderIcon from "@lucide/svelte/icons/folder";
-</script>
-
-<Empty.Root>
-  <Empty.Header>
-    <Empty.Media variant="icon"><FolderIcon /></Empty.Media>
-    <Empty.Title>No projects yet</Empty.Title>
-    <Empty.Description
-      >Get started by creating a new project.</Empty.Description
-    >
-  </Empty.Header>
-  <Empty.Content>
-    <Button>Create Project</Button>
-  </Empty.Content>
-</Empty.Root>
-```
+Compose empty states from installed components such as `Card`, `Alert`, `Button`, `Badge`, `Skeleton`, and icons. If the registry `Empty` component is the right fit, add it intentionally before importing `$comp/ui/empty`.
 
 ---
 
@@ -129,15 +109,15 @@ Mount the `Toaster` from your UI folder once in the app layout (see [Sonner](htt
 | Focused task that requires input   | `Dialog`      |
 | Destructive action confirmation    | `AlertDialog` |
 | Side panel with details or filters | `Sheet`       |
-| Mobile-first bottom panel          | `Drawer`      |
-| Quick info on hover                | `HoverCard`   |
+| Mobile-first bottom panel          | Add `Drawer` before importing it |
+| Quick info on hover                | Add `HoverCard` before importing it |
 | Small contextual content on click  | `Popover`     |
 
 ---
 
-## Dialog, Sheet, and Drawer always need a Title
+## Dialog and Sheet always need a Title
 
-`Dialog.Title`, `Sheet.Title`, `Drawer.Title` are required for accessibility. Use `class="sr-only"` if visually hidden.
+`Dialog.Title` and `Sheet.Title` are required for accessibility. If you add another titled overlay such as `Drawer`, follow the same rule. Use `class="sr-only"` if visually hidden.
 
 ```svelte
 <script lang="ts">

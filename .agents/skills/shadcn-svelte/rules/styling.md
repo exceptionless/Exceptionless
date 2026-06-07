@@ -192,4 +192,4 @@ Use the `cn()` utility from the project for conditional or merged class names. D
 
 ## No manual z-index on overlay components
 
-`Dialog`, `Sheet`, `Drawer`, `AlertDialog`, `DropdownMenu`, `Popover`, `Tooltip`, `HoverCard` handle their own stacking. Never add `z-50` or `z-[999]`.
+`Dialog`, `Sheet`, `AlertDialog`, `DropdownMenu`, `Popover`, and `Tooltip` handle their own stacking. Never add `z-50` or `z-[999]`.

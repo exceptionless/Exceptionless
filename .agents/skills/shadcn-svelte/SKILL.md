@@ -13,6 +13,8 @@ A framework for building UI, components, and design systems for Svelte. Componen
 
 Read `components.json` at the project root and, when you need the live file layout, list the directory given by the `aliases.ui` path (resolved with the same rules as the CLI).
 
+Only import components that exist under the resolved `aliases.ui` directory. If a registry component is useful but not installed, add it intentionally with the CLI before importing it.
+
 ## Imports (Svelte)
 
 Each component lives in its own folder with an `index.ts` barrel. Match the [installation docs](https://shadcn-svelte.com/docs/installation):
@@ -54,7 +56,7 @@ These rules are **always enforced**. Each links to a file with Incorrect/Correct
 - **Forms use `Field.FieldGroup` + `Field.Field`.** Never use raw `div` with `space-y-*` or `grid gap-*` for form layout.
 - **`InputGroup` uses `InputGroup.Input`/`InputGroup.Textarea`.** Never raw `Input`/`Textarea` inside `InputGroup.Root`.
 - **Buttons inside inputs use `InputGroup.Root` + `InputGroup.Addon`.**
-- **Option sets (2–7 choices) use `ToggleGroup`.** Don't loop `Button` with manual active state.
+- **Option sets use installed form controls.** Prefer `RadioGroup`, `Select`, or an intentionally added `ToggleGroup`; don't loop `Button` with manual active state.
 - **`Field.FieldSet` + `Field.FieldLegend` for grouping related checkboxes/radios.** Don't use a `div` with a heading.
 - **Field validation uses `data-invalid` + `aria-invalid`.** `data-invalid` on `Field`, `aria-invalid` on the control. For disabled: `data-disabled` on `Field`, `disabled` on the control.
 
@@ -62,7 +64,7 @@ These rules are **always enforced**. Each links to a file with Incorrect/Correct
 
 - **Items always inside their Group.** `Select.Item` → `Select.Group`. `DropdownMenu.Item` → `DropdownMenu.Group`. `Command.Item` → `Command.Group`.
 - **Custom triggers.** Wrap controls in `Dialog.Trigger` / `AlertDialog.Trigger`, or control open state with `bind:open` on the root — see component docs.
-- **Dialog, Sheet, and Drawer always need a Title.** `Dialog.Title`, `Sheet.Title`, `Drawer.Title` required for accessibility. Use `class="sr-only"` if visually hidden.
+- **Dialog and Sheet always need a Title.** `Dialog.Title` and `Sheet.Title` are required for accessibility. Use `class="sr-only"` if visually hidden.
 - **Use full Card composition.** `Card.Header`/`Card.Title`/`Card.Description`/`Card.Content`/`Card.Footer`. Don't dump everything in `Card.Content`.
 - **Button has no `isPending`/`isLoading`.** Compose with `Spinner` inside `Button` + `disabled`; use `data-icon="inline-start"` / `inline-end` on `Spinner` for correct spacing (`import { Button }`, `import { Spinner }`).
 - **`Tabs.Trigger` must be inside `Tabs.List`.** Never render triggers directly in `Tabs`.
@@ -72,7 +74,7 @@ These rules are **always enforced**. Each links to a file with Incorrect/Correct
 
 - **Use existing components before custom markup.** Check if a component exists before writing a styled `div`.
 - **Callouts use `Alert`.** Don't build custom styled divs.
-- **Empty states use `Empty`.** Don't build custom empty state markup.
+- **Empty states use installed primitives.** Use `Card`, `Alert`, `Button`, `Skeleton`, and `Badge` unless the `Empty` component has been intentionally added.
 - **Toast via `svelte-sonner`.** Use `toast()` from `svelte-sonner` with the Sonner component from your UI folder.
 - **Use `Separator`** instead of `<hr>` or a `div` with border-only classes.
 - **Use `Skeleton`** for loading placeholders. No custom `animate-pulse` divs.
@@ -105,14 +107,14 @@ These are the most common patterns that differentiate correct shadcn-svelte code
 <!-- Form layout: Field.FieldGroup + Field.Field, not div + Label. -->
 <Field.FieldGroup>
   <Field.Field>
-    <Field.FieldLabel for="email">Email</Field.FieldLabel>
+    <Field.Label for="email">Email</Field.Label>
     <Input id="email" />
   </Field.Field>
 </Field.FieldGroup>
 
 <!-- Validation: data-invalid on Field, aria-invalid on the control. -->
 <Field.Field data-invalid>
-  <Field.FieldLabel for="email">Email</Field.FieldLabel>
+  <Field.Label for="email">Email</Field.Label>
   <Input id="email" aria-invalid />
   <Field.FieldDescription>Invalid email.</Field.FieldDescription>
 </Field.Field>
@@ -138,21 +140,21 @@ These are the most common patterns that differentiate correct shadcn-svelte code
 
 ## Component Selection
 
-| Need                       | Use                                                                                                 |
-| -------------------------- | --------------------------------------------------------------------------------------------------- |
-| Button/action              | `Button` with appropriate variant (`import { Button }`)                                             |
-| Form inputs                | `Input`, `Select`, `Combobox`, `Switch`, `Checkbox`, `RadioGroup`, `Textarea`, `InputOTP`, `Slider` |
-| Toggle between 2–5 options | `ToggleGroup.Root` + `ToggleGroup.Item`                                                             |
-| Data display               | `Table`, `Card`, `Badge`, `Avatar`                                                                  |
-| Navigation                 | `Sidebar`, `NavigationMenu`, `Breadcrumb`, `Tabs`, `Pagination`                                     |
-| Overlays                   | `Dialog` (modal), `Sheet` (side panel), `Drawer` (bottom sheet), `AlertDialog` (confirmation)       |
-| Feedback                   | `svelte-sonner` (toast), `Alert`, `Progress`, `Skeleton`, `Spinner`                                 |
-| Command palette            | `Command` inside `Dialog`                                                                           |
-| Charts                     | `Chart` (LayerChart)                                                                                |
-| Layout                     | `Card`, `Separator`, `Resizable`, `ScrollArea`, `Accordion`, `Collapsible`                          |
-| Empty states               | `Empty`                                                                                             |
-| Menus                      | `DropdownMenu`, `ContextMenu`, `Menubar`                                                            |
-| Tooltips/info              | `Tooltip`, `HoverCard`, `Popover`                                                                   |
+| Need                       | Use                                                                                           |
+| -------------------------- | --------------------------------------------------------------------------------------------- |
+| Button/action              | `Button` with appropriate variant (`import { Button }`)                                       |
+| Form inputs                | `Input`, `Select`, `Switch`, `Checkbox`, `RadioGroup`, `Textarea`, `Field`, `InputGroup`      |
+| Toggle between 2–5 options | `RadioGroup`, `Select`, or intentionally add `ToggleGroup` before importing it                 |
+| Data display               | `Table`, `Card`, `Badge`, `Avatar`                                                            |
+| Navigation                 | `Sidebar`, `Breadcrumb`, `Tabs`, `Pagination`                                                  |
+| Overlays                   | `Dialog` (modal), `Sheet` (side panel), `AlertDialog` (confirmation), `Popover`                |
+| Feedback                   | `svelte-sonner` (toast), `Alert`, `Skeleton`, `Spinner`                                        |
+| Command palette            | `Command` inside `Dialog`                                                                     |
+| Charts                     | `Chart` (LayerChart)                                                                          |
+| Layout                     | `Card`, `Separator`, `Collapsible`                                                            |
+| Empty states               | Compose installed primitives, or intentionally add `Empty` before importing it                 |
+| Menus                      | `DropdownMenu`, `ContextMenu`                                                                 |
+| Tooltips/info              | `Tooltip`, `Popover`                                                                          |
 
 ## Key Fields
 
@@ -185,7 +187,7 @@ Open `https://shadcn-svelte.com/docs/components/<name>.md` when adding a new com
 
 Use the **`update`** command to pull the latest registry versions of components already in the project. Review changes with `git diff` after `update`.
 
-1. Commit or stash local work.
+1. Commit current work first, or get explicit user approval before stashing.
 2. Run `npx shadcn-svelte@latest update [component]` or `--all`.
 3. Resolve merge conflicts if you had customized files.
 4. **Never use `--overwrite` on `add` without the user's explicit approval** when it would destroy intentional edits.
@@ -217,8 +219,8 @@ npx shadcn-svelte@latest registry build
 
 ## Detailed References
 
-- [rules/forms.md](./rules/forms.md) — Field.FieldGroup, Field.Field, InputGroup, ToggleGroup, Field.FieldSet, validation states
-- [rules/composition.md](./rules/composition.md) — Groups, overlays, Card, Tabs, Avatar, Alert, Empty, Toast, Separator, Skeleton, Badge, Button loading
+- [rules/forms.md](./rules/forms.md) — Field.FieldGroup, Field.Field, InputGroup, installed option controls, Field.FieldSet, validation states
+- [rules/composition.md](./rules/composition.md) — Groups, overlays, Card, Tabs, Avatar, Alert, empty states, Toast, Separator, Skeleton, Badge, Button loading
 - [rules/icons.md](./rules/icons.md) — data-icon, icon sizing, passing icon components
 - [rules/styling.md](./rules/styling.md) — Semantic colors, variants, class, spacing, size, truncate, dark mode, cn(), z-index
 - [cli.md](./cli.md) — Commands, flags, registry

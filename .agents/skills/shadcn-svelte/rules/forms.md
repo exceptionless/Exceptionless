@@ -5,7 +5,7 @@
 - Forms use Field.FieldGroup + Field.Field
 - InputGroup requires InputGroup.Input/InputGroup.Textarea
 - Buttons inside inputs use InputGroup.Root + InputGroup.Addon
-- Option sets (2–7 choices) use ToggleGroup.Root + ToggleGroup.Item
+- Option sets use installed form controls
 - Field.FieldSet + Field.FieldLegend for grouping related fields
 - Field validation and disabled states
 
@@ -23,28 +23,28 @@ Always use `Field.FieldGroup` + `Field.Field` — never raw `div` with `space-y-
 
 <Field.FieldGroup>
   <Field.Field>
-    <Field.FieldLabel for="email">Email</Field.FieldLabel>
+    <Field.Label for="email">Email</Field.Label>
     <Input id="email" type="email" />
   </Field.Field>
   <Field.Field>
-    <Field.FieldLabel for="password">Password</Field.FieldLabel>
+    <Field.Label for="password">Password</Field.Label>
     <Input id="password" type="password" />
   </Field.Field>
 </Field.FieldGroup>
 ```
 
-Use `Field` with `orientation="horizontal"` for settings pages. Use `Field.FieldLabel` with `class="sr-only"` for visually hidden labels.
+Use `Field` with `orientation="horizontal"` for settings pages. Use `Field.Label` with `class="sr-only"` for visually hidden labels.
 
 **Choosing form controls:**
 
 - Simple text input → `Input`
 - Dropdown with predefined options → `Select`
-- Searchable dropdown → `Combobox`
-- Native HTML select (no JS) → `native-select`
+- Searchable dropdown → add `Combobox` intentionally before importing it, or compose installed `Command` + `Popover`
+- Native HTML select (no JS) → add `native-select` intentionally before importing it
 - Boolean toggle → `Switch` (for settings) or `Checkbox` (for forms)
 - Single choice from few options → `RadioGroup`
-- Toggle between 2–5 options → `ToggleGroup.Root` + `ToggleGroup.Item`
-- OTP/verification code → `InputOTP`
+- Toggle between 2–5 options → use `RadioGroup`, `Select`, or intentionally add `ToggleGroup`
+- OTP/verification code → add `InputOTP` intentionally before importing it
 - Multi-line text → `Textarea`
 
 ---
@@ -122,9 +122,9 @@ Never place a `Button` directly inside or adjacent to an `Input` with custom pos
 
 ---
 
-## Option sets (2–7 choices) use ToggleGroup.Root + ToggleGroup.Item
+## Option sets use installed form controls
 
-Don't manually loop `Button` components with active state.
+Don't manually loop `Button` components with active state. Use `RadioGroup` or `Select` when they fit. If `ToggleGroup` is the right control, add it with the CLI before importing it.
 
 **Incorrect:**
 
@@ -146,7 +146,7 @@ Don't manually loop `Button` components with active state.
 </div>
 ```
 
-**Correct:**
+**Correct after intentionally adding `toggle-group`:**
 
 ```svelte
 <script lang="ts">
@@ -197,8 +197,8 @@ Use `Field.FieldSet` + `Field.FieldLegend` for related checkboxes, radios, or sw
   <Field.FieldGroup class="gap-3">
     <Field.Field orientation="horizontal">
       <Checkbox id="dark" />
-      <Field.FieldLabel for="dark" class="font-normal"
-        >Dark mode</Field.FieldLabel
+      <Field.Label for="dark" class="font-normal"
+        >Dark mode</Field.Label
       >
     </Field.Field>
   </Field.FieldGroup>
@@ -219,16 +219,16 @@ Both attributes are needed — `data-invalid`/`data-disabled` styles the field (
 
 <!-- Invalid. -->
 <Field.Field data-invalid>
-  <Field.FieldLabel for="email">Email</Field.FieldLabel>
+  <Field.Label for="email">Email</Field.Label>
   <Input id="email" aria-invalid />
   <Field.FieldDescription>Invalid email address.</Field.FieldDescription>
 </Field.Field>
 
 <!-- Disabled. -->
 <Field.Field data-disabled>
-  <Field.FieldLabel for="email">Email</Field.FieldLabel>
+  <Field.Label for="email">Email</Field.Label>
   <Input id="email" disabled />
 </Field.Field>
 ```
 
-Works for all controls: `Input`, `Textarea`, `Select`, `Checkbox`, `RadioGroupItem`, `Switch`, `Slider`, `NativeSelect`, `InputOTP`.
+Works for installed controls such as `Input`, `Textarea`, `Select`, `Checkbox`, `RadioGroupItem`, and `Switch`; for `Slider`, `NativeSelect`, or `InputOTP`, add the component before importing it.

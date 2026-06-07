@@ -147,7 +147,7 @@ Do not copy architecture from the legacy Angular app into Svelte.
 - Prefer accessible queries: `getByRole`, `getByLabelText`, then visible text; use test IDs only when semantics are not enough.
 - E2E tests use Playwright and must target local app URLs only. Prefer role/label selectors over CSS selectors.
 - Add focused tests for changed behavior; do not broaden coverage unrelated to the task.
-- During iteration, run the smallest relevant test or targeted verification. Do not run broad `npm run check`, `npm run lint`, or `npm run format` after every small edit; save those for pre-push/pre-PR verification or explicit user requests.
+- During iteration, run the smallest relevant test or targeted verification. Do not run broad `npm run check`, `npm run lint`, or `npm run format` after every small edit. Run them only for pre-push/pre-PR verification when there are pending unpushed frontend changes, or when the user explicitly asks for them.
 
 ## Navigation Preference
 
