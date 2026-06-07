@@ -254,7 +254,7 @@
 
     <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex flex-wrap gap-3">
-            <Button variant="secondary" href={resolve('/(app)/event/[slug=savedview]', { slug: 'all' })}>
+            <Button variant="secondary" href={resolve('/(app)/event')}>
                 <Events class="mr-2 size-4" /> View Events
             </Button>
             <Button variant="secondary" href={resolve('/(app)/organization/[organizationId]/projects', { organizationId })}>
