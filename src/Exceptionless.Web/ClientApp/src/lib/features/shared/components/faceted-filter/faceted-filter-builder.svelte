@@ -77,6 +77,9 @@
 
     const hiddenFilterCount = $derived(filters.filter((filter) => filter.hidden).length);
     const hiddenFilterLabel = $derived(`${hiddenFilterCount} Hidden ${hiddenFilterCount === 1 ? 'Filter' : 'Filters'}`);
+    const hiddenFilterToggleLabel = $derived(
+        `${showHiddenFilters ? 'Hide' : 'Show'} ${hiddenFilterCount} hidden ${hiddenFilterCount === 1 ? 'filter' : 'filters'}`
+    );
     const hasFilters = $derived(filters.length > 0);
     const visibleFacets = $derived(facets.filter((facet) => !facet.filter.hidden || showHiddenFilters));
 
@@ -272,7 +275,7 @@
                                 variant="ghost"
                                 size="icon-sm"
                                 onclick={toggleHiddenFilters}
-                                aria-label={`Toggle hidden filters. ${hiddenFilterLabel}.`}
+                                aria-label={hiddenFilterToggleLabel}
                             >
                                 {#if showHiddenFilters}
                                     <EyeOff class="text-muted-foreground size-4" />
@@ -289,7 +292,7 @@
                             </Button>
                         {/snippet}
                     </Tooltip.Trigger>
-                    <Tooltip.Content>Toggle hidden filters</Tooltip.Content>
+                    <Tooltip.Content>{hiddenFilterToggleLabel}</Tooltip.Content>
                 </Tooltip.Root>
             {/if}
             {#if filters.some((f) => f.type !== 'date')}
