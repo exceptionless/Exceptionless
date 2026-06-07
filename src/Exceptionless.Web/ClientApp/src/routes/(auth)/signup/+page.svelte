@@ -57,7 +57,7 @@
     }));
 </script>
 
-<Card.Root class="mx-auto w-sm">
+<Card.Root class="mx-auto w-[calc(100vw-2rem)] max-w-lg">
     <Card.Header>
         <Logo />
         <Card.Title class="text-center text-2xl">Signup for a FREE account in seconds</Card.Title>
