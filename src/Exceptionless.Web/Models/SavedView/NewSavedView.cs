@@ -15,9 +15,9 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
     public static readonly IReadOnlyDictionary<string, IReadOnlySet<string>> ValidColumnIds =
         new Dictionary<string, IReadOnlySet<string>>
         {
-            ["events"] = new HashSet<string> { "summary", "user", "date", "message", "event_type", "type", "source", "name", "level" },
+            ["events"] = new HashSet<string> { "summary", "user", "date", "message", "type", "exception_type", "source", "name", "level" },
             ["stacks"] = new HashSet<string> { "summary", "status", "users", "events", "first", "last" },
-            ["stream"] = new HashSet<string> { "summary", "user", "date", "message", "event_type", "type", "source", "name", "level" }
+            ["stream"] = new HashSet<string> { "summary", "user", "date", "message", "type", "exception_type", "source", "name", "level" }
         };
 
     /// <summary>Union of all valid column IDs across all views.</summary>
