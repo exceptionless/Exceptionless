@@ -1,12 +1,26 @@
-import { Exceptionless } from '@exceptionless/browser';
+import { browser } from '$app/environment';
 
 let _activeUserId: null | string = null;
+
+async function getExceptionless() {
+    if (!browser) {
+        return;
+    }
+
+    return (await import('@exceptionless/browser')).Exceptionless;
+}
 
 /**
  * Ends the current Exceptionless session and clears user identity.
  * Call on logout. Clears local state unconditionally even if submitSessionEnd fails.
  */
 export async function endSession(): Promise<void> {
+    const Exceptionless = await getExceptionless();
+    if (!Exceptionless) {
+        _activeUserId = null;
+        return;
+    }
+
     try {
         await Exceptionless.submitSessionEnd();
     } finally {
@@ -21,6 +35,11 @@ export async function endSession(): Promise<void> {
  */
 export async function setUserIdentity(userId: string, userName?: string): Promise<void> {
     if (!userId) {
+        return;
+    }
+
+    const Exceptionless = await getExceptionless();
+    if (!Exceptionless) {
         return;
     }
 
@@ -41,5 +60,10 @@ export async function setUserIdentity(userId: string, userName?: string): Promis
  * Mirrors the legacy Angular $ExceptionlessClient.submitFeatureUsage pattern.
  */
 export async function submitFeatureUsage(feature: string): Promise<void> {
+    const Exceptionless = await getExceptionless();
+    if (!Exceptionless) {
+        return;
+    }
+
     await Exceptionless.submitFeatureUsage(feature);
 }

@@ -3,7 +3,7 @@ name: Production E2E Tests
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 8 * * *"
+    - cron: "0 8 * * 1"
 
 permissions:
   contents: read
@@ -37,7 +37,7 @@ jobs:
 
       - name: Run Production E2E Tests
         env:
-          E2E_URL: https://be.exceptionless.io
+          E2E_URL: https://app.exceptionless.io
           E2E_RUN_ID: production-${{ github.run_id }}-${{ github.run_attempt }}
         run: npm run test:e2e:prod
 
@@ -47,7 +47,7 @@ jobs:
           echo "### Production E2E Tests" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- Run ID: production-${{ github.run_id }}-${{ github.run_attempt }}" >> $GITHUB_STEP_SUMMARY
-          echo "- E2E URL: https://be.exceptionless.io" >> $GITHUB_STEP_SUMMARY
+          echo "- E2E URL: https://app.exceptionless.io" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Playwright Report
         if: ${{ !cancelled() }}

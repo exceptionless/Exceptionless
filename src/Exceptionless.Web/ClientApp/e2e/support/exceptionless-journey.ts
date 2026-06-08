@@ -75,15 +75,20 @@ export class ExceptionlessE2EJourney {
     }
 
     async createFirstProjectAndVerifyConfigureToken(): Promise<void> {
-        await this.page.getByRole('link', { name: 'add a new project' }).click();
-        await expect(this.page.getByRole('heading', { name: 'Add Project' })).toBeVisible();
+        if (this.projectId) {
+            await this.page.goto(`/next/project/${this.projectId}/configure`);
+        } else {
+            await this.page.getByRole('link', { name: 'add a new project' }).click();
+            await expect(this.page.getByRole('heading', { name: 'Add Project' })).toBeVisible();
 
-        await this.page.getByLabel('Project Name').fill(this.projectName);
-        await this.page.getByRole('button', { name: 'Add Project' }).click();
+            await this.page.getByLabel('Project Name').fill(this.projectName);
+            await this.page.getByRole('button', { name: 'Add Project' }).click();
 
-        await this.page.waitForURL(/\/next\/project\/[^/]+\/configure/, { timeout: 30_000 });
-        this.projectId = getIdFromUrl(this.page, /\/project\/([^/]+)\/configure/);
-        await expect(this.page.getByRole('heading', { name: 'Download & Configure Project' })).toBeVisible();
+            await this.page.waitForURL(/\/next\/project\/[^/]+\/configure/, { timeout: 30_000 });
+            this.projectId = getIdFromUrl(this.page, /\/project\/([^/]+)\/configure/);
+        }
+
+        await expect(this.page.getByText('Select your project type.')).toBeVisible();
 
         await selectProjectType(this.page, 'Bash Shell');
         await expect(this.page.getByText('Execute the following in your shell.')).toBeVisible();
@@ -95,27 +100,21 @@ export class ExceptionlessE2EJourney {
     async expectEventDetails(): Promise<void> {
         expect(this.eventId).toBeTruthy();
 
-        await this.page.goto('/next');
-        await this.page
-            .getByRole('link', { name: new RegExp(escapeRegExp(this.message)) })
-            .first()
-            .click();
-        const eventDetails = this.page.getByRole('dialog', { name: 'Event Details' });
-        await expect(eventDetails).toBeVisible();
-        await expect(eventDetails.getByText(this.message).first()).toBeVisible({ timeout: 30_000 });
-        await expect(eventDetails.getByRole('tab', { name: 'Overview' })).toBeVisible();
-        await expect(eventDetails.getByRole('tab', { name: 'Exception' })).toBeVisible();
-        await expect(eventDetails.getByRole('tab', { name: 'Environment' })).toBeVisible();
-        await expect(eventDetails.getByRole('tab', { name: 'Extended Data' })).toBeVisible();
+        await this.page.goto(`/next/event/${this.eventId}`);
+        await expect(this.page.getByText(this.message).first()).toBeVisible({ timeout: 30_000 });
+        await expect(this.page.getByRole('tab', { name: 'Overview' })).toBeVisible();
+        await expect(this.page.getByRole('tab', { name: 'Exception' })).toBeVisible();
+        await expect(this.page.getByRole('tab', { name: 'Environment' })).toBeVisible();
+        await expect(this.page.getByRole('tab', { name: 'Extended Data' })).toBeVisible();
     }
 
     async expectEventInPrimaryViews(): Promise<void> {
-        await this.page.goto('/next');
+        await this.page.goto('/next/event');
         await expect(this.page.getByRole('heading', { name: 'Events' })).toBeVisible();
         await expect(this.page.getByText(this.message).first()).toBeVisible({ timeout: 30_000 });
 
-        await this.page.goto('/next/issues');
-        await expect(this.page.getByRole('heading', { name: 'Issues' })).toBeVisible();
+        await this.page.goto('/next/stack');
+        await expect(this.page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
         await expect(this.page.getByText(this.message).first()).toBeVisible({ timeout: 30_000 });
 
         await this.page.goto('/next/stream');
@@ -153,20 +152,22 @@ export class ExceptionlessE2EJourney {
         await this.page.getByRole('button', { name: 'Create My Account' }).click();
 
         this.userToken = await getUserToken(this.page);
-        const addOrganizationHeading = this.page.getByRole('heading', { name: 'Add Organization' });
+        const setupHeading = this.page.getByText('Set Up Exceptionless');
 
-        if (!(await addOrganizationHeading.isVisible())) {
+        if (!(await setupHeading.isVisible())) {
             await this.page.goto('/next/organization/add');
         }
 
-        await expect(addOrganizationHeading).toBeVisible({ timeout: 30_000 });
+        await expect(setupHeading).toBeVisible({ timeout: 30_000 });
 
         await this.page.getByLabel('Organization Name').fill(this.organizationName);
-        await this.page.getByRole('button', { name: 'Add Organization' }).click();
+        await this.page.getByLabel('Project Name').fill(this.projectName);
+        await this.page.getByRole('button', { name: 'Continue' }).click();
 
-        await this.page.waitForURL(/\/next\/organization\/[^/]+\/manage/, { timeout: 30_000 });
-        this.organizationId = getIdFromUrl(this.page, /\/organization\/([^/]+)\/manage/);
-        await expect(this.page.getByRole('heading', { name: new RegExp(`${escapeRegExp(this.organizationName)} Settings`) })).toBeVisible();
+        await this.page.waitForURL(/\/next\/project\/[^/]+\/configure/, { timeout: 30_000 });
+        this.projectId = getIdFromUrl(this.page, /\/project\/([^/]+)\/configure/);
+        this.organizationId = await this.getOrganizationIdByName();
+        await expect(this.page.getByText('Select your project type.')).toBeVisible();
     }
 
     async submitRepresentativeEvent(): Promise<void> {
@@ -214,6 +215,23 @@ export class ExceptionlessE2EJourney {
 
         this.eventId = event.id;
         this.stackId = event.stack_id;
+    }
+
+    private async getOrganizationIdByName(): Promise<string> {
+        expect(this.userToken).toBeTruthy();
+
+        await expect
+            .poll(async () => (await this.e2eApi.getOrganizations(this.userToken!)).find((item) => item.name === this.organizationName)?.id, {
+                timeout: 30_000
+            })
+            .toBeTruthy();
+
+        const organization = (await this.e2eApi.getOrganizations(this.userToken!)).find((item) => item.name === this.organizationName);
+        if (!organization?.id) {
+            throw new Error(`Could not find organization ${this.organizationName}`);
+        }
+
+        return organization.id;
     }
 }
 

@@ -8,7 +8,7 @@ test('new user can send an event and find it in primary views', async ({ e2eApi,
         await journey.submitRepresentativeEvent();
     });
 
-    await test.step('find the event in Events, Issues, and Event Stream', async () => {
+    await test.step('find the event in Events, Stacks, and Event Stream', async () => {
         await journey.expectEventInPrimaryViews();
     });
 });
