@@ -31,7 +31,7 @@ export function getColumns<TOrganizations extends ViewOrganization>(mode: GetOrg
             enableSorting: false,
             header: 'Plan',
             meta: {
-                class: 'w-[200px]'
+                class: 'w-28'
             }
         },
         {
@@ -111,10 +111,10 @@ export function getColumns<TOrganizations extends ViewOrganization>(mode: GetOrg
         cell: (info) => renderComponent(OrganizationsActionsCell, { organization: info.row.original }),
         enableHiding: false,
         enableSorting: false,
-        header: 'Actions',
+        header: '',
         id: 'actions',
         meta: {
-            class: 'w-16'
+            class: 'w-12 min-w-12 max-w-12 text-right'
         }
     });
 

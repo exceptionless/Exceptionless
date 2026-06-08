@@ -142,8 +142,15 @@
                     </div>
                     <p class="text-muted-foreground text-sm leading-relaxed">{action.description}</p>
                 </div>
-                <Button class="shrink-0" onclick={() => handleRun(action)} size="sm" variant={action.dangerous ? 'destructive' : 'outline'}>
-                    <Play class="size-3.5" />
+                <Button
+                    class="shrink-0"
+                    onclick={() => {
+                        handleRun(action);
+                    }}
+                    size="sm"
+                    variant={action.dangerous ? 'destructive' : 'outline'}
+                >
+                    <Play class="size-3.5" aria-hidden="true" />
                     Run
                 </Button>
             </div>

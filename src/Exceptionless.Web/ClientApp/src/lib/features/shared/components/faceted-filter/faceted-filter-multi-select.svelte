@@ -15,16 +15,29 @@
 
     interface Props {
         changed: (values: string[]) => void;
+        hidden?: boolean;
         loading?: boolean;
         noOptionsText?: string;
         open: boolean;
         options: Option[];
         remove: () => void;
         title: string;
+        toggleHidden?: () => void;
         values: string[];
     }
 
-    let { changed, loading = false, noOptionsText = 'No results found.', open = $bindable(), options, remove, title, values }: Props = $props();
+    let {
+        changed,
+        hidden = false,
+        loading = false,
+        noOptionsText = 'No results found.',
+        open = $bindable(),
+        options,
+        remove,
+        title,
+        toggleHidden,
+        values
+    }: Props = $props();
 
     // eslint-disable-next-line svelte/prefer-writable-derived
     let updatedValues = $state<string[]>([]);
@@ -38,24 +51,15 @@
         updatedValues = values;
     });
 
-    const hasChanged = $derived(updatedValues.length !== values.length || updatedValues.some((value) => !values.includes(value)));
-
-    function applyAndClose() {
-        if (hasChanged) {
-            changed(updatedValues);
-        }
-
-        open = false;
-    }
-
     function cancelAndClose() {
         updatedValues = values;
+        changed(updatedValues);
         open = false;
     }
 
     function onOpenChange(isOpen: boolean) {
         if (!isOpen) {
-            applyAndClose();
+            open = false;
         }
     }
 
@@ -66,10 +70,12 @@
 
     export function onValueSelected(currentValue: string) {
         updatedValues = updatedValues.includes(currentValue) ? updatedValues.filter((v) => v !== currentValue) : [...updatedValues, currentValue];
+        changed(updatedValues);
     }
 
     export function onClearFilter() {
         updatedValues = [];
+        changed(updatedValues);
     }
 
     function filter(value: string, search: string) {
@@ -89,7 +95,7 @@
 <Popover.Root bind:open {onOpenChange}>
     <Popover.Trigger>
         {#snippet child({ props })}
-            <Button {...props} class="gap-x-1 px-3" size="xl" variant="outline" aria-describedby={`${title}-help`}>
+            <Button {...props} class="gap-x-1 px-3" size="lg" variant="outline" aria-describedby={`${title}-help`}>
                 {title}
                 <Separator class="mx-2" orientation="vertical" />
                 {#if loading}
@@ -106,7 +112,7 @@
             </Button>
         {/snippet}
     </Popover.Trigger>
-    <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={applyAndClose}>
+    <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={(e) => e.preventDefault()}>
         <Command.Root {filter}>
             <Command.Input placeholder={title} autofocus={open} aria-describedby={`${title}-help`} />
             <Command.List>
@@ -136,6 +142,6 @@
             </Command.List>
         </Command.Root>
         <div id={`${title}-help`} class="sr-only">Arrow keys navigate. Space or Enter toggles selection. Escape cancels without saving.</div>
-        <FacetedFilter.Actions clear={onClearFilter} {remove} showClear={updatedValues.length > 0} />
+        <FacetedFilter.Actions clear={onClearFilter} {hidden} {remove} showClear={updatedValues.length > 0} {toggleHidden} />
     </Popover.Content>
 </Popover.Root>

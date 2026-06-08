@@ -1,4 +1,6 @@
 <script lang="ts">
+    import type { ProblemDetails } from '@exceptionless/fetchclient';
+
     import { type IFilter } from '$comp/faceted-filter';
     import DateTime from '$comp/formatters/date-time.svelte';
     import Number from '$comp/formatters/number.svelte';
@@ -22,6 +24,7 @@
     import Calendar from '@lucide/svelte/icons/calendar';
     import Clock from '@lucide/svelte/icons/clock';
     import Filter from '@lucide/svelte/icons/filter';
+    import Info from '@lucide/svelte/icons/info';
     import Users from '@lucide/svelte/icons/users';
 
     import StackLogLevel from './stack-log-level.svelte';
@@ -32,9 +35,12 @@
     interface Props {
         filterChanged: (filter: IFilter) => void;
         id: string | undefined;
+        onDeleted?: () => void;
+        onError?: (problem: ProblemDetails) => void;
     }
 
-    let { filterChanged, id }: Props = $props();
+    let { filterChanged, id, onDeleted, onError }: Props = $props();
+    let handledErrorForStackId = $state<string>();
 
     const stackQuery = getStackQuery({
         route: {
@@ -78,6 +84,12 @@
     const firstOccurrence = $derived(agg.min<string>(stackCountQuery?.data?.aggregations, 'min_date')?.value ?? stack?.first_occurrence);
     const lastOccurrence = $derived(agg.max<string>(stackCountQuery?.data?.aggregations, 'max_date')?.value ?? stack?.last_occurrence);
 
+    const metricCardClass = 'relative justify-between gap-1! bg-muted/50 py-2! ring-1 ring-border';
+    const metricHeaderClass = 'flex flex-row items-center justify-between gap-1.5 px-3 pb-0';
+    const metricTitleClass = 'min-w-0 truncate text-xs font-semibold text-muted-foreground';
+    const metricIconClass = 'size-3.5 shrink-0 text-muted-foreground';
+    const metricValueClass = 'truncate text-lg font-bold tabular-nums sm:text-xl';
+
     const chartData = $derived(() => {
         const now = new Date();
         const SEVEN_DAYS_IN_MS = 7 * 24 * 60 * 60 * 1000;
@@ -110,15 +122,25 @@
 
         return recentBuckets;
     });
+
+    $effect(() => {
+        if (!stackQuery.isError || handledErrorForStackId === id) {
+            return;
+        }
+
+        handledErrorForStackId = id;
+        onError?.(stackQuery.error);
+    });
 </script>
 
-{#if stackQuery.isSuccess}
-    <Card.Root>
+{#if stack}
+    <Card.Root
+        class="bg-background relative overflow-hidden ring-[color-mix(in_oklab,var(--chart-1)_42%,transparent)] before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-[linear-gradient(90deg,var(--chart-1),var(--chart-2))] before:content-['']"
+    >
         <Card.Header>
             <Card.Title class="flex flex-row items-center justify-between text-lg font-semibold">
                 <div class="mb-2 flex w-0 min-w-0 flex-1 flex-col lg:mb-0">
                     <div class="flex min-w-0 items-center">
-                        <EventsFacetedFilter.StringTrigger changed={filterChanged} class="mr-2 shrink-0" term="stack" value={stack.id} />
                         <span class="block max-w-full min-w-0 truncate" title={stack.title}>{stack.title}</span>
                     </div>
                 </div>
@@ -126,57 +148,104 @@
                     <StackLogLevel {stack} />
                     <ButtonGroup.Root>
                         <StackStatusDropdownMenu {stack} />
-                        <StackOptionsDropdownMenu {stack} />
+                        <StackOptionsDropdownMenu {onDeleted} {stack} />
                     </ButtonGroup.Root>
                 </div>
             </Card.Title>
         </Card.Header>
         <Card.Content class="space-y-2">
-            <div class="grid auto-rows-min grid-cols-2 gap-2 lg:grid-cols-4">
-                <Tooltip.Root>
-                    <Tooltip.Trigger
-                        class="bg-muted hover:bg-muted/80 flex cursor-pointer flex-col items-center rounded-lg p-2 transition-colors"
-                        onclick={() => filterChanged(new StringFilter('stack', stack.id))}
-                        aria-label="Filter by this stack"
-                        role="button"
-                        tabindex={0}
-                    >
-                        <Calendar class="text-primary mb-1 size-6" />
-                        <span class="text-lg font-bold"><Number value={totalOccurrences} /></span>
-                        <Muted>Total Events</Muted>
-                    </Tooltip.Trigger>
-                    <Tooltip.Content side="bottom">
-                        <Number value={totalOccurrences} /> All Time
-                    </Tooltip.Content>
-                </Tooltip.Root>
-                <Tooltip.Root>
-                    <Tooltip.Trigger class="bg-muted flex flex-col items-center rounded-lg p-2">
-                        <Users class="text-primary mb-1 size-6" />
-                        <span class="text-lg font-bold"><Percentage percent={(userCount / totalUserCount) * 100.0} /></span>
-                        <Muted>Users Affected</Muted>
-                    </Tooltip.Trigger>
-                    <Tooltip.Content side="bottom"><Number value={userCount} /> of <Number value={totalUserCount} /> Users Affected</Tooltip.Content>
-                </Tooltip.Root>
-                <Tooltip.Root>
-                    <Tooltip.Trigger class="bg-muted flex flex-col items-center rounded-lg p-2">
-                        <FirstOccurrence class="text-muted-foreground mb-1 size-6" />
-                        <span class="text-lg font-bold"><TimeAgo value={firstOccurrence} /></span>
-                        <Muted>First</Muted>
-                    </Tooltip.Trigger>
-                    <Tooltip.Content side="bottom">
-                        First Occurred On <DateTime value={stack.first_occurrence} />
-                    </Tooltip.Content>
-                </Tooltip.Root>
-                <Tooltip.Root>
-                    <Tooltip.Trigger class="bg-muted flex flex-col items-center rounded-lg p-2">
-                        <LastOccurrence class="text-muted-foreground mb-1 size-6" />
-                        <span class="text-lg font-bold"><TimeAgo value={lastOccurrence} /></span>
-                        <Muted>Last</Muted>
-                    </Tooltip.Trigger>
-                    <Tooltip.Content side="bottom">
-                        Last Occurred On <DateTime value={lastOccurrence} />
-                    </Tooltip.Content>
-                </Tooltip.Root>
+            <div class="grid grid-cols-2 gap-2 lg:grid-cols-4">
+                <Card.Root size="sm" class={metricCardClass}>
+                    <Card.Header class={metricHeaderClass}>
+                        <div class="flex min-w-0 items-center gap-1.5">
+                            <Calendar aria-hidden="true" class={metricIconClass} />
+                            <Card.Title class={metricTitleClass}>Total Events</Card.Title>
+                        </div>
+                        <Tooltip.Root>
+                            <Tooltip.Trigger
+                                class="text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded-sm outline-none focus-visible:ring-2"
+                                aria-label="About total events"
+                            >
+                                <Info aria-hidden="true" class="size-3.5" />
+                            </Tooltip.Trigger>
+                            <Tooltip.Content sideOffset={6}><Number value={totalOccurrences} /> All Time</Tooltip.Content>
+                        </Tooltip.Root>
+                    </Card.Header>
+                    <Card.Content class="px-3">
+                        <button class={metricValueClass} onclick={() => filterChanged(new StringFilter('stack', stack.id))} type="button">
+                            <Number value={totalOccurrences} />
+                        </button>
+                    </Card.Content>
+                </Card.Root>
+
+                <Card.Root size="sm" class={metricCardClass}>
+                    <Card.Header class={metricHeaderClass}>
+                        <div class="flex min-w-0 items-center gap-1.5">
+                            <Users aria-hidden="true" class={metricIconClass} />
+                            <Card.Title class={metricTitleClass}>Users Affected</Card.Title>
+                        </div>
+                        <Tooltip.Root>
+                            <Tooltip.Trigger
+                                class="text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded-sm outline-none focus-visible:ring-2"
+                                aria-label="About users affected"
+                            >
+                                <Info aria-hidden="true" class="size-3.5" />
+                            </Tooltip.Trigger>
+                            <Tooltip.Content sideOffset={6}><Number value={userCount} /> of <Number value={totalUserCount} /> Users Affected</Tooltip.Content>
+                        </Tooltip.Root>
+                    </Card.Header>
+                    <Card.Content class="px-3">
+                        <div class={metricValueClass}>
+                            <Percentage percent={(userCount / totalUserCount) * 100.0} />
+                        </div>
+                    </Card.Content>
+                </Card.Root>
+
+                <Card.Root size="sm" class={metricCardClass}>
+                    <Card.Header class={metricHeaderClass}>
+                        <div class="flex min-w-0 items-center gap-1.5">
+                            <FirstOccurrence aria-hidden="true" class={metricIconClass} />
+                            <Card.Title class={metricTitleClass}>First</Card.Title>
+                        </div>
+                        <Tooltip.Root>
+                            <Tooltip.Trigger
+                                class="text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded-sm outline-none focus-visible:ring-2"
+                                aria-label="About first occurrence"
+                            >
+                                <Info aria-hidden="true" class="size-3.5" />
+                            </Tooltip.Trigger>
+                            <Tooltip.Content sideOffset={6}>First Occurred On <DateTime value={stack.first_occurrence} /></Tooltip.Content>
+                        </Tooltip.Root>
+                    </Card.Header>
+                    <Card.Content class="px-3">
+                        <div class={metricValueClass}>
+                            <TimeAgo value={firstOccurrence} />
+                        </div>
+                    </Card.Content>
+                </Card.Root>
+
+                <Card.Root size="sm" class={metricCardClass}>
+                    <Card.Header class={metricHeaderClass}>
+                        <div class="flex min-w-0 items-center gap-1.5">
+                            <LastOccurrence aria-hidden="true" class={metricIconClass} />
+                            <Card.Title class={metricTitleClass}>Last</Card.Title>
+                        </div>
+                        <Tooltip.Root>
+                            <Tooltip.Trigger
+                                class="text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded-sm outline-none focus-visible:ring-2"
+                                aria-label="About last occurrence"
+                            >
+                                <Info aria-hidden="true" class="size-3.5" />
+                            </Tooltip.Trigger>
+                            <Tooltip.Content sideOffset={6}>Last Occurred On <DateTime value={lastOccurrence} /></Tooltip.Content>
+                        </Tooltip.Root>
+                    </Card.Header>
+                    <Card.Content class="px-3">
+                        <div class={metricValueClass}>
+                            <TimeAgo value={lastOccurrence} />
+                        </div>
+                    </Card.Content>
+                </Card.Root>
             </div>
 
             <div class="flex justify-end">
@@ -218,7 +287,7 @@
         </Card.Content>
     </Card.Root>
 {:else}
-    <Card.Root>
+    <Card.Root class="bg-background">
         <Card.Header>
             <Card.Title class="flex flex-row items-center justify-between text-lg font-semibold">
                 <span class="mb-2 flex flex-col lg:mb-0">
@@ -234,13 +303,16 @@
             </Card.Title>
         </Card.Header>
         <Card.Content class="space-y-2">
-            <div class="grid auto-rows-min grid-cols-2 gap-2 lg:grid-cols-4">
+            <div class="grid grid-cols-2 gap-2 lg:grid-cols-4">
                 {#each { length: 4 } as name, index (`${name}-${index}`)}
-                    <div class="bg-muted flex flex-col items-center rounded-lg p-2">
-                        <Skeleton class="mb-1 size-6" />
-                        <Skeleton class="mb-1 h-7 w-16" />
-                        <Skeleton class="h-6 w-20" />
-                    </div>
+                    <Card.Root size="sm" class={metricCardClass}>
+                        <Card.Header class={metricHeaderClass}>
+                            <Skeleton class="h-3.5 w-20" />
+                        </Card.Header>
+                        <Card.Content class="px-3">
+                            <Skeleton class="h-5 w-12" />
+                        </Card.Content>
+                    </Card.Root>
                 {/each}
             </div>
 

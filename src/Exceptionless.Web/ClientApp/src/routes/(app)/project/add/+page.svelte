@@ -16,6 +16,7 @@
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import { createForm } from '@tanstack/svelte-form';
+    import { untrack } from 'svelte';
     import { toast } from 'svelte-sonner';
 
     let toastId = $state<number | string>();
@@ -25,14 +26,14 @@
         defaultValues: {
             delete_bot_data_enabled: true,
             name: '',
-            organization_id: organization.current
+            organization_id: organization.current ?? ''
         } as NewProjectFormData,
         validators: {
             onSubmit: NewProjectSchema,
             onSubmitAsync: async ({ value }) => {
                 toast.dismiss(toastId);
                 try {
-                    const { id } = await createProject.mutateAsync(value as NewProject);
+                    const { id } = await createProject.mutateAsync({ ...value, organization_id: organization.current ?? value.organization_id } as NewProject);
                     toastId = toast.success('Project added successfully');
                     await goto(resolve('/(app)/project/[projectId]/configure', { projectId: id }) + '?redirect=true');
                     return null;
@@ -52,12 +53,17 @@
             }
         }
     }));
+
+    $effect(() => {
+        const organizationId = organization.current ?? '';
+        untrack(() => form.setFieldValue('organization_id', organizationId));
+    });
 </script>
 
-<div class="flex flex-col gap-4">
+<div class="mx-auto flex w-[calc(100vw-2rem)] max-w-lg flex-col gap-4">
     <div class="flex flex-col gap-1">
         <H3>Add Project</H3>
-        <Muted>Add a new project to start tracking errors and events.</Muted>
+        <Muted>Create a project, then configure a client to send your first event.</Muted>
     </div>
     <form
         onsubmit={(e) => {
@@ -94,7 +100,7 @@
                     {#if isSubmitting}
                         <Spinner /> Adding Project...
                     {:else}
-                        Add Project
+                        Continue to Client Setup
                     {/if}
                 </Button>
             {/snippet}

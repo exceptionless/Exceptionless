@@ -9,7 +9,14 @@ import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/s
 
 import type { GetOrganizationProjectsParams, GetProjectsMode } from '../../api.svelte';
 
-export function getColumns<TProject extends ViewProject>(mode: GetProjectsMode = 'stats'): ColumnDef<StockFeatures, TProject, unknown>[] {
+interface ProjectTableOptions {
+    includeOrganizationColumn?: boolean;
+}
+
+export function getColumns<TProject extends ViewProject>(
+    mode: GetProjectsMode = 'stats',
+    options: ProjectTableOptions = {}
+): ColumnDef<StockFeatures, TProject, unknown>[] {
     const columns: ColumnDef<StockFeatures, TProject, unknown>[] = [
         {
             accessorKey: 'name',
@@ -21,6 +28,18 @@ export function getColumns<TProject extends ViewProject>(mode: GetProjectsMode =
             }
         }
     ];
+
+    if (options.includeOrganizationColumn) {
+        columns.push({
+            accessorKey: 'organization_name',
+            cell: (info) => info.getValue(),
+            enableSorting: false,
+            header: 'Organization',
+            meta: {
+                class: 'w-50'
+            }
+        });
+    }
 
     const isStatsMode = mode === 'stats';
     if (isStatsMode) {
@@ -50,10 +69,10 @@ export function getColumns<TProject extends ViewProject>(mode: GetProjectsMode =
         cell: (info) => renderComponent(ProjectActionsCell, { project: info.row.original }),
         enableHiding: false,
         enableSorting: false,
-        header: 'Actions',
+        header: '',
         id: 'actions',
         meta: {
-            class: 'w-16'
+            class: 'w-12 min-w-12 max-w-12 text-right'
         }
     });
 
@@ -62,12 +81,13 @@ export function getColumns<TProject extends ViewProject>(mode: GetProjectsMode =
 
 export function getTableOptions<TProject extends ViewProject>(
     queryParameters: GetOrganizationProjectsParams,
-    queryResponse: CreateQueryResult<FetchClientResponse<TProject[]>, ProblemDetails>
+    queryResponse: CreateQueryResult<FetchClientResponse<TProject[]>, ProblemDetails>,
+    options: ProjectTableOptions = {}
 ) {
     return getSharedTableOptions<TProject>({
         columnPersistenceKey: 'projects-column-visibility',
         get columns() {
-            return getColumns<TProject>(queryParameters.mode);
+            return getColumns<TProject>(queryParameters.mode, options);
         },
         paginationStrategy: 'offset',
         get queryData() {

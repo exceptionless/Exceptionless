@@ -1,5 +1,4 @@
 <script lang="ts">
-    import type { ViewOrganization } from '$features/organizations/models';
     import type { SavedView } from '$features/saved-views/models';
     import type { Snippet } from 'svelte';
 
@@ -16,12 +15,15 @@
     import { filterUsesPremiumFeatures } from '$features/events/premium-filter';
     import { buildIntercomBootOptions, IntercomShell } from '$features/intercom';
     import { shouldLoadIntercomOrganization } from '$features/intercom/config';
+    import Notifications from '$features/notifications/components/notifications.svelte';
     import { getOrganizationQuery, getOrganizationsQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
     import OrganizationNotifications from '$features/organizations/components/organization-notifications.svelte';
     import { organization, showOrganizationNotifications } from '$features/organizations/context.svelte';
     import { premiumPage } from '$features/organizations/premium-page.svelte';
     import { invalidateProjectQueries } from '$features/projects/api.svelte';
-    import { getSavedViewsQuery, invalidateSavedViewQueries } from '$features/saved-views/api.svelte';
+    import { getSavedViewsQuery, invalidateSavedViewQueries, isSavedViewDeleted } from '$features/saved-views/api.svelte';
+    import { savedViewHref } from '$features/saved-views/slugs';
+    import { appKeyboardShortcuts, isKeyboardShortcut } from '$features/shared/keyboard-shortcuts';
     import { invalidateStackQueries } from '$features/stacks/api.svelte';
     import { invalidateTokenQueries } from '$features/tokens/api.svelte';
     import { getMeQuery, invalidateUserQueries } from '$features/users/api.svelte';
@@ -29,11 +31,14 @@
     import { invalidateWebhookQueries } from '$features/webhooks/api.svelte';
     import { isEntityChangedType, type WebSocketMessageType } from '$features/websockets/models';
     import { WebSocketClient } from '$features/websockets/web-socket-client.svelte';
+    import { Telemetry } from '$lib/telemetry';
     import { useMiddleware } from '@exceptionless/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
+    import { tick } from 'svelte';
     import { fade } from 'svelte/transition';
 
     import { type NavigationItemContext, routes } from '../routes.svelte';
+    import KeyboardShortcutsDialog from './(components)/keyboard-shortcuts-dialog.svelte';
     import Footer from './(components)/layouts/footer.svelte';
     import Navbar from './(components)/layouts/navbar.svelte';
     import SidebarOrganizationSwitcher from './(components)/layouts/sidebar-organization-switcher.svelte';
@@ -50,6 +55,10 @@
     let requiresPremium = $derived(premiumPage.requiresPremium || filterUsesPremiumFeatures(page.url.searchParams.get('filter')));
     const sidebar = useSidebar();
     let isCommandOpen = $state(false);
+    let commandResetKey = $state(0);
+    let isKeyboardShortcutsOpen = $state(false);
+    let isOrganizationSwitcherOpen = $state(false);
+    let isUserMenuOpen = $state(false);
 
     // Auto-reset premium page state on navigation so pages don't need cleanup
     beforeNavigate(() => {
@@ -57,7 +66,37 @@
     });
 
     function openCommandPalette(): void {
+        commandResetKey += 1;
         isCommandOpen = true;
+    }
+
+    async function openOrganizationSwitcher(): Promise<void> {
+        isCommandOpen = false;
+        isKeyboardShortcutsOpen = false;
+        isUserMenuOpen = false;
+        if (singleOrganization?.id) {
+            await goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: singleOrganization.id }));
+            return;
+        }
+
+        await tick();
+        isOrganizationSwitcherOpen = true;
+    }
+
+    async function openUserMenu(): Promise<void> {
+        isCommandOpen = false;
+        isKeyboardShortcutsOpen = false;
+        isOrganizationSwitcherOpen = false;
+        await tick();
+        isUserMenuOpen = true;
+    }
+
+    async function openKeyboardShortcuts(): Promise<void> {
+        isCommandOpen = false;
+        isOrganizationSwitcherOpen = false;
+        isUserMenuOpen = false;
+        await tick();
+        isKeyboardShortcutsOpen = true;
     }
 
     useMiddleware(async (ctx, next) => {
@@ -153,14 +192,58 @@
         }
     });
 
-    // WebSocket + keyboard shortcut — only depends on token, not navigation
+    // WebSocket + keyboard shortcuts — only depends on token, not navigation
     $effect(() => {
         const currentToken = accessToken.current;
 
         function handleKeydown(e: KeyboardEvent) {
-            if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+            if (
+                e.defaultPrevented ||
+                e.ctrlKey ||
+                e.metaKey ||
+                e.altKey ||
+                isCommandOpen ||
+                isKeyboardShortcutsOpen ||
+                isOrganizationSwitcherOpen ||
+                isUserMenuOpen ||
+                isEditableElement(e.target)
+            ) {
+                return;
+            }
+
+            if (isKeyboardShortcut(e, appKeyboardShortcuts.commandPalette)) {
                 e.preventDefault();
-                isCommandOpen = !isCommandOpen;
+                openCommandPalette();
+                return;
+            }
+
+            if (isKeyboardShortcut(e, appKeyboardShortcuts.switchOrganization)) {
+                e.preventDefault();
+                void openOrganizationSwitcher();
+                return;
+            }
+
+            if (isKeyboardShortcut(e, appKeyboardShortcuts.userMenu)) {
+                e.preventDefault();
+                void openUserMenu();
+                return;
+            }
+
+            if (isKeyboardShortcut(e, appKeyboardShortcuts.allEvents)) {
+                e.preventDefault();
+                void goto(resolve('/(app)/event'));
+                return;
+            }
+
+            if (isKeyboardShortcut(e, appKeyboardShortcuts.stacks)) {
+                e.preventDefault();
+                void goto(resolve('/(app)/stack'));
+                return;
+            }
+
+            if (isKeyboardShortcut(e, appKeyboardShortcuts.keyboardShortcuts)) {
+                e.preventDefault();
+                void openKeyboardShortcuts();
             }
         }
 
@@ -168,7 +251,7 @@
             return;
         }
 
-        document.addEventListener('keydown', handleKeydown);
+        document.addEventListener('keydown', handleKeydown, { capture: true });
 
         const ws = new WebSocketClient();
         ws.onMessage = onMessage;
@@ -185,10 +268,18 @@
         };
 
         return () => {
-            document.removeEventListener('keydown', handleKeydown);
+            document.removeEventListener('keydown', handleKeydown, { capture: true });
             ws?.close();
         };
     });
+
+    function isEditableElement(target: EventTarget | null): boolean {
+        if (!(target instanceof HTMLElement)) {
+            return false;
+        }
+
+        return target.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName);
+    }
 
     const meQuery = getMeQuery();
     const gravatar = getGravatarFromCurrentUser(meQuery);
@@ -200,7 +291,7 @@
     const impersonatingOrganizationId = $derived.by(() => {
         // Only consider impersonation if user data is loaded and user has organizations
         const userOrganizationIds = meQuery.data?.organization_ids;
-        if (!userOrganizationIds || userOrganizationIds.length === 0 || !organization.current) {
+        if (!isGlobalAdmin || !userOrganizationIds || userOrganizationIds.length === 0 || !organization.current) {
             return undefined;
         }
 
@@ -231,8 +322,15 @@
     });
     const intercomOrganization = $derived(shouldFetchIntercomOrganization ? currentOrganizationQuery.data : undefined);
 
-    // Simple organization selection - pick first available if none selected
+    function shouldRedirectToSetup(): boolean {
+        const addOrganizationPath = resolve('/(app)/organization/add');
+        return page.url.pathname !== addOrganizationPath && !page.url.pathname.startsWith(resolve('/(app)/system'));
+    }
+
+    // Keep selected organization synchronized with current memberships.
     $effect(() => {
+        void page.url.pathname;
+
         if (!organizationsQuery.isSuccess) {
             return;
         }
@@ -241,63 +339,63 @@
         if (!hasOrganizations) {
             organization.current = undefined;
 
-            // Redirect non-admins to add organization page
-            if (!isGlobalAdmin && !organizationsQuery.isLoading) {
-                goto(resolve(`/(app)/organization/add`));
+            if (shouldRedirectToSetup()) {
+                goto(resolve('/(app)/organization/add'));
             }
 
             return;
         }
 
-        // Select first organization if none selected
-        if (!organization.current) {
+        const hasSelectedOrganization = !!organization.current && organizations.some((organizationItem) => organizationItem.id === organization.current);
+        const hasInvalidImpersonatedOrganization = !!impersonatingOrganizationId && impersonatedOrganizationQuery.isError;
+        if ((!hasSelectedOrganization && !impersonatingOrganizationId) || hasInvalidImpersonatedOrganization) {
             organization.current = organizations[0]!.id;
         }
     });
 
     const isImpersonating = $derived(!!impersonatedOrganization);
-
-    const currentOrganization = $derived(organizations.find((organizationItem: ViewOrganization) => organizationItem.id === organization.current));
-    const hasSavedViewsFeature = $derived(currentOrganization?.features?.includes('feature-saved-views') ?? false);
+    const singleOrganization = $derived(!isGlobalAdmin && !isImpersonating && organizations.length === 1 ? organizations[0] : undefined);
 
     const savedViewsQuery = getSavedViewsQuery({
         route: {
             get organizationId() {
-                return hasSavedViewsFeature ? organization.current : undefined;
+                return organization.current;
             }
         }
     });
 
     const viewToHref: Record<string, string> = {
-        events: resolve('/(app)'),
-        issues: resolve('/(app)/issues'),
+        events: resolve('/(app)/event'),
+        stacks: resolve('/(app)/stack'),
         stream: resolve('/(app)/stream')
     };
 
-    function buildSavedViewHref(baseHref: string, savedView: SavedView): string {
-        const queryEntries: [string, string][] = [['saved', savedView.id]];
-        if (savedView.filter) {
-            queryEntries.push(['filter', savedView.filter]);
-        }
-
-        if (savedView.time) {
-            queryEntries.push(['time', savedView.time]);
-        }
-
-        const queryParams = new URLSearchParams(queryEntries);
-        return `${baseHref}?${queryParams.toString()}`;
+    function buildSavedViewHref(savedView: SavedView): string {
+        return savedViewHref(savedView);
     }
 
     const filteredRoutes = $derived.by(() => {
         const context: NavigationItemContext = { authenticated: isAuthenticated, impersonating: isImpersonating, user: meQuery.data };
         const allRoutes = routes().filter((route) => (route.show ? route.show(context) : true));
+        const organizationSettingsHref = singleOrganization?.id
+            ? resolve('/(app)/organization/[organizationId]/manage', { organizationId: singleOrganization.id })
+            : undefined;
 
-        const savedViews = savedViewsQuery.data ?? [];
-        if (savedViews.length === 0) {
-            return allRoutes;
-        }
+        const savedViews = (savedViewsQuery.data ?? []).filter((savedView) => !isSavedViewDeleted(savedView));
 
         return allRoutes.map((route) => {
+            if (organizationSettingsHref && route.group === 'Settings' && route.title === 'Organizations') {
+                route = {
+                    ...route,
+                    href: organizationSettingsHref,
+                    title: 'Organization'
+                };
+            }
+
+            if (savedViews.length === 0) {
+                return route;
+            }
+
             if (route.group !== 'Dashboards') {
                 return route;
             }
@@ -312,37 +410,19 @@
                 return route;
             }
 
-            const defaultView = viewSavedViews.find((savedView: SavedView) => savedView.is_default);
-            const nonDefaultViews = viewSavedViews.filter((savedView: SavedView) => !savedView.is_default);
+            const sortedViews = [...viewSavedViews].sort((a, b) => a.name.localeCompare(b.name));
 
-            // Only show submenu if there are non-default views
-            if (nonDefaultViews.length === 0) {
-                return { ...route, defaultViewId: defaultView?.id, view: viewKey };
-            }
-
-            // Show all views sorted: default first, then alphabetically by name
-            const sortedViews = [...viewSavedViews].sort((a, b) => {
-                if (a.is_default && !b.is_default) {
-                    return -1;
-                }
-
-                if (!a.is_default && b.is_default) {
-                    return 1;
-                }
-
-                return a.name.localeCompare(b.name);
-            });
-
-            const children = sortedViews.map((savedView) => ({
-                href: buildSavedViewHref(route.href, savedView),
-                isDefault: savedView.is_default,
-                title: savedView.name
-            }));
+            const children = [
+                ...sortedViews.map((savedView) => ({
+                    href: buildSavedViewHref(savedView),
+                    title: savedView.name
+                })),
+                ...(route.children ?? [])
+            ];
 
             return {
                 ...route,
                 children,
-                defaultViewId: defaultView?.id,
                 view: viewKey
             };
         });
@@ -357,18 +437,32 @@
     function onIntercomUnreadCountChange(unreadCount: number) {
         intercomUnreadCount = Math.max(0, unreadCount);
     }
+
+    const setupPath = resolve('/(app)/organization/add');
+    const isSetupPage = $derived(page.url.pathname === setupPath);
 </script>
+
+{#snippet setupShell()}
+    <div class="flex h-screen w-full items-center justify-center px-4">
+        <main class="w-full">
+            <div in:fade={{ delay: 150, duration: 150 }} out:fade={{ duration: 150 }}>
+                {@render children()}
+            </div>
+        </main>
+    </div>
+{/snippet}
 
 {#snippet appShell(openChat: () => void)}
     <Navbar openCommand={openCommandPalette}></Navbar>
     <Sidebar routes={filteredRoutes}>
         {#snippet header()}
             <SidebarOrganizationSwitcher
-                class="pt-2"
                 isLoading={organizationsQuery.isLoading}
                 {organizations}
                 {impersonatedOrganization}
+                bind:open={isOrganizationSwitcherOpen}
                 bind:currentOrganizationId={organization.current}
+                {isGlobalAdmin}
             />
         {/snippet}
 
@@ -378,17 +472,28 @@
                 isLoading={meQuery.isLoading}
                 user={meQuery.data}
                 {gravatar}
-                isImpersonating={!!impersonatedOrganization}
                 {organizations}
                 {openChat}
+                {openKeyboardShortcuts}
                 {intercomUnreadCount}
+                bind:open={isUserMenuOpen}
             />
         {/snippet}
     </Sidebar>
-    <div class="flex min-h-screen min-w-0 flex-1 pt-16">
-        <div class="text-secondary-foreground flex min-h-full min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
+    <div class="flex h-screen min-w-0 flex-1 flex-col overflow-hidden pt-16">
+        <div class="text-secondary-foreground flex min-h-0 min-w-0 flex-1 scrollbar-gutter-stable flex-col overflow-x-hidden overflow-y-auto">
             <main class="flex-1 px-4 pt-4">
-                <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
+                <NavigationCommand
+                    bind:open={isCommandOpen}
+                    {openKeyboardShortcuts}
+                    {openOrganizationSwitcher}
+                    {openUserMenu}
+                    resetKey={commandResetKey}
+                    routes={filteredRoutes}
+                />
+                <KeyboardShortcutsDialog bind:open={isKeyboardShortcutsOpen} />
+
+                <Notifications />
 
                 {#if showOrganizationNotifications.current}
                     <OrganizationNotifications {isChatEnabled} {openChat} {requiresPremium} premiumFeatureName={premiumPage.current} class="mb-4" />
@@ -412,7 +517,11 @@
         routeKey={page.url.pathname}
     >
         {#snippet children(openChat)}
-            {@render appShell(openChat)}
+            {#if isSetupPage}
+                {@render setupShell()}
+            {:else}
+                {@render appShell(openChat)}
+            {/if}
         {/snippet}
     </IntercomShell>
 
@@ -420,3 +529,5 @@
         <UpgradeRequiredDialog />
     {/if}
 {/if}
+
+<Telemetry userId={isAuthenticated ? meQuery.data?.email_address : undefined} userName={isAuthenticated ? meQuery.data?.full_name : undefined} />

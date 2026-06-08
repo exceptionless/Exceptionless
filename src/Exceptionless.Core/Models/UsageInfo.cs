@@ -9,6 +9,7 @@ public record UsageInfo
     public int Blocked { get; set; }
     public int Discarded { get; set; }
     public int TooBig { get; set; }
+    public int Deleted { get; set; }
 }
 
 public record UsageHourInfo
@@ -18,6 +19,7 @@ public record UsageHourInfo
     public int Blocked { get; set; }
     public int Discarded { get; set; }
     public int TooBig { get; set; }
+    public int Deleted { get; set; }
 }
 
 public record UsageInfoResponse

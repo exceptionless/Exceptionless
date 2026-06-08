@@ -26,7 +26,7 @@
         </strong>:&nbsp;
     {/if}
 
-    <A class="inline" href={resolve('/(app)/event/[eventId]', { eventId: source.id })}>
+    <A class="inline" href={resolve('/(app)/event/[eventId=objectid]', { eventId: source.id })}>
         {#if source.data.Name || source.data.Identity || source.data.SessionId}
             {source.data.Name || source.data.Identity || source.data.SessionId}
             {#if source.data.Name && source.data.Identity}

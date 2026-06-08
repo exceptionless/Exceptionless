@@ -57,7 +57,14 @@
         }
     });
 
+    const managedTitlePrefixes = [resolve('/(app)/stack'), resolve('/(app)/event'), resolve('/(app)/stream')];
+
     $effect(() => {
+        // Skip title for pages that manage their own (stacks, events, stream with saved views)
+        if (managedTitlePrefixes.some((prefix) => page.url.pathname === prefix || page.url.pathname.startsWith(prefix + '/'))) {
+            return;
+        }
+
         const currentRoute = routes().find((route) => page.url.pathname === route.href);
         if (currentRoute) {
             document.title = `${currentRoute.title} - Exceptionless`;

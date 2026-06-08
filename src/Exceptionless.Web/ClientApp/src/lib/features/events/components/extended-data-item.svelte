@@ -20,6 +20,7 @@
         excludedKeys?: string[];
         isPromoted?: boolean;
         promote?: (title: string) => Promise<void>;
+        showTitle?: boolean;
         title: string;
     }
 
@@ -31,6 +32,7 @@
         excludedKeys = [],
         isPromoted = false,
         promote = async () => {},
+        showTitle = true,
         title
     }: Props = $props();
 
@@ -112,8 +114,10 @@
 
 {#if hasData}
     <div class={['flex flex-col space-y-2', className]}>
-        <div class="flex items-center justify-between">
-            <H4>{title}</H4>
+        <div class={['flex items-center', showTitle ? 'justify-between' : 'justify-end']}>
+            {#if showTitle}
+                <H4>{title}</H4>
+            {/if}
             <DropdownMenu.Root>
                 <DropdownMenu.Trigger>
                     {#snippet child({ props })}
@@ -127,12 +131,12 @@
                         <DropdownMenu.GroupHeading>Actions</DropdownMenu.GroupHeading>
                         <DropdownMenu.Separator />
                         {#if canToggle}
-                            <DropdownMenu.Item onclick={onToggleView} title="Toggle between raw and structured view">
+                            <DropdownMenu.Item onclick={onToggleView} title="Toggle Between Raw and Structured View">
                                 <ToggleLeft class="mr-2 size-4" />
                                 Toggle View
                             </DropdownMenu.Item>
                         {/if}
-                        <DropdownMenu.Item onclick={copyToClipboard} title="Copy to clipboard">
+                        <DropdownMenu.Item onclick={copyToClipboard} title="Copy to Clipboard">
                             <Copy class="mr-2 size-4" />
                             Copy to Clipboard
                         </DropdownMenu.Item>

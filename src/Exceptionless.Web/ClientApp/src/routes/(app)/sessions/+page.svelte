@@ -18,7 +18,6 @@
     import {
         applyTimeFilter,
         buildFilterCacheKey,
-        filterCacheVersionNumber,
         filterChanged,
         filterRemoved,
         getFiltersFromCache,
@@ -51,7 +50,7 @@
     }
 
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
-        return resolve('/(app)/event/[eventId]', { eventId: row.id });
+        return resolve('/(app)/event/[eventId=objectid]', { eventId: row.id });
     }
 
     // Register this page as requiring premium features (layout auto-resets on navigation)
@@ -107,7 +106,7 @@
 
     let filters = $state(applyTimeFilter(getFiltersFromCache(filterCacheKey(queryParams.filter), queryParams.filter), queryParams.time));
     watch(
-        [() => queryParams.filter, () => queryParams.time, () => filterCacheVersionNumber()],
+        [() => queryParams.filter, () => queryParams.time],
         ([filter, time]) => {
             filters = applyTimeFilter(getFiltersFromCache(filterCacheKey(filter), filter), time);
         },
@@ -119,19 +118,27 @@
     });
 
     function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): void {
-        updateFilters(filterChanged(filters ?? [], addedOrUpdated));
+        const isNew = !filters?.some((f) => f.id === addedOrUpdated.id);
+        const updatedFilters = filterChanged(filters ?? [], addedOrUpdated);
+        updateFilters(updatedFilters);
+        if (isNew) {
+            filters = updatedFilters;
+        }
+
         selectedEventId = null;
     }
 
     function onFilterRemoved(removed?: FacetedFilter.IFilter): void {
-        updateFilters(filterRemoved(filters ?? [], removed));
+        const updatedFilters = filterRemoved(filters ?? [], removed);
+        updateFilters(updatedFilters);
+        filters = updatedFilters;
     }
 
     function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
         const filter = toFilter(updatedFilters.filter((f) => f.type !== 'date'));
 
         updateFilterCache(filterCacheKey(filter), updatedFilters);
-        queryParams.time = (updatedFilters.find((f) => f.type === 'date') as DateFilter)?.value as string;
+        queryParams.time = ((updatedFilters.find((f) => f.type === 'date') as DateFilter | undefined)?.value as string | undefined) ?? null;
         queryParams.filter = filter;
     }
 
@@ -146,6 +153,8 @@
     }
 
     const eventsQueryParameters: GetEventsParams = $state({
+        after: undefined,
+        before: undefined,
         get filter() {
             return activeFilter();
         },

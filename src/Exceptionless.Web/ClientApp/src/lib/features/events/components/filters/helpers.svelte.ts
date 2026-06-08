@@ -22,14 +22,10 @@ import {
     VersionFilter
 } from './models.svelte';
 
-let filterCacheVersion = $state(1);
-export function filterCacheVersionNumber() {
-    return filterCacheVersion;
-}
-
 const filterCache = new SvelteMap<null | string, IFilter[]>();
 
 interface SerializedFilter {
+    hidden?: boolean;
     term?: string;
     type: string;
     value?: unknown;
@@ -41,6 +37,8 @@ export function applyTimeFilter(filters: IFilter[], time: null | string): IFilte
         if (time) {
             const dateFilter = filters[dateFilterIndex] as DateFilter;
             dateFilter.value = time;
+        } else {
+            filters.splice(dateFilterIndex, 1);
         }
     } else if (time) {
         filters.push(new DateFilter('date', time));
@@ -55,7 +53,6 @@ export function buildFilterCacheKey(organization: string | undefined, scope: str
 
 export function clearFilterCache() {
     filterCache.clear();
-    filterCacheVersion = 1;
 }
 
 export function deserializeFilters(json: string): IFilter[] {
@@ -155,6 +152,10 @@ export function serializeFilters(filters: IFilter[]): string {
             entry.value = (filter as { value?: unknown }).value;
         }
 
+        if (filter.hidden) {
+            entry.hidden = true;
+        }
+
         return entry;
     });
 
@@ -204,12 +205,28 @@ export function shouldRefreshPersistentEventChanged(
     return true;
 }
 
+const TYPE_FILTER_REGEX = /\btype:(\w+)\b/g;
+
+export function hasSingleTypeFilter(filter: null | string | undefined): boolean {
+    if (!filter) {
+        return false;
+    }
+
+    const matches = filter.match(TYPE_FILTER_REGEX);
+    return matches?.length === 1;
+}
+
 export function toFilter(filters: IFilter[]): string {
     return filters
         .map((f) => f.toFilter())
         .filter(Boolean)
         .join(' ')
         .trim();
+}
+
+export function toFilterFromSerializedFilters(json: string): null | string {
+    const filter = toFilter(deserializeFilters(json).filter((f) => f.type !== 'date'));
+    return filter || null;
 }
 
 export function updateFilterCache(cacheKey: string, filters: IFilter[]) {
@@ -221,66 +238,90 @@ export function updateFilterCache(cacheKey: string, filters: IFilter[]) {
 
     filterCache.delete(cacheKey);
     filterCache.set(cacheKey, filters);
-    filterCacheVersion += 1;
+}
+
+function mergeDuplicateFilter(existingFilter: IFilter, filter: IFilter): void {
+    existingFilter.id = filter.id;
+    existingFilter.hidden = filter.hidden;
+
+    if (!('value' in existingFilter) || !('value' in filter)) {
+        return;
+    }
+
+    if (Array.isArray(existingFilter.value) && Array.isArray(filter.value)) {
+        existingFilter.value = [...new Set([...existingFilter.value, ...filter.value])];
+        return;
+    }
+
+    if (filter.value !== undefined) {
+        existingFilter.value = filter.value;
+    }
 }
 
 function processFilterRules(filters: IFilter[]): IFilter[] {
     const uniqueFilters = new SvelteMap<string, IFilter>();
     for (const filter of filters) {
-        const singletonFilterKeys = ['date-date', 'level', 'project', 'string-stack', 'tag', 'type'];
-        if (singletonFilterKeys.includes(filter.key)) {
-            const existingFilter = uniqueFilters.get(filter.key);
-            if (existingFilter) {
-                existingFilter.id = filter.id;
-                if ('value' in existingFilter && 'value' in filter) {
-                    if (Array.isArray(existingFilter.value) && Array.isArray(filter.value)) {
-                        existingFilter.value = [...new Set([...existingFilter.value, ...filter.value])];
-                    } else if (filter.value !== undefined) {
-                        existingFilter.value = filter.value;
-                    }
-                } else {
-                    throw new Error('Unable to merge filters');
-                }
-            }
-
-            uniqueFilters.set(filter.key, existingFilter ?? filter);
-        } else {
-            uniqueFilters.set(filter.id, filter);
+        const existingFilter = uniqueFilters.get(filter.key);
+        if (existingFilter) {
+            mergeDuplicateFilter(existingFilter, filter);
+            continue;
         }
+
+        uniqueFilters.set(filter.key, filter);
     }
 
     return Array.from(uniqueFilters.values());
 }
 
 function reconstructFilter(data: SerializedFilter): IFilter | null {
+    let filter: IFilter | null;
     switch (data.type) {
         case 'boolean':
-            return new BooleanFilter(data.term, data.value as boolean | undefined);
+            filter = new BooleanFilter(data.term, data.value as boolean | undefined);
+            break;
         case 'date':
-            return new DateFilter(data.term, data.value as Date | string | undefined);
+            filter = new DateFilter(data.term, data.value as Date | string | undefined);
+            break;
         case 'keyword':
-            return new KeywordFilter(data.value as string | undefined);
+            filter = new KeywordFilter(data.value as string | undefined);
+            break;
         case 'level':
-            return new LevelFilter(data.value as LogLevel[] | undefined);
+            filter = new LevelFilter(data.value as LogLevel[] | undefined);
+            break;
         case 'number':
-            return new NumberFilter(data.term, data.value as number | undefined);
+            filter = new NumberFilter(data.term, data.value as number | undefined);
+            break;
         case 'project':
-            return new ProjectFilter(data.value as string[] | undefined);
+            filter = new ProjectFilter(data.value as string[] | undefined);
+            break;
         case 'reference':
-            return new ReferenceFilter(data.value as string | undefined);
+            filter = new ReferenceFilter(data.value as string | undefined);
+            break;
         case 'session':
-            return new SessionFilter(data.value as string | undefined);
+            filter = new SessionFilter(data.value as string | undefined);
+            break;
         case 'status':
-            return new StatusFilter(data.value as StackStatus[] | undefined);
+            filter = new StatusFilter(data.value as StackStatus[] | undefined);
+            break;
         case 'string':
-            return new StringFilter(data.term, data.value as string | undefined);
+            filter = new StringFilter(data.term, data.value as string | undefined);
+            break;
         case 'tag':
-            return new TagFilter(data.value as PersistentEventKnownTypes[] | undefined);
+            filter = new TagFilter(data.value as PersistentEventKnownTypes[] | undefined);
+            break;
         case 'type':
-            return new TypeFilter(data.value as PersistentEventKnownTypes[] | undefined);
+            filter = new TypeFilter(data.value as PersistentEventKnownTypes[] | undefined);
+            break;
         case 'version':
-            return new VersionFilter(data.term, data.value as string | undefined);
+            filter = new VersionFilter(data.term, data.value as string | undefined);
+            break;
         default:
-            return null;
+            filter = null;
     }
+
+    if (filter) {
+        filter.hidden = data.hidden === true;
+    }
+
+    return filter;
 }

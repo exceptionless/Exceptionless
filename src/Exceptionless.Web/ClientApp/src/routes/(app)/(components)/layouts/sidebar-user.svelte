@@ -6,17 +6,16 @@
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import GitHubIcon from '$comp/icons/GitHubIcon.svelte';
-    import { A } from '$comp/typography';
     import * as Avatar from '$comp/ui/avatar/index';
     import { Badge } from '$comp/ui/badge';
     import * as DropdownMenu from '$comp/ui/dropdown-menu/index';
     import * as Sidebar from '$comp/ui/sidebar/index';
     import { useSidebar } from '$comp/ui/sidebar/index';
     import { Skeleton } from '$comp/ui/skeleton';
-    import ImpersonateOrganizationDialog from '$features/organizations/components/dialogs/impersonate-organization-dialog.svelte';
+    import { logout } from '$features/auth/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { apiReferenceHref, documentationHref, githubRepositoryHref, supportIssuesHref } from '$features/shared/help-links';
-    import GlobalUser from '$features/users/components/global-user.svelte';
+    import { useFetchClient } from '@exceptionless/fetchclient';
     import BadgeCheck from '@lucide/svelte/icons/badge-check';
     import Bell from '@lucide/svelte/icons/bell';
     import BookOpen from '@lucide/svelte/icons/book-open';
@@ -24,31 +23,38 @@
     import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
     import Help from '@lucide/svelte/icons/circle-help';
     import CreditCard from '@lucide/svelte/icons/credit-card';
-    import Database from '@lucide/svelte/icons/database';
-    import DatabaseZap from '@lucide/svelte/icons/database-zap';
-    import Eye from '@lucide/svelte/icons/eye';
-    import EyeOff from '@lucide/svelte/icons/eye-off';
-    import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
     import LogOut from '@lucide/svelte/icons/log-out';
-    import Play from '@lucide/svelte/icons/play';
     import Plus from '@lucide/svelte/icons/plus';
     import Settings from '@lucide/svelte/icons/settings';
-    import Wrench from '@lucide/svelte/icons/wrench';
+    import { useQueryClient } from '@tanstack/svelte-query';
 
     interface Props {
         gravatar: Gravatar;
         intercomUnreadCount: number;
         isChatEnabled: boolean;
-        isImpersonating?: boolean;
         isLoading: boolean;
+        open?: boolean;
         openChat: () => void;
+        openKeyboardShortcuts: () => Promise<void> | void;
         organizations?: ViewOrganization[];
         user: undefined | ViewCurrentUser;
     }
 
-    let { gravatar, intercomUnreadCount = 0, isChatEnabled, isImpersonating = false, isLoading, openChat, organizations = [], user }: Props = $props();
+    let {
+        gravatar,
+        intercomUnreadCount = 0,
+        isChatEnabled,
+        isLoading,
+        open = $bindable(false),
+        openChat,
+        openKeyboardShortcuts,
+        organizations = [],
+        user
+    }: Props = $props();
     const sidebar = useSidebar();
-    let openImpersonateDialog = $state(false);
+    const client = useFetchClient();
+    const queryClient = useQueryClient();
+    const currentOrganizationId = $derived(organizations.find((organizationItem) => organizationItem.id === organization.current)?.id);
 
     function getUnreadCountLabel(unreadCount: number): string {
         return unreadCount > 99 ? '99+' : unreadCount.toString();
@@ -65,14 +71,25 @@
         openChat();
     }
 
-    async function impersonateOrganization(vo: ViewOrganization): Promise<void> {
-        await goto(resolve('/(app)'));
-        organization.current = vo.id;
+    function onKeyboardShortcutsClick() {
+        onMenuClick();
+        void openKeyboardShortcuts();
     }
 
-    async function stopImpersonating(): Promise<void> {
-        await goto(resolve('/(app)'));
-        organization.current = organizations[0]?.id;
+    function navigateTo(href: string): void {
+        onMenuClick();
+        void goto(href);
+    }
+
+    async function onLogout(): Promise<void> {
+        onMenuClick();
+        await logout(queryClient, client);
+        await goto(resolve('/(auth)/login'));
+    }
+
+    function openExternalLink(href: string): void {
+        onMenuClick();
+        window.open(href, '_blank', 'noopener,noreferrer');
     }
 </script>
 
@@ -99,7 +116,7 @@
                 >
                     <Help class="size-4" aria-hidden="true" />
                     <div class="grid flex-1 gap-0.5 text-left">
-                        <span class="text-sm leading-none font-medium">Chat with support</span>
+                        <span class="text-sm leading-none font-medium">Chat with Support</span>
                     </div>
                     {#if intercomUnreadCount > 0}
                         <Sidebar.MenuBadge>{getUnreadCountLabel(intercomUnreadCount)}</Sidebar.MenuBadge>
@@ -110,7 +127,7 @@
     {/if}
     <Sidebar.Menu>
         <Sidebar.MenuItem>
-            <DropdownMenu.Root>
+            <DropdownMenu.Root bind:open>
                 <DropdownMenu.Trigger>
                     {#snippet child({ props })}
                         <Sidebar.MenuButton size="lg" class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground" {...props}>
@@ -118,7 +135,9 @@
                                 {#await gravatar.src}
                                     <Avatar.Fallback class="rounded-lg">{gravatar.initials}</Avatar.Fallback>
                                 {:then src}
-                                    <Avatar.Image alt={user ? `${user.full_name} avatar` : 'avatar'} {src} />
+                                    {#if src}
+                                        <Avatar.Image alt={user ? `${user.full_name} avatar` : 'avatar'} {src} />
+                                    {/if}
                                 {/await}
                                 <Avatar.Fallback class="rounded-lg">{gravatar.initials}</Avatar.Fallback>
                             </Avatar.Root>
@@ -142,7 +161,9 @@
                                 {#await gravatar.src}
                                     <Avatar.Fallback class="rounded-lg">{gravatar.initials}</Avatar.Fallback>
                                 {:then src}
-                                    <Avatar.Image alt={user ? `${user.full_name} avatar` : 'avatar'} {src} />
+                                    {#if src}
+                                        <Avatar.Image alt={user ? `${user.full_name} avatar` : 'avatar'} {src} />
+                                    {/if}
                                 {/await}
                                 <Avatar.Fallback class="rounded-lg">{gravatar.initials}</Avatar.Fallback>
                             </Avatar.Root>
@@ -155,48 +176,31 @@
                     <DropdownMenu.Separator />
 
                     <DropdownMenu.Group>
-                        <DropdownMenu.Item>
+                        <DropdownMenu.Item onSelect={() => navigateTo(resolve('/(app)/account/manage'))}>
                             <BadgeCheck />
-                            <A variant="ghost" href={resolve('/(app)/account/manage')} class="w-full" onclick={onMenuClick}>Account</A>
-                            <DropdownMenu.Shortcut>⇧⌘ga</DropdownMenu.Shortcut>
+                            <span class="w-full">Account</span>
                         </DropdownMenu.Item>
-                        <DropdownMenu.Item>
+                        <DropdownMenu.Item onSelect={() => navigateTo(resolve('/(app)/account/notifications'))}>
                             <Bell />
-                            <A variant="ghost" href={resolve('/(app)/account/notifications')} class="w-full" onclick={onMenuClick}>Notifications</A>
-                            <DropdownMenu.Shortcut>⇧⌘gn</DropdownMenu.Shortcut>
+                            <span class="w-full">Notifications</span>
                         </DropdownMenu.Item>
-                        {#if organization.current}
-                            <DropdownMenu.Item>
+                        {#if currentOrganizationId}
+                            <DropdownMenu.Item
+                                onSelect={() => navigateTo(resolve('/(app)/organization/[organizationId]/manage', { organizationId: currentOrganizationId }))}
+                            >
                                 <Settings />
-                                <A
-                                    variant="ghost"
-                                    href={resolve('/(app)/organization/[organizationId]/manage', { organizationId: organization.current })}
-                                    class="flex w-full items-center gap-2"
-                                    onclick={onMenuClick}
-                                >
-                                    Manage organization
-                                    <DropdownMenu.Shortcut>⇧⌘go</DropdownMenu.Shortcut>
-                                </A>
+                                <span class="w-full">Manage Organization</span>
                             </DropdownMenu.Item>
-                            <DropdownMenu.Item>
+                            <DropdownMenu.Item
+                                onSelect={() => navigateTo(resolve('/(app)/organization/[organizationId]/billing', { organizationId: currentOrganizationId }))}
+                            >
                                 <CreditCard />
-                                <A
-                                    variant="ghost"
-                                    href={resolve('/(app)/organization/[organizationId]/billing', { organizationId: organization.current })}
-                                    class="flex w-full items-center gap-2"
-                                    onclick={onMenuClick}
-                                >
-                                    Billing
-                                    <DropdownMenu.Shortcut>⇧⌘gb</DropdownMenu.Shortcut>
-                                </A>
+                                <span class="w-full">Billing</span>
                             </DropdownMenu.Item>
                         {:else}
-                            <DropdownMenu.Item>
+                            <DropdownMenu.Item onSelect={() => navigateTo(resolve('/(app)/organization/add'))}>
                                 <Plus />
-                                <A variant="ghost" href={resolve('/(app)/organization/add')} class="flex w-full items-center gap-2" onclick={onMenuClick}>
-                                    Add organization
-                                    <DropdownMenu.Shortcut>⇧⌘gn</DropdownMenu.Shortcut>
-                                </A>
+                                <span class="w-full">Add Organization</span>
                             </DropdownMenu.Item>
                         {/if}
                     </DropdownMenu.Group>
@@ -215,87 +219,35 @@
                                     {/if}
                                 </DropdownMenu.Item>
                             {/if}
-                            <DropdownMenu.Item>
+                            <DropdownMenu.Item onSelect={() => openExternalLink(documentationHref)}>
                                 <BookOpen />
-                                <A variant="ghost" href={documentationHref} target="_blank" class="w-full">Documentation</A>
-                                <DropdownMenu.Shortcut>⌘gw</DropdownMenu.Shortcut>
+                                <span class="w-full">Documentation</span>
                             </DropdownMenu.Item>
-                            <DropdownMenu.Item>
+                            <DropdownMenu.Item onSelect={() => openExternalLink(supportIssuesHref)}>
                                 <Help />
-                                <A variant="ghost" href={supportIssuesHref} target="_blank" class="w-full">Support</A>
-                                <DropdownMenu.Shortcut>⌘gs</DropdownMenu.Shortcut>
+                                <span class="w-full">Support</span>
                             </DropdownMenu.Item>
-                            <DropdownMenu.Item>
+                            <DropdownMenu.Item onSelect={() => openExternalLink(githubRepositoryHref)}>
                                 <GitHubIcon />
-                                <A variant="ghost" href={githubRepositoryHref} target="_blank" class="w-full">GitHub</A>
-                                <DropdownMenu.Shortcut>⌘gg</DropdownMenu.Shortcut>
+                                <span class="w-full">GitHub</span>
                             </DropdownMenu.Item>
-                            <DropdownMenu.Item>
+                            <DropdownMenu.Item onSelect={() => openExternalLink(apiReferenceHref)}>
                                 <Braces />
-                                <A variant="ghost" href={apiReferenceHref} target="_blank" class="w-full">API Reference</A>
+                                <span class="w-full">API Reference</span>
                             </DropdownMenu.Item>
-                            <DropdownMenu.Item>
+                            <DropdownMenu.Item onSelect={onKeyboardShortcutsClick}>
                                 <BookOpen />
-                                Keyboard shortcuts
-                                <DropdownMenu.Shortcut>⌘K</DropdownMenu.Shortcut>
+                                <span class="w-full">Keyboard Shortcuts</span>
                             </DropdownMenu.Item>
                         </DropdownMenu.SubContent>
                     </DropdownMenu.Sub>
-                    <GlobalUser>
-                        <DropdownMenu.Separator />
-                        <DropdownMenu.Sub>
-                            <DropdownMenu.SubTrigger>
-                                <Wrench />
-                                System
-                            </DropdownMenu.SubTrigger>
-                            <DropdownMenu.SubContent>
-                                <DropdownMenu.Item>
-                                    <LayoutDashboard />
-                                    <A variant="ghost" href={resolve('/(app)/system/overview')} class="w-full" onclick={onMenuClick}>Overview</A>
-                                </DropdownMenu.Item>
-                                <DropdownMenu.Item>
-                                    <Database />
-                                    <A variant="ghost" href={resolve('/(app)/system/elasticsearch/overview')} class="w-full" onclick={onMenuClick}
-                                        >Elasticsearch</A
-                                    >
-                                </DropdownMenu.Item>
-                                <DropdownMenu.Item>
-                                    <Play />
-                                    <A variant="ghost" href={resolve('/(app)/system/actions')} class="w-full" onclick={onMenuClick}>Actions</A>
-                                </DropdownMenu.Item>
-                                <DropdownMenu.Item>
-                                    <DatabaseZap />
-                                    <A variant="ghost" href={resolve('/(app)/system/migrations')} class="w-full" onclick={onMenuClick}>Migrations</A>
-                                </DropdownMenu.Item>
-                            </DropdownMenu.SubContent>
-                        </DropdownMenu.Sub>
-                        {#if isImpersonating}
-                            <DropdownMenu.Item
-                                onSelect={stopImpersonating}
-                                class="bg-violet-100 text-violet-900 hover:bg-violet-200 dark:bg-violet-900/30 dark:text-violet-100 dark:hover:bg-violet-900/50"
-                            >
-                                <EyeOff />
-                                Stop Impersonating
-                            </DropdownMenu.Item>
-                        {:else}
-                            <DropdownMenu.Item onSelect={() => (openImpersonateDialog = true)}>
-                                <Eye />
-                                Impersonate Organization
-                            </DropdownMenu.Item>
-                        {/if}
-                    </GlobalUser>
                     <DropdownMenu.Separator />
-                    <DropdownMenu.Item>
+                    <DropdownMenu.Item onSelect={onLogout}>
                         <LogOut />
-                        <A variant="ghost" href={resolve('/(auth)/logout')} class="w-full">Log out</A>
-                        <DropdownMenu.Shortcut>⇧⌘Q</DropdownMenu.Shortcut>
+                        <span class="w-full">Log Out</span>
                     </DropdownMenu.Item>
                 </DropdownMenu.Content>
             </DropdownMenu.Root>
         </Sidebar.MenuItem>
     </Sidebar.Menu>
-{/if}
-
-{#if openImpersonateDialog}
-    <ImpersonateOrganizationDialog bind:open={openImpersonateDialog} {impersonateOrganization} userOrganizationIds={organizations.map((o) => o.id)} />
 {/if}

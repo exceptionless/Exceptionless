@@ -1,12 +1,11 @@
 <script lang="ts">
     import type { StackStatus } from '$features/stacks/models';
 
-    import { resolve } from '$app/paths';
     import { A, Muted } from '$comp/typography';
     import StackStatusBadge from '$features/stacks/components/stack-status-badge.svelte';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
 
-    import type { StackSummaryModel, SummaryModel, SummaryTemplateKeys } from './index';
+    import { buildStackEventsHref, type StackSummaryModel, type SummaryModel, type SummaryTemplateKeys } from './index';
 
     interface Props {
         badgeStatus: StackStatus;
@@ -27,7 +26,7 @@
         <abbr title={source.data.TypeFullName}>{source.data.Type}</abbr>:
     </strong>
 
-    <A class="inline" href={`${resolve('/(app)')}?filter=stack:${source.id}`}>{source.title}</A>
+    <A class="inline" href={buildStackEventsHref(source.id)}>{source.title}</A>
 </div>
 
 {#if source.data.Path}

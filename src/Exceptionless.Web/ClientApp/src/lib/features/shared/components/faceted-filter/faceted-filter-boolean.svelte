@@ -9,13 +9,15 @@
 
     interface Props {
         changed: (value?: boolean) => void;
+        hidden?: boolean;
         open: boolean;
         remove: () => void;
         title: string;
+        toggleHidden?: () => void;
         value?: boolean;
     }
 
-    let { changed, open = $bindable(), remove, title, value }: Props = $props();
+    let { changed, hidden = false, open = $bindable(), remove, title, toggleHidden, value }: Props = $props();
 
     // eslint-disable-next-line svelte/prefer-writable-derived
     let updatedValue = $state<boolean | undefined>();
@@ -34,6 +36,8 @@
         } else if (selectedValue === 'no-value') {
             updatedValue = undefined;
         }
+
+        changed(updatedValue);
     }
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -47,21 +51,18 @@
     }
 
     function applyAndClose() {
-        if (updatedValue !== value) {
-            changed(updatedValue);
-        }
-
         open = false;
     }
 
     function cancelAndClose() {
         updatedValue = value;
+        changed(updatedValue);
         open = false;
     }
 
     function onOpenChange(isOpen: boolean) {
         if (!isOpen) {
-            applyAndClose();
+            open = false;
         }
     }
 
@@ -78,7 +79,7 @@
 <Popover.Root bind:open {onOpenChange}>
     <Popover.Trigger>
         {#snippet child({ props })}
-            <Button {...props} class="gap-x-1 px-3" size="xl" variant="outline" aria-describedby={`${title}-help`}>
+            <Button {...props} class="gap-x-1 px-3" size="lg" variant="outline" aria-describedby={`${title}-help`}>
                 {title}
                 <Separator class="mx-2" orientation="vertical" />
                 {#if value !== undefined}
@@ -89,7 +90,7 @@
             </Button>
         {/snippet}
     </Popover.Trigger>
-    <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={applyAndClose}>
+    <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={(e) => e.preventDefault()}>
         <div class="border-b p-4">
             <RadioGroup.Root
                 value={radioValue}
@@ -113,6 +114,6 @@
             </RadioGroup.Root>
         </div>
         <div id={`${title}-help`} class="sr-only">Arrow keys select. Enter applies, Escape cancels.</div>
-        <FacetedFilter.Actions clear={onClearFilter} {remove} showClear={updatedValue !== undefined} />
+        <FacetedFilter.Actions clear={onClearFilter} {hidden} {remove} showClear={updatedValue !== undefined} {toggleHidden} />
     </Popover.Content>
 </Popover.Root>

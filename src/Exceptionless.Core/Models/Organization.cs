@@ -31,6 +31,9 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     [Required]
     public string Name { get; set; } = null!;
 
+    [StringLength(2000)]
+    public string? IconFileName { get; set; }
+
     /// <summary>
     /// Stripe customer id that will be charged.
     /// </summary>
@@ -135,7 +138,7 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     public bool HasPremiumFeatures { get; set; }
 
     /// <summary>
-    /// Set of enabled feature flags for this organization (e.g., "feature-saved-views").
+    /// Set of enabled feature flags for this organization.
     /// Feature identifiers are always stored in lowercase.
     /// </summary>
     public ISet<string> Features { get; set; } = new HashSet<string>();
@@ -277,11 +280,4 @@ public enum BillingStatus
     Unpaid = 4
 }
 
-/// <summary>
-/// Well-known organization feature flag identifiers.
-/// </summary>
-public static class OrganizationFeatures
-{
-    /// <summary>Enables the Saved Views feature for the organization.</summary>
-    public const string SavedViews = "feature-saved-views";
-}
+

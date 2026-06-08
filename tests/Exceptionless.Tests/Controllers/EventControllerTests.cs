@@ -25,6 +25,7 @@ using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
 using Xunit;
 using MediaTypeHeaderValue = System.Net.Http.Headers.MediaTypeHeaderValue;
@@ -36,6 +37,7 @@ public class EventControllerTests : IntegrationTestsBase
 {
     private readonly JsonSerializerOptions _jsonSerializerOptions;
     private readonly IOrganizationRepository _organizationRepository;
+    private readonly IProjectRepository _projectRepository;
     private readonly StackData _stackData;
     private readonly Exceptionless.Helpers.RandomEventGenerator _randomEventGenerator;
     private readonly EventData _eventData;
@@ -48,6 +50,7 @@ public class EventControllerTests : IntegrationTestsBase
     {
         _jsonSerializerOptions = GetService<JsonSerializerOptions>();
         _organizationRepository = GetService<IOrganizationRepository>();
+        _projectRepository = GetService<IProjectRepository>();
         _stackData = GetService<StackData>();
         _randomEventGenerator = GetService<Exceptionless.Helpers.RandomEventGenerator>();
         _eventData = GetService<EventData>();
@@ -163,6 +166,92 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal(1, stats.Abandoned); // Event doesn't exist
 
         await _eventUserDescriptionQueue.DeleteQueueAsync();
+    }
+
+    [Fact]
+    public async Task GetSubmitEventAsync_WithOnlyIgnoredParameters_DoesNotEnqueueEvent()
+    {
+        // Act
+        await SendRequestAsync(r => r
+            .AsTestOrganizationClientUser()
+            .AppendPaths("events", "submit")
+            .QueryString("api_key", SampleDataService.TEST_API_KEY)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        var stats = await _eventQueue.GetQueueStatsAsync();
+        Assert.Equal(0, stats.Enqueued);
+    }
+
+    [Fact]
+    public async Task GetSubmitEventAsync_WithQueryParameters_EnqueuesEvent()
+    {
+        // Arrange
+        var eventDate = TimeProvider.GetUtcNow().AddMinutes(-5);
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsTestOrganizationClientUser()
+            .AppendPaths("events", "submit", Event.KnownTypes.FeatureUsage)
+            .QueryString("source", "build")
+            .QueryString("message", "GET submit event")
+            .QueryString("reference", "get-submit-reference")
+            .QueryString("date", eventDate.ToString("O"))
+            .QueryString("count", "3")
+            .QueryString("value", "10.5")
+            .QueryString("tags", "one,two")
+            .QueryString("identity", "user-123")
+            .QueryString("identity.name", "Test User")
+            .QueryString("custom_property", "custom value")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        var stats = await _eventQueue.GetQueueStatsAsync();
+        Assert.Equal(1, stats.Enqueued);
+        Assert.Equal(0, stats.Completed);
+
+        var processEventsJob = GetService<EventPostsJob>();
+        await processEventsJob.RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        stats = await _eventQueue.GetQueueStatsAsync();
+        Assert.Equal(1, stats.Completed);
+
+        var ev = (await _eventRepository.GetAllAsync()).Documents.Single(e => String.Equals(e.ReferenceId, "get-submit-reference", StringComparison.Ordinal));
+        Assert.Equal(Event.KnownTypes.FeatureUsage, ev.Type);
+        Assert.Equal("build", ev.Source);
+        Assert.Equal("GET submit event", ev.Message);
+        Assert.Equal("get-submit-reference", ev.ReferenceId);
+        Assert.Equal(3, ev.Count);
+        Assert.Equal(10.5m, ev.Value);
+        Assert.NotNull(ev.Tags);
+        Assert.Contains("one", ev.Tags);
+        Assert.Contains("two", ev.Tags);
+        Assert.NotNull(ev.Data);
+        Assert.Equal("custom value", ev.Data["custom_property"]);
+
+        var identity = ev.GetUserIdentity(_jsonSerializerOptions);
+        Assert.NotNull(identity);
+        Assert.Equal("user-123", identity.Identity);
+        Assert.Equal("Test User", identity.Name);
+    }
+
+    [Fact]
+    public async Task GetSubmitEventByProjectV2Async_MismatchedProjectRoute_ReturnsNotFound()
+    {
+        // Act
+        await SendRequestAsync(r => r
+            .AsTestOrganizationClientUser()
+            .AppendPaths("projects", SampleDataService.FREE_PROJECT_ID, "events", "submit")
+            .QueryString("message", "should not enqueue")
+            .StatusCodeShouldBeNotFound()
+        );
+
+        // Assert
+        var stats = await _eventQueue.GetQueueStatsAsync();
+        Assert.Equal(0, stats.Enqueued);
     }
 
     [Fact]
@@ -552,6 +641,30 @@ public class EventControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetEvent_WithMismatchedExpectedStack_ReturnsBadRequest()
+    {
+        var (stacks, events) = await CreateDataAsync(d =>
+        {
+            d.Event().TestProject().StackId("1ecd0826e447a44e78877ab1");
+            d.Event().TestProject().StackId("2ecd0826e447a44e78877ab2");
+        });
+
+        var expectedStackId = stacks.Single(s => s.Id == "2ecd0826e447a44e78877ab2").Id;
+        var actualEvent = events.Single(e => e.StackId == "1ecd0826e447a44e78877ab1");
+        string actualStackId = actualEvent.StackId ?? throw new InvalidOperationException("Expected test event to have a stack id.");
+
+        var problemDetails = await SendRequestAsAsync<ProblemDetails>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("events", actualEvent.Id)
+            .QueryString("expected_stack_id", expectedStackId)
+            .StatusCodeShouldBeBadRequest()
+        ) ?? throw new InvalidOperationException("Expected problem details response.");
+
+        Assert.Equal(StatusCodes.Status400BadRequest, problemDetails.Status);
+        Assert.Equal($"The event \"{actualEvent.Id}\" belongs to stack \"{actualStackId}\", not stack \"{expectedStackId}\". Open the event from its current stack.", problemDetails.Title);
+    }
+
+    [Fact]
     public async Task WillGetEventSessions()
     {
         string sessionId = Guid.NewGuid().ToString("N");
@@ -703,6 +816,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.NotNull(results);
         Assert.NotEmpty(results);
         Assert.All(results, summary => Assert.NotEqual(default, summary.Date));
+        Assert.Contains(results, summary => !String.IsNullOrEmpty(summary.Type));
     }
 
     [Fact]
@@ -1630,6 +1744,7 @@ public class EventControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
             .Post()
             .AsTestOrganizationClientUser()
+            .UserAgent("fluentrest/1.0.0")
             .AppendPath("events")
             .Content(eventJson, "application/json")
             .StatusCodeShouldBeAccepted()
@@ -1854,5 +1969,153 @@ public class EventControllerTests : IntegrationTestsBase
             WriteIndented = true
         };
         return JsonSerializer.Serialize(document.RootElement, prettyJsonOptions);
+    }
+
+    [Fact]
+    public async Task LegacyPatchAsync_WithPascalCaseLegacyFields_MapsToUserDescription()
+    {
+        // Arrange — submit event with a reference ID matching an objectid format
+        const string referenceId = "507f1f77bcf86cd799439011";
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content($$"""
+                {
+                  "type": "log",
+                  "message": "Legacy patch test",
+                  "reference_id": "{{referenceId}}"
+                }
+                """, "application/json")
+            .StatusCodeShouldBeAccepted()
+        );
+
+        await GetService<EventPostsJob>().RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        // Act — v1 clients sent PascalCase "UserEmail" / "UserDescription"
+        await SendRequestAsync(r => r
+            .Patch()
+            .BaseUri(_server.BaseAddress)
+            .AsTestOrganizationClientUser()
+            .AppendPaths("api", "v1", "error", referenceId)
+            .Content("""
+                {
+                  "UserEmail": "legacy@exceptionless.test",
+                  "UserDescription": "Legacy description"
+                }
+                """, "application/json")
+            .StatusCodeShouldBeAccepted()
+        );
+
+        await GetService<EventUserDescriptionsJob>().RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        // Assert
+        var ev = (await _eventRepository.GetByReferenceIdAsync(SampleDataService.TEST_PROJECT_ID, referenceId)).Documents.Single();
+        var userDescription = ev.GetUserDescription(_jsonSerializerOptions);
+        Assert.NotNull(userDescription);
+        Assert.Equal("legacy@exceptionless.test", userDescription.EmailAddress);
+        Assert.Equal("Legacy description", userDescription.Description);
+    }
+
+    [Fact]
+    public async Task DeleteModelsAsync_SingleEvent_IncrementsDeletedUsage()
+    {
+        // Arrange
+        var usageService = GetService<UsageService>();
+
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content(new Event { Message = "test-delete-usage", Type = Event.KnownTypes.Log })
+            .StatusCodeShouldBeAccepted());
+
+        var processEventsJob = GetService<EventPostsJob>();
+        await processEventsJob.RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        var events = await _eventRepository.GetAllAsync();
+        var targetEvent = events.Documents.Single(e => String.Equals(e.Message, "test-delete-usage", StringComparison.Ordinal));
+
+        // Act
+        await SendRequestAsync(r => r
+            .Delete()
+            .AsTestOrganizationUser()
+            .AppendPath($"events/{targetEvent.Id}")
+            .StatusCodeShouldBeAccepted());
+
+        await RefreshDataAsync();
+
+        // Assert
+        var remainingEvent = await _eventRepository.GetByIdAsync(targetEvent.Id);
+        Assert.Null(remainingEvent);
+
+        var usageResponse = await usageService.GetUsageAsync(targetEvent.OrganizationId, targetEvent.ProjectId);
+        Assert.Equal(1, usageResponse.CurrentUsage.Deleted);
+        Assert.Equal(1, usageResponse.CurrentHourUsage.Deleted);
+
+        TimeProvider.Advance(TimeSpan.FromMinutes(10));
+        await usageService.SavePendingUsageAsync();
+
+        var organization = await _organizationRepository.GetByIdAsync(targetEvent.OrganizationId);
+        Assert.NotNull(organization);
+        var orgUsage = organization.Usage.FirstOrDefault();
+        Assert.NotNull(orgUsage);
+        Assert.Equal(1, orgUsage.Deleted);
+    }
+
+    [Fact]
+    public async Task DeleteModelsAsync_MultipleEvents_IncrementsDeletedUsageForAll()
+    {
+        // Arrange
+        var usageService = GetService<UsageService>();
+
+        for (int eventIndex = 0; eventIndex < 3; eventIndex++)
+        {
+            await SendRequestAsync(r => r
+                .Post()
+                .AsTestOrganizationClientUser()
+                .AppendPath("events")
+                .Content(new Event { Message = $"test-multi-delete-{eventIndex}", Type = Event.KnownTypes.Log })
+                .StatusCodeShouldBeAccepted());
+        }
+
+        var processEventsJob = GetService<EventPostsJob>();
+        await processEventsJob.RunUntilEmptyAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        var events = await _eventRepository.GetAllAsync();
+        var targetEvents = events.Documents.Where(e => e.Message is not null && e.Message.StartsWith("test-multi-delete-", StringComparison.Ordinal)).ToList();
+        Assert.Equal(3, targetEvents.Count);
+
+        var ids = String.Join(",", targetEvents.Select(e => e.Id));
+
+        // Act
+        await SendRequestAsync(r => r
+            .Delete()
+            .AsTestOrganizationUser()
+            .AppendPath($"events/{ids}")
+            .StatusCodeShouldBeAccepted());
+
+        await RefreshDataAsync();
+
+        // Assert
+        var firstEvent = targetEvents.First();
+        var usageResponse = await usageService.GetUsageAsync(firstEvent.OrganizationId, firstEvent.ProjectId);
+        Assert.Equal(3, usageResponse.CurrentUsage.Deleted);
+        Assert.Equal(3, usageResponse.CurrentHourUsage.Deleted);
+
+        TimeProvider.Advance(TimeSpan.FromMinutes(10));
+        await usageService.SavePendingUsageAsync();
+
+        var organization = await _organizationRepository.GetByIdAsync(firstEvent.OrganizationId);
+        Assert.NotNull(organization);
+        Assert.Equal(3, organization.Usage.Sum(u => u.Deleted));
+
+        var project = await _projectRepository.GetByIdAsync(firstEvent.ProjectId);
+        Assert.NotNull(project);
+        Assert.Equal(3, project.Usage.Sum(u => u.Deleted));
     }
 }

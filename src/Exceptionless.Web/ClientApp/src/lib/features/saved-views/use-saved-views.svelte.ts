@@ -1,28 +1,43 @@
 import type { IFilter } from '$comp/faceted-filter';
-import type { ColumnVisibilityState } from '@tanstack/svelte-table';
+import type { ColumnOrderState, ColumnVisibilityState } from '@tanstack/svelte-table';
 
-import { deserializeFilters } from '$features/events/components/filters/helpers.svelte';
-import { getOrganizationQuery } from '$features/organizations/api.svelte';
+import { goto } from '$app/navigation';
+import { buildFilterCacheKey, deserializeFilters, serializeFilters } from '$features/events/components/filters/helpers.svelte';
 import { organization } from '$features/organizations/context.svelte';
-import { untrack } from 'svelte';
 
 import type { SavedView } from './models';
 
 import { getSavedViewsByViewQuery } from './api.svelte';
-
-const SAVED_VIEWS_FEATURE = 'feature-saved-views';
+import { savedViewHref, savedViewResolvedSlug } from './slugs';
 
 export interface SavedViewQueryParams {
-    filter: null | string;
-    saved: null | string | undefined;
+    filter: null | string | undefined;
+    filters?: null | string | undefined;
+    saved?: null | string | undefined;
+    sort?: null | string;
     time?: null | string;
 }
 
 export interface UseSavedViewsOptions {
+    baseHref?: string;
+    defaultColumnVisibility?: ColumnVisibilityState;
+    defaultFilter?: null | string;
+    defaultTime?: null | string;
     filterCacheKey: (filter: null | string) => string;
+    getColumnOrder?: () => ColumnOrderState;
     getColumnVisibility?: () => ColumnVisibilityState;
+    getFilter?: () => null | string;
+    getFilterDefinitions?: () => string;
+    getShowChart?: () => boolean;
+    getShowStats?: () => boolean;
+    getSort?: () => null | string | undefined;
+    getTime?: () => null | string | undefined;
     queryParams: SavedViewQueryParams;
+    setColumnOrder?: (order: ColumnOrderState) => void;
     setColumnVisibility?: (visibility: ColumnVisibilityState) => void;
+    setShowChart?: (show: boolean) => void;
+    setShowStats?: (show: boolean) => void;
+    slug?: string;
     updateFilterCache: (key: string, filters: IFilter[]) => void;
     view: string;
 }
@@ -30,11 +45,56 @@ export interface UseSavedViewsOptions {
 export interface UseSavedViewsReturn {
     activeSavedView: SavedView | undefined;
     handleClearSavedView: () => void;
-    handleLoadView: (id: string) => void;
+    handleLoadView: (view: SavedView) => void;
     handleResetToSaved: () => void;
     isEnabled: boolean;
+    isLoading: boolean;
+    isMissing: boolean;
     isModified: boolean;
     savedViews: SavedView[];
+}
+
+export function filterDefinitionsEqual(a: null | string | undefined, b: null | string | undefined): boolean {
+    return normalizeFilterDefinitions(a) === normalizeFilterDefinitions(b);
+}
+
+export function getComparableSavedViewFilter(
+    filter: null | string | undefined,
+    filterDefinitions: null | string | undefined,
+    defaultFilter: null | string | undefined
+): null | string {
+    if (filter != null) {
+        return filter || null;
+    }
+
+    return filterDefinitions ? null : (defaultFilter ?? null);
+}
+
+export function getComparableSavedViewTime(time: null | string | undefined, defaultTime: null | string | undefined): null | string {
+    return time ?? defaultTime ?? null;
+}
+
+export function hasMissingSavedViewSlug(options: {
+    activeSavedView: SavedView | undefined;
+    isLoading: boolean;
+    savedViews: SavedView[] | undefined;
+    slug: string | undefined;
+}): boolean {
+    return !!options.slug && !options.activeSavedView && !!options.savedViews && !options.isLoading;
+}
+
+export function hasSavedColumnOrder(columnOrder: null | string[] | undefined): columnOrder is string[] {
+    return !!columnOrder?.length;
+}
+
+export function hasSavedColumnVisibility(columns: null | Record<string, boolean> | undefined): columns is Record<string, boolean> {
+    return columns != null;
+}
+
+export function setSortQueryParam(queryParams: SavedViewQueryParams, value: null | string): void {
+    if (supportsSortQueryParam(queryParams)) {
+        queryParams.sort = value;
+    }
 }
 
 export function setTimeQueryParam(queryParams: SavedViewQueryParams, value: null | string): void {
@@ -43,29 +103,25 @@ export function setTimeQueryParam(queryParams: SavedViewQueryParams, value: null
     }
 }
 
+export function supportsSortQueryParam(queryParams: SavedViewQueryParams): queryParams is SavedViewQueryParams & { sort: null | string | undefined } {
+    return Object.prototype.hasOwnProperty.call(queryParams, 'sort');
+}
+
 export function supportsTimeQueryParam(queryParams: SavedViewQueryParams): queryParams is SavedViewQueryParams & { time: null | string | undefined } {
     return Object.prototype.hasOwnProperty.call(queryParams, 'time');
 }
 
 export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsReturn {
-    const organizationQuery = getOrganizationQuery({
-        route: {
-            get id() {
-                return organization.current;
-            }
-        }
-    });
+    const isEnabled = $derived(!!organization.current);
 
-    // Feature flag gate: only enable saved views if the organization has the feature
-    const isEnabled = $derived(organizationQuery.data?.features?.includes(SAVED_VIEWS_FEATURE) ?? false);
-
-    // Some routes, such as stream, do not declare a time query parameter.
+    // Some routes, such as stream, do not declare every saved-view query parameter.
+    const supportsSort = supportsSortQueryParam(options.queryParams);
     const supportsTime = supportsTimeQueryParam(options.queryParams);
 
     const savedViewsListQuery = getSavedViewsByViewQuery({
         route: {
             get organizationId() {
-                return isEnabled ? organization.current : undefined;
+                return organization.current;
             },
             get view() {
                 return options.view;
@@ -73,133 +129,154 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
     });
 
-    const activeSavedView = $derived(savedViewsListQuery.data?.find((v) => v.id === options.queryParams.saved));
+    const activeSavedView = $derived.by(() => {
+        const views = savedViewsListQuery.data;
+        if (!views) {
+            return undefined;
+        }
 
-    // Hydrate filters/columns when a saved view loads, or clear params if the view is no longer found.
+        if (options.slug) {
+            return views.find((view) => savedViewResolvedSlug(view) === options.slug);
+        }
+
+        if (options.queryParams.saved) {
+            return views.find((view) => view.id === options.queryParams.saved);
+        }
+
+        return undefined;
+    });
+
+    function applyColumnState(view: Pick<SavedView, 'column_order' | 'columns'> | undefined): void {
+        if (options.setColumnVisibility) {
+            options.setColumnVisibility(view?.columns ?? {});
+        }
+
+        if (options.setColumnOrder) {
+            options.setColumnOrder(view?.column_order ?? []);
+        }
+    }
+
+    function applyDisplayState(view: Pick<SavedView, 'show_chart' | 'show_stats'> | undefined): void {
+        options.setShowStats?.(view?.show_stats ?? true);
+        options.setShowChart?.(view?.show_chart ?? true);
+    }
+
+    // Hydrate saved view state when a saved view loads. Query params remain URL overrides.
     // lastLoadedViewId prevents re-hydration on background refetches (which would stomp user edits).
     let lastLoadedViewId = '';
-    let hasAutoRestored = false;
-    let lastAutoRestoredOrganizationId = '';
     $effect(() => {
-        const savedId = options.queryParams.saved;
+        const savedViewKey = options.slug ?? options.queryParams.saved;
+        const view = activeSavedView;
         const isLoading = savedViewsListQuery.isLoading;
         const isFetching = savedViewsListQuery.isFetching;
         const views = savedViewsListQuery.data;
 
-        if (!savedId || isLoading || !views) {
-            if (!savedId) {
+        if (!savedViewKey || isLoading || !views) {
+            if (!savedViewKey) {
+                if (lastLoadedViewId !== '') {
+                    applyColumnState(undefined);
+                    applyDisplayState(undefined);
+                }
+
                 lastLoadedViewId = '';
             }
 
             return;
         }
 
-        const view = views.find((v) => v.id === savedId);
         if (!view) {
             // Skip while refetching to avoid false-positive clears during cache invalidation
             if (isFetching) {
                 return;
             }
 
-            // View not found after a definitive load — clear params and allow auto-restore to re-run
-            untrack(() => {
-                options.queryParams.saved = null;
-            });
-            options.queryParams.filter = null;
-            setTimeQueryParam(options.queryParams, null);
-            hasAutoRestored = false;
             return;
         }
 
         // Already loaded this view — skip to avoid stomping user edits on background refetch
-        if (savedId === lastLoadedViewId) {
+        if (view.id === lastLoadedViewId) {
             return;
         }
 
-        lastLoadedViewId = savedId;
+        lastLoadedViewId = view.id;
 
         if (view.filter_definitions) {
             try {
                 const hydrated = deserializeFilters(view.filter_definitions);
-                options.updateFilterCache(options.filterCacheKey(view.filter ?? null), hydrated);
+                updateSavedViewFilterCache(options, view, hydrated);
             } catch {
                 console.error('Failed to deserialize saved view filter definitions');
             }
         }
 
-        options.queryParams.filter = view.filter ?? null;
-        setTimeQueryParam(options.queryParams, view.time ?? null);
-
-        if (view.columns && options.setColumnVisibility) {
-            options.setColumnVisibility(view.columns);
-        }
-    });
-
-    // Auto-load default saved view when navigating to page without explicit params
-    $effect(() => {
-        const organizationId = organization.current;
-        const views = savedViewsListQuery.data;
-        if (!organizationId) {
-            return;
-        }
-
-        if (organizationId !== lastAutoRestoredOrganizationId) {
-            hasAutoRestored = false;
-            lastAutoRestoredOrganizationId = organizationId;
-        }
-
-        if (hasAutoRestored) {
-            return;
-        }
-
-        // Don't lock out the auto-restore while the feature flag is still resolving
-        // or the views list hasn't loaded yet. Without this guard the effect fires
-        // while the query is disabled (isLoading=false but data=undefined) and marks
-        // hasAutoRestored=true before any view data is available.
-        if (!isEnabled || savedViewsListQuery.isLoading) {
-            return;
-        }
-
-        hasAutoRestored = true;
-
-        const search = window.location.search;
-        const hasExplicitParams = /[?&]saved(?:[=&]|$)/.test(search) || /[?&]filter(?:[=&]|$)/.test(search) || /[?&]time(?:[=&]|$)/.test(search);
-        if (hasExplicitParams) {
-            return;
-        }
-
-        untrack(() => {
-            const defaultView = views?.find((v) => v.is_default);
-            if (defaultView) {
-                options.queryParams.saved = defaultView.id;
-            }
-        });
+        applyColumnState(view);
+        applyDisplayState(view);
     });
 
     // Detect if current filters or columns differ from the active saved view
     const isModified = $derived.by(() => {
         const view = activeSavedView;
-        if (!view || !options.queryParams.saved) {
+        if (!view) {
             return false;
         }
 
-        if ((options.queryParams.filter ?? null) !== (view.filter ?? null)) {
+        const savedViewFilter = getComparableSavedViewFilter(view.filter, view.filter_definitions, options.defaultFilter);
+        if ((options.getFilter?.() ?? options.queryParams.filter ?? null) !== savedViewFilter) {
             return true;
         }
 
-        if (supportsTime && (options.queryParams.time ?? null) !== (view.time ?? null)) {
+        const savedViewTime = getComparableSavedViewTime(view.time, options.defaultTime);
+        if (supportsTime && (options.getTime?.() ?? options.queryParams.time ?? null) !== savedViewTime) {
             return true;
         }
 
-        if (options.getColumnVisibility && !columnsEqual(options.getColumnVisibility(), view.columns)) {
+        if (supportsSort && (options.getSort?.() ?? options.queryParams.sort ?? null) !== (view.sort ?? null)) {
+            return true;
+        }
+
+        if (options.getFilterDefinitions && view.filter_definitions && !filterDefinitionsEqual(options.getFilterDefinitions(), view.filter_definitions)) {
+            return true;
+        }
+
+        if (
+            options.getColumnVisibility &&
+            hasSavedColumnVisibility(view.columns) &&
+            !columnsEqual(options.getColumnVisibility(), view.columns, options.defaultColumnVisibility)
+        ) {
+            return true;
+        }
+
+        if (options.getColumnOrder && hasSavedColumnOrder(view.column_order) && !columnOrderEqual(options.getColumnOrder(), view.column_order)) {
+            return true;
+        }
+
+        if (options.getShowStats && options.getShowStats() !== (view.show_stats ?? true)) {
+            return true;
+        }
+
+        if (options.getShowChart && options.getShowChart() !== (view.show_chart ?? true)) {
             return true;
         }
 
         return false;
     });
 
-    function handleLoadView(id: string) {
-        options.queryParams.saved = id;
+    const isMissing = $derived(
+        hasMissingSavedViewSlug({
+            activeSavedView,
+            isLoading: savedViewsListQuery.isLoading,
+            savedViews: savedViewsListQuery.data,
+            slug: options.slug
+        })
+    );
+
+    function handleLoadView(view: SavedView) {
+        if (options.baseHref) {
+            goto(savedViewHref(view));
+            return;
+        }
+
+        options.queryParams.saved = view.id;
     }
 
     function handleResetToSaved() {
@@ -211,25 +288,34 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         if (view.filter_definitions) {
             try {
                 const hydrated = deserializeFilters(view.filter_definitions);
-                options.updateFilterCache(options.filterCacheKey(view.filter ?? null), hydrated);
+                updateSavedViewFilterCache(options, view, hydrated);
             } catch {
                 console.error('Failed to deserialize saved view filter definitions');
             }
         }
 
-        options.queryParams.filter = view.filter ?? null;
-        setTimeQueryParam(options.queryParams, view.time ?? null);
-        if (view.columns && options.setColumnVisibility) {
-            options.setColumnVisibility(view.columns);
-        }
+        options.queryParams.filter = null;
+        options.queryParams.filters = null;
+        setSortQueryParam(options.queryParams, null);
+        setTimeQueryParam(options.queryParams, null);
+        applyColumnState(view);
+        applyDisplayState(view);
     }
 
     function handleClearSavedView() {
-        options.queryParams.saved = null;
         options.queryParams.filter = null;
+        options.queryParams.filters = null;
+        setSortQueryParam(options.queryParams, null);
         setTimeQueryParam(options.queryParams, null);
-        if (options.setColumnVisibility) {
-            options.setColumnVisibility({});
+        applyColumnState(undefined);
+        applyDisplayState(undefined);
+
+        if (supportsSavedQueryParam(options.queryParams)) {
+            options.queryParams.saved = undefined;
+        }
+
+        if (options.baseHref) {
+            goto(options.baseHref);
         }
     }
 
@@ -243,6 +329,12 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         get isEnabled() {
             return isEnabled;
         },
+        get isLoading() {
+            return savedViewsListQuery.isLoading;
+        },
+        get isMissing() {
+            return isMissing;
+        },
         get isModified() {
             return isModified;
         },
@@ -252,9 +344,26 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     };
 }
 
-function columnsEqual(a: ColumnVisibilityState | undefined, b: null | Record<string, boolean> | undefined): boolean {
-    const aEntries = Object.entries(a ?? {}).sort(([k1], [k2]) => k1.localeCompare(k2));
-    const bEntries = Object.entries(b ?? {}).sort(([k1], [k2]) => k1.localeCompare(k2));
+function columnOrderEqual(a: ColumnOrderState | undefined, b: null | string[] | undefined): boolean {
+    const normalize = (value: null | string[] | undefined) => (value ?? []).filter((columnId) => columnId !== 'select');
+    const aOrder = normalize(a);
+    const bOrder = normalize(b);
+
+    if (aOrder.length !== bOrder.length) {
+        return false;
+    }
+
+    return aOrder.every((columnId, index) => columnId === bOrder[index]);
+}
+
+function columnsEqual(
+    a: ColumnVisibilityState | undefined,
+    b: null | Record<string, boolean> | undefined,
+    defaultColumnVisibility: ColumnVisibilityState = {}
+): boolean {
+    const normalize = (value: ColumnVisibilityState | null | undefined) => ({ ...defaultColumnVisibility, ...(value ?? {}) });
+    const aEntries = Object.entries(normalize(a)).sort(([k1], [k2]) => k1.localeCompare(k2));
+    const bEntries = Object.entries(normalize(b)).sort(([k1], [k2]) => k1.localeCompare(k2));
 
     if (aEntries.length !== bEntries.length) {
         return false;
@@ -264,4 +373,42 @@ function columnsEqual(a: ColumnVisibilityState | undefined, b: null | Record<str
         const bEntry = bEntries[i];
         return bEntry !== undefined && bEntry[0] === k && bEntry[1] === v;
     });
+}
+
+function normalizeFilterDefinitions(value: null | string | undefined): string {
+    if (!value) {
+        return '[]';
+    }
+
+    try {
+        const parsed = JSON.parse(value);
+        if (!Array.isArray(parsed) || parsed.length === 0) {
+            return '[]';
+        }
+
+        return serializeFilters(sortFilterDefinitions(deserializeFilters(value)));
+    } catch {
+        return value;
+    }
+}
+
+function sortFilterDefinitions(filters: IFilter[]): IFilter[] {
+    return [...filters].sort((a, b) => a.key.localeCompare(b.key));
+}
+
+function supportsSavedQueryParam(queryParams: SavedViewQueryParams): queryParams is SavedViewQueryParams & { saved: null | string | undefined } {
+    return Object.prototype.hasOwnProperty.call(queryParams, 'saved');
+}
+
+function updateSavedViewFilterCache(options: UseSavedViewsOptions, view: SavedView, filters: IFilter[]): void {
+    const currentRouteKey = options.filterCacheKey(view.filter ?? null);
+    options.updateFilterCache(currentRouteKey, filters);
+
+    const canonicalHref = savedViewHref(view);
+    const queryIndex = canonicalHref.indexOf('?');
+    const canonicalPath = queryIndex >= 0 ? canonicalHref.slice(0, queryIndex) : canonicalHref;
+    const canonicalRouteKey = buildFilterCacheKey(organization.current, canonicalPath, view.filter ?? null);
+    if (canonicalRouteKey !== currentRouteKey) {
+        options.updateFilterCache(canonicalRouteKey, filters);
+    }
 }

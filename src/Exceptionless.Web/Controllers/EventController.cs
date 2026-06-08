@@ -49,6 +49,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     private readonly ICacheClient _cache;
     private readonly JsonSerializerSettings _jsonSerializerSettings;
     private readonly AppOptions _appOptions;
+    private readonly UsageService _usageService;
 
     public EventController(IEventRepository repository,
         IOrganizationRepository organizationRepository,
@@ -63,6 +64,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         ApiMapper mapper,
         PersistentEventQueryValidator validator,
         AppOptions appOptions,
+        UsageService usageService,
         TimeProvider timeProvider,
         ILoggerFactory loggerFactory
     ) : base(repository, mapper, validator, timeProvider, loggerFactory)
@@ -77,6 +79,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         _cache = cacheClient;
         _jsonSerializerSettings = jsonSerializerSettings;
         _appOptions = appOptions;
+        _usageService = usageService;
 
         AllowedDateFields.Add(EventIndex.Alias.Date);
         DefaultDateField = EventIndex.Alias.Date;
@@ -169,17 +172,22 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// Get by id
     /// </summary>
     /// <param name="id">The identifier of the event.</param>
+    /// <param name="expectedStackId">Optional stack identifier that the event must belong to.</param>
     /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
     /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+    /// <response code="400">The event does not belong to the expected stack.</response>
     /// <response code="404">The event occurrence could not be found.</response>
     /// <response code="426">Unable to view event occurrence due to plan limits.</response>
     [HttpGet("{id:objectid}", Name = "GetPersistentEventById")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<PersistentEvent>> GetAsync(string id, string? time = null, string? offset = null)
+    public async Task<ActionResult<PersistentEvent>> GetAsync(string id, [FromQuery(Name = "expected_stack_id")] string? expectedStackId = null, string? time = null, string? offset = null)
     {
         var model = await GetModelAsync(id, false);
         if (model is null)
             return NotFound();
+
+        if (!String.IsNullOrEmpty(expectedStackId) && !String.Equals(model.StackId, expectedStackId, StringComparison.Ordinal))
+            return Problem(statusCode: StatusCodes.Status400BadRequest, title: $"The event \"{model.Id}\" belongs to stack \"{model.StackId}\", not stack \"{expectedStackId}\". Open the event from its current stack.");
 
         var organization = await GetOrganizationAsync(model.OrganizationId);
         if (organization is null)
@@ -310,6 +318,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                             Id = summaryData.Id,
                             TemplateKey = summaryData.TemplateKey,
                             Date = e.Date,
+                            Type = e.Type,
                             Data = summaryData.Data
                         };
                     }).ToList(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total, events.Hits.FirstOrDefault()?.GetSortToken(), events.Hits.LastOrDefault()?.GetSortToken());
@@ -1456,16 +1465,35 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         return totals;
     }
 
-    protected override Task<IEnumerable<string>> DeleteModelsAsync(ICollection<PersistentEvent> events)
+    protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<PersistentEvent> events)
     {
         var user = CurrentUser;
-        foreach (var projectEvents in events.GroupBy(ev => ev.ProjectId))
+        var projectGroups = events.GroupBy(ev => new { ev.OrganizationId, ev.ProjectId }).ToList();
+        foreach (var projectGroup in projectGroups)
         {
-            var ev = projectEvents.First();
+            var ev = projectGroup.First();
             using var _ = _logger.BeginScope(new ExceptionlessState().Organization(ev.OrganizationId).Project(ev.ProjectId).Tag("Delete").Identity(user.EmailAddress).Property("User", user).SetHttpContext(HttpContext));
-            _logger.LogInformation("User {User} deleted {RemovedCount} events in project ({ProjectId})", user.Id, projectEvents.Count(), ev.ProjectId);
+            _logger.LogInformation("User {User} deleted {RemovedCount} events in project ({ProjectId})", user.Id, projectGroup.Count(), ev.ProjectId);
         }
 
-        return base.DeleteModelsAsync(events);
+        var result = await base.DeleteModelsAsync(events);
+
+        foreach (var projectGroup in projectGroups)
+        {
+            try
+            {
+                await _usageService.IncrementDeletedAsync(projectGroup.Key.OrganizationId, projectGroup.Key.ProjectId, projectGroup.Count());
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to increment deleted usage metrics for org {OrganizationId} project {ProjectId}: {Message}", projectGroup.Key.OrganizationId, projectGroup.Key.ProjectId, ex.Message);
+            }
+        }
+
+        return result;
     }
 }

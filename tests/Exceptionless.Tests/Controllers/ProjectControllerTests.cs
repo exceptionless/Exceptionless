@@ -5,10 +5,12 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
+using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
 using FluentRest;
 using Foundatio.Jobs;
+using Foundatio.Repositories;
 using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
@@ -16,12 +18,14 @@ namespace Exceptionless.Tests.Controllers;
 public sealed class ProjectControllerTests : IntegrationTestsBase
 {
     private readonly IEventRepository _eventRepository;
+    private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly IStackRepository _stackRepository;
 
     public ProjectControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _eventRepository = GetService<IEventRepository>();
+        _organizationRepository = GetService<IOrganizationRepository>();
         _projectRepository = GetService<IProjectRepository>();
         _stackRepository = GetService<IStackRepository>();
     }
@@ -34,38 +38,103 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task PostAsync_NewProject_MapsAllPropertiesToProject()
+    public async Task DeleteAsync_ExistingProject_RemovesProject()
     {
-        // Arrange - Test Mapping: NewProject -> Project
-        var newProject = new NewProject
-        {
-            OrganizationId = SampleDataService.TEST_ORG_ID,
-            Name = "Mapped Test Project",
-            DeleteBotDataEnabled = true
-        };
-
-        // Act
-        var viewProject = await SendRequestAsAsync<ViewProject>(r => r
+        // Arrange
+        var project = await SendRequestAsAsync<ViewProject>(r => r
             .AsTestOrganizationUser()
             .Post()
             .AppendPath("projects")
-            .Content(newProject)
+            .Content(new NewProject
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Name = "Project To Delete",
+                DeleteBotDataEnabled = false
+            })
             .StatusCodeShouldBeCreated()
         );
-
-        // Assert - Verify mapping worked correctly
-        Assert.NotNull(viewProject);
-        Assert.NotNull(viewProject.Id);
-        Assert.Equal("Mapped Test Project", viewProject.Name);
-        Assert.Equal(SampleDataService.TEST_ORG_ID, viewProject.OrganizationId);
-        Assert.True(viewProject.DeleteBotDataEnabled);
-        Assert.True(viewProject.CreatedUtc > DateTime.MinValue);
-
-        // Verify persisted entity
-        var project = await _projectRepository.GetByIdAsync(viewProject.Id);
         Assert.NotNull(project);
-        Assert.Equal("Mapped Test Project", project.Name);
-        Assert.True(project.DeleteBotDataEnabled);
+
+        // Act
+        var workItems = await SendRequestAsAsync<WorkInProgressResult>(r => r
+            .AsTestOrganizationUser()
+            .Delete()
+            .AppendPaths("projects", project.Id)
+            .StatusCodeShouldBeAccepted()
+        );
+
+        Assert.NotNull(workItems);
+
+        var workItemJob = GetService<WorkItemJob>();
+        await workItemJob.RunUntilEmptyAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        // Assert
+        var deleted = await _projectRepository.GetByIdAsync(project.Id);
+        Assert.Null(deleted);
+    }
+
+    [Fact]
+    public Task DeleteAsync_NonExistentProject_ReturnsNotFound()
+    {
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Delete()
+            .AppendPaths("projects", "000000000000000000000000")
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public async Task DeleteDataAsync_ExistingKey_RemovesDataKey()
+    {
+        // Arrange - add a data key first
+        await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "data")
+            .QueryString("key", "MyDataKey")
+            .Content(new ValueFromBody<string>("MyDataValue"))
+            .StatusCodeShouldBeOk()
+        );
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Delete()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "data")
+            .QueryString("key", "MyDataKey")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+        Assert.False(project.Data?.ContainsKey("MyDataKey") ?? false);
+    }
+
+    [Fact]
+    public Task DeleteDataAsync_InvalidKey_ReturnsBadRequest()
+    {
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Delete()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "data")
+            .QueryString("key", "-invalid")
+            .StatusCodeShouldBeBadRequest()
+        );
+    }
+
+    [Fact]
+    public Task DeleteDataAsync_NonExistentProject_ReturnsNotFound()
+    {
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Delete()
+            .AppendPaths("projects", "000000000000000000000000", "data")
+            .QueryString("key", "SomeKey")
+            .StatusCodeShouldBeNotFound()
+        );
     }
 
     [Fact]
@@ -92,6 +161,38 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetAllAsync_AsTestUser_ReturnsUserProjects()
+    {
+        // Act
+        var projects = await SendRequestAsAsync<List<ViewProject>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("projects")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(projects);
+        Assert.True(projects.Count >= 2);
+        Assert.All(projects, p => Assert.Equal(SampleDataService.TEST_ORG_ID, p.OrganizationId));
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WithLimitParameter_RespectsLimit()
+    {
+        // Act
+        var projects = await SendRequestAsAsync<List<ViewProject>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("projects")
+            .QueryString("limit", "1")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(projects);
+        Assert.Single(projects);
+    }
+
+    [Fact]
     public async Task GetAsync_ExistingProject_MapsToViewProjectWithSlackIntegration()
     {
         // Act - Test Mapping: Project -> ViewProject (with AfterMap for HasSlackIntegration)
@@ -101,75 +202,52 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
-        // Assert - ViewProject should include computed HasSlackIntegration property
+        // Assert - seeded project has no Slack token, so the computed mapping must be false.
         Assert.NotNull(viewProject);
         Assert.Equal(SampleDataService.TEST_PROJECT_ID, viewProject.Id);
-        Assert.IsType<bool>(viewProject.HasSlackIntegration);
+        Assert.False(viewProject.HasSlackIntegration);
     }
 
     [Fact]
-    public async Task CanUpdateProject()
+    public async Task GetByOrganizationAsync_ValidOrganization_ReturnsProjectsForOrg()
     {
-        var project = await SendRequestAsAsync<ViewProject>(r => r
+        // Act
+        var projects = await SendRequestAsAsync<List<ViewProject>>(r => r
             .AsTestOrganizationUser()
-            .Post()
-            .AppendPath("projects")
-            .Content(new NewProject
-            {
-                OrganizationId = SampleDataService.TEST_ORG_ID,
-                Name = "Test Project",
-                DeleteBotDataEnabled = true
-            })
-            .StatusCodeShouldBeCreated()
-        );
-
-        Assert.NotNull(project);
-
-        var updatedProject = await SendRequestAsAsync<ViewProject>(r => r
-            .AsTestOrganizationUser()
-            .Patch()
-            .AppendPaths("projects", project.Id)
-            .Content(new UpdateProject
-            {
-                Name = "Test Project 2",
-                DeleteBotDataEnabled = true
-            })
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "projects")
             .StatusCodeShouldBeOk()
         );
 
-        Assert.NotNull(updatedProject);
-        Assert.NotEqual(project.Name, updatedProject.Name);
+        // Assert
+        Assert.NotNull(projects);
+        Assert.True(projects.Count >= 2);
+        Assert.All(projects, p => Assert.Equal(SampleDataService.TEST_ORG_ID, p.OrganizationId));
     }
 
+    [Fact]
+    public Task GetByOrganizationAsync_InvalidOrganization_ReturnsNotFound()
+    {
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", "000000000000000000000000", "projects")
+            .StatusCodeShouldBeNotFound()
+        );
+    }
 
     [Fact]
-    public async Task CanUpdateProjectWithExtraPayloadProperties()
+    public async Task GetConfigAsync_ByProjectId_ReturnsConfig()
     {
-        var project = await SendRequestAsAsync<ViewProject>(r => r
-            .AsTestOrganizationUser()
-            .Post()
-            .AppendPath("projects")
-            .Content(new NewProject
-            {
-                OrganizationId = SampleDataService.TEST_ORG_ID,
-                Name = "Test Project",
-                DeleteBotDataEnabled = true
-            })
-            .StatusCodeShouldBeCreated()
-        );
-
-        Assert.NotNull(project);
-        project.Name = "Updated";
-        var updatedProject = await SendRequestAsAsync<ViewProject>(r => r
-            .AsTestOrganizationUser()
-            .Patch()
-            .AppendPaths("projects", project.Id)
-            .Content(project)
+        // Act
+        var config = await SendRequestAsAsync<ClientConfiguration>(r => r
+            .AsTestOrganizationClientUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "config")
             .StatusCodeShouldBeOk()
         );
 
-        Assert.NotNull(updatedProject);
-        Assert.Equal("Updated", updatedProject.Name);
+        // Assert
+        Assert.NotNull(config);
+        Assert.True(config.Version >= 0);
+        Assert.NotNull(config.Settings);
     }
 
     [Fact]
@@ -314,7 +392,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .AsTestOrganizationUser()
             .Post()
             .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "config")
-            .QueryString("key", "")
+            .QueryString("key", String.Empty)
             .Content(new ValueFromBody<string>("SomeValue"))
             .StatusCodeShouldBeBadRequest()
         );
@@ -346,7 +424,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .Post()
             .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "config")
             .QueryString("key", "TestKey")
-            .Content(new ValueFromBody<string>(""))
+            .Content(new ValueFromBody<string>(String.Empty))
             .StatusCodeShouldBeBadRequest()
         );
 
@@ -473,6 +551,518 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
 
         Assert.NotNull(configAfter);
         Assert.Equal(configBefore.Version, configAfter.Version);
+    }
+
+    [Fact]
+    public async Task GetNotificationSettingsAsync_AsGlobalAdmin_ReturnsAllSettings()
+    {
+        // Arrange - set notification settings for the user first
+        var settings = new NotificationSettings
+        {
+            SendDailySummary = true,
+            ReportNewErrors = true,
+            ReportCriticalErrors = false,
+            ReportEventRegressions = true,
+            ReportNewEvents = false,
+            ReportCriticalEvents = true
+        };
+
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("users", TestConstants.UserId, "projects", SampleDataService.TEST_PROJECT_ID, "notifications")
+            .Content(settings)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Act
+        var allSettings = await SendRequestAsAsync<Dictionary<string, NotificationSettings>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "notifications")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(allSettings);
+        Assert.True(allSettings.Count > 0);
+    }
+
+    [Fact]
+    public async Task GetNotificationSettingsAsync_AsUser_ReturnsUserSettings()
+    {
+        // Arrange
+        var settings = new NotificationSettings
+        {
+            SendDailySummary = true,
+            ReportNewErrors = true
+        };
+
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("users", TestConstants.UserId, "projects", SampleDataService.TEST_PROJECT_ID, "notifications")
+            .Content(settings)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Act
+        var userSettings = await SendRequestAsAsync<NotificationSettings>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("users", TestConstants.UserId, "projects", SampleDataService.TEST_PROJECT_ID, "notifications")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(userSettings);
+        Assert.True(userSettings.SendDailySummary);
+        Assert.True(userSettings.ReportNewErrors);
+    }
+
+    [Fact]
+    public async Task GetV2ConfigAsync_WithClientAuth_ReturnsConfig()
+    {
+        // Act
+        var config = await SendRequestAsAsync<ClientConfiguration>(r => r
+            .AsFreeOrganizationClientUser()
+            .AppendPath("projects/config")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(config);
+        Assert.True(config.Version >= 0);
+        Assert.NotNull(config.Settings);
+    }
+
+    [Fact]
+    public async Task IsNameAvailableAsync_ExistingName_ReturnsCreated()
+    {
+        // Arrange - the TEST_PROJECT_ID project should have a name
+        var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+
+        // Act - 201 Created means name is already taken (NOT available)
+        await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("projects/check-name")
+            .QueryString("name", project.Name)
+            .StatusCodeShouldBeCreated()
+        );
+    }
+
+    [Fact]
+    public Task IsNameAvailableAsync_NewName_ReturnsNoContent()
+    {
+        // Act - 204 NoContent means name IS available
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("projects/check-name")
+            .QueryString("name", "UniqueProjectName_" + Guid.NewGuid().ToString("N"))
+            .StatusCodeShouldBeNoContent()
+        );
+    }
+
+    [Fact]
+    public Task IsNameAvailableAsync_ScopedToOrganization_ReturnsNoContent()
+    {
+        // Act - 204 NoContent means name IS available in this org scope
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "projects", "check-name")
+            .QueryString("name", "UniqueOrgScoped_" + Guid.NewGuid().ToString("N"))
+            .StatusCodeShouldBeNoContent()
+        );
+    }
+
+    [Fact]
+    public async Task PatchAsync_WithNameOnlySnakeCasePayload_UpdatesNameAndPreservesDeleteBotSetting()
+    {
+        // Arrange
+        var project = await SendRequestAsAsync<ViewProject>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPath("projects")
+            .Content(new NewProject
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Name = "Original Name",
+                DeleteBotDataEnabled = true
+            })
+            .StatusCodeShouldBeCreated()
+        );
+        Assert.NotNull(project);
+
+        /* language=json */
+        const string json = """
+                            {
+                                "name": "Updated Name"
+                            }
+                            """;
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Patch()
+            .AppendPaths("projects", project.Id)
+            .Content(json, "application/json")
+            .StatusCodeShouldBeOk()
+        );
+        string responseJson = await response.Content.ReadAsStringAsync(TestCancellationToken);
+        var updatedProject = await DeserializeResponseAsync<ViewProject>(response);
+
+        // Assert
+        Assert.NotNull(updatedProject);
+        Assert.Equal("Updated Name", updatedProject.Name);
+        Assert.True(updatedProject.DeleteBotDataEnabled);
+        Assert.Equal(project.OrganizationId, updatedProject.OrganizationId);
+
+        var persisted = await _projectRepository.GetByIdAsync(project.Id);
+        Assert.NotNull(persisted);
+        Assert.Equal("Updated Name", persisted.Name);
+        Assert.True(persisted.DeleteBotDataEnabled);
+
+        using var doc = JsonDocument.Parse(responseJson);
+        var root = doc.RootElement;
+        Assert.True(root.TryGetProperty("delete_bot_data_enabled", out var deleteBotDataEnabled), "Expected lower_case_underscore response property 'delete_bot_data_enabled'.");
+        Assert.True(deleteBotDataEnabled.GetBoolean());
+        Assert.False(root.TryGetProperty("DeleteBotDataEnabled", out _), "Response must not drift back to PascalCase 'DeleteBotDataEnabled'.");
+    }
+
+    [Fact]
+    public async Task PatchAsync_WithPromotedTabs_PreservesOrderAndRemovesDuplicates()
+    {
+        // Arrange
+        var project = await SendRequestAsAsync<ViewProject>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPath("projects")
+            .Content(new NewProject
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Name = "Promoted Tabs Project",
+                DeleteBotDataEnabled = false
+            })
+            .StatusCodeShouldBeCreated()
+        );
+        Assert.NotNull(project);
+
+        /* language=json */
+        const string json = """
+                            {
+                                "promoted_tabs": ["gamma", "alpha", "gamma", "  beta  ", ""]
+                            }
+                            """;
+
+        // Act
+        var updatedProject = await SendRequestAsAsync<ViewProject>(r => r
+            .AsTestOrganizationUser()
+            .Patch()
+            .AppendPaths("projects", project.Id)
+            .Content(json, "application/json")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updatedProject);
+        Assert.Equal(["gamma", "alpha", "beta"], updatedProject.PromotedTabs);
+
+        var persisted = await _projectRepository.GetByIdAsync(project.Id);
+        Assert.NotNull(persisted);
+        Assert.Equal(["gamma", "alpha", "beta"], persisted.PromotedTabs);
+    }
+
+    [Fact]
+    public async Task PatchAsync_NonExistentProject_ReturnsNotFound()
+    {
+        // Arrange - record a known project's state to verify it wasn't changed
+        var beforeProject = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(beforeProject);
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Patch()
+            .AppendPaths("projects", "000000000000000000000000")
+            .Content(new UpdateProject
+            {
+                Name = "Should Not Exist",
+                DeleteBotDataEnabled = false
+            })
+            .StatusCodeShouldBeNotFound()
+        );
+
+        // Assert - existing project was not affected
+        var afterProject = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(afterProject);
+        Assert.Equal(beforeProject.Name, afterProject.Name);
+    }
+
+    [Fact]
+    public async Task PatchAsync_WithExtraPayloadProperties_IgnoresReadOnlyFieldsAndUpdatesKnownFields()
+    {
+        // Arrange
+        var project = await SendRequestAsAsync<ViewProject>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPath("projects")
+            .Content(new NewProject
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Name = "Extra Props Project",
+                DeleteBotDataEnabled = true
+            })
+            .StatusCodeShouldBeCreated()
+        );
+        Assert.NotNull(project);
+
+        var persistedBefore = await _projectRepository.GetByIdAsync(project.Id);
+        Assert.NotNull(persistedBefore);
+
+        /* language=json */
+        string json = $$"""
+                        {
+                            "id": "000000000000000000000000",
+                            "organization_id": "{{SampleDataService.FREE_ORG_ID}}",
+                            "organization_name": "Hijacked Org",
+                            "created_utc": "2000-01-01T00:00:00Z",
+                            "name": "Patched With Extras",
+                            "delete_bot_data_enabled": false,
+                            "has_premium_features": true,
+                            "stack_count": 9999
+                        }
+                        """;
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Patch()
+            .AppendPaths("projects", project.Id)
+            .Content(json, "application/json")
+            .StatusCodeShouldBeOk()
+        );
+        string responseJson = await response.Content.ReadAsStringAsync(TestCancellationToken);
+        var updatedProject = await DeserializeResponseAsync<ViewProject>(response);
+
+        // Assert
+        Assert.NotNull(updatedProject);
+        Assert.Equal("Patched With Extras", updatedProject.Name);
+        Assert.False(updatedProject.DeleteBotDataEnabled);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, updatedProject.OrganizationId);
+        Assert.Equal(persistedBefore.CreatedUtc, updatedProject.CreatedUtc);
+
+        var persistedAfter = await _projectRepository.GetByIdAsync(project.Id);
+        Assert.NotNull(persistedAfter);
+        Assert.Equal("Patched With Extras", persistedAfter.Name);
+        Assert.False(persistedAfter.DeleteBotDataEnabled);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, persistedAfter.OrganizationId);
+        Assert.Equal(persistedBefore.CreatedUtc, persistedAfter.CreatedUtc);
+
+        using var doc = JsonDocument.Parse(responseJson);
+        var root = doc.RootElement;
+        Assert.True(root.TryGetProperty("organization_id", out var organizationId), "Expected lower_case_underscore response property 'organization_id'.");
+        Assert.Equal(SampleDataService.TEST_ORG_ID, organizationId.GetString());
+        Assert.True(root.TryGetProperty("delete_bot_data_enabled", out var deleteBotDataEnabled), "Expected lower_case_underscore response property 'delete_bot_data_enabled'.");
+        Assert.False(deleteBotDataEnabled.GetBoolean());
+        Assert.False(root.TryGetProperty("OrganizationId", out _), "Response must not drift back to PascalCase 'OrganizationId'.");
+        Assert.False(root.TryGetProperty("DeleteBotDataEnabled", out _), "Response must not drift back to PascalCase 'DeleteBotDataEnabled'.");
+    }
+
+    [Fact]
+    public async Task PostAsync_NewProject_MapsAllPropertiesToProject()
+    {
+        // Arrange - Test Mapping: NewProject -> Project
+        var newProject = new NewProject
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            Name = "Mapped Test Project",
+            DeleteBotDataEnabled = true
+        };
+
+        // Act
+        var viewProject = await SendRequestAsAsync<ViewProject>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPath("projects")
+            .Content(newProject)
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert - Verify mapping worked correctly
+        Assert.NotNull(viewProject);
+        Assert.NotNull(viewProject.Id);
+        Assert.Equal("Mapped Test Project", viewProject.Name);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, viewProject.OrganizationId);
+        Assert.True(viewProject.DeleteBotDataEnabled);
+        Assert.True(viewProject.CreatedUtc > DateTime.MinValue);
+
+        // Verify persisted entity
+        var project = await _projectRepository.GetByIdAsync(viewProject.Id);
+        Assert.NotNull(project);
+        Assert.Equal("Mapped Test Project", project.Name);
+        Assert.True(project.DeleteBotDataEnabled);
+    }
+
+    [Fact]
+    public async Task PostDataAsync_ValidKeyAndValue_PersistsData()
+    {
+        // Act
+        await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "data")
+            .QueryString("key", "TestDataKey")
+            .Content(new ValueFromBody<string>("TestDataValue"))
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+        Assert.NotNull(project.Data);
+        Assert.True(project.Data.TryGetValue("TestDataKey", out var dataValue));
+        Assert.Equal("TestDataValue", dataValue);
+    }
+
+    [Fact]
+    public Task PostDataAsync_EmptyKey_ReturnsBadRequest()
+    {
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "data")
+            .QueryString("key", String.Empty)
+            .Content(new ValueFromBody<string>("SomeValue"))
+            .StatusCodeShouldBeBadRequest()
+        );
+    }
+
+    [Fact]
+    public Task PostDataAsync_KeyStartsWithDash_ReturnsBadRequest()
+    {
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "data")
+            .QueryString("key", "-invalid")
+            .Content(new ValueFromBody<string>("SomeValue"))
+            .StatusCodeShouldBeBadRequest()
+        );
+    }
+
+    [Fact]
+    public Task PostDataAsync_NonExistentProject_ReturnsNotFound()
+    {
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("projects", "000000000000000000000000", "data")
+            .QueryString("key", "SomeKey")
+            .Content(new ValueFromBody<string>("SomeValue"))
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public async Task ResetDataAsync_ValidProject_ClearsStacksAndEvents()
+    {
+        // Arrange
+        await CreateDataAsync(d =>
+        {
+            d.Event().Message("test for reset");
+        });
+
+        long stacksBefore = await _stackRepository.CountAsync(q => q.Project(SampleDataService.TEST_PROJECT_ID));
+        long eventsBefore = await _eventRepository.CountAsync(q => q.Project(SampleDataService.TEST_PROJECT_ID));
+        Assert.True(stacksBefore > 0);
+        Assert.True(eventsBefore > 0);
+
+        // Act
+        var workItems = await SendRequestAsAsync<WorkInProgressResult>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "reset-data")
+            .StatusCodeShouldBeAccepted()
+        );
+
+        Assert.NotNull(workItems);
+        Assert.Single(workItems.Workers);
+
+        var workItemJob = GetService<WorkItemJob>();
+        await workItemJob.RunUntilEmptyAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        // Assert
+        long stacksAfter = await _stackRepository.CountAsync(q => q.Project(SampleDataService.TEST_PROJECT_ID));
+        long eventsAfter = await _eventRepository.CountAsync(q => q.Project(SampleDataService.TEST_PROJECT_ID));
+        Assert.Equal(0, stacksAfter);
+        Assert.Equal(0, eventsAfter);
+    }
+
+    [Fact]
+    public async Task SetNotificationSettingsAsync_ValidSettings_PersistsSettings()
+    {
+        // Arrange
+        var settings = new NotificationSettings
+        {
+            SendDailySummary = true,
+            ReportNewErrors = true,
+            ReportCriticalErrors = true,
+            ReportEventRegressions = false,
+            ReportNewEvents = false,
+            ReportCriticalEvents = true
+        };
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("users", TestConstants.UserId, "projects", SampleDataService.TEST_PROJECT_ID, "notifications")
+            .Content(settings)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert - read back from repository
+        var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+        Assert.True(project.NotificationSettings.TryGetValue(TestConstants.UserId, out var saved));
+        Assert.NotNull(saved);
+        Assert.True(saved.SendDailySummary);
+        Assert.True(saved.ReportNewErrors);
+        Assert.True(saved.ReportCriticalErrors);
+        Assert.False(saved.ReportEventRegressions);
+        Assert.False(saved.ReportNewEvents);
+        Assert.True(saved.ReportCriticalEvents);
+    }
+
+    [Fact]
+    public async Task SetNotificationSettingsAsync_NullSettings_RemovesSettings()
+    {
+        // Arrange - set some settings first
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("users", TestConstants.UserId, "projects", SampleDataService.TEST_PROJECT_ID, "notifications")
+            .Content(new NotificationSettings { ReportNewErrors = true })
+            .StatusCodeShouldBeOk()
+        );
+
+        // Verify they exist
+        var projectBefore = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(projectBefore);
+        Assert.True(projectBefore.NotificationSettings.ContainsKey(TestConstants.UserId));
+
+        // Act - send null to remove
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .Delete()
+            .AppendPaths("users", TestConstants.UserId, "projects", SampleDataService.TEST_PROJECT_ID, "notifications")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        var projectAfter = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(projectAfter);
+        Assert.False(projectAfter.NotificationSettings.ContainsKey(TestConstants.UserId));
     }
 
     [Fact]

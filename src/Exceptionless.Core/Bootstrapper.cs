@@ -20,6 +20,7 @@ using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Seed;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
@@ -42,6 +43,7 @@ using Foundatio.Resilience;
 using Foundatio.Serializer;
 using Foundatio.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 using MaintainIndexesJob = Foundatio.Repositories.Elasticsearch.Jobs.MaintainIndexesJob;
@@ -94,6 +96,10 @@ public class Bootstrapper
         services.AddSingleton<IElasticConfiguration>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>());
         services.AddStartupAction<ExceptionlessElasticConfiguration>();
 
+        services.AddSingleton<DataSeedService>();
+        services.AddSingleton<IDataSeed, PredefinedSavedViewsDataSeed>();
+        services.AddStartupAction<DataSeedService>();
+
         services.AddStartupAction("Create Sample Data", CreateSampleDataAsync);
 
         services.AddSingleton(typeof(IWorkItemHandler), typeof(Bootstrapper).Assembly, typeof(ReindexWorkItemHandler).Assembly);
@@ -122,6 +128,8 @@ public class Bootstrapper
         services.AddSingleton(s => CreateQueue<WebHookNotification>(s));
         services.AddSingleton(s => CreateQueue<MailMessage>(s));
         services.AddSingleton(s => CreateQueue<WorkItemData>(s, TimeSpan.FromHours(1)));
+
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IQueueBehavior<WorkItemData>, WorkItemDuplicateDetectionQueueBehavior>());
 
         services.AddSingleton<IConnectionMapping, ConnectionMapping>();
         services.AddSingleton<MessageService>();
@@ -178,6 +186,7 @@ public class Bootstrapper
         services.AddSingleton<CacheLockProvider>(s => new CacheLockProvider(s.GetRequiredService<ICacheClient>(), s.GetRequiredService<IMessageBus>(), s.GetRequiredService<TimeProvider>(), s.GetRequiredService<IResiliencePolicyProvider>(), s.GetRequiredService<ILoggerFactory>()));
         services.AddSingleton<ILockProvider>(s => s.GetRequiredService<CacheLockProvider>());
         services.AddTransient<StripeEventHandler>();
+        services.AddSingleton<IStripeBillingClient, StripeBillingClient>();
         services.AddSingleton<BillingManager>();
         services.AddSingleton<BillingPlans>();
         services.AddSingleton<EventPostService>();
@@ -192,6 +201,7 @@ public class Bootstrapper
         services.AddSingleton<UserAgentParser>();
         services.AddSingleton<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();
 
+        services.AddSingleton<NotificationService>();
         services.AddSingleton<OrganizationService>();
         services.AddStartupAction<OrganizationService>();
         services.AddSingleton<UsageService>();
@@ -254,7 +264,7 @@ public class Bootstrapper
 
         var dataHelper = container.GetRequiredService<SampleDataService>();
         await dataHelper.CreateDataAsync();
-        await dataHelper.EnqueueSampleEventsAsync(eventCount: 100, daysBack: 7);
+        await dataHelper.EnqueueSampleEventsAsync();
     }
 
     public static void AddHostedJobs(IServiceCollection services, ILoggerFactory loggerFactory)
@@ -294,10 +304,14 @@ public class Bootstrapper
         return new InMemoryQueue<T>(new InMemoryQueueOptions<T>
         {
             WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
+            Behaviors = container.GetServices<IQueueBehavior<T>>().ToList(),
             Serializer = container.GetRequiredService<ISerializer>(),
             TimeProvider = container.GetRequiredService<TimeProvider>(),
             ResiliencePolicyProvider = container.GetRequiredService<IResiliencePolicyProvider>(),
             LoggerFactory = loggerFactory
         });
     }
+
+    private sealed class WorkItemDuplicateDetectionQueueBehavior(ICacheClient cacheClient, ILoggerFactory loggerFactory)
+        : DuplicateDetectionQueueBehavior<WorkItemData>(cacheClient, loggerFactory, TimeSpan.FromHours(24));
 }

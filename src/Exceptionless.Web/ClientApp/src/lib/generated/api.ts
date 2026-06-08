@@ -112,6 +112,8 @@ export interface InvoiceLineItem {
   amount: number;
 }
 
+export type JsonElement = any;
+
 export interface Login {
   /** The email address or domain username */
   email: string;
@@ -128,6 +130,7 @@ export interface NewProject {
   organization_id: string;
   name: string;
   delete_bot_data_enabled: boolean;
+  promoted_tabs?: string[] | null;
 }
 
 export interface NewSavedView {
@@ -136,11 +139,15 @@ export interface NewSavedView {
   name: string;
   filter?: null | string;
   time?: null | string;
+  sort?: null | string;
+  /** @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$ */
+  slug?: null | string;
   view_type: string;
   filter_definitions?: null | string;
   columns?: null | Record<string, boolean>;
-  /** If true, this view will be the default for its view type. Defaults to false. */
-  is_default?: null | boolean;
+  column_order?: string[] | null;
+  show_stats?: null | boolean;
+  show_chart?: null | boolean;
   /** If true, the view will only be visible to the current user. Defaults to false. */
   is_private?: null | boolean;
 }
@@ -219,7 +226,10 @@ export interface PersistentEvent {
   created_utc: string;
   /** Used to store primitive data type custom data values for searching the event. */
   idx?: null | Record<string, unknown>;
-  /** The event type (ie. error, log message, feature usage). Check KnownTypes for standard event types. */
+  /**
+   * The event type (ie. error, log message, feature usage). Check KnownTypes for standard event types.
+   * Nullable in transit; the pipeline infers a default before save. Validated as required on repository save.
+   */
   type?: null | string;
   /** The event source (ie. machine name, log name, feature name). */
   source?: null | string;
@@ -248,6 +258,21 @@ export interface PersistentEvent {
   data?: null | Record<string, unknown>;
   /** An optional identifier to be used for referencing this event instance at a later time. */
   reference_id?: null | string;
+}
+
+export interface PredefinedSavedViewDefinition {
+  key: string;
+  name: string;
+  slug: string;
+  viewType: string;
+  filter?: null | string;
+  time?: null | string;
+  sort?: null | string;
+  filterDefinitions?: null | JsonElement;
+  columns?: null | Record<string, boolean>;
+  columnOrder?: string[] | null;
+  showStats?: null | boolean;
+  showChart?: null | boolean;
 }
 
 export interface ResetPasswordModel {
@@ -362,16 +387,21 @@ export interface UpdateEvent {
 export interface UpdateProject {
   name: string;
   delete_bot_data_enabled: boolean;
+  promoted_tabs?: string[] | null;
 }
 
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
 export interface UpdateSavedView {
   name?: null | string;
-  is_default?: null | boolean;
   filter?: null | string;
   time?: null | string;
+  sort?: null | string;
+  slug?: null | string;
   filter_definitions?: null | string;
   columns?: null | Record<string, boolean>;
+  column_order?: string[] | null;
+  show_stats?: null | boolean;
+  show_chart?: null | boolean;
 }
 
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
@@ -397,6 +427,8 @@ export interface UsageHourInfo {
   discarded: number;
   /** @format int32 */
   too_big: number;
+  /** @format int32 */
+  deleted: number;
 }
 
 export interface UsageInfo {
@@ -412,6 +444,8 @@ export interface UsageInfo {
   discarded: number;
   /** @format int32 */
   too_big: number;
+  /** @format int32 */
+  deleted: number;
 }
 
 export interface User {
@@ -432,6 +466,7 @@ export interface User {
   full_name: string;
   /** @format email */
   email_address: string;
+  avatar_file_name?: null | string;
   email_notifications_enabled: boolean;
   is_email_address_verified: boolean;
   verify_email_address_token?: null | string;
@@ -464,6 +499,7 @@ export interface ViewCurrentUser {
   full_name: string;
   /** @format email */
   email_address: string;
+  avatar_url?: null | string;
   email_notifications_enabled: boolean;
   is_email_address_verified: boolean;
   is_active: boolean;
@@ -479,6 +515,7 @@ export interface ViewOrganization {
   /** @format date-time */
   updated_utc: string;
   name: string;
+  icon_url?: null | string;
   plan_id: string;
   plan_name: string;
   plan_description: string;
@@ -563,9 +600,13 @@ export interface ViewSavedView {
   filter?: null | string;
   filter_definitions?: null | string;
   columns?: null | Record<string, boolean>;
-  is_default: boolean;
+  column_order?: string[] | null;
+  show_stats?: null | boolean;
+  show_chart?: null | boolean;
   name: string;
+  slug: string;
   time?: null | string;
+  sort?: null | string;
   /** @format int32 */
   version: number;
   view_type: string;
@@ -605,6 +646,7 @@ export interface ViewUser {
   full_name: string;
   /** @format email */
   email_address: string;
+  avatar_url?: null | string;
   email_notifications_enabled: boolean;
   is_email_address_verified: boolean;
   is_active: boolean;

@@ -24,10 +24,11 @@ public sealed class SavedViewMapperTests
             Name = "Open Issues",
             Filter = "(status:open OR status:regressed)",
             Time = "[now-7d TO now]",
-            ViewType = "issues",
+            Sort = "-last",
+            ViewType = "stacks",
             FilterDefinitions = "[{\"type\":\"status\",\"values\":[\"open\",\"regressed\"]}]",
             Columns = new Dictionary<string, bool> { ["status"] = true, ["users"] = false },
-            IsDefault = true
+            ColumnOrder = ["summary", "status", "users"]
         };
 
         // Act
@@ -38,12 +39,13 @@ public sealed class SavedViewMapperTests
         Assert.Equal("Open Issues", result.Name);
         Assert.Equal("(status:open OR status:regressed)", result.Filter);
         Assert.Equal("[now-7d TO now]", result.Time);
-        Assert.Equal("issues", result.ViewType);
+        Assert.Equal("-last", result.Sort);
+        Assert.Equal("stacks", result.ViewType);
         Assert.Equal("[{\"type\":\"status\",\"values\":[\"open\",\"regressed\"]}]", result.FilterDefinitions);
         Assert.NotNull(result.Columns);
         Assert.True(result.Columns["status"]);
         Assert.False(result.Columns["users"]);
-        Assert.True(result.IsDefault);
+        Assert.Equal(["summary", "status", "users"], result.ColumnOrder);
     }
 
     [Fact]
@@ -87,7 +89,7 @@ public sealed class SavedViewMapperTests
         Assert.Null(result.Time);
         Assert.Null(result.FilterDefinitions);
         Assert.Null(result.Columns);
-        Assert.False(result.IsDefault);
+        Assert.Null(result.ColumnOrder);
     }
 
     [Fact]
@@ -105,11 +107,12 @@ public sealed class SavedViewMapperTests
             Filter = "status:open",
             FilterDefinitions = "[{\"type\":\"status\",\"values\":[\"open\"]}]",
             Columns = new Dictionary<string, bool> { ["status"] = true },
-            IsDefault = false,
+            ColumnOrder = ["summary", "status"],
             Name = "My View",
             Time = "[now-30d TO now]",
+            Sort = "-last",
             Version = 1,
-            ViewType = "issues",
+            ViewType = "stacks",
             CreatedUtc = now.AddDays(-1),
             UpdatedUtc = now
         };
@@ -127,11 +130,12 @@ public sealed class SavedViewMapperTests
         Assert.Equal("[{\"type\":\"status\",\"values\":[\"open\"]}]", result.FilterDefinitions);
         Assert.NotNull(result.Columns);
         Assert.True(result.Columns["status"]);
-        Assert.False(result.IsDefault);
+        Assert.Equal(["summary", "status"], result.ColumnOrder);
         Assert.Equal("My View", result.Name);
         Assert.Equal("[now-30d TO now]", result.Time);
+        Assert.Equal("-last", result.Sort);
         Assert.Equal(1, result.Version);
-        Assert.Equal("issues", result.ViewType);
+        Assert.Equal("stacks", result.ViewType);
         Assert.Equal(now.AddDays(-1), result.CreatedUtc);
         Assert.Equal(now, result.UpdatedUtc);
     }
@@ -159,7 +163,9 @@ public sealed class SavedViewMapperTests
         Assert.Null(result.Filter);
         Assert.Null(result.FilterDefinitions);
         Assert.Null(result.Columns);
+        Assert.Null(result.ColumnOrder);
         Assert.Null(result.Time);
+        Assert.Null(result.Sort);
     }
 
     [Fact]
@@ -169,7 +175,7 @@ public sealed class SavedViewMapperTests
         var views = new List<SavedView>
         {
             new() { Id = "88cd0826e447a44e78877ab1", OrganizationId = "537650f3b77efe23a47914f3", CreatedByUserId = "1ecd0826e447ad1e78822555", Name = "View 1", ViewType = "events" },
-            new() { Id = "88cd0826e447a44e78877ab2", OrganizationId = "537650f3b77efe23a47914f3", CreatedByUserId = "1ecd0826e447ad1e78822555", Name = "View 2", ViewType = "issues" },
+            new() { Id = "88cd0826e447a44e78877ab2", OrganizationId = "537650f3b77efe23a47914f3", CreatedByUserId = "1ecd0826e447ad1e78822555", Name = "View 2", ViewType = "stacks" },
             new() { Id = "88cd0826e447a44e78877ab3", OrganizationId = "537650f3b77efe23a47914f3", CreatedByUserId = "1ecd0826e447ad1e78822555", Name = "View 3", ViewType = "stream" }
         };
 

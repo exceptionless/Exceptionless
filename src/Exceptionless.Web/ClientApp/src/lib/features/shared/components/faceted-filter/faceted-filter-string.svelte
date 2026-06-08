@@ -4,23 +4,41 @@
     import { Input } from '$comp/ui/input';
     import * as Popover from '$comp/ui/popover';
     import Separator from '$comp/ui/separator/separator.svelte';
+    import { onDestroy } from 'svelte';
 
     interface Props {
         changed: (value?: string) => void;
+        hidden?: boolean;
         open: boolean;
         remove: () => void;
         title: string;
+        toggleHidden?: () => void;
         value?: string;
     }
 
-    let { changed, open = $bindable(), remove, title, value }: Props = $props();
+    let { changed, hidden = false, open = $bindable(), remove, title, toggleHidden, value }: Props = $props();
+
+    const DEBOUNCE_MS = 500;
 
     // eslint-disable-next-line svelte/prefer-writable-derived
     let updatedValue = $state<string | undefined>();
+    let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
+    onDestroy(() => clearTimeout(debounceTimer));
 
     $effect.pre(() => {
         updatedValue = value;
     });
+
+    function scheduleApply() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            const normalized = updatedValue?.trim() || undefined;
+            if (normalized !== value) {
+                changed(normalized);
+            }
+        }, DEBOUNCE_MS);
+    }
 
     function handleKeyDown(event: KeyboardEvent) {
         if (event.key === 'Enter') {
@@ -33,14 +51,17 @@
     }
 
     function applyAndClose() {
-        if (updatedValue !== value) {
-            changed(updatedValue);
+        clearTimeout(debounceTimer);
+        const normalized = updatedValue?.trim() || undefined;
+        if (normalized !== value) {
+            changed(normalized);
         }
 
         open = false;
     }
 
     function cancelAndClose() {
+        clearTimeout(debounceTimer);
         updatedValue = value;
         open = false;
     }
@@ -64,7 +85,7 @@
 <Popover.Root bind:open {onOpenChange}>
     <Popover.Trigger>
         {#snippet child({ props })}
-            <Button {...props} class="gap-x-1 px-3" size="xl" variant="outline" aria-describedby={`${title}-help`}>
+            <Button {...props} class="gap-x-1 px-3" size="lg" variant="outline" aria-describedby={`${title}-help`}>
                 {title}
                 <Separator class="mx-2" orientation="vertical" />
                 {#if value?.trim()}
@@ -75,8 +96,8 @@
             </Button>
         {/snippet}
     </Popover.Trigger>
-    <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={applyAndClose}>
-        <div class="flex items-center border-b">
+    <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={(e) => e.preventDefault()}>
+        <div class="p-2">
             <Input
                 bind:value={updatedValue}
                 placeholder={title}
@@ -84,10 +105,11 @@
                 aria-label={`Filter by ${title}`}
                 aria-describedby={`${title}-help`}
                 onkeydown={handleKeyDown}
+                oninput={scheduleApply}
                 autofocus={open}
             />
         </div>
         <div id={`${title}-help`} class="sr-only">Type to filter. Enter applies, Escape cancels.</div>
-        <FacetedFilter.Actions clear={onClearFilter} {remove} showClear={!!updatedValue?.trim()} />
+        <FacetedFilter.Actions clear={onClearFilter} {hidden} {remove} showClear={!!updatedValue?.trim()} {toggleHidden} />
     </Popover.Content>
 </Popover.Root>

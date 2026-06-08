@@ -215,9 +215,8 @@
             {#snippet toolbarChildren()}
                 <div class="flex-1"></div>
                 <DataTableViewOptions size="icon-lg" {table} />
-                <Button size="icon-lg" onclick={() => (showAddWebhookDialog = true)} title="Add Webhook">
-                    <Plus class="size-4" aria-hidden="true" />
-                    <span class="sr-only">Add Webhook</span>
+                <Button size="icon-lg" onclick={() => (showAddWebhookDialog = true)} title="Add Webhook" aria-label="Add Webhook">
+                    <Plus aria-hidden="true" />
                 </Button>
             {/snippet}
         </WebhooksDataTable>

@@ -83,6 +83,12 @@ public class AppSendBuilder : PostBuilder<AppSendBuilder>
         return this.BearerToken(SampleDataService.FREE_API_KEY);
     }
 
+    public AppSendBuilder UserAgent(string value)
+    {
+        RequestMessage.Headers.UserAgent.ParseAdd(value);
+        return this;
+    }
+
     public bool IsAnonymous { get; private set; }
     public AppSendBuilder AsAnonymousUser()
     {

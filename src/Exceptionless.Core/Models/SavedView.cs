@@ -10,6 +10,8 @@ namespace Exceptionless.Core.Models;
 /// </summary>
 public record SavedView : IOwnedByOrganizationWithIdentity, IHaveDates
 {
+    public const int MaxFilterDefinitionsLength = 100_000;
+
     // Identity
     [ObjectId]
     public string Id { get; set; } = null!;
@@ -38,30 +40,50 @@ public record SavedView : IOwnedByOrganizationWithIdentity, IHaveDates
     public string? Filter { get; set; }
 
     /// <summary>JSON array of structured filter objects for UI chip hydration.</summary>
-    [MaxLength(10000)]
+    [MaxLength(MaxFilterDefinitionsLength)]
     public string? FilterDefinitions { get; set; }
 
     /// <summary>Column visibility state per dashboard table, keyed by column id.</summary>
     public Dictionary<string, bool>? Columns { get; set; }
 
-    /// <summary>Whether this view loads automatically when navigating to the page.</summary>
-    public bool IsDefault { get; set; }
+    /// <summary>Column display order per dashboard table, excluding utility columns.</summary>
+    public List<string>? ColumnOrder { get; set; }
+
+    /// <summary>Whether dashboard statistic cards are shown for this view. Null means use the default.</summary>
+    public bool? ShowStats { get; set; }
+
+    /// <summary>Whether the dashboard chart is shown for this view. Null means use the default.</summary>
+    public bool? ShowChart { get; set; }
+
+    /// <summary>Stable identifier used to synchronize predefined saved views across organizations.</summary>
+    [MaxLength(150)]
+    public string? PredefinedKey { get; set; }
 
     /// <summary>Display name shown in the sidebar and picker.</summary>
     [Required]
     [MaxLength(100)]
     public string Name { get; set; } = null!;
 
+    /// <summary>URL slug used to load this saved view.</summary>
+    [Required]
+    [MaxLength(100)]
+    [RegularExpression("^(?![a-f0-9]{24}$)[a-z0-9]+(?:-[a-z0-9]+)*$")]
+    public string Slug { get; set; } = null!;
+
     /// <summary>Date-math time range, e.g. "[now-7d TO now]". Null if no time constraint.</summary>
     [MaxLength(100)]
     public string? Time { get; set; }
 
+    /// <summary>Sort expression for the dashboard table, e.g. "-date".</summary>
+    [MaxLength(100)]
+    public string? Sort { get; set; }
+
     /// <summary>Schema version for future filter definition migrations.</summary>
     public int Version { get; set; } = 1;
 
-    /// <summary>Dashboard page identifier: "events", "issues", or "stream".</summary>
+    /// <summary>Dashboard page identifier: "events", "stacks", or "stream".</summary>
     [Required]
-    [RegularExpression("^(events|issues|stream)$")]
+    [RegularExpression("^(events|stacks|stream)$")]
     public string ViewType { get; set; } = null!;
 
     // Timestamps

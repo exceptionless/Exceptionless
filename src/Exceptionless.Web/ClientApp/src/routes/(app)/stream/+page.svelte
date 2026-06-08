@@ -5,7 +5,6 @@
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as DataTable from '$comp/data-table';
-    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
     import DelayedRender from '$comp/delayed-render.svelte';
     import ErrorMessage from '$comp/error-message.svelte';
     import * as FacetedFilter from '$comp/faceted-filter';
@@ -16,16 +15,17 @@
     import { ProjectFilter, StatusFilter } from '$features/events/components/filters';
     import {
         buildFilterCacheKey,
-        filterCacheVersionNumber,
         filterChanged,
         filterRemoved,
         getFiltersFromCache,
+        hasSingleTypeFilter,
+        serializeFilters,
         shouldRefreshPersistentEventChanged,
         toFilter,
         updateFilterCache
     } from '$features/events/components/filters/helpers.svelte';
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
-    import { getColumns } from '$features/events/components/table/options.svelte';
+    import { defaultEventColumnVisibility, getColumns } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
     import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
@@ -39,7 +39,7 @@
     import { useEventListener, watch } from 'runed';
     import { debounce } from 'throttle-debounce';
 
-    import { redirectToEventsWithFilter } from '../redirect-to-events.svelte';
+    import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../redirect-to-events.svelte';
 
     let selectedEventId: null | string = $state(null);
 
@@ -53,7 +53,7 @@
     }
 
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
-        return resolve('/(app)/event/[eventId]', { eventId: row.id });
+        return resolve('/(app)/event/[eventId=objectid]', { eventId: row.id });
     }
 
     const DEFAULT_FILTERS = [new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
@@ -80,12 +80,22 @@
 
     const VIEW = 'stream';
     const savedViewsState = useSavedViews({
+        defaultColumnVisibility: defaultEventColumnVisibility,
+        defaultFilter: DEFAULT_PARAMS.filter,
         filterCacheKey,
-        getColumnVisibility: () => table.store.state.columnVisibility,
+        getColumnOrder: () => table.state.columnOrder,
+        getColumnVisibility: () => table.state.columnVisibility,
+        getFilterDefinitions: () => serializeFilters(filters ?? []),
         queryParams,
+        setColumnOrder: (v) => table.setColumnOrder(v),
         setColumnVisibility: (v) => table.setColumnVisibility(v),
         updateFilterCache,
         view: VIEW
+    });
+    const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Event Stream');
+
+    $effect(() => {
+        document.title = `${pageTitle} - Exceptionless`;
     });
 
     watch(
@@ -101,7 +111,7 @@
 
     let filters = $state(getFiltersFromCache(filterCacheKey(queryParams.filter), queryParams.filter));
     watch(
-        [() => queryParams.filter, () => filterCacheVersionNumber()],
+        [() => queryParams.filter],
         ([filter]) => {
             filters = getFiltersFromCache(filterCacheKey(filter), filter);
         },
@@ -111,20 +121,27 @@
     async function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter) {
         // If this is a stack filter, redirect to the Events page
         if (addedOrUpdated.type === 'string' && addedOrUpdated.key === 'string-stack') {
-            await redirectToEventsWithFilter(organization.current, addedOrUpdated);
+            await redirectToEventsWithFilter(organization.current, addedOrUpdated, getEventsNavigationOptionsForFilter(addedOrUpdated));
             return;
         }
 
         // For all other filters (skipping date filters), apply them to the current page
         if (addedOrUpdated.type !== 'date') {
-            updateFilters(filterChanged(filters ?? [], addedOrUpdated));
+            const isNew = !filters?.some((f) => f.id === addedOrUpdated.id);
+            const updatedFilters = filterChanged(filters ?? [], addedOrUpdated);
+            updateFilters(updatedFilters);
+            if (isNew) {
+                filters = updatedFilters;
+            }
         }
 
         selectedEventId = null;
     }
 
     function onFilterRemoved(removed?: FacetedFilter.IFilter): void {
-        updateFilters(filterRemoved(filters ?? [], removed));
+        const updatedFilters = filterRemoved(filters ?? [], removed);
+        updateFilters(updatedFilters);
+        filters = updatedFilters;
     }
 
     function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
@@ -160,15 +177,19 @@
         getSharedTableOptions<EventSummaryModel<SummaryTemplateKeys>>({
             columnPersistenceKey: 'stream-column-visibility',
             get columns() {
-                return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode);
+                return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode, {
+                    showType: !hasSingleTypeFilter(eventsQueryParameters.filter)
+                })
+                    .filter((c) => c.id !== 'select')
+                    .map((c) => ({ ...c, enableSorting: false }));
             },
             configureOptions: (options) => {
-                options.columns = options.columns.filter((c) => c.id !== 'select').map((c) => ({ ...c, enableSorting: false }));
                 options.enableMultiRowSelection = false;
                 options.enableRowSelection = false;
                 options.manualSorting = false;
                 return options;
             },
+            defaultColumnVisibility: defaultEventColumnVisibility,
             paginationStrategy: 'cursor',
             get queryData() {
                 return queryData;
@@ -179,6 +200,10 @@
             get queryParameters() {
                 return eventsQueryParameters;
             }
+        }),
+        (state) => ({
+            columnOrder: state.columnOrder,
+            columnVisibility: state.columnVisibility
         })
     );
 
@@ -268,7 +293,7 @@
 
 <DataTable.Root>
     <div class="mb-4 flex flex-wrap items-start gap-2">
-        <H3 class="my-0 shrink-0">Event Stream</H3>
+        <H3 class="my-0 shrink-0">{pageTitle}</H3>
         <div class="flex min-w-0 flex-1 flex-wrap items-start gap-2">
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                 <OrganizationDefaultsFacetedFilterBuilder />
@@ -278,17 +303,18 @@
             {#if savedViewsState.isEnabled}
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
-                    columnVisibility={table.store.state.columnVisibility}
+                    columnOrder={table.state.columnOrder}
+                    columnVisibility={table.state.columnVisibility}
                     filters={filters ?? []}
                     isModified={savedViewsState.isModified}
                     onLoadView={savedViewsState.handleLoadView}
-                    onResetToSaved={savedViewsState.handleResetToSaved}
                     onClearSavedView={savedViewsState.handleClearSavedView}
+                    onResetToSaved={savedViewsState.handleResetToSaved}
                     savedViews={savedViewsState.savedViews}
+                    {table}
                     view={VIEW}
                 />
             {/if}
-            <DataTableViewOptions size="icon-lg" {table} />
             <StreamingIndicatorButton onToggle={handleToggle} {paused} size="icon-lg" />
         </div>
     </div>

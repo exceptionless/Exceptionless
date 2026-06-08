@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { deserializeFilters, quoteIfSpecialCharacters, serializeFilters } from './helpers.svelte';
+import {
+    applyTimeFilter,
+    deserializeFilters,
+    filterChanged,
+    quoteIfSpecialCharacters,
+    serializeFilters,
+    toFilter,
+    toFilterFromSerializedFilters
+} from './helpers.svelte';
 import {
     BooleanFilter,
     DateFilter,
@@ -63,6 +71,65 @@ describe('helpers.svelte', () => {
     });
 });
 
+describe('applyTimeFilter', () => {
+    it('removes an existing date filter when time is explicitly empty', () => {
+        // Arrange
+        const filters = [new DateFilter('date', '[now-7d TO now]'), new StringFilter('stack', 'stack-1')];
+
+        // Act
+        const result = applyTimeFilter(filters, null);
+
+        // Assert
+        expect(result.map((filter) => filter.key)).toEqual(['string-stack']);
+    });
+});
+
+describe('filterChanged', () => {
+    it('merges duplicate multi-value filters by key', () => {
+        // Arrange
+        const existing = new StatusFilter(['open'] as never[]);
+        const added = new StatusFilter(['regressed'] as never[]);
+
+        // Act
+        const result = filterChanged([existing], added);
+
+        // Assert
+        expect(result).toHaveLength(1);
+        expect(result[0]).toBeInstanceOf(StatusFilter);
+        expect((result[0] as StatusFilter).value).toEqual(['open', 'regressed']);
+    });
+
+    it('replaces duplicate scalar filters by key', () => {
+        // Arrange
+        const existing = new ReferenceFilter('ref-1');
+        const added = new ReferenceFilter('ref-2');
+
+        // Act
+        const result = filterChanged([existing], added);
+
+        // Assert
+        expect(result).toHaveLength(1);
+        expect(result[0]).toBeInstanceOf(ReferenceFilter);
+        expect((result[0] as ReferenceFilter).value).toBe('ref-2');
+    });
+
+    it('deduplicates hidden filters by key', () => {
+        // Arrange
+        const existing = new BooleanFilter('bot', true);
+        existing.hidden = true;
+        const added = new BooleanFilter('bot');
+
+        // Act
+        const result = filterChanged([existing], added);
+
+        // Assert
+        expect(result).toHaveLength(1);
+        expect(result[0]).toBeInstanceOf(BooleanFilter);
+        expect((result[0] as BooleanFilter).value).toBe(true);
+        expect(result[0]?.hidden).toBe(false);
+    });
+});
+
 describe('serializeFilters', () => {
     it('serializes an empty array', () => {
         expect(serializeFilters([])).toBe('[]');
@@ -109,6 +176,14 @@ describe('serializeFilters', () => {
         const result = JSON.parse(serializeFilters(filters));
 
         expect(result[0]).toEqual({ type: 'project', value: ['proj1', 'proj2'] });
+    });
+
+    it('serializes hidden filters when hidden is true', () => {
+        const filter = new ProjectFilter(['proj1']);
+        filter.hidden = true;
+        const result = JSON.parse(serializeFilters([filter]));
+
+        expect(result[0]).toEqual({ hidden: true, type: 'project', value: ['proj1'] });
     });
 
     it('serializes a ReferenceFilter with value', () => {
@@ -178,6 +253,30 @@ describe('serializeFilters', () => {
     });
 });
 
+describe('toFilterFromSerializedFilters', () => {
+    it('derives the filter expression from serialized filter controls', () => {
+        // Arrange
+        const serialized = serializeFilters([new DateFilter('date', '[now-7d TO now]'), new StringFilter('stack', 'stack-1')]);
+
+        // Act
+        const result = toFilterFromSerializedFilters(serialized);
+
+        // Assert
+        expect(result).toBe('stack:"stack-1"');
+    });
+
+    it('returns null when serialized filters contain only date controls', () => {
+        // Arrange
+        const serialized = serializeFilters([new DateFilter('date', '[now-7d TO now]')]);
+
+        // Act
+        const result = toFilterFromSerializedFilters(serialized);
+
+        // Assert
+        expect(result).toBeNull();
+    });
+});
+
 describe('deserializeFilters', () => {
     it('deserializes an empty array', () => {
         expect(deserializeFilters('[]')).toEqual([]);
@@ -232,6 +331,14 @@ describe('deserializeFilters', () => {
         expect(filters).toHaveLength(1);
         expect(filters[0]).toBeInstanceOf(ProjectFilter);
         expect((filters[0] as ProjectFilter).value).toEqual(['p1', 'p2']);
+    });
+
+    it('deserializes hidden filters', () => {
+        const filters = deserializeFilters('[{"type":"project","value":["p1"],"hidden":true}]');
+
+        expect(filters).toHaveLength(1);
+        expect(filters[0]).toBeInstanceOf(ProjectFilter);
+        expect(filters[0]?.hidden).toBe(true);
     });
 
     it('deserializes a ReferenceFilter', () => {
@@ -301,6 +408,19 @@ describe('deserializeFilters', () => {
 });
 
 describe('round-trip serialization', () => {
+    it('round-trips hidden state without changing filter output', () => {
+        const projectFilter = new ProjectFilter(['proj1']);
+        projectFilter.hidden = true;
+        const originalFilterString = toFilter([projectFilter]);
+
+        const result = deserializeFilters(serializeFilters([projectFilter]));
+
+        expect(result).toHaveLength(1);
+        expect(result[0]).toBeInstanceOf(ProjectFilter);
+        expect(result[0]?.hidden).toBe(true);
+        expect(toFilter(result)).toBe(originalFilterString);
+    });
+
     it('round-trips a BooleanFilter', () => {
         const original = [new BooleanFilter('is_fixed', true)];
         const result = deserializeFilters(serializeFilters(original));

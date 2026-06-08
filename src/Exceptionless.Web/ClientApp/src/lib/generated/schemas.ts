@@ -169,6 +169,7 @@ export const NewProjectSchema = object({
     .regex(/^[a-fA-F0-9]{24}$/, "Organization id has invalid format"),
   name: string().min(1, "Name is required"),
   delete_bot_data_enabled: boolean(),
+  promoted_tabs: array(string()).nullable().optional(),
 });
 export type NewProjectFormData = Infer<typeof NewProjectSchema>;
 
@@ -189,14 +190,27 @@ export const NewSavedViewSchema = object({
     .max(100, "Time must be at most 100 characters")
     .nullable()
     .optional(),
+  sort: string()
+    .min(1, "Sort is required")
+    .max(100, "Sort must be at most 100 characters")
+    .nullable()
+    .optional(),
+  slug: string()
+    .min(1, "Slug is required")
+    .max(100, "Slug must be at most 100 characters")
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug has invalid format")
+    .nullable()
+    .optional(),
   view_type: string().min(1, "View type is required"),
   filter_definitions: string()
     .min(1, "Filter definitions is required")
-    .max(10000, "Filter definitions must be at most 10000 characters")
+    .max(100000, "Filter definitions must be at most 100000 characters")
     .nullable()
     .optional(),
   columns: record(string(), boolean()).nullable().optional(),
-  is_default: boolean().nullable().optional(),
+  column_order: array(string()).nullable().optional(),
+  show_stats: boolean().nullable().optional(),
+  show_chart: boolean().nullable().optional(),
   is_private: boolean().nullable().optional(),
 });
 export type NewSavedViewFormData = Infer<typeof NewSavedViewSchema>;
@@ -283,8 +297,7 @@ export const PersistentEventSchema = object({
   type: string()
     .min(1, "Type is required")
     .max(100, "Type must be at most 100 characters")
-    .nullable()
-    .optional(),
+    .nullable(),
   source: string()
     .min(1, "Source is required")
     .max(2000, "Source must be at most 2000 characters")
@@ -307,6 +320,24 @@ export const PersistentEventSchema = object({
     .optional(),
 });
 export type PersistentEventFormData = Infer<typeof PersistentEventSchema>;
+
+export const PredefinedSavedViewDefinitionSchema = object({
+  key: string().min(1, "Key is required"),
+  name: string().min(1, "Name is required"),
+  slug: string().min(1, "Slug is required"),
+  viewType: string().min(1, "View type is required"),
+  filter: string().min(1, "Filter is required").nullable().optional(),
+  time: string().min(1, "Time is required").nullable().optional(),
+  sort: string().min(1, "Sort is required").nullable().optional(),
+  filterDefinitions: unknown().optional(),
+  columns: record(string(), boolean()).nullable().optional(),
+  columnOrder: array(string()).nullable().optional(),
+  showStats: boolean().nullable().optional(),
+  showChart: boolean().nullable().optional(),
+});
+export type PredefinedSavedViewDefinitionFormData = Infer<
+  typeof PredefinedSavedViewDefinitionSchema
+>;
 
 export const ResetPasswordModelSchema = object({
   password_reset_token: string().length(
@@ -405,19 +436,24 @@ export type UpdateEventFormData = Infer<typeof UpdateEventSchema>;
 export const UpdateProjectSchema = object({
   name: string().min(1, "Name is required").optional(),
   delete_bot_data_enabled: boolean().optional(),
+  promoted_tabs: array(string()).nullable().optional(),
 });
 export type UpdateProjectFormData = Infer<typeof UpdateProjectSchema>;
 
 export const UpdateSavedViewSchema = object({
   name: string().min(1, "Name is required").nullable().optional(),
-  is_default: boolean().nullable().optional(),
   filter: string().min(1, "Filter is required").nullable().optional(),
   time: string().min(1, "Time is required").nullable().optional(),
+  sort: string().min(1, "Sort is required").nullable().optional(),
+  slug: string().min(1, "Slug is required").nullable().optional(),
   filter_definitions: string()
     .min(1, "Filter definitions is required")
     .nullable()
     .optional(),
   columns: record(string(), boolean()).nullable().optional(),
+  column_order: array(string()).nullable().optional(),
+  show_stats: boolean().nullable().optional(),
+  show_chart: boolean().nullable().optional(),
 });
 export type UpdateSavedViewFormData = Infer<typeof UpdateSavedViewSchema>;
 
@@ -439,6 +475,7 @@ export const UsageHourInfoSchema = object({
   blocked: int32(),
   discarded: int32(),
   too_big: int32(),
+  deleted: int32(),
 });
 export type UsageHourInfoFormData = Infer<typeof UsageHourInfoSchema>;
 
@@ -449,6 +486,7 @@ export const UsageInfoSchema = object({
   blocked: int32(),
   discarded: int32(),
   too_big: int32(),
+  deleted: int32(),
 });
 export type UsageInfoFormData = Infer<typeof UsageInfoSchema>;
 
@@ -467,6 +505,11 @@ export const UserSchema = object({
   o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
   full_name: string().min(1, "Full name is required"),
   email_address: email(),
+  avatar_file_name: string()
+    .min(1, "Avatar file name is required")
+    .max(2000, "Avatar file name must be at most 2000 characters")
+    .nullable()
+    .optional(),
   email_notifications_enabled: boolean(),
   is_email_address_verified: boolean(),
   verify_email_address_token: string()
@@ -498,6 +541,7 @@ export const ViewCurrentUserSchema = object({
   organization_ids: array(string()),
   full_name: string().min(1, "Full name is required"),
   email_address: email(),
+  avatar_url: url().nullable().optional(),
   email_notifications_enabled: boolean(),
   is_email_address_verified: boolean(),
   is_active: boolean(),
@@ -513,6 +557,7 @@ export const ViewOrganizationSchema = object({
   created_utc: iso.datetime(),
   updated_utc: iso.datetime(),
   name: string().min(1, "Name is required"),
+  icon_url: url().nullable().optional(),
   plan_id: string().min(1, "Plan id is required"),
   plan_name: string().min(1, "Plan name is required"),
   plan_description: string().min(1, "Plan description is required"),
@@ -606,9 +651,13 @@ export const ViewSavedViewSchema = object({
     .nullable()
     .optional(),
   columns: record(string(), boolean()).nullable().optional(),
-  is_default: boolean(),
+  column_order: array(string()).nullable().optional(),
+  show_stats: boolean().nullable().optional(),
+  show_chart: boolean().nullable().optional(),
   name: string().min(1, "Name is required"),
+  slug: string().min(1, "Slug is required"),
   time: string().min(1, "Time is required").nullable().optional(),
+  sort: string().min(1, "Sort is required").nullable().optional(),
   version: int32(),
   view_type: string().min(1, "View type is required"),
   created_utc: iso.datetime(),
@@ -653,6 +702,7 @@ export const ViewUserSchema = object({
   organization_ids: array(string()),
   full_name: string().min(1, "Full name is required"),
   email_address: email(),
+  avatar_url: url().nullable().optional(),
   email_notifications_enabled: boolean(),
   is_email_address_verified: boolean(),
   is_active: boolean(),

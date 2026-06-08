@@ -13,6 +13,8 @@
 				link: "text-primary underline-offset-4 hover:underline",
 				// Custom semantic color variants — adapted to new [a]:hover: selector format
 				red: "bg-red-100 text-red-700 [a]:hover:bg-red-200 border-transparent focus-visible:ring-red-400 dark:bg-red-900/30 dark:text-red-300 dark:[a]:hover:bg-red-900/50",
+				info: "bg-primary/10 text-foreground border-transparent [a]:hover:bg-primary/15 focus-visible:ring-primary/30 dark:bg-primary/15 dark:[a]:hover:bg-primary/20",
+				yellow: "bg-yellow-100 text-yellow-700 [a]:hover:bg-yellow-200 border-transparent focus-visible:ring-yellow-400 dark:bg-yellow-900/30 dark:text-yellow-300 dark:[a]:hover:bg-yellow-900/50",
 				amber: "bg-amber-100 text-amber-700 [a]:hover:bg-amber-200 border-transparent focus-visible:ring-amber-400 dark:bg-amber-900/30 dark:text-amber-300 dark:[a]:hover:bg-amber-900/50",
 				orange: "bg-orange-100 text-orange-700 [a]:hover:bg-orange-200 border-transparent focus-visible:ring-orange-400 dark:bg-orange-900/30 dark:text-orange-300 dark:[a]:hover:bg-orange-900/50",
 			},

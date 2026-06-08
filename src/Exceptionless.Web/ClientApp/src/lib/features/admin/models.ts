@@ -93,6 +93,21 @@ export type MigrationState = {
 
 export type MigrationStatus = 'Completed' | 'Failed' | 'Pending' | 'Running';
 
+export type PredefinedSavedViewDefinition = {
+    columnOrder?: null | string[];
+    columns?: null | Record<string, boolean>;
+    filter?: null | string;
+    filterDefinitions?: unknown;
+    key: string;
+    name: string;
+    showChart?: boolean | null;
+    showStats?: boolean | null;
+    slug: string;
+    sort?: null | string;
+    time?: null | string;
+    viewType: string;
+};
+
 export type ShardMetric = {
     id: string;
     label: string;

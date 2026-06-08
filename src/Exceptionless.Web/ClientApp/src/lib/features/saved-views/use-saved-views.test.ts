@@ -1,37 +1,203 @@
 import { ChangeType } from '$features/websockets/models';
 import { QueryClient } from '@tanstack/svelte-query';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { SavedView } from './models';
 
-import { invalidateSavedViewQueries, queryKeys, syncSavedViewCaches, upsertSavedViewCache } from './api.svelte';
-import { type SavedViewQueryParams, setTimeQueryParam, supportsTimeQueryParam } from './use-saved-views.svelte';
+import { invalidateSavedViewQueries, queryKeys, removeSavedViewFromCaches, SAVED_VIEW_REFRESH_DELAY_MS, syncSavedViewCaches } from './api.svelte';
+import {
+    filterDefinitionsEqual,
+    getComparableSavedViewFilter,
+    getComparableSavedViewTime,
+    hasMissingSavedViewSlug,
+    hasSavedColumnOrder,
+    hasSavedColumnVisibility,
+    type SavedViewQueryParams,
+    setSortQueryParam,
+    setTimeQueryParam,
+    supportsSortQueryParam,
+    supportsTimeQueryParam
+} from './use-saved-views.svelte';
+
+vi.mock('$features/auth/index.svelte', () => ({
+    accessToken: { current: 'token_123' }
+}));
 
 const TEST_ORG_ID = '507f1f77bcf86cd799439011';
 const TEST_USER_ID = '66a1b2c3d4e5f6a7b8c9d0e1';
 
+afterEach(() => {
+    vi.useRealTimers();
+});
+
 function buildSavedView({ id, name, ...overrides }: Partial<SavedView> & Pick<SavedView, 'id' | 'name'>): SavedView {
+    const slug =
+        overrides.slug ??
+        name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, '');
+
     return {
+        column_order: null,
         columns: {},
         created_by_user_id: TEST_USER_ID,
         created_utc: new Date().toISOString(),
         filter: null,
         filter_definitions: null,
         id,
-        is_default: false,
         name,
         organization_id: TEST_ORG_ID,
+        sort: null,
         time: null,
         updated_by_user_id: null,
         updated_utc: new Date().toISOString(),
         user_id: null,
         version: 1,
-        view_type: 'issues',
-        ...overrides
+        view_type: 'stacks',
+        ...overrides,
+        slug
     };
 }
 
 describe('useSavedViews', () => {
+    describe('saved view slug resolution', () => {
+        it('reports a missing slug after saved views finish loading without a match', () => {
+            // Arrange
+            const savedView = buildSavedView({ id: 'view-1', name: 'My Saved View' });
+
+            // Act
+            const result = hasMissingSavedViewSlug({
+                activeSavedView: undefined,
+                isLoading: false,
+                savedViews: [savedView],
+                slug: 'most-frequent'
+            });
+
+            // Assert
+            expect(result).toBe(true);
+        });
+
+        it('reports a missing slug while cached saved-view data is background fetching', () => {
+            // Act
+            const result = hasMissingSavedViewSlug({
+                activeSavedView: undefined,
+                isLoading: false,
+                savedViews: [],
+                slug: 'most-frequent'
+            });
+
+            // Assert
+            expect(result).toBe(true);
+        });
+
+        it('does not report a missing slug before saved views are available', () => {
+            // Act
+            const result = hasMissingSavedViewSlug({
+                activeSavedView: undefined,
+                isLoading: false,
+                savedViews: undefined,
+                slug: 'most-frequent'
+            });
+
+            // Assert
+            expect(result).toBe(false);
+        });
+
+        it('does not report a missing slug when there is no slug route parameter', () => {
+            // Act
+            const result = hasMissingSavedViewSlug({
+                activeSavedView: undefined,
+                isLoading: false,
+                savedViews: [],
+                slug: undefined
+            });
+
+            // Assert
+            expect(result).toBe(false);
+        });
+    });
+
+    describe('filter definition comparison', () => {
+        it('treats omitted empty filter values as equal to hydrated empty values', () => {
+            // Arrange
+            const seededDefinitions = '[{"type":"date","term":"date","value":"[now-7d TO now]"},{"type":"project"}]';
+            const serializedDefinitions = '[{"type":"date","term":"date","value":"[now-7d TO now]"},{"type":"project","value":[]}]';
+
+            // Act
+            const result = filterDefinitionsEqual(serializedDefinitions, seededDefinitions);
+
+            // Assert
+            expect(result).toBe(true);
+        });
+
+        it('treats equivalent filter definitions in different order as equal', () => {
+            // Arrange
+            const seededDefinitions =
+                '[{"type":"date","term":"date","value":"[now-7d TO now]"},{"type":"project"},{"type":"status","value":["open","regressed"],"hidden":true},{"type":"type","value":["404"],"hidden":true}]';
+            const serializedDefinitions =
+                '[{"type":"project","value":[]},{"type":"status","value":["open","regressed"],"hidden":true},{"type":"type","value":["404"],"hidden":true},{"type":"date","term":"date","value":"[now-7d TO now]"}]';
+
+            // Act
+            const result = filterDefinitionsEqual(serializedDefinitions, seededDefinitions);
+
+            // Assert
+            expect(result).toBe(true);
+        });
+
+        it('uses the route default filter when saved views do not have filter definitions', () => {
+            // Act
+            const result = getComparableSavedViewFilter(null, null, '(status:open OR status:regressed)');
+
+            // Assert
+            expect(result).toBe('(status:open OR status:regressed)');
+        });
+
+        it('does not apply the route default filter when saved filter definitions are present', () => {
+            // Act
+            const result = getComparableSavedViewFilter(null, '[]', '(status:open OR status:regressed)');
+
+            // Assert
+            expect(result).toBeNull();
+        });
+    });
+
+    describe('time comparison', () => {
+        it('uses the route default time when saved views do not store time', () => {
+            // Act
+            const result = getComparableSavedViewTime(null, '[now-7d TO now]');
+
+            // Assert
+            expect(result).toBe('[now-7d TO now]');
+        });
+    });
+
+    describe('column comparison', () => {
+        it('does not compare column visibility when a saved view omits column settings', () => {
+            // Act & Assert
+            expect(hasSavedColumnVisibility(null)).toBe(false);
+            expect(hasSavedColumnVisibility(undefined)).toBe(false);
+        });
+
+        it('compares explicit saved column visibility, including empty settings', () => {
+            // Act & Assert
+            expect(hasSavedColumnVisibility({})).toBe(true);
+            expect(hasSavedColumnVisibility({ events: false })).toBe(true);
+        });
+
+        it('does not compare column order when a saved view omits or clears column order', () => {
+            // Act & Assert
+            expect(hasSavedColumnOrder(null)).toBe(false);
+            expect(hasSavedColumnOrder(undefined)).toBe(false);
+            expect(hasSavedColumnOrder([])).toBe(false);
+        });
+
+        it('compares explicit saved column order', () => {
+            // Act & Assert
+            expect(hasSavedColumnOrder(['summary', 'events'])).toBe(true);
+        });
+    });
+
     describe('time parameter detection', () => {
         it('detects when time is not in query params (stream page)', () => {
             // Arrange
@@ -133,9 +299,81 @@ describe('useSavedViews', () => {
         });
     });
 
-    describe('saved view websocket invalidation', () => {
-        it('invalidates immediately for Added events', async () => {
+    describe('sort parameter detection', () => {
+        it('detects when sort is not in query params', () => {
             // Arrange
+            const queryParamsWithoutSort: SavedViewQueryParams = {
+                filter: null,
+                saved: undefined
+            };
+
+            // Act
+            const supportsSort = supportsSortQueryParam(queryParamsWithoutSort);
+
+            // Assert
+            expect(supportsSort).toBe(false);
+        });
+
+        it('detects when sort is in query params', () => {
+            // Arrange
+            const queryParamsWithSort: SavedViewQueryParams = {
+                filter: null,
+                saved: undefined,
+                sort: '-date'
+            };
+
+            // Act
+            const supportsSort = supportsSortQueryParam(queryParamsWithSort);
+
+            // Assert
+            expect(supportsSort).toBe(true);
+        });
+    });
+
+    describe('sort parameter updates', () => {
+        it('does not write sort when the route does not support it', () => {
+            // Arrange
+            const target: SavedViewQueryParams = {
+                filter: null,
+                saved: undefined
+            };
+            const queryParams = new Proxy(target, {
+                set(obj, prop, value) {
+                    if (prop === 'sort') {
+                        throw new Error(`unexpected sort assignment: ${String(value)}`);
+                    }
+
+                    return Reflect.set(obj, prop, value);
+                }
+            }) as SavedViewQueryParams;
+
+            // Act & Assert
+            expect(() => {
+                setSortQueryParam(queryParams, null);
+            }).not.toThrow();
+            expect('sort' in target).toBe(false);
+        });
+
+        it('updates sort when the route supports it', () => {
+            // Arrange
+            const queryParams: SavedViewQueryParams = {
+                filter: null,
+                saved: undefined,
+                sort: undefined
+            };
+
+            // Act
+            setSortQueryParam(queryParams, '-date');
+
+            // Assert
+            expect(queryParams.sort).toBe('-date');
+        });
+    });
+
+    describe('saved view websocket invalidation', () => {
+        it('delays invalidation for Added events so optimistic caches stay visible', async () => {
+            // Arrange
+            vi.useFakeTimers();
             const queryClient = new QueryClient();
             const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockImplementation(async () => {});
 
@@ -148,11 +386,15 @@ describe('useSavedViews', () => {
             });
 
             // Assert
+            expect(invalidateSpy).not.toHaveBeenCalled();
+
+            await vi.advanceTimersByTimeAsync(SAVED_VIEW_REFRESH_DELAY_MS);
             expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.organization(TEST_ORG_ID) });
         });
 
-        it('invalidates immediately for Saved events', async () => {
+        it('delays invalidation for Saved events so optimistic caches stay visible', async () => {
             // Arrange
+            vi.useFakeTimers();
             const queryClient = new QueryClient();
             const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockImplementation(async () => {});
 
@@ -165,6 +407,9 @@ describe('useSavedViews', () => {
             });
 
             // Assert
+            expect(invalidateSpy).not.toHaveBeenCalled();
+
+            await vi.advanceTimersByTimeAsync(SAVED_VIEW_REFRESH_DELAY_MS);
             expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.organization(TEST_ORG_ID) });
         });
 
@@ -174,7 +419,7 @@ describe('useSavedViews', () => {
             const view = buildSavedView({ id: 'view-1', name: 'My View' });
             const otherView = buildSavedView({ id: 'view-2', name: 'Other View' });
             queryClient.setQueryData(queryKeys.organization(TEST_ORG_ID), [view, otherView]);
-            queryClient.setQueryData(queryKeys.view(TEST_ORG_ID, 'issues'), [view, otherView]);
+            queryClient.setQueryData(queryKeys.view(TEST_ORG_ID, 'stacks'), [view, otherView]);
 
             // Act
             await invalidateSavedViewQueries(queryClient, {
@@ -187,7 +432,7 @@ describe('useSavedViews', () => {
 
             // Assert - view removed from both caches without refetch
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([otherView]);
-            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'issues'))).toEqual([otherView]);
+            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'stacks'))).toEqual([otherView]);
         });
 
         it('falls back to invalidation for Removed events when view is not cached', async () => {
@@ -216,15 +461,28 @@ describe('useSavedViews', () => {
             const existingView = buildSavedView({ id: 'view-1', name: 'Existing View' });
             const createdView = buildSavedView({ id: 'view-2', name: 'New View' });
 
-            queryClient.setQueryData(queryKeys.view(TEST_ORG_ID, 'issues'), [existingView]);
+            queryClient.setQueryData(queryKeys.view(TEST_ORG_ID, 'stacks'), [existingView]);
             queryClient.setQueryData(queryKeys.organization(TEST_ORG_ID), [existingView]);
 
             // Act
             syncSavedViewCaches(queryClient, createdView);
 
             // Assert
-            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'issues'))).toEqual([existingView, createdView]);
+            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'stacks'))).toEqual([existingView, createdView]);
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([existingView, createdView]);
+        });
+
+        it('uses the explicit organization id when syncing a created view', () => {
+            // Arrange
+            const queryClient = new QueryClient();
+            const createdView = buildSavedView({ id: 'view-1', name: 'New View', organization_id: undefined as never });
+
+            // Act
+            syncSavedViewCaches(queryClient, createdView, TEST_ORG_ID);
+
+            // Assert
+            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'stacks'))).toEqual([createdView]);
+            expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([createdView]);
         });
 
         it('syncs an updated view into both caches immediately', () => {
@@ -238,30 +496,34 @@ describe('useSavedViews', () => {
                 time: '[now-15m TO now]'
             };
 
-            queryClient.setQueryData(queryKeys.view(TEST_ORG_ID, 'issues'), [existingView, otherView]);
+            queryClient.setQueryData(queryKeys.view(TEST_ORG_ID, 'stacks'), [existingView, otherView]);
             queryClient.setQueryData(queryKeys.organization(TEST_ORG_ID), [existingView, otherView]);
 
             // Act
             syncSavedViewCaches(queryClient, updatedView);
 
             // Assert
-            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'issues'))).toEqual([updatedView, otherView]);
+            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'stacks'))).toEqual([updatedView, otherView]);
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([updatedView, otherView]);
         });
 
-        it('keeps only one default per saved-view type in the cached list', () => {
+        it('removes a deleted view from every saved-view list cache', () => {
             // Arrange
-            const currentDefault = buildSavedView({ id: 'view-1', is_default: true, name: 'Current Default' });
-            const otherIssuesView = buildSavedView({ id: 'view-2', name: 'Other Issues View' });
-            const streamDefault = buildSavedView({ id: 'view-3', is_default: true, name: 'Stream Default', view_type: 'stream' });
-            const newDefault = buildSavedView({ id: 'view-4', is_default: true, name: 'New Default' });
+            const queryClient = new QueryClient();
+            const deletedView = buildSavedView({ id: 'view-1', name: 'Deleted View' });
+            const otherView = buildSavedView({ id: 'view-2', name: 'Other View' });
+
+            queryClient.setQueryData(queryKeys.organization(TEST_ORG_ID), [deletedView, otherView]);
+            queryClient.setQueryData(queryKeys.view(TEST_ORG_ID, 'stacks'), [deletedView, otherView]);
+            queryClient.setQueryData(queryKeys.view(TEST_ORG_ID, 'events'), [deletedView, otherView]);
 
             // Act
-            const updatedViews = upsertSavedViewCache([currentDefault, otherIssuesView, streamDefault], newDefault);
+            removeSavedViewFromCaches(queryClient, deletedView, TEST_ORG_ID);
 
             // Assert
-            expect(updatedViews.filter((view) => view.view_type === 'issues' && view.is_default)).toEqual([newDefault]);
-            expect(updatedViews.filter((view) => view.view_type === 'stream' && view.is_default)).toEqual([streamDefault]);
+            expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([otherView]);
+            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'stacks'))).toEqual([otherView]);
+            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'events'))).toEqual([otherView]);
         });
     });
 

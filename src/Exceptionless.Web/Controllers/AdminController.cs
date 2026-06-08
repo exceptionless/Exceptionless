@@ -153,25 +153,25 @@ public class AdminController : ExceptionlessApiController
     }
 
     [HttpGet("assemblies")]
-    public ActionResult<IEnumerable<AssemblyDetail>> Assemblies()
+    public ActionResult<IEnumerable<AssemblyDetailResponse>> Assemblies()
     {
-        var details = AssemblyDetail.ExtractAll();
+        var details = AssemblyDetail.ExtractAll().Select(AssemblyDetailResponse.FromAssemblyDetail);
         return Ok(details);
     }
 
     [HttpPost("change-plan")]
-    public async Task<IActionResult> ChangePlanAsync(string organizationId, string planId)
+    public async Task<ActionResult<ChangePlanResponse>> ChangePlanAsync(string organizationId, string planId)
     {
         if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
-            return Ok(new { Success = false, Message = "Invalid Organization Id." });
+            return Ok(new ChangePlanResponse(false, "Invalid Organization Id."));
 
         var organization = await _organizationRepository.GetByIdAsync(organizationId);
         if (organization is null)
-            return Ok(new { Success = false, Message = "Invalid Organization Id." });
+            return Ok(new ChangePlanResponse(false, "Invalid Organization Id."));
 
         var plan = _billingManager.GetBillingPlan(planId);
         if (plan is null)
-            return Ok(new { Success = false, Message = "Invalid PlanId." });
+            return Ok(new ChangePlanResponse(false, "Invalid PlanId."));
 
         organization.BillingStatus = !String.Equals(plan.Id, _plans.FreePlan.Id) ? BillingStatus.Active : BillingStatus.Trialing;
         organization.RemoveSuspension();
@@ -183,7 +183,7 @@ public class AdminController : ExceptionlessApiController
             OrganizationId = organization.Id
         });
 
-        return Ok(new { Success = true });
+        return Ok(new ChangePlanResponse(true));
     }
 
     /// <summary>
@@ -439,7 +439,7 @@ public class AdminController : ExceptionlessApiController
     }
 
     [HttpPost("generate-sample-events")]
-    public async Task<IActionResult> GenerateSampleEventsAsync(int eventCount = 100, int daysBack = 7)
+    public async Task<IActionResult> GenerateSampleEventsAsync(int eventCount = 250, int daysBack = 7)
     {
         if (eventCount < 1 || eventCount > 10000)
         {
@@ -457,4 +457,3 @@ public class AdminController : ExceptionlessApiController
         return Ok(new { Success = true, Message = $"Enqueued generation of {eventCount} sample events over {daysBack} days. Events will appear shortly." });
     }
 }
-

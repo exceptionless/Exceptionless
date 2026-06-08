@@ -97,16 +97,12 @@ public static class DictionaryExtensions
             if (!other.TryGetValue(key, out var otherValue))
                 return false;
 
-            if (sourceValue is null && otherValue is null)
-                return true;
-
-            if (sourceValue != null && sourceValue.Equals(otherValue))
+            if (!Equals(sourceValue, otherValue))
                 return false;
         }
 
         return true;
     }
-
 
     public static int GetCollectionHashCode<TValue>(this IDictionary<string, TValue> source, IList<string>? exclusions = null)
     {

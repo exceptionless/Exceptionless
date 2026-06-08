@@ -99,6 +99,7 @@ export function getErrorType(event: PersistentEvent) {
 
 export function getExtendedDataItems(event: PersistentEvent, project?: ViewProject): ExtendedDataItem[] {
     const items: ExtendedDataItem[] = [];
+    const promotedTabIndexes = new Map((project?.promoted_tabs ?? []).map((tab, index) => [tab, index]));
 
     for (const [key, data] of Object.entries(event.data ?? {})) {
         const knownDataKeys = ['haserror', 'sessionend'];
@@ -110,7 +111,17 @@ export function getExtendedDataItems(event: PersistentEvent, project?: ViewProje
         items.push({ data, promoted, title: key });
     }
 
-    return items.sort((a, b) => a.title.localeCompare(b.title));
+    return items.sort((a, b) => {
+        if (a.promoted && b.promoted) {
+            return (promotedTabIndexes.get(a.title) ?? Number.MAX_SAFE_INTEGER) - (promotedTabIndexes.get(b.title) ?? Number.MAX_SAFE_INTEGER);
+        }
+
+        if (a.promoted !== b.promoted) {
+            return a.promoted ? -1 : 1;
+        }
+
+        return a.title.localeCompare(b.title);
+    });
 }
 
 export function getLocation(event: PersistentEvent) {

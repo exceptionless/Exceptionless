@@ -40,6 +40,11 @@ public static class RequestExtensions
         return builder.ExpectedStatus(HttpStatusCode.Created);
     }
 
+    public static AppSendBuilder StatusCodeShouldBeNoContent(this AppSendBuilder builder)
+    {
+        return builder.ExpectedStatus(HttpStatusCode.NoContent);
+    }
+
     public static AppSendBuilder StatusCodeShouldBeUnauthorized(this AppSendBuilder builder)
     {
         return builder.ExpectedStatus(HttpStatusCode.Unauthorized);

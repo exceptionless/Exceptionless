@@ -2,9 +2,8 @@
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Queues.Models;
+using Exceptionless.Core.Services;
 using Exceptionless.Web.Models;
-using Foundatio.Caching;
-using Foundatio.Messaging;
 using Foundatio.Queues;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,8 +15,7 @@ namespace Exceptionless.Web.Controllers;
 [Authorize(Policy = AuthorizationRoles.UserPolicy)]
 public class StatusController : ExceptionlessApiController
 {
-    private readonly ICacheClient _cacheClient;
-    private readonly IMessagePublisher _messagePublisher;
+    private readonly NotificationService _notificationService;
     private readonly IQueue<EventPost> _eventQueue;
     private readonly IQueue<MailMessage> _mailQueue;
     private readonly IQueue<EventNotification> _notificationQueue;
@@ -26,8 +24,7 @@ public class StatusController : ExceptionlessApiController
     private readonly AppOptions _appOptions;
 
     public StatusController(
-        ICacheClient cacheClient,
-        IMessagePublisher messagePublisher,
+        NotificationService notificationService,
         IQueue<EventPost> eventQueue,
         IQueue<MailMessage> mailQueue,
         IQueue<EventNotification> notificationQueue,
@@ -36,8 +33,7 @@ public class StatusController : ExceptionlessApiController
         AppOptions appOptions,
         TimeProvider timeProvider) : base(timeProvider)
     {
-        _cacheClient = cacheClient;
-        _messagePublisher = messagePublisher;
+        _notificationService = notificationService;
         _eventQueue = eventQueue;
         _mailQueue = mailQueue;
         _notificationQueue = notificationQueue;
@@ -111,8 +107,8 @@ public class StatusController : ExceptionlessApiController
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
     public async Task<ActionResult<ReleaseNotification>> PostReleaseNotificationAsync(ValueFromBody<string> message, bool critical = false)
     {
-        var notification = new ReleaseNotification { Critical = critical, Date = _timeProvider.GetUtcNow().UtcDateTime, Message = message.Value };
-        await _messagePublisher.PublishAsync(notification);
+        var notification = await _notificationService.SendReleaseNotificationAsync(message.Value, critical);
+
         return Ok(notification);
     }
 
@@ -122,34 +118,39 @@ public class StatusController : ExceptionlessApiController
     [HttpGet("notifications/system")]
     public async Task<ActionResult<SystemNotification>> GetSystemNotificationAsync()
     {
-        var notification = await _cacheClient.GetAsync<SystemNotification>("system-notification");
-        if (!notification.HasValue)
+        var notification = await _notificationService.GetSystemNotificationAsync();
+        if (notification is null)
             return Ok();
 
-        return Ok(notification.Value);
+        return Ok(notification);
     }
 
     [HttpPost("notifications/system")]
     [Consumes("application/json")]
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-    public async Task<ActionResult<SystemNotification>> PostSystemNotificationAsync(ValueFromBody<string> message)
+    public async Task<ActionResult<SystemNotification>> PostSystemNotificationAsync(SetSystemNotificationRequest request, bool publish = true)
     {
-        if (String.IsNullOrWhiteSpace(message?.Value))
+        if (String.IsNullOrWhiteSpace(request.Message))
             return NotFound();
 
-        var notification = new SystemNotification { Date = _timeProvider.GetUtcNow().UtcDateTime, Message = message.Value };
-        await _cacheClient.SetAsync("system-notification", notification);
-        await _messagePublisher.PublishAsync(notification);
+        var notification = await _notificationService.SetSystemNotificationAsync(request.Message, request.Level, request.Target, publish);
 
         return Ok(notification);
     }
 
     [HttpDelete("notifications/system")]
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-    public async Task<IActionResult> RemoveSystemNotificationAsync()
+    public async Task<IActionResult> RemoveSystemNotificationAsync(bool publish = true)
     {
-        await _cacheClient.RemoveAsync("system-notification");
-        await _messagePublisher.PublishAsync(new SystemNotification { Date = _timeProvider.GetUtcNow().UtcDateTime });
+        await _notificationService.ClearSystemNotificationAsync(publish);
+
         return Ok();
     }
+}
+
+public record SetSystemNotificationRequest
+{
+    public string? Message { get; set; }
+    public SystemNotificationLevel Level { get; set; } = SystemNotificationLevel.Info;
+    public SystemNotificationTarget Target { get; set; } = SystemNotificationTarget.Both;
 }

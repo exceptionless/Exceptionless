@@ -2,24 +2,31 @@
     import type { IFilter } from '$comp/faceted-filter';
     import type { ProblemDetails } from '@exceptionless/fetchclient';
 
-    import { resolve } from '$app/paths';
-    import { Button } from '$comp/ui/button';
-    import * as Sheet from '$comp/ui/sheet';
-    import ExternalLink from '@lucide/svelte/icons/external-link';
+    import DetailSheet from '$comp/detail-sheet.svelte';
+
+    import type { PersistentEvent } from '../models';
 
     import EventsOverview from './events-overview.svelte';
+    import { buildEventDetailsHref } from './summary';
 
     interface Props {
+        detailsHref?: string;
         eventId: null | string;
         filterChanged: (filter: IFilter) => void;
         onClose: () => void;
         onError?: (problem: ProblemDetails) => void;
     }
 
-    let { eventId = $bindable(), filterChanged, onClose, onError }: Props = $props();
+    let { detailsHref, eventId = $bindable(), filterChanged, onClose, onError }: Props = $props();
 
-    function handleOpenChange() {
-        onClose();
+    let currentEventDetails = $state<{ eventId: string; stackId: string }>();
+
+    const resolvedHref = $derived(
+        detailsHref ?? (eventId ? buildEventDetailsHref(eventId, currentEventDetails?.eventId === eventId ? currentEventDetails.stackId : undefined) : '#')
+    );
+
+    function handleEventLoaded(event: PersistentEvent): void {
+        currentEventDetails = { eventId: event.id, stackId: event.stack_id };
     }
 
     function handleError(problem: ProblemDetails) {
@@ -31,22 +38,8 @@
     }
 </script>
 
-<Sheet.Root onOpenChange={handleOpenChange} open={!!eventId}>
-    <Sheet.Content class="w-full overflow-y-scroll sm:max-w-full! md:w-5/6!">
-        <Sheet.Header>
-            <Sheet.Title
-                >Event Details <Button
-                    href={eventId ? resolve('/(app)/event/[eventId]', { eventId }) : '#'}
-                    size="sm"
-                    title="Open in new window"
-                    variant="ghost"><ExternalLink /></Button
-                ></Sheet.Title
-            >
-        </Sheet.Header>
-        <div class="px-4">
-            {#if eventId}
-                <EventsOverview {filterChanged} id={eventId} {handleError} onSessionFilter={onClose} />
-            {/if}
-        </div>
-    </Sheet.Content>
-</Sheet.Root>
+<DetailSheet detailsHref={resolvedHref} {onClose} open={!!eventId} title="Event">
+    {#if eventId}
+        <EventsOverview {filterChanged} id={eventId} {handleError} onEventLoaded={handleEventLoaded} onNavigate={(newId) => (eventId = newId)} />
+    {/if}
+</DetailSheet>

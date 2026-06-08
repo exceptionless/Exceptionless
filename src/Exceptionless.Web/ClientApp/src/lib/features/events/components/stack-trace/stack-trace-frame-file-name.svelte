@@ -9,6 +9,6 @@
 </script>
 
 {#if frame.file_name}&nbsp;in
-    <span class="text-blue-400"
+    <span class="text-blue-700 dark:text-blue-400"
         >{frame.file_name}{#if frame.line_number}:line {frame.line_number}{/if}</span
-    >{#if frame.column}:col <span class="text-blue-400">{frame.column}</span>{/if}{/if}
+    >{#if frame.column}:col <span class="text-blue-700 dark:text-blue-400">{frame.column}</span>{/if}{/if}

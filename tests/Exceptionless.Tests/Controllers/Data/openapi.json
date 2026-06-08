@@ -150,7 +150,7 @@
           {
             "name": "viewType",
             "in": "path",
-            "description": "The dashboard view type (events, issues, stream).",
+            "description": "The dashboard view type (events, stacks, stream).",
             "required": true,
             "schema": {
               "type": "string"
@@ -337,6 +337,239 @@
         }
       }
     },
+    "/api/v2/organizations/{organizationId}/saved-views/predefined": {
+      "post": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Create or update predefined saved views",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "description": "The identifier of the organization.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The predefined saved views were created or updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ViewSavedView"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The organization could not be found."
+          }
+        }
+      }
+    },
+    "/api/v2/saved-views/predefined": {
+      "get": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Get global predefined saved views as seed JSON",
+        "responses": {
+          "200": {
+            "description": "The current predefined saved views.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PredefinedSavedViewDefinition"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Replace all predefined saved views with the provided definitions",
+        "requestBody": {
+          "description": "The full set of predefined saved view definitions.",
+          "content": {
+            "text/plain": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PredefinedSavedViewDefinition"
+                }
+              }
+            },
+            "application/octet-stream": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PredefinedSavedViewDefinition"
+                }
+              }
+            },
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PredefinedSavedViewDefinition"
+                }
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PredefinedSavedViewDefinition"
+                }
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PredefinedSavedViewDefinition"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The predefined saved views were replaced.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PredefinedSavedViewDefinition"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/organizations/{organizationId}/saved-views/export": {
+      "get": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Get an organization's saved views exported as predefined definitions",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "description": "The identifier of the organization to export from.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The organization's saved views as predefined definitions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PredefinedSavedViewDefinition"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The organization could not be found."
+          }
+        }
+      }
+    },
+    "/api/v2/saved-views/{id}/predefined": {
+      "post": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Save a saved view as a global predefined saved view",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the saved view to promote.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The predefined saved view was created or updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewSavedView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The saved view could not be found."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Delete a global predefined saved view",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the saved view whose predefined saved view should be deleted.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
+          },
+          "204": {
+            "description": "The predefined saved view was deleted."
+          },
+          "404": {
+            "description": "The saved view could not be found."
+          }
+        }
+      }
+    },
     "/api/v2/saved-views/{ids}": {
       "delete": {
         "tags": [
@@ -440,7 +673,7 @@
           "Token"
         ],
         "summary": "Create for organization",
-        "description": "This is a helper action that makes it easier to create a token for a specific organization.\nYou may also specify a scope when creating a token. There are three valid scopes: client, user and admin.",
+        "description": "This is a helper action that makes it easier to create a token for a specific organization.\r\nYou may also specify a scope when creating a token. There are three valid scopes: client, user and admin.",
         "parameters": [
           {
             "name": "organizationId",
@@ -564,7 +797,7 @@
           "Token"
         ],
         "summary": "Create for project",
-        "description": "This is a helper action that makes it easier to create a token for a specific project.\nYou may also specify a scope when creating a token. There are three valid scopes: client, user and admin.",
+        "description": "This is a helper action that makes it easier to create a token for a specific project.\r\nYou may also specify a scope when creating a token. There are three valid scopes: client, user and admin.",
         "parameters": [
           {
             "name": "projectId",
@@ -1071,7 +1304,7 @@
           "Auth"
         ],
         "summary": "Login",
-        "description": "Log in with your email address and password to generate a token scoped with your users roles.\n\n```{ \"email\": \"noreply@exceptionless.io\", \"password\": \"exceptionless\" }```\n\nThis token can then be used to access the api. You can use this token in the header (bearer authentication)\nor append it onto the query string: ?access_token=MY_TOKEN\n\nPlease note that you can also use this token on the documentation site by placing it in the\nheaders api_key input box.",
+        "description": "Log in with your email address and password to generate a token scoped with your users roles.\r\n\r\n```{ \"email\": \"noreply@exceptionless.io\", \"password\": \"exceptionless\" }```\r\n\r\nThis token can then be used to access the api. You can use this token in the header (bearer authentication)\r\nor append it onto the query string: ?access_token=MY_TOKEN\r\n\r\nPlease note that you can also use this token on the documentation site by placing it in the\r\nheaders api_key input box.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1782,6 +2015,13 @@
             }
           },
           {
+            "name": "expected_stack_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "time",
             "in": "query",
             "description": "The time filter that limits the data being returned to a specific date range.",
@@ -1808,6 +2048,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "The event does not belong to the expected stack."
           },
           "404": {
             "description": "The event occurrence could not be found."
@@ -1928,7 +2171,7 @@
           "Event"
         ],
         "summary": "Submit event by POST",
-        "description": "      You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it\n      we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON\n      object into the events data collection.\n\n      You can also post a multi-line string. We automatically split strings by the \\n character and create a new log event for every line.\n\n      Simple event:\n      ```{ \"message\": \"Exceptionless is amazing!\" }```\n\n      Simple log event with user identity:\n      ```{\n    \"type\": \"log\",\n    \"message\": \"Exceptionless is amazing!\",\n    \"date\":\"2030-01-01T12:00:00.0000000-05:00\",\n    \"@user\":{ \"identity\":\"123456789\", \"name\": \"Test User\" }\n}```\n\n      Multiple events from string content:\n      ```Exceptionless is amazing!\nExceptionless is really amazing!```\n\n      Simple error:\n      ```{\n    \"type\": \"error\",\n    \"date\":\"2030-01-01T12:00:00.0000000-05:00\",\n    \"@simple_error\": {\n        \"message\": \"Simple Exception\",\n        \"type\": \"System.Exception\",\n        \"stack_trace\": \"   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77\"\n    }\n}```",
+        "description": "      You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it\r\n      we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON\r\n      object into the events data collection.\r\n\r\n      You can also post a multi-line string. We automatically split strings by the \\n character and create a new log event for every line.\r\n\r\n      Simple event:\r\n      ```{ \"message\": \"Exceptionless is amazing!\" }```\r\n\r\n      Simple log event with user identity:\r\n      ```{\r\n    \"type\": \"log\",\r\n    \"message\": \"Exceptionless is amazing!\",\r\n    \"date\":\"2030-01-01T12:00:00.0000000-05:00\",\r\n    \"@user\":{ \"identity\":\"123456789\", \"name\": \"Test User\" }\r\n}```\r\n\r\n      Multiple events from string content:\r\n      ```Exceptionless is amazing!\r\nExceptionless is really amazing!```\r\n\r\n      Simple error:\r\n      ```{\r\n    \"type\": \"error\",\r\n    \"date\":\"2030-01-01T12:00:00.0000000-05:00\",\r\n    \"@simple_error\": {\r\n        \"message\": \"Simple Exception\",\r\n        \"type\": \"System.Exception\",\r\n        \"stack_trace\": \"   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77\"\r\n    }\r\n}```",
         "parameters": [
           {
             "name": "userAgent",
@@ -2214,7 +2457,7 @@
           "Event"
         ],
         "summary": "Submit event by POST for a specific project",
-        "description": "      You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it\n      we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON\n      object into the events data collection.\n\n      You can also post a multi-line string. We automatically split strings by the \\n character and create a new log event for every line.\n\n      Simple event:\n      ```{ \"message\": \"Exceptionless is amazing!\" }```\n\n      Simple log event with user identity:\n      ```{\n    \"type\": \"log\",\n    \"message\": \"Exceptionless is amazing!\",\n    \"date\":\"2030-01-01T12:00:00.0000000-05:00\",\n    \"@user\":{ \"identity\":\"123456789\", \"name\": \"Test User\" }\n}```\n\n      Multiple events from string content:\n      ```Exceptionless is amazing!\nExceptionless is really amazing!```\n\n      Simple error:\n      ```{\n    \"type\": \"error\",\n    \"date\":\"2030-01-01T12:00:00.0000000-05:00\",\n    \"@simple_error\": {\n        \"message\": \"Simple Exception\",\n        \"type\": \"System.Exception\",\n        \"stack_trace\": \"   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77\"\n    }\n}```",
+        "description": "      You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it\r\n      we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON\r\n      object into the events data collection.\r\n\r\n      You can also post a multi-line string. We automatically split strings by the \\n character and create a new log event for every line.\r\n\r\n      Simple event:\r\n      ```{ \"message\": \"Exceptionless is amazing!\" }```\r\n\r\n      Simple log event with user identity:\r\n      ```{\r\n    \"type\": \"log\",\r\n    \"message\": \"Exceptionless is amazing!\",\r\n    \"date\":\"2030-01-01T12:00:00.0000000-05:00\",\r\n    \"@user\":{ \"identity\":\"123456789\", \"name\": \"Test User\" }\r\n}```\r\n\r\n      Multiple events from string content:\r\n      ```Exceptionless is amazing!\r\nExceptionless is really amazing!```\r\n\r\n      Simple error:\r\n      ```{\r\n    \"type\": \"error\",\r\n    \"date\":\"2030-01-01T12:00:00.0000000-05:00\",\r\n    \"@simple_error\": {\r\n        \"message\": \"Simple Exception\",\r\n        \"type\": \"System.Exception\",\r\n        \"stack_trace\": \"   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77\"\r\n    }\r\n}```",
         "parameters": [
           {
             "name": "projectId",
@@ -3547,7 +3790,7 @@
           "Event"
         ],
         "summary": "Submit event by GET",
-        "description": "You can submit an event using an HTTP GET and query string parameters. Any unknown query string parameters will be added to the extended data of the event.\n\nFeature usage named build with a duration of 10:\n```/events/submit?access_token=YOUR_API_KEY&amp;type=usage&amp;source=build&amp;value=10```\n\nLog with message, geo and extended data\n```/events/submit?access_token=YOUR_API_KEY&amp;type=log&amp;message=Hello World&amp;source=server01&amp;geo=32.85,-96.9613&amp;randomproperty=true```",
+        "description": "You can submit an event using an HTTP GET and query string parameters. Any unknown query string parameters will be added to the extended data of the event.\r\n\r\nFeature usage named build with a duration of 10:\r\n```/events/submit?access_token=YOUR_API_KEY&amp;type=usage&amp;source=build&amp;value=10```\r\n\r\nLog with message, geo and extended data\r\n```/events/submit?access_token=YOUR_API_KEY&amp;type=log&amp;message=Hello World&amp;source=server01&amp;geo=32.85,-96.9613&amp;randomproperty=true```",
         "parameters": [
           {
             "name": "type",
@@ -3681,7 +3924,7 @@
           "Event"
         ],
         "summary": "Submit event type by GET",
-        "description": "You can submit an event using an HTTP GET and query string parameters.\n\nFeature usage event named build with a value of 10:\n```/events/submit/usage?access_token=YOUR_API_KEY&amp;source=build&amp;value=10```\n\nLog event with message, geo and extended data\n```/events/submit/log?access_token=YOUR_API_KEY&amp;message=Hello World&amp;source=server01&amp;geo=32.85,-96.9613&amp;randomproperty=true```",
+        "description": "You can submit an event using an HTTP GET and query string parameters.\r\n\r\nFeature usage event named build with a value of 10:\r\n```/events/submit/usage?access_token=YOUR_API_KEY&amp;source=build&amp;value=10```\r\n\r\nLog event with message, geo and extended data\r\n```/events/submit/log?access_token=YOUR_API_KEY&amp;message=Hello World&amp;source=server01&amp;geo=32.85,-96.9613&amp;randomproperty=true```",
         "parameters": [
           {
             "name": "type",
@@ -3817,7 +4060,7 @@
           "Event"
         ],
         "summary": "Submit event type by GET for a specific project",
-        "description": "You can submit an event using an HTTP GET and query string parameters.\n\nFeature usage named build with a duration of 10:\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&amp;type=usage&amp;source=build&amp;value=10```\n\nLog with message, geo and extended data\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&amp;type=log&amp;message=Hello World&amp;source=server01&amp;geo=32.85,-96.9613&amp;randomproperty=true```",
+        "description": "You can submit an event using an HTTP GET and query string parameters.\r\n\r\nFeature usage named build with a duration of 10:\r\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&amp;type=usage&amp;source=build&amp;value=10```\r\n\r\nLog with message, geo and extended data\r\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&amp;type=log&amp;message=Hello World&amp;source=server01&amp;geo=32.85,-96.9613&amp;randomproperty=true```",
         "parameters": [
           {
             "name": "projectId",
@@ -3953,7 +4196,7 @@
           "Event"
         ],
         "summary": "Submit event type by GET for a specific project",
-        "description": "You can submit an event using an HTTP GET and query string parameters.\n\nFeature usage named build with a duration of 10:\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&amp;type=usage&amp;source=build&amp;value=10```\n\nLog with message, geo and extended data\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&amp;type=log&amp;message=Hello World&amp;source=server01&amp;geo=32.85,-96.9613&amp;randomproperty=true```",
+        "description": "You can submit an event using an HTTP GET and query string parameters.\r\n\r\nFeature usage named build with a duration of 10:\r\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&amp;type=usage&amp;source=build&amp;value=10```\r\n\r\nLog with message, geo and extended data\r\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&amp;type=log&amp;message=Hello World&amp;source=server01&amp;geo=32.85,-96.9613&amp;randomproperty=true```",
         "parameters": [
           {
             "name": "projectId",
@@ -4277,6 +4520,14 @@
         "summary": "Get all",
         "parameters": [
           {
+            "name": "filter",
+            "in": "query",
+            "description": "A filter that controls what data is returned from the server.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "mode",
             "in": "query",
             "description": "If no mode is set then a lightweight organization object will be returned. If the mode is set to stats than the fully populated object will be returned.",
@@ -4490,6 +4741,138 @@
         }
       }
     },
+    "/api/v2/organizations/{id}/icon": {
+      "post": {
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Upload icon",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the organization.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "description": "The image file to upload.",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewOrganization"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The organization could not be found."
+          },
+          "422": {
+            "description": "The image file is invalid."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Remove icon",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the organization.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewOrganization"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The organization could not be found."
+          }
+        }
+      }
+    },
+    "/api/v2/organizations/{id}/icon/{fileName}": {
+      "get": {
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Get icon",
+        "operationId": "GetOrganizationIcon",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the organization.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "fileName",
+            "in": "path",
+            "description": "The icon file name.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
+          },
+          "404": {
+            "description": "The icon could not be found."
+          }
+        }
+      }
+    },
     "/api/v2/organizations/{ids}": {
       "delete": {
         "tags": [
@@ -4675,7 +5058,7 @@
           "Organization"
         ],
         "summary": "Change plan",
-        "description": "Upgrades or downgrades the organization's plan.\nAccepts parameters via JSON body (preferred) or query string (legacy).",
+        "description": "Upgrades or downgrades the organization's plan.\r\nAccepts parameters via JSON body (preferred) or query string (legacy).",
         "parameters": [
           {
             "name": "id",
@@ -7303,6 +7686,138 @@
         }
       }
     },
+    "/api/v2/users/{id}/avatar": {
+      "post": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Upload avatar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the user.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "description": "The image file to upload.",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewUser"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The user could not be found."
+          },
+          "422": {
+            "description": "The image file is invalid."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Remove avatar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the user.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewUser"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The user could not be found."
+          }
+        }
+      }
+    },
+    "/api/v2/users/{id}/avatar/{fileName}": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Get avatar",
+        "operationId": "GetUserAvatar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the user.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "fileName",
+            "in": "path",
+            "description": "The avatar file name.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
+          },
+          "404": {
+            "description": "The avatar could not be found."
+          }
+        }
+      }
+    },
     "/api/v2/users/{ids}": {
       "delete": {
         "tags": [
@@ -7793,6 +8308,7 @@
           }
         }
       },
+      "JsonElement": { },
       "Login": {
         "required": [
           "email",
@@ -7849,6 +8365,15 @@
           },
           "delete_bot_data_enabled": {
             "type": "boolean"
+          },
+          "promoted_tabs": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -7884,11 +8409,26 @@
               "string"
             ]
           },
+          "sort": {
+            "maxLength": 100,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "slug": {
+            "maxLength": 100,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "view_type": {
             "type": "string"
           },
           "filter_definitions": {
-            "maxLength": 10000,
+            "maxLength": 100000,
             "type": [
               "null",
               "string"
@@ -7904,12 +8444,27 @@
               "type": "boolean"
             }
           },
-          "is_default": {
+          "column_order": {
+            "maxItems": 50,
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "show_stats": {
             "type": [
               "null",
               "boolean"
-            ],
-            "description": "If true, this view will be the default for its view type. Defaults to false."
+            ]
+          },
+          "show_chart": {
+            "type": [
+              "null",
+              "boolean"
+            ]
           },
           "is_private": {
             "type": [
@@ -8134,7 +8689,7 @@
               "null",
               "string"
             ],
-            "description": "The event type (ie. error, log message, feature usage). Check KnownTypes for standard event types.\nNullable in transit; the pipeline infers a default before save. Validated as required on repository save."
+            "description": "The event type (ie. error, log message, feature usage). Check KnownTypes for standard event types.\r\nNullable in transit; the pipeline infers a default before save. Validated as required on repository save."
           },
           "source": {
             "maxLength": 2000,
@@ -8207,6 +8762,87 @@
               "string"
             ],
             "description": "An optional identifier to be used for referencing this event instance at a later time."
+          }
+        }
+      },
+      "PredefinedSavedViewDefinition": {
+        "required": [
+          "key",
+          "name",
+          "slug",
+          "viewType"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "viewType": {
+            "type": "string"
+          },
+          "filter": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "time": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sort": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "filterDefinitions": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonElement"
+              }
+            ]
+          },
+          "columns": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          },
+          "columnOrder": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "showStats": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "showChart": {
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         }
       },
@@ -8518,6 +9154,15 @@
           },
           "delete_bot_data_enabled": {
             "type": "boolean"
+          },
+          "promoted_tabs": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         },
         "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
@@ -8531,12 +9176,6 @@
               "string"
             ]
           },
-          "is_default": {
-            "type": [
-              "null",
-              "boolean"
-            ]
-          },
           "filter": {
             "type": [
               "null",
@@ -8544,6 +9183,18 @@
             ]
           },
           "time": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sort": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "slug": {
             "type": [
               "null",
               "string"
@@ -8563,6 +9214,28 @@
             "additionalProperties": {
               "type": "boolean"
             }
+          },
+          "column_order": {
+            "maxItems": 50,
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "show_stats": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "show_chart": {
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         },
         "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
@@ -8600,7 +9273,8 @@
           "total",
           "blocked",
           "discarded",
-          "too_big"
+          "too_big",
+          "deleted"
         ],
         "type": "object",
         "properties": {
@@ -8623,6 +9297,10 @@
           "too_big": {
             "type": "integer",
             "format": "int32"
+          },
+          "deleted": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -8633,7 +9311,8 @@
           "total",
           "blocked",
           "discarded",
-          "too_big"
+          "too_big",
+          "deleted"
         ],
         "type": "object",
         "properties": {
@@ -8658,6 +9337,10 @@
             "format": "int32"
           },
           "too_big": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "deleted": {
             "type": "integer",
             "format": "int32"
           }
@@ -8731,6 +9414,14 @@
           "email_address": {
             "type": "string",
             "format": "email"
+          },
+          "avatar_file_name": {
+            "maxLength": 2000,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "email_notifications_enabled": {
             "type": "boolean"
@@ -8846,6 +9537,12 @@
             "type": "string",
             "format": "email"
           },
+          "avatar_url": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "email_notifications_enabled": {
             "type": "boolean"
           },
@@ -8914,6 +9611,12 @@
           },
           "name": {
             "type": "string"
+          },
+          "icon_url": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "plan_id": {
             "type": "string"
@@ -9118,7 +9821,6 @@
             "additionalProperties": { }
           },
           "promoted_tabs": {
-            "uniqueItems": true,
             "type": "array",
             "items": {
               "type": "string"
@@ -9163,8 +9865,8 @@
           "id",
           "organization_id",
           "created_by_user_id",
-          "is_default",
           "name",
+          "slug",
           "version",
           "view_type",
           "created_utc",
@@ -9229,13 +9931,40 @@
               "type": "boolean"
             }
           },
-          "is_default": {
-            "type": "boolean"
+          "column_order": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "show_stats": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "show_chart": {
+            "type": [
+              "null",
+              "boolean"
+            ]
           },
           "name": {
             "type": "string"
           },
+          "slug": {
+            "type": "string"
+          },
           "time": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sort": {
             "type": [
               "null",
               "string"
@@ -9376,6 +10105,12 @@
           "email_address": {
             "type": "string",
             "format": "email"
+          },
+          "avatar_url": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "email_notifications_enabled": {
             "type": "boolean"

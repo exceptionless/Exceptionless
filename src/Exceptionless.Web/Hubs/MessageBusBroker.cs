@@ -58,25 +58,25 @@ public sealed class MessageBusBroker : IStartupAction
         _logger.LogTrace("Attempting to update user {User} active groups for {UserConnectionCount} connections", userMembershipChanged.UserId, userConnectionIds.Count);
         foreach (string connectionId in userConnectionIds)
         {
-            if (userMembershipChanged.ChangeType == ChangeType.Added)
+            if (userMembershipChanged.ChangeType is ChangeType.Added)
                 await _connectionMapping.GroupAddAsync(userMembershipChanged.OrganizationId, connectionId);
-            else if (userMembershipChanged.ChangeType == ChangeType.Removed)
+            else if (userMembershipChanged.ChangeType is ChangeType.Removed)
                 await _connectionMapping.GroupRemoveAsync(userMembershipChanged.OrganizationId, connectionId);
         }
 
         await GroupSendAsync(userMembershipChanged.OrganizationId, userMembershipChanged);
     }
 
-    private async Task OnEntityChangedAsync(EntityChanged ec, CancellationToken cancellationToken = default)
+    internal async Task OnEntityChangedAsync(EntityChanged ec, CancellationToken cancellationToken = default)
     {
         if (ec is null)
             return;
 
         var entityChanged = ExtendedEntityChanged.Create(ec);
-        if (UserTypeName == entityChanged.Type)
+        if (String.Equals(UserTypeName, entityChanged.Type, StringComparison.Ordinal))
         {
             // It's pointless to send a user added message to the new user.
-            if (entityChanged.ChangeType == ChangeType.Added)
+            if (entityChanged.ChangeType is ChangeType.Added)
             {
                 _logger.LogTrace("Ignoring {UserTypeName} message for added user: {UserId}", UserTypeName, entityChanged.Id);
                 return;
@@ -97,22 +97,43 @@ public sealed class MessageBusBroker : IStartupAction
         }
 
         // Only allow specific token messages to be sent down to the client.
-        if (TokenTypeName == entityChanged.Type)
+        if (String.Equals(TokenTypeName, entityChanged.Type, StringComparison.Ordinal))
         {
             string? userId = entityChanged.Data.GetValueOrDefault<string>(ExtendedEntityChanged.KnownKeys.UserId);
+            bool isAuthToken = entityChanged.Data.GetValueOrDefault<bool>(ExtendedEntityChanged.KnownKeys.IsAuthenticationToken);
+
             if (userId is not null)
             {
                 var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(userId);
-                _logger.LogTrace("Sending {TokenTypeName} message for added user: {UserId} (to {UserConnectionCount} connections)", TokenTypeName, userId, userConnectionIds.Count);
+
+                // Auth token removed = logout. Close sockets immediately without sending;
+                // there is no point delivering a message to a connection we are about to tear down.
+                if (isAuthToken && entityChanged.ChangeType is ChangeType.Removed)
+                {
+                    _logger.LogTrace("Auth token removed for user {UserId}; closing {ConnectionCount} WebSocket connection(s)", userId, userConnectionIds.Count);
+                    string? organizationId = entityChanged.OrganizationId;
+                    foreach (string connectionId in userConnectionIds)
+                    {
+                        if (organizationId is { Length: > 0 })
+                            await _connectionMapping.GroupRemoveAsync(organizationId, connectionId);
+
+                        await _connectionMapping.UserIdRemoveAsync(userId, connectionId);
+                        await _connectionManager.RemoveWebSocketAsync(connectionId);
+                    }
+
+                    return;
+                }
+
+                _logger.LogTrace("Sending {TokenTypeName} message for user: {UserId} (to {UserConnectionCount} connections)", TokenTypeName, userId, userConnectionIds.Count);
                 foreach (string connectionId in userConnectionIds)
                     await TypedSendAsync(connectionId, entityChanged);
 
                 return;
             }
 
-            if (entityChanged.Data.GetValueOrDefault<bool>(ExtendedEntityChanged.KnownKeys.IsAuthenticationToken))
+            if (isAuthToken)
             {
-                _logger.LogTrace("Ignoring {TokenTypeName} Authentication Token message: {UserId}", TokenTypeName, entityChanged.Id);
+                _logger.LogTrace("Ignoring {TokenTypeName} Authentication Token message: {TokenId}", TokenTypeName, entityChanged.Id);
                 return;
             }
 
@@ -163,7 +184,7 @@ public sealed class MessageBusBroker : IStartupAction
     private async Task GroupSendAsync(string group, object value)
     {
         var connectionIds = await _connectionMapping.GetGroupConnectionsAsync(group);
-        if (connectionIds.Count == 0)
+        if (connectionIds.Count is 0)
         {
             _logger.LogTrace("Ignoring group message to {Group}: No Connections", group);
             return;

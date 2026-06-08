@@ -15,7 +15,7 @@
     variant="ghost"
     size={children ? 'xs' : 'icon-xs'}
     onclick={() => changed(new SessionFilter(value ?? undefined))}
-    title={`Search session:${value}`}
+    title={`Filter session:${value}`}
     class={['cursor-pointer', children ? '' : 'opacity-50 hover:opacity-100 focus-visible:opacity-100', className]}
     {...props}
 >

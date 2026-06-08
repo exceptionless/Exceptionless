@@ -1,4 +1,6 @@
 import { resolve } from '$app/paths';
+import Bell from '@lucide/svelte/icons/bell';
+import Bookmark from '@lucide/svelte/icons/bookmark';
 import Database from '@lucide/svelte/icons/database';
 import DatabaseZap from '@lucide/svelte/icons/database-zap';
 import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
@@ -28,6 +30,20 @@ export function routes(): NavigationItem[] {
             icon: Play,
             show: (context) => context.user?.roles?.includes('global') ?? false,
             title: 'Actions'
+        },
+        {
+            group: 'System',
+            href: resolve('/(app)/system/notifications'),
+            icon: Bell,
+            show: (context) => context.user?.roles?.includes('global') ?? false,
+            title: 'Notifications'
+        },
+        {
+            group: 'System',
+            href: resolve('/(app)/system/saved-views'),
+            icon: Bookmark,
+            show: (context) => context.user?.roles?.includes('global') ?? false,
+            title: 'Saved Views'
         },
         {
             group: 'System',

@@ -4,7 +4,7 @@ import type { CountResult, WorkInProgressResult } from '$shared/models';
 import { accessToken } from '$features/auth/index.svelte';
 import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
-import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
+import { createMutation, createQuery, keepPreviousData, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
 import type { EventSummaryModel, SummaryTemplateKeys } from './components/summary/index';
 import type { PersistentEvent } from './models';
@@ -16,15 +16,15 @@ export async function invalidatePersistentEventQueries(queryClient: QueryClient,
     }
 
     if (stack_id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.stacks(stack_id) });
+        await queryClient.invalidateQueries({ exact: true, queryKey: queryKeys.stacks(stack_id) });
     }
 
     if (project_id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.projects(project_id) });
+        await queryClient.invalidateQueries({ exact: true, queryKey: queryKeys.projects(project_id) });
     }
 
     if (organization_id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.organizations(organization_id) });
+        await queryClient.invalidateQueries({ exact: true, queryKey: queryKeys.organizations(organization_id) });
     }
 
     if (!id && !stack_id) {
@@ -34,14 +34,18 @@ export async function invalidatePersistentEventQueries(queryClient: QueryClient,
 
 export const queryKeys = {
     deleteEvent: (ids: string[] | undefined) => [...queryKeys.type, 'delete', ...(ids ?? [])] as const,
+    eventsByReference: (referenceId: string | undefined, projectId?: string | undefined, params?: GetEventsByReferenceRequest['params']) =>
+        [...queryKeys.type, 'by-ref', referenceId, projectId, params] as const,
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
     organizations: (id: string | undefined) => [...queryKeys.type, 'organizations', id] as const,
     organizationsCount: (id: string | undefined, params?: GetOrganizationCountRequest['params']) => [...queryKeys.organizations(id), 'count', params] as const,
     projects: (id: string | undefined) => [...queryKeys.type, 'projects', id] as const,
     projectsCount: (id: string | undefined, params?: GetProjectCountRequest['params']) => [...queryKeys.projects(id), 'count', params] as const,
-    sessionEvents: (id: string | undefined, params?: GetSessionEventsRequest['params']) => [...queryKeys.type, 'sessions', 'session', id, params] as const,
+    sessionEvents: (id: string | undefined, projectId?: string | undefined, params?: GetSessionEventsRequest['params']) =>
+        [...queryKeys.type, 'sessions', 'session', id, projectId, params] as const,
     sessions: (id: string | undefined) => [...queryKeys.type, 'sessions', 'organizations', id] as const,
     sessionsCount: (id: string | undefined, params?: GetOrganizationSessionsCountRequest['params']) => [...queryKeys.sessions(id), 'count', params] as const,
+    stackEvents: (id: string | undefined, params?: GetStackEventsRequest['params']) => [...queryKeys.stacks(id), 'events', params] as const,
     stacks: (id: string | undefined) => [...queryKeys.type, 'stacks', id] as const,
     stacksCount: (id: string | undefined, params?: GetStackCountRequest['params']) => [...queryKeys.stacks(id), 'count', params] as const,
     type: ['PersistentEvent'] as const
@@ -53,13 +57,39 @@ export interface DeleteEventsRequest {
     };
 }
 
+export interface EventNavigation {
+    nextId: null | string;
+    previousId: null | string;
+}
+
+export interface EventWithNavigation {
+    event: PersistentEvent;
+    navigation: EventNavigation;
+}
+
 export interface GetEventRequest {
     params?: {
+        expected_stack_id?: string;
         offset?: string;
         time?: string;
     };
     route: {
         id: string | undefined;
+    };
+}
+
+export interface GetEventsByReferenceRequest {
+    params?: {
+        after?: string;
+        before?: string;
+        limit?: number;
+        mode?: 'summary';
+        offset?: string;
+        page?: number;
+    };
+    route: {
+        projectId?: string | undefined;
+        referenceId: string | undefined;
     };
 }
 
@@ -128,6 +158,7 @@ export interface GetSessionEventsRequest {
         time?: string;
     };
     route: {
+        projectId?: string | undefined;
         sessionId: string | undefined;
     };
 }
@@ -146,6 +177,7 @@ export interface GetStackCountRequest {
 }
 
 export interface GetStackEventsRequest {
+    enabled?: () => boolean;
     params?: {
         after?: string;
         before?: string;
@@ -197,6 +229,64 @@ export function getEventQuery(request: GetEventRequest) {
             return response.data!;
         },
         queryKey: queryKeys.id(request.route.id)
+    }));
+}
+
+export function getEventsByReferenceQuery(request: GetEventsByReferenceRequest) {
+    return createQuery<EventSummaryModel<SummaryTemplateKeys>[], ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.referenceId,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const path = request.route.projectId
+                ? `projects/${request.route.projectId}/events/by-ref/${encodeURIComponent(request.route.referenceId ?? '')}`
+                : `events/by-ref/${encodeURIComponent(request.route.referenceId ?? '')}`;
+            const response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(path, {
+                params: {
+                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                    limit: 20,
+                    mode: 'summary',
+                    page: 1,
+                    ...request.params
+                },
+                signal
+            });
+
+            return response.data!;
+        },
+        queryKey: queryKeys.eventsByReference(request.route.referenceId, request.route.projectId, request.params)
+    }));
+}
+
+export function getEventWithNavigationQuery(request: GetEventRequest) {
+    const queryClient = useQueryClient();
+    return createQuery<EventWithNavigation, ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        placeholderData: keepPreviousData,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<PersistentEvent>(`events/${request.route.id}`, {
+                params: {
+                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                    ...request.params
+                },
+                signal
+            });
+
+            const event = response.data!;
+            queryClient.setQueryData(queryKeys.id(request.route.id), event);
+
+            const previousUrl = response.meta?.links?.previous?.url;
+            const nextUrl = response.meta?.links?.next?.url;
+
+            return {
+                event,
+                navigation: {
+                    nextId: nextUrl ? (nextUrl.split('/').pop() ?? null) : null,
+                    previousId: previousUrl ? (previousUrl.split('/').pop() ?? null) : null
+                }
+            };
+        },
+        queryKey: [...queryKeys.id(request.route.id), 'withNavigation', request.params]
     }));
 }
 
@@ -279,7 +369,10 @@ export function getSessionEventsQuery(request: GetSessionEventsRequest) {
         enabled: () => !!accessToken.current && !!request.route.sessionId,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
-            const response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`events/sessions/${request.route.sessionId}`, {
+            const path = request.route.projectId
+                ? `projects/${request.route.projectId}/events/sessions/${request.route.sessionId}`
+                : `events/sessions/${request.route.sessionId}`;
+            const response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(path, {
                 params: {
                     ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
                     mode: 'summary',
@@ -290,7 +383,7 @@ export function getSessionEventsQuery(request: GetSessionEventsRequest) {
 
             return response.data!;
         },
-        queryKey: queryKeys.sessionEvents(request.route.sessionId, request.params)
+        queryKey: queryKeys.sessionEvents(request.route.sessionId, request.route.projectId, request.params)
     }));
 }
 
@@ -323,7 +416,7 @@ export function getStackEventsQuery(request: GetStackEventsRequest) {
     const queryClient = useQueryClient();
 
     return createQuery<PersistentEvent[], ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.stackId,
+        enabled: () => !!accessToken.current && !!request.route.stackId && (request.enabled?.() ?? true),
         onSuccess: (data: PersistentEvent[]) => {
             data.forEach((event) => {
                 queryClient.setQueryData(queryKeys.id(event.id!), event);
@@ -342,6 +435,6 @@ export function getStackEventsQuery(request: GetStackEventsRequest) {
 
             return response.data!;
         },
-        queryKey: queryKeys.stacks(request.route.stackId)
+        queryKey: queryKeys.stackEvents(request.route.stackId, request.params)
     }));
 }

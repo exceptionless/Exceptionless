@@ -33,6 +33,10 @@ Authorization: Bearer {{token}}
 GET {{apiUrl}}/events/{{eventId}}
 Authorization: Bearer {{token}}
 
+### By Id With Expected Stack
+GET {{apiUrl}}/events/{{eventId}}?expected_stack_id={{stackId}}
+Authorization: Bearer {{token}}
+
 ### By Organization
 GET {{apiUrl}}/events?organization={{organizationId}}
 Authorization: Bearer {{token}}

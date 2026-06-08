@@ -30,6 +30,14 @@ Authorization: Bearer {{token}}
 GET {{apiUrl}}/organizations/{{organizationId}}/saved-views/events
 Authorization: Bearer {{token}}
 
+### Create or update predefined saved views
+POST {{apiUrl}}/organizations/{{organizationId}}/saved-views/predefined
+Authorization: Bearer {{token}}
+
+### Get global predefined saved views as seed JSON
+GET {{apiUrl}}/saved-views/predefined
+Authorization: Bearer {{token}}
+
 ### Create organization-wide saved view
 # @name newSavedView
 POST {{apiUrl}}/organizations/{{organizationId}}/saved-views
@@ -41,12 +49,13 @@ Content-Type: application/json
     "name": "Open Events",
     "filter": "status:open",
     "time": "[now-7d TO now]",
+    "sort": "-date",
     "view_type": "events",
     "columns": {
         "user": true,
         "date": true
     },
-    "is_default": false
+    "column_order": ["summary", "user", "date"]
 }
 
 ###
@@ -67,7 +76,7 @@ Content-Type: application/json
         "user": true,
         "date": true
     },
-    "is_default": false,
+    "column_order": ["summary", "date", "user"],
     "is_private": true
 }
 
@@ -82,8 +91,18 @@ Content-Type: application/json
 
 {
     "name": "Open Events (Last 30d)",
-    "time": "[now-30d TO now]"
+    "time": "[now-30d TO now]",
+    "sort": "date",
+    "column_order": ["summary", "date", "user"]
 }
+
+### Save saved view as a predefined saved view
+POST {{apiUrl}}/saved-views/{{savedViewId}}/predefined
+Authorization: Bearer {{token}}
+
+### Delete predefined saved view
+DELETE {{apiUrl}}/saved-views/{{savedViewId}}/predefined
+Authorization: Bearer {{token}}
 
 ### Delete saved view
 DELETE {{apiUrl}}/saved-views/{{savedViewId}}

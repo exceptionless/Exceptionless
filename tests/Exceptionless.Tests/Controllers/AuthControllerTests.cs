@@ -963,6 +963,97 @@ public class AuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ForgotPasswordCreatesResetTokenAsync()
+    {
+        const string email = "forgot-password@exceptionless.io";
+        var user = new User
+        {
+            EmailAddress = email,
+            FullName = "Forgot Password",
+            Roles = AuthorizationRoles.AllScopes
+        };
+
+        user.MarkEmailAddressVerified();
+        await _userRepository.AddAsync(user);
+
+        await SendRequestAsync(r => r
+            .AppendPath($"auth/forgot-password/{email}")
+            .StatusCodeShouldBeOk()
+        );
+
+        var updatedUser = await _userRepository.GetByEmailAddressAsync(email);
+        Assert.NotNull(updatedUser);
+        Assert.False(String.IsNullOrEmpty(updatedUser.PasswordResetToken));
+        Assert.True(updatedUser.PasswordResetTokenExpiration.IsAfter(TimeProvider.GetUtcNow().UtcDateTime));
+    }
+
+    [Fact]
+    public Task ForgotPasswordForUnknownEmailReturnsOkAsync()
+    {
+        return SendRequestAsync(r => r
+            .AppendPath("auth/forgot-password/missing-password-user@exceptionless.io")
+            .StatusCodeShouldBeOk()
+        );
+    }
+
+    [Fact]
+    public async Task CancelResetPasswordClearsTokenAsync()
+    {
+        const string email = "cancel-reset-password@exceptionless.io";
+        var user = new User
+        {
+            EmailAddress = email,
+            FullName = "Cancel Reset Password",
+            Roles = AuthorizationRoles.AllScopes
+        };
+
+        user.MarkEmailAddressVerified();
+        user.CreatePasswordResetToken(TimeProvider);
+        string token = user.PasswordResetToken!;
+        await _userRepository.AddAsync(user);
+
+        await SendRequestAsync(r => r
+            .Post()
+            .AppendPath($"auth/cancel-reset-password/{token}")
+            .StatusCodeShouldBeOk()
+        );
+
+        var updatedUser = await _userRepository.GetByEmailAddressAsync(email);
+        Assert.NotNull(updatedUser);
+        Assert.Null(updatedUser.PasswordResetToken);
+        Assert.Equal(DateTime.MinValue, updatedUser.PasswordResetTokenExpiration);
+    }
+
+    [Fact]
+    public async Task EmailAddressAvailabilityReturnsCreatedForExistingUserAsync()
+    {
+        const string email = "existing-email-check@exceptionless.io";
+        var user = new User
+        {
+            EmailAddress = email,
+            FullName = "Existing Email Check",
+            Roles = AuthorizationRoles.AllScopes
+        };
+
+        user.MarkEmailAddressVerified();
+        await _userRepository.AddAsync(user);
+
+        await SendRequestAsync(r => r
+            .AppendPath($"auth/check-email-address/{email}")
+            .StatusCodeShouldBeCreated()
+        );
+    }
+
+    [Fact]
+    public Task EmailAddressAvailabilityReturnsNoContentForMissingUserAsync()
+    {
+        return SendRequestAsync(r => r
+            .AppendPath("auth/check-email-address/missing-email-check@exceptionless.io")
+            .StatusCodeShouldBeNoContent()
+        );
+    }
+
+    [Fact]
     public async Task CanLogoutUserAsync()
     {
         const string email = "test7@exceptionless.io";

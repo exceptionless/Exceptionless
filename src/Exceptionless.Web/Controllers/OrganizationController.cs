@@ -14,10 +14,12 @@ using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
+using Exceptionless.Web.Utility.OpenApi;
 using Foundatio.Caching;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using Foundatio.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -37,9 +39,11 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     private readonly IEventRepository _eventRepository;
     private readonly IUserRepository _userRepository;
     private readonly IProjectRepository _projectRepository;
+    private readonly IFileStorage _fileStorage;
     private readonly BillingManager _billingManager;
     private readonly UsageService _usageService;
     private readonly BillingPlans _plans;
+    private readonly IStripeBillingClient _stripeBillingClient;
     private readonly IMailer _mailer;
     private readonly IMessagePublisher _messagePublisher;
     private readonly AppOptions _options;
@@ -51,9 +55,11 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         IEventRepository eventRepository,
         IUserRepository userRepository,
         IProjectRepository projectRepository,
+        IFileStorage fileStorage,
         BillingManager billingManager,
         BillingPlans plans,
         UsageService usageService,
+        IStripeBillingClient stripeBillingClient,
         IMailer mailer,
         IMessagePublisher messagePublisher,
         ApiMapper mapper,
@@ -67,9 +73,11 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         _eventRepository = eventRepository;
         _userRepository = userRepository;
         _projectRepository = projectRepository;
+        _fileStorage = fileStorage;
         _billingManager = billingManager;
         _plans = plans;
         _usageService = usageService;
+        _stripeBillingClient = stripeBillingClient;
         _mailer = mailer;
         _messagePublisher = messagePublisher;
         _options = options;
@@ -83,11 +91,19 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     /// <summary>
     /// Get all
     /// </summary>
+    /// <param name="filter">A filter that controls what data is returned from the server.</param>
     /// <param name="mode">If no mode is set then a lightweight organization object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyCollection<ViewOrganization>>> GetAllAsync(string? mode = null)
+    public async Task<ActionResult<IReadOnlyCollection<ViewOrganization>>> GetAllAsync(string? filter = null, string? mode = null)
     {
         var organizations = await GetModelsAsync(GetAssociatedOrganizationIds().ToArray());
+        if (organizations.Count == 0)
+            return Ok(EmptyModels);
+
+        var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
+        organizations = String.IsNullOrWhiteSpace(filter)
+            ? organizations
+            : (await _repository.GetByFilterAsync(sf, filter, null, o => o.PageLimit(1000))).Documents;
         var viewOrganizations = MapToViewModels(organizations);
         await AfterResultMapAsync(viewOrganizations);
 
@@ -175,6 +191,86 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     }
 
     /// <summary>
+    /// Upload icon
+    /// </summary>
+    /// <param name="id">The identifier of the organization.</param>
+    /// <param name="file">The organization icon image file.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <response code="404">The organization could not be found.</response>
+    /// <response code="422">The image file is invalid.</response>
+    [HttpPost("{id:objectid}/icon")]
+    [Consumes("multipart/form-data")]
+    [MultipartFileUpload]
+    [RequestSizeLimit(ProfileImageStorage.MaxRequestBodySize)]
+    [RequestFormLimits(MultipartBodyLengthLimit = ProfileImageStorage.MaxRequestBodySize)]
+    public async Task<ActionResult<ViewOrganization>> UploadIconAsync(string id, [FromForm] IFormFile? file, CancellationToken cancellationToken = default)
+    {
+        var organization = await GetModelAsync(id, false);
+        if (organization is null)
+            return NotFound();
+
+        var image = await ProfileImageStorage.SaveAsync(_fileStorage, file, "organizations", organization.Id, ModelState, cancellationToken);
+        if (image is null)
+            return ValidationProblem(ModelState);
+
+        string? oldIconFileName = organization.IconFileName;
+        organization.IconFileName = image.FileName;
+        try
+        {
+            await _repository.SaveAsync(organization, o => o.Cache());
+        }
+        catch
+        {
+            await ProfileImageStorage.TryDeleteAsync(_fileStorage, image.FileName, "organizations", organization.Id, CancellationToken.None);
+            throw;
+        }
+
+        await ProfileImageStorage.DeleteAsync(_fileStorage, oldIconFileName, "organizations", organization.Id, cancellationToken);
+
+        return await OkModelAsync(organization);
+    }
+
+    /// <summary>
+    /// Remove icon
+    /// </summary>
+    /// <param name="id">The identifier of the organization.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <response code="404">The organization could not be found.</response>
+    [HttpDelete("{id:objectid}/icon")]
+    public async Task<ActionResult<ViewOrganization>> DeleteIconAsync(string id, CancellationToken cancellationToken = default)
+    {
+        var organization = await GetModelAsync(id, false);
+        if (organization is null)
+            return NotFound();
+
+        string? oldIconFileName = organization.IconFileName;
+        organization.IconFileName = null;
+        await _repository.SaveAsync(organization, o => o.Cache());
+        await ProfileImageStorage.DeleteAsync(_fileStorage, oldIconFileName, "organizations", organization.Id, cancellationToken);
+
+        return await OkModelAsync(organization);
+    }
+
+    /// <summary>
+    /// Get icon
+    /// </summary>
+    /// <param name="id">The identifier of the organization.</param>
+    /// <param name="fileName">The icon file name.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <response code="404">The icon could not be found.</response>
+    [AllowAnonymous]
+    [HttpGet("{id:objectid}/icon/{fileName}", Name = "GetOrganizationIcon")]
+    [ResponseCache(Duration = 31536000, Location = ResponseCacheLocation.Any)]
+    public async Task<IActionResult> GetIconAsync(string id, string fileName, CancellationToken cancellationToken = default)
+    {
+        if (!ProfileImageStorage.TryGetContentType(fileName, out string contentType))
+            return NotFound();
+
+        var stream = await ProfileImageStorage.GetFileStreamAsync(_fileStorage, fileName, "organizations", id, cancellationToken);
+        return stream is null ? NotFound() : File(stream, contentType);
+    }
+
+    /// <summary>
     /// Remove
     /// </summary>
     /// <param name="ids">A comma-delimited list of organization identifiers.</param>
@@ -222,12 +318,9 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             id = "in_" + id;
 
         Stripe.Invoice? stripeInvoice = null;
-        var client = new StripeClient(_options.StripeOptions.StripeApiKey);
-
         try
         {
-            var invoiceService = new InvoiceService(client);
-            stripeInvoice = await invoiceService.GetAsync(id);
+            stripeInvoice = await _stripeBillingClient.GetInvoiceAsync(id);
         }
         catch (StripeException ex)
         {
@@ -325,10 +418,8 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         if (!String.IsNullOrEmpty(after) && !after.StartsWith("in_"))
             after = "in_" + after;
 
-        var client = new StripeClient(_options.StripeOptions.StripeApiKey);
-        var invoiceService = new InvoiceService(client);
         var invoiceOptions = new InvoiceListOptions { Customer = organization.StripeCustomerId, Limit = limit + 1, EndingBefore = before, StartingAfter = after };
-        var invoices = _mapper.MapToInvoiceGridModels(await invoiceService.ListAsync(invoiceOptions));
+        var invoices = _mapper.MapToInvoiceGridModels(await _stripeBillingClient.ListInvoicesAsync(invoiceOptions));
         return OkWithResourceLinks(invoices.Take(limit).ToList(), invoices.Count > limit);
     }
 
@@ -442,11 +533,6 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 return Ok(result);
         }
 
-        var client = new StripeClient(_options.StripeOptions.StripeApiKey);
-        var customerService = new CustomerService(client);
-        var subscriptionService = new SubscriptionService(client);
-        var paymentMethodService = new PaymentMethodService(client);
-
         bool isPaymentMethod = model.StripeToken?.StartsWith("pm_", StringComparison.Ordinal) is true;
 
         try
@@ -458,9 +544,9 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             {
                 if (!String.IsNullOrEmpty(organization.StripeCustomerId))
                 {
-                    var subs = await subscriptionService.ListAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId });
+                    var subs = await _stripeBillingClient.ListSubscriptionsAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId });
                     foreach (var sub in subs.Where(s => !s.CanceledAt.HasValue))
-                        await subscriptionService.CancelAsync(sub.Id, new SubscriptionCancelOptions());
+                        await _stripeBillingClient.CancelSubscriptionAsync(sub.Id, new SubscriptionCancelOptions());
                 }
 
                 organization.BillingStatus = BillingStatus.Trialing;
@@ -493,7 +579,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                     createCustomer.Source = model.StripeToken;
                 }
 
-                var customer = await customerService.CreateAsync(createCustomer);
+                var customer = await _stripeBillingClient.CreateCustomerAsync(createCustomer);
 
                 // Persist the Stripe customer ID immediately so a retry won't create a duplicate customer
                 organization.StripeCustomerId = customer.Id;
@@ -513,7 +599,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 if (!String.IsNullOrWhiteSpace(model.CouponId))
                     subscriptionOptions.Discounts = [new SubscriptionDiscountOptions { Coupon = model.CouponId }];
 
-                await subscriptionService.CreateAsync(subscriptionOptions);
+                await _stripeBillingClient.CreateSubscriptionAsync(subscriptionOptions);
 
                 organization.BillingStatus = BillingStatus.Active;
                 organization.RemoveSuspension();
@@ -529,13 +615,13 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 if (!Request.IsGlobalAdmin())
                     customerUpdateOptions.Email = CurrentUser.EmailAddress;
 
-                var listSubscriptionsTask = subscriptionService.ListAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId });
+                var listSubscriptionsTask = _stripeBillingClient.ListSubscriptionsAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId });
 
                 if (!String.IsNullOrEmpty(model.StripeToken))
                 {
                     if (isPaymentMethod)
                     {
-                        await paymentMethodService.AttachAsync(model.StripeToken, new PaymentMethodAttachOptions
+                        await _stripeBillingClient.AttachPaymentMethodAsync(model.StripeToken, new PaymentMethodAttachOptions
                         {
                             Customer = organization.StripeCustomerId
                         });
@@ -552,7 +638,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 }
 
                 await Task.WhenAll(
-                    customerService.UpdateAsync(organization.StripeCustomerId, customerUpdateOptions),
+                    _stripeBillingClient.UpdateCustomerAsync(organization.StripeCustomerId, customerUpdateOptions),
                     listSubscriptionsTask
                 );
 
@@ -563,7 +649,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                     update.Items.Add(new SubscriptionItemOptions { Id = subscription.Items.Data[0].Id, Price = model.PlanId });
                     if (!String.IsNullOrWhiteSpace(model.CouponId))
                         update.Discounts = [new SubscriptionDiscountOptions { Coupon = model.CouponId }];
-                    await subscriptionService.UpdateAsync(subscription.Id, update);
+                    await _stripeBillingClient.UpdateSubscriptionAsync(subscription.Id, update);
                 }
                 else if (subscription is not null)
                 {
@@ -571,18 +657,21 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                     update.Items.Add(new SubscriptionItemOptions { Price = model.PlanId });
                     if (!String.IsNullOrWhiteSpace(model.CouponId))
                         update.Discounts = [new SubscriptionDiscountOptions { Coupon = model.CouponId }];
-                    await subscriptionService.UpdateAsync(subscription.Id, update);
+                    await _stripeBillingClient.UpdateSubscriptionAsync(subscription.Id, update);
                 }
                 else
                 {
                     create.Items.Add(new SubscriptionItemOptions { Price = model.PlanId });
                     if (!String.IsNullOrWhiteSpace(model.CouponId))
                         create.Discounts = [new SubscriptionDiscountOptions { Coupon = model.CouponId }];
-                    await subscriptionService.CreateAsync(create);
+                    await _stripeBillingClient.CreateSubscriptionAsync(create);
                 }
 
                 if (cardUpdated)
                     organization.CardLast4 = model.Last4;
+
+                if (organization.SubscribeDate is null || organization.SubscribeDate == DateTime.MinValue)
+                    organization.SubscribeDate = _timeProvider.GetUtcNow().UtcDateTime;
 
                 organization.BillingStatus = BillingStatus.Active;
                 organization.RemoveSuspension();
@@ -806,7 +895,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     /// Enable a feature flag
     /// </summary>
     /// <param name="id">The identifier of the organization.</param>
-    /// <param name="feature">The feature flag identifier (e.g., "feature-saved-views").</param>
+    /// <param name="feature">The feature flag identifier.</param>
     /// <response code="200">The feature flag was enabled.</response>
     /// <response code="404">The organization was not found.</response>
     [HttpPost]
@@ -833,7 +922,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     /// Disable a feature flag
     /// </summary>
     /// <param name="id">The identifier of the organization.</param>
-    /// <param name="feature">The feature flag identifier (e.g., "feature-saved-views").</param>
+    /// <param name="feature">The feature flag identifier.</param>
     /// <response code="200">The feature flag was disabled.</response>
     /// <response code="404">The organization was not found.</response>
     [HttpDelete]
@@ -947,6 +1036,8 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         var viewOrganizations = models.OfType<ViewOrganization>().ToList();
         foreach (var viewOrganization in viewOrganizations)
         {
+            viewOrganization.IconUrl = GetOrganizationIconUrl(viewOrganization.Id, viewOrganization.IconUrl);
+
             var realTimeUsage = await _usageService.GetUsageAsync(viewOrganization.Id);
 
             // ensure 12 months of usage
@@ -959,12 +1050,14 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             currentUsage.Blocked = realTimeUsage.CurrentUsage.Blocked;
             currentUsage.Discarded = realTimeUsage.CurrentUsage.Discarded;
             currentUsage.TooBig = realTimeUsage.CurrentUsage.TooBig;
+            currentUsage.Deleted = realTimeUsage.CurrentUsage.Deleted;
 
             var currentHourUsage = viewOrganization.GetCurrentHourlyUsage(_timeProvider);
             currentHourUsage.Total = realTimeUsage.CurrentHourUsage.Total;
             currentHourUsage.Blocked = realTimeUsage.CurrentHourUsage.Blocked;
             currentHourUsage.Discarded = realTimeUsage.CurrentHourUsage.Discarded;
             currentHourUsage.TooBig = realTimeUsage.CurrentHourUsage.TooBig;
+            currentHourUsage.Deleted = realTimeUsage.CurrentHourUsage.Deleted;
 
             viewOrganization.IsThrottled = realTimeUsage.IsThrottled;
             viewOrganization.IsOverRequestLimit = await OrganizationExtensions.IsOverRequestLimitAsync(viewOrganization.Id, _cacheClient, _options.ApiThrottleLimit, _timeProvider);
@@ -999,5 +1092,13 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         }
 
         return viewOrganizations;
+    }
+
+    private string? GetOrganizationIconUrl(string id, string? fileName)
+    {
+        if (String.IsNullOrWhiteSpace(fileName))
+            return null;
+
+        return Url.RouteUrl("GetOrganizationIcon", new { id, fileName }) ?? $"/api/v2/organizations/{id}/icon/{fileName}";
     }
 }

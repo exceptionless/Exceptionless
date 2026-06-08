@@ -28,6 +28,7 @@ public class EventContext : ExtensibleObject, IPipelineContext
     public bool IsNew { get; set; }
     public bool IsRegression { get; set; }
     public bool IncludePrivateInformation { get; set; }
+    public bool AllowExtendedEventDateRange { get; set; }
     public string? SignatureHash { get; set; }
     public IDictionary<string, string> StackSignatureData { get; private set; }
 

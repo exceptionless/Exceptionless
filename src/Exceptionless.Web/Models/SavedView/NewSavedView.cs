@@ -9,15 +9,15 @@ namespace Exceptionless.Web.Models;
 public record NewSavedView : IOwnedByOrganization, IValidatableObject
 {
     /// <summary>The set of valid dashboard view type identifiers.</summary>
-    public static readonly string[] ValidViewTypes = ["events", "issues", "stream"];
+    public static readonly string[] ValidViewTypes = ["events", "stacks", "stream"];
 
     /// <summary>Valid column IDs per view, matching the TanStack Table column definitions.</summary>
     public static readonly IReadOnlyDictionary<string, IReadOnlySet<string>> ValidColumnIds =
         new Dictionary<string, IReadOnlySet<string>>
         {
-            ["events"] = new HashSet<string> { "user", "date" },
-            ["issues"] = new HashSet<string> { "status", "users", "events", "first", "last" },
-            ["stream"] = new HashSet<string> { "user", "date" }
+            ["events"] = new HashSet<string> { "summary", "user", "date", "message", "type", "exception_type", "source", "name", "level" },
+            ["stacks"] = new HashSet<string> { "summary", "status", "users", "events", "first", "last" },
+            ["stream"] = new HashSet<string> { "summary", "user", "date", "message", "type", "exception_type", "source", "name", "level" }
         };
 
     /// <summary>Union of all valid column IDs across all views.</summary>
@@ -39,17 +39,28 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
     [MaxLength(100)]
     public string? Time { get; set; }
 
+    [MaxLength(100)]
+    public string? Sort { get; set; }
+
+    [MaxLength(100)]
+    [RegularExpression("^[a-z0-9]+(?:-[a-z0-9]+)*$")]
+    public string? Slug { get; set; }
+
     [Required]
     public string ViewType { get; set; } = null!;
 
-    [MaxLength(10000)]
+    [MaxLength(SavedView.MaxFilterDefinitionsLength)]
     public string? FilterDefinitions { get; set; }
 
     [MaxLength(50)]
     public Dictionary<string, bool>? Columns { get; set; }
 
-    /// <summary>If true, this view will be the default for its view type. Defaults to false.</summary>
-    public bool? IsDefault { get; set; }
+    [MaxLength(50)]
+    public List<string>? ColumnOrder { get; set; }
+
+    public bool? ShowStats { get; set; }
+
+    public bool? ShowChart { get; set; }
 
     /// <summary>If true, the view will only be visible to the current user. Defaults to false.</summary>
     public bool? IsPrivate { get; set; }
@@ -80,6 +91,11 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
         {
             yield return error;
         }
+
+        foreach (var error in ValidateColumnOrder(ViewType, ColumnOrder))
+        {
+            yield return error;
+        }
     }
 
     internal static IEnumerable<ValidationResult> ValidateColumnKeys(string? view, Dictionary<string, bool>? columns)
@@ -99,6 +115,36 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
             yield return new ValidationResult(
                 $"Column key '{key}' is not a valid column. Valid columns are: {String.Join(", ", validKeys.Order())}.",
                 [nameof(Columns)]
+            );
+        }
+    }
+
+    internal static IEnumerable<ValidationResult> ValidateColumnOrder(string? view, IReadOnlyCollection<string>? columnOrder)
+    {
+        if (columnOrder is null || columnOrder.Count == 0)
+        {
+            yield break;
+        }
+
+        var validKeys = view is not null && ValidColumnIds.TryGetValue(view, out var viewKeys)
+            ? viewKeys
+            : AllValidColumnIds;
+
+        var invalidKeys = columnOrder.Where(key => !validKeys.Contains(key)).Distinct();
+        foreach (var key in invalidKeys)
+        {
+            yield return new ValidationResult(
+                $"Column order key '{key}' is not a valid column. Valid columns are: {String.Join(", ", validKeys.Order())}.",
+                [nameof(ColumnOrder)]
+            );
+        }
+
+        var duplicateKeys = columnOrder.GroupBy(key => key).Where(group => group.Count() > 1).Select(group => group.Key);
+        foreach (var key in duplicateKeys)
+        {
+            yield return new ValidationResult(
+                $"Column order key '{key}' cannot be repeated.",
+                [nameof(ColumnOrder)]
             );
         }
     }

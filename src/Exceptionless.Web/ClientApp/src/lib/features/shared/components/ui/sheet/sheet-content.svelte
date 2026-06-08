@@ -17,10 +17,12 @@
 		class: className,
 		side = "right",
 		showCloseButton = true,
+		overlayProps,
 		portalProps,
 		children,
 		...restProps
 	}: WithoutChildrenOrChild<SheetPrimitive.ContentProps> & {
+		overlayProps?: WithoutChildrenOrChild<ComponentProps<typeof SheetOverlay>>;
 		portalProps?: WithoutChildrenOrChild<ComponentProps<typeof SheetPortal>>;
 		side?: Side;
 		showCloseButton?: boolean;
@@ -29,7 +31,7 @@
 </script>
 
 <SheetPortal {...portalProps}>
-	<SheetOverlay />
+	<SheetOverlay {...overlayProps} />
 	<SheetPrimitive.Content
 		bind:ref
 		data-slot="sheet-content"

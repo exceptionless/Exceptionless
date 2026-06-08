@@ -10,7 +10,7 @@
 <div class="space-y-6">
     <div>
         <H3>Web sessions</H3>
-        <Muted>This is a list of devices that have logged into your account. Revoke any sessions that you do not recognize.</Muted>
+        <Muted>This is a list of devices that have logged into your account. Revoke any sessions that you do not recognize</Muted>
     </div>
     <Separator />
 
