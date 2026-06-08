@@ -816,6 +816,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.NotNull(results);
         Assert.NotEmpty(results);
         Assert.All(results, summary => Assert.NotEqual(default, summary.Date));
+        Assert.Contains(results, summary => !String.IsNullOrEmpty(summary.Type));
     }
 
     [Fact]

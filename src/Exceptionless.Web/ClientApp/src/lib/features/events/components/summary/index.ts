@@ -61,6 +61,7 @@ export interface EventSummaryData {
 export interface EventSummaryModel<T extends SummaryTemplateKeys> extends SummaryModel<T> {
     /** @format date-time */
     date: string;
+    type?: string;
 }
 
 export interface StackErrorSummaryData {
