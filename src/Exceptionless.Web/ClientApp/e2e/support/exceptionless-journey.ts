@@ -283,6 +283,10 @@ async function getUserToken(page: Page): Promise<string> {
     return token;
 }
 
+function isE2EScenario(value: E2EScenario | TestInfo): value is E2EScenario {
+    return 'projectToken' in value;
+}
+
 async function runCleanupStep(errors: Error[], name: string, action: () => Promise<void>): Promise<void> {
     try {
         await action();
@@ -290,10 +294,6 @@ async function runCleanupStep(errors: Error[], name: string, action: () => Promi
         const message = error instanceof Error ? error.message : String(error);
         errors.push(new Error(`${name}: ${message}`));
     }
-}
-
-function isE2EScenario(value: E2EScenario | TestInfo): value is E2EScenario {
-    return 'projectToken' in value;
 }
 
 async function selectProjectType(page: Page, optionName: string): Promise<void> {
@@ -307,17 +307,17 @@ async function selectProjectType(page: Page, optionName: string): Promise<void> 
     }
 }
 
-async function waitForEmailValidation(page: Page): Promise<void> {
-    await page
-        .getByLabel('Validating email')
-        .waitFor({ state: 'detached', timeout: 10_000 })
-        .catch(() => undefined);
-}
-
 function throwIfCleanupFailed(errors: Error[]): void {
     if (errors.length === 0) {
         return;
     }
 
     throw new Error(`E2E cleanup failed:\n${errors.map((error) => `- ${error.message}`).join('\n')}`);
+}
+
+async function waitForEmailValidation(page: Page): Promise<void> {
+    await page
+        .getByLabel('Validating email')
+        .waitFor({ state: 'detached', timeout: 10_000 })
+        .catch(() => undefined);
 }

@@ -2,14 +2,6 @@ import { browser } from '$app/environment';
 
 let _activeUserId: null | string = null;
 
-async function getExceptionless() {
-    if (!browser) {
-        return;
-    }
-
-    return (await import('@exceptionless/browser')).Exceptionless;
-}
-
 /**
  * Ends the current Exceptionless session and clears user identity.
  * Call on logout. Clears local state unconditionally even if submitSessionEnd fails.
@@ -66,4 +58,12 @@ export async function submitFeatureUsage(feature: string): Promise<void> {
     }
 
     await Exceptionless.submitFeatureUsage(feature);
+}
+
+async function getExceptionless() {
+    if (!browser) {
+        return;
+    }
+
+    return (await import('@exceptionless/browser')).Exceptionless;
 }

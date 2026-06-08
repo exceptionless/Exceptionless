@@ -1,7 +1,8 @@
+import type { Plugin } from 'vite';
+
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { svelteTesting } from '@testing-library/svelte/vite';
-import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
 
 const apiTarget = process.env.API_HTTPS || process.env.API_HTTP;
@@ -23,8 +24,6 @@ function svelteKitRuntimeDefines(): Plugin {
 
     return {
         apply: 'serve',
-        enforce: 'pre',
-        name: 'exceptionless-sveltekit-runtime-defines',
         configResolved(config) {
             replacements = new Map(
                 Object.entries(config.define ?? {})
@@ -32,6 +31,8 @@ function svelteKitRuntimeDefines(): Plugin {
                     .map(([key, value]) => [key, String(value)])
             );
         },
+        enforce: 'pre',
+        name: 'exceptionless-sveltekit-runtime-defines',
         transform(code, id) {
             if (!id.includes('/node_modules/@sveltejs/kit/src/runtime/') && !id.includes('\\node_modules\\@sveltejs\\kit\\src\\runtime\\')) {
                 return;
