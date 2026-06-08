@@ -290,7 +290,8 @@ jobs:
       - name: Wait for Aspire Resources
         run: |
           for attempt in {1..60}; do
-            if aspire wait Api --status healthy --timeout 10 --non-interactive; then
+            if curl -fksS https://web-ex.dev.localhost:7131/api/v2/about > /dev/null &&
+              curl -fksS https://web-ex.dev.localhost:7131/next/login > /dev/null; then
               break
             fi
 
@@ -306,9 +307,6 @@ jobs:
 
             sleep 5
           done
-
-          aspire wait Jobs --status healthy --timeout 300 --non-interactive
-          aspire wait App --status up --timeout 300 --non-interactive
 
       - name: Verify E2E Endpoints
         run: |
