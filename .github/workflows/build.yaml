@@ -279,11 +279,34 @@ jobs:
 
       - name: Start AppHost
         run: |
-          aspire run --detach --format Json --non-interactive --nologo -- --ci-e2e > aspire-run.json
+          aspire run --non-interactive --nologo -- --ci-e2e > aspire-run.log 2>&1 &
+          echo "$!" > aspire-run.pid
+          sleep 5
+          if ! kill -0 "$(cat aspire-run.pid)" 2>/dev/null; then
+            cat aspire-run.log
+            exit 1
+          fi
 
       - name: Wait for Aspire Resources
         run: |
-          aspire wait Api --status healthy --timeout 300 --non-interactive
+          for attempt in {1..60}; do
+            if aspire wait Api --status healthy --timeout 10 --non-interactive; then
+              break
+            fi
+
+            if ! kill -0 "$(cat aspire-run.pid)" 2>/dev/null; then
+              cat aspire-run.log
+              exit 1
+            fi
+
+            if [ "$attempt" -eq 60 ]; then
+              cat aspire-run.log
+              exit 1
+            fi
+
+            sleep 5
+          done
+
           aspire wait Jobs --status healthy --timeout 300 --non-interactive
           aspire wait App --status up --timeout 300 --non-interactive
 
@@ -303,13 +326,19 @@ jobs:
         if: ${{ always() }}
         run: |
           aspire stop --all --non-interactive || true
+          if [ -f aspire-run.pid ]; then
+            kill "$(cat aspire-run.pid)" 2>/dev/null || true
+          fi
 
       - name: Collect Aspire Logs
         if: ${{ !cancelled() }}
         run: |
           mkdir -p aspire-logs
-          if [ -f aspire-run.json ]; then
-            cp aspire-run.json aspire-logs/
+          if [ -f aspire-run.log ]; then
+            cp aspire-run.log aspire-logs/
+          fi
+          if [ -f aspire-run.pid ]; then
+            cp aspire-run.pid aspire-logs/
           fi
           if [ -d "$HOME/.aspire/cli/logs" ]; then
             cp -r "$HOME/.aspire/cli/logs/." aspire-logs/
