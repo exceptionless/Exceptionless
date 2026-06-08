@@ -4,12 +4,19 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { basename, dirname, join, normalize } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-function git(args) {
-    try {
-        return execFileSync('git', args, { encoding: 'utf8' }).trim();
-    } catch {
-        return '';
-    }
+function deriveScope() {
+    const gitDir = git(['rev-parse', '--git-dir']);
+    const normalizedGitDir = gitDir ? normalize(gitDir).replace(/[\\/]+$/, '') : '';
+    const gitRoot = findGitRoot();
+    const worktreeName = /[\\/]worktrees[\\/]/i.test(normalizedGitDir) ? basename(normalizedGitDir) : gitRoot.worktreeName;
+    const name = worktreeName || basename(git(['rev-parse', '--show-toplevel']) || gitRoot.root || 'Exceptionless');
+
+    return (
+        name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '') || 'exceptionless'
+    );
 }
 
 function findGitRoot() {
@@ -35,24 +42,47 @@ function findGitRoot() {
     }
 }
 
-function deriveScope() {
-    const gitDir = git(['rev-parse', '--git-dir']);
-    const normalizedGitDir = gitDir ? normalize(gitDir).replace(/[\\/]+$/, '') : '';
-    const gitRoot = findGitRoot();
-    const worktreeName = /[\\/]worktrees[\\/]/i.test(normalizedGitDir) ? basename(normalizedGitDir) : gitRoot.worktreeName;
-    const name = worktreeName || basename(git(['rev-parse', '--show-toplevel']) || gitRoot.root || 'Exceptionless');
-
-    return (
-        name
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-+|-+$/g, '') || 'exceptionless'
-    );
+function git(args) {
+    try {
+        return execFileSync('git', args, { encoding: 'utf8' }).trim();
+    } catch {
+        return '';
+    }
 }
 
 const isAppResource = (resource) => /^app$/i.test(resource.displayName ?? '') || /^app$/i.test(resource.name ?? '');
 const isOldAppResource = (resource) => /^oldapp$/i.test(resource.displayName ?? '') || /^oldapp$/i.test(resource.name ?? '');
 const isApiResource = (resource) => /^api$/i.test(resource.displayName ?? '') || /^api$/i.test(resource.name ?? '');
+
+export function resolveUrls() {
+    const clean = (url) => url && url.replace(/\/$/, '');
+    const scope = deriveScope();
+    const { apiUrl, appUrl, found, oldAppUrl } = fromAspire();
+
+    if (appUrl) {
+        return {
+            apiUrl: clean(apiUrl),
+            appUrl: clean(appUrl),
+            oldAppUrl: clean(oldAppUrl),
+            scope,
+            status: 'ready'
+        };
+    }
+
+    if (found) {
+        return {
+            message: "The app is starting up; its Svelte frontend isn't ready yet. Wait with `aspire wait App`.",
+            scope,
+            status: 'starting'
+        };
+    }
+
+    return {
+        message: 'No running app found. Start it with `aspire run`, then run `npm run urls` again.',
+        scope,
+        status: 'no-app'
+    };
+}
 
 function fromAspire() {
     const root = git(['rev-parse', '--show-toplevel']) || findGitRoot().root;
@@ -61,14 +91,7 @@ function fromAspire() {
     try {
         raw = execFileSync(
             'aspire',
-            [
-                'describe',
-                '--apphost',
-                join(root, 'src', 'Exceptionless.AppHost', 'Exceptionless.AppHost.csproj'),
-                '--non-interactive',
-                '--format',
-                'Json'
-            ],
+            ['describe', '--apphost', join(root, 'src', 'Exceptionless.AppHost', 'Exceptionless.AppHost.csproj'), '--non-interactive', '--format', 'Json'],
             { cwd: root || undefined, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 60_000 }
         );
     } catch {
@@ -119,37 +142,7 @@ function fromAspire() {
         }
     }
 
-    return { found, appUrl, oldAppUrl, apiUrl };
-}
-
-export function resolveUrls() {
-    const clean = (url) => url && url.replace(/\/$/, '');
-    const scope = deriveScope();
-    const { found, appUrl, oldAppUrl, apiUrl } = fromAspire();
-
-    if (appUrl) {
-        return {
-            status: 'ready',
-            scope,
-            appUrl: clean(appUrl),
-            oldAppUrl: clean(oldAppUrl),
-            apiUrl: clean(apiUrl)
-        };
-    }
-
-    if (found) {
-        return {
-            status: 'starting',
-            scope,
-            message: "The app is starting up; its Svelte frontend isn't ready yet. Wait with `aspire wait App`."
-        };
-    }
-
-    return {
-        status: 'no-app',
-        scope,
-        message: 'No running app found. Start it with `aspire run`, then run `npm run urls` again.'
-    };
+    return { apiUrl, appUrl, found, oldAppUrl };
 }
 
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
