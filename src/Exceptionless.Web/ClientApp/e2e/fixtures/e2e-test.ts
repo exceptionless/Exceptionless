@@ -80,20 +80,30 @@ export const test = base.extend<E2EFixtures>({
                 userToken
             });
         } finally {
+            const cleanupErrors: Error[] = [];
+
             if (userToken && projectId) {
-                await e2eApi.deleteProject(userToken, projectId);
-                await e2eApi.waitForProjectDeleted(userToken, projectId);
+                await runCleanupStep(cleanupErrors, `delete project ${projectId}`, async () => {
+                    await e2eApi.deleteProject(userToken!, projectId!);
+                    await e2eApi.waitForProjectDeleted(userToken!, projectId!);
+                });
             }
 
             if (userToken && organizationId) {
-                await e2eApi.deleteOrganization(userToken, organizationId);
-                await e2eApi.waitForOrganizationDeleted(userToken, organizationId);
+                await runCleanupStep(cleanupErrors, `delete organization ${organizationId}`, async () => {
+                    await e2eApi.deleteOrganization(userToken!, organizationId!);
+                    await e2eApi.waitForOrganizationDeleted(userToken!, organizationId!);
+                });
             }
 
             if (userToken && createdUser) {
-                await e2eApi.deleteCurrentUser(userToken);
-                await e2eApi.waitForCurrentUserDeleted(userToken);
+                await runCleanupStep(cleanupErrors, 'delete generated user', async () => {
+                    await e2eApi.deleteCurrentUser(userToken!);
+                    await e2eApi.waitForCurrentUserDeleted(userToken!);
+                });
             }
+
+            throwIfCleanupFailed(cleanupErrors);
         }
     }
 });
@@ -106,4 +116,21 @@ export function createRunName(runId: string, testInfo: TestInfo): string {
         .replace(/[^a-zA-Z0-9_-]/g, '-')
         .replace(/-+/g, '-')
         .slice(0, 96);
+}
+
+async function runCleanupStep(errors: Error[], name: string, action: () => Promise<void>): Promise<void> {
+    try {
+        await action();
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        errors.push(new Error(`${name}: ${message}`));
+    }
+}
+
+function throwIfCleanupFailed(errors: Error[]): void {
+    if (errors.length === 0) {
+        return;
+    }
+
+    throw new Error(`E2E cleanup failed:\n${errors.map((error) => `- ${error.message}`).join('\n')}`);
 }

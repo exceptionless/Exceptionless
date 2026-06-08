@@ -248,8 +248,9 @@ export class E2EApiClient {
     }
 
     async submitEvent(projectId: string, projectToken: string, event: Record<string, unknown>): Promise<void> {
-        const response = await this.request.post(this.url(`projects/${projectId}/events?access_token=${encodeURIComponent(projectToken)}`), {
-            data: event
+        const response = await this.request.post(this.url(`projects/${projectId}/events`), {
+            data: event,
+            headers: this.authHeaders(projectToken)
         });
 
         await expectStatus(response, [202], 'submit event');

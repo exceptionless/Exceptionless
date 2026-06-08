@@ -59,19 +59,38 @@ export class ExceptionlessE2EJourney {
     }
 
     async cleanup(): Promise<void> {
-        if (!this.userToken || !this.organizationId) {
+        if (!this.userToken) {
             return;
         }
 
-        if (this.projectId) {
-            await this.e2eApi.deleteProject(this.userToken, this.projectId);
-            await this.e2eApi.waitForProjectDeleted(this.userToken, this.projectId);
+        const errors: Error[] = [];
+
+        if (!this.organizationId) {
+            await runCleanupStep(errors, `find organization ${this.organizationName}`, async () => {
+                this.organizationId = await this.getOrganizationIdByName();
+            });
         }
 
-        await this.e2eApi.deleteOrganization(this.userToken, this.organizationId);
-        await this.e2eApi.waitForOrganizationDeleted(this.userToken, this.organizationId);
-        await this.e2eApi.deleteCurrentUser(this.userToken);
-        await this.e2eApi.waitForCurrentUserDeleted(this.userToken);
+        if (this.projectId) {
+            await runCleanupStep(errors, `delete project ${this.projectId}`, async () => {
+                await this.e2eApi.deleteProject(this.userToken!, this.projectId!);
+                await this.e2eApi.waitForProjectDeleted(this.userToken!, this.projectId!);
+            });
+        }
+
+        if (this.organizationId) {
+            await runCleanupStep(errors, `delete organization ${this.organizationId}`, async () => {
+                await this.e2eApi.deleteOrganization(this.userToken!, this.organizationId!);
+                await this.e2eApi.waitForOrganizationDeleted(this.userToken!, this.organizationId!);
+            });
+        }
+
+        await runCleanupStep(errors, 'delete generated user', async () => {
+            await this.e2eApi.deleteCurrentUser(this.userToken!);
+            await this.e2eApi.waitForCurrentUserDeleted(this.userToken!);
+        });
+
+        throwIfCleanupFailed(errors);
     }
 
     async createFirstProjectAndVerifyConfigureToken(): Promise<void> {
@@ -235,10 +254,6 @@ export class ExceptionlessE2EJourney {
     }
 }
 
-function escapeRegExp(value: string): string {
-    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 function getIdFromUrl(page: Page, pattern: RegExp): string {
     const match = pattern.exec(new URL(page.url()).pathname);
     if (!match?.[1]) {
@@ -268,6 +283,15 @@ async function getUserToken(page: Page): Promise<string> {
     return token;
 }
 
+async function runCleanupStep(errors: Error[], name: string, action: () => Promise<void>): Promise<void> {
+    try {
+        await action();
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        errors.push(new Error(`${name}: ${message}`));
+    }
+}
+
 function isE2EScenario(value: E2EScenario | TestInfo): value is E2EScenario {
     return 'projectToken' in value;
 }
@@ -288,4 +312,12 @@ async function waitForEmailValidation(page: Page): Promise<void> {
         .getByLabel('Validating email')
         .waitFor({ state: 'detached', timeout: 10_000 })
         .catch(() => undefined);
+}
+
+function throwIfCleanupFailed(errors: Error[]): void {
+    if (errors.length === 0) {
+        return;
+    }
+
+    throw new Error(`E2E cleanup failed:\n${errors.map((error) => `- ${error.message}`).join('\n')}`);
 }
