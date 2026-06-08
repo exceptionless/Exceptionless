@@ -279,7 +279,7 @@ jobs:
 
       - name: Start AppHost
         run: |
-          aspire run --detach --format Json --non-interactive --nologo > aspire-run.json
+          aspire run --detach --format Json --non-interactive --nologo -- --ci-e2e > aspire-run.json
 
       - name: Wait for Aspire Resources
         run: |
