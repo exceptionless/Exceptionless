@@ -19,9 +19,9 @@
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
     import Database from '@lucide/svelte/icons/database';
+    import Stacks from '@lucide/svelte/icons/layers';
     import NotificationSettings from '@lucide/svelte/icons/mail';
     import Send from '@lucide/svelte/icons/send';
-    import Stacks from '@lucide/svelte/icons/layers';
     import X from '@lucide/svelte/icons/x';
     import { createForm } from '@tanstack/svelte-form';
     import { toast } from 'svelte-sonner';

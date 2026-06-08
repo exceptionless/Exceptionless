@@ -23,8 +23,8 @@
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { getInitials } from '$shared/strings';
     import { ProblemDetails } from '@exceptionless/fetchclient';
-    import Camera from '@lucide/svelte/icons/camera';
     import Events from '@lucide/svelte/icons/calendar-days';
+    import Camera from '@lucide/svelte/icons/camera';
     import Projects from '@lucide/svelte/icons/folder-open';
     import X from '@lucide/svelte/icons/x';
     import { createForm } from '@tanstack/svelte-form';
