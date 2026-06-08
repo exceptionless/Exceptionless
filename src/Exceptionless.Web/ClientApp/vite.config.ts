@@ -9,12 +9,13 @@ const apiProxy = { changeOrigin: true, target: apiTarget };
 const oldAppTarget = process.env.OLDAPP_HTTPS || process.env.OLDAPP_HTTP;
 const oldAppProxy = { changeOrigin: true, secure: false, target: oldAppTarget };
 
+const port = Number(process.env.PORT) || 7131;
 const codespaceName = process.env.CODESPACE_NAME;
 const codespaceDomain = process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN;
-const hmr = codespaceName && codespaceDomain ? { clientPort: 443, host: `${codespaceName}-7131.${codespaceDomain}`, protocol: 'wss' as const } : undefined;
+const hmr = codespaceName && codespaceDomain ? { clientPort: 443, host: `${codespaceName}-${port}.${codespaceDomain}`, protocol: 'wss' as const } : undefined;
 const allowedHosts = ['web-ex.dev.localhost', 'localhost', '127.0.0.1'];
 if (codespaceName && codespaceDomain) {
-    allowedHosts.push(`${codespaceName}-7131.${codespaceDomain}`);
+    allowedHosts.push(`${codespaceName}-${port}.${codespaceDomain}`);
 }
 
 export default defineConfig({
@@ -28,7 +29,7 @@ export default defineConfig({
     server: {
         allowedHosts,
         hmr,
-        port: 7131,
+        port,
         proxy: {
             '/api': { ...apiProxy, ws: true },
             '/docs': apiProxy,
