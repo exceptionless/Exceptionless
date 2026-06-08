@@ -81,6 +81,7 @@
     const VIEW = 'stream';
     const savedViewsState = useSavedViews({
         defaultColumnVisibility: defaultEventColumnVisibility,
+        defaultFilter: DEFAULT_PARAMS.filter,
         filterCacheKey,
         getColumnOrder: () => table.state.columnOrder,
         getColumnVisibility: () => table.state.columnVisibility,

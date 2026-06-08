@@ -23,9 +23,9 @@
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { getInitials } from '$shared/strings';
     import { ProblemDetails } from '@exceptionless/fetchclient';
+    import Events from '@lucide/svelte/icons/calendar-days';
     import Camera from '@lucide/svelte/icons/camera';
     import Projects from '@lucide/svelte/icons/folder-open';
-    import Stacks from '@lucide/svelte/icons/layers';
     import X from '@lucide/svelte/icons/x';
     import { createForm } from '@tanstack/svelte-form';
     import { toast } from 'svelte-sonner';
@@ -254,11 +254,11 @@
 
     <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex flex-wrap gap-3">
-            <Button variant="secondary" href={resolve('/(app)/stack')}>
-                <Stacks class="mr-2 size-4" /> Go To Stacks
+            <Button variant="secondary" href={resolve('/(app)/event')}>
+                <Events class="mr-2 size-4" /> View Events
             </Button>
             <Button variant="secondary" href={resolve('/(app)/organization/[organizationId]/projects', { organizationId })}>
-                <Projects class="mr-2 size-4" /> Go To Projects
+                <Projects class="mr-2 size-4" /> View Projects
             </Button>
         </div>
 

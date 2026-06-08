@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { resolvePaginationChange } from './table.svelte';
+import { type QueryMeta, resolvePageCount, resolvePaginationChange } from './table.svelte';
 
 describe('resolvePaginationChange', () => {
     it('keeps the requested page when only the page index changes', () => {
@@ -73,5 +73,45 @@ describe('resolvePaginationChange', () => {
             pageSizeChanged: true,
             previousPageInfo
         });
+    });
+});
+
+describe('resolvePageCount', () => {
+    it('uses the cursor total on the first page when the API returns one', () => {
+        const meta = { links: { next: { after: 'next', rel: 'next', url: '/events?after=next' } }, total: 53000 } as QueryMeta;
+
+        const result = resolvePageCount('cursor', meta, 1, 50, 0);
+
+        expect(result).toBe(1060);
+    });
+
+    it('does not shrink a known cursor page count when a later page reports a smaller remaining total', () => {
+        const meta = {
+            links: {
+                next: { after: 'next', rel: 'next', url: '/events?after=next' },
+                previous: { before: 'previous', rel: 'previous', url: '/events?before=previous' }
+            },
+            total: 21200
+        } as QueryMeta;
+
+        const result = resolvePageCount('cursor', meta, 2, 50, 1060);
+
+        expect(result).toBe(1060);
+    });
+
+    it('uses the current cursor page as the final page when there is no next link', () => {
+        const meta = { links: { previous: { before: 'previous', rel: 'previous', url: '/events?before=previous' } }, total: 21200 } as QueryMeta;
+
+        const result = resolvePageCount('cursor', meta, 20, 50, 1060);
+
+        expect(result).toBe(20);
+    });
+
+    it('keeps offset pagination tied to the returned total', () => {
+        const meta = { links: {}, total: 21200 } as QueryMeta;
+
+        const result = resolvePageCount('offset', meta, 2, 50, 1060);
+
+        expect(result).toBe(424);
     });
 });

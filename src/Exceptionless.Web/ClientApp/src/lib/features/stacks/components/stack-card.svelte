@@ -133,7 +133,7 @@
     });
 </script>
 
-{#if stackQuery.isSuccess}
+{#if stack}
     <Card.Root
         class="bg-background relative overflow-hidden ring-[color-mix(in_oklab,var(--chart-1)_42%,transparent)] before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-[linear-gradient(90deg,var(--chart-1),var(--chart-2))] before:content-['']"
     >

@@ -1761,7 +1761,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
                 OrganizationId = SampleDataService.TEST_ORG_ID,
                 Name = "Valid Columns",
                 ViewType = "events",
-                Columns = new Dictionary<string, bool> { ["summary"] = true, ["level"] = false, ["message"] = false }
+                Columns = new Dictionary<string, bool> { ["summary"] = true, ["type"] = false, ["exception_type"] = false, ["level"] = false, ["message"] = false }
             })
             .StatusCodeShouldBeCreated()
         );

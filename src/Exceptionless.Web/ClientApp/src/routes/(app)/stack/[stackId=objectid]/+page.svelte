@@ -34,7 +34,7 @@
             return;
         }
 
-        toast.error('Unable to load stack event details.');
+        toast.error(problem.title ?? problem.detail ?? 'Unable to load stack event details.');
     }
 
     async function handleDeleted() {

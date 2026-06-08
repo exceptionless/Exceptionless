@@ -243,6 +243,8 @@
     const savedViewsState = useSavedViews({
         baseHref: resolve('/(app)/event'),
         defaultColumnVisibility: defaultEventColumnVisibility,
+        defaultFilter: DEFAULT_FILTER,
+        defaultTime: DEFAULT_TIME_RANGE,
         filterCacheKey,
         getColumnOrder: () => table.state.columnOrder,
         getColumnVisibility: () => table.state.columnVisibility,
@@ -884,4 +886,11 @@
     </div>
 </div>
 
-<EventDetailSheet eventId={selectedEventId} filterChanged={onFilterChanged} onClose={() => (selectedEventId = null)} onError={handleEventError} />
+<EventDetailSheet
+    eventId={selectedEventId}
+    filterChanged={onFilterChanged}
+    onClose={() => {
+        selectedEventId = null;
+    }}
+    onError={handleEventError}
+/>

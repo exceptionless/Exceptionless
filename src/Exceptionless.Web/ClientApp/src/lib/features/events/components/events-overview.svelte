@@ -1,6 +1,6 @@
 <script lang="ts">
     import type { IFilter } from '$comp/faceted-filter';
-    import type { ViewProject } from '$features/projects/models';
+    import type { UpdateProject, ViewProject } from '$features/projects/models';
     import type { ProblemDetails } from '@exceptionless/fetchclient';
 
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
@@ -15,13 +15,14 @@
     import * as EventsFacetedFilter from '$features/events/components/filters';
     import { getExtendedDataItems, hasErrorOrSimpleError } from '$features/events/persistent-event';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
-    import { getProjectQuery } from '$features/projects/api.svelte';
+    import { getProjectQuery, updateProject } from '$features/projects/api.svelte';
     import StackCard from '$features/stacks/components/stack-card.svelte';
     import Braces from '@lucide/svelte/icons/braces';
     import ChevronLeft from '@lucide/svelte/icons/chevron-left';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
     import Funnel from '@lucide/svelte/icons/funnel';
     import { onMount, tick } from 'svelte';
+    import { toast } from 'svelte-sonner';
 
     import type { PersistentEvent } from '../models/index';
 
@@ -36,6 +37,7 @@
     import TraceLog from './views/trace-log.svelte';
 
     interface Props {
+        expectedStackId?: string;
         filterChanged: (filter: IFilter) => void;
         handleError: (problem: ProblemDetails) => void;
         id: string;
@@ -43,7 +45,7 @@
         onNavigate?: (eventId: string) => void;
     }
 
-    let { filterChanged, handleError, id, onEventLoaded, onNavigate }: Props = $props();
+    let { expectedStackId, filterChanged, handleError, id, onEventLoaded, onNavigate }: Props = $props();
 
     function getTabs(event?: null | PersistentEvent, project?: ViewProject): TabType[] {
         if (!event) {
@@ -94,6 +96,11 @@
     }
 
     const eventQuery = getEventWithNavigationQuery({
+        params: {
+            get expected_stack_id() {
+                return expectedStackId;
+            }
+        },
         route: {
             get id() {
                 return id;
@@ -108,6 +115,14 @@
         route: {
             get id() {
                 return event?.project_id;
+            }
+        }
+    });
+
+    const updateProjectMutation = updateProject({
+        route: {
+            get id() {
+                return event?.project_id ?? '';
             }
         }
     });
@@ -129,8 +144,13 @@
     let tabsListRef = $state<HTMLElement | null>(null);
     let canScrollTabsLeft = $state(false);
     let canScrollTabsRight = $state(false);
+    let draggedPromotedTab = $state<null | string>(null);
     let notifiedEventId = $state('');
     let showJsonDialog = $state(false);
+
+    function isPromotedTab(tab: TabType): boolean {
+        return !!projectQuery.data?.promoted_tabs?.includes(tab);
+    }
 
     function updateTabsOverflow(): void {
         if (!tabsListRef) {
@@ -158,6 +178,70 @@
 
     function onDemoted(): void {
         activeTab = 'Extended Data';
+    }
+
+    function movePromotedTab(source: string, target: string): null | string[] {
+        const promotedTabs = [...(projectQuery.data?.promoted_tabs ?? [])];
+        const fromIndex = promotedTabs.indexOf(source);
+        const toIndex = promotedTabs.indexOf(target);
+        if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+            return null;
+        }
+
+        const [moved] = promotedTabs.splice(fromIndex, 1);
+        if (!moved) {
+            return null;
+        }
+
+        promotedTabs.splice(toIndex, 0, moved);
+        return promotedTabs;
+    }
+
+    function handlePromotedTabDragStart(event: DragEvent, tab: TabType): void {
+        if (!isPromotedTab(tab)) {
+            return;
+        }
+
+        draggedPromotedTab = tab;
+        if (event.dataTransfer) {
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', tab);
+        }
+    }
+
+    function handlePromotedTabDragOver(event: DragEvent, tab: TabType): void {
+        if (!draggedPromotedTab || !isPromotedTab(tab) || draggedPromotedTab === tab) {
+            return;
+        }
+
+        event.preventDefault();
+        if (event.dataTransfer) {
+            event.dataTransfer.dropEffect = 'move';
+        }
+    }
+
+    async function handlePromotedTabDrop(event: DragEvent, tab: TabType): Promise<void> {
+        event.preventDefault();
+        const source = draggedPromotedTab;
+        draggedPromotedTab = null;
+        if (!source || !isPromotedTab(tab)) {
+            return;
+        }
+
+        const promotedTabs = movePromotedTab(source, tab);
+        if (!promotedTabs) {
+            return;
+        }
+
+        try {
+            await updateProjectMutation.mutateAsync({ promoted_tabs: promotedTabs } as UpdateProject);
+        } catch {
+            toast.error('An error occurred reordering tabs.');
+        }
+    }
+
+    function handlePromotedTabDragEnd(): void {
+        draggedPromotedTab = null;
     }
 
     function navigateToPrevious(): void {
@@ -270,19 +354,21 @@
                     <Table.Cell class="w-4 pr-0"></Table.Cell>
                     <Table.Cell class="flex items-center"><Skeleton class="h-6 w-full rounded-full" /></Table.Cell>{/if}
             </Table.Row>
-            <Table.Row class="group">
-                {#if projectQuery.isSuccess}
-                    <Table.Head class="w-40 font-semibold whitespace-nowrap">Project</Table.Head>
-                    <Table.Cell class="w-4 pr-0"
-                        ><EventsFacetedFilter.ProjectTrigger changed={filterChanged} class="mr-0" value={[projectQuery.data.id!]} /></Table.Cell
-                    >
-                    <Table.Cell>{projectQuery.data.name}</Table.Cell>
-                {:else}
-                    <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>
-                    <Table.Cell class="w-4 pr-0"></Table.Cell>
-                    <Table.Cell class="flex items-center"><Skeleton class="h-6 w-full rounded-full" /></Table.Cell>
-                {/if}
-            </Table.Row>
+            {#if projectQuery.isSuccess || event?.project_id}
+                <Table.Row class="group">
+                    {#if projectQuery.isSuccess}
+                        <Table.Head class="w-40 font-semibold whitespace-nowrap">Project</Table.Head>
+                        <Table.Cell class="w-4 pr-0"
+                            ><EventsFacetedFilter.ProjectTrigger changed={filterChanged} class="mr-0" value={[projectQuery.data.id!]} /></Table.Cell
+                        >
+                        <Table.Cell>{projectQuery.data.name}</Table.Cell>
+                    {:else}
+                        <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>
+                        <Table.Cell class="w-4 pr-0"></Table.Cell>
+                        <Table.Cell class="flex items-center"><Skeleton class="h-6 w-full rounded-full" /></Table.Cell>
+                    {/if}
+                </Table.Row>
+            {/if}
         </Table.Body>
     </Table.Root>
 
@@ -307,7 +393,18 @@
                 >
                     {#each tabs as tab (tab)}
                         <Tabs.Trigger
-                            class="dark:data-[state=active]:bg-background flex-none shrink-0 px-3 py-1.5 data-[state=active]:shadow-xs dark:data-[state=active]:border-transparent"
+                            aria-label={isPromotedTab(tab) ? `${tab}. Drag to reorder custom tab.` : undefined}
+                            class={[
+                                'dark:data-[state=active]:bg-background flex-none shrink-0 px-3 py-1.5 data-[state=active]:shadow-xs dark:data-[state=active]:border-transparent',
+                                isPromotedTab(tab) && 'cursor-grab active:cursor-grabbing',
+                                draggedPromotedTab === tab && 'bg-accent/70'
+                            ]}
+                            draggable={isPromotedTab(tab)}
+                            ondragstart={(event) => handlePromotedTabDragStart(event, tab)}
+                            ondragover={(event) => handlePromotedTabDragOver(event, tab)}
+                            ondrop={(event) => handlePromotedTabDrop(event, tab)}
+                            ondragend={handlePromotedTabDragEnd}
+                            title={isPromotedTab(tab) ? 'Drag to reorder custom tab' : undefined}
                             value={tab}>{tab}</Tabs.Trigger
                         >
                     {/each}

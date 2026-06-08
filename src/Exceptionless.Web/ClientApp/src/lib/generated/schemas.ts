@@ -169,6 +169,7 @@ export const NewProjectSchema = object({
     .regex(/^[a-fA-F0-9]{24}$/, "Organization id has invalid format"),
   name: string().min(1, "Name is required"),
   delete_bot_data_enabled: boolean(),
+  promoted_tabs: array(string()).nullable().optional(),
 });
 export type NewProjectFormData = Infer<typeof NewProjectSchema>;
 
@@ -435,6 +436,7 @@ export type UpdateEventFormData = Infer<typeof UpdateEventSchema>;
 export const UpdateProjectSchema = object({
   name: string().min(1, "Name is required").optional(),
   delete_bot_data_enabled: boolean().optional(),
+  promoted_tabs: array(string()).nullable().optional(),
 });
 export type UpdateProjectFormData = Infer<typeof UpdateProjectSchema>;
 

@@ -17,7 +17,7 @@ import {
 } from '@tanstack/svelte-table';
 import { PersistedState } from 'runed';
 
-import { DEFAULT_LIMIT } from './api/api.svelte';
+import { DEFAULT_LIMIT } from './api/constants';
 
 export type PaginationStrategy = 'cursor' | 'memory' | 'offset';
 export type QueryMeta = FetchClientResponse<unknown>['meta'];
@@ -196,9 +196,7 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
             (configuration.paginationStrategy === 'offset'
                 ? (configuration.queryParameters as TableOffsetPagingParameters).page
                 : (configuration.queryParameters as TableMemoryPagingParameters).page) ?? 1;
-        const total = isMemoryPaging ? allData().length : (meta?.total as number | undefined);
-        const totalPages = total != null ? Math.ceil(total / limit) : meta?.links?.next ? currentPage + 1 : currentPage;
-        setPageCount(totalPages);
+        setPageCount(resolvePageCount(configuration.paginationStrategy, meta, currentPage, limit, pageCount(), allData().length));
 
         // // Only adjust pagination for offset pagination here
         // // Memory pagination adjusts in setDataImpl to avoid duplication
@@ -343,6 +341,33 @@ export function removeTableSelection<TData extends RowData>(table: Table<StockFe
     }
 
     return false;
+}
+
+export function resolvePageCount(
+    strategy: PaginationStrategy,
+    meta: QueryMeta | undefined,
+    currentPage: number,
+    limit: number,
+    previousPageCount: number,
+    memoryDataLength: number = 0
+): number {
+    const total = strategy === 'memory' ? memoryDataLength : (meta?.total as number | undefined);
+    const totalPages = total != null ? Math.ceil(total / limit) : undefined;
+    const hasNextPage = Boolean(meta?.links?.next);
+
+    if (strategy === 'cursor') {
+        if (currentPage <= 1) {
+            return totalPages ?? (hasNextPage ? 2 : 1);
+        }
+
+        if (!hasNextPage) {
+            return currentPage;
+        }
+
+        return Math.max(previousPageCount, currentPage + 1, totalPages ?? 0);
+    }
+
+    return totalPages ?? (hasNextPage ? currentPage + 1 : currentPage);
 }
 
 export function resolvePaginationChange(previousPageInfo: PaginationState, currentPageInfo: PaginationState) {
