@@ -13,6 +13,7 @@
 </script>
 
 {#snippet Fallback()}
+	<!-- CUSTOM: KEEP ACCESSIBLE NEXT LABEL FOR SCREEN READERS/KEYBOARD CONTEXT; LABEL IS INTENTIONALLY COMMENTED TO AVOID BEING NUKED BY UPSTREAM UPDATES. -->
 	<!-- <span>Next</span> -->
 	<ChevronRightIcon class={cn("size-4", className)} />
 {/snippet}
