@@ -29,8 +29,8 @@
     import { getMeQuery, invalidateUserQueries } from '$features/users/api.svelte';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import { invalidateWebhookQueries } from '$features/webhooks/api.svelte';
-    import { isEntityChangedType, type WebSocketMessageType } from '$features/websockets/models';
-    import { WebSocketClient } from '$features/websockets/web-socket-client.svelte';
+    import { type EntityChanged, isEntityChangedType, type UserMembershipChanged, type WebSocketMessageType } from '$features/websockets/models';
+    import { SseClient } from '$features/websockets/sse-client.svelte';
     import { Telemetry } from '$lib/telemetry';
     import { useMiddleware } from '@exceptionless/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
@@ -160,11 +160,29 @@
             }
         }
 
-        // This event is fired when a user is added or removed from an organization.
-        // if (data.type === "UserMembershipChanged" && data.message?.organization_id) {
-        //     $rootScope.$emit("OrganizationChanged", data.message);
-        //     $rootScope.$emit("ProjectChanged", data.message);
-        // }
+        // When a user is added or removed from an organization, invalidate org/project caches
+        // so the UI reflects the membership change without a manual reload.
+        if (data.type === 'UserMembershipChanged') {
+            const membershipMessage = data.message as UserMembershipChanged;
+            if (membershipMessage.organization_id) {
+                const organizationChangedMessage: EntityChanged = {
+                    change_type: membershipMessage.change_type,
+                    data: {},
+                    id: membershipMessage.organization_id,
+                    organization_id: membershipMessage.organization_id,
+                    type: 'Organization'
+                };
+                const projectChangedMessage: EntityChanged = {
+                    change_type: membershipMessage.change_type,
+                    data: {},
+                    organization_id: membershipMessage.organization_id,
+                    type: 'Project'
+                };
+
+                await invalidateOrganizationQueries(queryClient, organizationChangedMessage);
+                await invalidateProjectQueries(queryClient, projectChangedMessage);
+            }
+        }
     }
 
     // Close Sidebar on page change on mobile
@@ -192,7 +210,7 @@
         }
     });
 
-    // WebSocket + keyboard shortcuts — only depends on token, not navigation
+    // SSE + keyboard shortcuts — only depends on token, not navigation
     $effect(() => {
         const currentToken = accessToken.current;
 
@@ -253,15 +271,15 @@
 
         document.addEventListener('keydown', handleKeydown, { capture: true });
 
-        const ws = new WebSocketClient();
-        ws.onMessage = onMessage;
-        ws.onOpen = (_, isReconnect) => {
+        const sse = new SseClient();
+        sse.onMessage = onMessage;
+        sse.onOpen = (isReconnect) => {
             if (isReconnect) {
                 queryClient.invalidateQueries();
                 document.dispatchEvent(
                     new CustomEvent('refresh', {
                         bubbles: true,
-                        detail: 'WebSocket Connected'
+                        detail: 'SSE Connected'
                     })
                 );
             }
@@ -269,7 +287,7 @@
 
         return () => {
             document.removeEventListener('keydown', handleKeydown, { capture: true });
-            ws?.close();
+            sse?.close();
         };
     });
 

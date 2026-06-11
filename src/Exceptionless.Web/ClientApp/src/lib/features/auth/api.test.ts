@@ -3,6 +3,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { logout } from './api.svelte';
 
+vi.mock('@exceptionless/browser', () => ({
+    Exceptionless: {
+        config: {
+            setUserIdentity: vi.fn()
+        },
+        submitFeatureUsage: vi.fn(),
+        submitSessionEnd: vi.fn().mockResolvedValue(undefined),
+        submitSessionStart: vi.fn().mockResolvedValue(undefined)
+    }
+}));
+
 describe('logout', () => {
     beforeEach(() => {
         // Mock localStorage for server-side tests

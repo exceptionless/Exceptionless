@@ -23,6 +23,17 @@ vi.mock('$features/auth/index.svelte', () => ({
     accessToken: { current: 'token_123' }
 }));
 
+vi.mock('@exceptionless/browser', () => ({
+    Exceptionless: {
+        config: {
+            setUserIdentity: vi.fn()
+        },
+        submitFeatureUsage: vi.fn(),
+        submitSessionEnd: vi.fn().mockResolvedValue(undefined),
+        submitSessionStart: vi.fn().mockResolvedValue(undefined)
+    }
+}));
+
 const TEST_ORG_ID = '507f1f77bcf86cd799439011';
 const TEST_USER_ID = '66a1b2c3d4e5f6a7b8c9d0e1';
 

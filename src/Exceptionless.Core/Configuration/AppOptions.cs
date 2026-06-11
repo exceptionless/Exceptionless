@@ -55,7 +55,11 @@ public class AppOptions
 
     public bool EnableRepositoryNotifications { get; internal set; }
 
-    public bool EnableWebSockets { get; internal set; }
+    /// <summary>
+    /// Controls whether real-time push (SSE) is enabled. Reads from either 'EnablePush'
+    /// or legacy 'EnableWebSockets' config key for backward compatibility.
+    /// </summary>
+    public bool EnablePush { get; internal set; }
 
     public string? Version { get; internal set; }
 
@@ -111,7 +115,8 @@ public class AppOptions
         options.BulkBatchSize = config.GetValue(nameof(options.BulkBatchSize), 1000);
 
         options.EnableRepositoryNotifications = config.GetValue(nameof(options.EnableRepositoryNotifications), true);
-        options.EnableWebSockets = config.GetValue(nameof(options.EnableWebSockets), true);
+        // Support both new 'EnablePush' and legacy 'EnableWebSockets' config keys
+        options.EnablePush = config.GetValue(nameof(options.EnablePush), config.GetValue("EnableWebSockets", true));
 
         try
         {

@@ -305,10 +305,11 @@ public class Startup
         // Reject event posts in organizations over their max event limits.
         app.UseMiddleware<OverageMiddleware>();
 
-        if (options.EnableWebSockets)
+        if (options.EnablePush)
         {
             app.UseWebSockets();
-            app.UseMiddleware<MessageBusBrokerMiddleware>();
+            app.UseMiddleware<WebSocketPushMiddleware>();
+            app.UseMiddleware<SseMiddleware>();
         }
 
         app.UseEndpoints(endpoints =>

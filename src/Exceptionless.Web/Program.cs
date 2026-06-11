@@ -73,6 +73,12 @@ public class Program
 
         var builder = Host.CreateDefaultBuilder()
             .UseEnvironment(environment)
+            .ConfigureHostOptions(o =>
+            {
+                // Align with k8s terminationGracePeriodSeconds (60s) minus preStop sleep (15s).
+                // Gives ASP.NET Core 45s to drain active SSE connections before the pod is force-killed.
+                o.ShutdownTimeout = TimeSpan.FromSeconds(45);
+            })
             .ConfigureLogging(b => b.ClearProviders()) // clears .net providers since we are telling serilog to write to providers we only want it to be the otel provider
             .UseSerilog((ctx, sp, c) =>
             {

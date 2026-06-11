@@ -8,9 +8,9 @@ using Xunit;
 namespace Exceptionless.Tests.Hubs;
 
 /// <summary>
-/// Tests for <see cref="MessageBusBroker"/> WebSocket behavior.  Calls
+/// Tests for <see cref="MessageBusBroker"/> WebSocket behavior. Calls
 /// <see cref="MessageBusBroker.OnEntityChangedAsync"/> directly so they do not depend on
-/// message bus wiring or <c>EnableWebSockets</c> in test host configuration.
+/// message bus wiring or <c>EnablePush</c> in test host configuration.
 /// </summary>
 public sealed class WebSocketTests : TestWithServices
 {
@@ -28,7 +28,6 @@ public sealed class WebSocketTests : TestWithServices
     [Fact]
     public async Task OnEntityChangedAsync_AuthTokenRemoved_ClosesWebSocketsAndClearsUserMapping()
     {
-        // Arrange
         const string userId = "test-user-id";
         const string organizationId = "test-organization-id";
         var socket1 = new TestWebSocket();
@@ -57,10 +56,8 @@ public sealed class WebSocketTests : TestWithServices
             entityChanged.Data[ExtendedEntityChanged.KnownKeys.UserId] = userId;
             entityChanged.Data[ExtendedEntityChanged.KnownKeys.IsAuthenticationToken] = true;
 
-            // Act — call the broker directly; no message bus or EnableWebSockets dependency
             await _broker.OnEntityChangedAsync(entityChanged, CancellationToken.None);
 
-            // Assert – sockets closed and removed from manager
             Assert.Null(_connectionManager.GetWebSocketById(connectionId1));
             Assert.Null(_connectionManager.GetWebSocketById(connectionId2));
             Assert.Same(unrelatedSocket, _connectionManager.GetWebSocketById(unrelatedConnectionId));
@@ -69,7 +66,6 @@ public sealed class WebSocketTests : TestWithServices
             Assert.Equal(1, socket2.CloseCount);
             Assert.Equal(0, unrelatedSocket.CloseCount);
 
-            // Assert – user-id mapping removed by broker
             var remaining = await _connectionMapping.GetUserIdConnectionsAsync(userId);
             Assert.Empty(remaining);
             var organizationConnections = await _connectionMapping.GetGroupConnectionsAsync(organizationId);
@@ -87,7 +83,6 @@ public sealed class WebSocketTests : TestWithServices
     [Fact]
     public async Task OnEntityChangedAsync_NonAuthTokenRemoved_DoesNotCloseWebSockets()
     {
-        // Arrange
         const string userId = "test-user-id-2";
         var socket = new TestWebSocket();
         string connectionId = _connectionManager.AddWebSocket(socket);
@@ -103,12 +98,9 @@ public sealed class WebSocketTests : TestWithServices
                 ChangeType = ChangeType.Removed
             };
             entityChanged.Data[ExtendedEntityChanged.KnownKeys.UserId] = userId;
-            // IsAuthenticationToken intentionally omitted (defaults false)
 
-            // Act
             await _broker.OnEntityChangedAsync(entityChanged, CancellationToken.None);
 
-            // Assert – socket should NOT be closed for a non-auth token removal
             Assert.Equal(0, socket.CloseCount);
             Assert.Same(socket, _connectionManager.GetWebSocketById(connectionId));
         }
