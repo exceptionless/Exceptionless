@@ -9,6 +9,7 @@
 	}: TabsPrimitive.TriggerProps = $props();
 </script>
 
+<!-- CUSTOM: TIGHTEN HORIZONTAL TAB INDICATOR OFFSET SO ACTIVE LINE LINES UP WITH DESIGN GRID. -->
 <TabsPrimitive.Trigger
 	bind:ref
 	data-slot="tabs-trigger"

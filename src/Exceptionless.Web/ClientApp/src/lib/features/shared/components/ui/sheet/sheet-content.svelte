@@ -31,6 +31,7 @@
 </script>
 
 <SheetPortal {...portalProps}>
+	<!-- CUSTOM: FORWARD OVERLAY PROPS TO PRESERVE BRANDED OVERLAY CONTROLS WHILE REUSING SHEET CONTENT BASE. -->
 	<SheetOverlay {...overlayProps} />
 	<SheetPrimitive.Content
 		bind:ref
