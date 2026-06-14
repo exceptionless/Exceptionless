@@ -77,6 +77,9 @@
 
     const hiddenFilterCount = $derived(filters.filter((filter) => filter.hidden).length);
     const hiddenFilterLabel = $derived(`${hiddenFilterCount} Hidden ${hiddenFilterCount === 1 ? 'Filter' : 'Filters'}`);
+    const hiddenFilterToggleLabel = $derived(
+        `${showHiddenFilters ? 'Hide' : 'Show'} ${hiddenFilterCount} hidden ${hiddenFilterCount === 1 ? 'filter' : 'filters'}`
+    );
     const hasFilters = $derived(filters.length > 0);
     const visibleFacets = $derived(facets.filter((facet) => !facet.filter.hidden || showHiddenFilters));
 
@@ -96,6 +99,22 @@
         facets.forEach((f) => (f.open = false));
 
         const filter = builder.create();
+        const existingFilter = filters.find((f) => f.key === filter.key);
+        if (existingFilter) {
+            if (existingFilter.hidden) {
+                showHiddenFilters = true;
+            }
+
+            const existingFacet = facets.find((facet) => facet.filter.id === existingFilter.id);
+            if (existingFacet) {
+                existingFacet.open = true;
+            }
+
+            open = false;
+            lastOpenFilterId = existingFilter.id;
+            return;
+        }
+
         changed(filter);
 
         open = false;
@@ -206,11 +225,11 @@
                 class={['relative', !hasFilters && 'gap-x-1 px-3']}
                 size={hasFilters ? 'icon-lg' : 'lg'}
                 variant="outline"
-                title="Add and Manage Filters"
-                aria-label={hiddenFilterCount > 0 ? `Add and Manage Filters. ${hiddenFilterLabel}.` : 'Add and Manage Filters'}
+                title={hiddenFilterCount > 0 && !showHiddenFilters ? `Manage filters (${hiddenFilterCount} hidden)` : 'Manage filters'}
+                aria-label={hiddenFilterCount > 0 && !showHiddenFilters ? `Manage filters. ${hiddenFilterLabel}.` : 'Manage filters'}
             >
                 <Circle class={[hasFilters ? 'size-4' : 'mr-2 size-4']} aria-hidden="true" />
-                {#if hiddenFilterCount > 0}
+                {#if hiddenFilterCount > 0 && !showHiddenFilters}
                     <Badge
                         variant="secondary"
                         class="absolute -top-1 -right-1 h-4 min-w-4 rounded-full px-1 text-[10px] leading-none shadow-sm"
@@ -250,24 +269,38 @@
                 <Tooltip.Root>
                     <Tooltip.Trigger>
                         {#snippet child({ props })}
-                            <Button {...props} variant="ghost" size="icon-sm" onclick={toggleHiddenFilters}>
+                            <Button
+                                {...props}
+                                class="relative"
+                                variant="ghost"
+                                size="icon-sm"
+                                onclick={toggleHiddenFilters}
+                                aria-label={hiddenFilterToggleLabel}
+                            >
                                 {#if showHiddenFilters}
-                                    <EyeOff class="text-muted-foreground size-3.5" />
+                                    <EyeOff class="text-muted-foreground size-4" />
                                 {:else}
-                                    <Eye class="text-muted-foreground size-3.5" />
+                                    <Eye class="text-muted-foreground size-4" />
                                 {/if}
+                                <Badge
+                                    variant="secondary"
+                                    class="absolute -top-1 -right-1 h-4 min-w-4 rounded-full px-1 text-[10px] leading-none shadow-sm"
+                                    aria-hidden="true"
+                                >
+                                    {hiddenFilterCount}
+                                </Badge>
                             </Button>
                         {/snippet}
                     </Tooltip.Trigger>
-                    <Tooltip.Content>Toggle hidden filters</Tooltip.Content>
+                    <Tooltip.Content>{hiddenFilterToggleLabel}</Tooltip.Content>
                 </Tooltip.Root>
             {/if}
             {#if filters.some((f) => f.type !== 'date')}
                 <Tooltip.Root>
                     <Tooltip.Trigger>
                         {#snippet child({ props })}
-                            <Button {...props} variant="ghost" size="icon-sm" onclick={onRemoveAll}>
-                                <Eraser class="text-muted-foreground size-3.5" />
+                            <Button {...props} variant="ghost" size="icon-sm" onclick={onRemoveAll} aria-label="Clear all filters">
+                                <Eraser class="text-muted-foreground size-4" />
                             </Button>
                         {/snippet}
                     </Tooltip.Trigger>

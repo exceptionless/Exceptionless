@@ -206,7 +206,7 @@
                     {:else if eventsAllTimeChartData.length === 0}
                         <p class="text-muted-foreground py-8 text-center text-sm">No event history available.</p>
                     {:else}
-                        <Chart.Container config={eventsAllTimeChartConfig} class="h-48 w-full">
+                        <Chart.Container config={eventsAllTimeChartConfig} class="h-48 w-full overflow-visible pl-16 pr-3">
                             <AreaChart
                                 data={eventsAllTimeChartData}
                                 x="date"
@@ -235,7 +235,7 @@
                     {:else if organizationGrowthChartData.length === 0}
                         <p class="text-muted-foreground py-8 text-center text-sm">No growth data available.</p>
                     {:else}
-                        <Chart.Container config={organizationGrowthChartConfig} class="h-48 w-full">
+                        <Chart.Container config={organizationGrowthChartConfig} class="h-48 w-full overflow-visible pl-16 pr-3">
                             <AreaChart
                                 data={organizationGrowthChartData}
                                 x="month"

@@ -8,6 +8,8 @@ using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
+using Exceptionless.Web.Utility;
+using Foundatio.Storage;
 using Foundatio.Mediator;
 using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 using Microsoft.AspNetCore.Mvc;
@@ -15,6 +17,8 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using OrganizationMessages = Exceptionless.Web.Api.Messages;
 using Invoice = Exceptionless.Web.Models.Invoice;
 using Exceptionless.Web.Utility.OpenApi;
+using HttpIResult = Microsoft.AspNetCore.Http.IResult;
+using HttpResults = Microsoft.AspNetCore.Http.Results;
 
 namespace Exceptionless.Web.Api.Endpoints;
 
@@ -122,6 +126,58 @@ public static class OrganizationEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "An error occurred while updating the organization.",
                 ["404"] = "The organization could not be found.",
+            }
+        });
+
+        group.MapPost("organizations/{id:objectid}/icon", UploadIconAsync)
+        .Accepts<IFormFile>("multipart/form-data")
+        .Produces<ViewOrganization>()
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .WithMetadata(
+            new MultipartFileUploadAttribute(),
+            new RequestSizeLimitAttribute(ProfileImageStorage.MaxRequestBodySize),
+            new RequestFormLimitsAttribute { MultipartBodyLengthLimit = ProfileImageStorage.MaxRequestBodySize })
+        .WithSummary("Upload icon")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["id"] = "The identifier of the organization.",
+                ["file"] = "The organization icon image file.",
+            },
+            ResponseDescriptions = new() {
+                ["404"] = "The organization could not be found.",
+                ["422"] = "The image file is invalid.",
+            }
+        })
+        .DisableAntiforgery();
+
+        group.MapDelete("organizations/{id:objectid}/icon", DeleteIconAsync)
+        .Produces<ViewOrganization>()
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .WithSummary("Remove icon")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["id"] = "The identifier of the organization.",
+            },
+            ResponseDescriptions = new() {
+                ["404"] = "The organization could not be found.",
+            }
+        });
+
+        group.MapGet("organizations/{id:objectid}/icon/{fileName}", GetIconAsync)
+        .AllowAnonymous()
+        .WithName("GetOrganizationIcon")
+        .Produces(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .WithMetadata(new ResponseCacheAttribute { Duration = 31536000, Location = ResponseCacheLocation.Any })
+        .WithSummary("Get icon")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["id"] = "The identifier of the organization.",
+                ["fileName"] = "The icon file name.",
+            },
+            ResponseDescriptions = new() {
+                ["404"] = "The icon could not be found.",
             }
         });
 
@@ -331,5 +387,61 @@ public static class OrganizationEndpoints
         });
 
         return endpoints;
+    }
+
+    private static async Task<HttpIResult> UploadIconAsync(string id, HttpContext httpContext, IMediator mediator, [FromServices] IFileStorage fileStorage, [FromForm] IFormFile? file, CancellationToken cancellationToken)
+    {
+        var modelState = new ModelStateDictionary();
+        var image = await ProfileImageStorage.SaveAsync(fileStorage, file, "organizations", id, modelState, cancellationToken);
+        if (image is null)
+            return ValidationProblem(modelState);
+
+        try
+        {
+            var result = await mediator.InvokeAsync<Result<ProfileImageUpdate<ViewOrganization>>>(new OrganizationMessages.SetOrganizationIcon(id, image.FileName, httpContext));
+            if (!result.IsSuccess)
+            {
+                await ProfileImageStorage.TryDeleteAsync(fileStorage, image.FileName, "organizations", id, CancellationToken.None);
+                return result.ToHttpResult();
+            }
+
+            var update = result.ValueOrDefault!;
+            await ProfileImageStorage.DeleteAsync(fileStorage, update.PreviousFileName, "organizations", id, cancellationToken);
+            return HttpResults.Ok(update.View);
+        }
+        catch
+        {
+            await ProfileImageStorage.TryDeleteAsync(fileStorage, image.FileName, "organizations", id, CancellationToken.None);
+            throw;
+        }
+    }
+
+    private static async Task<HttpIResult> DeleteIconAsync(string id, HttpContext httpContext, IMediator mediator, [FromServices] IFileStorage fileStorage, CancellationToken cancellationToken)
+    {
+        var result = await mediator.InvokeAsync<Result<ProfileImageUpdate<ViewOrganization>>>(new OrganizationMessages.DeleteOrganizationIcon(id, httpContext));
+        if (!result.IsSuccess)
+            return result.ToHttpResult();
+
+        var update = result.ValueOrDefault!;
+        await ProfileImageStorage.DeleteAsync(fileStorage, update.PreviousFileName, "organizations", id, cancellationToken);
+        return HttpResults.Ok(update.View);
+    }
+
+    private static async Task<HttpIResult> GetIconAsync(string id, string fileName, [FromServices] IFileStorage fileStorage, CancellationToken cancellationToken)
+    {
+        if (!ProfileImageStorage.TryGetContentType(fileName, out string contentType))
+            return HttpResults.NotFound();
+
+        var stream = await ProfileImageStorage.GetFileStreamAsync(fileStorage, fileName, "organizations", id, cancellationToken);
+        return stream is null ? HttpResults.NotFound() : HttpResults.File(stream, contentType);
+    }
+
+    private static HttpIResult ValidationProblem(ModelStateDictionary modelState)
+    {
+        var errors = modelState
+            .Where(kvp => kvp.Value?.Errors.Count > 0)
+            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+
+        return HttpResults.ValidationProblem(errors, statusCode: StatusCodes.Status422UnprocessableEntity);
     }
 }

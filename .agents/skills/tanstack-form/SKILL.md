@@ -9,7 +9,7 @@ description: >
 
 # TanStack Form
 
-> **Documentation:** [tanstack.com/form](https://tanstack.com/form) | Use `context7` for API reference
+> **Documentation:** [tanstack.com/form](https://tanstack.com/form). Use official docs when the local pattern is not enough.
 
 Use TanStack Form (`@tanstack/svelte-form`) with Zod for form state management.
 

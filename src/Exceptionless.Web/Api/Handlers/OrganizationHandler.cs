@@ -152,6 +152,32 @@ public class OrganizationHandler(
         return await MapToViewAsync(original);
     }
 
+    public async Task<Result<ProfileImageUpdate<ViewOrganization>>> Handle(SetOrganizationIcon message)
+    {
+        var organization = await GetModelAsync(message.Id, false);
+        if (organization is null)
+            return Result.NotFound("Organization not found.");
+
+        string? oldIconFileName = organization.IconFileName;
+        organization.IconFileName = message.FileName;
+
+        await repository.SaveAsync(organization, o => o.Cache());
+        return new ProfileImageUpdate<ViewOrganization>(await MapToViewAsync(organization), oldIconFileName);
+    }
+
+    public async Task<Result<ProfileImageUpdate<ViewOrganization>>> Handle(DeleteOrganizationIcon message)
+    {
+        var organization = await GetModelAsync(message.Id, false);
+        if (organization is null)
+            return Result.NotFound("Organization not found.");
+
+        string? oldIconFileName = organization.IconFileName;
+        organization.IconFileName = null;
+
+        await repository.SaveAsync(organization, o => o.Cache());
+        return new ProfileImageUpdate<ViewOrganization>(await MapToViewAsync(organization), oldIconFileName);
+    }
+
     public async Task<Result<ModelActionResults>> Handle(DeleteOrganizations message)
     {
         var items = await GetModelsAsync(message.Ids, useCache: false);
@@ -825,6 +851,8 @@ public class OrganizationHandler(
         var viewOrganizations = models.OfType<ViewOrganization>().ToList();
         foreach (var viewOrganization in viewOrganizations)
         {
+            viewOrganization.IconUrl = GetOrganizationIconUrl(viewOrganization.Id, viewOrganization.IconUrl);
+
             var realTimeUsage = await usageService.GetUsageAsync(viewOrganization.Id);
             viewOrganization.EnsureUsage(timeProvider);
             viewOrganization.TrimUsage(timeProvider);
@@ -847,6 +875,14 @@ public class OrganizationHandler(
             viewOrganization.IsThrottled = realTimeUsage.IsThrottled;
             viewOrganization.IsOverRequestLimit = await OrganizationExtensions.IsOverRequestLimitAsync(viewOrganization.Id, cacheClient, options.ApiThrottleLimit, timeProvider);
         }
+    }
+
+    private static string? GetOrganizationIconUrl(string id, string? fileName)
+    {
+        if (String.IsNullOrWhiteSpace(fileName))
+            return null;
+
+        return $"/api/v2/organizations/{id}/icon/{fileName}";
     }
 
     private async Task<ViewOrganization> PopulateOrganizationStatsAsync(ViewOrganization organization)

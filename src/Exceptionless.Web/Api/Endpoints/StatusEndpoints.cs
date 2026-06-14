@@ -46,12 +46,12 @@ public static class StatusEndpoints
             return result.Date == DateTime.MinValue ? HttpResults.Ok() : HttpResults.Ok(result);
         });
 
-        group.MapPost("notifications/system", async (IMediator mediator, [FromBody] ValueFromBody<string> message, bool publish = true) =>
+        group.MapPost("notifications/system", async (IMediator mediator, [FromBody] SetSystemNotificationRequest request, bool publish = true) =>
         {
-            if (String.IsNullOrWhiteSpace(message?.Value))
+            if (String.IsNullOrWhiteSpace(request.Message))
                 return HttpResults.NotFound();
 
-            var result = await mediator.InvokeAsync<object>(new PostSystemNotification(message.Value, publish));
+            var result = await mediator.InvokeAsync<object>(new PostSystemNotification(request.Message, request.Level, request.Target, publish));
             return HttpResults.Ok(result);
         })
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy);

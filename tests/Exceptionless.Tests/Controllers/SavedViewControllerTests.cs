@@ -44,7 +44,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         Assert.True(await _organizationRepository.CountAsync() > 0);
 
         var existingSystemViews = await GetSystemPredefinedSavedViewsAsync();
-        Assert.Equal(5, existingSystemViews.Count);
+        Assert.Equal(6, existingSystemViews.Count);
 
         foreach (var savedView in existingSystemViews)
             await _savedViewRepository.RemoveAsync(savedView.Id, o => o.ImmediateConsistency());
@@ -57,7 +57,8 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
 
         // Assert
         var seededSystemViews = await GetSystemPredefinedSavedViewsAsync();
-        Assert.Equal(5, seededSystemViews.Count);
+        Assert.Equal(6, seededSystemViews.Count);
+        Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "events", "All"));
         Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "events", "Logs"));
         Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "events", "Errors"));
         Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "stacks", "Most Frequent Errors"));
@@ -81,7 +82,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         Assert.Contains("\"filterDefinitions\"", json);
         Assert.DoesNotContain("\"filter_definitions\"", json);
         Assert.NotNull(definitions);
-        Assert.Equal(5, definitions.Count);
+        Assert.Equal(6, definitions.Count);
 
         var logs = definitions.FirstOrDefault(view => String.Equals(view.Key, "events:logs", StringComparison.OrdinalIgnoreCase));
         Assert.NotNull(logs);
@@ -566,7 +567,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(predefinedViews);
-        Assert.Equal(5, predefinedViews.Count);
+        Assert.Equal(6, predefinedViews.Count);
         Assert.Contains(predefinedViews, view => IsPredefinedSavedView(view, "events", "Logs"));
         Assert.Contains(predefinedViews, view => IsPredefinedSavedView(view, "events", "Errors"));
         Assert.Contains(predefinedViews, view => IsPredefinedSavedView(view, "stacks", "Most Frequent Errors"));
@@ -697,7 +698,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(updatedPredefinedViews);
-        Assert.Equal(5, updatedPredefinedViews.Count);
+        Assert.Equal(6, updatedPredefinedViews.Count);
         var applicationLogs = updatedPredefinedViews.FirstOrDefault(view => IsPredefinedSavedView(view, "events", "Application Logs"));
         Assert.NotNull(applicationLogs);
         Assert.Equal("application-logs", applicationLogs.Slug);
@@ -821,14 +822,14 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(updatedPredefinedViews);
-        Assert.Equal(4, updatedPredefinedViews.Count);
+        Assert.Equal(5, updatedPredefinedViews.Count);
         Assert.DoesNotContain(updatedPredefinedViews, view => IsPredefinedSavedView(view, "events", "Logs"));
         Assert.Contains(updatedPredefinedViews, view => IsPredefinedSavedView(view, "events", "Errors"));
 
         await GetService<DataSeedService>().SeedAsync(TestContext.Current.CancellationToken);
         await RefreshDataAsync();
 
-        Assert.Equal(4, await _savedViewRepository.CountByOrganizationIdAsync(PredefinedSavedViewsDataSeed.SystemOrganizationId));
+        Assert.Equal(5, await _savedViewRepository.CountByOrganizationIdAsync(PredefinedSavedViewsDataSeed.SystemOrganizationId));
     }
 
     [Fact]
@@ -1753,7 +1754,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
                 OrganizationId = SampleDataService.TEST_ORG_ID,
                 Name = "Valid Columns",
                 ViewType = "events",
-                Columns = new Dictionary<string, bool> { ["summary"] = true, ["level"] = false, ["message"] = false }
+                Columns = new Dictionary<string, bool> { ["summary"] = true, ["type"] = false, ["exception_type"] = false, ["level"] = false, ["message"] = false }
             })
             .StatusCodeShouldBeCreated()
         );

@@ -122,6 +122,32 @@ public class UserHandler(
         return Result<object>.Success(MapToView(original));
     }
 
+    public async Task<Result<ProfileImageUpdate<object>>> Handle(SetUserAvatar message)
+    {
+        var user = await GetModelAsync(message.Id, false);
+        if (user is null)
+            return Result.NotFound("User not found.");
+
+        string? oldAvatarFileName = user.AvatarFileName;
+        user.AvatarFileName = message.FileName;
+
+        await repository.SaveAsync(user, o => o.Cache());
+        return new ProfileImageUpdate<object>(MapToView(user), oldAvatarFileName);
+    }
+
+    public async Task<Result<ProfileImageUpdate<object>>> Handle(DeleteUserAvatar message)
+    {
+        var user = await GetModelAsync(message.Id, false);
+        if (user is null)
+            return Result.NotFound("User not found.");
+
+        string? oldAvatarFileName = user.AvatarFileName;
+        user.AvatarFileName = null;
+
+        await repository.SaveAsync(user, o => o.Cache());
+        return new ProfileImageUpdate<object>(MapToView(user), oldAvatarFileName);
+    }
+
     public Task<Result<ModelActionResults>> Handle(DeleteCurrentUser message)
     {
         string userId = GetCurrentUserId();
@@ -397,10 +423,21 @@ public class UserHandler(
 
     private string GetCurrentUserId() => HttpContext.Request.GetUser().Id;
 
-    private static void AfterResultMap<TDestination>(ICollection<TDestination> models)
+    private void AfterResultMap<TDestination>(ICollection<TDestination> models)
     {
         foreach (var model in models.OfType<IData>())
             model.Data?.RemoveSensitiveData();
+
+        foreach (var user in models.OfType<ViewUser>())
+            user.AvatarUrl = GetUserAvatarUrl(user.Id, user.AvatarUrl);
+    }
+
+    private static string? GetUserAvatarUrl(string id, string? fileName)
+    {
+        if (String.IsNullOrWhiteSpace(fileName))
+            return null;
+
+        return $"/api/v2/users/{id}/avatar/{fileName}";
     }
 
     private static Result PermissionToResult(PermissionResult permission)

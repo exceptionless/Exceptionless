@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
     import { Notification, NotificationDescription, NotificationTitle } from '$comp/notification';
@@ -11,16 +12,21 @@
     import { getIntercom } from '$features/intercom';
     import { openSupportChat } from '$features/intercom/chat';
     import { organization } from '$features/organizations/context.svelte';
+    import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
     import { generateSampleData } from '$features/projects/api.svelte';
     import { getProjectDefaultTokenQuery, patchToken } from '$features/tokens/api.svelte';
     import EnableTokenDialog from '$features/tokens/components/dialogs/enable-token-dialog.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
+    import Events from '@lucide/svelte/icons/calendar-days';
     import Database from '@lucide/svelte/icons/database';
+    import NotificationSettings from '@lucide/svelte/icons/mail';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener } from 'runed';
     import { toast } from 'svelte-sonner';
 
     import { redirectToEventsWithFilter } from '../../../redirect-to-events.svelte';
+
+    useHideOrganizationNotifications();
 
     // Project ID from route params
     const projectId = $derived(page.params.projectId || '');
@@ -635,6 +641,9 @@ public partial class App : Application {
     {/if}
 
     <div class="border-border flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end">
+        <Button variant="secondary" href={`${resolve('/(app)/account/notifications')}?project=${projectId}`}>
+            <NotificationSettings class="mr-2 size-4" aria-hidden="true" /> Notifications
+        </Button>
         <Button variant="success" onclick={generateProjectSampleData} disabled={generateSampleDataMutation.isPending}>
             {#if generateSampleDataMutation.isPending}
                 <Spinner /> Generating...
@@ -642,7 +651,9 @@ public partial class App : Application {
                 <Database class="mr-2 size-4" aria-hidden="true" /> Generate Sample Data
             {/if}
         </Button>
-        <Button variant="secondary" onclick={goToProjectEvents}>View Events</Button>
+        <Button variant="secondary" onclick={goToProjectEvents}>
+            <Events class="mr-2 size-4" aria-hidden="true" /> View Events
+        </Button>
     </div>
 
     {#if isTokenDisabled}

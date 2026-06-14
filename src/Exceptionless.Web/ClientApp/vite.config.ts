@@ -18,16 +18,12 @@ if (codespaceName && codespaceDomain) {
 }
 
 export default defineConfig({
-    base: '/next/',
     build: {
         sourcemap: true,
         target: 'esnext'
     },
     clearScreen: false,
     logLevel: 'info',
-    optimizeDeps: {
-        entries: ['src/**/*.{svelte,ts,js}']
-    },
     plugins: [tailwindcss(), sveltekit()],
     server: {
         allowedHosts,

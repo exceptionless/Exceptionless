@@ -974,6 +974,48 @@
     "authenticationSchemes": []
   },
   {
+    "method": "DELETE",
+    "route": "/api/v2/organizations/{id:objectid}/icon",
+    "displayName": "HTTP: DELETE api/v2/organizations/{id:objectid}/icon =\u003E DeleteIconAsync",
+    "tags": [
+      "Organization"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/organizations/{id:objectid}/icon",
+    "displayName": "HTTP: POST api/v2/organizations/{id:objectid}/icon =\u003E UploadIconAsync",
+    "tags": [
+      "Organization"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
+    "route": "/api/v2/organizations/{id:objectid}/icon/{fileName}",
+    "displayName": "HTTP: GET api/v2/organizations/{id:objectid}/icon/{fileName} =\u003E GetIconAsync",
+    "tags": [
+      "Organization"
+    ],
+    "allowAnonymous": true,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
     "method": "GET",
     "route": "/api/v2/organizations/{id:objectid}/invoices",
     "displayName": "HTTP: GET api/v2/organizations/{id:objectid}/invoices",
@@ -1171,6 +1213,21 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
+    "route": "/api/v2/organizations/{organizationId:objectid}/saved-views/export",
+    "displayName": "HTTP: GET api/v2/organizations/{organizationId:objectid}/saved-views/export",
+    "tags": [
+      "SavedView"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -1866,6 +1923,21 @@
     "authenticationSchemes": []
   },
   {
+    "method": "PUT",
+    "route": "/api/v2/saved-views/predefined",
+    "displayName": "HTTP: PUT api/v2/saved-views/predefined",
+    "tags": [
+      "SavedView"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy",
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
     "method": "GET",
     "route": "/api/v2/saved-views/{id:objectid}",
     "displayName": "HTTP: GET api/v2/saved-views/{id:objectid}",
@@ -2375,6 +2447,48 @@
     "allowAnonymous": false,
     "authorizationPolicies": [
       "GlobalAdminPolicy",
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "DELETE",
+    "route": "/api/v2/users/{id:objectid}/avatar",
+    "displayName": "HTTP: DELETE api/v2/users/{id:objectid}/avatar =\u003E DeleteAvatarAsync",
+    "tags": [
+      "User"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/users/{id:objectid}/avatar",
+    "displayName": "HTTP: POST api/v2/users/{id:objectid}/avatar =\u003E UploadAvatarAsync",
+    "tags": [
+      "User"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
+    "route": "/api/v2/users/{id:objectid}/avatar/{fileName}",
+    "displayName": "HTTP: GET api/v2/users/{id:objectid}/avatar/{fileName} =\u003E GetAvatarAsync",
+    "tags": [
+      "User"
+    ],
+    "allowAnonymous": true,
+    "authorizationPolicies": [
       "UserPolicy"
     ],
     "authorizationRoles": [],

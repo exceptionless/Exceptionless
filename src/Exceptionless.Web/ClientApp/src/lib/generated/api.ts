@@ -112,6 +112,8 @@ export interface InvoiceLineItem {
   amount: number;
 }
 
+export type JsonElement = any;
+
 export interface Login {
   /** The email address or domain username */
   email: string;
@@ -128,6 +130,7 @@ export interface NewProject {
   organization_id: string;
   name: string;
   delete_bot_data_enabled: boolean;
+  promoted_tabs?: string[] | null;
 }
 
 export interface NewSavedView {
@@ -137,6 +140,7 @@ export interface NewSavedView {
   filter?: null | string;
   time?: null | string;
   sort?: null | string;
+  /** @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$ */
   slug?: null | string;
   view_type: string;
   filter_definitions?: null | string;
@@ -256,6 +260,21 @@ export interface PersistentEvent {
   reference_id?: null | string;
 }
 
+export interface PredefinedSavedViewDefinition {
+  key: string;
+  name: string;
+  slug: string;
+  viewType: string;
+  filter?: null | string;
+  time?: null | string;
+  sort?: null | string;
+  filterDefinitions?: null | JsonElement;
+  columns?: null | Record<string, boolean>;
+  columnOrder?: string[] | null;
+  showStats?: null | boolean;
+  showChart?: null | boolean;
+}
+
 export interface ResetPasswordModel {
   password_reset_token: string;
   password: string;
@@ -368,6 +387,7 @@ export interface UpdateEvent {
 export interface UpdateProject {
   name: string;
   delete_bot_data_enabled: boolean;
+  promoted_tabs?: string[] | null;
 }
 
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
@@ -446,6 +466,7 @@ export interface User {
   full_name: string;
   /** @format email */
   email_address: string;
+  avatar_file_name?: null | string;
   email_notifications_enabled: boolean;
   is_email_address_verified: boolean;
   verify_email_address_token?: null | string;
@@ -478,6 +499,7 @@ export interface ViewCurrentUser {
   full_name: string;
   /** @format email */
   email_address: string;
+  avatar_url?: null | string;
   email_notifications_enabled: boolean;
   is_email_address_verified: boolean;
   is_active: boolean;
@@ -493,6 +515,7 @@ export interface ViewOrganization {
   /** @format date-time */
   updated_utc: string;
   name: string;
+  icon_url?: null | string;
   plan_id: string;
   plan_name: string;
   plan_description: string;
@@ -623,6 +646,7 @@ export interface ViewUser {
   full_name: string;
   /** @format email */
   email_address: string;
+  avatar_url?: null | string;
   email_notifications_enabled: boolean;
   is_email_address_verified: boolean;
   is_active: boolean;

@@ -123,6 +123,34 @@ public static class SavedViewEndpoints
             }
         });
 
+        group.MapGet("organizations/{organizationId:objectid}/saved-views/export", async (string organizationId, IMediator mediator)
+            => (await mediator.InvokeAsync<Result<IReadOnlyCollection<PredefinedSavedViewDefinition>>>(new SavedViewMessages.ExportOrganizationSavedViews(organizationId))).ToHttpResult())
+        .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
+        .Produces<IReadOnlyCollection<PredefinedSavedViewDefinition>>()
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .WithSummary("Get an organization's saved views exported as predefined definitions")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["organizationId"] = "The identifier of the organization to export from.",
+            },
+            ResponseDescriptions = new() {
+                ["200"] = "The organization's saved views as predefined definitions.",
+                ["404"] = "The organization could not be found.",
+            }
+        });
+
+        group.MapPut("saved-views/predefined", async (IMediator mediator, [FromBody] IReadOnlyCollection<PredefinedSavedViewDefinition> definitions)
+            => (await mediator.InvokeAsync<Result<IReadOnlyCollection<PredefinedSavedViewDefinition>>>(new SavedViewMessages.ReplacePredefinedSavedViews(definitions))).ToHttpResult())
+        .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
+        .Produces<IReadOnlyCollection<PredefinedSavedViewDefinition>>()
+        .WithSummary("Replace all predefined saved views with the provided definitions")
+        .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The full set of predefined saved view definitions.",
+            ResponseDescriptions = new() {
+                ["200"] = "The predefined saved views were replaced.",
+            }
+        });
+
         group.MapPost("saved-views/{id:objectid}/predefined", async (string id, IMediator mediator)
             => (await mediator.InvokeAsync<Result<ViewSavedView>>(new SavedViewMessages.PromoteToPredefinedSavedView(id))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)

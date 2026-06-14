@@ -102,12 +102,14 @@ public class StatusControllerTests : IntegrationTestsBase
             .Post()
             .AsGlobalAdminUser()
             .AppendPath("notifications/system")
-            .Content(new ValueFromBody<string>("System maintenance scheduled"))
+            .Content(new { message = "System maintenance scheduled", level = "Info", target = "Both" })
             .StatusCodeShouldBeOk());
 
         // Assert
         Assert.NotNull(notification);
         Assert.Equal("System maintenance scheduled", notification.Message);
+        Assert.Equal(SystemNotificationLevel.Info, notification.Level);
+        Assert.Equal(SystemNotificationTarget.Both, notification.Target);
         Assert.True(notification.Date.IsAfterOrEqual(utcNow));
     }
 
@@ -118,7 +120,7 @@ public class StatusControllerTests : IntegrationTestsBase
             .Post()
             .AsGlobalAdminUser()
             .AppendPath("notifications/system")
-            .Content(new ValueFromBody<string>(String.Empty))
+            .Content(new { message = String.Empty, level = "Info", target = "Both" })
             .StatusCodeShouldBeNotFound());
     }
 
@@ -129,7 +131,7 @@ public class StatusControllerTests : IntegrationTestsBase
             .Post()
             .AsTestOrganizationUser()
             .AppendPath("notifications/system")
-            .Content(new ValueFromBody<string>("test"))
+            .Content(new { message = "test", level = "Info", target = "Both" })
             .StatusCodeShouldBeForbidden());
     }
 
@@ -141,7 +143,7 @@ public class StatusControllerTests : IntegrationTestsBase
             .Post()
             .AsGlobalAdminUser()
             .AppendPath("notifications/system")
-            .Content(new ValueFromBody<string>("To be removed"))
+            .Content(new { message = "To be removed", level = "Info", target = "Both" })
             .StatusCodeShouldBeOk());
 
         // Act
@@ -178,7 +180,7 @@ public class StatusControllerTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath("notifications/system")
             .QueryString("publish", "false")
-            .Content(new ValueFromBody<string>("Silent notification"))
+            .Content(new { message = "Silent notification", level = "Info", target = "Both" })
             .StatusCodeShouldBeOk());
 
         // Assert — notification is persisted and returned

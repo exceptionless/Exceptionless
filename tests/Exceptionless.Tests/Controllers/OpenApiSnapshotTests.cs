@@ -13,6 +13,16 @@ public sealed class OpenApiSnapshotTests
         // Act
         string actualJson = await GetOpenApiJsonAsync();
 
+        // Set UPDATE_SNAPSHOTS=true to regenerate the baseline file.
+        if (String.Equals(Environment.GetEnvironmentVariable("UPDATE_SNAPSHOTS"), "true", StringComparison.OrdinalIgnoreCase))
+        {
+            // Write to the source tree so the change produces a real git diff.
+            string sourcePath = Path.GetFullPath(Path.Join(AppContext.BaseDirectory, "..", "..", "..", "Controllers", "Data", "openapi.json"));
+            await File.WriteAllTextAsync(sourcePath, actualJson, TestContext.Current.CancellationToken);
+
+            return;
+        }
+
         // Assert
         await SnapshotTestHelper.AssertMatchesJsonSnapshotAsync("openapi.json", actualJson, TestContext.Current.CancellationToken);
     }

@@ -350,9 +350,13 @@ public class ProjectHandler(
         if (project is null)
             return Result.NotFound("Project not found.");
 
+        string normalizedName = message.Name.Trim();
         project.PromotedTabs ??= [];
-        if (project.PromotedTabs.Add(message.Name.Trim()))
+        if (!project.PromotedTabs.Contains(normalizedName, StringComparer.Ordinal))
+        {
+            project.PromotedTabs.Add(normalizedName);
             await repository.SaveAsync(project, o => o.Cache());
+        }
 
         return Result.Success();
     }
@@ -366,8 +370,11 @@ public class ProjectHandler(
         if (project is null)
             return Result.NotFound("Project not found.");
 
-        if (project.PromotedTabs is not null && project.PromotedTabs.Remove(message.Name.Trim()))
+        if (project.PromotedTabs is not null)
+        {
+            project.PromotedTabs.Remove(message.Name.Trim());
             await repository.SaveAsync(project, o => o.Cache());
+        }
 
         return Result.Success();
     }

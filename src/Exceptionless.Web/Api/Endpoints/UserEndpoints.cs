@@ -4,11 +4,16 @@ using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
+using Exceptionless.Web.Utility;
+using Foundatio.Storage;
 using Foundatio.Mediator;
 using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using UserMessages = Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Utility.OpenApi;
+using HttpIResult = Microsoft.AspNetCore.Http.IResult;
+using HttpResults = Microsoft.AspNetCore.Http.Results;
 
 namespace Exceptionless.Web.Api.Endpoints;
 
@@ -94,6 +99,58 @@ public static class UserEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "An error occurred while updating the user.",
                 ["404"] = "The user could not be found.",
+            }
+        });
+
+        group.MapPost("users/{id:objectid}/avatar", UploadAvatarAsync)
+        .Accepts<IFormFile>("multipart/form-data")
+        .Produces<ViewUser>()
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .WithMetadata(
+            new MultipartFileUploadAttribute(),
+            new RequestSizeLimitAttribute(ProfileImageStorage.MaxRequestBodySize),
+            new RequestFormLimitsAttribute { MultipartBodyLengthLimit = ProfileImageStorage.MaxRequestBodySize })
+        .WithSummary("Upload avatar")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["id"] = "The identifier of the user.",
+                ["file"] = "The avatar image file.",
+            },
+            ResponseDescriptions = new() {
+                ["404"] = "The user could not be found.",
+                ["422"] = "The image file is invalid.",
+            }
+        })
+        .DisableAntiforgery();
+
+        group.MapDelete("users/{id:objectid}/avatar", DeleteAvatarAsync)
+        .Produces<ViewUser>()
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .WithSummary("Remove avatar")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["id"] = "The identifier of the user.",
+            },
+            ResponseDescriptions = new() {
+                ["404"] = "The user could not be found.",
+            }
+        });
+
+        group.MapGet("users/{id:objectid}/avatar/{fileName}", GetAvatarAsync)
+        .AllowAnonymous()
+        .WithName("GetUserAvatar")
+        .Produces(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .WithMetadata(new ResponseCacheAttribute { Duration = 31536000, Location = ResponseCacheLocation.Any })
+        .WithSummary("Get avatar")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["id"] = "The identifier of the user.",
+                ["fileName"] = "The avatar file name.",
+            },
+            ResponseDescriptions = new() {
+                ["404"] = "The avatar could not be found.",
             }
         });
 
@@ -202,5 +259,61 @@ public static class UserEndpoints
         .ExcludeFromDescription();
 
         return endpoints;
+    }
+
+    private static async Task<HttpIResult> UploadAvatarAsync(string id, IMediator mediator, [FromServices] IFileStorage fileStorage, [FromForm] IFormFile? file, CancellationToken cancellationToken)
+    {
+        var modelState = new ModelStateDictionary();
+        var image = await ProfileImageStorage.SaveAsync(fileStorage, file, "users", id, modelState, cancellationToken);
+        if (image is null)
+            return ValidationProblem(modelState);
+
+        try
+        {
+            var result = await mediator.InvokeAsync<Result<ProfileImageUpdate<object>>>(new UserMessages.SetUserAvatar(id, image.FileName));
+            if (!result.IsSuccess)
+            {
+                await ProfileImageStorage.TryDeleteAsync(fileStorage, image.FileName, "users", id, CancellationToken.None);
+                return result.ToHttpResult();
+            }
+
+            var update = result.ValueOrDefault!;
+            await ProfileImageStorage.DeleteAsync(fileStorage, update.PreviousFileName, "users", id, cancellationToken);
+            return HttpResults.Ok(update.View);
+        }
+        catch
+        {
+            await ProfileImageStorage.TryDeleteAsync(fileStorage, image.FileName, "users", id, CancellationToken.None);
+            throw;
+        }
+    }
+
+    private static async Task<HttpIResult> DeleteAvatarAsync(string id, IMediator mediator, [FromServices] IFileStorage fileStorage, CancellationToken cancellationToken)
+    {
+        var result = await mediator.InvokeAsync<Result<ProfileImageUpdate<object>>>(new UserMessages.DeleteUserAvatar(id));
+        if (!result.IsSuccess)
+            return result.ToHttpResult();
+
+        var update = result.ValueOrDefault!;
+        await ProfileImageStorage.DeleteAsync(fileStorage, update.PreviousFileName, "users", id, cancellationToken);
+        return HttpResults.Ok(update.View);
+    }
+
+    private static async Task<HttpIResult> GetAvatarAsync(string id, string fileName, [FromServices] IFileStorage fileStorage, CancellationToken cancellationToken)
+    {
+        if (!ProfileImageStorage.TryGetContentType(fileName, out string contentType))
+            return HttpResults.NotFound();
+
+        var stream = await ProfileImageStorage.GetFileStreamAsync(fileStorage, fileName, "users", id, cancellationToken);
+        return stream is null ? HttpResults.NotFound() : HttpResults.File(stream, contentType);
+    }
+
+    private static HttpIResult ValidationProblem(ModelStateDictionary modelState)
+    {
+        var errors = modelState
+            .Where(kvp => kvp.Value?.Errors.Count > 0)
+            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+
+        return HttpResults.ValidationProblem(errors, statusCode: StatusCodes.Status422UnprocessableEntity);
     }
 }

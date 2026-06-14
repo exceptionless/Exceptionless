@@ -7,6 +7,8 @@ public record GetCurrentUser;
 public record GetUserById(string Id);
 public record GetUsersByOrganization(string OrganizationId, int Page, int Limit);
 public record UpdateUserMessage(string Id, JsonPatchDocument<UpdateUser> PatchDocument);
+public record SetUserAvatar(string Id, string FileName);
+public record DeleteUserAvatar(string Id);
 public record DeleteCurrentUser;
 public record DeleteUsers(string[] Ids);
 public record UpdateEmailAddress(string Id, string Email);

@@ -734,6 +734,49 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PatchAsync_WithPromotedTabs_PreservesOrderAndRemovesDuplicates()
+    {
+        // Arrange
+        var project = await SendRequestAsAsync<ViewProject>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPath("projects")
+            .Content(new NewProject
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Name = "Promoted Tabs Project",
+                DeleteBotDataEnabled = false
+            })
+            .StatusCodeShouldBeCreated()
+        );
+        Assert.NotNull(project);
+
+        /* language=json */
+        const string json = """
+                            {
+                                "promoted_tabs": ["gamma", "alpha", "gamma", "  beta  ", ""]
+                            }
+                            """;
+
+        // Act
+        var updatedProject = await SendRequestAsAsync<ViewProject>(r => r
+            .AsTestOrganizationUser()
+            .Patch()
+            .AppendPaths("projects", project.Id)
+            .Content(json, "application/json")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updatedProject);
+        Assert.Equal(["gamma", "alpha", "beta"], updatedProject.PromotedTabs);
+
+        var persisted = await _projectRepository.GetByIdAsync(project.Id);
+        Assert.NotNull(persisted);
+        Assert.Equal(["gamma", "alpha", "beta"], persisted.PromotedTabs);
+    }
+
+    [Fact]
     public async Task PatchAsync_NonExistentProject_ReturnsNotFound()
     {
         // Arrange - record a known project's state to verify it wasn't changed

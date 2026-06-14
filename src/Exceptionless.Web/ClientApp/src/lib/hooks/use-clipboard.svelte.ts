@@ -27,7 +27,11 @@ export class UseClipboard {
         }
 
         try {
-            await navigator.clipboard.writeText(text);
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(text);
+            } else if (!copyUsingTextArea(text)) {
+                throw new Error('Clipboard API is not available');
+            }
 
             this.#copiedStatus = 'success';
 
@@ -35,7 +39,7 @@ export class UseClipboard {
                 this.#copiedStatus = undefined;
             }, this.delay);
         } catch {
-            this.#copiedStatus = 'failure';
+            this.#copiedStatus = copyUsingTextArea(text) ? 'success' : 'failure';
 
             this.timeout = setTimeout(() => {
                 this.#copiedStatus = undefined;
@@ -43,5 +47,37 @@ export class UseClipboard {
         }
 
         return this.#copiedStatus;
+    }
+}
+
+function copyUsingTextArea(text: string) {
+    if (typeof document === 'undefined') {
+        return false;
+    }
+
+    const activeElement = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
+    const textArea = document.createElement('textarea');
+
+    textArea.value = text;
+    textArea.setAttribute('readonly', '');
+    textArea.style.border = '0';
+    textArea.style.height = '1px';
+    textArea.style.left = '0';
+    textArea.style.opacity = '0';
+    textArea.style.padding = '0';
+    textArea.style.position = 'fixed';
+    textArea.style.top = '0';
+    textArea.style.width = '1px';
+
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    textArea.setSelectionRange(0, textArea.value.length);
+
+    try {
+        return document.execCommand('copy');
+    } finally {
+        document.body.removeChild(textArea);
+        activeElement?.focus();
     }
 }

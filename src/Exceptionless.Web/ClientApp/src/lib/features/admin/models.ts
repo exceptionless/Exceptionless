@@ -72,13 +72,11 @@ export type MaintenanceAction = {
     description: string;
     hasDateRange?: boolean;
     hasOrganizationId?: boolean;
-    kind?: MaintenanceActionKind;
     label: string;
     name: string;
 };
 
 export type MaintenanceActionCategory = 'Billing' | 'Configuration' | 'Elasticsearch' | 'Maintenance' | 'Security' | 'Users';
-export type MaintenanceActionKind = 'maintenance-job' | 'predefined-saved-views';
 export type MigrationsResponse = {
     current_version: number;
     states: MigrationState[];
@@ -148,15 +146,6 @@ export const maintenanceActions: MaintenanceAction[] = [
             'Re-stamps the latest system-default user-agent bot-filter patterns onto every project and bumps the configuration version, forcing all Exceptionless clients to refresh their local settings on the next request.',
         label: 'Update Project Default Bot Lists',
         name: 'update-project-default-bot-lists'
-    },
-    {
-        category: 'Configuration',
-        dangerous: false,
-        description:
-            'Loads the current global predefined saved views from the API and displays the seed JSON for review or copying into the bundled predefined saved views file.',
-        kind: 'predefined-saved-views',
-        label: 'View Predefined Saved Views',
-        name: 'predefined-saved-views'
     },
     {
         category: 'Configuration',

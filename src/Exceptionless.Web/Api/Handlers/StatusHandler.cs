@@ -84,7 +84,7 @@ public class StatusHandler(
         if (String.IsNullOrWhiteSpace(message.Message))
             return new SystemNotification { Date = DateTime.MinValue };
 
-        return await notificationService.SetSystemNotificationAsync(message.Message, message.Publish);
+        return await notificationService.SetSystemNotificationAsync(message.Message, message.Level, message.Target, message.Publish);
     }
 
     public Task Handle(RemoveSystemNotification message)

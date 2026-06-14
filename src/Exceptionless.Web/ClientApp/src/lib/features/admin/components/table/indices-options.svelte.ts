@@ -86,10 +86,12 @@ export function getTableOptions(queryParameters: TableMemoryPagingParameters, ge
             return getColumns();
         },
         configureOptions: (options) => {
-            options._rowModels = { ...options._rowModels, sortedRowModel: createSortedRowModel(sortFns) };
-            options.initialState = { sorting: [{ desc: true, id: 'store_size_in_bytes' }] };
-            options.manualSorting = false;
-            return options;
+            return {
+                ...options,
+                _rowModels: { ...options._rowModels, sortedRowModel: createSortedRowModel(sortFns) },
+                initialState: { sorting: [{ desc: true, id: 'store_size_in_bytes' }] },
+                manualSorting: false
+            };
         },
         defaultColumnVisibility: {
             primary: false,

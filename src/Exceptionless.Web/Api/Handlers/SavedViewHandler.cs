@@ -107,6 +107,61 @@ public class SavedViewHandler(
         return Result<IReadOnlyCollection<PredefinedSavedViewDefinition>>.Success(definitions);
     }
 
+    public async Task<Result<IReadOnlyCollection<PredefinedSavedViewDefinition>>> Handle(ExportOrganizationSavedViews message)
+    {
+        if (!HttpContext.Request.CanAccessOrganization(message.OrganizationId))
+            return Result.NotFound("Organization not found.");
+
+        var definitions = new List<PredefinedSavedViewDefinition>();
+
+        foreach (var viewType in NewSavedView.ValidViewTypes)
+        {
+            var results = await repository.GetByViewAsync(message.OrganizationId, viewType, o => o.PageLimit(1000));
+            foreach (var savedView in results.Documents.Where(v => v.UserId is null))
+            {
+                var key = GetPredefinedKey(savedView);
+                definitions.Add(ToPredefinedSavedView(savedView, key));
+            }
+        }
+
+        return definitions;
+    }
+
+    public async Task<Result<IReadOnlyCollection<PredefinedSavedViewDefinition>>> Handle(ReplacePredefinedSavedViews message)
+    {
+        foreach (var viewType in NewSavedView.ValidViewTypes)
+        {
+            var existingViews = await GetSystemPredefinedSavedViewsAsync(viewType);
+            if (existingViews.Count > 0)
+                await repository.RemoveAsync(existingViews.Select(v => v.Id).ToList(), o => o.ImmediateConsistency());
+        }
+
+        var savedViews = message.Definitions.Select(definition => new SavedView
+            {
+                OrganizationId = PredefinedSavedViewsDataSeed.SystemOrganizationId,
+                CreatedByUserId = GetCurrentUserId(),
+                PredefinedKey = definition.Key,
+                Name = definition.Name,
+                Slug = definition.Slug,
+                ViewType = definition.ViewType,
+                Filter = definition.Filter,
+                Time = definition.Time,
+                Sort = definition.Sort,
+                FilterDefinitions = definition.FilterDefinitions is { } filterDefinitions ? JsonSerializer.Serialize(filterDefinitions) : null,
+                Columns = definition.Columns is { } columns ? new Dictionary<string, bool>(columns) : null,
+                ColumnOrder = definition.ColumnOrder?.ToList(),
+                ShowStats = definition.ShowStats,
+                ShowChart = definition.ShowChart,
+                Version = 1
+            })
+            .ToList();
+
+        if (savedViews.Count > 0)
+            await repository.AddAsync(savedViews, o => o.Cache().ImmediateConsistency());
+
+        return Result<IReadOnlyCollection<PredefinedSavedViewDefinition>>.Success(await GetPredefinedSavedViewsAsync());
+    }
+
     public async Task<Result<ViewSavedView>> Handle(PromoteToPredefinedSavedView message)
     {
         var source = await repository.GetByIdAsync(message.Id);
@@ -767,7 +822,7 @@ public class SavedViewHandler(
         var candidate = baseSlug;
         var suffix = 2;
 
-        while (existingViews.Any(view => view.Id != excludingId && String.Equals(ToFallbackSlug(String.IsNullOrWhiteSpace(view.Slug) ? view.Name : view.Slug, view.Id), candidate, StringComparison.OrdinalIgnoreCase)))
+        while (existingViews.Any(view => view.Id != excludingId && String.Equals(view.Slug, candidate, StringComparison.OrdinalIgnoreCase)))
         {
             var suffixText = $"-{suffix}";
             var maxBaseLength = 100 - suffixText.Length;
