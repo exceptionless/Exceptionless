@@ -165,7 +165,7 @@
 }
 
 @utility no-scrollbar {
-	/* CUSTOM: HELPS KEEP CUSTOM SIDEBAR/OVERLAYS FROM CAUSING VISUAL LAYOUT JITTER. */
+    /* CUSTOM: HELPS KEEP CUSTOM SIDEBAR/OVERLAYS FROM CAUSING VISUAL LAYOUT JITTER. */
     -ms-overflow-style: none;
     scrollbar-width: none;
 

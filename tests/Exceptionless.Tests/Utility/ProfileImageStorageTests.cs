@@ -2,15 +2,18 @@ using System.Text;
 using Exceptionless.Core.Utility;
 using Exceptionless.Web.Utility;
 using Foundatio.Storage;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Xunit;
 
 namespace Exceptionless.Tests.Utility;
 
-public class ProfileImageStorageTests
+public class ProfileImageStorageTests : TestWithServices
 {
     private const string UserId = "507f1f77bcf86cd799439011";
+
+    public ProfileImageStorageTests(ITestOutputHelper output) : base(output)
+    {
+    }
 
     [Fact]
     public async Task SaveAsync_WithPngImage_StoresImage()
