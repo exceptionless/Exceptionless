@@ -1,4 +1,5 @@
 using Exceptionless.Web.Api.Endpoints;
+using Foundatio.Mediator;
 
 namespace Exceptionless.Web.Api;
 
@@ -19,6 +20,7 @@ public static class ApiEndpoints
         app.MapStackEndpoints();
         app.MapAdminEndpoints();
         app.MapEventEndpoints();
+        app.MapMediatorEndpoints();
 
         return app;
     }

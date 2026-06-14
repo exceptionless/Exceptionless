@@ -18,21 +18,6 @@ public static class StatusEndpoints
             .AddEndpointFilter<AutoValidationEndpointFilter>()
             .ExcludeFromDescription();
 
-        group.MapGet("about", async (IMediator mediator) =>
-        {
-            var result = await mediator.InvokeAsync<object>(new GetAboutInfo());
-            return HttpResults.Ok(result);
-        })
-        .AllowAnonymous()
-        .WithName("GetAboutInfo");
-
-        group.MapGet("queue-stats", async (IMediator mediator) =>
-        {
-            var result = await mediator.InvokeAsync<object>(new GetQueueStats());
-            return HttpResults.Ok(result);
-        })
-        .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy);
-
         group.MapPost("notifications/release", async (IMediator mediator, [FromBody] ValueFromBody<string> message, bool critical = false) =>
         {
             var result = await mediator.InvokeAsync<object>(new PostReleaseNotification(message.Value, critical));

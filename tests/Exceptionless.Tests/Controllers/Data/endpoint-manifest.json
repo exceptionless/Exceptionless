@@ -198,12 +198,10 @@
   {
     "method": "GET",
     "route": "/api/v2/about",
-    "displayName": "HTTP: GET api/v2/about",
+    "displayName": "HTTP: GET /api/v2/about",
     "tags": [],
     "allowAnonymous": true,
-    "authorizationPolicies": [
-      "UserPolicy"
-    ],
+    "authorizationPolicies": [],
     "authorizationRoles": [],
     "authenticationSchemes": []
   },
@@ -1897,7 +1895,7 @@
   {
     "method": "GET",
     "route": "/api/v2/queue-stats",
-    "displayName": "HTTP: GET api/v2/queue-stats",
+    "displayName": "HTTP: GET /api/v2/queue-stats",
     "tags": [],
     "allowAnonymous": false,
     "authorizationPolicies": [
