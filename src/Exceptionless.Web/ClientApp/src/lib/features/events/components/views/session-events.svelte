@@ -4,7 +4,6 @@
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
-    import { H3 } from '$comp/typography';
     import * as Alert from '$comp/ui/alert';
     import { Button } from '$comp/ui/button';
     import { Skeleton } from '$comp/ui/skeleton';
@@ -15,7 +14,7 @@
     import Summary from '$features/events/components/summary/summary.svelte';
     import { getSessionId } from '$features/events/utils/index';
     import { organization } from '$features/organizations/context.svelte';
-    import FilterIcon from '@lucide/svelte/icons/filter';
+    import Funnel from '@lucide/svelte/icons/funnel';
     import InfoIcon from '@lucide/svelte/icons/info';
 
     import SessionEventDuration from '../session-event-duration.svelte';
@@ -31,7 +30,7 @@
 
     const sessionId = $derived(getSessionId(event));
     const isSessionStart = $derived(event.type === 'session');
-    const eventsPath = $derived(resolve('/(app)/events'));
+    const eventsPath = $derived(resolve('/(app)/event'));
     const sessionEventsHref = $derived.by(() => {
         const filter = getSessionFilter();
         if (!filter) {
@@ -57,6 +56,9 @@
             return queryParams;
         },
         route: {
+            get projectId() {
+                return event.project_id;
+            },
             get sessionId() {
                 return hasPremiumFeatures ? sessionId : undefined;
             }
@@ -64,7 +66,7 @@
     });
 
     function getEventHref(eventId: string): string {
-        return resolve('/(app)/events/[eventId=objectid]', { eventId });
+        return resolve('/(app)/event/[eventId=objectid]', { eventId });
     }
 
     function getSessionFilter(): SessionFilter | undefined {
@@ -137,18 +139,17 @@
         </Table.Root>
     {/if}
 
-    <div class="mb-2 flex items-center justify-between gap-2">
-        <H3>Session Events</H3>
+    <div class="mb-2 flex justify-end">
         <Button
+            aria-label="Open events filtered to this session"
             disabled={!sessionEventsHref}
             href={sessionEventsHref}
             onclick={handleSessionFilterClick}
-            size="sm"
+            size="icon-sm"
             title="Open events filtered to this session"
             variant="outline"
         >
-            <FilterIcon data-icon="inline-start" />
-            Filter
+            <Funnel class="size-4" />
         </Button>
     </div>
 

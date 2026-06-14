@@ -23,6 +23,24 @@ Authorization: Bearer {{token}}
 
 ###
 @userId = {{currentUser.response.body.$.id}}
+@avatarFile = ./avatar.png
+
+### Upload Avatar
+# Replace {{avatarFile}} with a local PNG, JPEG, GIF, or WebP image.
+POST {{apiUrl}}/users/{{userId}}/avatar
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=avatar-boundary
+
+--avatar-boundary
+Content-Disposition: form-data; name="file"; filename="avatar.png"
+Content-Type: image/png
+
+< {{avatarFile}}
+--avatar-boundary--
+
+### Remove Avatar
+DELETE {{apiUrl}}/users/{{userId}}/avatar
+Authorization: Bearer {{token}}
 
 ### Delete By User Id
 DELETE {{apiUrl}}/users/{{userId}}

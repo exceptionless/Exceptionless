@@ -41,12 +41,12 @@ export function savedViewHref(savedView: SavedViewLink): string {
         return `${resolve('/(app)/stream')}?saved=${savedView.id}`;
     }
 
-    const base = savedView.view_type === 'events' ? resolve('/(app)/events') : resolve('/(app)/stacks');
+    const base = savedView.view_type === 'events' ? resolve('/(app)/event') : resolve('/(app)/stack');
     return `${base}/${savedViewResolvedSlug(savedView)}`;
 }
 
 export function savedViewResolvedSlug(savedView: Pick<SavedViewLink, 'name' | 'slug'>): string {
-    return savedView.slug || savedViewSlug(savedView.name);
+    return savedView.slug ?? '';
 }
 
 export function savedViewSlug(value: string): string {

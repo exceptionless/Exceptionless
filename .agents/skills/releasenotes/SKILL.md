@@ -1,8 +1,6 @@
 ---
 name: releasenotes
 description: Generate formatted changelogs from git history since the last release tag. Use when preparing release notes that categorize changes into breaking changes, features, fixes, and other sections.
-triggers:
-- /releasenotes
 ---
 
 Generate a changelog for all changes from the most recent release until now.
@@ -14,6 +12,7 @@ Generate a changelog for all changes from the most recent release until now.
 4. Categorize changes into sections: Breaking Changes, Added, Changed, Fixed, Notes
 5. Focus on user-facing changes (features, important bug fixes, breaking changes)
 6. Include PR links and contributor attribution
+7. Draft for user review only; do not create or publish a GitHub release without explicit approval
 
 ## Output
-Present the changelog in a markdown code block, ready to copy-paste into a GitHub release.
+Present the changelog in a markdown code block for review.

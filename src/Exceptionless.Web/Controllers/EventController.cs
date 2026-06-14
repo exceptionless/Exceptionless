@@ -172,17 +172,22 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// Get by id
     /// </summary>
     /// <param name="id">The identifier of the event.</param>
+    /// <param name="expectedStackId">Optional stack identifier that the event must belong to.</param>
     /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
     /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+    /// <response code="400">The event does not belong to the expected stack.</response>
     /// <response code="404">The event occurrence could not be found.</response>
     /// <response code="426">Unable to view event occurrence due to plan limits.</response>
     [HttpGet("{id:objectid}", Name = "GetPersistentEventById")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<PersistentEvent>> GetAsync(string id, string? time = null, string? offset = null)
+    public async Task<ActionResult<PersistentEvent>> GetAsync(string id, [FromQuery(Name = "expected_stack_id")] string? expectedStackId = null, string? time = null, string? offset = null)
     {
         var model = await GetModelAsync(id, false);
         if (model is null)
             return NotFound();
+
+        if (!String.IsNullOrEmpty(expectedStackId) && !String.Equals(model.StackId, expectedStackId, StringComparison.Ordinal))
+            return Problem(statusCode: StatusCodes.Status400BadRequest, title: $"The event \"{model.Id}\" belongs to stack \"{model.StackId}\", not stack \"{expectedStackId}\". Open the event from its current stack.");
 
         var organization = await GetOrganizationAsync(model.OrganizationId);
         if (organization is null)
@@ -313,6 +318,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                             Id = summaryData.Id,
                             TemplateKey = summaryData.TemplateKey,
                             Date = e.Date,
+                            Type = e.Type,
                             Data = summaryData.Data
                         };
                     }).ToList(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total, events.Hits.FirstOrDefault()?.GetSortToken(_serializer), events.Hits.LastOrDefault()?.GetSortToken(_serializer));

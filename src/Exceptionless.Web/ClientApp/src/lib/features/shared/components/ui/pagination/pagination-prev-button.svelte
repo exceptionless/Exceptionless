@@ -14,6 +14,7 @@
 
 {#snippet Fallback()}
 	<ChevronLeftIcon class={cn("size-4", className)} />
+	<!-- CUSTOM: KEEP ACCESSIBLE PREVIOUS LABEL FOR SCREEN READERS/KEYBOARD CONTEXT; LABEL IS INTENTIONALLY COMMENTED TO AVOID BEING NUKED BY UPSTREAM UPDATES. -->
 	<!-- <span>Previous</span> -->
 {/snippet}
 

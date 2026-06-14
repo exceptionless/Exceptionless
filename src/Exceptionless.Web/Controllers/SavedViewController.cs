@@ -25,7 +25,7 @@ public partial class SavedViewController : RepositoryApiController<ISavedViewRep
 {
     private const int MaxViewsPerOrganization = 100;
     private const string PredefinedSavedViewsDataKey = "@@PredefinedSavedViewsVersion";
-    private const int PredefinedSavedViewsVersion = 4;
+    private const int PredefinedSavedViewsVersion = 1;
 
     private readonly IOrganizationRepository _organizationRepository;
     private readonly ILockProvider _lockProvider;
@@ -52,11 +52,7 @@ public partial class SavedViewController : RepositoryApiController<ISavedViewRep
 
     protected override ViewSavedView MapToViewModel(SavedView model)
     {
-        var viewModel = _mapper.MapToViewSavedView(model);
-        if (String.IsNullOrWhiteSpace(viewModel.Slug))
-            viewModel.Slug = ToFallbackSlug(viewModel.Name, viewModel.Id);
-
-        return viewModel;
+        return _mapper.MapToViewSavedView(model);
     }
 
     protected override List<ViewSavedView> MapToViewModels(IEnumerable<SavedView> models) => models.Select(MapToViewModel).ToList();
@@ -172,6 +168,77 @@ public partial class SavedViewController : RepositoryApiController<ISavedViewRep
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
     public async Task<ActionResult<IReadOnlyCollection<PredefinedSavedViewDefinition>>> GetPredefinedAsync()
     {
+        return Ok(await GetPredefinedSavedViewsAsync());
+    }
+
+    /// <summary>
+    /// Get an organization's saved views exported as predefined definitions
+    /// </summary>
+    /// <param name="organizationId">The identifier of the organization to export from.</param>
+    /// <response code="200">The organization's saved views as predefined definitions.</response>
+    /// <response code="404">The organization could not be found.</response>
+    [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/saved-views/export")]
+    [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
+    public async Task<ActionResult<IReadOnlyCollection<PredefinedSavedViewDefinition>>> ExportOrganizationSavedViewsAsync(string organizationId)
+    {
+        if (!CanAccessOrganization(organizationId))
+            return NotFound();
+
+        var definitions = new List<PredefinedSavedViewDefinition>();
+
+        foreach (var viewType in NewSavedView.ValidViewTypes)
+        {
+            var results = await _repository.GetByViewAsync(organizationId, viewType, o => o.PageLimit(1000));
+            foreach (var savedView in results.Documents.Where(v => v.UserId is null))
+            {
+                var key = GetPredefinedKey(savedView);
+                definitions.Add(ToPredefinedSavedView(savedView, key));
+            }
+        }
+
+        return Ok(definitions);
+    }
+
+    /// <summary>
+    /// Replace all predefined saved views with the provided definitions
+    /// </summary>
+    /// <param name="definitions">The full set of predefined saved view definitions.</param>
+    /// <response code="200">The predefined saved views were replaced.</response>
+    [HttpPut("predefined")]
+    [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
+    public async Task<ActionResult<IReadOnlyCollection<PredefinedSavedViewDefinition>>> PutPredefinedAsync([FromBody] IReadOnlyCollection<PredefinedSavedViewDefinition> definitions)
+    {
+        // Remove all existing system predefined views
+        foreach (var viewType in NewSavedView.ValidViewTypes)
+        {
+            var existingViews = await GetSystemPredefinedSavedViewsAsync(viewType);
+            if (existingViews.Count > 0)
+                await _repository.RemoveAsync(existingViews.Select(v => v.Id).ToList(), o => o.ImmediateConsistency());
+        }
+
+        var savedViews = definitions.Select(definition => new SavedView
+            {
+                OrganizationId = PredefinedSavedViewsDataSeed.SystemOrganizationId,
+                CreatedByUserId = CurrentUser.Id,
+                PredefinedKey = definition.Key,
+                Name = definition.Name,
+                Slug = definition.Slug,
+                ViewType = definition.ViewType,
+                Filter = definition.Filter,
+                Time = definition.Time,
+                Sort = definition.Sort,
+                FilterDefinitions = definition.FilterDefinitions is { } fd ? JsonSerializer.Serialize(fd) : null,
+                Columns = definition.Columns is { } cols ? new Dictionary<string, bool>(cols) : null,
+                ColumnOrder = definition.ColumnOrder?.ToList(),
+                ShowStats = definition.ShowStats,
+                ShowChart = definition.ShowChart,
+                Version = 1
+            })
+            .ToList();
+
+        if (savedViews.Count > 0)
+            await _repository.AddAsync(savedViews, o => o.Cache().ImmediateConsistency());
+
         return Ok(await GetPredefinedSavedViewsAsync());
     }
 
@@ -405,7 +472,7 @@ public partial class SavedViewController : RepositoryApiController<ISavedViewRep
             original.Slug = ToSlug(original.Slug);
 
         if (String.IsNullOrWhiteSpace(original.Slug))
-            original.Slug = ToFallbackSlug(original.Name, original.Id);
+            original.Slug = ToSlug(original.Name);
 
         original.UpdatedByUserId = CurrentUser.Id;
 
@@ -757,7 +824,7 @@ public partial class SavedViewController : RepositoryApiController<ISavedViewRep
         var candidate = baseSlug;
         var suffix = 2;
 
-        while (existingViews.Any(view => view.Id != excludingId && String.Equals(ToFallbackSlug(String.IsNullOrWhiteSpace(view.Slug) ? view.Name : view.Slug, view.Id), candidate, StringComparison.OrdinalIgnoreCase)))
+        while (existingViews.Any(view => view.Id != excludingId && String.Equals(view.Slug, candidate, StringComparison.OrdinalIgnoreCase)))
         {
             var suffixText = $"-{suffix}";
             var maxBaseLength = 100 - suffixText.Length;
@@ -771,7 +838,7 @@ public partial class SavedViewController : RepositoryApiController<ISavedViewRep
     private async Task<bool> SlugExistsAsync(string organizationId, string viewType, string slug, string? excludingId)
     {
         var results = await _repository.GetByViewForUserAsync(organizationId, viewType, CurrentUser.Id, o => o.PageLimit(1000));
-        return results.Documents.Any(view => view.Id != excludingId && String.Equals(ToFallbackSlug(String.IsNullOrWhiteSpace(view.Slug) ? view.Name : view.Slug, view.Id), slug, StringComparison.OrdinalIgnoreCase));
+        return results.Documents.Any(view => view.Id != excludingId && String.Equals(view.Slug, slug, StringComparison.OrdinalIgnoreCase));
     }
 
     private async Task<bool> NameExistsAsync(string organizationId, string viewType, string name, string? excludingId)

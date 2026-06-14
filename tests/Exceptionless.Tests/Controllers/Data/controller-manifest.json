@@ -1174,6 +1174,55 @@
   },
   {
     "Controller": "OrganizationController",
+    "Action": "DeleteIconAsync",
+    "HttpMethod": "DELETE",
+    "Route": "/api/v2/organizations/{id:objectid}/icon",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OrganizationController",
+    "Action": "UploadIconAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/organizations/{id:objectid}/icon",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [
+      "multipart/form-data"
+    ],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OrganizationController",
+    "Action": "GetIconAsync",
+    "HttpMethod": "GET",
+    "Route": "/api/v2/organizations/{id:objectid}/icon/{fileName}",
+    "Name": "GetOrganizationIcon",
+    "Authorization": [
+      "AllowAnonymous",
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OrganizationController",
     "Action": "GetInvoicesAsync",
     "HttpMethod": "GET",
     "Route": "/api/v2/organizations/{id:objectid}/invoices",
@@ -1387,6 +1436,22 @@
     "Consumes": [
       "application/json"
     ],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "SavedViewController",
+    "Action": "ExportOrganizationSavedViewsAsync",
+    "HttpMethod": "GET",
+    "Route": "/api/v2/organizations/{organizationId:objectid}/saved-views/export",
+    "Authorization": [
+      "Authorize(Policy=GlobalAdminPolicy)",
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
     "Produces": [
       "application/json",
       "application/problem\u002Bjson"
@@ -2163,6 +2228,22 @@
   },
   {
     "Controller": "SavedViewController",
+    "Action": "PutPredefinedAsync",
+    "HttpMethod": "PUT",
+    "Route": "/api/v2/saved-views/predefined",
+    "Authorization": [
+      "Authorize(Policy=GlobalAdminPolicy)",
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "SavedViewController",
     "Action": "GetAsync",
     "HttpMethod": "GET",
     "Route": "/api/v2/saved-views/{id:objectid}",
@@ -2748,6 +2829,55 @@
       "application/problem\u002Bjson"
     ],
     "ExcludeFromDescription": true
+  },
+  {
+    "Controller": "UserController",
+    "Action": "DeleteAvatarAsync",
+    "HttpMethod": "DELETE",
+    "Route": "/api/v2/users/{id:objectid}/avatar",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "UserController",
+    "Action": "UploadAvatarAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/users/{id:objectid}/avatar",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [
+      "multipart/form-data"
+    ],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "UserController",
+    "Action": "GetAvatarAsync",
+    "HttpMethod": "GET",
+    "Route": "/api/v2/users/{id:objectid}/avatar/{fileName}",
+    "Name": "GetUserAvatar",
+    "Authorization": [
+      "AllowAnonymous",
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
   },
   {
     "Controller": "UserController",

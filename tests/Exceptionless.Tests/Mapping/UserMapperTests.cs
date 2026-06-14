@@ -21,6 +21,7 @@ public sealed class UserMapperTests
         {
             Id = "1ecd0826e447ad1e78822555",
             EmailAddress = "user@localhost",
+            AvatarFileName = "avatar.png",
             FullName = "Eric Smith",
             IsEmailAddressVerified = true,
             IsActive = true
@@ -32,6 +33,7 @@ public sealed class UserMapperTests
         // Assert
         Assert.Equal("1ecd0826e447ad1e78822555", result.Id);
         Assert.Equal("user@localhost", result.EmailAddress);
+        Assert.Equal("avatar.png", result.AvatarUrl);
         Assert.Equal("Eric Smith", result.FullName);
         Assert.True(result.IsEmailAddressVerified);
         Assert.True(result.IsActive);

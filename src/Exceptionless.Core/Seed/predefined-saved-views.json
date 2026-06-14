@@ -1,5 +1,32 @@
 [
     {
+        "key": "events:all",
+        "name": "All",
+        "slug": "all",
+        "viewType": "events",
+        "time": "[now-7d TO now]",
+        "sort": "-date",
+        "filterDefinitions": [
+            {
+                "type": "date",
+                "term": "date",
+                "value": "[now-7d TO now]"
+            },
+            {
+                "type": "project"
+            }
+        ],
+        "columns": {
+            "level": false,
+            "message": false,
+            "name": false,
+            "source": false,
+            "type": false
+        },
+        "showStats": true,
+        "showChart": true
+    },
+    {
         "key": "events:errors",
         "name": "Errors",
         "slug": "errors",
@@ -12,6 +39,9 @@
                 "type": "date",
                 "term": "date",
                 "value": "[now-7d TO now]"
+            },
+            {
+                "type": "project"
             },
             {
                 "type": "type",
@@ -44,6 +74,9 @@
                 "value": "[now-7d TO now]"
             },
             {
+                "type": "project"
+            },
+            {
                 "type": "type",
                 "value": ["log"],
                 "hidden": true
@@ -74,6 +107,9 @@
                 "value": "[now-7d TO now]"
             },
             {
+                "type": "project"
+            },
+            {
                 "type": "status",
                 "value": ["open", "regressed"],
                 "hidden": true
@@ -102,6 +138,9 @@
                 "value": "[now-7d TO now]"
             },
             {
+                "type": "project"
+            },
+            {
                 "type": "type",
                 "value": ["error"],
                 "hidden": true
@@ -128,6 +167,9 @@
                 "type": "date",
                 "term": "date",
                 "value": "[now-7d TO now]"
+            },
+            {
+                "type": "project"
             },
             {
                 "type": "type",

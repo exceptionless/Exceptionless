@@ -16,6 +16,7 @@ Content-Type: application/json
 ###
 
 @token = {{login.response.body.$.token}}
+@iconFile = ./icon.png
 
 ### All
 GET {{apiUrl}}/organizations
@@ -69,6 +70,23 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "name": "My updated organization" }
+
+### Upload Icon
+# Replace {{iconFile}} with a local PNG, JPEG, GIF, or WebP image.
+POST {{apiUrl}}/organizations/{{organizationId}}/icon
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=icon-boundary
+
+--icon-boundary
+Content-Disposition: form-data; name="file"; filename="icon.png"
+Content-Type: image/png
+
+< {{iconFile}}
+--icon-boundary--
+
+### Remove Icon
+DELETE {{apiUrl}}/organizations/{{organizationId}}/icon
+Authorization: Bearer {{token}}
 
 ### Delete
 DELETE {{apiUrl}}/organizations/{{organizationId}}

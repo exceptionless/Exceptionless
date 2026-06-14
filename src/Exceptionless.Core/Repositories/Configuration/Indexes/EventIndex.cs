@@ -138,6 +138,8 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
         config
             .SetDefaultFields([
                 "id",
+                Alias.ReferenceId,
+                "reference_id",
                 "source",
                 "message",
                 "tags",

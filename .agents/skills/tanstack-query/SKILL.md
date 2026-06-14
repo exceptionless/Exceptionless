@@ -9,7 +9,7 @@ description: >
 
 # TanStack Query
 
-> **Documentation:** [tanstack.com/query](https://tanstack.com/query) | Use `context7` for API reference
+> **Documentation:** [tanstack.com/query](https://tanstack.com/query). Use official docs when the local pattern is not enough.
 
 Centralize API calls in `api.svelte.ts` per feature using TanStack Query with `@exceptionless/fetchclient`.
 
@@ -18,17 +18,21 @@ Centralize API calls in `api.svelte.ts` per feature using TanStack Query with `@
 ```typescript
 // src/lib/features/organizations/api.svelte.ts
 import { createQuery, createMutation, useQueryClient } from "@tanstack/svelte-query";
-import { useFetchClient, type ProblemDetails } from "@exceptionless/fetchclient";
+import { type FetchClientResponse, type ProblemDetails, useFetchClient } from "@exceptionless/fetchclient";
+import { accessToken } from "$features/auth/index.svelte";
+
+const queryKeys = {
+    type: ["Organization"] as const,
+};
 
 export function getOrganizationsQuery() {
-    const client = useFetchClient();
-
-    return createQuery(() => ({
-        queryKey: ["organizations"],
-        queryFn: async () => {
-            const response = await client.getJSON<Organization[]>("/organizations");
-            if (!response.ok) throw response.problem;
-            return response.data!;
+    return createQuery<FetchClientResponse<Organization[]>, ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current,
+        queryKey: queryKeys.type,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<Organization[]>("/organizations", { signal });
+            return response;
         },
     }));
 }
@@ -49,23 +53,22 @@ export const queryKeys = {
 };
 ```
 
-Common key patterns: `["organizations"]`, `["organizations", id]`, `["projects", projectId, "events"]`, `["events", { projectId, status: "open" }]`.
+Prefer the feature's `queryKeys` factory over ad-hoc arrays so WebSocket invalidation and cache updates share the same keys.
 
 ## Mutations
 
 ```typescript
 export function postOrganizationMutation() {
-    const client = useFetchClient();
     const queryClient = useQueryClient();
 
     return createMutation(() => ({
         mutationFn: async (data: CreateOrganizationRequest) => {
+            const client = useFetchClient();
             const response = await client.postJSON<Organization>("/organizations", data);
-            if (!response.ok) throw response.problem;
             return response.data!;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["organizations"] });
+            queryClient.invalidateQueries({ queryKey: queryKeys.type });
         },
     }));
 }
@@ -106,4 +109,4 @@ export async function invalidateWebhookQueries(
 }
 ```
 
-Wire up: `onMessage("WebhookChanged", (msg) => invalidateWebhookQueries(queryClient, msg));`
+Wire WebSocket messages from the app layout to the feature invalidation helper.

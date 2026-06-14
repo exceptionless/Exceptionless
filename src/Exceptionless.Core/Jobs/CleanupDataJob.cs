@@ -4,6 +4,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -11,6 +12,7 @@ using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Resilience;
+using Foundatio.Storage;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 
@@ -31,6 +33,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
     private readonly AppOptions _appOptions;
     private readonly ILockProvider _lockProvider;
     private readonly ICacheClient _cacheClient;
+    private readonly IFileStorage _fileStorage;
     private DateTime? _lastRun;
 
     public CleanupDataJob(
@@ -43,6 +46,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         IWebHookRepository webHookRepository,
         ILockProvider lockProvider,
         ICacheClient cacheClient,
+        IFileStorage fileStorage,
         BillingManager billingManager,
         UsageService usageService,
         AppOptions appOptions,
@@ -63,6 +67,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         _appOptions = appOptions;
         _lockProvider = lockProvider;
         _cacheClient = cacheClient;
+        _fileStorage = fileStorage;
     }
 
     protected override Task<ILock?> GetLockAsync(CancellationToken cancellationToken = default)
@@ -196,8 +201,24 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         await RenewLockAsync(context);
         long removedProjects = await _projectRepository.RemoveAllByOrganizationIdAsync(organization.Id);
 
+        await RenewLockAsync(context);
+        await RemoveOrganizationFilesAsync(organization, context);
+
         await _organizationRepository.RemoveAsync(organization);
         _logger.RemoveOrganizationComplete(organization.Name, organization.Id, removedProjects, removedStacks, removedEvents);
+    }
+
+    private Task RemoveOrganizationFilesAsync(Organization organization, JobContext context)
+        => RemoveFilesAsync(OrganizationStoragePaths.GetProfileImagesPath(organization.Id), context.CancellationToken);
+
+    private async Task RemoveFilesAsync(string path, CancellationToken cancellationToken)
+    {
+        string searchPattern = $"{path}/*";
+        var files = await _fileStorage.GetFileListAsync(searchPattern, cancellationToken: cancellationToken);
+        if (!files.Any())
+            return;
+
+        await _fileStorage.DeleteFilesAsync(searchPattern, cancellationToken);
     }
 
     private async Task RemoveProjectsAsync(Project project, JobContext context)
