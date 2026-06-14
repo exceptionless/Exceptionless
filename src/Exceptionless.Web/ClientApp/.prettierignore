@@ -5,6 +5,8 @@ yarn.lock
 
 # Generated files
 src/lib/generated
+playwright-report
+test-results
 
 # Third-party
 .agents/

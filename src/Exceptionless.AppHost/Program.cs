@@ -3,7 +3,9 @@ using Aspire.Hosting.JavaScript;
 using Microsoft.Extensions.Hosting;
 
 var builder = DistributedApplication.CreateBuilder(args);
-var servicesOnly = args.Any(arg => StringComparer.OrdinalIgnoreCase.Equals(arg, "--services-only") || StringComparer.OrdinalIgnoreCase.Equals(arg, "services-only"));
+var servicesOnly = HasArgument("--services-only");
+var ciE2E = HasArgument("--ci-e2e");
+var includeDevTools = !ciE2E;
 
 var elastic = builder.AddElasticsearch("Elasticsearch", port: 9200)
     .WithDataVolume(servicesOnly ? null : "exceptionless.data.v1");
@@ -49,20 +51,28 @@ if (!servicesOnly)
 {
     elastic = elastic
         .WithLifetime(ContainerLifetime.Persistent)
-        .WithContainerName("Exceptionless-Elasticsearch")
-        .WithKibana(b => b
+        .WithContainerName("Exceptionless-Elasticsearch");
+
+    if (includeDevTools)
+    {
+        elastic = elastic.WithKibana(b => b
             .WithLifetime(ContainerLifetime.Persistent)
             .WithContainerName("Exceptionless-Kibana")
             .WithParentRelationship(elastic));
+    }
 
     cache = cache
         .WithLifetime(ContainerLifetime.Persistent)
-        .WithContainerName("Exceptionless-Redis")
-        .WithRedisInsight(b => b
+        .WithContainerName("Exceptionless-Redis");
+
+    if (includeDevTools)
+    {
+        cache = cache.WithRedisInsight(b => b
             .WithLifetime(ContainerLifetime.Persistent)
             .WithContainerName("Exceptionless-RedisInsight")
             .WithUrlForEndpoint("http", u => u.DisplayText = "Redis")
             .WithParentRelationship(cache), containerName: "Redis-insight");
+    }
 
     mail = mail
         .WithLifetime(ContainerLifetime.Persistent)
@@ -153,3 +163,5 @@ if (!servicesOnly)
 }
 
 await builder.Build().RunAsync();
+
+bool HasArgument(string name) => args.Any(arg => StringComparer.OrdinalIgnoreCase.Equals(arg, name) || StringComparer.OrdinalIgnoreCase.Equals(arg, name.TrimStart('-')));
