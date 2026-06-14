@@ -53,7 +53,7 @@ public class RandomEventGeneratorTests : TestWithServices
     public void Generate_WithSampleEvents_IncludesReferenceIds()
     {
         // Arrange
-        var generator = new Exceptionless.Core.Utility.RandomEventGenerator(TimeProvider.System);
+        var generator = new Exceptionless.Core.Utility.RandomEventGenerator(System.TimeProvider.System);
 
         // Act
         var events = generator.Generate("organization", "project", 10);
