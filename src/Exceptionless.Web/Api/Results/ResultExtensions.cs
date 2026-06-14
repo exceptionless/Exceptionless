@@ -12,6 +12,22 @@ namespace Exceptionless.Web.Api.Results;
 public static class ResultExtensions
 {
     /// <summary>
+    /// Converts a Result (non-generic) to an HTTP IResult through the registered mediator result mapper.
+    /// </summary>
+    public static IHttpResult ToHttpResult(this Result result, IMediatorResultMapper<IHttpResult> resultMapper)
+    {
+        return resultMapper.MapResult(result);
+    }
+
+    /// <summary>
+    /// Converts a Result&lt;T&gt; to an HTTP IResult through the registered mediator result mapper.
+    /// </summary>
+    public static IHttpResult ToHttpResult<T>(this Result<T> result, IMediatorResultMapper<IHttpResult> resultMapper)
+    {
+        return resultMapper.MapResult(result);
+    }
+
+    /// <summary>
     /// Converts a Result (non-generic) to an HTTP IResult.
     /// </summary>
     public static IHttpResult ToHttpResult(this Result result)

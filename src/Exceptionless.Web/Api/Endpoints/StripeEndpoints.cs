@@ -9,12 +9,12 @@ public static class StripeEndpoints
 {
     public static IEndpointRouteBuilder MapStripeEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapPost("api/v2/stripe", async (HttpContext httpContext, IMediator mediator) =>
+        endpoints.MapPost("api/v2/stripe", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper) =>
         {
             using var reader = new StreamReader(httpContext.Request.Body, leaveOpen: true);
             string json = await reader.ReadToEndAsync();
             string? signature = httpContext.Request.Headers["Stripe-Signature"];
-            return (await mediator.InvokeAsync<Result>(new HandleStripeWebhook(json, signature))).ToHttpResult();
+            return (await mediator.InvokeAsync<Result>(new HandleStripeWebhook(json, signature))).ToHttpResult(resultMapper);
         })
         .AddEndpointFilter<AutoValidationEndpointFilter>()
         .AllowAnonymous()

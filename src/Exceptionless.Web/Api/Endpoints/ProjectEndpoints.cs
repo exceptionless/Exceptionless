@@ -25,8 +25,8 @@ public static class ProjectEndpoints
             .AddEndpointFilter<AutoValidationEndpointFilter>()
             .WithTags("Project");
 
-        group.MapGet("projects", async (HttpContext httpContext, IMediator mediator, string? filter = null, string? sort = null, int page = 1, int limit = 10, string? mode = null)
-            => (await mediator.InvokeAsync<Result<PagedResult<ViewProject>>>(new ProjectMessages.GetProjects(filter, sort, page, limit, mode, httpContext))).ToHttpResult())
+        group.MapGet("projects", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? filter = null, string? sort = null, int page = 1, int limit = 10, string? mode = null)
+            => (await mediator.InvokeAsync<Result<PagedResult<ViewProject>>>(new ProjectMessages.GetProjects(filter, sort, page, limit, mode, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces<IReadOnlyCollection<ViewProject>>()
         .WithSummary("Get all")
@@ -40,8 +40,8 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapGet("organizations/{organizationId:objectid}/projects", async (string organizationId, HttpContext httpContext, IMediator mediator, string? filter = null, string? sort = null, int page = 1, int limit = 10, string? mode = null)
-            => (await mediator.InvokeAsync<Result<PagedResult<ViewProject>>>(new ProjectMessages.GetProjectsByOrganization(organizationId, filter, sort, page, limit, mode, httpContext))).ToHttpResult())
+        group.MapGet("organizations/{organizationId:objectid}/projects", async (string organizationId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? filter = null, string? sort = null, int page = 1, int limit = 10, string? mode = null)
+            => (await mediator.InvokeAsync<Result<PagedResult<ViewProject>>>(new ProjectMessages.GetProjectsByOrganization(organizationId, filter, sort, page, limit, mode, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces<IReadOnlyCollection<ViewProject>>()
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -60,8 +60,8 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapGet("projects/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, string? mode = null)
-            => (await mediator.InvokeAsync<Result<ViewProject>>(new ProjectMessages.GetProjectById(id, mode, httpContext))).ToHttpResult())
+        group.MapGet("projects/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? mode = null)
+            => (await mediator.InvokeAsync<Result<ViewProject>>(new ProjectMessages.GetProjectById(id, mode, httpContext))).ToHttpResult(resultMapper))
         .WithName("GetProjectById")
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces<ViewProject>()
@@ -77,13 +77,13 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPost("projects", async (HttpContext httpContext, IMediator mediator, IServiceProvider serviceProvider, [FromBody] NewProject project) =>
+        group.MapPost("projects", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, IServiceProvider serviceProvider, [FromBody] NewProject project) =>
         {
             var validation = await ApiValidation.ValidateAsync(project, serviceProvider);
             if (validation is not null)
                 return validation;
 
-            return (await mediator.InvokeAsync<Result<ViewProject>>(new ProjectMessages.CreateProject(project, httpContext))).ToHttpResult();
+            return (await mediator.InvokeAsync<Result<ViewProject>>(new ProjectMessages.CreateProject(project, httpContext))).ToHttpResult(resultMapper);
         })
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Accepts<NewProject>("application/json")
@@ -101,8 +101,8 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPatch("projects/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, JsonPatchDocument<UpdateProject> patchDocument)
-            => (await mediator.InvokeAsync<Result<ViewProject>>(new ProjectMessages.UpdateProjectMessage(id, patchDocument, httpContext))).ToHttpResult())
+        group.MapPatch("projects/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, JsonPatchDocument<UpdateProject> patchDocument)
+            => (await mediator.InvokeAsync<Result<ViewProject>>(new ProjectMessages.UpdateProjectMessage(id, patchDocument, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces<ViewProject>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -120,8 +120,8 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPut("projects/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, JsonPatchDocument<UpdateProject> patchDocument)
-            => (await mediator.InvokeAsync<Result<ViewProject>>(new ProjectMessages.UpdateProjectMessage(id, patchDocument, httpContext))).ToHttpResult())
+        group.MapPut("projects/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, JsonPatchDocument<UpdateProject> patchDocument)
+            => (await mediator.InvokeAsync<Result<ViewProject>>(new ProjectMessages.UpdateProjectMessage(id, patchDocument, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces<ViewProject>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -139,8 +139,8 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapDelete("projects/{ids:objectids}", async (string ids, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result<ModelActionResults>>(new ProjectMessages.DeleteProjects(ids.FromDelimitedString(), httpContext))).ToHttpResult())
+        group.MapDelete("projects/{ids:objectids}", async (string ids, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result<ModelActionResults>>(new ProjectMessages.DeleteProjects(ids.FromDelimitedString(), httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -159,16 +159,16 @@ public static class ProjectEndpoints
             }
         });
 
-        endpoints.MapGet("api/v1/project/config", async (HttpContext httpContext, IMediator mediator, int? v = null)
-            => (await mediator.InvokeAsync<Result<object>>(new ProjectMessages.GetLegacyProjectConfig(v, httpContext))).ToHttpResult())
+        endpoints.MapGet("api/v1/project/config", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, int? v = null)
+            => (await mediator.InvokeAsync<Result<object>>(new ProjectMessages.GetLegacyProjectConfig(v, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .WithTags("Project")
         .Produces<ClientConfiguration>()
         .Produces(StatusCodes.Status304NotModified)
         .ProducesProblem(StatusCodes.Status404NotFound);
 
-        group.MapGet("projects/config", async (HttpContext httpContext, IMediator mediator, int? v = null)
-            => (await mediator.InvokeAsync<Result<object>>(new ProjectMessages.GetProjectConfig(null, v, httpContext))).ToHttpResult())
+        group.MapGet("projects/config", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, int? v = null)
+            => (await mediator.InvokeAsync<Result<object>>(new ProjectMessages.GetProjectConfig(null, v, httpContext))).ToHttpResult(resultMapper))
         .Produces<ClientConfiguration>()
         .Produces(StatusCodes.Status304NotModified)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -183,8 +183,8 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapGet("projects/{id:objectid}/config", async (string id, HttpContext httpContext, IMediator mediator, int? v = null)
-            => (await mediator.InvokeAsync<Result<object>>(new ProjectMessages.GetProjectConfig(id, v, httpContext))).ToHttpResult())
+        group.MapGet("projects/{id:objectid}/config", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, int? v = null)
+            => (await mediator.InvokeAsync<Result<object>>(new ProjectMessages.GetProjectConfig(id, v, httpContext))).ToHttpResult(resultMapper))
         .Produces<ClientConfiguration>()
         .Produces(StatusCodes.Status304NotModified)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -200,8 +200,8 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPost("projects/{id:objectid}/config", async (string id, string key, HttpContext httpContext, IMediator mediator, [FromBody] ValueFromBody<string> value)
-            => (await mediator.InvokeAsync<Result>(new ProjectMessages.SetProjectConfig(id, key, value, httpContext))).ToHttpResult())
+        group.MapPost("projects/{id:objectid}/config", async (string id, string key, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] ValueFromBody<string> value)
+            => (await mediator.InvokeAsync<Result>(new ProjectMessages.SetProjectConfig(id, key, value, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Accepts<ValueFromBody<string>>("application/json")
         .Produces(StatusCodes.Status200OK)
@@ -220,8 +220,8 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapDelete("projects/{id:objectid}/config", async (string id, string key, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result>(new ProjectMessages.DeleteProjectConfig(id, key, httpContext))).ToHttpResult())
+        group.MapDelete("projects/{id:objectid}/config", async (string id, string key, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result>(new ProjectMessages.DeleteProjectConfig(id, key, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -238,8 +238,8 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPost("projects/{id:objectid}/sample-data", async (string id, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result<WorkInProgressResult>>(new ProjectMessages.GenerateProjectSampleData(id, httpContext))).ToHttpResult())
+        group.MapPost("projects/{id:objectid}/sample-data", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result<WorkInProgressResult>>(new ProjectMessages.GenerateProjectSampleData(id, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -254,8 +254,8 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapGet("projects/{id:objectid}/reset-data", async (string id, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result<WorkInProgressResult>>(new ProjectMessages.ResetProjectData(id, httpContext))).ToHttpResult())
+        group.MapGet("projects/{id:objectid}/reset-data", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result<WorkInProgressResult>>(new ProjectMessages.ResetProjectData(id, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -270,8 +270,8 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPost("projects/{id:objectid}/reset-data", async (string id, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result<WorkInProgressResult>>(new ProjectMessages.ResetProjectData(id, httpContext))).ToHttpResult())
+        group.MapPost("projects/{id:objectid}/reset-data", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result<WorkInProgressResult>>(new ProjectMessages.ResetProjectData(id, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -286,15 +286,15 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapGet("projects/{id:objectid}/notifications", async (string id, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result<IDictionary<string, NotificationSettings>>>(new ProjectMessages.GetProjectNotificationSettings(id, httpContext))).ToHttpResult())
+        group.MapGet("projects/{id:objectid}/notifications", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result<IDictionary<string, NotificationSettings>>>(new ProjectMessages.GetProjectNotificationSettings(id, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
         .Produces<IDictionary<string, NotificationSettings>>()
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ExcludeFromDescription();
 
-        group.MapGet("users/{userId:objectid}/projects/{id:objectid}/notifications", async (string id, string userId, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result<NotificationSettings>>(new ProjectMessages.GetProjectUserNotificationSettings(id, userId, httpContext))).ToHttpResult())
+        group.MapGet("users/{userId:objectid}/projects/{id:objectid}/notifications", async (string id, string userId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result<NotificationSettings>>(new ProjectMessages.GetProjectUserNotificationSettings(id, userId, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces<NotificationSettings>()
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -309,16 +309,16 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapGet("projects/{id:objectid}/{integration:minlength(1)}/notifications", async (string id, string integration, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result<NotificationSettings>>(new ProjectMessages.GetProjectIntegrationNotificationSettings(id, integration, httpContext))).ToHttpResult())
+        group.MapGet("projects/{id:objectid}/{integration:minlength(1)}/notifications", async (string id, string integration, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result<NotificationSettings>>(new ProjectMessages.GetProjectIntegrationNotificationSettings(id, integration, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces<NotificationSettings>()
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ExcludeFromDescription();
 
-        group.MapPut("users/{userId:objectid}/projects/{id:objectid}/notifications", async (string id, string userId, HttpContext httpContext, IMediator mediator,
+        group.MapPut("users/{userId:objectid}/projects/{id:objectid}/notifications", async (string id, string userId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper,
             [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] NotificationSettings? settings = null)
-            => (await mediator.InvokeAsync<Result>(new ProjectMessages.SetProjectUserNotificationSettings(id, userId, settings, httpContext))).ToHttpResult())
+            => (await mediator.InvokeAsync<Result>(new ProjectMessages.SetProjectUserNotificationSettings(id, userId, settings, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Accepts<NotificationSettings>("application/json")
         .Produces(StatusCodes.Status200OK)
@@ -335,9 +335,9 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPost("users/{userId:objectid}/projects/{id:objectid}/notifications", async (string id, string userId, HttpContext httpContext, IMediator mediator,
+        group.MapPost("users/{userId:objectid}/projects/{id:objectid}/notifications", async (string id, string userId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper,
             [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] NotificationSettings? settings = null)
-            => (await mediator.InvokeAsync<Result>(new ProjectMessages.SetProjectUserNotificationSettings(id, userId, settings, httpContext))).ToHttpResult())
+            => (await mediator.InvokeAsync<Result>(new ProjectMessages.SetProjectUserNotificationSettings(id, userId, settings, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Accepts<NotificationSettings>("application/json")
         .Produces(StatusCodes.Status200OK)
@@ -354,9 +354,9 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPut("projects/{id:objectid}/{integration:minlength(1)}/notifications", async (string id, string integration, HttpContext httpContext, IMediator mediator,
+        group.MapPut("projects/{id:objectid}/{integration:minlength(1)}/notifications", async (string id, string integration, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper,
             [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] NotificationSettings? settings = null)
-            => (await mediator.InvokeAsync<Result>(new ProjectMessages.SetProjectIntegrationNotificationSettings(id, integration, settings, httpContext))).ToHttpResult())
+            => (await mediator.InvokeAsync<Result>(new ProjectMessages.SetProjectIntegrationNotificationSettings(id, integration, settings, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Accepts<NotificationSettings>("application/json")
         .Produces(StatusCodes.Status200OK)
@@ -375,9 +375,9 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPost("projects/{id:objectid}/{integration:minlength(1)}/notifications", async (string id, string integration, HttpContext httpContext, IMediator mediator,
+        group.MapPost("projects/{id:objectid}/{integration:minlength(1)}/notifications", async (string id, string integration, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper,
             [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] NotificationSettings? settings = null)
-            => (await mediator.InvokeAsync<Result>(new ProjectMessages.SetProjectIntegrationNotificationSettings(id, integration, settings, httpContext))).ToHttpResult())
+            => (await mediator.InvokeAsync<Result>(new ProjectMessages.SetProjectIntegrationNotificationSettings(id, integration, settings, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Accepts<NotificationSettings>("application/json")
         .Produces(StatusCodes.Status200OK)
@@ -396,8 +396,8 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapDelete("users/{userId:objectid}/projects/{id:objectid}/notifications", async (string id, string userId, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result>(new ProjectMessages.DeleteProjectNotificationSettings(id, userId, httpContext))).ToHttpResult())
+        group.MapDelete("users/{userId:objectid}/projects/{id:objectid}/notifications", async (string id, string userId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result>(new ProjectMessages.DeleteProjectNotificationSettings(id, userId, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -412,8 +412,8 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPut("projects/{id:objectid}/promotedtabs", async (string id, string name, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result>(new ProjectMessages.PromoteProjectTab(id, name, httpContext))).ToHttpResult())
+        group.MapPut("projects/{id:objectid}/promotedtabs", async (string id, string name, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result>(new ProjectMessages.PromoteProjectTab(id, name, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -430,8 +430,8 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPost("projects/{id:objectid}/promotedtabs", async (string id, string name, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result>(new ProjectMessages.PromoteProjectTab(id, name, httpContext))).ToHttpResult())
+        group.MapPost("projects/{id:objectid}/promotedtabs", async (string id, string name, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result>(new ProjectMessages.PromoteProjectTab(id, name, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -448,8 +448,8 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapDelete("projects/{id:objectid}/promotedtabs", async (string id, string name, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result>(new ProjectMessages.DemoteProjectTab(id, name, httpContext))).ToHttpResult())
+        group.MapDelete("projects/{id:objectid}/promotedtabs", async (string id, string name, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result>(new ProjectMessages.DemoteProjectTab(id, name, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -466,8 +466,8 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapGet("projects/check-name", async (string name, HttpContext httpContext, IMediator mediator, string? organizationId = null)
-            => (await mediator.InvokeAsync<Result>(new ProjectMessages.CheckProjectName(name, organizationId, httpContext))).ToHttpResult())
+        group.MapGet("projects/check-name", async (string name, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? organizationId = null)
+            => (await mediator.InvokeAsync<Result>(new ProjectMessages.CheckProjectName(name, organizationId, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status201Created)
         .Produces(StatusCodes.Status204NoContent)
@@ -482,8 +482,8 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapGet("organizations/{organizationId:objectid}/projects/check-name", async (string organizationId, string name, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result>(new ProjectMessages.CheckProjectName(name, organizationId, httpContext))).ToHttpResult())
+        group.MapGet("organizations/{organizationId:objectid}/projects/check-name", async (string organizationId, string name, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result>(new ProjectMessages.CheckProjectName(name, organizationId, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status201Created)
         .Produces(StatusCodes.Status204NoContent)
@@ -499,8 +499,8 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPost("projects/{id:objectid}/data", async (string id, string key, HttpContext httpContext, IMediator mediator, [FromBody] ValueFromBody<string> value)
-            => (await mediator.InvokeAsync<Result>(new ProjectMessages.SetProjectData(id, key, value, httpContext))).ToHttpResult())
+        group.MapPost("projects/{id:objectid}/data", async (string id, string key, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] ValueFromBody<string> value)
+            => (await mediator.InvokeAsync<Result>(new ProjectMessages.SetProjectData(id, key, value, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Accepts<ValueFromBody<string>>("application/json")
         .Produces(StatusCodes.Status200OK)
@@ -519,8 +519,8 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapDelete("projects/{id:objectid}/data", async (string id, string key, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result>(new ProjectMessages.DeleteProjectData(id, key, httpContext))).ToHttpResult())
+        group.MapDelete("projects/{id:objectid}/data", async (string id, string key, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result>(new ProjectMessages.DeleteProjectData(id, key, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -537,8 +537,8 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPost("projects/{id:objectid}/slack", async (string id, string code, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result<object>>(new ProjectMessages.AddProjectSlack(id, code, httpContext))).ToHttpResult())
+        group.MapPost("projects/{id:objectid}/slack", async (string id, string code, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result<object>>(new ProjectMessages.AddProjectSlack(id, code, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status304NotModified)
@@ -546,8 +546,8 @@ public static class ProjectEndpoints
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ExcludeFromDescription();
 
-        group.MapDelete("projects/{id:objectid}/slack", async (string id, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result>(new ProjectMessages.RemoveProjectSlack(id, httpContext))).ToHttpResult())
+        group.MapDelete("projects/{id:objectid}/slack", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result>(new ProjectMessages.RemoveProjectSlack(id, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)

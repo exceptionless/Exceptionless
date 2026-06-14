@@ -1,6 +1,7 @@
 using System.Reflection;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Web.Api;
+using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.OpenApi;
 using Foundatio.Mediator;
@@ -35,6 +36,7 @@ internal static class MinimalApiTestApp
             options.ConstraintMap.Add("tokens", typeof(TokensRouteConstraint));
         });
         builder.Services.AddSingleton<IServiceProviderIsService, PermissiveServiceProviderIsService>();
+        builder.Services.AddSingleton<IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult>, ApiResultMapper>();
         builder.Services.AddSingleton<IMediator>(_ => DispatchProxy.Create<IMediator, NullMediatorProxy>());
 
         if (includeOpenApi)

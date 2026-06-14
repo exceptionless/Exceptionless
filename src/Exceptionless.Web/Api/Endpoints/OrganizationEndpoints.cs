@@ -31,8 +31,8 @@ public static class OrganizationEndpoints
             .AddEndpointFilter<AutoValidationEndpointFilter>()
             .WithTags("Organization");
 
-        group.MapGet("organizations", async (HttpContext httpContext, IMediator mediator, string? filter = null, string? mode = null)
-            => (await mediator.InvokeAsync<Result<IReadOnlyCollection<ViewOrganization>>>(new OrganizationMessages.GetOrganizations(filter, mode, httpContext))).ToHttpResult())
+        group.MapGet("organizations", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? filter = null, string? mode = null)
+            => (await mediator.InvokeAsync<Result<IReadOnlyCollection<ViewOrganization>>>(new OrganizationMessages.GetOrganizations(filter, mode, httpContext))).ToHttpResult(resultMapper))
         .Produces<IReadOnlyCollection<ViewOrganization>>()
         .WithSummary("Get all")
         .WithMetadata(new EndpointDocumentation {
@@ -42,20 +42,20 @@ public static class OrganizationEndpoints
             }
         });
 
-        group.MapGet("admin/organizations", async (HttpContext httpContext, IMediator mediator, string? criteria = null, bool? paid = null, bool? suspended = null, string? mode = null, int page = 1, int limit = 10, OrganizationSortBy sort = OrganizationSortBy.Newest)
-            => (await mediator.InvokeAsync<Result<PagedResult<ViewOrganization>>>(new OrganizationMessages.GetAdminOrganizations(criteria, paid, suspended, mode, page, limit, sort, httpContext))).ToHttpResult())
+        group.MapGet("admin/organizations", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? criteria = null, bool? paid = null, bool? suspended = null, string? mode = null, int page = 1, int limit = 10, OrganizationSortBy sort = OrganizationSortBy.Newest)
+            => (await mediator.InvokeAsync<Result<PagedResult<ViewOrganization>>>(new OrganizationMessages.GetAdminOrganizations(criteria, paid, suspended, mode, page, limit, sort, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
         .Produces<IReadOnlyCollection<ViewOrganization>>()
         .ExcludeFromDescription();
 
-        group.MapGet("admin/organizations/stats", async (HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result<BillingPlanStats>>(new OrganizationMessages.GetOrganizationPlanStats(httpContext))).ToHttpResult())
+        group.MapGet("admin/organizations/stats", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result<BillingPlanStats>>(new OrganizationMessages.GetOrganizationPlanStats(httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
         .Produces<BillingPlanStats>()
         .ExcludeFromDescription();
 
-        group.MapGet("organizations/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, string? mode = null)
-            => (await mediator.InvokeAsync<Result<ViewOrganization>>(new OrganizationMessages.GetOrganizationById(id, mode, httpContext))).ToHttpResult())
+        group.MapGet("organizations/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? mode = null)
+            => (await mediator.InvokeAsync<Result<ViewOrganization>>(new OrganizationMessages.GetOrganizationById(id, mode, httpContext))).ToHttpResult(resultMapper))
         .WithName("GetOrganizationById")
         .Produces<ViewOrganization>()
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -70,13 +70,13 @@ public static class OrganizationEndpoints
             }
         });
 
-        group.MapPost("organizations", async (HttpContext httpContext, IMediator mediator, IServiceProvider serviceProvider, [FromBody] NewOrganization organization) =>
+        group.MapPost("organizations", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, IServiceProvider serviceProvider, [FromBody] NewOrganization organization) =>
         {
             var validation = await ApiValidation.ValidateAsync(organization, serviceProvider);
             if (validation is not null)
                 return validation;
 
-            return (await mediator.InvokeAsync<Result<ViewOrganization>>(new OrganizationMessages.CreateOrganization(organization, httpContext))).ToHttpResult();
+            return (await mediator.InvokeAsync<Result<ViewOrganization>>(new OrganizationMessages.CreateOrganization(organization, httpContext))).ToHttpResult(resultMapper);
         })
         .Accepts<NewOrganization>("application/json")
         .Produces<ViewOrganization>(StatusCodes.Status201Created)
@@ -93,8 +93,8 @@ public static class OrganizationEndpoints
             }
         });
 
-        group.MapPatch("organizations/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, JsonPatchDocument<NewOrganization> patchDocument)
-            => (await mediator.InvokeAsync<Result<ViewOrganization>>(new OrganizationMessages.UpdateOrganizationMessage(id, patchDocument, httpContext))).ToHttpResult())
+        group.MapPatch("organizations/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, JsonPatchDocument<NewOrganization> patchDocument)
+            => (await mediator.InvokeAsync<Result<ViewOrganization>>(new OrganizationMessages.UpdateOrganizationMessage(id, patchDocument, httpContext))).ToHttpResult(resultMapper))
         .Produces<ViewOrganization>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -111,8 +111,8 @@ public static class OrganizationEndpoints
             }
         });
 
-        group.MapPut("organizations/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, JsonPatchDocument<NewOrganization> patchDocument)
-            => (await mediator.InvokeAsync<Result<ViewOrganization>>(new OrganizationMessages.UpdateOrganizationMessage(id, patchDocument, httpContext))).ToHttpResult())
+        group.MapPut("organizations/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, JsonPatchDocument<NewOrganization> patchDocument)
+            => (await mediator.InvokeAsync<Result<ViewOrganization>>(new OrganizationMessages.UpdateOrganizationMessage(id, patchDocument, httpContext))).ToHttpResult(resultMapper))
         .Produces<ViewOrganization>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -181,8 +181,8 @@ public static class OrganizationEndpoints
             }
         });
 
-        group.MapDelete("organizations/{ids:objectids}", async (string ids, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result<ModelActionResults>>(new OrganizationMessages.DeleteOrganizations(ids.FromDelimitedString(), httpContext))).ToHttpResult())
+        group.MapDelete("organizations/{ids:objectids}", async (string ids, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result<ModelActionResults>>(new OrganizationMessages.DeleteOrganizations(ids.FromDelimitedString(), httpContext))).ToHttpResult(resultMapper))
         .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -200,8 +200,8 @@ public static class OrganizationEndpoints
             }
         });
 
-        group.MapGet("organizations/invoice/{id:minlength(10)}", async (string id, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result<Invoice>>(new OrganizationMessages.GetInvoice(id, httpContext))).ToHttpResult())
+        group.MapGet("organizations/invoice/{id:minlength(10)}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result<Invoice>>(new OrganizationMessages.GetInvoice(id, httpContext))).ToHttpResult(resultMapper))
         .Produces<Invoice>()
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Get invoice")
@@ -214,8 +214,8 @@ public static class OrganizationEndpoints
             }
         });
 
-        group.MapGet("organizations/{id:objectid}/invoices", async (string id, HttpContext httpContext, IMediator mediator, string? before = null, string? after = null, int limit = 12)
-            => (await mediator.InvokeAsync<Result<PagedResult<InvoiceGridModel>>>(new OrganizationMessages.GetInvoices(id, before, after, limit, httpContext))).ToHttpResult())
+        group.MapGet("organizations/{id:objectid}/invoices", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? before = null, string? after = null, int limit = 12)
+            => (await mediator.InvokeAsync<Result<PagedResult<InvoiceGridModel>>>(new OrganizationMessages.GetInvoices(id, before, after, limit, httpContext))).ToHttpResult(resultMapper))
         .Produces<IReadOnlyCollection<InvoiceGridModel>>()
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Get invoices")
@@ -231,8 +231,8 @@ public static class OrganizationEndpoints
             }
         });
 
-        group.MapGet("organizations/{id:objectid}/plans", async (string id, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result<IReadOnlyCollection<BillingPlan>>>(new OrganizationMessages.GetPlans(id, httpContext))).ToHttpResult())
+        group.MapGet("organizations/{id:objectid}/plans", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result<IReadOnlyCollection<BillingPlan>>>(new OrganizationMessages.GetPlans(id, httpContext))).ToHttpResult(resultMapper))
         .Produces<IReadOnlyCollection<BillingPlan>>()
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Get plans")
@@ -246,13 +246,13 @@ public static class OrganizationEndpoints
             }
         });
 
-        group.MapPost("organizations/{id:objectid}/change-plan", async (string id, HttpContext httpContext, IMediator mediator,
+        group.MapPost("organizations/{id:objectid}/change-plan", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper,
             [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] ChangePlanRequest? model = null,
             [FromQuery] string? planId = null,
             [FromQuery] string? stripeToken = null,
             [FromQuery] string? last4 = null,
             [FromQuery] string? couponId = null)
-            => (await mediator.InvokeAsync<Result<ChangePlanResult>>(new OrganizationMessages.ChangeOrganizationPlan(id, model, planId, stripeToken, last4, couponId, httpContext))).ToHttpResult())
+            => (await mediator.InvokeAsync<Result<ChangePlanResult>>(new OrganizationMessages.ChangeOrganizationPlan(id, model, planId, stripeToken, last4, couponId, httpContext))).ToHttpResult(resultMapper))
         .Accepts<ChangePlanRequest>("application/json")
         .Produces<ChangePlanResult>()
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -273,8 +273,8 @@ public static class OrganizationEndpoints
             }
         });
 
-        group.MapPost("organizations/{id:objectid}/users/{email:minlength(1)}", async (string id, string email, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result<User>>(new OrganizationMessages.AddOrganizationUser(id, email, httpContext))).ToHttpResult())
+        group.MapPost("organizations/{id:objectid}/users/{email:minlength(1)}", async (string id, string email, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result<User>>(new OrganizationMessages.AddOrganizationUser(id, email, httpContext))).ToHttpResult(resultMapper))
         .Produces<User>()
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status426UpgradeRequired)
@@ -290,8 +290,8 @@ public static class OrganizationEndpoints
             }
         });
 
-        group.MapDelete("organizations/{id:objectid}/users/{email:minlength(1)}", async (string id, string email, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result>(new OrganizationMessages.RemoveOrganizationUser(id, email, httpContext))).ToHttpResult())
+        group.MapDelete("organizations/{id:objectid}/users/{email:minlength(1)}", async (string id, string email, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result>(new OrganizationMessages.RemoveOrganizationUser(id, email, httpContext))).ToHttpResult(resultMapper))
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -307,22 +307,22 @@ public static class OrganizationEndpoints
             }
         });
 
-        group.MapPost("organizations/{id:objectid}/suspend", async (string id, HttpContext httpContext, IMediator mediator, SuspensionCode? code = null, string? notes = null)
-            => (await mediator.InvokeAsync<Result>(new OrganizationMessages.SuspendOrganization(id, code ?? SuspensionCode.Billing, notes, httpContext))).ToHttpResult())
+        group.MapPost("organizations/{id:objectid}/suspend", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, SuspensionCode? code = null, string? notes = null)
+            => (await mediator.InvokeAsync<Result>(new OrganizationMessages.SuspendOrganization(id, code ?? SuspensionCode.Billing, notes, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ExcludeFromDescription();
 
-        group.MapDelete("organizations/{id:objectid}/suspend", async (string id, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result>(new OrganizationMessages.UnsuspendOrganization(id, httpContext))).ToHttpResult())
+        group.MapDelete("organizations/{id:objectid}/suspend", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result>(new OrganizationMessages.UnsuspendOrganization(id, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ExcludeFromDescription();
 
-        group.MapPost("organizations/{id:objectid}/data/{key:minlength(1)}", async (string id, string key, HttpContext httpContext, IMediator mediator, [FromBody] ValueFromBody<string> value)
-            => (await mediator.InvokeAsync<Result>(new OrganizationMessages.SetOrganizationData(id, key, value, httpContext))).ToHttpResult())
+        group.MapPost("organizations/{id:objectid}/data/{key:minlength(1)}", async (string id, string key, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] ValueFromBody<string> value)
+            => (await mediator.InvokeAsync<Result>(new OrganizationMessages.SetOrganizationData(id, key, value, httpContext))).ToHttpResult(resultMapper))
         .Accepts<ValueFromBody<string>>("application/json")
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -339,8 +339,8 @@ public static class OrganizationEndpoints
             }
         });
 
-        group.MapDelete("organizations/{id:objectid}/data/{key:minlength(1)}", async (string id, string key, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result>(new OrganizationMessages.DeleteOrganizationData(id, key, httpContext))).ToHttpResult())
+        group.MapDelete("organizations/{id:objectid}/data/{key:minlength(1)}", async (string id, string key, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result>(new OrganizationMessages.DeleteOrganizationData(id, key, httpContext))).ToHttpResult(resultMapper))
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Remove custom data")
@@ -354,24 +354,24 @@ public static class OrganizationEndpoints
             }
         });
 
-        group.MapPost("organizations/{id:objectid}/features/{feature:minlength(1)}", async (string id, string feature, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result>(new OrganizationMessages.SetOrganizationFeature(id, feature, httpContext))).ToHttpResult())
+        group.MapPost("organizations/{id:objectid}/features/{feature:minlength(1)}", async (string id, string feature, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result>(new OrganizationMessages.SetOrganizationFeature(id, feature, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ExcludeFromDescription();
 
-        group.MapDelete("organizations/{id:objectid}/features/{feature:minlength(1)}", async (string id, string feature, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result>(new OrganizationMessages.RemoveOrganizationFeature(id, feature, httpContext))).ToHttpResult())
+        group.MapDelete("organizations/{id:objectid}/features/{feature:minlength(1)}", async (string id, string feature, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result>(new OrganizationMessages.RemoveOrganizationFeature(id, feature, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ExcludeFromDescription();
 
-        group.MapGet("organizations/check-name", async (string name, HttpContext httpContext, IMediator mediator)
-            => (await mediator.InvokeAsync<Result>(new OrganizationMessages.CheckOrganizationName(name, httpContext))).ToHttpResult())
+        group.MapGet("organizations/check-name", async (string name, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result>(new OrganizationMessages.CheckOrganizationName(name, httpContext))).ToHttpResult(resultMapper))
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status201Created)
         .Produces(StatusCodes.Status204NoContent)
@@ -389,7 +389,7 @@ public static class OrganizationEndpoints
         return endpoints;
     }
 
-    private static async Task<HttpIResult> UploadIconAsync(string id, HttpContext httpContext, IMediator mediator, [FromServices] IFileStorage fileStorage, [FromForm] IFormFile? file, CancellationToken cancellationToken)
+    private static async Task<HttpIResult> UploadIconAsync(string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromServices] IFileStorage fileStorage, [FromForm] IFormFile? file, CancellationToken cancellationToken)
     {
         var modelState = new ModelStateDictionary();
         var image = await ProfileImageStorage.SaveAsync(fileStorage, file, "organizations", id, modelState, cancellationToken);
@@ -402,7 +402,7 @@ public static class OrganizationEndpoints
             if (!result.IsSuccess)
             {
                 await ProfileImageStorage.TryDeleteAsync(fileStorage, image.FileName, "organizations", id, CancellationToken.None);
-                return result.ToHttpResult();
+                return result.ToHttpResult(resultMapper);
             }
 
             var update = result.ValueOrDefault!;
@@ -416,11 +416,11 @@ public static class OrganizationEndpoints
         }
     }
 
-    private static async Task<HttpIResult> DeleteIconAsync(string id, HttpContext httpContext, IMediator mediator, [FromServices] IFileStorage fileStorage, CancellationToken cancellationToken)
+    private static async Task<HttpIResult> DeleteIconAsync(string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromServices] IFileStorage fileStorage, CancellationToken cancellationToken)
     {
         var result = await mediator.InvokeAsync<Result<ProfileImageUpdate<ViewOrganization>>>(new OrganizationMessages.DeleteOrganizationIcon(id, httpContext));
         if (!result.IsSuccess)
-            return result.ToHttpResult();
+            return result.ToHttpResult(resultMapper);
 
         var update = result.ValueOrDefault!;
         await ProfileImageStorage.DeleteAsync(fileStorage, update.PreviousFileName, "organizations", id, cancellationToken);
