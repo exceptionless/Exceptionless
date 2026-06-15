@@ -3,6 +3,7 @@
 	import type { HTMLAnchorAttributes, HTMLButtonAttributes } from "svelte/elements";
 	import { type VariantProps, tv } from "tailwind-variants";
 
+	// CUSTOM: FORCE EXCEPTIONLESS PRIMARY/SUCCESS BUTTON COLORS TO STAY ON-BRAND FOR THE MOST-USED ACTIONS.
 	const primaryActionVariant =
 		"bg-[#4f9630] text-white hover:bg-[#427f28] focus-visible:border-[#427f28] focus-visible:ring-[#4f9630]/20 dark:bg-[#4f9630] dark:hover:bg-[#427f28]";
 

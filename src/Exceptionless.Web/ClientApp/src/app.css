@@ -44,6 +44,7 @@
     --sidebar-border: var(--border);
     --sidebar-ring: var(--ring);
 
+    /* CUSTOM: BRAND-ALIGNED DASHBOARD COLOR PALETTE FOR CHART SERIES IN LIGHT MODE. */
     --chart-1: #72c928; /* Total / events: classic Exceptionless green */
     --chart-2: #43a047; /* Secondary series: deeper green */
     --chart-3: #f0ad4e; /* Discarded / regressed: warm amber */
@@ -92,6 +93,7 @@
     --sidebar-border: var(--border);
     --sidebar-ring: var(--ring);
 
+    /* CUSTOM: BRAND-ALIGNED DASHBOARD COLOR PALETTE FOR CHART SERIES IN DARK MODE. */
     --chart-1: #91dc45; /* Total / events: classic Exceptionless green */
     --chart-2: #5fc263; /* Secondary series: deeper green */
     --chart-3: #ffbd63; /* Discarded / regressed: warm amber */
@@ -163,6 +165,7 @@
 }
 
 @utility no-scrollbar {
+	/* CUSTOM: HELPS KEEP CUSTOM SIDEBAR/OVERLAYS FROM CAUSING VISUAL LAYOUT JITTER. */
     -ms-overflow-style: none;
     scrollbar-width: none;
 
@@ -204,7 +207,7 @@
     }
 }
 
-/* HACK: Need to figure out why this is needed for range selection. */
+/* CUSTOM: PRESERVE THIS SVG FILL OPACITY OVERRIDE UNTIL CHART LIBRARY RANGE-STYLING DEFAULT IS FIXED. */
 [data-slot='chart'] .lc-area-path {
     fill-opacity: 0.16;
 }

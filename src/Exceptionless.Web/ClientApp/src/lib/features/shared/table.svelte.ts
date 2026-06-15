@@ -313,7 +313,10 @@ export function removeTableData<TData extends RowData>(
     predicate: (value: TData, index: number, array: TData[]) => boolean
 ): boolean {
     if ([...table.options.data].some(predicate)) {
-        table.options.data = [...table.options.data].filter((value, index, array) => !predicate(value, index, array));
+        table.setOptions((previousOptions) => ({
+            ...previousOptions,
+            data: [...previousOptions.data].filter((value, index, array) => !predicate(value, index, array))
+        }));
 
         return true;
     }
