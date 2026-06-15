@@ -9,9 +9,12 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
+using Exceptionless.Web.Api.Filters;
+using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models.Admin;
+using Exceptionless.Core.Authorization;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
 using Foundatio.Queues;
@@ -43,11 +46,17 @@ public class AdminHandler(
 {
     private readonly ILogger _logger = loggerFactory.CreateLogger<AdminHandler>();
 
+    [HiddenEndpoint]
+    [HandlerAuthorize(Policies = [AuthorizationRoles.GlobalAdminPolicy])]
+    [HandlerEndpoint(HandlerMethod.Get, "/api/v2/admin/settings", EndpointFilters = [typeof(AutoValidationEndpointFilter)])]
     public Task<Result<object>> Handle(GetAdminSettings message)
     {
         return Task.FromResult<Result<object>>(appOptions);
     }
 
+    [HiddenEndpoint]
+    [HandlerAuthorize(Policies = [AuthorizationRoles.GlobalAdminPolicy])]
+    [HandlerEndpoint(HandlerMethod.Get, "/api/v2/admin/stats", EndpointFilters = [typeof(AutoValidationEndpointFilter)])]
     public async Task<Result<object>> Handle(GetAdminStats message)
     {
         var organizationCountTask = organizationRepository.CountAsync(q => q
@@ -73,6 +82,9 @@ public class AdminHandler(
         );
     }
 
+    [HiddenEndpoint]
+    [HandlerAuthorize(Policies = [AuthorizationRoles.GlobalAdminPolicy])]
+    [HandlerEndpoint(HandlerMethod.Get, "/api/v2/admin/migrations", EndpointFilters = [typeof(AutoValidationEndpointFilter)])]
     public async Task<Result<object>> Handle(GetAdminMigrations message)
     {
         var result = await migrationStateRepository.GetAllAsync(o => o.SearchAfterPaging().PageLimit(1000));
@@ -110,6 +122,9 @@ public class AdminHandler(
         });
     }
 
+    [HiddenEndpoint]
+    [HandlerAuthorize(Policies = [AuthorizationRoles.GlobalAdminPolicy])]
+    [HandlerEndpoint(HandlerMethod.Get, "/api/v2/admin/assemblies", EndpointFilters = [typeof(AutoValidationEndpointFilter)])]
     public Task<Result<object>> Handle(GetAdminAssemblies message)
     {
         var details = AssemblyDetail.ExtractAll().Select(AssemblyDetailResponse.FromAssemblyDetail).ToArray();
@@ -160,6 +175,9 @@ public class AdminHandler(
         return Result.Success();
     }
 
+    [HiddenEndpoint]
+    [HandlerAuthorize(Policies = [AuthorizationRoles.GlobalAdminPolicy])]
+    [HandlerEndpoint(HandlerMethod.Get, "/api/v2/admin/requeue", EndpointFilters = [typeof(AutoValidationEndpointFilter)])]
     public async Task<Result<object>> Handle(AdminRequeue message)
     {
         string path = message.Path ?? @"q\*";
@@ -174,6 +192,9 @@ public class AdminHandler(
         return new { Enqueued = enqueued };
     }
 
+    [HiddenEndpoint]
+    [HandlerAuthorize(Policies = [AuthorizationRoles.GlobalAdminPolicy])]
+    [HandlerEndpoint(HandlerMethod.Get, "/api/v2/admin/maintenance/{name:minlength(1)}", EndpointFilters = [typeof(AutoValidationEndpointFilter)])]
     public async Task<Result> Handle(AdminRunMaintenance message)
     {
         switch (message.Name.ToLowerInvariant())
@@ -229,6 +250,9 @@ public class AdminHandler(
         return Result.Success();
     }
 
+    [HiddenEndpoint]
+    [HandlerAuthorize(Policies = [AuthorizationRoles.GlobalAdminPolicy])]
+    [HandlerEndpoint(HandlerMethod.Get, "/api/v2/admin/elasticsearch", EndpointFilters = [typeof(AutoValidationEndpointFilter)])]
     public async Task<Result<object>> Handle(GetAdminElasticsearch message)
     {
         var client = configuration.Client;
@@ -285,6 +309,9 @@ public class AdminHandler(
         );
     }
 
+    [HiddenEndpoint]
+    [HandlerAuthorize(Policies = [AuthorizationRoles.GlobalAdminPolicy])]
+    [HandlerEndpoint(HandlerMethod.Get, "/api/v2/admin/elasticsearch/snapshots", EndpointFilters = [typeof(AutoValidationEndpointFilter)])]
     public async Task<Result<object>> Handle(GetAdminElasticsearchSnapshots message)
     {
         var client = configuration.Client;
@@ -370,6 +397,9 @@ public class AdminHandler(
         }
     }
 
+    [HiddenEndpoint]
+    [HandlerAuthorize(Policies = [AuthorizationRoles.GlobalAdminPolicy])]
+    [HandlerEndpoint(HandlerMethod.Post, "/api/v2/admin/generate-sample-events", EndpointFilters = [typeof(AutoValidationEndpointFilter)])]
     public async Task<Result<object>> Handle(AdminGenerateSampleEvents message)
     {
         if (message.EventCount < 1 || message.EventCount > 10000)

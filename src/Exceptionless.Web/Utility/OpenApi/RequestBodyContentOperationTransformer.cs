@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
@@ -14,6 +15,31 @@ public class RequestBodyContentOperationTransformer : IOpenApiOperationTransform
 {
     public Task TransformAsync(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
     {
+        var requestBodySchema = context.Description.ActionDescriptor.EndpointMetadata
+            .OfType<RequestBodySchemaAttribute>()
+            .FirstOrDefault();
+        if (requestBodySchema is not null)
+        {
+            var document = context.Document!;
+            document.Components ??= new OpenApiComponents();
+            document.Components.Schemas ??= new Dictionary<string, IOpenApiSchema>();
+            document.Components.Schemas.TryAdd(requestBodySchema.SchemaReferenceId, CreateJsonPatchSchema());
+
+            operation.RequestBody = new OpenApiRequestBody
+            {
+                Required = true,
+                Content = new Dictionary<string, OpenApiMediaType>
+                {
+                    [requestBodySchema.ContentType] = new()
+                    {
+                        Schema = new OpenApiSchemaReference(requestBodySchema.SchemaReferenceId, document)
+                    }
+                }
+            };
+
+            return Task.CompletedTask;
+        }
+
         var methodInfo = context.Description.ActionDescriptor.EndpointMetadata
             .OfType<MethodInfo>()
             .FirstOrDefault();
@@ -82,6 +108,42 @@ public class RequestBodyContentOperationTransformer : IOpenApiOperationTransform
 
         return Task.CompletedTask;
     }
+
+    private static OpenApiSchema CreateJsonPatchSchema()
+    {
+        return new OpenApiSchema
+        {
+            Type = JsonSchemaType.Array,
+            Items = new OpenApiSchema
+            {
+                Type = JsonSchemaType.Object,
+                Required = new HashSet<string> { "op", "path" },
+                Properties = new Dictionary<string, IOpenApiSchema>
+                {
+                    ["op"] = new OpenApiSchema
+                    {
+                        Type = JsonSchemaType.String,
+                        Enum = [JsonValue.Create("replace"), JsonValue.Create("test")],
+                        Description = "The operation to perform (only 'replace' and 'test' are supported)."
+                    },
+                    ["path"] = new OpenApiSchema
+                    {
+                        Type = JsonSchemaType.String,
+                        Description = "A JSON Pointer (RFC 6901) to the target property, using snake_case naming (e.g., '/full_name')."
+                    },
+                    ["value"] = new OpenApiSchema
+                    {
+                        Description = "The value to use for the operation."
+                    },
+                    ["from"] = new OpenApiSchema
+                    {
+                        Type = JsonSchemaType.String,
+                        Description = "A JSON Pointer to the source property (only used with 'move' and 'copy' operations)."
+                    }
+                }
+            }
+        };
+    }
 }
 
 /// <summary>
@@ -104,4 +166,24 @@ public class MultipartFileUploadAttribute : Attribute
     {
         FileParameterName = fileParameterName;
     }
+}
+
+[AttributeUsage(AttributeTargets.Method)]
+public class JsonPatchRequestBodyAttribute<T> : RequestBodySchemaAttribute
+{
+    public JsonPatchRequestBodyAttribute() : base($"{typeof(T).Name}JsonPatchDocument", "application/json-patch+json")
+    {
+    }
+}
+
+public abstract class RequestBodySchemaAttribute : Attribute
+{
+    protected RequestBodySchemaAttribute(string schemaReferenceId, string contentType)
+    {
+        SchemaReferenceId = schemaReferenceId;
+        ContentType = contentType;
+    }
+
+    public string SchemaReferenceId { get; }
+    public string ContentType { get; }
 }

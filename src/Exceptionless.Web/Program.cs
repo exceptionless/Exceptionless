@@ -179,7 +179,18 @@ public partial class Program
                 o.AddSchemaTransformer<XEnumNamesSchemaTransformer>();
             });
 
-            builder.Services.AddSingleton<IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult>, ApiResultMapper>();
+            builder.Services
+                .ConfigureMediatorResultMapping<Microsoft.AspNetCore.Http.IResult>(resultMapping => resultMapping
+                    .MapStatus(ResultStatus.BadRequest, ApiResultMapper.MapBadRequest)
+                    .MapStatus(ResultStatus.Invalid, ApiResultMapper.MapValidation)
+                    .MapStatus(ResultStatus.NotFound, ApiResultMapper.MapNotFound)
+                    .MapStatus(ResultStatus.Unauthorized, ApiResultMapper.MapUnauthorized)
+                    .MapStatus(ResultStatus.Forbidden, ApiResultMapper.MapForbidden)
+                    .MapStatus(ResultStatus.Conflict, ApiResultMapper.MapConflict)
+                    .MapStatus(ResultStatus.Error, ApiResultMapper.MapError)
+                    .MapStatus(ResultStatus.CriticalError, ApiResultMapper.MapCriticalError)
+                    .MapStatus(ResultStatus.Unavailable, ApiResultMapper.MapUnavailable))
+                .AddSingleton<IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult>, ApiResultMapper>();
             builder.Services.AddMediator();
             Bootstrapper.RegisterServices(builder.Services, options, Log.Logger.ToLoggerFactory());
             builder.Services.AddSingleton(_ => new ThrottlingOptions

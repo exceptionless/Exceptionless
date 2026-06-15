@@ -132,7 +132,8 @@ public class ProjectHandler(
 
         var dto = new UpdateProject {
             Name = original.Name,
-            DeleteBotDataEnabled = original.DeleteBotDataEnabled
+            DeleteBotDataEnabled = original.DeleteBotDataEnabled,
+            PromotedTabs = original.PromotedTabs?.ToList()
         };
 
         var patchResult = JsonPatchValidation.ApplyPatch(message.PatchDocument, dto);
@@ -145,6 +146,8 @@ public class ProjectHandler(
 
         original.Name = dto.Name;
         original.DeleteBotDataEnabled = dto.DeleteBotDataEnabled;
+        if (message.PatchDocument.AffectsProperty(p => p.PromotedTabs))
+            original.PromotedTabs = NormalizePromotedTabs(dto.PromotedTabs);
 
         await repository.SaveAsync(original, o => o.Cache());
         return await MapToViewAsync(original);
@@ -746,4 +749,9 @@ public class ProjectHandler(
     private static User GetCurrentUser(HttpContext httpContext) => httpContext.Request.GetUser();
     private static string GetCurrentUserId(HttpContext httpContext) => GetCurrentUser(httpContext).Id;
     private static bool IsStatsMode(string? mode) => !String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase);
+    private static List<string> NormalizePromotedTabs(IEnumerable<string>? tabs) => tabs?
+        .Select(tab => tab.Trim())
+        .Where(tab => !String.IsNullOrEmpty(tab))
+        .Distinct(StringComparer.Ordinal)
+        .ToList() ?? [];
 }

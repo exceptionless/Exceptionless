@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
@@ -11,8 +12,12 @@ using Foundatio.Mediator;
 using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.Extensions.Options;
 using ProjectMessages = Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Utility.OpenApi;
+using HttpJsonOptions = Microsoft.AspNetCore.Http.Json.JsonOptions;
+using HttpIResult = Microsoft.AspNetCore.Http.IResult;
+using HttpResults = Microsoft.AspNetCore.Http.Results;
 
 namespace Exceptionless.Web.Api.Endpoints;
 
@@ -101,14 +106,16 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPatch("projects/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, JsonPatchDocument<UpdateProject> patchDocument)
-            => (await mediator.InvokeAsync<Result<ViewProject>>(new ProjectMessages.UpdateProjectMessage(id, patchDocument, httpContext))).ToHttpResult(resultMapper))
+        group.MapPatch("projects/{id:objectid}", UpdateProjectAsync)
+        .AcceptAnyJsonContentType()
+        .WithDisplayName("HTTP: PATCH api/v2/projects/{id:objectid}")
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces<ViewProject>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Update")
+        .WithMetadata(new JsonPatchRequestBodyAttribute<UpdateProject>())
         .WithMetadata(new EndpointDocumentation {
             RequestBodyDescription = "The changes",
             ParameterDescriptions = new() {
@@ -120,14 +127,16 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPut("projects/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, JsonPatchDocument<UpdateProject> patchDocument)
-            => (await mediator.InvokeAsync<Result<ViewProject>>(new ProjectMessages.UpdateProjectMessage(id, patchDocument, httpContext))).ToHttpResult(resultMapper))
+        group.MapPut("projects/{id:objectid}", UpdateProjectAsync)
+        .AcceptAnyJsonContentType()
+        .WithDisplayName("HTTP: PUT api/v2/projects/{id:objectid}")
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces<ViewProject>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Update")
+        .WithMetadata(new JsonPatchRequestBodyAttribute<UpdateProject>())
         .WithMetadata(new EndpointDocumentation {
             RequestBodyDescription = "The changes",
             ParameterDescriptions = new() {
@@ -554,5 +563,33 @@ public static class ProjectEndpoints
         .ExcludeFromDescription();
 
         return endpoints;
+    }
+
+    private static async Task<HttpIResult> UpdateProjectAsync(
+        string id,
+        HttpContext httpContext,
+        IMediator mediator,
+        IMediatorResultMapper<HttpIResult> resultMapper,
+        IOptions<HttpJsonOptions> jsonOptions,
+        [FromBody] JsonElement body)
+    {
+        var patchDocument = CreatePatchDocument(body, jsonOptions.Value.SerializerOptions);
+        if (patchDocument is null)
+        {
+            return HttpResults.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["patch"] = ["Invalid patch document."]
+            });
+        }
+
+        return (await mediator.InvokeAsync<Result<ViewProject>>(new ProjectMessages.UpdateProjectMessage(id, patchDocument, httpContext))).ToHttpResult(resultMapper);
+    }
+
+    private static JsonPatchDocument<UpdateProject>? CreatePatchDocument(JsonElement body, JsonSerializerOptions options)
+    {
+        if (body.ValueKind is JsonValueKind.Array)
+            return body.Deserialize<JsonPatchDocument<UpdateProject>>(options);
+
+        return JsonPatchValidation.FromPartialObject<UpdateProject>(body, options);
     }
 }

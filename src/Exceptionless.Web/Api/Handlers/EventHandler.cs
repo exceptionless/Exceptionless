@@ -112,6 +112,10 @@ public class EventHandler(
         if (model is null)
             return Result.NotFound("Event not found.");
 
+        string? expectedStackId = httpContext.Request.Query["expected_stack_id"].FirstOrDefault();
+        if (!String.IsNullOrEmpty(expectedStackId) && !String.Equals(model.StackId, expectedStackId, StringComparison.Ordinal))
+            return Result.BadRequest($"The event \"{model.Id}\" belongs to stack \"{model.StackId}\", not stack \"{expectedStackId}\". Open the event from its current stack.");
+
         var organization = await GetOrganizationAsync(model.OrganizationId, httpContext);
         if (organization is null)
             return Result.NotFound("Organization not found.");
@@ -763,6 +767,7 @@ public class EventHandler(
                             Id = summaryData.Id,
                             TemplateKey = summaryData.TemplateKey,
                             Date = e.Date,
+                            Type = e.Type,
                             Data = summaryData.Data
                         };
                     }).ToList();
