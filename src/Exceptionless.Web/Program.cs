@@ -179,8 +179,9 @@ public partial class Program
                 o.AddSchemaTransformer<XEnumNamesSchemaTransformer>();
             });
 
-            builder.Services
-                .ConfigureMediatorResultMapping<Microsoft.AspNetCore.Http.IResult>(resultMapping => resultMapping
+            builder.Services.AddSingleton<IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult>, ApiResultMapper>();
+            builder.Services.AddMediator()
+                .ConfigureResultMapping<Microsoft.AspNetCore.Http.IResult>(resultMapping => resultMapping
                     .MapStatus(ResultStatus.BadRequest, ApiResultMapper.MapBadRequest)
                     .MapStatus(ResultStatus.Invalid, ApiResultMapper.MapValidation)
                     .MapStatus(ResultStatus.NotFound, ApiResultMapper.MapNotFound)
@@ -189,9 +190,7 @@ public partial class Program
                     .MapStatus(ResultStatus.Conflict, ApiResultMapper.MapConflict)
                     .MapStatus(ResultStatus.Error, ApiResultMapper.MapError)
                     .MapStatus(ResultStatus.CriticalError, ApiResultMapper.MapCriticalError)
-                    .MapStatus(ResultStatus.Unavailable, ApiResultMapper.MapUnavailable))
-                .AddSingleton<IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult>, ApiResultMapper>();
-            builder.Services.AddMediator();
+                    .MapStatus(ResultStatus.Unavailable, ApiResultMapper.MapUnavailable));
             Bootstrapper.RegisterServices(builder.Services, options, Log.Logger.ToLoggerFactory());
             builder.Services.AddSingleton(_ => new ThrottlingOptions
             {
