@@ -209,7 +209,9 @@
     "method": "GET",
     "route": "/api/v2/admin/assemblies",
     "displayName": "HTTP: GET /api/v2/admin/assemblies",
-    "tags": [],
+    "tags": [
+      "Admin"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "GlobalAdminPolicy"
@@ -245,7 +247,9 @@
     "method": "GET",
     "route": "/api/v2/admin/elasticsearch",
     "displayName": "HTTP: GET /api/v2/admin/elasticsearch",
-    "tags": [],
+    "tags": [
+      "Admin"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "GlobalAdminPolicy"
@@ -257,7 +261,9 @@
     "method": "GET",
     "route": "/api/v2/admin/elasticsearch/snapshots",
     "displayName": "HTTP: GET /api/v2/admin/elasticsearch/snapshots",
-    "tags": [],
+    "tags": [
+      "Admin"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "GlobalAdminPolicy"
@@ -269,7 +275,9 @@
     "method": "POST",
     "route": "/api/v2/admin/generate-sample-events",
     "displayName": "HTTP: POST /api/v2/admin/generate-sample-events",
-    "tags": [],
+    "tags": [
+      "Admin"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "GlobalAdminPolicy"
@@ -281,7 +289,9 @@
     "method": "GET",
     "route": "/api/v2/admin/maintenance/{name:minlength(1)}",
     "displayName": "HTTP: GET /api/v2/admin/maintenance/{name:minlength(1)}",
-    "tags": [],
+    "tags": [
+      "Admin"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "GlobalAdminPolicy"
@@ -293,7 +303,9 @@
     "method": "GET",
     "route": "/api/v2/admin/migrations",
     "displayName": "HTTP: GET /api/v2/admin/migrations",
-    "tags": [],
+    "tags": [
+      "Admin"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "GlobalAdminPolicy"
@@ -335,7 +347,9 @@
     "method": "GET",
     "route": "/api/v2/admin/requeue",
     "displayName": "HTTP: GET /api/v2/admin/requeue",
-    "tags": [],
+    "tags": [
+      "Admin"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "GlobalAdminPolicy"
@@ -359,7 +373,9 @@
     "method": "GET",
     "route": "/api/v2/admin/settings",
     "displayName": "HTTP: GET /api/v2/admin/settings",
-    "tags": [],
+    "tags": [
+      "Admin"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "GlobalAdminPolicy"
@@ -371,7 +387,9 @@
     "method": "GET",
     "route": "/api/v2/admin/stats",
     "displayName": "HTTP: GET /api/v2/admin/stats",
-    "tags": [],
+    "tags": [
+      "Admin"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "GlobalAdminPolicy"
