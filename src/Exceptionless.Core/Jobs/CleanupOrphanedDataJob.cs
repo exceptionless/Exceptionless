@@ -19,6 +19,7 @@ namespace Exceptionless.Core.Jobs;
 [Job(Description = "Deletes orphaned data.", IsContinuous = false)]
 public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
 {
+    private static readonly TimeSpan OrphanedEventLookback = TimeSpan.FromDays(3);
     private readonly ExceptionlessElasticConfiguration _config;
     private readonly IElasticClient _elasticClient;
     private readonly IStackRepository _stackRepository;
@@ -60,9 +61,13 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
 
     public async Task DeleteOrphanedEventsByStackAsync(JobContext context)
     {
+        var orphanedEventCutoffUtc = _timeProvider.GetUtcNow().UtcDateTime.Subtract(OrphanedEventLookback);
+
         // get approximate number of unique stack ids
-        var stackCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Size(0).Aggregations(a => a
-            .Cardinality("cardinality_stack_id", c => c.Field(f => f.StackId).PrecisionThreshold(40000))));
+        var stackCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s
+            .Size(0)
+            .Query(q => q.DateRange(r => r.Field(f => f.CreatedUtc).GreaterThanOrEquals(orphanedEventCutoffUtc)))
+            .Aggregations(a => a.Cardinality("cardinality_stack_id", c => c.Field(f => f.StackId).PrecisionThreshold(40000))));
 
         double? uniqueStackIdCount = stackCardinality.Aggregations.Cardinality("cardinality_stack_id")?.Value;
         if (!uniqueStackIdCount.HasValue || uniqueStackIdCount.Value <= 0)
@@ -79,8 +84,10 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
         {
             await RenewLockAsync(context);
 
-            var stackIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Size(0).Aggregations(a => a
-                .Terms("terms_stack_id", c => c.Field(f => f.StackId).Include(batchNumber, buckets).Size(batchSize * 2))));
+            var stackIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s
+                .Size(0)
+                .Query(q => q.DateRange(r => r.Field(f => f.CreatedUtc).GreaterThanOrEquals(orphanedEventCutoffUtc)))
+                .Aggregations(a => a.Terms("terms_stack_id", c => c.Field(f => f.StackId).Include(batchNumber, buckets).Size(batchSize * 2))));
 
             string[] stackIds = stackIdTerms.Aggregations.Terms("terms_stack_id").Buckets.Select(b => b.Key).ToArray();
             if (stackIds.Length == 0)
@@ -100,17 +107,24 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
 
             totalOrphanedEventCount += missingStackIds.Length;
             _logger.LogInformation("{BatchNumber}/{BatchCount}: Found {OrphanedEventCount} orphaned events from missing stacks {MissingStackIds} out of {StackIdCount}", batchNumber, buckets, missingStackIds.Length, missingStackIds, stackIds.Length);
-            await _elasticClient.DeleteByQueryAsync<PersistentEvent>(r => r.Query(q => q.Terms(t => t.Field(f => f.StackId).Terms(missingStackIds))));
+            await _elasticClient.DeleteByQueryAsync<PersistentEvent>(r => r.Query(q => q.Bool(b => b
+                .Filter(
+                    f => f.Terms(t => t.Field(e => e.StackId).Terms(missingStackIds)),
+                    f => f.DateRange(d => d.Field(e => e.CreatedUtc).GreaterThanOrEquals(orphanedEventCutoffUtc))))));
         }
 
-        _logger.LogInformation("Found {OrphanedEventCount} orphaned events from missing stacks out of {StackIdCount}", totalOrphanedEventCount, totalStackIds);
+        _logger.LogInformation("Found {OrphanedEventCount} orphaned events from missing stacks out of {StackIdCount} since {OrphanedEventCutoffUtc}", totalOrphanedEventCount, totalStackIds, orphanedEventCutoffUtc);
     }
 
     public async Task DeleteOrphanedEventsByProjectAsync(JobContext context)
     {
+        var orphanedEventCutoffUtc = _timeProvider.GetUtcNow().UtcDateTime.Subtract(OrphanedEventLookback);
+
         // get approximate number of unique project ids
-        var projectCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Size(0).Aggregations(a => a
-            .Cardinality("cardinality_project_id", c => c.Field(f => f.ProjectId).PrecisionThreshold(40000))));
+        var projectCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s
+            .Size(0)
+            .Query(q => q.DateRange(r => r.Field(f => f.CreatedUtc).GreaterThanOrEquals(orphanedEventCutoffUtc)))
+            .Aggregations(a => a.Cardinality("cardinality_project_id", c => c.Field(f => f.ProjectId).PrecisionThreshold(40000))));
 
         double? uniqueProjectIdCount = projectCardinality.Aggregations.Cardinality("cardinality_project_id")?.Value;
         if (!uniqueProjectIdCount.HasValue || uniqueProjectIdCount.Value <= 0)
@@ -127,8 +141,10 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
         {
             await RenewLockAsync(context);
 
-            var projectIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Size(0).Aggregations(a => a
-                .Terms("terms_project_id", c => c.Field(f => f.ProjectId).Include(batchNumber, buckets).Size(batchSize * 2))));
+            var projectIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s
+                .Size(0)
+                .Query(q => q.DateRange(r => r.Field(f => f.CreatedUtc).GreaterThanOrEquals(orphanedEventCutoffUtc)))
+                .Aggregations(a => a.Terms("terms_project_id", c => c.Field(f => f.ProjectId).Include(batchNumber, buckets).Size(batchSize * 2))));
 
             string[] projectIds = projectIdTerms.Aggregations.Terms("terms_project_id").Buckets.Select(b => b.Key).ToArray();
             if (projectIds.Length == 0)
@@ -146,17 +162,24 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             }
 
             _logger.LogInformation("{BatchNumber}/{BatchCount}: Found {OrphanedEventCount} orphaned events from missing projects {MissingProjectIds} out of {ProjectIdCount}", batchNumber, buckets, missingProjectIds.Length, missingProjectIds, projectIds.Length);
-            await _elasticClient.DeleteByQueryAsync<PersistentEvent>(r => r.Query(q => q.Terms(t => t.Field(f => f.ProjectId).Terms(missingProjectIds))));
+            await _elasticClient.DeleteByQueryAsync<PersistentEvent>(r => r.Query(q => q.Bool(b => b
+                .Filter(
+                    f => f.Terms(t => t.Field(e => e.ProjectId).Terms(missingProjectIds)),
+                    f => f.DateRange(d => d.Field(e => e.CreatedUtc).GreaterThanOrEquals(orphanedEventCutoffUtc))))));
         }
 
-        _logger.LogInformation("Found {OrphanedEventCount} orphaned events from missing projects out of {ProjectIdCount}", totalOrphanedEventCount, totalProjectIds);
+        _logger.LogInformation("Found {OrphanedEventCount} orphaned events from missing projects out of {ProjectIdCount} since {OrphanedEventCutoffUtc}", totalOrphanedEventCount, totalProjectIds, orphanedEventCutoffUtc);
     }
 
     public async Task DeleteOrphanedEventsByOrganizationAsync(JobContext context)
     {
+        var orphanedEventCutoffUtc = _timeProvider.GetUtcNow().UtcDateTime.Subtract(OrphanedEventLookback);
+
         // get approximate number of unique organization ids
-        var organizationCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Size(0).Aggregations(a => a
-            .Cardinality("cardinality_organization_id", c => c.Field(f => f.OrganizationId).PrecisionThreshold(40000))));
+        var organizationCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s
+            .Size(0)
+            .Query(q => q.DateRange(r => r.Field(f => f.CreatedUtc).GreaterThanOrEquals(orphanedEventCutoffUtc)))
+            .Aggregations(a => a.Cardinality("cardinality_organization_id", c => c.Field(f => f.OrganizationId).PrecisionThreshold(40000))));
 
         double? uniqueOrganizationIdCount = organizationCardinality.Aggregations.Cardinality("cardinality_organization_id")?.Value;
         if (!uniqueOrganizationIdCount.HasValue || uniqueOrganizationIdCount.Value <= 0)
@@ -173,8 +196,10 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
         {
             await RenewLockAsync(context);
 
-            var organizationIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Size(0).Aggregations(a => a
-                .Terms("terms_organization_id", c => c.Field(f => f.OrganizationId).Include(batchNumber, buckets).Size(batchSize * 2))));
+            var organizationIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s
+                .Size(0)
+                .Query(q => q.DateRange(r => r.Field(f => f.CreatedUtc).GreaterThanOrEquals(orphanedEventCutoffUtc)))
+                .Aggregations(a => a.Terms("terms_organization_id", c => c.Field(f => f.OrganizationId).Include(batchNumber, buckets).Size(batchSize * 2))));
 
             string[] organizationIds = organizationIdTerms.Aggregations.Terms("terms_organization_id").Buckets.Select(b => b.Key).ToArray();
             if (organizationIds.Length == 0)
@@ -192,10 +217,13 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             }
 
             _logger.LogInformation("{BatchNumber}/{BatchCount}: Found {OrphanedEventCount} orphaned events from missing organizations {MissingOrganizationIds} out of {OrganizationIdCount}", batchNumber, buckets, missingOrganizationIds.Length, missingOrganizationIds, organizationIds.Length);
-            await _elasticClient.DeleteByQueryAsync<PersistentEvent>(r => r.Query(q => q.Terms(t => t.Field(f => f.OrganizationId).Terms(missingOrganizationIds))));
+            await _elasticClient.DeleteByQueryAsync<PersistentEvent>(r => r.Query(q => q.Bool(b => b
+                .Filter(
+                    f => f.Terms(t => t.Field(e => e.OrganizationId).Terms(missingOrganizationIds)),
+                    f => f.DateRange(d => d.Field(e => e.CreatedUtc).GreaterThanOrEquals(orphanedEventCutoffUtc))))));
         }
 
-        _logger.LogInformation("Found {OrphanedEventCount} orphaned events from missing organizations out of {OrganizationIdCount}", totalOrphanedEventCount, totalOrganizationIds);
+        _logger.LogInformation("Found {OrphanedEventCount} orphaned events from missing organizations out of {OrganizationIdCount} since {OrphanedEventCutoffUtc}", totalOrphanedEventCount, totalOrganizationIds, orphanedEventCutoffUtc);
     }
 
     public async Task FixDuplicateStacks(JobContext context)
