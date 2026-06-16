@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:10.0.300 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0.301 AS build
 ARG MinVerVersionOverride
 WORKDIR /app
 
@@ -40,7 +40,7 @@ RUN dotnet publish -c Release -o out --no-build
 
 # job
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.8 AS job
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.9 AS job
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 
@@ -57,7 +57,7 @@ RUN dotnet publish -c Release -o out --no-build /p:SkipSpaPublish=true
 
 # api
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.8 AS api
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.9 AS api
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
 
@@ -73,7 +73,7 @@ RUN dotnet publish -c Release -o out --no-build
 
 # app
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.8 AS app
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.9 AS app
 
 WORKDIR /app
 COPY --from=app-publish /app/src/Exceptionless.Web/out ./
@@ -147,7 +147,7 @@ USER elasticsearch
 
 RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
     chmod +x dotnet-install.sh && \
-    ./dotnet-install.sh --version 10.0.8 --runtime aspnetcore && \
+    ./dotnet-install.sh --version 10.0.9 --runtime aspnetcore && \
     rm dotnet-install.sh
 
 EXPOSE 8080 9200
