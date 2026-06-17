@@ -85,7 +85,7 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
 
     private ElasticsearchClientSettings CreateElasticsearchClientSettings(NodePool connectionPool)
     {
-        var settings = new ElasticsearchClientSettings(
+        return ConfigureElasticsearchClientSettings(new ElasticsearchClientSettings(
             connectionPool,
             sourceSerializer: (_, clientSettings) =>
                 new DefaultSourceSerializer(clientSettings, options =>
@@ -109,8 +109,11 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
                             options.Converters.RemoveAt(i);
                     }
                     options.Converters.Insert(0, new Exceptionless.Core.Serialization.ObjectToInferredTypesConverter(preferInt64: true));
-                }));
+                })));
+    }
 
+    private ElasticsearchClientSettings ConfigureElasticsearchClientSettings(ElasticsearchClientSettings settings)
+    {
         ConfigureSettings(settings);
         foreach (var index in Indexes)
             index.ConfigureSettings(settings);

@@ -82,20 +82,14 @@ public static class JsonNodeExtensions
         if (target.IsNullOrEmpty())
             return false;
 
-        var toRemove = new List<(JsonObject parent, string name)>();
-
-        foreach (var descendant in target.DescendantsAndSelf().OfType<JsonObject>())
+        bool removed = false;
+        foreach (var descendant in target.DescendantsAndSelf().OfType<JsonObject>().ToList())
         {
-            foreach (var name in names.Where(n => descendant.IsPropertyNullOrEmpty(n) && descendant.ContainsKey(n)))
-            {
-                toRemove.Add((descendant, name));
-            }
+            foreach (var name in names.Where(n => descendant.IsPropertyNullOrEmpty(n) && descendant.ContainsKey(n)).ToList())
+                removed |= descendant.Remove(name);
         }
 
-        foreach (var (parent, name) in toRemove)
-            parent.Remove(name);
-
-        return toRemove.Count > 0;
+        return removed;
     }
 
     /// <summary>
