@@ -89,7 +89,7 @@ public class SerializerTests : TestWithServices
         // Verify round-trip preserves data
         string roundTrippedJson = _serializer.SerializeToString(ev);
         string expectedRoundTrippedJson = await File.ReadAllTextAsync(
-            Path.GetFullPath(Path.Combine("..", "..", "..", "Serializer", "Data", "event-with-unknown-properties-roundtrip.expected.json")),
+            Path.Join(AppContext.BaseDirectory, "Serializer", "Data", "event-with-unknown-properties-roundtrip.expected.json"),
             TestCancellationToken);
         JsonAssert.AssertJsonEquals(expectedRoundTrippedJson, roundTrippedJson);
 
