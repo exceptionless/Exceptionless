@@ -90,13 +90,11 @@ public class Event : IData, IJsonOnDeserialized
             // "referenceId" are entirely different strings (not just different casing) so they
             // go to ExtensionData. Required for older .NET SDK versions (< 5.x) that submit
             // events with PascalCase/camelCase property names.
-            if (ReferenceId is null)
+            if (ReferenceId is null &&
+                (ExtensionData.Remove("ReferenceId", out var refIdElement) ||
+                 ExtensionData.Remove("referenceId", out refIdElement)))
             {
-                if (ExtensionData.Remove("ReferenceId", out var refIdElement) ||
-                    ExtensionData.Remove("referenceId", out refIdElement))
-                {
-                    ReferenceId = refIdElement.GetString();
-                }
+                ReferenceId = refIdElement.GetString();
             }
 
             Data ??= [];
