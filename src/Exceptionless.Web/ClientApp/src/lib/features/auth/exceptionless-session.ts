@@ -1,21 +1,16 @@
-import { browser } from '$app/environment';
-
-type ExceptionlessClient = typeof import('@exceptionless/browser').Exceptionless;
+import { Exceptionless } from '@exceptionless/browser';
 
 let _activeUserId: null | string = null;
-let _exceptionlessClient: null | Promise<ExceptionlessClient> = null;
 
 /**
  * Ends the current Exceptionless session and clears user identity.
  * Call on logout. Clears local state unconditionally even if submitSessionEnd fails.
  */
 export async function endSession(): Promise<void> {
-    const exceptionless = await getExceptionlessClient();
-
     try {
-        await exceptionless?.submitSessionEnd();
+        await Exceptionless.submitSessionEnd();
     } finally {
-        exceptionless?.config.setUserIdentity('', '');
+        Exceptionless.config.setUserIdentity('', '');
         _activeUserId = null;
     }
 }
@@ -29,20 +24,15 @@ export async function setUserIdentity(userId: string, userName?: string): Promis
         return;
     }
 
-    const exceptionless = await getExceptionlessClient();
-    if (!exceptionless) {
-        return;
-    }
-
     if (userName) {
-        exceptionless.config.setUserIdentity(userId, userName);
+        Exceptionless.config.setUserIdentity(userId, userName);
     } else {
-        exceptionless.config.setUserIdentity(userId);
+        Exceptionless.config.setUserIdentity(userId);
     }
 
     if (_activeUserId !== userId) {
         _activeUserId = userId;
-        await exceptionless.submitSessionStart();
+        await Exceptionless.submitSessionStart();
     }
 }
 
@@ -51,15 +41,5 @@ export async function setUserIdentity(userId: string, userName?: string): Promis
  * Mirrors the legacy Angular $ExceptionlessClient.submitFeatureUsage pattern.
  */
 export async function submitFeatureUsage(feature: string): Promise<void> {
-    const exceptionless = await getExceptionlessClient();
-    await exceptionless?.submitFeatureUsage(feature);
-}
-
-function getExceptionlessClient(): null | Promise<ExceptionlessClient> {
-    if (!browser) {
-        return null;
-    }
-
-    _exceptionlessClient ??= import('@exceptionless/browser').then(({ Exceptionless }) => Exceptionless);
-    return _exceptionlessClient;
+    await Exceptionless.submitFeatureUsage(feature);
 }
