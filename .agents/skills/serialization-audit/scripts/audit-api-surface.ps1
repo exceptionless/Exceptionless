@@ -47,6 +47,8 @@ if (-not $BranchName) {
     if (-not $BranchName) { $BranchName = "unknown" }
 }
 $BranchName = $BranchName -replace '[/\\]', '-'
+$ReferenceScope = "$AuditRunId-$BranchName" -replace '[^A-Za-z0-9_-]', '-'
+$AuditEventDate = (Get-Date).ToUniversalTime().ToString("o")
 
 # ─── Output directory ─────────────────────────────────────────────────────────
 try {
@@ -84,6 +86,17 @@ function Format-Json {
     } catch { }
     # Fallback: return as-is if python3 unavailable
     return $Json
+}
+
+# ─── Helper: Scope fixed audit reference IDs to this run/branch ───────────────
+function Get-AuditReferenceId {
+    param([string]$ReferenceId)
+    return "$ReferenceScope-$ReferenceId"
+}
+
+function Set-AuditEventDate {
+    param([string]$Json)
+    return $Json.Replace("2026-05-20T12:00:00+00:00", $AuditEventDate)
 }
 
 # ─── Helper: Invoke API request with error handling ───────────────────────────
@@ -188,6 +201,10 @@ function Get-EsDocument {
 function Invoke-EventScenario {
     param([string]$ScenarioName, [string]$RequestJson, [string]$ReferenceId)
     Write-Host "  → $ScenarioName" -NoNewline
+    $scopedReferenceId = Get-AuditReferenceId $ReferenceId
+    $RequestJson = $RequestJson.Replace($ReferenceId, $scopedReferenceId)
+    $RequestJson = Set-AuditEventDate $RequestJson
+    $ReferenceId = $scopedReferenceId
 
     # 1. Save request
     Save-ScenarioFile -ScenarioName $ScenarioName -FileName "request.json" -Content (Format-Json $RequestJson)
@@ -494,10 +511,10 @@ Invoke-EventScenario -ScenarioName "events-post-date-formats" -ReferenceId "audi
 Write-Host "`n[Events — GET]"
 
 # events-get-list: submit an event, then GET the events list
-$listRefId = "audit-list-001"
+$listRefId = Get-AuditReferenceId "audit-list-001"
 Write-Host "  → events-get-list" -NoNewline
 
-$listPostResp = Invoke-Api -Method POST -Path "/events" -ApiKey $ProjectApiKey -Body @'
+$listPostBody = @'
 {
     "type": "log",
     "message": "Test list retrieval",
@@ -506,6 +523,9 @@ $listPostResp = Invoke-Api -Method POST -Path "/events" -ApiKey $ProjectApiKey -
     "source": "AuditSource-List"
 }
 '@
+$listPostBody = $listPostBody.Replace("audit-list-001", $listRefId)
+$listPostBody = Set-AuditEventDate $listPostBody
+$listPostResp = Invoke-Api -Method POST -Path "/events" -ApiKey $ProjectApiKey -Body $listPostBody
 
 if ($listPostResp.StatusCode -in @(200, 201, 202)) {
     $listEventsJson = Wait-ForEventByRef -ReferenceId $listRefId
@@ -528,10 +548,10 @@ if ($listPostResp.StatusCode -in @(200, 201, 202)) {
 } else { Write-Host " ✗ POST failed ($($listPostResp.StatusCode))" }
 
 # events-get-stack-mode
-$stackModeRefId = "audit-stackmode-001"
+$stackModeRefId = Get-AuditReferenceId "audit-stackmode-001"
 Write-Host "  → events-get-stack-mode" -NoNewline
 
-$stackModePostResp = Invoke-Api -Method POST -Path "/events" -ApiKey $ProjectApiKey -Body @'
+$stackModePostBody = @'
 {
     "type": "log",
     "message": "Test stack mode retrieval",
@@ -540,6 +560,9 @@ $stackModePostResp = Invoke-Api -Method POST -Path "/events" -ApiKey $ProjectApi
     "source": "AuditSource-StackMode"
 }
 '@
+$stackModePostBody = $stackModePostBody.Replace("audit-stackmode-001", $stackModeRefId)
+$stackModePostBody = Set-AuditEventDate $stackModePostBody
+$stackModePostResp = Invoke-Api -Method POST -Path "/events" -ApiKey $ProjectApiKey -Body $stackModePostBody
 
 if ($stackModePostResp.StatusCode -in @(200, 201, 202)) {
     $smEventsJson = Wait-ForEventByRef -ReferenceId $stackModeRefId
@@ -643,10 +666,10 @@ Write-Host " ✓"
 Write-Host "`n[Stacks]"
 
 # stacks-get-after-event: reuse a previously submitted event's stack
-$stackRefId = "audit-stack-001"
+$stackRefId = Get-AuditReferenceId "audit-stack-001"
 Write-Host "  → stacks-get-after-event" -NoNewline
 
-$stackPostResp = Invoke-Api -Method POST -Path "/events" -ApiKey $ProjectApiKey -Body @'
+$stackPostBody = @'
 {
     "type": "error",
     "message": "Test stack capture",
@@ -660,6 +683,9 @@ $stackPostResp = Invoke-Api -Method POST -Path "/events" -ApiKey $ProjectApiKey 
     }
 }
 '@
+$stackPostBody = $stackPostBody.Replace("audit-stack-001", $stackRefId)
+$stackPostBody = Set-AuditEventDate $stackPostBody
+$stackPostResp = Invoke-Api -Method POST -Path "/events" -ApiKey $ProjectApiKey -Body $stackPostBody
 if ($stackPostResp.StatusCode -in @(200, 201, 202)) {
     $stackEventsJson = Wait-ForEventByRef -ReferenceId $stackRefId
     if ($stackEventsJson) {
