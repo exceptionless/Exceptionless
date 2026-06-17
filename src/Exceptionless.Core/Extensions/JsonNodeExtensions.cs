@@ -82,7 +82,6 @@ public static class JsonNodeExtensions
         if (target.IsNullOrEmpty())
             return false;
 
-        bool removed = false;
         var toRemove = new List<(JsonObject parent, string name)>();
 
         foreach (var descendant in target.DescendantsAndSelf().OfType<JsonObject>())
@@ -94,12 +93,9 @@ public static class JsonNodeExtensions
         }
 
         foreach (var (parent, name) in toRemove)
-        {
             parent.Remove(name);
-            removed = true;
-        }
 
-        return removed;
+        return toRemove.Count > 0;
     }
 
     /// <summary>

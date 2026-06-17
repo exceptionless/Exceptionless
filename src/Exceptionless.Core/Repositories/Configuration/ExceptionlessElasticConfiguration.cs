@@ -80,10 +80,11 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
     protected override ElasticsearchClient CreateElasticClient()
     {
         var connectionPool = CreateConnectionPool();
+        return new ElasticsearchClient(CreateElasticsearchClientSettings(connectionPool));
+    }
 
-        // Settings are intentionally not disposed: they're owned by the ElasticsearchClient for the
-        // app's lifetime. The configuration is registered as a singleton in DI, so both the settings
-        // and client live until process exit.
+    private ElasticsearchClientSettings CreateElasticsearchClientSettings(NodePool connectionPool)
+    {
         var settings = new ElasticsearchClientSettings(
             connectionPool,
             sourceSerializer: (_, clientSettings) =>
@@ -117,8 +118,7 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
         if (!String.IsNullOrEmpty(_appOptions.ElasticsearchOptions.UserName) && !String.IsNullOrEmpty(_appOptions.ElasticsearchOptions.Password))
             settings.Authentication(new BasicAuthentication(_appOptions.ElasticsearchOptions.UserName, _appOptions.ElasticsearchOptions.Password));
 
-        var client = new ElasticsearchClient(settings);
-        return client;
+        return settings;
     }
 
     protected override NodePool CreateConnectionPool()
