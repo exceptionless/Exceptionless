@@ -469,13 +469,11 @@ internal static class EventIndexExtensions
         string propertyName = GetPropertyInfo(property).Name;
         JsonTypeInfo typeInfo = _propertyNameOptions.GetTypeInfo(typeof(TModel));
 
-        foreach (JsonPropertyInfo jsonProperty in typeInfo.Properties)
-        {
-            if (jsonProperty.AttributeProvider is PropertyInfo modelProperty && String.Equals(modelProperty.Name, propertyName, StringComparison.Ordinal))
-                return jsonProperty.Name;
-        }
-
-        throw new InvalidOperationException($"Unable to resolve JSON field name for {typeof(TModel).FullName}.{propertyName}.");
+        return typeInfo.Properties
+            .Where(jsonProperty => jsonProperty.AttributeProvider is PropertyInfo modelProperty && String.Equals(modelProperty.Name, propertyName, StringComparison.Ordinal))
+            .Select(jsonProperty => jsonProperty.Name)
+            .FirstOrDefault()
+            ?? throw new InvalidOperationException($"Unable to resolve JSON field name for {typeof(TModel).FullName}.{propertyName}.");
     }
 
     private static PropertyInfo GetPropertyInfo<TModel>(Expression<Func<TModel, object?>> expression)

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization.Metadata;
 
@@ -73,11 +74,11 @@ public static class EmptyCollectionModifier
             return null;
 
         // Check if it implements ICollection<T> (e.g., HashSet<T>)
-        foreach (var iface in propertyType.GetInterfaces())
-        {
-            if (iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(ICollection<>))
-                return iface.GetProperty("Count");
-        }
+        var genericCollectionInterface = propertyType.GetInterfaces()
+            .FirstOrDefault(iface => iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(ICollection<>));
+
+        if (genericCollectionInterface is not null)
+            return genericCollectionInterface.GetProperty("Count");
 
         // Fallback: any IEnumerable with a public Count property (custom collections)
         return propertyType.GetProperty("Count");
