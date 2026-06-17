@@ -2,12 +2,15 @@ var path = require("path");
 var fs = require("fs");
 var s = require("child_process");
 // eslint-disable-next-line import/no-extraneous-dependencies
+var livereload = require("connect-livereload");
+// eslint-disable-next-line import/no-extraneous-dependencies
 var proxyRequest = require("grunt-connect-proxy2/lib/utils").proxyRequest;
 
 module.exports = function () {
     var target = getTarget();
     var useHttps = String(process.env.USE_HTTPS || "").toLowerCase() === "true";
     var port = Number(process.env.PORT) || 7121;
+    var liveReloadPort = Number(process.env.LIVERELOAD_PORT) || 35729;
     var certs = useHttps ? generateCerts() : { cert: undefined, key: undefined };
 
     return {
@@ -19,6 +22,7 @@ module.exports = function () {
                 cert: certs.cert,
                 middleware: function (connect, options, middlewares) {
                     middlewares.unshift(proxyRequest);
+                    middlewares.splice(1, 0, livereload({ port: liveReloadPort }));
                     return middlewares;
                 },
             },
