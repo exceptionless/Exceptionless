@@ -1,16 +1,21 @@
-import { Exceptionless } from '@exceptionless/browser';
+import { browser } from '$app/environment';
+
+type ExceptionlessClient = typeof import('@exceptionless/browser').Exceptionless;
 
 let _activeUserId: null | string = null;
+let _exceptionlessClient: null | Promise<ExceptionlessClient> = null;
 
 /**
  * Ends the current Exceptionless session and clears user identity.
  * Call on logout. Clears local state unconditionally even if submitSessionEnd fails.
  */
 export async function endSession(): Promise<void> {
+    const exceptionless = await getExceptionlessClient();
+
     try {
-        await Exceptionless.submitSessionEnd();
+        await exceptionless?.submitSessionEnd();
     } finally {
-        Exceptionless.config.setUserIdentity('', '');
+        exceptionless?.config.setUserIdentity('', '');
         _activeUserId = null;
     }
 }
@@ -24,15 +29,20 @@ export async function setUserIdentity(userId: string, userName?: string): Promis
         return;
     }
 
+    const exceptionless = await getExceptionlessClient();
+    if (!exceptionless) {
+        return;
+    }
+
     if (userName) {
-        Exceptionless.config.setUserIdentity(userId, userName);
+        exceptionless.config.setUserIdentity(userId, userName);
     } else {
-        Exceptionless.config.setUserIdentity(userId);
+        exceptionless.config.setUserIdentity(userId);
     }
 
     if (_activeUserId !== userId) {
         _activeUserId = userId;
-        await Exceptionless.submitSessionStart();
+        await exceptionless.submitSessionStart();
     }
 }
 
@@ -41,5 +51,15 @@ export async function setUserIdentity(userId: string, userName?: string): Promis
  * Mirrors the legacy Angular $ExceptionlessClient.submitFeatureUsage pattern.
  */
 export async function submitFeatureUsage(feature: string): Promise<void> {
-    await Exceptionless.submitFeatureUsage(feature);
+    const exceptionless = await getExceptionlessClient();
+    await exceptionless?.submitFeatureUsage(feature);
+}
+
+function getExceptionlessClient(): null | Promise<ExceptionlessClient> {
+    if (!browser) {
+        return null;
+    }
+
+    _exceptionlessClient ??= import('@exceptionless/browser').then(({ Exceptionless }) => Exceptionless);
+    return _exceptionlessClient;
 }
