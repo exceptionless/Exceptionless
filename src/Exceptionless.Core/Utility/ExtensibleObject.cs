@@ -8,7 +8,7 @@ public interface IExtensibleObject
 {
     void SetProperty<T>(string name, T value);
 
-    T? GetProperty<T>(string name, JsonSerializerOptions? options = null);
+    T? GetProperty<T>(string name);
 
     object? GetProperty(string name);
 
@@ -33,7 +33,12 @@ public class ExtensibleObject : INotifyPropertyChanged, IExtensibleObject
         NotifyPropertyChanged(name);
     }
 
-    public T? GetProperty<T>(string name, JsonSerializerOptions? options = null)
+    public T? GetProperty<T>(string name)
+    {
+        return GetProperty<T>(name, null);
+    }
+
+    public T? GetProperty<T>(string name, JsonSerializerOptions? options)
     {
         object? value = GetProperty(name);
         if (value is null)

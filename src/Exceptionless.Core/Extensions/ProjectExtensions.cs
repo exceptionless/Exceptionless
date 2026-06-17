@@ -51,6 +51,14 @@ public static class ProjectExtensions
     /// <summary>
     /// Gets the slack token from extended data.
     /// </summary>
+    public static SlackToken? GetSlackToken(this Project project)
+    {
+        return project.Data is not null && project.Data.TryGetValue(Project.KnownDataKeys.SlackToken, out object? value) ? value as SlackToken : null;
+    }
+
+    /// <summary>
+    /// Gets the slack token from extended data using serializer-aware conversion.
+    /// </summary>
     public static SlackToken? GetSlackToken(this Project project, ITextSerializer serializer, ILogger? logger = null)
     {
         if (project.Data is null || !project.Data.TryGetValue(Project.KnownDataKeys.SlackToken, out _))

@@ -15,6 +15,14 @@ public static class DataDictionaryExtensions
     /// <summary>
     /// Retrieves a typed value from the <see cref="DataDictionary"/>, deserializing if necessary.
     /// </summary>
+    public static T? GetValue<T>(this DataDictionary extendedData, string key, JsonSerializerOptions options)
+    {
+        return extendedData.GetValue<T>(key, new SystemTextJsonSerializer(options));
+    }
+
+    /// <summary>
+    /// Retrieves a typed value from the <see cref="DataDictionary"/>, deserializing if necessary.
+    /// </summary>
     public static T? GetValue<T>(this DataDictionary extendedData, string key, ITextSerializer serializer)
     {
         if (!extendedData.TryGetValue(key, out object? data))
