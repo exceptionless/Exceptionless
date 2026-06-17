@@ -22,7 +22,7 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     private HashSet<string> _changedProperties = null!;
     private TEntityType _entity = null!;
     private Type _entityType = null!;
-    private JsonSerializerOptions? _options;
+    private readonly JsonSerializerOptions? _options;
 
     /// <summary>
     /// Initializes a new instance of <see cref="Delta{TEntityType}" />.
