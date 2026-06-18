@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="$(MSBuildThisFileDirectory)..\..\buildMultiTargeting\Microsoft.Testing.Extensions.Telemetry.props" />
-</Project>

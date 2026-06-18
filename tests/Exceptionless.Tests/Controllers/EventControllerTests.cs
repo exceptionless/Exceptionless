@@ -25,6 +25,8 @@ using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using Foundatio.Serializer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
 using Xunit;
 using MediaTypeHeaderValue = System.Net.Http.Headers.MediaTypeHeaderValue;
@@ -32,7 +34,7 @@ using Run = Exceptionless.Tests.Utility.Run;
 
 namespace Exceptionless.Tests.Controllers;
 
-public class EventControllerTests : IntegrationTestsBase
+public partial class EventControllerTests : IntegrationTestsBase
 {
     private readonly JsonSerializerOptions _jsonSerializerOptions;
     private readonly IOrganizationRepository _organizationRepository;
@@ -72,7 +74,7 @@ public class EventControllerTests : IntegrationTestsBase
     [Fact]
     public async Task PostEvent_WithValidPayload_EnqueuesAndProcessesEventAsync()
     {
-        var jsonOptions = GetService<JsonSerializerOptions>();
+        var serializer = GetService<ITextSerializer>();
         /* language=json */
         const string json = """{"message":"test","reference_id":"TestReferenceId","@user":{"identity":"Test user","name":null}}""";
         await SendRequestAsync(r => r
@@ -99,12 +101,11 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal("test", ev.Message);
         Assert.Equal("TestReferenceId", ev.ReferenceId);
 
-        var identity = ev.GetUserIdentity(jsonOptions);
+        var identity = ev.GetUserIdentity(serializer, _logger);
         Assert.NotNull(identity);
         Assert.Equal("Test user", identity.Identity);
         Assert.Null(identity.Name);
-        Assert.Null(identity.Name);
-        Assert.Null(ev.GetUserDescription(jsonOptions));
+        Assert.Null(ev.GetUserDescription(serializer, _logger));
 
         // post description
         await _eventUserDescriptionQueue.DeleteQueueAsync();
@@ -130,13 +131,12 @@ public class EventControllerTests : IntegrationTestsBase
 
         ev = await _eventRepository.GetByIdAsync(ev.Id);
         Assert.NotNull(ev);
-        identity = ev.GetUserIdentity(jsonOptions);
+        identity = ev.GetUserIdentity(serializer, _logger);
         Assert.NotNull(identity);
         Assert.Equal("Test user", identity.Identity);
         Assert.Null(identity.Name);
-        Assert.Null(identity.Name);
 
-        var description = ev.GetUserDescription(jsonOptions);
+        var description = ev.GetUserDescription(serializer, _logger);
         Assert.NotNull(description);
         Assert.Equal("Test Description", description.Description);
         Assert.Equal(TestConstants.UserEmail, description.EmailAddress);
@@ -231,7 +231,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.NotNull(ev.Data);
         Assert.Equal("custom value", ev.Data["custom_property"]);
 
-        var identity = ev.GetUserIdentity(_jsonSerializerOptions);
+        var identity = ev.GetUserIdentity(GetService<ITextSerializer>(), Log.CreateLogger<EventControllerTests>());
         Assert.NotNull(identity);
         Assert.Equal("user-123", identity.Identity);
         Assert.Equal("Test User", identity.Name);
@@ -318,7 +318,7 @@ public class EventControllerTests : IntegrationTestsBase
     [Fact]
     public async Task CanPostJsonWithUserInfoAsync()
     {
-        var jsonOptions = GetService<JsonSerializerOptions>();
+        var serializer = GetService<ITextSerializer>();
         /* language=json */
         const string json = """{"message":"test","@user":{"identity":"Test user","name":null}}""";
         await SendRequestAsync(r => r
@@ -344,7 +344,7 @@ public class EventControllerTests : IntegrationTestsBase
         var ev = events.Documents.Single(e => String.Equals(e.Type, Event.KnownTypes.Log));
         Assert.Equal("test", ev.Message);
 
-        var userInfo = ev.GetUserIdentity(jsonOptions);
+        var userInfo = ev.GetUserIdentity(serializer, _logger);
         Assert.NotNull(userInfo);
         Assert.Equal("Test user", userInfo.Identity);
         Assert.Null(userInfo.Name);
@@ -640,6 +640,30 @@ public class EventControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetEvent_WithMismatchedExpectedStack_ReturnsBadRequest()
+    {
+        var (stacks, events) = await CreateDataAsync(d =>
+        {
+            d.Event().TestProject().StackId("1ecd0826e447a44e78877ab1");
+            d.Event().TestProject().StackId("2ecd0826e447a44e78877ab2");
+        });
+
+        var expectedStackId = stacks.Single(s => s.Id == "2ecd0826e447a44e78877ab2").Id;
+        var actualEvent = events.Single(e => e.StackId == "1ecd0826e447a44e78877ab1");
+        string actualStackId = actualEvent.StackId ?? throw new InvalidOperationException("Expected test event to have a stack id.");
+
+        var problemDetails = await SendRequestAsAsync<ProblemDetails>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("events", actualEvent.Id)
+            .QueryString("expected_stack_id", expectedStackId)
+            .StatusCodeShouldBeBadRequest()
+        ) ?? throw new InvalidOperationException("Expected problem details response.");
+
+        Assert.Equal(StatusCodes.Status400BadRequest, problemDetails.Status);
+        Assert.Equal($"The event \"{actualEvent.Id}\" belongs to stack \"{actualStackId}\", not stack \"{expectedStackId}\". Open the event from its current stack.", problemDetails.Title);
+    }
+
+    [Fact]
     public async Task WillGetEventSessions()
     {
         string sessionId = Guid.NewGuid().ToString("N");
@@ -791,6 +815,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.NotNull(results);
         Assert.NotEmpty(results);
         Assert.All(results, summary => Assert.NotEqual(default, summary.Date));
+        Assert.Contains(results, summary => !String.IsNullOrEmpty(summary.Type));
     }
 
     [Fact]
@@ -899,6 +924,7 @@ public class EventControllerTests : IntegrationTestsBase
                 .TestProject()
                 .Message("New stack - skip due to date filter")
                 .Type(Event.KnownTypes.Log)
+                .Source("skip-due-to-date-filter")
                 .Status(StackStatus.Open)
                 .TotalOccurrences(50)
                 .IsFirstOccurrence()
@@ -909,6 +935,7 @@ public class EventControllerTests : IntegrationTestsBase
                 .TestProject()
                 .Message("Old stack - new event")
                 .Type(Event.KnownTypes.Log)
+                .Source("old-stack-new-event")
                 .Status(StackStatus.Regressed)
                 .TotalOccurrences(33)
                 .FirstOccurrence(utcNow.SubtractYears(1))
@@ -918,6 +945,7 @@ public class EventControllerTests : IntegrationTestsBase
                 .TestProject()
                 .Message("New Stack - event not marked as first occurrence")
                 .Type(Event.KnownTypes.Log)
+                .Source("new-stack-not-first-occurrence")
                 .Status(StackStatus.Open)
                 .TotalOccurrences(15)
                 .FirstOccurrence(utcNow.SubtractDays(2))
@@ -1742,7 +1770,7 @@ public class EventControllerTests : IntegrationTestsBase
             .Replace("<EVENT_ID>", processedEvent.Id)
             .Replace("<STACK_ID>", processedEvent.StackId);
 
-        Assert.Equal(ToPrettyJson(expectedJson), ToPrettyJson(actualJson));
+        JsonAssert.AssertJsonEqualsNormalized(expectedJson, actualJson, _jsonSerializerOptions);
     }
 
     [Fact]
@@ -1784,14 +1812,11 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal("log", ev.Type);
         Assert.Equal("Test with extra properties", ev.Message);
 
-        // Note: Extra root properties should be captured if JsonExtensionData is implemented on Event class
-        // If not implemented, this assertion verifies the current behavior
-        if (ev.Data is not null && ev.Data.ContainsKey("custom_field"))
-        {
-            Assert.Equal("custom_value", ev.Data["custom_field"]);
-            Assert.Equal(42L, ev.Data["custom_number"]);
-            Assert.True(ev.Data["custom_flag"] as bool?);
-        }
+        // Extra root properties are captured via [JsonExtensionData] + OnDeserialized merge into Data
+        Assert.NotNull(ev.Data);
+        Assert.Equal("custom_value", ev.Data["custom_field"]);
+        Assert.Equal(42L, ev.Data["custom_number"]);
+        Assert.Equal(true, ev.Data["custom_flag"]);
     }
 
     [Fact]
@@ -1826,7 +1851,7 @@ public class EventControllerTests : IntegrationTestsBase
         await processEventsJob.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
 
-        var jsonOptions = GetService<JsonSerializerOptions>();
+        var serializer = GetService<ITextSerializer>();
 
         // Assert
         var events = await _eventRepository.GetAllAsync();
@@ -1836,7 +1861,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal("Error with mixed data", ev.Message);
 
         // Verify known data is properly deserialized
-        var userInfo = ev.GetUserIdentity(jsonOptions);
+        var userInfo = ev.GetUserIdentity(serializer, _logger);
         Assert.NotNull(userInfo);
         Assert.Equal("user@example.com", userInfo.Identity);
         Assert.Equal("Test User", userInfo.Name);
@@ -1845,12 +1870,10 @@ public class EventControllerTests : IntegrationTestsBase
         string? version = ev.GetVersion();
         Assert.Equal("1.0.0", version);
 
-        // Verify extra properties are captured if JsonExtensionData is implemented
-        if (ev.Data is not null && ev.Data.TryGetValue("extra_field_1", out object? value))
-        {
-            Assert.Equal("value1", value);
-            Assert.Equal(99L, ev.Data["extra_field_2"]);
-        }
+        // Extra root properties are captured via [JsonExtensionData] + OnDeserialized merge into Data
+        Assert.NotNull(ev.Data);
+        Assert.Equal("value1", ev.Data["extra_field_1"]);
+        Assert.Equal(99L, ev.Data["extra_field_2"]);
     }
 
     [Fact]
@@ -1892,10 +1915,24 @@ public class EventControllerTests : IntegrationTestsBase
 
         Assert.Equal("log", ev.Type);
         Assert.Equal("Test with complex properties", ev.Message);
-
-        // Verify event was processed successfully
-        Assert.NotNull(ev.Id);
         Assert.NotEqual(DateTimeOffset.MinValue, ev.Date);
+        Assert.InRange(ev.Date, DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddMinutes(1));
+
+        // Verify complex properties are captured in Data via JsonExtensionData + OnDeserialized
+        Assert.NotNull(ev.Data);
+        // Verify nested object structure is preserved
+        Assert.True(ev.Data.TryGetValue("metadata", out var metadataRaw), "metadata key should be captured in Data");
+        var metadata = Assert.IsType<Dictionary<string, object?>>(metadataRaw);
+        Assert.Equal("value1", metadata["key1"]);
+        Assert.Equal(42L, metadata["key2"]);
+        var nested = Assert.IsType<Dictionary<string, object?>>(metadata["nested"]);
+        Assert.Equal("value", nested["inner"]);
+
+        // Verify array structure is preserved
+        Assert.True(ev.Data.TryGetValue("tags_list", out var tagsListRaw), "tags_list key should be captured in Data");
+        var tagsList = Assert.IsType<List<object?>>(tagsListRaw);
+        Assert.Equal(3, tagsList.Count);
+        Assert.Equal("tag1", tagsList[0]);
     }
 
     [Fact]
@@ -1986,8 +2023,9 @@ public class EventControllerTests : IntegrationTestsBase
         await RefreshDataAsync();
 
         // Assert
+        var serializer = GetService<ITextSerializer>();
         var ev = (await _eventRepository.GetByReferenceIdAsync(SampleDataService.TEST_PROJECT_ID, referenceId)).Documents.Single();
-        var userDescription = ev.GetUserDescription(_jsonSerializerOptions);
+        var userDescription = ev.GetUserDescription(serializer, _logger);
         Assert.NotNull(userDescription);
         Assert.Equal("legacy@exceptionless.test", userDescription.EmailAddress);
         Assert.Equal("Legacy description", userDescription.Description);

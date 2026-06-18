@@ -18,10 +18,11 @@
     import RequiresPromotedWebHookDialog from './dialogs/requires-promoted-web-hook-dialog.svelte';
 
     interface Props {
+        onDeleted?: () => void;
         stack: Stack;
     }
 
-    let { stack }: Props = $props();
+    let { onDeleted, stack }: Props = $props();
     let openAddStackReferenceDialog = $state<boolean>(false);
     let openRemoveStackDialog = $state<boolean>(false);
     let openRequiresPromotedWebHookDialog = $state<boolean>(false);
@@ -107,6 +108,7 @@
     async function remove() {
         await removeStacks.mutateAsync();
         toast.success('Successfully queued the stack for deletion.');
+        onDeleted?.();
     }
 </script>
 

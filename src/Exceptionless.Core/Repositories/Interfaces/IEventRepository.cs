@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Models;
+﻿using Elastic.Clients.Elasticsearch;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
@@ -23,7 +24,7 @@ public interface IEventRepository : IRepositoryOwnedByOrganizationAndProject<Per
 
 public record CompositeKeyResult
 {
-    public Dictionary<string, object> AfterKey { get; init; } = [];
+    public Dictionary<Field, FieldValue> AfterKey { get; init; } = [];
 }
 
 public static class EventRepositoryExtensions

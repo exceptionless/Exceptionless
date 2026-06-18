@@ -8,6 +8,7 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Models;
+using Exceptionless.Web.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
 using Microsoft.Extensions.DependencyInjection;
@@ -215,6 +216,31 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         Assert.Equal(SampleDataService.TEST_ORG_ID, viewOrg.Id);
         Assert.NotNull(viewOrg.Usage);
         Assert.NotNull(viewOrg.UsageHours);
+    }
+
+    [Fact]
+    public async Task UploadIconAsync_ImageOverGlobalRequestLimit_ReturnsUpdatedOrganization()
+    {
+        // Arrange
+        using var content = CreateProfileImageContent();
+
+        // Act
+        var organization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "icon")
+            .Content(content)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(organization);
+        Assert.Contains($"/organizations/{SampleDataService.TEST_ORG_ID}/icon/", organization.IconUrl);
+
+        var storedOrganization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(storedOrganization);
+        Assert.Equal(organization.IconUrl?.Split('/').Last(), storedOrganization.IconFileName);
+        Assert.DoesNotContain("/", storedOrganization.IconFileName!);
     }
 
     [Fact]
@@ -975,6 +1001,41 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ChangePlanAsync_HiddenPlanTarget_ReturnsValidationError()
+    {
+        // Arrange
+        await SetPlanAndStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, _plans.SmallPlan.Id, "cus_existing");
+
+        // Act
+        var problemDetails = await WithBillingEnabledAsync<Microsoft.AspNetCore.Mvc.ValidationProblemDetails?>(() =>
+            SendRequestAsAsync<Microsoft.AspNetCore.Mvc.ValidationProblemDetails>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest { PlanId = _plans.UnlimitedPlan.Id })
+                .StatusCodeShouldBeUnprocessableEntity()
+            ));
+
+        // Assert
+        Assert.NotNull(problemDetails);
+        Assert.Collection(problemDetails.Errors,
+            error =>
+            {
+                Assert.Equal("general", error.Key);
+                Assert.Equal(["Invalid plan. Please select a valid plan."], error.Value);
+            });
+
+        Assert.Empty(StripeBillingClient.UpdatedSubscriptions);
+        Assert.Empty(StripeBillingClient.CreatedSubscriptionOptions);
+
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        Assert.Equal(_plans.SmallPlan.Id, organization.PlanId);
+        Assert.Equal("cus_existing", organization.StripeCustomerId);
+        Assert.Equal(BillingStatus.Active, organization.BillingStatus);
+    }
+
+    [Fact]
     public async Task ChangePlanAsync_SameFreePlan_ReturnsSuccess()
     {
         var result = await WithBillingEnabledAsync(() =>
@@ -1565,5 +1626,20 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         Assert.NotNull(updated);
         Assert.Equal(originalOrganization.Name, updated.Name);
         Assert.Equal(originalOrganization.UpdatedUtc, updated.UpdatedUtc);
+    }
+
+    private static MultipartFormDataContent CreateProfileImageContent()
+    {
+        var bytes = new byte[256 * 1024];
+        byte[] pngHeader = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+        Array.Copy(pngHeader, bytes, pngHeader.Length);
+        Assert.True(bytes.Length < ProfileImageStorage.MaxFileSize);
+
+        var fileContent = new ByteArrayContent(bytes);
+        fileContent.Headers.ContentType = new("image/png");
+
+        var content = new MultipartFormDataContent();
+        content.Add(fileContent, "file", "icon.png");
+        return content;
     }
 }

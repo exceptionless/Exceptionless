@@ -25,7 +25,7 @@
             <div class="flex items-center justify-start">
                 <Sidebar.Trigger variant="outline" class="size-9" />
 
-                <A variant="ghost" class="mr-14 ml-2 flex md:min-w-62.5 lg:ml-3 dark:text-white" href={resolve('/(app)/stacks')}>
+                <A variant="ghost" class="mr-14 ml-2 flex md:min-w-62.5 lg:ml-3 dark:text-white" href={resolve('/(app)/stack')}>
                     {#if isMediumScreenQuery.current}
                         <Logo class="absolute top-1 mr-3 h-14" />
                     {:else}

@@ -79,11 +79,13 @@ export function getTableOptions(queryParameters: TableMemoryPagingParameters, ge
             return getColumns();
         },
         configureOptions: (options) => {
-            options.getRowId = (row) => row.repository + '/' + row.name;
-            options._rowModels = { ...options._rowModels, sortedRowModel: createSortedRowModel(sortFns) };
-            options.initialState = { sorting: [{ desc: true, id: 'start_time' }] };
-            options.manualSorting = false;
-            return options;
+            return {
+                ...options,
+                _rowModels: { ...options._rowModels, sortedRowModel: createSortedRowModel(sortFns) },
+                getRowId: (row) => row.repository + '/' + row.name,
+                initialState: { sorting: [{ desc: true, id: 'start_time' }] },
+                manualSorting: false
+            };
         },
         paginationStrategy: 'memory',
         get queryData() {

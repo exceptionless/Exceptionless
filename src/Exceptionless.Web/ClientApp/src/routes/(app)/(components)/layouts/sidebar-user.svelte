@@ -12,8 +12,10 @@
     import * as Sidebar from '$comp/ui/sidebar/index';
     import { useSidebar } from '$comp/ui/sidebar/index';
     import { Skeleton } from '$comp/ui/skeleton';
+    import { logout } from '$features/auth/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { apiReferenceHref, documentationHref, githubRepositoryHref, supportIssuesHref } from '$features/shared/help-links';
+    import { useFetchClient } from '@exceptionless/fetchclient';
     import BadgeCheck from '@lucide/svelte/icons/badge-check';
     import Bell from '@lucide/svelte/icons/bell';
     import BookOpen from '@lucide/svelte/icons/book-open';
@@ -24,6 +26,7 @@
     import LogOut from '@lucide/svelte/icons/log-out';
     import Plus from '@lucide/svelte/icons/plus';
     import Settings from '@lucide/svelte/icons/settings';
+    import { useQueryClient } from '@tanstack/svelte-query';
 
     interface Props {
         gravatar: Gravatar;
@@ -49,6 +52,8 @@
         user
     }: Props = $props();
     const sidebar = useSidebar();
+    const client = useFetchClient();
+    const queryClient = useQueryClient();
     const currentOrganizationId = $derived(organizations.find((organizationItem) => organizationItem.id === organization.current)?.id);
 
     function getUnreadCountLabel(unreadCount: number): string {
@@ -74,6 +79,12 @@
     function navigateTo(href: string): void {
         onMenuClick();
         void goto(href);
+    }
+
+    async function onLogout(): Promise<void> {
+        onMenuClick();
+        await logout(queryClient, client);
+        await goto(resolve('/(auth)/login'));
     }
 
     function openExternalLink(href: string): void {
@@ -124,7 +135,9 @@
                                 {#await gravatar.src}
                                     <Avatar.Fallback class="rounded-lg">{gravatar.initials}</Avatar.Fallback>
                                 {:then src}
-                                    <Avatar.Image alt={user ? `${user.full_name} avatar` : 'avatar'} {src} />
+                                    {#if src}
+                                        <Avatar.Image alt={user ? `${user.full_name} avatar` : 'avatar'} {src} />
+                                    {/if}
                                 {/await}
                                 <Avatar.Fallback class="rounded-lg">{gravatar.initials}</Avatar.Fallback>
                             </Avatar.Root>
@@ -148,7 +161,9 @@
                                 {#await gravatar.src}
                                     <Avatar.Fallback class="rounded-lg">{gravatar.initials}</Avatar.Fallback>
                                 {:then src}
-                                    <Avatar.Image alt={user ? `${user.full_name} avatar` : 'avatar'} {src} />
+                                    {#if src}
+                                        <Avatar.Image alt={user ? `${user.full_name} avatar` : 'avatar'} {src} />
+                                    {/if}
                                 {/await}
                                 <Avatar.Fallback class="rounded-lg">{gravatar.initials}</Avatar.Fallback>
                             </Avatar.Root>
@@ -227,7 +242,7 @@
                         </DropdownMenu.SubContent>
                     </DropdownMenu.Sub>
                     <DropdownMenu.Separator />
-                    <DropdownMenu.Item onSelect={() => navigateTo(resolve('/(auth)/logout'))}>
+                    <DropdownMenu.Item onSelect={onLogout}>
                         <LogOut />
                         <span class="w-full">Log Out</span>
                     </DropdownMenu.Item>

@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Text.Json;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories;
@@ -8,6 +7,7 @@ using Exceptionless.Helpers;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
+using Foundatio.Serializer;
 using Xunit;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
@@ -21,7 +21,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     private readonly IEventRepository _repository;
     private readonly StackData _stackData;
     private readonly IStackRepository _stackRepository;
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly ITextSerializer _serializer;
 
     public EventRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
@@ -30,10 +30,10 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         _repository = GetService<IEventRepository>();
         _stackData = GetService<StackData>();
         _stackRepository = GetService<IStackRepository>();
-        _jsonOptions = GetService<JsonSerializerOptions>();
+        _serializer = GetService<ITextSerializer>();
     }
 
-    [Fact(Skip = "https://github.com/elastic/elasticsearch-net/issues/2463")]
+    [Fact]
     public async Task GetAsync()
     {
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
@@ -50,7 +50,17 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
             Geo = "40,-70"
         });
 
-        Assert.Equal(ev, await _repository.GetByIdAsync(ev.Id));
+        var actual = await _repository.GetByIdAsync(ev.Id);
+        Assert.NotNull(actual);
+        Assert.Equal(ev.Id, actual.Id);
+        Assert.Equal(ev.Type, actual.Type);
+        Assert.Equal(ev.OrganizationId, actual.OrganizationId);
+        Assert.Equal(ev.ProjectId, actual.ProjectId);
+        Assert.Equal(ev.StackId, actual.StackId);
+        Assert.Equal(ev.Date, actual.Date);
+        Assert.Equal(ev.Count, actual.Count);
+        Assert.Equal(ev.Value, actual.Value);
+        Assert.Equal(ev.Geo, actual.Geo);
     }
 
     [Fact(Skip = "Performance Testing")]
@@ -224,7 +234,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Count);
         events.ForEach(e =>
         {
-            var ri = e.GetRequestInfo(_jsonOptions);
+            var ri = e.GetRequestInfo(_serializer, _logger);
             Assert.NotNull(ri);
             Assert.Equal(_clientIpAddress, ri.ClientIpAddress);
         });
@@ -278,10 +288,10 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
 
         // Act
         var afterKey = new CompositeKeyResult();
-        var stackIds = await _repository.GetDistinctStackIdsAsync(100, afterKey);
+        var stackIds = await _repository.GetDistinctStackIdsAsync(10000, afterKey);
 
         // Assert
-        Assert.Equal(2, stackIds.Count);
+        Assert.Equal(stackIds.Count, stackIds.Distinct(StringComparer.Ordinal).Count());
         Assert.Contains(stack1.Id, stackIds);
         Assert.Contains(stack2.Id, stackIds);
     }
@@ -298,18 +308,17 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
             await _repository.AddAsync(_eventData.GenerateEvents(2, TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id), o => o.ImmediateConsistency());
 
         // Act - page through with batch size of 2
-        var allIds = new HashSet<string>();
+        var allIds = new List<string>();
         var afterKey = new CompositeKeyResult();
         IReadOnlyCollection<string> batch;
         do
         {
             batch = await _repository.GetDistinctStackIdsAsync(2, afterKey);
-            foreach (var id in batch)
-                allIds.Add(id);
-        } while (batch.Count == 2);
+            allIds.AddRange(batch);
+        } while (afterKey.AfterKey.Count > 0);
 
         // Assert
-        Assert.Equal(5, allIds.Count);
+        Assert.Equal(allIds.Count, allIds.Distinct(StringComparer.Ordinal).Count());
         foreach (var stack in stacks)
             Assert.Contains(stack.Id, allIds);
     }
@@ -418,10 +427,10 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
 
         // Act
         var afterKey = new CompositeKeyResult();
-        var projectIds = await _repository.GetDistinctProjectIdsAsync(100, afterKey);
+        var projectIds = await _repository.GetDistinctProjectIdsAsync(10000, afterKey);
 
         // Assert
-        Assert.Equal(2, projectIds.Count);
+        Assert.Equal(projectIds.Count, projectIds.Distinct(StringComparer.Ordinal).Count());
         Assert.Contains(TestConstants.ProjectId, projectIds);
         Assert.Contains(project2Id, projectIds);
     }
@@ -438,10 +447,10 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
 
         // Act
         var afterKey = new CompositeKeyResult();
-        var orgIds = await _repository.GetDistinctOrganizationIdsAsync(100, afterKey);
+        var orgIds = await _repository.GetDistinctOrganizationIdsAsync(10000, afterKey);
 
         // Assert
-        Assert.Equal(2, orgIds.Count);
+        Assert.Equal(orgIds.Count, orgIds.Distinct(StringComparer.Ordinal).Count());
         Assert.Contains(TestConstants.OrganizationId, orgIds);
         Assert.Contains(org2Id, orgIds);
     }

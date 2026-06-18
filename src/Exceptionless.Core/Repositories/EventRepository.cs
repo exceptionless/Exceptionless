@@ -1,12 +1,18 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
+using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.Aggregations;
+using Elastic.Clients.Elasticsearch.QueryDsl;
+using Elastic.Transport;
+using Elastic.Transport.Products.Elasticsearch;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Validation;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch.Extensions;
+using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
-using Nest;
 
 namespace Exceptionless.Core.Repositories;
 
@@ -25,7 +31,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         BatchNotifications = true;
         DefaultPipeline = "events-pipeline";
 
-        AddDefaultExclude(e => e.Idx!);
+        AddDefaultExclude(e => e.Idx);
         // copy to fields
         AddDefaultExclude(EventIndex.Alias.IpAddress);
         AddDefaultExclude(EventIndex.Alias.OperatingSystem);
@@ -36,11 +42,14 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
 
     public Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, CommandOptionsDescriptor<PersistentEvent>? options = null)
     {
-        var filter = Query<PersistentEvent>.Term(e => e.Type, Event.KnownTypes.Session) && !Query<PersistentEvent>.Exists(f => f.Field(e => e.Idx![Event.KnownDataKeys.SessionEnd + "-d"]));
-        if (createdBeforeUtc.Ticks > 0)
-            filter &= Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).LessThanOrEquals(createdBeforeUtc));
+        var query = new RepositoryQuery<PersistentEvent>()
+            .FieldEquals(e => e.Type, Event.KnownTypes.Session)
+            .ElasticFilter(new BoolQuery { MustNot = [new ExistsQuery { Field = $"idx.{Event.KnownDataKeys.SessionEnd}-d" }] });
 
-        return FindAsync(q => q.ElasticFilter(filter).SortDescending(e => e.Date), options);
+        if (createdBeforeUtc.Ticks > 0)
+            query = query.DateRange(null, createdBeforeUtc, (PersistentEvent e) => e.Date); // No lower bound, upper bound is exclusive
+
+        return FindAsync(q => query.SortDescending(e => e.Date), options);
     }
 
     /// <summary>
@@ -67,20 +76,19 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         if (utcStart.HasValue && utcEnd.HasValue)
             query = query.DateRange(utcStart, utcEnd, InferField(e => e.Date)).Index(utcStart, utcEnd);
         else if (utcEnd.HasValue)
-            query = query.ElasticFilter(Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).LessThan(utcEnd)));
+            query = query.DateRange(null, utcEnd, (PersistentEvent e) => e.Date);
         else if (utcStart.HasValue)
-            query = query.ElasticFilter(Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).GreaterThan(utcStart)));
+            query = query.DateRange(utcStart, null, (PersistentEvent e) => e.Date);
 
         if (!String.IsNullOrEmpty(clientIpAddress))
             query = query.FieldEquals(EventIndex.Alias.IpAddress, clientIpAddress);
 
-        return RemoveAllAsync(q => query, options);
+        return RemoveAllIgnoringMissingEventIndexesAsync(q => query, options);
     }
 
     public Task<FindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId)
     {
-        var filter = Query<PersistentEvent>.Term(e => e.ReferenceId, referenceId);
-        return FindAsync(q => q.Project(projectId).ElasticFilter(filter).SortDescending(e => e.Date), o => o.PageLimit(10));
+        return FindAsync(q => q.Project(projectId).FieldEquals(e => e.ReferenceId, referenceId).SortDescending(e => e.Date), o => o.PageLimit(10));
     }
 
     public async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, AppFilter? systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null)
@@ -116,8 +124,8 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
             .SortDescending(e => e.Date)
             .Include(e => e.Id, e => e.Date)
             .AppFilter(systemFilter)
-            .ElasticFilter(!Query<PersistentEvent>.Ids(ids => ids.Values(ev.Id)))
-            .FilterExpression(String.Concat(EventIndex.Alias.StackId, ":", ev.StackId))
+            .Stack(ev.StackId)
+            .ExcludedId(ev.Id)
             .EnforceEventStackFilter(false), o => o.PageLimit(10));
 
         if (results.Total == 0)
@@ -156,8 +164,8 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
             .SortAscending(e => e.Date)
             .Include(e => e.Id, e => e.Date)
             .AppFilter(systemFilter)
-            .ElasticFilter(!Query<PersistentEvent>.Ids(ids => ids.Values(ev.Id)))
-            .FilterExpression(String.Concat(EventIndex.Alias.StackId, ":", ev.StackId))
+            .Stack(ev.StackId)
+            .ExcludedId(ev.Id)
             .EnforceEventStackFilter(false), o => o.PageLimit(10));
 
         if (results.Total == 0)
@@ -189,13 +197,28 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         return FindAsync(q => q.Project(projectId).SortDescending(e => e.Date).SortDescending(e => e.Id), options);
     }
 
+    public override Task<long> RemoveAllByOrganizationIdAsync(string organizationId)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(organizationId);
+
+        return RemoveAllIgnoringMissingEventIndexesAsync(q => q.Organization(organizationId));
+    }
+
+    public override Task<long> RemoveAllByProjectIdAsync(string organizationId, string projectId)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(organizationId);
+        ArgumentException.ThrowIfNullOrEmpty(projectId);
+
+        return RemoveAllIgnoringMissingEventIndexesAsync(q => q.Organization(organizationId).Project(projectId));
+    }
+
     public Task<long> RemoveAllByStackIdsAsync(string[] stackIds)
     {
         ArgumentNullException.ThrowIfNull(stackIds);
         if (stackIds is [])
             throw new ArgumentOutOfRangeException(nameof(stackIds));
 
-        return RemoveAllAsync(q => q.Stack(stackIds));
+        return RemoveAllIgnoringMissingEventIndexesAsync(q => q.Stack(stackIds));
     }
 
     public Task<long> RemoveAllByProjectIdsAsync(string[] projectIds)
@@ -204,7 +227,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         if (projectIds is [])
             throw new ArgumentOutOfRangeException(nameof(projectIds));
 
-        return RemoveAllAsync(q => q.Project(projectIds));
+        return RemoveAllIgnoringMissingEventIndexesAsync(q => q.Project(projectIds));
     }
 
     public Task<long> RemoveAllByOrganizationIdsAsync(string[] organizationIds)
@@ -213,7 +236,50 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         if (organizationIds is [])
             throw new ArgumentOutOfRangeException(nameof(organizationIds));
 
-        return RemoveAllAsync(q => q.Organization(organizationIds));
+        return RemoveAllIgnoringMissingEventIndexesAsync(q => q.Organization(organizationIds));
+    }
+
+    private async Task<long> RemoveAllIgnoringMissingEventIndexesAsync(
+        RepositoryQueryDescriptor<PersistentEvent> query, CommandOptionsDescriptor<PersistentEvent>? options = null)
+    {
+        try
+        {
+            return await RemoveAllAsync(query, options);
+        }
+        catch (RepositoryException ex) when (IsIndexNotFound(ex.InnerException as TransportException))
+        {
+            return 0;
+        }
+        catch (TransportException ex) when (IsIndexNotFound(ex))
+        {
+            return 0;
+        }
+    }
+
+    private static bool IsIndexNotFound(TransportException? ex)
+    {
+        if (ex?.ApiCallDetails?.HttpStatusCode != 404)
+            return false;
+
+        return ex.ApiCallDetails.ProductError is ElasticsearchServerError serverError
+            ? IsIndexNotFound(serverError)
+            : ex.DebugInformation.Contains("index_not_found_exception", StringComparison.Ordinal);
+    }
+
+    private static bool IsIndexNotFound(ElasticsearchServerError serverError)
+    {
+        if (serverError.Status != 404 || serverError.Error is null)
+            return false;
+
+        return String.Equals(serverError.Error.Type, "index_not_found_exception", StringComparison.Ordinal)
+            || serverError.Error.RootCause?.Any(IsIndexNotFound) == true;
+    }
+
+    private static bool IsIndexNotFound(Elastic.Transport.Products.Elasticsearch.ErrorCause? cause)
+    {
+        return cause is not null
+            && (String.Equals(cause.Type, "index_not_found_exception", StringComparison.Ordinal)
+                || cause.CausedBy is not null && IsIndexNotFound(cause.CausedBy));
     }
 
     /// <summary>
@@ -225,7 +291,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         ArgumentNullException.ThrowIfNull(sourceStackIds);
         ArgumentException.ThrowIfNullOrEmpty(targetStackId);
 
-        // Materialize to avoid multiple enumeration and guard against empty — an empty
+        // Materialize to avoid multiple enumeration and guard against empty; an empty
         // .Stack() filter would match ALL events and reassign them to the target stack.
         var sourceIds = sourceStackIds.ToList();
         if (sourceIds.Count == 0)
@@ -265,21 +331,29 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         string fieldName, Expression<Func<PersistentEvent, object>> fieldExpression, int batchSize, CompositeKeyResult? afterKey)
     {
         var afterKeyValues = afterKey?.AfterKey;
+        string aggregationName = $"composite_{fieldName}";
+        var sources = new List<KeyValuePair<string, CompositeAggregationSource>>
+        {
+            new(fieldName, new CompositeAggregationSource
+            {
+                Terms = new CompositeTermsAggregation { Field = fieldExpression }
+            })
+        };
+
         var search = await _configuration.Client.SearchAsync<PersistentEvent>(s =>
         {
-            s.Size(0).Aggregations(a => a
-                .Composite($"composite_{fieldName}", c =>
+            s.Size(0)
+                .AddAggregation(aggregationName, a => a.Composite(c =>
                 {
-                    var composite = c.Size(batchSize)
-                        .Sources(src => src.Terms(fieldName, t => t.Field(fieldExpression)));
+                    c.Size(batchSize)
+                        .Sources(sources);
+
                     if (afterKeyValues is { Count: > 0 })
-                        composite.After(new CompositeKey(afterKeyValues));
-                    return composite;
+                        c.After(afterKeyValues);
                 }));
-            return s;
         });
 
-        var composite = search.Aggregations.Composite($"composite_{fieldName}");
+        var composite = search.Aggregations?.GetComposite(aggregationName);
 
         // Always clear the cursor first; repopulate only when a next page exists.
         // This ensures callers that check afterKey.AfterKey.Count > 0 correctly

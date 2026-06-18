@@ -6,10 +6,10 @@ using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
-using Foundatio.FastCloner;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Options;
 using Foundatio.Repositories.Utility;
+using Foundatio.Serializer;
 using Foundatio.Utility;
 using Xunit;
 
@@ -18,12 +18,14 @@ namespace Exceptionless.Tests.Repositories;
 public sealed class StackRepositoryTests : IntegrationTestsBase
 {
     private readonly InMemoryCacheClient _cache;
+    private readonly ITextSerializer _serializer;
     private readonly StackData _stackData;
     private readonly IStackRepository _repository;
 
     public StackRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _cache = GetService<ICacheClient>() as InMemoryCacheClient ?? throw new InvalidOperationException();
+        _serializer = GetService<ITextSerializer>();
         _stackData = GetService<StackData>();
         _repository = GetService<IStackRepository>();
     }
@@ -85,7 +87,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
         Assert.Equal(misses, _cache.Misses);
 
         var result = await _repository.GetStackBySignatureHashAsync(stack.ProjectId, stack.SignatureHash);
-        Assert.Equal(stack.ToJson(), result.ToJson());
+        JsonAssert.AssertJsonEquivalent(_serializer.SerializeToString(stack), _serializer.SerializeToString(result));
         Assert.Equal(count + 2, _cache.Count);
         Assert.Equal(hits + 1, _cache.Hits);
         Assert.Equal(misses, _cache.Misses);

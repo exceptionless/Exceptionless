@@ -1,3 +1,0 @@
-<Project>
-  <Import Project="..\build\Aspire.Hosting.Orchestration.osx-arm64.targets" />
-</Project>

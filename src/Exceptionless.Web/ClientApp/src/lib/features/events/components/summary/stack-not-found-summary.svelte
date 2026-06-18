@@ -1,11 +1,10 @@
 <script lang="ts">
     import type { StackStatus } from '$features/stacks/models';
 
-    import { resolve } from '$app/paths';
     import { A } from '$comp/typography';
     import StackStatusBadge from '$features/stacks/components/stack-status-badge.svelte';
 
-    import type { StackSummaryModel, SummaryModel, SummaryTemplateKeys } from './index';
+    import { buildStackEventsHref, type StackSummaryModel, type SummaryModel, type SummaryTemplateKeys } from './index';
 
     interface Props {
         badgeStatus: StackStatus;
@@ -26,7 +25,7 @@
     {#if showType}
         <strong>404</strong>:&nbsp;
     {/if}
-    <A class="inline" href={`${resolve('/(app)/events')}?filter=stack:${source.id}`}>
+    <A class="inline" href={buildStackEventsHref(source.id)}>
         {source.title}
     </A>
 </div>

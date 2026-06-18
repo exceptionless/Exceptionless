@@ -1,7 +1,9 @@
 import type { WebSocketMessageValue } from '$features/websockets/models';
+import type { WorkInProgressResult } from '$shared/models';
 
 import { setUserIdentity } from '$features/auth/exceptionless-session';
 import { accessToken } from '$features/auth/index.svelte';
+import { fetchApiJson } from '$features/shared/api/api.svelte';
 import { type FetchClientResponse, ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
@@ -22,6 +24,8 @@ export async function invalidateUserQueries(queryClient: QueryClient, message: W
 }
 
 export const queryKeys = {
+    avatar: (id: string | undefined) => [...queryKeys.id(id), 'avatar'] as const,
+    deleteCurrentUser: () => [...queryKeys.me(), 'delete'] as const,
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
     idEmailAddress: (id?: string) => [...queryKeys.id(id), 'email-address'] as const,
     ids: (ids: string[] | undefined) => [...queryKeys.type, ...(ids ?? [])] as const,
@@ -60,6 +64,45 @@ export interface ResendVerificationEmailRequest {
     route: {
         id: string | undefined;
     };
+}
+
+export interface UserAvatarRequest {
+    route: {
+        id: string | undefined;
+    };
+}
+
+export function deleteCurrentUser() {
+    return createMutation<WorkInProgressResult, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.current,
+        mutationFn: async () => {
+            const client = useFetchClient();
+            const response = await client.deleteJSON<WorkInProgressResult>('users/me');
+            return response.data!;
+        },
+        mutationKey: queryKeys.deleteCurrentUser()
+    }));
+}
+
+export function deleteUserAvatar(request: UserAvatarRequest) {
+    const queryClient = useQueryClient();
+    return createMutation<ViewCurrentUser, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async () => {
+            return await fetchApiJson<ViewCurrentUser>(`users/${request.route.id}/avatar`, {
+                method: 'DELETE'
+            });
+        },
+        mutationKey: queryKeys.avatar(request.route.id),
+        onSuccess: (data) => {
+            queryClient.setQueryData(queryKeys.id(request.route.id), data);
+
+            const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
+            if (currentUser?.id === request.route.id) {
+                queryClient.setQueryData(queryKeys.me(), data);
+            }
+        }
+    }));
 }
 
 export function getMeQuery() {
@@ -169,5 +212,29 @@ export function resendVerificationEmail(request: ResendVerificationEmailRequest)
             await client.getJSON<void>(`users/${request.route.id}/resend-verification-email`);
         },
         mutationKey: [...queryKeys.id(request.route.id), 'resend-verification-email']
+    }));
+}
+
+export function uploadUserAvatar(request: UserAvatarRequest) {
+    const queryClient = useQueryClient();
+    return createMutation<ViewCurrentUser, ProblemDetails, File>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async (file: File) => {
+            const data = new FormData();
+            data.append('file', file);
+            return await fetchApiJson<ViewCurrentUser>(`users/${request.route.id}/avatar`, {
+                body: data,
+                method: 'POST'
+            });
+        },
+        mutationKey: queryKeys.avatar(request.route.id),
+        onSuccess: (data) => {
+            queryClient.setQueryData(queryKeys.id(request.route.id), data);
+
+            const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
+            if (currentUser?.id === request.route.id) {
+                queryClient.setQueryData(queryKeys.me(), data);
+            }
+        }
     }));
 }

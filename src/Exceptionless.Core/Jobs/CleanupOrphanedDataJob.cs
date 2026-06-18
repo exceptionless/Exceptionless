@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core.Models;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -80,7 +80,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             totalStackIds += stackIds.Count;
 
             var existingStacks = await _stackRepository.GetByIdsAsync(stackIds.ToArray(), o => o.Include(s => s.Id, s => s.IsDeleted));
-            var existingStackIds = existingStacks.Select(s => s.Id).ToHashSet();
+            var existingStackIds = existingStacks.Select(s => s.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
             string[] missingStackIds = stackIds.Where(id => !existingStackIds.Contains(id)).ToArray();
 
             if (missingStackIds.Length == 0)
@@ -115,7 +115,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             totalProjectIds += projectIds.Count;
 
             var existingProjects = await _projectRepository.GetByIdsAsync(projectIds.ToArray(), o => o.Include(p => p.Id, p => p.IsDeleted));
-            var existingProjectIds = existingProjects.Select(p => p.Id).ToHashSet();
+            var existingProjectIds = existingProjects.Select(p => p.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
             string[] missingProjectIds = projectIds.Where(id => !existingProjectIds.Contains(id)).ToArray();
 
             if (missingProjectIds.Length == 0)
@@ -149,9 +149,9 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             hasMore = organizationIds.Count == 500;
             totalOrganizationIds += organizationIds.Count;
 
-            var existingOrgs = await _organizationRepository.GetByIdsAsync(organizationIds.ToArray(), o => o.Include(org => org.Id, org => org.IsDeleted));
-            var existingOrgIds = existingOrgs.Select(o => o.Id).ToHashSet();
-            string[] missingOrganizationIds = organizationIds.Where(id => !existingOrgIds.Contains(id)).ToArray();
+            var existingOrganizations = await _organizationRepository.GetByIdsAsync(organizationIds.ToArray(), o => o.Include(organization => organization.Id, organization => organization.IsDeleted));
+            var existingOrganizationIds = existingOrganizations.Select(organization => organization.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            string[] missingOrganizationIds = organizationIds.Where(id => !existingOrganizationIds.Contains(id)).ToArray();
 
             if (missingOrganizationIds.Length == 0)
                 continue;
@@ -159,10 +159,10 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             long deletedCount = await _eventRepository.RemoveAllByOrganizationIdsAsync(missingOrganizationIds);
             totalOrphanedEvents += deletedCount;
 
-            _logger.LogInformation("Deleted {DeletedCount} orphaned events from {MissingOrgCount} missing organizations out of {OrgIdCount} checked", deletedCount, missingOrganizationIds.Length, organizationIds.Count);
+            _logger.LogInformation("Deleted {DeletedCount} orphaned events from {MissingOrganizationCount} missing organizations out of {OrganizationIdCount} checked", deletedCount, missingOrganizationIds.Length, organizationIds.Count);
         }
 
-        _logger.LogInformation("Completed orphaned events cleanup by organization: deleted {TotalOrphanedEvents} events, checked {TotalOrgIds} organizations", totalOrphanedEvents, totalOrganizationIds);
+        _logger.LogInformation("Completed orphaned events cleanup by organization: deleted {TotalOrphanedEvents} events, checked {TotalOrganizationIds} organizations", totalOrphanedEvents, totalOrganizationIds);
     }
 
     public async Task FixDuplicateStacks(JobContext context)
@@ -177,8 +177,8 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
         int batch = 0;
 
         // Loop until no more duplicate signatures exist. Each iteration forces an index refresh
-        // (via ImmediateConsistency on SaveAsync) so soft-deleted stacks are excluded from
-        // subsequent aggregation calls, preventing the same signatures from being re-processed.
+        // (via ImmediateConsistency on GetDuplicateSignaturesAsync) so soft-deleted stacks are
+        // excluded from subsequent aggregation calls, preventing re-processing.
         while (!context.CancellationToken.IsCancellationRequested)
         {
             var duplicateSignatures = await _stackRepository.GetDuplicateSignaturesAsync();
@@ -209,7 +209,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                     projectId = parts[0];
                     signature = parts[1];
 
-                    var stacks = await _stackRepository.FindAsync(q => q.Project(projectId).FilterExpression($"signature_hash:{signature}"));
+                    var stacks = await _stackRepository.FindAsync(q => q.Project(projectId).FieldEquals(s => s.SignatureHash, signature));
                     if (stacks.Documents.Count < 2)
                     {
                         _logger.LogError("Did not find multiple stacks with signature {SignatureHash} and project {ProjectId}", signature, projectId);
@@ -217,16 +217,16 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                     }
 
                     var eventCounts = await _eventRepository.CountAsync(q => q.Stack(stacks.Documents.Select(s => s.Id)).AggregationsExpression("terms:stack_id"));
-                    var eventCountBuckets = eventCounts.Aggregations.Terms("terms_stack_id")?.Buckets ?? new List<Foundatio.Repositories.Models.KeyedBucket<string>>();
+                    var eventCountBuckets = eventCounts.Aggregations.Terms("terms_stack_id")?.Buckets ?? new List<KeyedBucket<string>>();
 
-                    // we only need to update events if more than one stack has events associated to it
+                    // We only need to update events if more than one stack has events associated to it.
                     bool shouldUpdateEvents = eventCountBuckets.Count > 1;
 
-                    // default to using the oldest stack
+                    // Default to using the oldest stack.
                     var targetStack = stacks.Documents.OrderBy(s => s.CreatedUtc).First();
                     var duplicateStacks = stacks.Documents.OrderBy(s => s.CreatedUtc).Skip(1).ToList();
 
-                    // use the stack that has the most events on it so we can reduce the number of updates
+                    // Use the stack that has the most events on it so we can reduce the number of updates.
                     if (eventCountBuckets.Count > 0)
                     {
                         string targetStackId = eventCountBuckets.OrderByDescending(b => b.Total).First().Key;
@@ -281,13 +281,13 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                 catch (Exception ex)
                 {
                     // Intentionally broad: log and continue processing other groups rather than
-                    // aborting the entire job for a single corrupt or transiently-failing signature.
+                    // aborting the entire job for a single corrupt or transiently failing signature.
                     error++;
                     _logger.LogError(ex, "Error fixing duplicate stack {ProjectId} {SignatureHash}: {Message}", projectId, signature, ex.Message);
                 }
             }
 
-            _logger.LogInformation("Batch #{Batch} complete: Processed={BatchProcessed} Total={Processed}/{Total} Errors={ErrorCount}", batch, batchProcessed, processed, total, error);
+            _logger.LogInformation("Batch #{Batch} complete: Processed={BatchProcessed} Total={Processed}/{Total} Errors={ErrorCount} UpdatedEvents={UpdatedEventCount}", batch, batchProcessed, processed, total, error, totalUpdatedEventCount);
             await _cacheClient.RemoveByPrefixAsync(nameof(Stack));
 
             // If nothing was processed this batch (all errors), stop to avoid an infinite loop
@@ -296,7 +296,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                 break;
         }
 
-        _logger.LogInformation("Done de-duping stacks: Total={Processed}/{Total} Errors={ErrorCount}", processed, total, error);
+        _logger.LogInformation("Done de-duping stacks: Total={Processed}/{Total} Errors={ErrorCount} UpdatedEvents={UpdatedEventCount}", processed, total, error, totalUpdatedEventCount);
     }
 
     private Task RenewLockAsync(JobContext context)

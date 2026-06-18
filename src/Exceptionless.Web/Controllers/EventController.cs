@@ -26,10 +26,10 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
+using Foundatio.Serializer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
-using Newtonsoft.Json;
 
 namespace Exceptionless.Web.Controllers;
 
@@ -47,7 +47,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     private readonly MiniValidationValidator _miniValidationValidator;
     private readonly FormattingPluginManager _formattingPluginManager;
     private readonly ICacheClient _cache;
-    private readonly JsonSerializerSettings _jsonSerializerSettings;
+    private readonly ITextSerializer _serializer;
     private readonly AppOptions _appOptions;
     private readonly UsageService _usageService;
 
@@ -60,7 +60,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         MiniValidationValidator miniValidationValidator,
         FormattingPluginManager formattingPluginManager,
         ICacheClient cacheClient,
-        JsonSerializerSettings jsonSerializerSettings,
+        ITextSerializer serializer,
         ApiMapper mapper,
         PersistentEventQueryValidator validator,
         AppOptions appOptions,
@@ -77,7 +77,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         _miniValidationValidator = miniValidationValidator;
         _formattingPluginManager = formattingPluginManager;
         _cache = cacheClient;
-        _jsonSerializerSettings = jsonSerializerSettings;
+        _serializer = serializer;
         _appOptions = appOptions;
         _usageService = usageService;
 
@@ -172,17 +172,22 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// Get by id
     /// </summary>
     /// <param name="id">The identifier of the event.</param>
+    /// <param name="expectedStackId">Optional stack identifier that the event must belong to.</param>
     /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
     /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+    /// <response code="400">The event does not belong to the expected stack.</response>
     /// <response code="404">The event occurrence could not be found.</response>
     /// <response code="426">Unable to view event occurrence due to plan limits.</response>
     [HttpGet("{id:objectid}", Name = "GetPersistentEventById")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<PersistentEvent>> GetAsync(string id, string? time = null, string? offset = null)
+    public async Task<ActionResult<PersistentEvent>> GetAsync(string id, [FromQuery(Name = "expected_stack_id")] string? expectedStackId = null, string? time = null, string? offset = null)
     {
         var model = await GetModelAsync(id, false);
         if (model is null)
             return NotFound();
+
+        if (!String.IsNullOrEmpty(expectedStackId) && !String.Equals(model.StackId, expectedStackId, StringComparison.Ordinal))
+            return Problem(statusCode: StatusCodes.Status400BadRequest, title: $"The event \"{model.Id}\" belongs to stack \"{model.StackId}\", not stack \"{expectedStackId}\". Open the event from its current stack.");
 
         var organization = await GetOrganizationAsync(model.OrganizationId);
         if (organization is null)
@@ -313,9 +318,10 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                             Id = summaryData.Id,
                             TemplateKey = summaryData.TemplateKey,
                             Date = e.Date,
+                            Type = e.Type,
                             Data = summaryData.Data
                         };
-                    }).ToList(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total, events.Hits.FirstOrDefault()?.GetSortToken(), events.Hits.LastOrDefault()?.GetSortToken());
+                    }).ToList(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total, events.Hits.FirstOrDefault()?.GetSortToken(_serializer), events.Hits.LastOrDefault()?.GetSortToken(_serializer));
                 case "stack_recent":
                 case "stack_frequent":
                 case "stack_new":
@@ -361,7 +367,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                     return OkWithResourceLinks(summaries.Take(limit).ToList(), summaries.Count > limit && !NextPageExceedsSkipLimit(resolvedPage, limit), resolvedPage, total);
                 default:
                     events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, before, after);
-                    return OkWithResourceLinks(events.Documents.ToArray(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total, events.Hits.FirstOrDefault()?.GetSortToken(), events.Hits.LastOrDefault()?.GetSortToken());
+                    return OkWithResourceLinks(events.Documents.ToArray(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total, events.Hits.FirstOrDefault()?.GetSortToken(_serializer), events.Hits.LastOrDefault()?.GetSortToken(_serializer));
             }
         }
         catch (ApplicationException ex)
@@ -423,7 +429,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                 .Index(ti.Range.UtcStart, ti.Range.UtcEnd),
             o => page.HasValue
                 ? o.PageNumber(page).PageLimit(limit)
-                : o.SearchBeforeToken(before).SearchAfterToken(after).PageLimit(limit));
+                : o.SearchBeforeToken(before, _serializer).SearchAfterToken(after, _serializer).PageLimit(limit));
     }
 
     /// <summary>
@@ -1129,7 +1135,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                 charSet = contentTypeHeader.Charset.ToString();
             }
 
-            var stream = new MemoryStream(ev.GetBytes(_jsonSerializerSettings));
+            using var stream = new MemoryStream(ev.GetBytes(_serializer));
             await _eventPostService.EnqueueAsync(new EventPost(_appOptions.EnableArchive)
             {
                 ApiVersion = apiVersion,
