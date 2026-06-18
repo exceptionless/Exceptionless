@@ -4,7 +4,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Exceptionless.AspNetCore" Version="6.1.0" />
+    <PackageReference Include="Exceptionless.AspNetCore" Version="6.2.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="Serilog.Enrichers.Span" Version="3.1.0" />
     <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
