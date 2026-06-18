@@ -3,7 +3,8 @@ using System.Text.Json.Serialization;
 
 namespace Exceptionless.Web.Models;
 
-// NOTE: This will bypass our LowerCaseUnderscorePropertyNamesContractResolver and provide the correct casing.
+// NOTE: Explicit [JsonPropertyName] attributes ensure camelCase keys for these properties,
+// overriding the global SnakeCaseLower naming policy.
 public record ExternalAuthInfo
 {
     [Required]

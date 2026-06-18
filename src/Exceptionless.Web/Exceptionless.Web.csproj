@@ -19,7 +19,6 @@
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
     <PackageReference Include="Riok.Mapperly" Version="4.3.1" />
     <PackageReference Include="MiniValidation" Version="0.10.0" />
-    <PackageReference Include="NEST.JsonNetSerializer" Version="7.17.5" />
     <PackageReference Include="OAuth2" Version="1.0.0" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.16.3" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />

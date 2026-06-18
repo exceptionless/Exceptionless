@@ -4,7 +4,6 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Nest;
 using Token = Exceptionless.Core.Models.Token;
 
 namespace Exceptionless.Core.Repositories;
@@ -19,36 +18,39 @@ public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, I
 
     public Task<FindResults<Token>> GetByTypeAndUserIdAsync(TokenType type, string userId, CommandOptionsDescriptor<Token>? options = null)
     {
-        var filter = Query<Token>.Term(e => e.UserId, userId) && Query<Token>.Term(t => t.Type, type);
-        return FindAsync(q => q.ElasticFilter(filter).Sort(f => f.CreatedUtc), options);
+        return FindAsync(q => q.FieldEquals(t => t.UserId, userId).FieldEquals(t => t.Type, (int)type).Sort(f => f.CreatedUtc), options);
     }
 
     public Task<FindResults<Token>> GetByTypeAndOrganizationIdAsync(TokenType type, string organizationId, CommandOptionsDescriptor<Token>? options = null)
     {
         return FindAsync(q => q
             .Organization(organizationId)
-            .ElasticFilter(Query<Token>.Term(t => t.Type, type))
+            .FieldEquals(t => t.Type, (int)type)
             .Sort(f => f.CreatedUtc), options);
     }
 
     public Task<FindResults<Token>> GetByTypeAndProjectIdAsync(TokenType type, string projectId, CommandOptionsDescriptor<Token>? options = null)
     {
-        var filter = (
-                Query<Token>.Term(t => t.ProjectId, projectId) || Query<Token>.Term(t => t.DefaultProjectId, projectId)
-            ) && Query<Token>.Term(t => t.Type, type);
-
-        return FindAsync(q => q.ElasticFilter(filter).Sort(f => f.CreatedUtc), options);
+        return FindAsync(q => q
+            .FieldOr(g => g
+                .FieldEquals(t => t.ProjectId, projectId)
+                .FieldEquals(t => t.DefaultProjectId, projectId))
+            .FieldEquals(t => t.Type, (int)type)
+            .Sort(f => f.CreatedUtc), options);
     }
 
     public override Task<FindResults<Token>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<Token>? options = null)
     {
-        var filter = (Query<Token>.Term(t => t.ProjectId, projectId) || Query<Token>.Term(t => t.DefaultProjectId, projectId));
-        return FindAsync(q => q.ElasticFilter(filter).Sort(f => f.CreatedUtc), options);
+        return FindAsync(q => q
+            .FieldOr(g => g
+                .FieldEquals(t => t.ProjectId, projectId)
+                .FieldEquals(t => t.DefaultProjectId, projectId))
+            .Sort(f => f.CreatedUtc), options);
     }
 
     public Task<long> RemoveAllByUserIdAsync(string userId, CommandOptionsDescriptor<Token>? options = null)
     {
-        return RemoveAllAsync(q => q.ElasticFilter(Query<Token>.Term(t => t.UserId, userId)), options);
+        return RemoveAllAsync(q => q.FieldEquals(t => t.UserId, userId), options);
     }
 
     protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, Token? document, IDictionary<string, object?>? data = null, TimeSpan? delay = null)

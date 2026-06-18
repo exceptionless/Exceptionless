@@ -36,8 +36,8 @@ public class OpenApiControllerTests : IntegrationTestsBase
         }
 
         // Assert
-        string expectedJson = (await File.ReadAllTextAsync(baselinePath, TestCancellationToken)).Replace("\\r\\n", "\\n");
-        actualJson = actualJson.Replace("\\r\\n", "\\n");
+        string expectedJson = NormalizeOpenApiJson(await File.ReadAllTextAsync(baselinePath, TestCancellationToken));
+        actualJson = NormalizeOpenApiJson(actualJson);
 
         Assert.Equal(expectedJson, actualJson);
     }
@@ -93,6 +93,14 @@ public class OpenApiControllerTests : IntegrationTestsBase
         Assert.True(securitySchemes.TryGetProperty("Token", out var token));
         Assert.Equal("apiKey", token.GetProperty("type").GetString());
         Assert.Equal("access_token", token.GetProperty("name").GetString());
+    }
+
+    private static string NormalizeOpenApiJson(string json)
+    {
+        return json
+            .ReplaceLineEndings("\n")
+            .Replace("\\r\\n", "\\n")
+            .TrimEnd('\n');
     }
 
     private async Task<JsonDocument> GetOpenApiDocumentAsync()

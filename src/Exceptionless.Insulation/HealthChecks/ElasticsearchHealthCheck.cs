@@ -1,9 +1,7 @@
 using System.Diagnostics;
-using Elasticsearch.Net;
 using Exceptionless.Core.Repositories.Configuration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
-using Nest;
 
 namespace Exceptionless.Insulation.HealthChecks;
 
@@ -24,14 +22,8 @@ public class ElasticsearchHealthCheck : IHealthCheck
 
         try
         {
-            var pingResult = await _config.Client.LowLevel.PingAsync<PingResponse>(ctx: cancellationToken, requestParameters: new PingRequestParameters
-            {
-                RequestConfiguration = new RequestConfiguration
-                {
-                    RequestTimeout = TimeSpan.FromSeconds(60) // 60 seconds is default for NEST
-                }
-            });
-            bool isSuccess = pingResult.ApiCall.HttpStatusCode == 200;
+            var pingResult = await _config.Client.PingAsync(cancellationToken);
+            bool isSuccess = pingResult.IsValidResponse;
 
             return isSuccess ? HealthCheckResult.Healthy() : new HealthCheckResult(context.Registration.FailureStatus);
         }

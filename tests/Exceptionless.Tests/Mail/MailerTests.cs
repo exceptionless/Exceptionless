@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -11,6 +10,7 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Utility;
 using Foundatio.Queues;
+using Foundatio.Serializer;
 using Xunit;
 
 namespace Exceptionless.Tests.Mail;
@@ -40,7 +40,7 @@ public sealed class MailerTests : TestWithServices
         _plans = GetService<BillingPlans>();
 
         if (_mailer is NullMailer)
-            _mailer = new Mailer(GetService<IQueue<MailMessage>>(), GetService<FormattingPluginManager>(), GetService<JsonSerializerOptions>(), _options, TimeProvider, Log.CreateLogger<Mailer>());
+            _mailer = new Mailer(GetService<IQueue<MailMessage>>(), GetService<FormattingPluginManager>(), GetService<ITextSerializer>(), _options, TimeProvider, Log.CreateLogger<Mailer>());
     }
 
     [Fact]

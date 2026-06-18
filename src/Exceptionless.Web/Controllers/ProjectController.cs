@@ -17,6 +17,7 @@ using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using Foundatio.Serializer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
@@ -35,6 +36,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     private readonly IQueue<WorkItemData> _workItemQueue;
     private readonly BillingManager _billingManager;
     private readonly SlackService _slackService;
+    private readonly ITextSerializer _serializer;
     private readonly AppOptions _options;
     private readonly UsageService _usageService;
     private readonly SampleDataService _sampleDataService;
@@ -51,6 +53,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         SampleDataService sampleDataService,
         ApiMapper mapper,
         IAppQueryValidator validator,
+        ITextSerializer serializer,
         AppOptions options,
         UsageService usageService,
         TimeProvider timeProvider,
@@ -65,6 +68,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         _workItemQueue = workItemQueue;
         _billingManager = billingManager;
         _slackService = slackService;
+        _serializer = serializer;
         _sampleDataService = sampleDataService;
         _options = options;
         _usageService = usageService;
@@ -704,7 +708,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (project is null)
             return NotFound();
 
-        var token = project.GetSlackToken();
+        var token = project.GetSlackToken(_serializer, _logger);
         using var _ = _logger.BeginScope(new ExceptionlessState().Property("Token", token).Tag("Slack").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext));
 
         if (token is not null)
