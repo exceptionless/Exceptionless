@@ -8,7 +8,7 @@
     <NoWarn>$(NoWarn);ASPIRECERTIFICATES001</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Elastic.Clients.Elasticsearch" Version="8.19.22" />
+    <PackageReference Include="Elastic.Clients.Elasticsearch" Version="9.4.2" />
     <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="13.4.4" />
     <PackageReference Include="Aspire.Hosting.Browsers" Version="13.4.4-preview.1.26314.3" />
     <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.4.4" />
