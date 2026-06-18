@@ -23,7 +23,6 @@ public sealed class OpenApiSnapshotTests
             return;
         }
 
-        // Assert
         await SnapshotTestHelper.AssertMatchesJsonSnapshotAsync("openapi.json", actualJson, TestContext.Current.CancellationToken);
     }
 

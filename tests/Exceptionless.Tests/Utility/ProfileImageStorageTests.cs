@@ -2,21 +2,24 @@ using System.Text;
 using Exceptionless.Core.Utility;
 using Exceptionless.Web.Utility;
 using Foundatio.Storage;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Xunit;
 
 namespace Exceptionless.Tests.Utility;
 
-public class ProfileImageStorageTests
+public class ProfileImageStorageTests : TestWithServices
 {
     private const string UserId = "507f1f77bcf86cd799439011";
+
+    public ProfileImageStorageTests(ITestOutputHelper output) : base(output)
+    {
+    }
 
     [Fact]
     public async Task SaveAsync_WithPngImage_StoresImage()
     {
         // Arrange
-        using var storage = new InMemoryFileStorage(new InMemoryFileStorageOptions());
+        using var storage = GetService<IFileStorage>();
         var modelState = new ModelStateDictionary();
         using var file = CreateFile([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
 
@@ -34,7 +37,7 @@ public class ProfileImageStorageTests
     public async Task SaveAsync_WithOrganizationImage_StoresImageUnderOrganizationPath()
     {
         // Arrange
-        using var storage = new InMemoryFileStorage(new InMemoryFileStorageOptions());
+        using var storage = GetService<IFileStorage>();
         var modelState = new ModelStateDictionary();
         using var file = CreateFile([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
 
@@ -51,7 +54,7 @@ public class ProfileImageStorageTests
     public async Task SaveAsync_WithInvalidImage_AddsModelError()
     {
         // Arrange
-        using var storage = new InMemoryFileStorage(new InMemoryFileStorageOptions());
+        using var storage = GetService<IFileStorage>();
         var modelState = new ModelStateDictionary();
         using var file = CreateFile(Encoding.UTF8.GetBytes("not an image"), "text/plain", "avatar.txt");
 
@@ -68,7 +71,7 @@ public class ProfileImageStorageTests
     public async Task SaveAsync_WithOversizedImage_AddsModelError()
     {
         // Arrange
-        using var storage = new InMemoryFileStorage(new InMemoryFileStorageOptions());
+        using var storage = GetService<IFileStorage>();
         var modelState = new ModelStateDictionary();
         using var file = CreateFile(new byte[ProfileImageStorage.MaxFileSize + 1]);
 
@@ -85,7 +88,7 @@ public class ProfileImageStorageTests
     public async Task DeleteAsync_WithStoredImageFileName_DeletesImage()
     {
         // Arrange
-        using var storage = new InMemoryFileStorage(new InMemoryFileStorageOptions());
+        using var storage = GetService<IFileStorage>();
         var modelState = new ModelStateDictionary();
         using var file = CreateFile([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
         var result = await ProfileImageStorage.SaveAsync(storage, file.FormFile, "users", UserId, modelState, TestContext.Current.CancellationToken);

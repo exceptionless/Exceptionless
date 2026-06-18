@@ -27,6 +27,7 @@ public class StatusHandler(
         {
             appOptions.InformationalVersion,
             AppMode = appOptions.AppMode.ToString(),
+            appOptions.AppScope,
             Environment.MachineName
         };
     }

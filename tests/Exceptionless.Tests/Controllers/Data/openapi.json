@@ -10196,7 +10196,7 @@
           },
           "slug": {
             "maxLength": 100,
-            "pattern": "^[a-z0-9]\u002B(?:-[a-z0-9]\u002B)*$",
+            "pattern": "^(?![a-f0-9]{24}$)[a-z0-9]\u002B(?:-[a-z0-9]\u002B)*$",
             "type": [
               "null",
               "string"

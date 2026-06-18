@@ -1,4 +1,6 @@
-using Elasticsearch.Net;
+using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.Serialization;
+using Elastic.Transport;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Queries;
@@ -11,32 +13,30 @@ using Foundatio.Queues;
 using Foundatio.Repositories.Elasticsearch;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
+using Foundatio.Repositories.Serialization;
 using Foundatio.Resilience;
+using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
-using Nest;
-using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Repositories.Configuration;
 
 public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IStartupAction
 {
     private readonly AppOptions _appOptions;
-    private readonly JsonSerializerSettings _serializerSettings;
 
     public ExceptionlessElasticConfiguration(
         AppOptions appOptions,
         IQueue<WorkItemData> workItemQueue,
-        JsonSerializerSettings serializerSettings,
         ICacheClient cacheClient,
         IMessageBus messageBus,
         IServiceProvider serviceProvider,
+        ITextSerializer serializer,
         TimeProvider timeProvider,
         IResiliencePolicyProvider resiliencePolicyProvider,
         ILoggerFactory loggerFactory
-    ) : base(workItemQueue, cacheClient, messageBus, timeProvider, resiliencePolicyProvider, loggerFactory)
+    ) : base(workItemQueue, cacheClient, messageBus, serializer, timeProvider, resiliencePolicyProvider, loggerFactory)
     {
         _appOptions = appOptions;
-        _serializerSettings = serializerSettings;
 
         _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", _appOptions.ElasticsearchOptions.NumberOfShards, _appOptions.ElasticsearchOptions.NumberOfReplicas);
         AddIndex(Stacks = new StackIndex(this));
@@ -77,35 +77,66 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
     public UserIndex Users { get; }
     public WebHookIndex WebHooks { get; }
 
-    protected override IElasticClient CreateElasticClient()
+    protected override ElasticsearchClient CreateElasticClient()
     {
         var connectionPool = CreateConnectionPool();
-        var settings = new ConnectionSettings(connectionPool, (serializer, values) => new ElasticJsonNetSerializer(serializer, values, _serializerSettings));
+        return new ElasticsearchClient(CreateElasticsearchClientSettings(connectionPool));
+    }
 
+    private ElasticsearchClientSettings CreateElasticsearchClientSettings(NodePool connectionPool)
+    {
+        return ConfigureElasticsearchClientSettings(new ElasticsearchClientSettings(
+            connectionPool,
+            sourceSerializer: (_, clientSettings) =>
+                new DefaultSourceSerializer(clientSettings, options =>
+                {
+                    // Base defaults from Foundatio + app-specific overrides
+                    options.ConfigureFoundatioRepositoryDefaults();
+                    options.ConfigureExceptionlessDefaults();
+
+                    // ES-specific overrides (legacy data compatibility)
+                    options.RespectNullableAnnotations = false;
+
+                    // ES needs integers as long and our custom ObjectToInferredTypesConverter.
+                    // Remove any JsonStringEnumConverter (most enums store as integers in ES;
+                    // StackStatus has a type-level [JsonConverter] that takes precedence).
+                    // Remove existing ObjectToInferredTypesConverter instances and insert ours at position 0.
+                    for (int i = options.Converters.Count - 1; i >= 0; i--)
+                    {
+                        if (options.Converters[i] is System.Text.Json.Serialization.JsonStringEnumConverter
+                            or Exceptionless.Core.Serialization.ObjectToInferredTypesConverter
+                            or Foundatio.Repositories.Serialization.ObjectToInferredTypesConverter)
+                            options.Converters.RemoveAt(i);
+                    }
+                    options.Converters.Insert(0, new Exceptionless.Core.Serialization.ObjectToInferredTypesConverter(preferInt64: true));
+                })));
+    }
+
+    private ElasticsearchClientSettings ConfigureElasticsearchClientSettings(ElasticsearchClientSettings settings)
+    {
         ConfigureSettings(settings);
         foreach (var index in Indexes)
             index.ConfigureSettings(settings);
 
         if (!String.IsNullOrEmpty(_appOptions.ElasticsearchOptions.UserName) && !String.IsNullOrEmpty(_appOptions.ElasticsearchOptions.Password))
-            settings.BasicAuthentication(_appOptions.ElasticsearchOptions.UserName, _appOptions.ElasticsearchOptions.Password);
+            settings.Authentication(new BasicAuthentication(_appOptions.ElasticsearchOptions.UserName, _appOptions.ElasticsearchOptions.Password));
 
-        var client = new ElasticClient(settings);
-        return client;
+        return settings;
     }
 
-    protected override IConnectionPool CreateConnectionPool()
+    protected override NodePool CreateConnectionPool()
     {
-        var serverUris = Options?.ServerUrl.Split(',').Select(url => new Uri(url));
-        return new StaticConnectionPool(serverUris);
+        var serverUris = Options.ServerUrl?.Split(',').Select(url => new Uri(url))
+            ?? throw new InvalidOperationException("ElasticsearchOptions.ServerUrl is not configured.");
+        return new StaticNodePool(serverUris);
     }
 
-    protected override void ConfigureSettings(ConnectionSettings settings)
+    protected override void ConfigureSettings(ElasticsearchClientSettings settings)
     {
         if (_appOptions.AppMode == AppMode.Development)
             settings.EnableDebugMode();
 
-        settings.ServerCertificateValidationCallback(CertificateValidations.AllowAll);
-        settings.EnableApiVersioningHeader();
+        settings.ServerCertificateValidationCallback((_, _, _, _) => true);
         settings.DisableDirectStreaming();
         settings.EnableTcpKeepAlive(TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(2));
         settings.DefaultFieldNameInferrer(p => p.ToLowerUnderscoredWords());

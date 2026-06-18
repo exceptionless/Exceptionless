@@ -133,7 +133,7 @@ public partial class Program
 
             builder.Services.ConfigureHttpJsonOptions(o =>
             {
-                o.SerializerOptions.ConfigureExceptionlessDefaults();
+                o.SerializerOptions.ConfigureExceptionlessApiDefaults();
             });
 
             builder.Services.AddProblemDetails(o => o.CustomizeProblemDetails = CustomizeProblemDetails);
@@ -371,7 +371,7 @@ public partial class Program
 
     private static void CustomizeProblemDetails(ProblemDetailsContext ctx)
     {
-        ctx.ProblemDetails.Extensions.Add("instance", $"{ctx.HttpContext.Request.Method} {ctx.HttpContext.Request.Path}");
+        ctx.ProblemDetails.Instance = $"{ctx.HttpContext.Request.Method} {ctx.HttpContext.Request.Path}";
         if (ctx.HttpContext.Items.TryGetValue("reference-id", out object? refId) && refId is string referenceId)
             ctx.ProblemDetails.Extensions.Add("reference-id", referenceId);
 

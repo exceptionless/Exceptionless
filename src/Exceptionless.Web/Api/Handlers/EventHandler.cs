@@ -25,13 +25,13 @@ using Exceptionless.Web.Utility;
 using Foundatio.Caching;
 using Foundatio.Mediator;
 using Foundatio.Queues;
+using Foundatio.Serializer;
 using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
 using Microsoft.Net.Http.Headers;
-using Newtonsoft.Json;
 using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
 
 namespace Exceptionless.Web.Api.Handlers;
@@ -46,7 +46,7 @@ public class EventHandler(
     MiniValidationValidator miniValidationValidator,
     FormattingPluginManager formattingPluginManager,
     ICacheClient cacheClient,
-    JsonSerializerSettings jsonSerializerSettings,
+    ITextSerializer serializer,
     IAppQueryValidator validator,
     AppOptions appOptions,
     UsageService usageService,
@@ -537,7 +537,7 @@ public class EventHandler(
                 charSet = contentTypeHeader.Charset.ToString();
             }
 
-            using var stream = new MemoryStream(ev.GetBytes(jsonSerializerSettings));
+            using var stream = new MemoryStream(ev.GetBytes(serializer));
             await eventPostService.EnqueueAsync(new EventPost(appOptions.EnableArchive)
             {
                 ApiVersion = message.ApiVersion,
@@ -771,7 +771,7 @@ public class EventHandler(
                             Data = summaryData.Data
                         };
                     }).ToList();
-                    return new PagedResult<object>(summaries.Cast<object>().ToList(), events.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, events.Total, events.Hits.FirstOrDefault()?.GetSortToken(), events.Hits.LastOrDefault()?.GetSortToken());
+                    return new PagedResult<object>(summaries.Cast<object>().ToList(), events.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, events.Total, events.Hits.FirstOrDefault()?.GetSortToken(serializer), events.Hits.LastOrDefault()?.GetSortToken(serializer));
                 case "stack_recent":
                 case "stack_frequent":
                 case "stack_new":
@@ -817,7 +817,7 @@ public class EventHandler(
                     return new PagedResult<object>(stackSummaries.Take(limit).Cast<object>().ToList(), stackSummaries.Count > limit && !Pagination.NextPageExceedsSkipLimit(resolvedPage, limit), resolvedPage, total);
                 default:
                     events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, before, after, httpContext.Request);
-                    return new PagedResult<object>(events.Documents.Cast<object>().ToList(), events.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, events.Total, events.Hits.FirstOrDefault()?.GetSortToken(), events.Hits.LastOrDefault()?.GetSortToken());
+                    return new PagedResult<object>(events.Documents.Cast<object>().ToList(), events.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, events.Total, events.Hits.FirstOrDefault()?.GetSortToken(serializer), events.Hits.LastOrDefault()?.GetSortToken(serializer));
             }
         }
         catch (ApplicationException ex)
@@ -879,7 +879,7 @@ public class EventHandler(
                 .Index(ti.Range.UtcStart, ti.Range.UtcEnd),
             o => page.HasValue
                 ? o.PageNumber(page).PageLimit(limit)
-                : o.SearchBeforeToken(before).SearchAfterToken(after).PageLimit(limit));
+                : o.SearchBeforeToken(before, serializer).SearchAfterToken(after, serializer).PageLimit(limit));
     }
 
     private static bool ShouldApplySystemFilter(AppFilter sf, string? filter, HttpRequest? request = null)

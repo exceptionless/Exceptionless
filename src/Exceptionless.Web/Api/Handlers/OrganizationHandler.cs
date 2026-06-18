@@ -384,6 +384,12 @@ public class OrganizationHandler(
             return Result.Invalid(ValidationError.Create("general", "Invalid plan. Please select a valid plan."));
         }
 
+        if (plan.IsHidden && !String.Equals(organization.PlanId, plan.Id, StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning("Hidden plan {PlanId} is not selectable for organization {OrganizationId}", model.PlanId, message.Id);
+            return Result.Invalid(ValidationError.Create("general", "Invalid plan. Please select a valid plan."));
+        }
+
         if (String.Equals(organization.PlanId, plan.Id) && String.Equals(plans.FreePlan.Id, plan.Id))
             return ChangePlanResult.SuccessWithMessage("Your plan was not changed as you were already on the free plan.");
 

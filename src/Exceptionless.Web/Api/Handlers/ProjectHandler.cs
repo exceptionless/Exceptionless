@@ -17,10 +17,11 @@ using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Jobs;
-using Foundatio.Queues;
 using Foundatio.Mediator;
+using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using Foundatio.Serializer;
 using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
@@ -38,6 +39,7 @@ public class ProjectHandler(
     SlackService slackService,
     SampleDataService sampleDataService,
     ApiMapper mapper,
+    ITextSerializer serializer,
     AppOptions options,
     UsageService usageService,
     TimeProvider timeProvider,
@@ -460,7 +462,7 @@ public class ProjectHandler(
         if (project is null)
             return Result.NotFound("Project not found.");
 
-        var token = project.GetSlackToken();
+        var token = project.GetSlackToken(serializer, _logger);
         using var _ = _logger.BeginScope(new ExceptionlessState().Property("Token", token).Tag("Slack").Identity(GetCurrentUser(message.Context).EmailAddress).Property("User", GetCurrentUser(message.Context)).SetHttpContext(message.Context));
 
         if (token is not null)

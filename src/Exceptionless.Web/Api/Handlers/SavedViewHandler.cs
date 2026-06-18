@@ -22,7 +22,7 @@ using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Web.Api.Handlers;
 
-public class SavedViewHandler(
+public partial class SavedViewHandler(
     ISavedViewRepository repository,
     IOrganizationRepository organizationRepository,
     ILockProvider lockProvider,
@@ -847,12 +847,12 @@ public class SavedViewHandler(
 
     private static bool IsValidSlug(string slug)
     {
-        return Regex.IsMatch(slug, "^[a-z0-9]+(?:-[a-z0-9]+)*$") && !IsReservedSlug(slug);
+        return !IsReservedSlug(slug) && SavedView.SlugRegex().IsMatch(slug);
     }
 
     private static bool IsReservedSlug(string slug)
     {
-        return Regex.IsMatch(slug, "^[a-f0-9]{24}$");
+        return ObjectIdSlugRegex().IsMatch(slug);
     }
 
     private static string ToSlug(string value)
@@ -874,4 +874,7 @@ public class SavedViewHandler(
     private static int GetPage(int page) => page < 1 ? 1 : page;
     private static int GetLimit(int limit) => limit < 1 ? 10 : limit > 100 ? 100 : limit;
     private static bool NextPageExceedsSkipLimit(int page, int limit) => (page + 1) * limit >= 1000;
+
+    [GeneratedRegex("^[a-f0-9]{24}$")]
+    private static partial Regex ObjectIdSlugRegex();
 }

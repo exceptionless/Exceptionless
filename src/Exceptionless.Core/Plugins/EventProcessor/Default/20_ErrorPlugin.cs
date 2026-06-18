@@ -1,8 +1,8 @@
-﻿using System.Text.Json;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Utility;
+using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor;
@@ -10,11 +10,11 @@ namespace Exceptionless.Core.Plugins.EventProcessor;
 [Priority(20)]
 public sealed class ErrorPlugin : EventProcessorPluginBase
 {
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly ITextSerializer _serializer;
 
-    public ErrorPlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    public ErrorPlugin(ITextSerializer serializer, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
-        _jsonOptions = jsonOptions;
+        _serializer = serializer;
     }
 
     public override Task EventProcessingAsync(EventContext context)
@@ -22,7 +22,7 @@ public sealed class ErrorPlugin : EventProcessorPluginBase
         if (!context.Event.IsError())
             return Task.CompletedTask;
 
-        var error = context.Event.GetError(_jsonOptions);
+        var error = context.Event.GetError(_serializer, _logger);
         if (error is null)
             return Task.CompletedTask;
 
@@ -40,7 +40,7 @@ public sealed class ErrorPlugin : EventProcessorPluginBase
         if (context.HasProperty("UserNamespaces"))
             userNamespaces = context.GetProperty<string>("UserNamespaces")?.SplitAndTrim([',']);
 
-        var signature = new ErrorSignature(error, _jsonOptions, userNamespaces, userCommonMethods);
+        var signature = new ErrorSignature(error, _serializer, userNamespaces, userCommonMethods);
         if (signature.SignatureInfo.Count <= 0)
             return Task.CompletedTask;
 
@@ -50,6 +50,12 @@ public sealed class ErrorPlugin : EventProcessorPluginBase
             targetInfo.AddItemIfNotEmpty("Message", stackingTarget.Error.Message);
 
         error.SetTargetInfo(targetInfo);
+
+        // Write the mutated error back to Event.Data so pipeline changes (e.g., @target)
+        // persist. GetValue<T>() deserializes a disconnected copy; without this write-back,
+        // SetTargetInfo mutations are lost when the event is later serialized for storage.
+        context.Event.SetError(error);
+
         foreach (string key in signature.SignatureInfo.Keys)
             context.StackSignatureData.Add(key, signature.SignatureInfo[key]);
 

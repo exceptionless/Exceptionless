@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
-using System.Text.Json;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -18,6 +17,7 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Extensions;
+using Foundatio.Serializer;
 using Foundatio.Storage;
 using McSherry.SemanticVersioning;
 using Xunit;
@@ -39,7 +39,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     private readonly IUserRepository _userRepository;
     private readonly BillingManager _billingManager;
     private readonly BillingPlans _plans;
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly ITextSerializer _serializer;
 
     public EventPipelineTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
@@ -55,7 +55,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         _pipeline = GetService<EventPipeline>();
         _billingManager = GetService<BillingManager>();
         _plans = GetService<BillingPlans>();
-        _jsonOptions = GetService<JsonSerializerOptions>();
+        _serializer = GetService<ITextSerializer>();
     }
 
     protected override async Task ResetDataAsync()
@@ -224,19 +224,19 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         var results = await _eventRepository.GetAllAsync(o => o.PageLimit(15));
         Assert.Equal(9, results.Total);
         Assert.Equal(2, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
-        Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd() && e.GetUserIdentity(_jsonOptions)?.Identity == "blake@exceptionless.io"));
-        Assert.Single(results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId()) && e.GetUserIdentity(_jsonOptions)?.Identity == "eric@exceptionless.io").Select(e => e.GetSessionId()).Distinct());
+        Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd() && e.GetUserIdentity(_serializer, _logger)?.Identity == "blake@exceptionless.io"));
+        Assert.Single(results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId()) && e.GetUserIdentity(_serializer, _logger)?.Identity == "eric@exceptionless.io").Select(e => e.GetSessionId()).Distinct());
         Assert.Equal(1, results.Documents.Count(e => String.IsNullOrEmpty(e.GetSessionId())));
         Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd()));
 
         var sessionStarts = results.Documents.Where(e => e.IsSessionStart()).ToList();
         Assert.Equal(2, sessionStarts.Count);
 
-        var firstUserSessionStartEvents = sessionStarts.Single(e => e.GetUserIdentity(_jsonOptions)?.Identity == "blake@exceptionless.io");
+        var firstUserSessionStartEvents = sessionStarts.Single(e => e.GetUserIdentity(_serializer, _logger)?.Identity == "blake@exceptionless.io");
         Assert.Equal((decimal)(lastEventDate - firstEventDate).TotalSeconds, firstUserSessionStartEvents.Value);
         Assert.True(firstUserSessionStartEvents.HasSessionEndTime());
 
-        var secondUserSessionStartEvents = sessionStarts.Single(e => e.GetUserIdentity(_jsonOptions)?.Identity == "eric@exceptionless.io");
+        var secondUserSessionStartEvents = sessionStarts.Single(e => e.GetUserIdentity(_serializer, _logger)?.Identity == "eric@exceptionless.io");
         Assert.Equal((decimal)(lastEventDate - firstEventDate).TotalSeconds, secondUserSessionStartEvents.Value);
         Assert.False(secondUserSessionStartEvents.HasSessionEndTime());
     }
@@ -903,10 +903,10 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         var context = contexts.Single();
         Assert.False(context.HasError);
 
-        var requestInfo = context.Event.GetRequestInfo(_jsonOptions);
-        var environmentInfo = context.Event.GetEnvironmentInfo(_jsonOptions);
-        var userInfo = context.Event.GetUserIdentity(_jsonOptions);
-        var userDescription = context.Event.GetUserDescription(_jsonOptions);
+        var requestInfo = context.Event.GetRequestInfo(_serializer, _logger);
+        var environmentInfo = context.Event.GetEnvironmentInfo(_serializer, _logger);
+        var userInfo = context.Event.GetUserIdentity(_serializer, _logger);
+        var userDescription = context.Event.GetUserDescription(_serializer, _logger);
 
         Assert.Equal("/test", requestInfo?.Path);
         Assert.Equal("Windows", environmentInfo?.OSName);
@@ -1177,7 +1177,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                     ev.Data.Remove(key);
 
                 ev.Data.Remove(Event.KnownDataKeys.UserDescription);
-                var identity = ev.GetUserIdentity(_jsonOptions);
+                var identity = ev.GetUserIdentity(_serializer, _logger);
                 if (identity?.Identity is not null)
                 {
                     if (!mappedUsers.ContainsKey(identity.Identity))
@@ -1186,7 +1186,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                     ev.SetUserIdentity(mappedUsers[identity.Identity]);
                 }
 
-                var request = ev.GetRequestInfo(_jsonOptions);
+                var request = ev.GetRequestInfo(_serializer, _logger);
                 if (request is not null)
                 {
                     request.Cookies?.Clear();
@@ -1206,7 +1206,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                     }
                 }
 
-                InnerError? error = ev.GetError(_jsonOptions);
+                InnerError? error = ev.GetError(_serializer, _logger);
                 while (error is not null)
                 {
                     error.Message = RandomData.GetSentence();
@@ -1216,13 +1216,13 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                     error = error.Inner;
                 }
 
-                var environment = ev.GetEnvironmentInfo(_jsonOptions);
+                var environment = ev.GetEnvironmentInfo(_serializer, _logger);
                 environment?.Data?.Clear();
             }
 
             // inject random session start events.
             if (currentBatchCount % 10 == 0)
-                events.Insert(0, events[0].ToSessionStartEvent(_jsonOptions));
+                events.Insert(0, events[0].ToSessionStartEvent(_serializer, _logger));
 
             await storage.SaveObjectAsync(Path.Combine(dataDirectory, $"{currentBatchCount++}.json"), events, TestCancellationToken);
         }
@@ -1285,6 +1285,96 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
             await _userRepository.AddAsync(user, o => o.ImmediateConsistency().Cache());
         }
+    }
+
+    [Fact]
+    public async Task ErrorPlugin_SetsTargetInfo_AfterPipelineProcessing()
+    {
+        // Arrange - Create an error event with multiple stack frames
+        var ev = GenerateEvent(type: Event.KnownTypes.Error);
+        ev.Data = new DataDictionary
+        {
+            [Event.KnownDataKeys.Error] = new Error
+            {
+                Type = "System.InvalidOperationException",
+                Message = "Test error for target info",
+                StackTrace =
+                [
+                    new Exceptionless.Core.Models.Data.StackFrame
+                    {
+                        DeclaringNamespace = "TestApp.Services",
+                        DeclaringType = "TestService",
+                        Name = "DoWork"
+                    },
+                    new Exceptionless.Core.Models.Data.StackFrame
+                    {
+                        DeclaringNamespace = "TestApp.Controllers",
+                        DeclaringType = "HomeController",
+                        Name = "Index"
+                    }
+                ]
+            }
+        };
+
+        // Act - Run through the pipeline
+        var context = await _pipeline.RunAsync(ev, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject());
+        Assert.False(context.HasError, context.ErrorMessage);
+
+        // Fetch from ES to verify serialized form
+        await RefreshDataAsync();
+        var stored = await _eventRepository.GetByIdAsync(ev.Id);
+        Assert.NotNull(stored);
+
+        // Assert - @target should have computed strings, not raw Method object
+        var error = stored.GetError(_serializer, _logger);
+        Assert.NotNull(error);
+
+        var targetInfo = error.Data?.GetValue<SettingsDictionary>(Error.KnownDataKeys.TargetInfo, _serializer);
+        Assert.NotNull(targetInfo);
+        Assert.True(targetInfo.TryGetValue("ExceptionType", out var exceptionType), "@target should contain ExceptionType");
+        Assert.Equal("System.InvalidOperationException", exceptionType);
+        Assert.True(targetInfo.TryGetValue("Method", out var method), "@target should contain Method");
+        Assert.Contains("TestService.DoWork", method);
+
+        // Assert - is_signature_target should be set on stack frames (FINDING-3b)
+        Assert.NotNull(error.StackTrace);
+        Assert.Equal(2, error.StackTrace.Count);
+        Assert.True(error.StackTrace[0].IsSignatureTarget, "First frame should be signature target");
+        Assert.False(error.StackTrace[1].IsSignatureTarget, "Second frame should not be signature target");
+    }
+
+    [Fact]
+    public async Task SimpleErrorPlugin_SetsTargetInfo_AfterPipelineProcessing()
+    {
+        // Arrange - Create a simple error event with type and stack trace string
+        var ev = GenerateEvent(type: Event.KnownTypes.Error);
+        ev.Data = new DataDictionary
+        {
+            [Event.KnownDataKeys.SimpleError] = new SimpleError
+            {
+                Type = "System.ArgumentNullException",
+                Message = "Value cannot be null",
+                StackTrace = "at TestApp.Services.UserService.GetUser(String userId)"
+            }
+        };
+
+        // Act - Run through the pipeline
+        var context = await _pipeline.RunAsync(ev, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject());
+        Assert.False(context.HasError, context.ErrorMessage);
+
+        // Fetch from ES to verify serialized form
+        await RefreshDataAsync();
+        var stored = await _eventRepository.GetByIdAsync(ev.Id);
+        Assert.NotNull(stored);
+
+        // Assert - @target should exist with ExceptionType from SimpleErrorPlugin
+        var error = stored.GetSimpleError(_serializer, _logger);
+        Assert.NotNull(error);
+
+        var targetInfo = error.Data?.GetValue<SettingsDictionary>(Error.KnownDataKeys.TargetInfo, _serializer);
+        Assert.NotNull(targetInfo);
+        Assert.True(targetInfo.TryGetValue("ExceptionType", out var exceptionType), "@target should contain ExceptionType");
+        Assert.Equal("System.ArgumentNullException", exceptionType);
     }
 
     private PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string? userIdentity = null, string? type = null, string? sessionId = null)

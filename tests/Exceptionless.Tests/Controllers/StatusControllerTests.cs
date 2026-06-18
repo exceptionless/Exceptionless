@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
@@ -10,7 +11,12 @@ namespace Exceptionless.Tests.Controllers;
 
 public class StatusControllerTests : IntegrationTestsBase
 {
-    public StatusControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) { }
+    private readonly AppWebHostFactory _factory;
+
+    public StatusControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
+        _factory = factory;
+    }
 
     protected override async Task ResetDataAsync()
     {
@@ -57,11 +63,16 @@ public class StatusControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public Task GetAboutAsync_Anonymous_ReturnsVersionInfo()
+    public async Task GetAboutAsync_Anonymous_ReturnsVersionInfo()
     {
-        return SendRequestAsync(r => r
+        var response = await SendRequestAsync(r => r
             .AppendPath("about")
             .StatusCodeShouldBeOk());
+
+        var document = await response.DeserializeAsync<JsonDocument>();
+        Assert.NotNull(document);
+        using var _ = document;
+        Assert.Equal(_factory.AppScope, document.RootElement.GetProperty("app_scope").GetString());
     }
 
     [Fact]

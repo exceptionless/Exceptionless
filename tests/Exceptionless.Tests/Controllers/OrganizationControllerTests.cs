@@ -1002,6 +1002,41 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ChangePlanAsync_HiddenPlanTarget_ReturnsValidationError()
+    {
+        // Arrange
+        await SetPlanAndStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, _plans.SmallPlan.Id, "cus_existing");
+
+        // Act
+        var problemDetails = await WithBillingEnabledAsync<Microsoft.AspNetCore.Mvc.ValidationProblemDetails?>(() =>
+            SendRequestAsAsync<Microsoft.AspNetCore.Mvc.ValidationProblemDetails>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest { PlanId = _plans.UnlimitedPlan.Id })
+                .StatusCodeShouldBeUnprocessableEntity()
+            ));
+
+        // Assert
+        Assert.NotNull(problemDetails);
+        Assert.Collection(problemDetails.Errors,
+            error =>
+            {
+                Assert.Equal("general", error.Key);
+                Assert.Equal(["Invalid plan. Please select a valid plan."], error.Value);
+            });
+
+        Assert.Empty(StripeBillingClient.UpdatedSubscriptions);
+        Assert.Empty(StripeBillingClient.CreatedSubscriptionOptions);
+
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        Assert.Equal(_plans.SmallPlan.Id, organization.PlanId);
+        Assert.Equal("cus_existing", organization.StripeCustomerId);
+        Assert.Equal(BillingStatus.Active, organization.BillingStatus);
+    }
+
+    [Fact]
     public async Task ChangePlanAsync_SameFreePlan_ReturnsSuccess()
     {
         var result = await WithBillingEnabledAsync(() =>

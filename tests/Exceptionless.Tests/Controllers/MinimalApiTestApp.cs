@@ -24,7 +24,7 @@ internal static class MinimalApiTestApp
         builder.Services.AddAuthenticationCore();
         builder.Services.ConfigureHttpJsonOptions(o =>
         {
-            o.SerializerOptions.ConfigureExceptionlessDefaults();
+            o.SerializerOptions.ConfigureExceptionlessApiDefaults();
         });
         builder.Services.AddRouting(options =>
         {
