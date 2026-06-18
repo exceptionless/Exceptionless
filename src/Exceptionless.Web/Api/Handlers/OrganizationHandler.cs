@@ -231,10 +231,6 @@ public class OrganizationHandler(
         {
             _logger.LogCritical(ex, "Error getting invoice ({InvoiceId}): {Message}", invoiceId, ex.Message);
         }
-        catch (Exception ex)
-        {
-            _logger.LogCritical(ex, "Unexpected error getting invoice ({InvoiceId}): {Message}", invoiceId, ex.Message);
-        }
 
         if (String.IsNullOrEmpty(stripeInvoice?.CustomerId))
             return Result.NotFound("Organization not found.");
@@ -545,11 +541,6 @@ public class OrganizationHandler(
         {
             _logger.LogCritical(ex, "Error occurred update billing plan: {Message}", ex.Message);
             return ChangePlanResult.FailWithMessage("An error occurred while changing plans. Please try again or contact support.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogCritical(ex, "An unexpected error occurred while trying to update your billing plan: {Message}", ex.Message);
-            return ChangePlanResult.FailWithMessage("An error occurred while changing plans. Please try again.");
         }
 
         return new ChangePlanResult { Success = true };

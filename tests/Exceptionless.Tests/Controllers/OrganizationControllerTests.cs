@@ -1219,7 +1219,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     public async Task ChangePlanAsync_StripeBillingClientThrows_ReturnsFailure()
     {
         // Arrange
-        StripeBillingClient.CreateCustomerException = new InvalidOperationException("Stripe unavailable");
+        StripeBillingClient.CreateCustomerException = new StripeException("Stripe unavailable");
 
         // Act
         var result = await WithBillingEnabledAsync(() =>
@@ -1239,7 +1239,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(result);
         Assert.False(result.Success);
-        Assert.Equal("An error occurred while changing plans. Please try again.", result.Message);
+        Assert.Equal("An error occurred while changing plans. Please try again or contact support.", result.Message);
         Assert.Empty(StripeBillingClient.CreatedSubscriptionOptions);
     }
 
@@ -1248,7 +1248,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     {
         // Arrange
         StripeBillingClient.CustomerToReturn = new Customer { Id = "cus_created" };
-        StripeBillingClient.CreateSubscriptionException = new InvalidOperationException("Stripe unavailable");
+        StripeBillingClient.CreateSubscriptionException = new StripeException("Stripe unavailable");
 
         // Act
         var result = await WithBillingEnabledAsync(() =>
@@ -1268,7 +1268,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(result);
         Assert.False(result.Success);
-        Assert.Equal("An error occurred while changing plans. Please try again.", result.Message);
+        Assert.Equal("An error occurred while changing plans. Please try again or contact support.", result.Message);
 
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
         Assert.NotNull(organization);
@@ -1284,7 +1284,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         // Arrange
         await SetStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, "cus_existing");
         StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_active", "si_active"));
-        StripeBillingClient.UpdateSubscriptionException = new InvalidOperationException("Stripe unavailable");
+        StripeBillingClient.UpdateSubscriptionException = new StripeException("Stripe unavailable");
 
         // Act
         var result = await WithBillingEnabledAsync(() =>
@@ -1304,7 +1304,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(result);
         Assert.False(result.Success);
-        Assert.Equal("An error occurred while changing plans. Please try again.", result.Message);
+        Assert.Equal("An error occurred while changing plans. Please try again or contact support.", result.Message);
         Assert.NotEmpty(StripeBillingClient.UpdatedSubscriptions);
 
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
@@ -1450,7 +1450,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     public Task GetInvoiceAsync_StripeBillingClientThrows_ReturnsNotFound()
     {
         // Arrange
-        StripeBillingClient.GetInvoiceException = new InvalidOperationException("Stripe unavailable");
+        StripeBillingClient.GetInvoiceException = new StripeException("Stripe unavailable");
 
         // Act & Assert
         return WithBillingEnabledAsync(() =>

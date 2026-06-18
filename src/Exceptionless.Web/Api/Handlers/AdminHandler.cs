@@ -365,7 +365,16 @@ public class AdminHandler(
 
             return new ElasticsearchSnapshotsResponse(successfulRepositoryNames, snapshots);
         }
-        catch (Exception ex)
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Unable to retrieve snapshot information");
+            return Result.Error("Unable to retrieve snapshot information.");
+        }
+        catch (TimeoutException ex)
         {
             _logger.LogError(ex, "Unable to retrieve snapshot information");
             return Result.Error("Unable to retrieve snapshot information.");

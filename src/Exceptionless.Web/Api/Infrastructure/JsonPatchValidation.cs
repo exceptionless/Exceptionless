@@ -110,9 +110,8 @@ public static class JsonPatchValidation
         var policy = patch.SerializerOptions?.PropertyNamingPolicy;
         var affected = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var op in patch.Operations)
+        foreach (var pathSegment in patch.Operations.Select(op => NormalizePath(op.path).TrimStart('/')))
         {
-            var pathSegment = NormalizePath(op.path).TrimStart('/');
             foreach (var prop in properties)
             {
                 var jsonName = policy?.ConvertName(prop.Name) ?? prop.Name;
@@ -162,17 +161,14 @@ public static class JsonPatchValidation
         if (body.ValueKind != JsonValueKind.Object)
             return null;
 
-        var ops = new JsonArray();
-        foreach (var prop in body.EnumerateObject())
-        {
-            var op = new JsonObject
+        var ops = new JsonArray(body.EnumerateObject()
+            .Select(prop => new JsonObject
             {
                 ["op"] = "replace",
                 ["path"] = $"/{prop.Name}",
                 ["value"] = JsonNode.Parse(prop.Value.GetRawText())
-            };
-            ops.Add(op);
-        }
+            })
+            .ToArray());
 
         if (ops.Count == 0)
             return new JsonPatchDocument<T>([], options);
