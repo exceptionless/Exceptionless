@@ -51,7 +51,7 @@
                             <pre class="command-line-code" ng-if="vm.isBashShell()">
 curl "{{::vm.serverUrl}}/api/v2/events" \
     --request POST \
-    --header "Authorization: Bearer {{::vm.apiKey}}" \
+    --header "Authorization: Bearer {{vm.apiKey}}" \
     --header "Content-Type: application/json" \
     --data-binary '[{"type":"log","message":"Hello World!"}]'</pre>
                             <pre class="command-line-code" ng-if="!vm.isBashShell()">
@@ -61,7 +61,7 @@ $body = @{
 } | ConvertTo-Json
 
 $header = @{
- "Authorization"="Bearer {{::vm.apiKey}}"
+ "Authorization"="Bearer {{vm.apiKey}}"
  "Content-Type"="application/json"
 }
 
@@ -77,7 +77,7 @@ Invoke-RestMethod -Uri "{{::vm.serverUrl}}/api/v2/events" -Method "Post" -Body $
                                 <pre><a ng-href="http://nuget.org/packages/{{vm.currentProjectType.key}}" target="_blank">Install-Package {{vm.currentProjectType.key}}</a></pre>
                             </div>
                             <div ng-if="vm.isJavaScript()">
-                                <div ng-if="!vm.isNode()">
+                                <div ng-if="!vm.isNode() && !vm.isReactNative() && !vm.isExpo()">
                                     <p ng-bind-html="'Notice_Install_Node_Package' | translate"></p>
                                     <pre><a href="https://www.npmjs.com/package/@exceptionless/browser" target="_blank">npm install @exceptionless/browser --save</a></pre>
                                     <p ng-bind-html="'Notice_Install_Manually' | translate"></p>
@@ -86,22 +86,44 @@ Invoke-RestMethod -Uri "{{::vm.serverUrl}}/api/v2/events" -Method "Post" -Body $
                                     <p ng-bind-html="'Notice_Install_Node_Package' | translate"></p>
                                     <pre><a href="https://www.npmjs.com/package/@exceptionless/node" target="_blank">npm install @exceptionless/node --save</a></pre>
                                 </div>
+                                <div ng-if="vm.isReactNative()">
+                                    <p ng-bind-html="'Notice_Install_Node_Package' | translate"></p>
+                                    <p>Install AsyncStorage with the client. It is a peer dependency used for persistent event queue storage.</p>
+                                    <pre><a href="https://www.npmjs.com/package/@exceptionless/react-native" target="_blank">npm install @exceptionless/react-native @react-native-async-storage/async-storage</a><br />cd ios &amp;&amp; pod install</pre>
+                                </div>
+                                <div ng-if="vm.isExpo()">
+                                    <p ng-bind-html="'Notice_Install_Node_Package' | translate"></p>
+                                    <p>Install AsyncStorage with the client. It is a peer dependency used for persistent event queue storage.</p>
+                                    <pre><a href="https://www.npmjs.com/package/@exceptionless/react-native" target="_blank">npx expo install @exceptionless/react-native @react-native-async-storage/async-storage</a></pre>
+                                </div>
                             </div>
                         </li>
                         <li ng-if="vm.isJavaScript()" style="margin-top: 15px">
-                            <div ng-if="!vm.isNode()">
+                            <div ng-if="!vm.isNode() && !vm.isReactNative() && !vm.isExpo()">
                                 <p>
                                     {{::'Configure the ExceptionlessClient with your Exceptionless API key:' |
                                     translate}}
                                 </p>
-                                <pre>import { Exceptionless } from "@exceptionless/browser";<br /><br />await Exceptionless.startup(c => {<br />&nbsp;&nbsp;c.apiKey = "{{::vm.apiKey}}";<br />});</pre>
+                                <pre>import { Exceptionless } from "@exceptionless/browser";<br /><br />await Exceptionless.startup(c => {<br />&nbsp;&nbsp;c.apiKey = "{{vm.apiKey}}";<br />});</pre>
                             </div>
                             <div ng-if="vm.isNode()">
                                 <p>
                                     {{::'Configure the ExceptionlessClient with your Exceptionless API key:' |
                                     translate}}
                                 </p>
-                                <pre>import { Exceptionless } from "@exceptionless/node";<br /><br />await Exceptionless.startup(c => {<br />&nbsp;&nbsp;c.apiKey = "{{::vm.apiKey}}";<br />});</pre>
+                                <pre>import { Exceptionless } from "@exceptionless/node";<br /><br />await Exceptionless.startup(c => {<br />&nbsp;&nbsp;c.apiKey = "{{vm.apiKey}}";<br />});</pre>
+                            </div>
+                            <div ng-if="vm.isExpo()">
+                                <p>Add the Exceptionless config plugin to app.json when using development or standalone builds:</p>
+                                <pre>{<br />&nbsp;&nbsp;"expo": {<br />&nbsp;&nbsp;&nbsp;&nbsp;"plugins": ["@exceptionless/react-native/expo-plugin"]<br />&nbsp;&nbsp;}<br />}</pre>
+                                <p>Native iOS crash reporting requires an Expo development build or standalone build. JavaScript error reporting works in Expo Go.</p>
+                            </div>
+                            <div ng-if="vm.isReactNative() || vm.isExpo()">
+                                <p>
+                                    {{::'Configure the ExceptionlessClient with your Exceptionless API key:' |
+                                    translate}}
+                                </p>
+                                <pre>import { Exceptionless } from "@exceptionless/react-native";<br /><br />await Exceptionless.startup(c => {<br />&nbsp;&nbsp;c.apiKey = "{{vm.apiKey}}";<br />});</pre>
                             </div>
                         </li>
                         <li ng-if="vm.isDotNet()" style="margin-top: 15px">
