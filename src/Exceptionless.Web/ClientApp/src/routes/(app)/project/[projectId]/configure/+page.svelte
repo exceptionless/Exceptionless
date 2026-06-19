@@ -123,7 +123,7 @@
 
         { id: 'javascript-browser', label: 'Browser applications', package: 'Exceptionless.JavaScript', platform: 'JavaScript' },
         { id: 'javascript-nodejs', label: 'Node.js', package: 'Exceptionless.Node', platform: 'JavaScript' },
-        { id: 'javascript-react-native', label: 'React Native CLI', package: '@exceptionless/react-native', platform: 'JavaScript' },
+        { id: 'javascript-react-native', label: 'React Native', package: '@exceptionless/react-native', platform: 'JavaScript' },
         { id: 'javascript-expo', label: 'Expo', package: '@exceptionless/react-native', platform: 'JavaScript' },
 
         { id: 'dotnet-legacy-console', label: 'Console and Service applications', package: 'Exceptionless', platform: '.NET Legacy' },
@@ -315,7 +315,7 @@ public partial class App : Application {
                 };
             case 'javascript-react-native':
                 return {
-                    installCommand: 'npm install @exceptionless/react-native @react-native-async-storage/async-storage\ncd ios && pod install',
+                    installCommand: 'npm install @exceptionless/react-native @react-native-async-storage/async-storage',
                     installNote: 'The AsyncStorage package is a peer dependency used for persistent event queue storage, so install it alongside the client.',
                     packageName: '@exceptionless/react-native',
                     startupCode: codeSamples.reactNativeJs
@@ -641,12 +641,9 @@ public partial class App : Application {
             {#if isJavaScript && javascriptClientConfiguration}
                 <li>
                     <P
-                        >Install the <strong>{javascriptClientConfiguration.packageName}</strong> npm package in your JavaScript project by running this command in
-                        the project directory.</P
+                        >Install the <strong>{javascriptClientConfiguration.packageName}</strong> npm package in your JavaScript project by running this command
+                        in the project directory. {javascriptClientConfiguration.installNote ?? ''}</P
                     >
-                    {#if javascriptClientConfiguration.installNote}
-                        <P>{javascriptClientConfiguration.installNote}</P>
-                    {/if}
                     <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
                         <CodeBlock code={javascriptClientConfiguration.installCommand} language="shellscript" />
                         <div class="absolute top-2 right-2">

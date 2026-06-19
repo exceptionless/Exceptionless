@@ -141,7 +141,7 @@
                             platform: "JavaScript",
                         },
                         { key: "Exceptionless.Node", name: "Node.js", platform: "JavaScript" },
-                        { key: "Exceptionless.ReactNative", name: "React Native CLI", platform: "JavaScript" },
+                        { key: "Exceptionless.ReactNative", name: "React Native", platform: "JavaScript" },
                         { key: "Exceptionless.Expo", name: "Expo", platform: "JavaScript" },
                     ];
                 }

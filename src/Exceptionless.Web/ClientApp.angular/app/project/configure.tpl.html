@@ -87,13 +87,11 @@ Invoke-RestMethod -Uri "{{::vm.serverUrl}}/api/v2/events" -Method "Post" -Body $
                                     <pre><a href="https://www.npmjs.com/package/@exceptionless/node" target="_blank">npm install @exceptionless/node --save</a></pre>
                                 </div>
                                 <div ng-if="vm.isReactNative()">
-                                    <p ng-bind-html="'Notice_Install_Node_Package' | translate"></p>
-                                    <p>Install AsyncStorage with the client. It is a peer dependency used for persistent event queue storage.</p>
-                                    <pre><a href="https://www.npmjs.com/package/@exceptionless/react-native" target="_blank">npm install @exceptionless/react-native @react-native-async-storage/async-storage</a><br />cd ios &amp;&amp; pod install</pre>
+                                    <p>Install Exceptionless using the <a href="https://www.npmjs.com/package/@exceptionless/react-native" target="_blank">Node Package Manager</a>. Install AsyncStorage with the client. It is a peer dependency used for persistent event queue storage.</p>
+                                    <pre>npm install @exceptionless/react-native @react-native-async-storage/async-storage</pre>
                                 </div>
                                 <div ng-if="vm.isExpo()">
-                                    <p ng-bind-html="'Notice_Install_Node_Package' | translate"></p>
-                                    <p>Install AsyncStorage with the client. It is a peer dependency used for persistent event queue storage.</p>
+                                    <p>Install Exceptionless using the <a href="https://www.npmjs.com/package/@exceptionless/react-native" target="_blank">Node Package Manager</a>. Install AsyncStorage with the client. It is a peer dependency used for persistent event queue storage.</p>
                                     <pre><a href="https://www.npmjs.com/package/@exceptionless/react-native" target="_blank">npx expo install @exceptionless/react-native @react-native-async-storage/async-storage</a></pre>
                                 </div>
                             </div>
