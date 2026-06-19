@@ -103,6 +103,21 @@ export function setTimeQueryParam(queryParams: SavedViewQueryParams, value: null
     }
 }
 
+export function clearSavedViewQueryParams(queryParams: SavedViewQueryParams): void {
+    queryParams.filter = null;
+
+    if (supportsFiltersQueryParam(queryParams)) {
+        queryParams.filters = null;
+    }
+
+    setSortQueryParam(queryParams, null);
+    setTimeQueryParam(queryParams, null);
+
+    if (supportsSavedQueryParam(queryParams)) {
+        queryParams.saved = null;
+    }
+}
+
 export function supportsSortQueryParam(queryParams: SavedViewQueryParams): queryParams is SavedViewQueryParams & { sort: null | string | undefined } {
     return Object.prototype.hasOwnProperty.call(queryParams, 'sort');
 }
@@ -303,16 +318,9 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     }
 
     function handleClearSavedView() {
-        options.queryParams.filter = null;
-        options.queryParams.filters = null;
-        setSortQueryParam(options.queryParams, null);
-        setTimeQueryParam(options.queryParams, null);
+        clearSavedViewQueryParams(options.queryParams);
         applyColumnState(undefined);
         applyDisplayState(undefined);
-
-        if (supportsSavedQueryParam(options.queryParams)) {
-            options.queryParams.saved = undefined;
-        }
 
         if (options.baseHref) {
             goto(options.baseHref);
@@ -398,6 +406,10 @@ function sortFilterDefinitions(filters: IFilter[]): IFilter[] {
 
 function supportsSavedQueryParam(queryParams: SavedViewQueryParams): queryParams is SavedViewQueryParams & { saved: null | string | undefined } {
     return Object.prototype.hasOwnProperty.call(queryParams, 'saved');
+}
+
+function supportsFiltersQueryParam(queryParams: SavedViewQueryParams): queryParams is SavedViewQueryParams & { filters: null | string | undefined } {
+    return Object.prototype.hasOwnProperty.call(queryParams, 'filters');
 }
 
 function updateSavedViewFilterCache(options: UseSavedViewsOptions, view: SavedView, filters: IFilter[]): void {

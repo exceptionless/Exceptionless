@@ -6,6 +6,7 @@ import type { SavedView } from './models';
 
 import { invalidateSavedViewQueries, queryKeys, removeSavedViewFromCaches, SAVED_VIEW_REFRESH_DELAY_MS, syncSavedViewCaches } from './api.svelte';
 import {
+    clearSavedViewQueryParams,
     filterDefinitionsEqual,
     getComparableSavedViewFilter,
     getComparableSavedViewTime,
@@ -296,6 +297,57 @@ describe('useSavedViews', () => {
 
             // Assert
             expect(queryParams.time).toBeNull();
+        });
+    });
+
+    describe('saved parameter clearing', () => {
+        it('clears saved view selection to null instead of undefined', () => {
+            // Arrange
+            const queryParams: SavedViewQueryParams = {
+                filter: 'type:error',
+                filters: 'type:error',
+                saved: 'view-1',
+                sort: '-date',
+                time: '[now-7d TO now]'
+            };
+
+            // Act
+            clearSavedViewQueryParams(queryParams);
+
+            // Assert
+            expect(queryParams).toEqual({
+                filter: null,
+                filters: null,
+                saved: null,
+                sort: null,
+                time: null
+            });
+        });
+
+        it('does not write query parameters unsupported by the route', () => {
+            // Arrange
+            const target: SavedViewQueryParams = {
+                filter: 'type:error',
+                time: '[now-7d TO now]'
+            };
+            const queryParams = new Proxy(target, {
+                set(obj, prop, value) {
+                    if (prop === 'filters' || prop === 'saved' || prop === 'sort') {
+                        throw new Error(`unexpected ${String(prop)} assignment: ${String(value)}`);
+                    }
+
+                    return Reflect.set(obj, prop, value);
+                }
+            }) as SavedViewQueryParams;
+
+            // Act & Assert
+            expect(() => {
+                clearSavedViewQueryParams(queryParams);
+            }).not.toThrow();
+            expect(queryParams).toEqual({
+                filter: null,
+                time: null
+            });
         });
     });
 
