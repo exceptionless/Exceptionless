@@ -54,6 +54,21 @@ export interface UseSavedViewsReturn {
     savedViews: SavedView[];
 }
 
+export function clearSavedViewQueryParams(queryParams: SavedViewQueryParams): void {
+    queryParams.filter = null;
+
+    if (supportsFiltersQueryParam(queryParams)) {
+        queryParams.filters = null;
+    }
+
+    setSortQueryParam(queryParams, null);
+    setTimeQueryParam(queryParams, null);
+
+    if (supportsSavedQueryParam(queryParams)) {
+        queryParams.saved = null;
+    }
+}
+
 export function filterDefinitionsEqual(a: null | string | undefined, b: null | string | undefined): boolean {
     return normalizeFilterDefinitions(a) === normalizeFilterDefinitions(b);
 }
@@ -100,21 +115,6 @@ export function setSortQueryParam(queryParams: SavedViewQueryParams, value: null
 export function setTimeQueryParam(queryParams: SavedViewQueryParams, value: null | string): void {
     if (supportsTimeQueryParam(queryParams)) {
         queryParams.time = value;
-    }
-}
-
-export function clearSavedViewQueryParams(queryParams: SavedViewQueryParams): void {
-    queryParams.filter = null;
-
-    if (supportsFiltersQueryParam(queryParams)) {
-        queryParams.filters = null;
-    }
-
-    setSortQueryParam(queryParams, null);
-    setTimeQueryParam(queryParams, null);
-
-    if (supportsSavedQueryParam(queryParams)) {
-        queryParams.saved = null;
     }
 }
 
@@ -404,12 +404,12 @@ function sortFilterDefinitions(filters: IFilter[]): IFilter[] {
     return [...filters].sort((a, b) => a.key.localeCompare(b.key));
 }
 
-function supportsSavedQueryParam(queryParams: SavedViewQueryParams): queryParams is SavedViewQueryParams & { saved: null | string | undefined } {
-    return Object.prototype.hasOwnProperty.call(queryParams, 'saved');
-}
-
 function supportsFiltersQueryParam(queryParams: SavedViewQueryParams): queryParams is SavedViewQueryParams & { filters: null | string | undefined } {
     return Object.prototype.hasOwnProperty.call(queryParams, 'filters');
+}
+
+function supportsSavedQueryParam(queryParams: SavedViewQueryParams): queryParams is SavedViewQueryParams & { saved: null | string | undefined } {
+    return Object.prototype.hasOwnProperty.call(queryParams, 'saved');
 }
 
 function updateSavedViewFilterCache(options: UseSavedViewsOptions, view: SavedView, filters: IFilter[]): void {
