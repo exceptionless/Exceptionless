@@ -370,7 +370,7 @@ export function resolvePageCount(
         return Math.max(previousPageCount, currentPage + 1, totalPages ?? 0);
     }
 
-    return totalPages ?? (hasNextPage ? currentPage + 1 : currentPage);
+    return totalPages ?? (hasNextPage ? Math.max(previousPageCount, currentPage + 1) : currentPage);
 }
 
 export function resolvePaginationChange(previousPageInfo: PaginationState, currentPageInfo: PaginationState) {

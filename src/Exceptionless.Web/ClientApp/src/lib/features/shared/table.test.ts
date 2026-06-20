@@ -114,4 +114,12 @@ describe('resolvePageCount', () => {
 
         expect(result).toBe(424);
     });
+
+    it('keeps a known offset page count when a later response omits total but has a next page', () => {
+        const meta = { links: { next: { page: '3', rel: 'next', url: '/events?page=3' } } } as QueryMeta;
+
+        const result = resolvePageCount('offset', meta, 2, 50, 1060);
+
+        expect(result).toBe(1060);
+    });
 });

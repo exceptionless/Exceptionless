@@ -657,7 +657,10 @@
         }
 
         clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
-            params: eventsQueryParameters as Record<string, unknown>
+            params: {
+                ...eventsQueryParameters,
+                includeTotal: !eventsQueryParameters.page || eventsQueryParameters.page <= 1
+            } as Record<string, unknown>
         });
 
         showBillingDialogOnUpgradeProblem(clientResponse.problem, organization.current, () => loadData());

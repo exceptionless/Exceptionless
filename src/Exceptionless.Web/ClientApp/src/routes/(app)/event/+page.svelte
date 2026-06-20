@@ -689,7 +689,10 @@
             return;
         }
 
-        const params = { ...eventsQueryParameters };
+        const params = {
+            ...eventsQueryParameters,
+            includeTotal: !eventsQueryParameters.after && !eventsQueryParameters.before
+        };
         delete params.page;
         clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, { params });
 
