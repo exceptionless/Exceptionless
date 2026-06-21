@@ -386,8 +386,8 @@ During deployment where old instances use Newtonsoft and new instances use STJ:
 ### Newtonsoft.Json (Transitive Only — NOT USED)
 
 ```
-Foundatio.Repositories.Elasticsearch v8.0.0-beta1
-  → Foundatio.Repositories v8.0.0-beta1
+Foundatio.Repositories.Elasticsearch v8.0.0-beta2
+  → Foundatio.Repositories v8.0.0-beta2
     → Foundatio.JsonNet v13.0.1
       → Newtonsoft.Json v13.0.4
 
