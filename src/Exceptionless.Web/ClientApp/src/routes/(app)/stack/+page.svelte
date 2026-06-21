@@ -659,7 +659,7 @@
         clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
             params: {
                 ...eventsQueryParameters,
-                includeTotal: !eventsQueryParameters.page || eventsQueryParameters.page <= 1
+                include: !eventsQueryParameters.page || eventsQueryParameters.page <= 1 ? 'total' : undefined
             } as Record<string, unknown>
         });
 

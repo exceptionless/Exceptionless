@@ -2144,12 +2144,11 @@
             }
           },
           {
-            "name": "includeTotal",
+            "name": "include",
             "in": "query",
-            "description": "Whether to include the total result count in the response headers.",
+            "description": "Optional response metadata to include. Specify total to include the total result count in response headers.",
             "schema": {
-              "type": "boolean",
-              "default": true
+              "type": "string"
             }
           }
         ],
@@ -2317,12 +2316,11 @@
             }
           },
           {
-            "name": "includeTotal",
+            "name": "include",
             "in": "query",
-            "description": "Whether to include the total result count in the response headers.",
+            "description": "Optional response metadata to include. Specify total to include the total result count in response headers.",
             "schema": {
-              "type": "boolean",
-              "default": true
+              "type": "string"
             }
           }
         ],
@@ -2445,12 +2443,11 @@
             }
           },
           {
-            "name": "includeTotal",
+            "name": "include",
             "in": "query",
-            "description": "Whether to include the total result count in the response headers.",
+            "description": "Optional response metadata to include. Specify total to include the total result count in response headers.",
             "schema": {
-              "type": "boolean",
-              "default": true
+              "type": "string"
             }
           }
         ],
@@ -2631,12 +2628,11 @@
             }
           },
           {
-            "name": "includeTotal",
+            "name": "include",
             "in": "query",
-            "description": "Whether to include the total result count in the response headers.",
+            "description": "Optional response metadata to include. Specify total to include the total result count in response headers.",
             "schema": {
-              "type": "boolean",
-              "default": true
+              "type": "string"
             }
           }
         ],
@@ -2735,12 +2731,11 @@
             }
           },
           {
-            "name": "includeTotal",
+            "name": "include",
             "in": "query",
-            "description": "Whether to include the total result count in the response headers.",
+            "description": "Optional response metadata to include. Specify total to include the total result count in response headers.",
             "schema": {
-              "type": "boolean",
-              "default": true
+              "type": "string"
             }
           }
         ],
@@ -2846,12 +2841,11 @@
             }
           },
           {
-            "name": "includeTotal",
+            "name": "include",
             "in": "query",
-            "description": "Whether to include the total result count in the response headers.",
+            "description": "Optional response metadata to include. Specify total to include the total result count in response headers.",
             "schema": {
-              "type": "boolean",
-              "default": true
+              "type": "string"
             }
           }
         ],
@@ -2974,12 +2968,11 @@
             }
           },
           {
-            "name": "includeTotal",
+            "name": "include",
             "in": "query",
-            "description": "Whether to include the total result count in the response headers.",
+            "description": "Optional response metadata to include. Specify total to include the total result count in response headers.",
             "schema": {
-              "type": "boolean",
-              "default": true
+              "type": "string"
             }
           }
         ],
@@ -3109,12 +3102,11 @@
             }
           },
           {
-            "name": "includeTotal",
+            "name": "include",
             "in": "query",
-            "description": "Whether to include the total result count in the response headers.",
+            "description": "Optional response metadata to include. Specify total to include the total result count in response headers.",
             "schema": {
-              "type": "boolean",
-              "default": true
+              "type": "string"
             }
           }
         ],
@@ -3227,12 +3219,11 @@
             }
           },
           {
-            "name": "includeTotal",
+            "name": "include",
             "in": "query",
-            "description": "Whether to include the total result count in the response headers.",
+            "description": "Optional response metadata to include. Specify total to include the total result count in response headers.",
             "schema": {
-              "type": "boolean",
-              "default": true
+              "type": "string"
             }
           }
         ],
@@ -3349,12 +3340,11 @@
             }
           },
           {
-            "name": "includeTotal",
+            "name": "include",
             "in": "query",
-            "description": "Whether to include the total result count in the response headers.",
+            "description": "Optional response metadata to include. Specify total to include the total result count in response headers.",
             "schema": {
-              "type": "boolean",
-              "default": true
+              "type": "string"
             }
           }
         ],
@@ -3477,12 +3467,11 @@
             }
           },
           {
-            "name": "includeTotal",
+            "name": "include",
             "in": "query",
-            "description": "Whether to include the total result count in the response headers.",
+            "description": "Optional response metadata to include. Specify total to include the total result count in response headers.",
             "schema": {
-              "type": "boolean",
-              "default": true
+              "type": "string"
             }
           }
         ],
