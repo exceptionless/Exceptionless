@@ -8,6 +8,7 @@
 @codeVerifier = local-test-code-verifier
 @codeChallenge = replace-with-S256-code-challenge
 @oauthApplicationId = replace-with-oauth-application-id
+@dynamicRedirectUri = http://127.0.0.1:49152/callback
 
 ### OAuth Authorization Server Metadata
 GET {{rootUrl}}/.well-known/oauth-authorization-server
@@ -15,6 +16,26 @@ GET {{rootUrl}}/.well-known/oauth-authorization-server
 ### OAuth Protected Resource Metadata
 GET {{rootUrl}}/.well-known/oauth-protected-resource
 
+### Dynamic Client Registration
+# @name registerOAuthClient
+POST {{apiUrl}}/oauth/register
+Content-Type: application/json
+
+{
+  "client_name": "Codex Dev",
+  "redirect_uris": [
+    "{{dynamicRedirectUri}}"
+  ],
+  "grant_types": [
+    "authorization_code",
+    "refresh_token"
+  ],
+  "response_types": [
+    "code"
+  ],
+  "scope": "mcp:read projects:read stacks:read events:read offline_access",
+  "token_endpoint_auth_method": "none"
+}
 ### Login
 # @name login
 POST {{apiUrl}}/auth/login

@@ -26,8 +26,73 @@ public class OAuthService(OAuthOptions options, ICacheClient cacheClient, IOAuth
 
     private const string AuthorizationCodeCachePrefix = "oauth:code:";
     private const string ClientMetadataNotes = "Discovered from OAuth client metadata document.";
+    private const string DynamicClientRegistrationNotes = "Registered through OAuth dynamic client registration.";
 
     public bool ClientIdMetadataDocumentSupported => options.EnableClientIdMetadataDocuments;
+
+    public async Task<OAuthClientRegistrationResult> RegisterClientAsync(OAuthClientRegistrationRequest request)
+    {
+        string tokenEndpointAuthMethod = String.IsNullOrWhiteSpace(request.TokenEndpointAuthMethod) ? "none" : request.TokenEndpointAuthMethod.Trim();
+        if (!String.Equals(tokenEndpointAuthMethod, "none", StringComparison.Ordinal))
+            return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", "Only public OAuth clients using token_endpoint_auth_method 'none' are supported.");
+
+        if (request.GrantTypes is { Length: > 0 } && !request.GrantTypes.All(g => g is OAuthGrantTypes.AuthorizationCode or OAuthGrantTypes.RefreshToken))
+            return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", "Only authorization_code and refresh_token grant types are supported.");
+
+        if (request.GrantTypes is { Length: > 0 } && !request.GrantTypes.Contains(OAuthGrantTypes.AuthorizationCode, StringComparer.Ordinal))
+            return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", "The authorization_code grant type is required.");
+
+        if (request.ResponseTypes is { Length: > 0 } && !request.ResponseTypes.SequenceEqual(["code"]))
+            return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", "Only the code response type is supported.");
+
+        if (request.RedirectUris is null || request.RedirectUris.Length == 0)
+            return OAuthClientRegistrationResult.Invalid("invalid_redirect_uri", "At least one redirect_uri is required.");
+
+        var redirectUris = request.RedirectUris
+            .Where(uri => !String.IsNullOrWhiteSpace(uri))
+            .Select(uri => uri.Trim())
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        if (redirectUris.Length == 0 || redirectUris.Length > 20 || redirectUris.Any(uri => !IsSecureRedirectUri(uri)))
+            return OAuthClientRegistrationResult.Invalid("invalid_redirect_uri", "Redirect URIs must be absolute HTTPS URIs or loopback HTTP URIs without fragments.");
+
+        var scopes = NormalizeScopes(request.Scope);
+        if (scopes.Count == 0)
+            scopes = SupportedScopes;
+
+        if (scopes.Any(s => !SupportedScopes.Contains(s, StringComparer.Ordinal)))
+            return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", "One or more scopes are not supported.");
+
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+        string clientId = await CreateUniqueClientIdAsync();
+        var application = new OAuthApplication
+        {
+            Id = ObjectId.GenerateNewId().ToString(),
+            ClientId = clientId,
+            Name = NormalizeClientName(request.ClientName, clientId),
+            RedirectUris = redirectUris,
+            Scopes = scopes.ToArray(),
+            Notes = DynamicClientRegistrationNotes,
+            CreatedByUserId = OAuthApplication.SystemUserId,
+            UpdatedByUserId = OAuthApplication.SystemUserId,
+            CreatedUtc = utcNow,
+            UpdatedUtc = utcNow
+        };
+
+        await oauthApplicationRepository.AddAsync(application, o => o.ImmediateConsistency());
+        return OAuthClientRegistrationResult.Success(new OAuthClientRegistrationResponse
+        {
+            ClientId = application.ClientId,
+            ClientName = application.Name,
+            RedirectUris = application.RedirectUris,
+            GrantTypes = [OAuthGrantTypes.AuthorizationCode, OAuthGrantTypes.RefreshToken],
+            ResponseTypes = ["code"],
+            Scope = String.Join(' ', application.Scopes),
+            TokenEndpointAuthMethod = "none",
+            ClientIdIssuedAt = new DateTimeOffset(application.CreatedUtc).ToUnixTimeSeconds()
+        });
+    }
 
     public async Task<OAuthClientOptions?> GetClientAsync(string clientId, bool allowClientMetadataDocument = false)
     {
@@ -122,6 +187,16 @@ public class OAuthService(OAuthOptions options, ICacheClient cacheClient, IOAuth
     {
         string name = String.IsNullOrWhiteSpace(clientName) ? clientId : clientName.Trim();
         return name.Length <= 200 ? name : name[..200];
+    }
+
+    private async Task<string> CreateUniqueClientIdAsync()
+    {
+        while (true)
+        {
+            string clientId = $"dcr_{StringExtensions.GetNewToken()}";
+            if (await oauthApplicationRepository.GetByClientIdAsync(clientId) is null)
+                return clientId;
+        }
     }
 
     private static bool IsSecureRedirectUri(string redirectUri)
@@ -351,6 +426,60 @@ public record OAuthTokenRequest
     public string? CodeVerifier { get; init; }
     public string? RefreshToken { get; init; }
     public string? Resource { get; init; }
+}
+
+public record OAuthClientRegistrationRequest
+{
+    [JsonPropertyName("redirect_uris")]
+    public string[]? RedirectUris { get; init; }
+
+    [JsonPropertyName("client_name")]
+    public string? ClientName { get; init; }
+
+    [JsonPropertyName("scope")]
+    public string? Scope { get; init; }
+
+    [JsonPropertyName("grant_types")]
+    public string[]? GrantTypes { get; init; }
+
+    [JsonPropertyName("response_types")]
+    public string[]? ResponseTypes { get; init; }
+
+    [JsonPropertyName("token_endpoint_auth_method")]
+    public string? TokenEndpointAuthMethod { get; init; }
+}
+
+public record OAuthClientRegistrationResult(bool IsSuccess, OAuthClientRegistrationResponse? Response, string? Error, string? ErrorDescription)
+{
+    public static OAuthClientRegistrationResult Success(OAuthClientRegistrationResponse response) => new(true, response, null, null);
+    public static OAuthClientRegistrationResult Invalid(string error, string description) => new(false, null, error, description);
+}
+
+public record OAuthClientRegistrationResponse
+{
+    [JsonPropertyName("client_id")]
+    public required string ClientId { get; init; }
+
+    [JsonPropertyName("client_name")]
+    public required string ClientName { get; init; }
+
+    [JsonPropertyName("redirect_uris")]
+    public required IReadOnlyCollection<string> RedirectUris { get; init; }
+
+    [JsonPropertyName("grant_types")]
+    public required IReadOnlyCollection<string> GrantTypes { get; init; }
+
+    [JsonPropertyName("response_types")]
+    public required IReadOnlyCollection<string> ResponseTypes { get; init; }
+
+    [JsonPropertyName("scope")]
+    public required string Scope { get; init; }
+
+    [JsonPropertyName("token_endpoint_auth_method")]
+    public required string TokenEndpointAuthMethod { get; init; }
+
+    [JsonPropertyName("client_id_issued_at")]
+    public required long ClientIdIssuedAt { get; init; }
 }
 
 public record OAuthAuthorizationCode

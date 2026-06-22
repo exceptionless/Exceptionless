@@ -64,10 +64,63 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.Equal("http://localhost", metadata.Issuer);
         Assert.Equal("http://localhost/api/v2/oauth/authorize", metadata.AuthorizationEndpoint);
         Assert.Equal("http://localhost/api/v2/oauth/token", metadata.TokenEndpoint);
+        Assert.Equal("http://localhost/api/v2/oauth/register", metadata.RegistrationEndpoint);
         Assert.Contains(OAuthGrantTypes.AuthorizationCode, metadata.GrantTypesSupported);
         Assert.Contains(OAuthService.CodeChallengeMethod, metadata.CodeChallengeMethodsSupported);
         Assert.Contains(AuthorizationRoles.McpRead, metadata.ScopesSupported);
         Assert.True(metadata.ClientIdMetadataDocumentSupported);
+    }
+
+    [Fact]
+    public async Task RegisterAsync_ValidDynamicClient_ReturnsClientAndPersistsApplication()
+    {
+        using var client = CreateHttpClient();
+
+        var response = await client.PostAsJsonAsync("oauth/register", new OAuthClientRegistrationRequest
+        {
+            ClientName = "Codex",
+            RedirectUris = ["http://127.0.0.1:49152/callback"],
+            GrantTypes = [OAuthGrantTypes.AuthorizationCode, OAuthGrantTypes.RefreshToken],
+            ResponseTypes = ["code"],
+            Scope = $"{AuthorizationRoles.McpRead} {AuthorizationRoles.ProjectsRead}",
+            TokenEndpointAuthMethod = "none"
+        }, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var registration = await DeserializeResponseAsync<OAuthClientRegistrationResponse>(response);
+        Assert.NotNull(registration);
+        Assert.StartsWith("dcr_", registration.ClientId, StringComparison.Ordinal);
+        Assert.Equal("Codex", registration.ClientName);
+        Assert.Contains("http://127.0.0.1:49152/callback", registration.RedirectUris);
+        Assert.Contains(OAuthGrantTypes.AuthorizationCode, registration.GrantTypes);
+        Assert.Equal("none", registration.TokenEndpointAuthMethod);
+        Assert.Contains(AuthorizationRoles.McpRead, registration.Scope);
+
+        var application = await _oauthApplicationRepository.GetByClientIdAsync(registration.ClientId, o => o.ImmediateConsistency());
+        Assert.NotNull(application);
+        Assert.Equal(OAuthApplication.SystemUserId, application.CreatedByUserId);
+        Assert.Contains("http://127.0.0.1:49152/callback", application.RedirectUris);
+        Assert.Contains(AuthorizationRoles.ProjectsRead, application.Scopes);
+    }
+
+    [Fact]
+    public async Task RegisterAsync_InvalidRedirectUri_ReturnsBadRequest()
+    {
+        using var client = CreateHttpClient();
+
+        var response = await client.PostAsJsonAsync("oauth/register", new OAuthClientRegistrationRequest
+        {
+            ClientName = "Bad Client",
+            RedirectUris = ["http://attacker.example/callback"],
+            GrantTypes = [OAuthGrantTypes.AuthorizationCode],
+            ResponseTypes = ["code"],
+            TokenEndpointAuthMethod = "none"
+        }, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
+        Assert.NotNull(error);
+        Assert.Equal("invalid_redirect_uri", error.Error);
     }
 
     [Fact]

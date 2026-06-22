@@ -21,6 +21,7 @@ public sealed class OAuthController(OAuthService oauthService, TimeProvider time
             Issuer = origin,
             AuthorizationEndpoint = $"{origin}/{API_PREFIX}/oauth/authorize",
             TokenEndpoint = $"{origin}/{API_PREFIX}/oauth/token",
+            RegistrationEndpoint = $"{origin}/{API_PREFIX}/oauth/register",
             RevocationEndpoint = $"{origin}/{API_PREFIX}/oauth/revoke",
             GrantTypesSupported = [OAuthGrantTypes.AuthorizationCode, OAuthGrantTypes.RefreshToken],
             ResponseTypesSupported = ["code"],
@@ -80,6 +81,17 @@ public sealed class OAuthController(OAuthService oauthService, TimeProvider time
     public Task<IActionResult> CompleteAuthorizeAsync([FromBody] OAuthAuthorizeForm form)
     {
         return CompleteAuthorizationAsync(form.ToRequest(), jsonResponse: true);
+    }
+
+    [HttpPost(API_PREFIX + "/oauth/register")]
+    [AllowAnonymous]
+    public async Task<ActionResult<OAuthClientRegistrationResponse>> RegisterAsync([FromBody] OAuthClientRegistrationRequest request)
+    {
+        var result = await oauthService.RegisterClientAsync(request);
+        if (!result.IsSuccess)
+            return OAuthError(result.Error, result.ErrorDescription);
+
+        return StatusCode(StatusCodes.Status201Created, result.Response);
     }
 
     [HttpPost(API_PREFIX + "/oauth/token")]
@@ -214,6 +226,9 @@ public sealed record OAuthAuthorizationServerMetadata
 
     [JsonPropertyName("token_endpoint")]
     public required string TokenEndpoint { get; init; }
+
+    [JsonPropertyName("registration_endpoint")]
+    public required string RegistrationEndpoint { get; init; }
 
     [JsonPropertyName("revocation_endpoint")]
     public required string RevocationEndpoint { get; init; }
