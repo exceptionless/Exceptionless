@@ -1,5 +1,35 @@
 [
   {
+    "Controller": "OAuthController",
+    "Action": "GetAuthorizationServerMetadataAsync",
+    "HttpMethod": "GET",
+    "Route": "/.well-known/oauth-authorization-server",
+    "Authorization": [
+      "AllowAnonymous"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OAuthController",
+    "Action": "GetProtectedResourceMetadataAsync",
+    "HttpMethod": "GET",
+    "Route": "/.well-known/oauth-protected-resource",
+    "Authorization": [
+      "AllowAnonymous"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
     "Controller": "EventController",
     "Action": "LegacyPostAsync",
     "HttpMethod": "POST",
@@ -379,6 +409,66 @@
     "Action": "GetMigrationsAsync",
     "HttpMethod": "GET",
     "Route": "/api/v2/admin/migrations",
+    "Authorization": [
+      "Authorize(Policy=GlobalAdminPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": true
+  },
+  {
+    "Controller": "OAuthApplicationController",
+    "Action": "GetAllAsync",
+    "HttpMethod": "GET",
+    "Route": "/api/v2/admin/oauth-applications",
+    "Authorization": [
+      "Authorize(Policy=GlobalAdminPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": true
+  },
+  {
+    "Controller": "OAuthApplicationController",
+    "Action": "CreateAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/admin/oauth-applications",
+    "Authorization": [
+      "Authorize(Policy=GlobalAdminPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": true
+  },
+  {
+    "Controller": "OAuthApplicationController",
+    "Action": "DeleteAsync",
+    "HttpMethod": "DELETE",
+    "Route": "/api/v2/admin/oauth-applications/{id:objectid}",
+    "Authorization": [
+      "Authorize(Policy=GlobalAdminPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": true
+  },
+  {
+    "Controller": "OAuthApplicationController",
+    "Action": "UpdateAsync",
+    "HttpMethod": "PUT",
+    "Route": "/api/v2/admin/oauth-applications/{id:objectid}",
     "Authorization": [
       "Authorize(Policy=GlobalAdminPolicy)"
     ],
@@ -980,6 +1070,51 @@
       "application/problem\u002Bjson"
     ],
     "ExcludeFromDescription": true
+  },
+  {
+    "Controller": "OAuthController",
+    "Action": "AuthorizeAsync",
+    "HttpMethod": "GET",
+    "Route": "/api/v2/oauth/authorize",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OAuthController",
+    "Action": "RevokeAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/oauth/revoke",
+    "Authorization": [
+      "AllowAnonymous"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OAuthController",
+    "Action": "TokenAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/oauth/token",
+    "Authorization": [
+      "AllowAnonymous"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
   },
   {
     "Controller": "OrganizationController",
