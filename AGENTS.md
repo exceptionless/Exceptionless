@@ -93,6 +93,7 @@ tests/                         # C# tests and HTTP samples
 ## Pull Requests
 
 - Fill out the existing PR template when creating a PR.
+- Use `feature/` for feature branch names and `issue/` for bug fix or issue branch names; keep PR titles neutral and project-facing, and do not add `codex/`, `[codex]`, or other agent branding unless the user explicitly asks for it.
 - Keep descriptions concise: what changed, why, affected APIs/behaviors, verification, and breaking changes.
 - For dependency upgrades, review release notes/changelogs, identify breaking changes, search affected APIs, check security advisories, note release age, run the appropriate full test suite before push, and document the evidence in the PR.
 
