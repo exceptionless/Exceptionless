@@ -1,13 +1,13 @@
 import type { StockFeatures, TableOptions } from '@tanstack/svelte-table';
 import { describe, expect, it } from 'vitest';
 
-import { assignTableOptions, type QueryMeta, resolvePageCount, resolvePaginationChange } from './table.svelte';
+import { type QueryMeta, resolveConfiguredTableOptions, resolvePageCount, resolvePaginationChange } from './table.svelte';
 
-describe('assignTableOptions', () => {
-    it('preserves reactive getters on table options', () => {
+describe('resolveConfiguredTableOptions', () => {
+    it('preserves base reactive getters when configured options are returned from a spread', () => {
         // Arrange
         let rows = [{ id: 'one' }];
-        const options = {
+        const baseOptions = {
             _features: {},
             _rowModels: {},
             get columns() {
@@ -19,12 +19,13 @@ describe('assignTableOptions', () => {
         } as unknown as TableOptions<StockFeatures, { id: string }>;
 
         // Act
-        const result = assignTableOptions(options, { manualSorting: false });
+        const result = resolveConfiguredTableOptions(baseOptions, { ...baseOptions, manualSorting: false });
         rows = [{ id: 'two' }];
 
         // Assert
         expect(Object.getOwnPropertyDescriptor(result, 'data')?.get).toBeTypeOf('function');
         expect(result.data).toEqual([{ id: 'two' }]);
+        expect(result.manualSorting).toBe(false);
     });
 });
 

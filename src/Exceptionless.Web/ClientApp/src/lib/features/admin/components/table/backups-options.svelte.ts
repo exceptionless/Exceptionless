@@ -2,7 +2,7 @@ import type { ElasticsearchSnapshot } from '$features/admin/models';
 
 import DateTime from '$comp/formatters/date-time.svelte';
 import Number from '$comp/formatters/number.svelte';
-import { assignTableOptions, getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';
+import { getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';
 import { type ColumnDef, createSortedRowModel, renderComponent, sortFns, type StockFeatures } from '@tanstack/svelte-table';
 
 import ShardsCell from './shards-cell.svelte';
@@ -79,12 +79,13 @@ export function getTableOptions(queryParameters: TableMemoryPagingParameters, ge
             return getColumns();
         },
         configureOptions: (options) => {
-            return assignTableOptions(options, {
+            return {
+                ...options,
                 _rowModels: { ...options._rowModels, sortedRowModel: createSortedRowModel(sortFns) },
                 getRowId: (row) => row.repository + '/' + row.name,
                 initialState: { sorting: [{ desc: true, id: 'start_time' }] },
                 manualSorting: false
-            });
+            };
         },
         paginationStrategy: 'memory',
         get queryData() {

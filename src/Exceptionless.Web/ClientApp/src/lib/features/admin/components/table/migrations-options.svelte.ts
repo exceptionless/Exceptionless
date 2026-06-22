@@ -1,7 +1,7 @@
 import type { MigrationState, MigrationStatus } from '$features/admin/models';
 
 import DateTime from '$comp/formatters/date-time.svelte';
-import { assignTableOptions, getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';
+import { getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';
 import { type ColumnDef, createSortedRowModel, renderComponent, sortFns, type StockFeatures } from '@tanstack/svelte-table';
 
 import MigrationDurationCell from './migration-duration-cell.svelte';
@@ -84,14 +84,15 @@ export function getTableOptions(queryParameters: TableMemoryPagingParameters, ge
             return getColumns();
         },
         configureOptions: (options) => {
-            return assignTableOptions(options, {
+            return {
+                ...options,
                 _rowModels: { ...options._rowModels, sortedRowModel: createSortedRowModel(sortFns) },
                 getRowId: (row) => row.id,
                 initialState: {
                     sorting: [{ desc: true, id: 'version' }]
                 },
                 manualSorting: false
-            });
+            };
         },
         defaultColumnVisibility: {
             completed_utc: false,
