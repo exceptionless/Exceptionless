@@ -628,6 +628,65 @@ public class SerializerTests : TestWithServices
     }
 
     [Fact]
+    public void OnDeserialized_RootLevelJsonStringKnownData_CanGetTypedValue()
+    {
+        // Arrange
+        /* language=json */
+        const string json = """{"type":"error","message":"Something broke","@user":"{\"identity\":\"user-123\",\"name\":null}"}""";
+
+        // Act
+        var ev = _serializer.Deserialize<Event>(json);
+
+        // Assert
+        Assert.NotNull(ev);
+        Assert.NotNull(ev.Data);
+        Assert.IsType<Dictionary<string, object?>>(ev.Data[Event.KnownDataKeys.UserInfo]);
+
+        var userInfo = ev.GetUserIdentity(_serializer, _logger);
+        Assert.NotNull(userInfo);
+        Assert.Equal("user-123", userInfo.Identity);
+        Assert.Null(userInfo.Name);
+    }
+
+    [Fact]
+    public void OnDeserialized_DataJsonStringKnownData_CanGetTypedValue()
+    {
+        // Arrange
+        /* language=json */
+        const string json = """{"type":"error","message":"Something broke","data":{"@user":"{\"identity\":\"user-456\",\"name\":\"Test User\"}"}}""";
+
+        // Act
+        var ev = _serializer.Deserialize<Event>(json);
+
+        // Assert
+        Assert.NotNull(ev);
+        Assert.NotNull(ev.Data);
+        Assert.IsType<Dictionary<string, object?>>(ev.Data[Event.KnownDataKeys.UserInfo]);
+
+        var userInfo = ev.GetUserIdentity(_serializer, _logger);
+        Assert.NotNull(userInfo);
+        Assert.Equal("user-456", userInfo.Identity);
+        Assert.Equal("Test User", userInfo.Name);
+    }
+
+    [Theory]
+    [InlineData("""{"type":"error","@user":"not-user-json"}""")]
+    [InlineData("""{"type":"error","@user":"[]"}""")]
+    [InlineData("""{"type":"error","data":{"@user":42}}""")]
+    [InlineData("""{"type":"error","data":{"@user":[]}}""")]
+    public void OnDeserialized_InvalidKnownMappedObjectData_PreservesUnderEscapedKey(string json)
+    {
+        // Act
+        var ev = _serializer.Deserialize<Event>(json);
+
+        // Assert
+        Assert.NotNull(ev);
+        Assert.NotNull(ev.Data);
+        Assert.False(ev.Data.ContainsKey(Event.KnownDataKeys.UserInfo));
+        Assert.True(ev.Data.ContainsKey("_@user"));
+    }
+
+    [Fact]
     public void Deserialize_SnakeCaseProperties_MatchesPascalCaseModel()
     {
         // CRITICAL: PropertyNameCaseInsensitive MUST be true or the frontend breaks.

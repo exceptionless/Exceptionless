@@ -83,6 +83,8 @@ public class Event : IData, IJsonOnDeserialized
     /// </summary>
     void IJsonOnDeserialized.OnDeserialized()
     {
+        EventDataNormalizer.Normalize(Data);
+
         if (ExtensionData is { Count: > 0 })
         {
             // STJ with SnakeCaseLower policy only matches case-insensitively against the
@@ -101,27 +103,11 @@ public class Event : IData, IJsonOnDeserialized
             foreach (var kvp in ExtensionData)
             {
                 object? value = JsonElementConverter.Convert(kvp.Value);
-                Data[GetDataKey(kvp.Key)] = value;
+                EventDataNormalizer.Set(Data, kvp.Key, value);
             }
 
             ExtensionData = null;
         }
-    }
-
-    private string GetDataKey(string dataKey)
-    {
-        if (Data is null)
-            return dataKey;
-
-        if (Data.ContainsKey(dataKey))
-            dataKey = dataKey.StartsWith('@') ? "_" + dataKey : dataKey;
-
-        int count = 1;
-        string key = dataKey;
-        while (Data.ContainsKey(key))
-            key = dataKey + count++;
-
-        return key;
     }
 
     protected bool Equals(Event other)
