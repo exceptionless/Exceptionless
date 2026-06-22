@@ -22,6 +22,7 @@ namespace Exceptionless.Tests;
 public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program>, IAsyncLifetime
 {
     private const string SharedElasticsearchUrl = "http://localhost:9200";
+    private static readonly TimeSpan SharedElasticsearchStartupTimeout = TimeSpan.FromMinutes(3);
     private static int s_counter = -1;
     private static readonly Lazy<Task<DistributedApplication>> s_sharedAppHost = new(StartSharedAppHostAsync, LazyThreadSafetyMode.ExecutionAndPublication);
     private static readonly ConcurrentQueue<int> s_pool = new();
@@ -58,7 +59,7 @@ public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program
     private static async Task WaitForElasticsearchAsync(Uri elasticsearchUri)
     {
         using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(1) };
-        var deadline = TimeProvider.System.GetUtcNow() + TimeSpan.FromSeconds(60);
+        var deadline = TimeProvider.System.GetUtcNow() + SharedElasticsearchStartupTimeout;
 
         while (TimeProvider.System.GetUtcNow() < deadline)
         {
