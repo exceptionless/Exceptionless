@@ -1,4 +1,5 @@
 import type { StockFeatures, TableOptions } from '@tanstack/svelte-table';
+
 import { describe, expect, it } from 'vitest';
 
 import { type QueryMeta, resolveConfiguredTableOptions, resolvePageCount, resolvePaginationChange } from './table.svelte';

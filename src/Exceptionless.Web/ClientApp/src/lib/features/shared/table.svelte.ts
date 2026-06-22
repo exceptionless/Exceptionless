@@ -74,32 +74,6 @@ export function createPageSizePreference(key: string) {
     };
 }
 
-export function resolveConfiguredTableOptions<TData extends RowData>(
-    baseOptions: TableOptions<StockFeatures, TData>,
-    configuredOptions: TableOptions<StockFeatures, TData> | void
-): TableOptions<StockFeatures, TData> {
-    if (!configuredOptions || configuredOptions === baseOptions) {
-        return baseOptions;
-    }
-
-    for (const key of Reflect.ownKeys(configuredOptions)) {
-        const baseDescriptor = Object.getOwnPropertyDescriptor(baseOptions, key);
-        const configuredDescriptor = Object.getOwnPropertyDescriptor(configuredOptions, key);
-
-        if (!configuredDescriptor) {
-            continue;
-        }
-
-        if (baseDescriptor && (baseDescriptor.get || baseDescriptor.set) && 'value' in configuredDescriptor) {
-            continue;
-        }
-
-        Object.defineProperty(baseOptions, key, configuredDescriptor);
-    }
-
-    return baseOptions;
-}
-
 export function getSharedTableOptions<TData extends RowData, TPaginationStrategy extends PaginationStrategy = PaginationStrategy>(
     configuration: TableConfiguration<TData, TPaginationStrategy>
 ): TableOptions<StockFeatures, TData> {
@@ -371,6 +345,32 @@ export function removeTableSelection<TData extends RowData>(table: Table<StockFe
     }
 
     return false;
+}
+
+export function resolveConfiguredTableOptions<TData extends RowData>(
+    baseOptions: TableOptions<StockFeatures, TData>,
+    configuredOptions: TableOptions<StockFeatures, TData> | void
+): TableOptions<StockFeatures, TData> {
+    if (!configuredOptions || configuredOptions === baseOptions) {
+        return baseOptions;
+    }
+
+    for (const key of Reflect.ownKeys(configuredOptions)) {
+        const baseDescriptor = Object.getOwnPropertyDescriptor(baseOptions, key);
+        const configuredDescriptor = Object.getOwnPropertyDescriptor(configuredOptions, key);
+
+        if (!configuredDescriptor) {
+            continue;
+        }
+
+        if (baseDescriptor && (baseDescriptor.get || baseDescriptor.set) && 'value' in configuredDescriptor) {
+            continue;
+        }
+
+        Object.defineProperty(baseOptions, key, configuredDescriptor);
+    }
+
+    return baseOptions;
 }
 
 export function resolvePageCount(
