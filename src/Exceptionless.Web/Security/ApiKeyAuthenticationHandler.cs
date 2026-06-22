@@ -153,6 +153,17 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         return AuthenticateResult.Success(CreateTokenAuthenticationTicket(tokenRecord));
     }
 
+    protected override async Task HandleChallengeAsync(AuthenticationProperties properties)
+    {
+        await base.HandleChallengeAsync(properties);
+
+        if (Request.Path.StartsWithSegments("/mcp"))
+        {
+            string origin = $"{Request.Scheme}://{Request.Host}";
+            Response.Headers.WWWAuthenticate = $"Bearer resource_metadata=\"{origin}/.well-known/oauth-protected-resource\"";
+        }
+    }
+
     private AuthenticationTicket CreateUserAuthenticationTicket(User user, Token? token = null)
     {
         Request.SetUser(user);

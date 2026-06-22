@@ -85,6 +85,23 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task McpAsync_WithoutAuth_ReturnsProtectedResourceChallenge()
+    {
+        using var client = _server.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/mcp")
+        {
+            Content = new StringContent("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}", Encoding.UTF8, "application/json")
+        };
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        var challenge = Assert.Single(response.Headers.WwwAuthenticate);
+        Assert.Equal("Bearer", challenge.Scheme);
+        Assert.Equal("resource_metadata=\"http://localhost/.well-known/oauth-protected-resource\"", challenge.Parameter);
+    }
+
+    [Fact]
     public async Task AuthorizeAsync_InvalidRedirectUri_ReturnsBadRequest()
     {
         using var client = CreateHttpClient();
