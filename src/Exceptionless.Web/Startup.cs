@@ -8,6 +8,7 @@ using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Validation;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Hubs;
+using Exceptionless.Web.Mcp;
 using Exceptionless.Web.Security;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Handlers;
@@ -86,6 +87,9 @@ public class Startup
             o.AddPolicy(AuthorizationRoles.ClientPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.Client));
             o.AddPolicy(AuthorizationRoles.UserPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.User));
             o.AddPolicy(AuthorizationRoles.GlobalAdminPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.GlobalAdmin));
+            o.AddPolicy(AuthorizationRoles.McpPolicy, policy => policy.RequireAssertion(ctx =>
+                ctx.User.HasClaim(ClaimTypes.Role, AuthorizationRoles.User) ||
+                ctx.User.HasClaim(ClaimTypes.Role, AuthorizationRoles.McpRead)));
         });
 
         services.AddRouting(r =>
@@ -127,6 +131,10 @@ public class Startup
 
         var appOptions = AppOptions.ReadFromConfiguration(Configuration);
         Bootstrapper.RegisterServices(services, appOptions, Log.Logger.ToLoggerFactory());
+        services.AddMcpServer()
+            .WithHttpTransport(o => o.Stateless = true)
+            .WithTools<ExceptionlessMcpTools>();
+
         services.AddSingleton(s =>
         {
             return new ThrottlingOptions
@@ -322,6 +330,7 @@ public class Startup
             });
 
             endpoints.MapControllers();
+            endpoints.MapMcp("/mcp").RequireAuthorization(AuthorizationRoles.McpPolicy);
             endpoints.MapFallback("{**slug:nonfile}", CreateRequestDelegate(endpoints, "/index.html"));
         });
     }

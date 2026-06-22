@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core.Messaging.Models;
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Validation;
@@ -37,6 +37,11 @@ public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, I
                 .FieldEquals(t => t.DefaultProjectId, projectId))
             .FieldEquals(t => t.Type, (int)type)
             .Sort(f => f.CreatedUtc), options);
+    }
+
+    public Task<FindResults<Token>> GetByRefreshTokenAsync(string refreshToken, CommandOptionsDescriptor<Token>? options = null)
+    {
+        return FindAsync(q => q.FieldEquals(t => t.Refresh, refreshToken).SortDescending(f => f.CreatedUtc), options);
     }
 
     public override Task<FindResults<Token>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<Token>? options = null)

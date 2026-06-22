@@ -1,0 +1,52 @@
+@apiUrl = http://localhost:7110/api/v2
+@rootUrl = http://localhost:7110
+@email = admin@exceptionless.test
+@password = tester
+
+### login to test account
+# @name login
+POST {{apiUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+###
+
+@token = {{login.response.body.$.token}}
+
+### Initialize MCP session
+# @name initialize
+POST {{rootUrl}}/mcp
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Accept: application/json, text/event-stream
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2025-06-18",
+    "capabilities": {},
+    "clientInfo": {
+      "name": "exceptionless-http-sample",
+      "version": "1.0.0"
+    }
+  }
+}
+
+### List MCP tools
+POST {{rootUrl}}/mcp
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Accept: application/json, text/event-stream
+
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/list",
+  "params": {}
+}

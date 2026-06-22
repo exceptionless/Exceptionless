@@ -1,0 +1,421 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Text;
+using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
+using Exceptionless.Core.Utility;
+using Exceptionless.Tests.Extensions;
+using Exceptionless.Tests.Utility;
+using Exceptionless.Web.Controllers;
+using FluentRest;
+using Foundatio.Repositories;
+using Foundatio.Repositories.Utility;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.DependencyInjection;
+using Xunit;
+
+namespace Exceptionless.Tests.Controllers;
+
+public sealed class OAuthControllerTests : IntegrationTestsBase
+{
+    private const string ClientId = "test-oauth-client";
+    private const string RedirectUri = "http://localhost/callback";
+    private const string MetadataClientId = "https://oauth.example/client.json";
+    private const string MetadataRedirectUri = "https://oauth.example/callback";
+    private const string Resource = "http://localhost/mcp";
+
+    private readonly IOAuthApplicationRepository _oauthApplicationRepository;
+    private readonly ITokenRepository _tokenRepository;
+
+    public OAuthControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
+        _oauthApplicationRepository = GetService<IOAuthApplicationRepository>();
+        _tokenRepository = GetService<ITokenRepository>();
+    }
+
+    protected override void RegisterServices(IServiceCollection services)
+    {
+        base.RegisterServices(services);
+        services.ReplaceSingleton<IOAuthClientMetadataService, FakeOAuthClientMetadataService>();
+    }
+
+    protected override async Task ResetDataAsync()
+    {
+        await base.ResetDataAsync();
+        var service = GetService<SampleDataService>();
+        await service.CreateDataAsync();
+        await CreateStoredOAuthApplicationAsync(ClientId, RedirectUri);
+    }
+
+    [Fact]
+    public async Task GetAuthorizationServerMetadataAsync_ReturnsOAuthMetadata()
+    {
+        using var client = _server.CreateClient();
+
+        var response = await client.GetAsync("/.well-known/oauth-authorization-server", TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var metadata = await DeserializeResponseAsync<OAuthAuthorizationServerMetadata>(response);
+        Assert.NotNull(metadata);
+        Assert.Equal("http://localhost", metadata.Issuer);
+        Assert.Equal("http://localhost/api/v2/oauth/authorize", metadata.AuthorizationEndpoint);
+        Assert.Equal("http://localhost/api/v2/oauth/token", metadata.TokenEndpoint);
+        Assert.Contains(OAuthGrantTypes.AuthorizationCode, metadata.GrantTypesSupported);
+        Assert.Contains(OAuthService.CodeChallengeMethod, metadata.CodeChallengeMethodsSupported);
+        Assert.Contains(AuthorizationRoles.McpRead, metadata.ScopesSupported);
+        Assert.True(metadata.ClientIdMetadataDocumentSupported);
+    }
+
+    [Fact]
+    public async Task GetProtectedResourceMetadataAsync_ReturnsMcpResourceMetadata()
+    {
+        using var client = _server.CreateClient();
+
+        var response = await client.GetAsync("/.well-known/oauth-protected-resource", TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var metadata = await DeserializeResponseAsync<OAuthProtectedResourceMetadata>(response);
+        Assert.NotNull(metadata);
+        Assert.Equal(Resource, metadata.Resource);
+        Assert.Contains("http://localhost", metadata.AuthorizationServers);
+        Assert.Contains("header", metadata.BearerMethodsSupported);
+    }
+
+    [Fact]
+    public async Task AuthorizeAsync_InvalidRedirectUri_ReturnsBadRequest()
+    {
+        using var client = CreateHttpClient();
+        using var request = CreateAuthorizeRequest("bad-verifier", "https://attacker.example/callback");
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
+        Assert.NotNull(error);
+        Assert.Equal("invalid_request", error.Error);
+    }
+
+    [Fact]
+    public async Task AuthorizeAsync_UnknownClient_ReturnsBadRequest()
+    {
+        using var client = CreateHttpClient();
+        using var request = CreateAuthorizeRequest("bad-verifier", clientId: "unknown-oauth-client");
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
+        Assert.NotNull(error);
+        Assert.Equal("invalid_client", error.Error);
+    }
+
+    [Fact]
+    public async Task AuthorizeAsync_ClientMetadataDocument_PersistsObservedApplication()
+    {
+        await CreateAuthorizationCodeAsync("valid-test-code-verifier", MetadataRedirectUri, clientId: MetadataClientId);
+
+        var application = await _oauthApplicationRepository.GetByClientIdAsync(MetadataClientId, o => o.ImmediateConsistency());
+
+        Assert.NotNull(application);
+        Assert.Equal("Example AI Client", application.Name);
+        Assert.Equal(OAuthApplication.SystemUserId, application.CreatedByUserId);
+        Assert.Contains(MetadataRedirectUri, application.RedirectUris);
+        Assert.Contains(AuthorizationRoles.McpRead, application.Scopes);
+    }
+
+    [Fact]
+    public async Task AuthorizeAsync_InsecureClientMetadataDocument_ReturnsBadRequest()
+    {
+        using var client = CreateHttpClient();
+        using var request = CreateAuthorizeRequest("bad-verifier", MetadataRedirectUri, clientId: "http://oauth.example/client.json");
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
+        Assert.NotNull(error);
+        Assert.Equal("invalid_client", error.Error);
+    }
+
+    [Fact]
+    public async Task AuthorizeAsync_ClientMetadataDocumentMismatch_ReturnsBadRequest()
+    {
+        const string clientId = "https://oauth.example/mismatch.json";
+        using var client = CreateHttpClient();
+        using var request = CreateAuthorizeRequest("bad-verifier", MetadataRedirectUri, clientId: clientId);
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
+        Assert.NotNull(error);
+        Assert.Equal("invalid_client", error.Error);
+
+        var application = await _oauthApplicationRepository.GetByClientIdAsync(clientId, o => o.ImmediateConsistency());
+        Assert.Null(application);
+    }
+
+    [Fact]
+    public async Task TokenAsync_ValidAuthorizationCode_ReturnsOAuthTokens()
+    {
+        var token = await IssueTokenAsync();
+
+        Assert.NotNull(token);
+        Assert.False(String.IsNullOrEmpty(token.AccessToken));
+        Assert.False(String.IsNullOrEmpty(token.RefreshToken));
+        Assert.Equal("Bearer", token.TokenType);
+        Assert.Equal(Resource, token.Resource);
+        Assert.Contains(AuthorizationRoles.McpRead, token.Scope);
+
+        var storedToken = await _tokenRepository.GetByIdAsync(token.AccessToken);
+        Assert.NotNull(storedToken);
+        Assert.Equal(TokenType.Access, storedToken.Type);
+        Assert.Equal(OAuthTokenType.Access, storedToken.OAuthType);
+        Assert.Equal(ClientId, storedToken.OAuthClientId);
+        Assert.Equal(Resource, storedToken.OAuthResource);
+        Assert.Contains(AuthorizationRoles.EventsRead, storedToken.Scopes);
+    }
+
+    [Fact]
+    public async Task TokenAsync_StoredOAuthApplication_ReturnsOAuthTokens()
+    {
+        const string clientId = "stored-oauth-client";
+        const string redirectUri = "http://localhost/stored-callback";
+        await CreateStoredOAuthApplicationAsync(clientId, redirectUri);
+
+        var token = await IssueTokenAsync(clientId, redirectUri);
+
+        Assert.NotNull(token);
+        var storedToken = await _tokenRepository.GetByIdAsync(token.AccessToken);
+        Assert.NotNull(storedToken);
+        Assert.Equal(clientId, storedToken.OAuthClientId);
+        Assert.Contains(AuthorizationRoles.McpRead, storedToken.Scopes);
+    }
+
+    [Fact]
+    public async Task TokenAsync_ClientMetadataDocumentApplication_ReturnsOAuthTokens()
+    {
+        var token = await IssueTokenAsync(MetadataClientId, MetadataRedirectUri);
+
+        Assert.NotNull(token);
+        var storedToken = await _tokenRepository.GetByIdAsync(token.AccessToken);
+        Assert.NotNull(storedToken);
+        Assert.Equal(MetadataClientId, storedToken.OAuthClientId);
+        Assert.Contains(AuthorizationRoles.McpRead, storedToken.Scopes);
+    }
+
+    [Fact]
+    public async Task OAuthBearer_DisabledStoredOAuthApplication_ReturnsUnauthorized()
+    {
+        const string clientId = "stored-disabled-client";
+        const string redirectUri = "http://localhost/stored-disabled-callback";
+        var application = await CreateStoredOAuthApplicationAsync(clientId, redirectUri);
+        var token = await IssueTokenAsync(clientId, redirectUri);
+
+        application.IsDisabled = true;
+        await _oauthApplicationRepository.SaveAsync(application, o => o.ImmediateConsistency());
+
+        await SendRequestAsync(r => r
+            .BearerToken(token.AccessToken)
+            .AppendPath("users/me")
+            .StatusCodeShouldBeUnauthorized());
+    }
+
+    [Fact]
+    public async Task TokenAsync_InvalidCodeVerifier_ReturnsBadRequestAndConsumesCode()
+    {
+        string verifier = "valid-test-code-verifier";
+        string code = await CreateAuthorizationCodeAsync(verifier);
+        using var client = CreateHttpClient();
+
+        var response = await client.PostAsync("oauth/token", CreateTokenExchangeContent(code, "wrong-verifier"), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
+        Assert.NotNull(error);
+        Assert.Equal("invalid_grant", error.Error);
+
+        response = await client.PostAsync("oauth/token", CreateTokenExchangeContent(code, verifier), TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task TokenAsync_RefreshToken_RotatesRefreshToken()
+    {
+        var token = await IssueTokenAsync();
+        Assert.NotNull(token.RefreshToken);
+        using var client = CreateHttpClient();
+
+        var refreshResponse = await client.PostAsync("oauth/token", new FormUrlEncodedContent(new Dictionary<string, string?>
+        {
+            ["grant_type"] = OAuthGrantTypes.RefreshToken,
+            ["client_id"] = ClientId,
+            ["refresh_token"] = token.RefreshToken
+        }), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, refreshResponse.StatusCode);
+        var refreshedToken = await DeserializeResponseAsync<OAuthTokenResponse>(refreshResponse);
+        Assert.NotNull(refreshedToken);
+        Assert.NotEqual(token.AccessToken, refreshedToken.AccessToken);
+        Assert.NotEqual(token.RefreshToken, refreshedToken.RefreshToken);
+
+        var reusedRefreshResponse = await client.PostAsync("oauth/token", new FormUrlEncodedContent(new Dictionary<string, string?>
+        {
+            ["grant_type"] = OAuthGrantTypes.RefreshToken,
+            ["client_id"] = ClientId,
+            ["refresh_token"] = token.RefreshToken
+        }), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, reusedRefreshResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task RevokeAsync_DisablesOAuthToken()
+    {
+        var token = await IssueTokenAsync();
+        using var client = CreateHttpClient();
+
+        var response = await client.PostAsync("oauth/revoke", new FormUrlEncodedContent(new Dictionary<string, string?>
+        {
+            ["token"] = token.AccessToken
+        }), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var storedToken = await _tokenRepository.GetByIdAsync(token.AccessToken);
+        Assert.NotNull(storedToken);
+        Assert.True(storedToken.IsDisabled);
+        Assert.Null(storedToken.Refresh);
+    }
+
+    [Fact]
+    public async Task OAuthBearer_WithMismatchedResource_ReturnsUnauthorized()
+    {
+        string verifier = "valid-test-code-verifier";
+        string code = await CreateAuthorizationCodeAsync(verifier, resource: "http://localhost/not-api");
+        using var client = CreateHttpClient();
+        var tokenResponse = await client.PostAsync("oauth/token", CreateTokenExchangeContent(code, verifier, resource: "http://localhost/not-api"), TestContext.Current.CancellationToken);
+        tokenResponse.EnsureSuccessStatusCode();
+        var token = await DeserializeResponseAsync<OAuthTokenResponse>(tokenResponse);
+        Assert.NotNull(token);
+
+        await SendRequestAsync(r => r
+            .BearerToken(token.AccessToken)
+            .AppendPath("users/me")
+            .StatusCodeShouldBeUnauthorized()
+        );
+    }
+
+    private async Task<OAuthTokenResponse> IssueTokenAsync(string clientId = ClientId, string redirectUri = RedirectUri)
+    {
+        string verifier = "valid-test-code-verifier";
+        string code = await CreateAuthorizationCodeAsync(verifier, redirectUri, clientId: clientId);
+        using var client = CreateHttpClient();
+        var response = await client.PostAsync("oauth/token", CreateTokenExchangeContent(code, verifier, redirectUri, clientId: clientId), TestContext.Current.CancellationToken);
+        response.EnsureSuccessStatusCode();
+        var token = await DeserializeResponseAsync<OAuthTokenResponse>(response);
+        Assert.NotNull(token);
+        return token;
+    }
+
+    private async Task<string> CreateAuthorizationCodeAsync(string verifier, string redirectUri = RedirectUri, string resource = Resource, string clientId = ClientId)
+    {
+        using var client = CreateHttpClient();
+        using var request = CreateAuthorizeRequest(verifier, redirectUri, resource, clientId);
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.NotNull(response.Headers.Location);
+        var query = QueryHelpers.ParseQuery(response.Headers.Location.Query);
+        Assert.True(query.TryGetValue("code", out var code));
+        Assert.Equal("state-value", query["state"].ToString());
+        return code.ToString();
+    }
+
+    private async Task<OAuthApplication> CreateStoredOAuthApplicationAsync(string clientId, string redirectUri, bool isDisabled = false)
+    {
+        var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
+        var application = new OAuthApplication
+        {
+            Id = ObjectId.GenerateNewId().ToString(),
+            ClientId = clientId,
+            Name = clientId,
+            RedirectUris = [redirectUri],
+            Scopes = [AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead, AuthorizationRoles.StacksRead, AuthorizationRoles.EventsRead, AuthorizationRoles.OfflineAccess],
+            Notes = null,
+            IsDisabled = isDisabled,
+            CreatedByUserId = TestConstants.UserId,
+            UpdatedByUserId = TestConstants.UserId,
+            CreatedUtc = utcNow,
+            UpdatedUtc = utcNow
+        };
+
+        await _oauthApplicationRepository.AddAsync(application, o => o.ImmediateConsistency());
+        return application;
+    }
+
+    private static FormUrlEncodedContent CreateTokenExchangeContent(string code, string verifier, string redirectUri = RedirectUri, string resource = Resource, string clientId = ClientId)
+    {
+        return new FormUrlEncodedContent(new Dictionary<string, string?>
+        {
+            ["grant_type"] = OAuthGrantTypes.AuthorizationCode,
+            ["client_id"] = clientId,
+            ["code"] = code,
+            ["redirect_uri"] = redirectUri,
+            ["code_verifier"] = verifier,
+            ["resource"] = resource
+        });
+    }
+
+    private static HttpRequestMessage CreateAuthorizeRequest(string verifier, string redirectUri = RedirectUri, string resource = Resource, string clientId = ClientId)
+    {
+        string url = QueryHelpers.AddQueryString("oauth/authorize", new Dictionary<string, string?>
+        {
+            ["client_id"] = clientId,
+            ["redirect_uri"] = redirectUri,
+            ["scope"] = $"{AuthorizationRoles.McpRead} {AuthorizationRoles.ProjectsRead} {AuthorizationRoles.StacksRead} {AuthorizationRoles.EventsRead} {AuthorizationRoles.OfflineAccess}",
+            ["state"] = "state-value",
+            ["code_challenge"] = OAuthService.CreateCodeChallenge(verifier),
+            ["code_challenge_method"] = OAuthService.CodeChallengeMethod,
+            ["resource"] = resource
+        });
+
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes($"{SampleDataService.TEST_USER_EMAIL}:{SampleDataService.TEST_USER_PASSWORD}")));
+        return request;
+    }
+
+    private sealed class FakeOAuthClientMetadataService : IOAuthClientMetadataService
+    {
+        public Task<OAuthClientMetadataDocument?> GetClientMetadataAsync(string clientId)
+        {
+            return Task.FromResult(clientId switch
+            {
+                MetadataClientId => new OAuthClientMetadataDocument
+                {
+                    ClientId = MetadataClientId,
+                    ClientName = "Example AI Client",
+                    RedirectUris = [MetadataRedirectUri],
+                    GrantTypes = [OAuthGrantTypes.AuthorizationCode],
+                    ResponseTypes = ["code"],
+                    Scope = String.Join(' ', OAuthService.SupportedScopes),
+                    TokenEndpointAuthMethod = "none"
+                },
+                "https://oauth.example/mismatch.json" => new OAuthClientMetadataDocument
+                {
+                    ClientId = "https://oauth.example/other-client.json",
+                    ClientName = "Mismatched AI Client",
+                    RedirectUris = [MetadataRedirectUri],
+                    GrantTypes = [OAuthGrantTypes.AuthorizationCode],
+                    ResponseTypes = ["code"],
+                    Scope = String.Join(' ', OAuthService.SupportedScopes),
+                    TokenEndpointAuthMethod = "none"
+                },
+                _ => null
+            });
+        }
+    }
+}

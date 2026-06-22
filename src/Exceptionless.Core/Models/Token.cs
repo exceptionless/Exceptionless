@@ -36,6 +36,10 @@ public class Token : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, IVa
     public string? DefaultProjectId { get; set; }
     public string? Refresh { get; set; }
     public TokenType Type { get; set; }
+    public OAuthTokenType OAuthType { get; set; }
+    public string? OAuthClientId { get; set; }
+    public string? OAuthResource { get; set; }
+    public DateTime? OAuthRefreshExpiresUtc { get; set; }
     public HashSet<string> Scopes { get; set; } = new();
     public DateTime? ExpiresUtc { get; set; }
     public string? Notes { get; set; }
@@ -85,5 +89,11 @@ public class Token : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, IVa
 public enum TokenType
 {
     Authentication,
+    Access
+}
+
+public enum OAuthTokenType
+{
+    None,
     Access
 }

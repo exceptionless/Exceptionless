@@ -137,6 +137,7 @@ public class Bootstrapper
         services.AddSingleton<MigrationManager>();
         services.AddSingleton<MigrationIndex>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().Migrations);
         services.AddSingleton<IOrganizationRepository, OrganizationRepository>();
+        services.AddSingleton<IOAuthApplicationRepository, OAuthApplicationRepository>();
         services.AddSingleton<IProjectRepository, ProjectRepository>();
         services.AddSingleton<IUserRepository, UserRepository>();
         services.AddSingleton<IWebHookRepository, WebHookRepository>();
@@ -182,6 +183,9 @@ public class Bootstrapper
         services.AddSingleton<NotificationService>();
         services.AddSingleton<OrganizationService>();
         services.AddStartupAction<OrganizationService>();
+        services.AddHttpClient<IOAuthClientMetadataService, OAuthClientMetadataService>(client => client.Timeout = appOptions.OAuthOptions.ClientMetadataDocumentRequestTimeout)
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false });
+        services.AddSingleton<OAuthService>();
         services.AddSingleton<UsageService>();
         services.AddSingleton<SlackService>();
         services.AddSingleton<StackService>();

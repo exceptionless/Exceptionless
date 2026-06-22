@@ -1,0 +1,120 @@
+@apiUrl = http://localhost:7110/api/v2
+@rootUrl = http://localhost:7110
+@email = admin@exceptionless.test
+@password = tester
+@clientId = https://example-ai-client.dev/oauth-client.json
+@redirectUri = https://chat.openai.com/aip/g-test/oauth/callback
+@resource = http://localhost:7110/mcp
+@codeVerifier = local-test-code-verifier
+@codeChallenge = replace-with-S256-code-challenge
+@oauthApplicationId = replace-with-oauth-application-id
+
+### OAuth Authorization Server Metadata
+GET {{rootUrl}}/.well-known/oauth-authorization-server
+
+### OAuth Protected Resource Metadata
+GET {{rootUrl}}/.well-known/oauth-protected-resource
+
+### Login
+# @name login
+POST {{apiUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Optional: Create OAuth Application
+# Clients that support Client ID Metadata Documents can use an HTTPS metadata-document URL
+# as client_id and do not need this manual registration step. Manually create an application
+# when you want to pin, restrict, disable, or test a client before it is discovered.
+# @name createOAuthApplication
+POST {{apiUrl}}/admin/oauth-applications
+Authorization: Bearer {{login.response.body.token}}
+Content-Type: application/json
+
+{
+  "client_id": "{{clientId}}",
+  "name": "ChatGPT Dev",
+  "redirect_uris": [
+    "https://chat.openai.com/aip/g-test/oauth/callback",
+    "https://chatgpt.com/aip/g-test/oauth/callback"
+  ],
+  "scopes": [
+    "mcp:read",
+    "projects:read",
+    "stacks:read",
+    "events:read",
+    "offline_access"
+  ],
+  "notes": "Local dev OAuth client. CIMD clients can also be auto-observed from their metadata document.",
+  "is_disabled": false
+}
+
+### List OAuth Applications
+GET {{apiUrl}}/admin/oauth-applications
+Authorization: Bearer {{login.response.body.token}}
+
+### Update OAuth Application
+PUT {{apiUrl}}/admin/oauth-applications/{{oauthApplicationId}}
+Authorization: Bearer {{login.response.body.token}}
+Content-Type: application/json
+
+{
+  "client_id": "{{clientId}}",
+  "name": "ChatGPT Dev",
+  "redirect_uris": [
+    "https://chat.openai.com/aip/g-test/oauth/callback",
+    "https://chatgpt.com/aip/g-test/oauth/callback"
+  ],
+  "scopes": [
+    "mcp:read",
+    "projects:read",
+    "stacks:read",
+    "events:read",
+    "offline_access"
+  ],
+  "notes": "Updated local dev OAuth client.",
+  "is_disabled": false
+}
+
+### Authorize
+# Open this URL in a browser or send it with an authenticated user session/token.
+GET {{apiUrl}}/oauth/authorize?client_id={{clientId}}&redirect_uri={{redirectUri}}&scope=mcp:read%20projects:read%20stacks:read%20events:read%20offline_access&state=local-state&code_challenge={{codeChallenge}}&code_challenge_method=S256&resource={{resource}}
+Authorization: Bearer {{login.response.body.token}}
+
+### Token Exchange
+POST {{apiUrl}}/oauth/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code&client_id={{clientId}}&code=replace-with-code&redirect_uri={{redirectUri}}&code_verifier={{codeVerifier}}&resource={{resource}}
+
+### Refresh Token
+POST {{apiUrl}}/oauth/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=refresh_token&client_id={{clientId}}&refresh_token=replace-with-refresh-token
+
+### Revoke Token
+POST {{apiUrl}}/oauth/revoke
+Content-Type: application/x-www-form-urlencoded
+
+token=replace-with-access-or-refresh-token
+
+### MCP with OAuth Bearer Token
+POST {{rootUrl}}/mcp
+Authorization: Bearer replace-with-oauth-access-token
+Content-Type: application/json
+Accept: application/json, text/event-stream
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/list",
+  "params": {}
+}
+
+### Delete OAuth Application
+DELETE {{apiUrl}}/admin/oauth-applications/{{oauthApplicationId}}
+Authorization: Bearer {{login.response.body.token}}
