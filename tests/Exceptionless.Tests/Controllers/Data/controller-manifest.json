@@ -1077,7 +1077,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/oauth/authorize",
     "Authorization": [
-      "Authorize(Policy=UserPolicy)"
+      "AllowAnonymous"
     ],
     "Consumes": [],
     "Produces": [

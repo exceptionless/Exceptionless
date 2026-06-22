@@ -48,7 +48,7 @@ public sealed class OAuthController(OAuthService oauthService, TimeProvider time
     }
 
     [HttpGet(API_PREFIX + "/oauth/authorize")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [AllowAnonymous]
     public async Task<IActionResult> AuthorizeAsync(
         [FromQuery(Name = "client_id")] string clientId,
         [FromQuery(Name = "redirect_uri")] string redirectUri,
@@ -58,6 +58,9 @@ public sealed class OAuthController(OAuthService oauthService, TimeProvider time
         [FromQuery(Name = "code_challenge_method")] string codeChallengeMethod,
         [FromQuery] string resource)
     {
+        if (User.Identity?.IsAuthenticated != true)
+            return RedirectToLogin();
+
         var request = new OAuthAuthorizeRequest
         {
             ClientId = clientId,
@@ -130,6 +133,13 @@ public sealed class OAuthController(OAuthService oauthService, TimeProvider time
             Error = error ?? "invalid_request",
             ErrorDescription = description
         });
+    }
+
+    private RedirectResult RedirectToLogin()
+    {
+        string returnUrl = Request.Path + Request.QueryString;
+        string loginUrl = Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString("/next/login", "redirect", returnUrl);
+        return Redirect(loginUrl);
     }
 }
 

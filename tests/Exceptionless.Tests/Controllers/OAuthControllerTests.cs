@@ -102,6 +102,30 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task AuthorizeAsync_AnonymousUser_RedirectsToLoginWithReturnUrl()
+    {
+        using var client = CreateHttpClient();
+        using var request = CreateAuthorizeRequest("valid-test-code-verifier", authenticate: false);
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        var locationHeader = response.Headers.Location;
+        Assert.NotNull(locationHeader);
+        string location = locationHeader.ToString();
+        Assert.StartsWith("/next/login?", location);
+        var loginQuery = QueryHelpers.ParseQuery(location[(location.IndexOf('?') + 1)..]);
+        Assert.True(loginQuery.TryGetValue("redirect", out var redirect));
+
+        string returnUrl = redirect.ToString();
+        Assert.StartsWith("/api/v2/oauth/authorize?", returnUrl);
+        var returnQuery = QueryHelpers.ParseQuery(new Uri("http://localhost" + returnUrl).Query);
+        Assert.Equal(ClientId, returnQuery["client_id"].ToString());
+        Assert.Equal(RedirectUri, returnQuery["redirect_uri"].ToString());
+        Assert.Equal(Resource, returnQuery["resource"].ToString());
+    }
+
+    [Fact]
     public async Task AuthorizeAsync_InvalidRedirectUri_ReturnsBadRequest()
     {
         using var client = CreateHttpClient();
@@ -387,7 +411,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         });
     }
 
-    private static HttpRequestMessage CreateAuthorizeRequest(string verifier, string redirectUri = RedirectUri, string resource = Resource, string clientId = ClientId)
+    private static HttpRequestMessage CreateAuthorizeRequest(string verifier, string redirectUri = RedirectUri, string resource = Resource, string clientId = ClientId, bool authenticate = true)
     {
         string url = QueryHelpers.AddQueryString("oauth/authorize", new Dictionary<string, string?>
         {
@@ -401,7 +425,9 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         });
 
         var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes($"{SampleDataService.TEST_USER_EMAIL}:{SampleDataService.TEST_USER_PASSWORD}")));
+        if (authenticate)
+            request.Headers.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes($"{SampleDataService.TEST_USER_EMAIL}:{SampleDataService.TEST_USER_PASSWORD}")));
+
         return request;
     }
 
