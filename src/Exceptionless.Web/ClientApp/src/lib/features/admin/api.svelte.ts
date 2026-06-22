@@ -26,6 +26,24 @@ export const queryKeys = {
     stats: ['admin', 'stats'] as const
 };
 
+export function deleteOAuthApplicationMutation() {
+    const queryClient = useQueryClient();
+
+    return createMutation<void, ProblemDetails, string>(() => ({
+        mutationFn: async (id: string) => {
+            const client = useFetchClient();
+            const response = await client.delete(`admin/oauth-applications/${id}`);
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.oauthApplications });
+        }
+    }));
+}
+
 export function getAdminStatsQuery() {
     return createQuery<AdminStats, ProblemDetails>(() => ({
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
@@ -94,61 +112,14 @@ export function getOAuthApplicationsQuery() {
                 signal
             });
 
-            if (!response.ok) throw response.problem;
+            if (!response.ok) {
+                throw response.problem;
+            }
+
             return response.data ?? [];
         },
         queryKey: queryKeys.oauthApplications,
         staleTime: 30 * 1000
-    }));
-}
-
-export function postOAuthApplicationMutation() {
-    const queryClient = useQueryClient();
-
-    return createMutation<OAuthApplication, ProblemDetails, OAuthApplicationRequest>(() => ({
-        mutationFn: async (request: OAuthApplicationRequest) => {
-            const client = useFetchClient();
-            const response = await client.postJSON<OAuthApplication>('admin/oauth-applications', request);
-
-            if (!response.ok) throw response.problem;
-            return response.data!;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.oauthApplications });
-        }
-    }));
-}
-
-export function putOAuthApplicationMutation() {
-    const queryClient = useQueryClient();
-
-    return createMutation<OAuthApplication, ProblemDetails, { id: string; request: OAuthApplicationRequest }>(() => ({
-        mutationFn: async ({ id, request }) => {
-            const client = useFetchClient();
-            const response = await client.putJSON<OAuthApplication>(`admin/oauth-applications/${id}`, request);
-
-            if (!response.ok) throw response.problem;
-            return response.data!;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.oauthApplications });
-        }
-    }));
-}
-
-export function deleteOAuthApplicationMutation() {
-    const queryClient = useQueryClient();
-
-    return createMutation<void, ProblemDetails, string>(() => ({
-        mutationFn: async (id: string) => {
-            const client = useFetchClient();
-            const response = await client.delete(`admin/oauth-applications/${id}`);
-
-            if (!response.ok) throw response.problem;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.oauthApplications });
-        }
     }));
 }
 
@@ -170,6 +141,46 @@ export function getPredefinedSavedViewsMutation() {
             const response = await client.getJSON<PredefinedSavedViewDefinition[]>('saved-views/predefined');
 
             return JSON.stringify(response.data ?? [], null, 2);
+        }
+    }));
+}
+
+export function postOAuthApplicationMutation() {
+    const queryClient = useQueryClient();
+
+    return createMutation<OAuthApplication, ProblemDetails, OAuthApplicationRequest>(() => ({
+        mutationFn: async (request: OAuthApplicationRequest) => {
+            const client = useFetchClient();
+            const response = await client.postJSON<OAuthApplication>('admin/oauth-applications', request);
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response.data!;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.oauthApplications });
+        }
+    }));
+}
+
+export function putOAuthApplicationMutation() {
+    const queryClient = useQueryClient();
+
+    return createMutation<OAuthApplication, ProblemDetails, { id: string; request: OAuthApplicationRequest }>(() => ({
+        mutationFn: async ({ id, request }) => {
+            const client = useFetchClient();
+            const response = await client.putJSON<OAuthApplication>(`admin/oauth-applications/${id}`, request);
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response.data!;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.oauthApplications });
         }
     }));
 }

@@ -1,4 +1,6 @@
 <script lang="ts">
+    import type { OAuthApplication, OAuthApplicationRequest } from '$features/admin/models';
+
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
     import ErrorMessage from '$comp/error-message.svelte';
     import DateTime from '$comp/formatters/date-time.svelte';
@@ -19,7 +21,6 @@
         postOAuthApplicationMutation,
         putOAuthApplicationMutation
     } from '$features/admin/api.svelte';
-    import type { OAuthApplication, OAuthApplicationRequest } from '$features/admin/models';
     import { type OAuthApplicationFormData, OAuthApplicationSchema } from '$features/admin/schemas';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@exceptionless/fetchclient';
@@ -44,7 +45,7 @@
     const updateApplication = putOAuthApplicationMutation();
     const deleteApplication = deleteOAuthApplicationMutation();
 
-    let selectedApplication = $state<OAuthApplication | null>(null);
+    let selectedApplication = $state<null | OAuthApplication>(null);
     let toastId = $state<number | string>();
 
     const applications = $derived(applicationsQuery.data ?? []);
@@ -78,7 +79,7 @@
         }
     }));
 
-    function getFormValues(application: OAuthApplication | null): OAuthApplicationFormData {
+    function getFormValues(application: null | OAuthApplication): OAuthApplicationFormData {
         return {
             client_id: application?.client_id ?? '',
             is_disabled: application?.is_disabled ?? false,
@@ -89,7 +90,7 @@
         };
     }
 
-    function setFormValues(application: OAuthApplication | null) {
+    function setFormValues(application: null | OAuthApplication) {
         const values = getFormValues(application);
         form.setFieldValue('client_id', values.client_id);
         form.setFieldValue('is_disabled', values.is_disabled);
@@ -134,6 +135,7 @@
             if (selectedApplication?.id === application.id) {
                 createNewApplication();
             }
+
             toast.success('OAuth application deleted.');
         } catch {
             toast.error('Failed to delete OAuth application.');
@@ -186,11 +188,7 @@
                                 {#each applications as application (application.id)}
                                     <Table.Row class={selectedApplication?.id === application.id ? 'bg-muted/60' : undefined}>
                                         <Table.Cell>
-                                            <button
-                                                type="button"
-                                                class="text-left font-medium hover:underline"
-                                                onclick={() => selectApplication(application)}
-                                            >
+                                            <button type="button" class="text-left font-medium hover:underline" onclick={() => selectApplication(application)}>
                                                 {application.name}
                                             </button>
                                             <div class="text-muted-foreground mt-1 text-xs">
@@ -363,7 +361,9 @@
                                 <Checkbox checked={field.state.value} onCheckedChange={(value) => field.handleChange(!!value)} />
                                 <div class="space-y-1">
                                     <Label>Disabled</Label>
-                                    <p class="text-muted-foreground text-xs">Disabled clients cannot authorize, refresh, or use existing OAuth access tokens.</p>
+                                    <p class="text-muted-foreground text-xs">
+                                        Disabled clients cannot authorize, refresh, or use existing OAuth access tokens.
+                                    </p>
                                 </div>
                             </div>
                         {/snippet}
