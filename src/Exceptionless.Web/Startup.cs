@@ -331,6 +331,12 @@ public class Startup
 
             endpoints.MapControllers();
             endpoints.MapMcp("/mcp").RequireAuthorization(AuthorizationRoles.McpPolicy);
+            endpoints.MapMethods("/mcp", [HttpMethods.Get, HttpMethods.Delete], context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
+                context.Response.Headers[HeaderNames.Allow] = HttpMethods.Post;
+                return Task.CompletedTask;
+            }).RequireAuthorization(AuthorizationRoles.McpPolicy);
             endpoints.MapFallback("{**slug:nonfile}", CreateRequestDelegate(endpoints, "/index.html"));
         });
     }
