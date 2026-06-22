@@ -1103,6 +1103,21 @@
   },
   {
     "Controller": "OAuthController",
+    "Action": "RegisterAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/oauth/register",
+    "Authorization": [
+      "AllowAnonymous"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OAuthController",
     "Action": "RevokeAsync",
     "HttpMethod": "POST",
     "Route": "/api/v2/oauth/revoke",
