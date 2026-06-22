@@ -74,6 +74,14 @@ export function createPageSizePreference(key: string) {
     };
 }
 
+export function assignTableOptions<TData extends RowData>(
+    options: TableOptions<StockFeatures, TData>,
+    overrides: Partial<TableOptions<StockFeatures, TData>>
+): TableOptions<StockFeatures, TData> {
+    Object.assign(options, overrides);
+    return options;
+}
+
 export function getSharedTableOptions<TData extends RowData, TPaginationStrategy extends PaginationStrategy = PaginationStrategy>(
     configuration: TableConfiguration<TData, TPaginationStrategy>
 ): TableOptions<StockFeatures, TData> {

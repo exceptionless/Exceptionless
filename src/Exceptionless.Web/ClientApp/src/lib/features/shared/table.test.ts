@@ -1,6 +1,32 @@
+import type { StockFeatures, TableOptions } from '@tanstack/svelte-table';
 import { describe, expect, it } from 'vitest';
 
-import { type QueryMeta, resolvePageCount, resolvePaginationChange } from './table.svelte';
+import { assignTableOptions, type QueryMeta, resolvePageCount, resolvePaginationChange } from './table.svelte';
+
+describe('assignTableOptions', () => {
+    it('preserves reactive getters on table options', () => {
+        // Arrange
+        let rows = [{ id: 'one' }];
+        const options = {
+            _features: {},
+            _rowModels: {},
+            get columns() {
+                return [];
+            },
+            get data() {
+                return rows;
+            }
+        } as unknown as TableOptions<StockFeatures, { id: string }>;
+
+        // Act
+        const result = assignTableOptions(options, { manualSorting: false });
+        rows = [{ id: 'two' }];
+
+        // Assert
+        expect(Object.getOwnPropertyDescriptor(result, 'data')?.get).toBeTypeOf('function');
+        expect(result.data).toEqual([{ id: 'two' }]);
+    });
+});
 
 describe('resolvePaginationChange', () => {
     it('keeps the requested page when only the page index changes', () => {
