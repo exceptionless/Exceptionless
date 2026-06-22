@@ -1,6 +1,0 @@
-{
-  "private": true,
-  "scripts": {
-    "openspec:validate": "npx -y @fission-ai/openspec@1.4.1 validate --strict --no-interactive"
-  }
-}
