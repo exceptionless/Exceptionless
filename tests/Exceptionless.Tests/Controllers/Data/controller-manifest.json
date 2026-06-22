@@ -1088,6 +1088,21 @@
   },
   {
     "Controller": "OAuthController",
+    "Action": "CompleteAuthorizeAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/oauth/authorize",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OAuthController",
     "Action": "RevokeAsync",
     "HttpMethod": "POST",
     "Route": "/api/v2/oauth/revoke",

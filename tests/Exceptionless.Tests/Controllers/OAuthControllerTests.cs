@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
@@ -102,7 +103,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task AuthorizeAsync_AnonymousUser_RedirectsToLoginWithReturnUrl()
+    public async Task AuthorizeAsync_AnonymousUser_RedirectsToAuthorizeBridge()
     {
         using var client = CreateHttpClient();
         using var request = CreateAuthorizeRequest("valid-test-code-verifier", authenticate: false);
@@ -113,16 +114,30 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         var locationHeader = response.Headers.Location;
         Assert.NotNull(locationHeader);
         string location = locationHeader.ToString();
-        Assert.StartsWith("/next/login?", location);
-        var loginQuery = QueryHelpers.ParseQuery(location[(location.IndexOf('?') + 1)..]);
-        Assert.True(loginQuery.TryGetValue("redirect", out var redirect));
+        Assert.StartsWith("/next/oauth/authorize?", location);
+        var bridgeQuery = QueryHelpers.ParseQuery(location[(location.IndexOf('?') + 1)..]);
+        Assert.Equal(ClientId, bridgeQuery["client_id"].ToString());
+        Assert.Equal(RedirectUri, bridgeQuery["redirect_uri"].ToString());
+        Assert.Equal(Resource, bridgeQuery["resource"].ToString());
+    }
 
-        string returnUrl = redirect.ToString();
-        Assert.StartsWith("/api/v2/oauth/authorize?", returnUrl);
-        var returnQuery = QueryHelpers.ParseQuery(new Uri("http://localhost" + returnUrl).Query);
-        Assert.Equal(ClientId, returnQuery["client_id"].ToString());
-        Assert.Equal(RedirectUri, returnQuery["redirect_uri"].ToString());
-        Assert.Equal(Resource, returnQuery["resource"].ToString());
+    [Fact]
+    public async Task CompleteAuthorizeAsync_ValidRequest_ReturnsRedirectUri()
+    {
+        using var client = CreateHttpClient();
+        using var request = CreateAuthorizeJsonRequest("valid-test-code-verifier");
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var authorization = await DeserializeResponseAsync<OAuthAuthorizeResponse>(response);
+        Assert.NotNull(authorization);
+        var redirectUri = new Uri(authorization.RedirectUri);
+        Assert.Equal(RedirectUri, redirectUri.GetLeftPart(UriPartial.Path));
+        var query = QueryHelpers.ParseQuery(redirectUri.Query);
+        Assert.True(query.TryGetValue("code", out var code));
+        Assert.False(String.IsNullOrEmpty(code.ToString()));
+        Assert.Equal("state-value", query["state"].ToString());
     }
 
     [Fact]
@@ -409,6 +424,25 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
             ["code_verifier"] = verifier,
             ["resource"] = resource
         });
+    }
+
+    private static HttpRequestMessage CreateAuthorizeJsonRequest(string verifier, string redirectUri = RedirectUri, string resource = Resource, string clientId = ClientId)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, "oauth/authorize")
+        {
+            Content = JsonContent.Create(new OAuthAuthorizeForm
+            {
+                ClientId = clientId,
+                RedirectUri = redirectUri,
+                Scope = $"{AuthorizationRoles.McpRead} {AuthorizationRoles.ProjectsRead} {AuthorizationRoles.StacksRead} {AuthorizationRoles.EventsRead} {AuthorizationRoles.OfflineAccess}",
+                State = "state-value",
+                CodeChallenge = OAuthService.CreateCodeChallenge(verifier),
+                CodeChallengeMethod = OAuthService.CodeChallengeMethod,
+                Resource = resource
+            })
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes($"{SampleDataService.TEST_USER_EMAIL}:{SampleDataService.TEST_USER_PASSWORD}")));
+        return request;
     }
 
     private static HttpRequestMessage CreateAuthorizeRequest(string verifier, string redirectUri = RedirectUri, string resource = Resource, string clientId = ClientId, bool authenticate = true)

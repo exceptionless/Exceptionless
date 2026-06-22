@@ -59,7 +59,7 @@ public sealed class OAuthController(OAuthService oauthService, TimeProvider time
         [FromQuery] string resource)
     {
         if (User.Identity?.IsAuthenticated != true)
-            return RedirectToLogin();
+            return RedirectToAuthorizeBridge();
 
         var request = new OAuthAuthorizeRequest
         {
@@ -72,20 +72,14 @@ public sealed class OAuthController(OAuthService oauthService, TimeProvider time
             Resource = resource
         };
 
-        var validation = await oauthService.ValidateAuthorizationRequestAsync(request);
-        if (!validation.IsValid)
-            return OAuthError(validation.Error, validation.ErrorDescription);
+        return await CompleteAuthorizationAsync(request, jsonResponse: false);
+    }
 
-        string code = await oauthService.CreateAuthorizationCodeAsync(request, CurrentUser.Id);
-        var redirect = new UriBuilder(redirectUri);
-        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(redirect.Query);
-        var parameters = query.ToDictionary(kvp => kvp.Key, kvp => (string?)kvp.Value.ToString());
-        parameters["code"] = code;
-        if (!String.IsNullOrEmpty(state))
-            parameters["state"] = state;
-
-        redirect.Query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(String.Empty, parameters).TrimStart('?');
-        return Redirect(redirect.Uri.ToString());
+    [HttpPost(API_PREFIX + "/oauth/authorize")]
+    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    public Task<IActionResult> CompleteAuthorizeAsync([FromBody] OAuthAuthorizeForm form)
+    {
+        return CompleteAuthorizationAsync(form.ToRequest(), jsonResponse: true);
     }
 
     [HttpPost(API_PREFIX + "/oauth/token")]
@@ -135,12 +129,79 @@ public sealed class OAuthController(OAuthService oauthService, TimeProvider time
         });
     }
 
-    private RedirectResult RedirectToLogin()
+    private async Task<IActionResult> CompleteAuthorizationAsync(OAuthAuthorizeRequest request, bool jsonResponse)
     {
-        string returnUrl = Request.Path + Request.QueryString;
-        string loginUrl = Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString("/next/login", "redirect", returnUrl);
-        return Redirect(loginUrl);
+        var validation = await oauthService.ValidateAuthorizationRequestAsync(request);
+        if (!validation.IsValid)
+            return OAuthError(validation.Error, validation.ErrorDescription);
+
+        string code = await oauthService.CreateAuthorizationCodeAsync(request, CurrentUser.Id);
+        string redirectUri = BuildRedirectUri(request.RedirectUri, code, request.State);
+        return jsonResponse ? Ok(new OAuthAuthorizeResponse { RedirectUri = redirectUri }) : Redirect(redirectUri);
     }
+
+    private static string BuildRedirectUri(string redirectUri, string code, string? state)
+    {
+        var redirect = new UriBuilder(redirectUri);
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(redirect.Query);
+        var parameters = query.ToDictionary(kvp => kvp.Key, kvp => (string?)kvp.Value.ToString());
+        parameters["code"] = code;
+        if (!String.IsNullOrEmpty(state))
+            parameters["state"] = state;
+
+        redirect.Query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(String.Empty, parameters).TrimStart('?');
+        return redirect.Uri.ToString();
+    }
+
+    private RedirectResult RedirectToAuthorizeBridge()
+    {
+        string authorizeUrl = "/next/oauth/authorize" + Request.QueryString;
+        return Redirect(authorizeUrl);
+    }
+}
+
+public sealed record OAuthAuthorizeForm
+{
+    [JsonPropertyName("client_id")]
+    public required string ClientId { get; init; }
+
+    [JsonPropertyName("redirect_uri")]
+    public required string RedirectUri { get; init; }
+
+    [JsonPropertyName("scope")]
+    public string? Scope { get; init; }
+
+    [JsonPropertyName("state")]
+    public string? State { get; init; }
+
+    [JsonPropertyName("code_challenge")]
+    public required string CodeChallenge { get; init; }
+
+    [JsonPropertyName("code_challenge_method")]
+    public required string CodeChallengeMethod { get; init; }
+
+    [JsonPropertyName("resource")]
+    public required string Resource { get; init; }
+
+    public OAuthAuthorizeRequest ToRequest()
+    {
+        return new OAuthAuthorizeRequest
+        {
+            ClientId = ClientId,
+            RedirectUri = RedirectUri,
+            Scope = Scope,
+            State = State,
+            CodeChallenge = CodeChallenge,
+            CodeChallengeMethod = CodeChallengeMethod,
+            Resource = Resource
+        };
+    }
+}
+
+public sealed record OAuthAuthorizeResponse
+{
+    [JsonPropertyName("redirect_uri")]
+    public required string RedirectUri { get; init; }
 }
 
 public sealed record OAuthAuthorizationServerMetadata
