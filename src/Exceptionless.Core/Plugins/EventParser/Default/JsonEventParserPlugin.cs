@@ -49,7 +49,7 @@ public class JsonEventParserPlugin : PluginBase, IEventParserPlugin
                 {
                     var parsedEvents = JsonSerializer.Deserialize<PersistentEvent[]>(input, _jsonOptions);
                     if (parsedEvents is { Length: > 0 })
-                        events.AddRange(parsedEvents);
+                        events.AddRange(parsedEvents.Where(e => e is not null));
                 }
                 catch (JsonException ex)
                 {
