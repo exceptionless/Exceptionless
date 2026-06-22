@@ -217,6 +217,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
+    /// <param name="include">Optional response metadata to include. Specify total to include the total result count in response headers.</param>
     /// <response code="400">Invalid filter.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet]
@@ -224,7 +225,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
-    public async Task<ActionResult<ICollection<PersistentEvent>>> GetAllAsync(string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
+    public async Task<ActionResult<ICollection<PersistentEvent>>> GetAllAsync(string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? include = null)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
         if (organizations.All(o => o.IsSuspended))
@@ -232,7 +233,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-        return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, before, after);
+        return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, before, after, includeTotal: ShouldIncludeTotal(include));
     }
 
     private async Task<ActionResult<CountResult>> CountInternalAsync(AppFilter sf, TimeInfo ti, string? filter = null, string? aggregations = null, string? mode = null)
@@ -271,7 +272,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         return Ok(result);
     }
 
-    private async Task<ActionResult<ICollection<PersistentEvent>>> GetInternalAsync(AppFilter sf, TimeInfo ti, string? filter = null, string? sort = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, bool usesPremiumFeatures = false)
+    private async Task<ActionResult<ICollection<PersistentEvent>>> GetInternalAsync(AppFilter sf, TimeInfo ti, string? filter = null, string? sort = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, bool usesPremiumFeatures = false, bool includeTotal = false)
     {
         using var _ = _logger.BeginScope(new ExceptionlessState()
             .Property("Search Filter", new
@@ -309,7 +310,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
             switch (mode)
             {
                 case "summary":
-                    events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, before, after);
+                    events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, before, after, includeTotal);
                     return OkWithResourceLinks(events.Documents.Select(e =>
                     {
                         var summaryData = _formattingPluginManager.GetEventSummaryData(e);
@@ -321,7 +322,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                             Type = e.Type,
                             Data = summaryData.Data
                         };
-                    }).ToList(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total, events.Hits.FirstOrDefault()?.GetSortToken(_serializer), events.Hits.LastOrDefault()?.GetSortToken(_serializer));
+                    }).ToList(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, includeTotal ? events.Total : null, events.Hits.FirstOrDefault()?.GetSortToken(_serializer), events.Hits.LastOrDefault()?.GetSortToken(_serializer));
                 case "stack_recent":
                 case "stack_frequent":
                 case "stack_new":
@@ -347,12 +348,16 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                     if (mode == "stack_new")
                         filter = AddFirstOccurrenceFilter(ti.Range, filter);
 
+                    string aggregationExpression = includeTotal
+                        ? $"cardinality:stack_id terms:(stack_id~{GetSkip(resolvedPage + 1, limit) + 1} {stackAggregations})"
+                        : $"terms:(stack_id~{GetSkip(resolvedPage + 1, limit) + 1} {stackAggregations})";
+
                     var countResponse = await _repository.CountAsync(q => q
                         .SystemFilter(systemFilter)
                         .FilterExpression(filter)
                         .EnforceEventStackFilter()
-                        .AggregationsExpression($"terms:(stack_id~{GetSkip(resolvedPage + 1, limit) + 1} {stackAggregations})")
-                    );
+                        .AggregationsExpression(aggregationExpression),
+                        o => o.TrackTotalHits(false));
 
                     var stackTerms = countResponse.Aggregations.Terms<string>("terms_stack_id");
                     if (stackTerms is null || stackTerms.Buckets.Count == 0)
@@ -363,11 +368,12 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
                     var summaries = await GetStackSummariesAsync(stacks, stackTerms.Buckets, sf, ti);
 
-                    long total = (stackTerms.Data?.GetValueOrDefault("SumOtherDocCount") as long? ?? 0L) + stackTerms.Buckets.Count;
+                    double? totalStackCount = countResponse.Aggregations.Cardinality("cardinality_stack_id")?.Value;
+                    long? total = includeTotal && totalStackCount.HasValue ? Convert.ToInt64(totalStackCount.Value) : null;
                     return OkWithResourceLinks(summaries.Take(limit).ToList(), summaries.Count > limit && !NextPageExceedsSkipLimit(resolvedPage, limit), resolvedPage, total);
                 default:
-                    events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, before, after);
-                    return OkWithResourceLinks(events.Documents.ToArray(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total, events.Hits.FirstOrDefault()?.GetSortToken(_serializer), events.Hits.LastOrDefault()?.GetSortToken(_serializer));
+                    events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, before, after, includeTotal);
+                    return OkWithResourceLinks(events.Documents.ToArray(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, includeTotal ? events.Total : null, events.Hits.FirstOrDefault()?.GetSortToken(_serializer), events.Hits.LastOrDefault()?.GetSortToken(_serializer));
             }
         }
         catch (ApplicationException ex)
@@ -415,7 +421,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         return sb.ToString();
     }
 
-    private Task<FindResults<PersistentEvent>> GetEventsInternalAsync(AppFilter sf, TimeInfo ti, string? filter, string? sort, int? page, int limit, string? before, string? after)
+    private Task<FindResults<PersistentEvent>> GetEventsInternalAsync(AppFilter sf, TimeInfo ti, string? filter, string? sort, int? page, int limit, string? before, string? after, bool includeTotal)
     {
         if (String.IsNullOrEmpty(sort))
             sort = $"-{EventIndex.Alias.Date}";
@@ -428,8 +434,8 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                 .DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field)
                 .Index(ti.Range.UtcStart, ti.Range.UtcEnd),
             o => page.HasValue
-                ? o.PageNumber(page).PageLimit(limit)
-                : o.SearchBeforeToken(before, _serializer).SearchAfterToken(after, _serializer).PageLimit(limit));
+                ? o.PageNumber(page).PageLimit(limit).TrackTotalHits(includeTotal)
+                : o.SearchBeforeToken(before, _serializer).SearchAfterToken(after, _serializer).PageLimit(limit).TrackTotalHits(includeTotal));
     }
 
     /// <summary>
@@ -445,6 +451,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
+    /// <param name="include">Optional response metadata to include. Specify total to include the total result count in response headers.</param>
     /// <response code="400">Invalid filter.</response>
     /// <response code="404">The organization could not be found.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
@@ -453,7 +460,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
-    public async Task<ActionResult<ICollection<PersistentEvent>>> GetByOrganizationAsync(string organizationId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
+    public async Task<ActionResult<ICollection<PersistentEvent>>> GetByOrganizationAsync(string organizationId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? include = null)
     {
         var organization = await GetOrganizationAsync(organizationId);
         if (organization is null)
@@ -464,7 +471,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(organization);
-        return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, before, after);
+        return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, before, after, includeTotal: ShouldIncludeTotal(include));
     }
 
     /// <summary>
@@ -480,6 +487,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
+    /// <param name="include">Optional response metadata to include. Specify total to include the total result count in response headers.</param>
     /// <response code="400">Invalid filter.</response>
     /// <response code="404">The project could not be found.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
@@ -488,7 +496,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
-    public async Task<ActionResult<ICollection<PersistentEvent>>> GetByProjectAsync(string projectId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
+    public async Task<ActionResult<ICollection<PersistentEvent>>> GetByProjectAsync(string projectId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? include = null)
     {
         var project = await GetProjectAsync(projectId);
         if (project is null)
@@ -503,7 +511,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(project, organization);
-        return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, before, after);
+        return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, before, after, includeTotal: ShouldIncludeTotal(include));
     }
 
     /// <summary>
@@ -519,6 +527,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
+    /// <param name="include">Optional response metadata to include. Specify total to include the total result count in response headers.</param>
     /// <response code="400">Invalid filter.</response>
     /// <response code="404">The stack could not be found.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
@@ -527,7 +536,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
-    public async Task<ActionResult<ICollection<PersistentEvent>>> GetByStackAsync(string stackId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
+    public async Task<ActionResult<ICollection<PersistentEvent>>> GetByStackAsync(string stackId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? include = null)
     {
         var stack = await GetStackAsync(stackId);
         if (stack is null)
@@ -542,7 +551,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(stack, _appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(stack, organization);
-        return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, before, after);
+        return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, before, after, includeTotal: ShouldIncludeTotal(include));
     }
 
     /// <summary>
@@ -555,6 +564,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
+    /// <param name="include">Optional response metadata to include. Specify total to include the total result count in response headers.</param>
     /// <response code="400">Invalid filter.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("by-ref/{referenceId:identifier}")]
@@ -562,7 +572,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
-    public async Task<ActionResult<ICollection<PersistentEvent>>> GetByReferenceIdAsync(string referenceId, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
+    public async Task<ActionResult<ICollection<PersistentEvent>>> GetByReferenceIdAsync(string referenceId, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? include = null)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository);
         if (organizations.All(o => o.IsSuspended))
@@ -570,7 +580,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var ti = GetTimeInfo(null, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-        return await GetInternalAsync(sf, ti, String.Concat("reference:", referenceId), null, mode, page, limit, before, after);
+        return await GetInternalAsync(sf, ti, String.Concat("reference:", referenceId), null, mode, page, limit, before, after, includeTotal: ShouldIncludeTotal(include));
     }
 
     /// <summary>
@@ -584,6 +594,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
+    /// <param name="include">Optional response metadata to include. Specify total to include the total result count in response headers.</param>
     /// <response code="400">Invalid filter.</response>
     /// <response code="404">The project could not be found.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
@@ -592,7 +603,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
-    public async Task<ActionResult<ICollection<PersistentEvent>>> GetByReferenceIdAsync(string referenceId, string projectId, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
+    public async Task<ActionResult<ICollection<PersistentEvent>>> GetByReferenceIdAsync(string referenceId, string projectId, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? include = null)
     {
         var project = await GetProjectAsync(projectId);
         if (project is null)
@@ -607,7 +618,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var ti = GetTimeInfo(null, offset, organization.GetRetentionUtcCutoff(project, _appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(project, organization);
-        return await GetInternalAsync(sf, ti, String.Concat("reference:", referenceId), null, mode, page, limit, before, after);
+        return await GetInternalAsync(sf, ti, String.Concat("reference:", referenceId), null, mode, page, limit, before, after, includeTotal: ShouldIncludeTotal(include));
     }
 
     /// <summary>
@@ -623,6 +634,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
+    /// <param name="include">Optional response metadata to include. Specify total to include the total result count in response headers.</param>
     /// <response code="400">Invalid filter.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("sessions/{sessionId:identifier}")]
@@ -630,7 +642,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
-    public async Task<ActionResult<ICollection<PersistentEvent>>> GetBySessionIdAsync(string sessionId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
+    public async Task<ActionResult<ICollection<PersistentEvent>>> GetBySessionIdAsync(string sessionId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? include = null)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
         if (organizations.All(o => o.IsSuspended))
@@ -638,7 +650,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-        return await GetInternalAsync(sf, ti, $"(reference:{sessionId} OR ref.session:{sessionId}) {filter}", sort, mode, page, limit, before, after, true);
+        return await GetInternalAsync(sf, ti, $"(reference:{sessionId} OR ref.session:{sessionId}) {filter}", sort, mode, page, limit, before, after, true, ShouldIncludeTotal(include));
     }
 
     /// <summary>
@@ -655,6 +667,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
+    /// <param name="include">Optional response metadata to include. Specify total to include the total result count in response headers.</param>
     /// <response code="400">Invalid filter.</response>
     /// <response code="404">The project could not be found.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
@@ -663,7 +676,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
-    public async Task<ActionResult<ICollection<PersistentEvent>>> GetBySessionIdAndProjectAsync(string sessionId, string projectId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
+    public async Task<ActionResult<ICollection<PersistentEvent>>> GetBySessionIdAndProjectAsync(string sessionId, string projectId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? include = null)
     {
         var project = await GetProjectAsync(projectId);
         if (project is null)
@@ -678,7 +691,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(project, organization);
-        return await GetInternalAsync(sf, ti, $"(reference:{sessionId} OR ref.session:{sessionId}) {filter}", sort, mode, page, limit, before, after, true);
+        return await GetInternalAsync(sf, ti, $"(reference:{sessionId} OR ref.session:{sessionId}) {filter}", sort, mode, page, limit, before, after, true, ShouldIncludeTotal(include));
     }
 
     /// <summary>
@@ -693,13 +706,14 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
+    /// <param name="include">Optional response metadata to include. Specify total to include the total result count in response headers.</param>
     /// <response code="400">Invalid filter.</response>
     [HttpGet("sessions")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
-    public async Task<ActionResult<ICollection<PersistentEvent>>> GetSessionsAsync(string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
+    public async Task<ActionResult<ICollection<PersistentEvent>>> GetSessionsAsync(string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? include = null)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
         if (organizations.All(o => o.IsSuspended))
@@ -707,7 +721,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-        return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, before, after, true);
+        return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, before, after, true, ShouldIncludeTotal(include));
     }
 
     /// <summary>
@@ -723,6 +737,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
+    /// <param name="include">Optional response metadata to include. Specify total to include the total result count in response headers.</param>
     /// <response code="400">Invalid filter.</response>
     /// <response code="404">The project could not be found.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
@@ -731,7 +746,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
-    public async Task<ActionResult<ICollection<PersistentEvent>>> GetSessionByOrganizationAsync(string organizationId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
+    public async Task<ActionResult<ICollection<PersistentEvent>>> GetSessionByOrganizationAsync(string organizationId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? include = null)
     {
         var organization = await GetOrganizationAsync(organizationId);
         if (organization is null)
@@ -742,7 +757,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(organization);
-        return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, before, after, true);
+        return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, before, after, true, ShouldIncludeTotal(include));
     }
 
     /// <summary>
@@ -758,6 +773,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
+    /// <param name="include">Optional response metadata to include. Specify total to include the total result count in response headers.</param>
     /// <response code="400">Invalid filter.</response>
     /// <response code="404">The project could not be found.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
@@ -766,7 +782,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
-    public async Task<ActionResult<ICollection<PersistentEvent>>> GetSessionByProjectAsync(string projectId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
+    public async Task<ActionResult<ICollection<PersistentEvent>>> GetSessionByProjectAsync(string projectId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? include = null)
     {
         var project = await GetProjectAsync(projectId);
         if (project is null)
@@ -781,7 +797,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(project, organization);
-        return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, before, after, true);
+        return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, before, after, true, ShouldIncludeTotal(include));
     }
 
     /// <summary>

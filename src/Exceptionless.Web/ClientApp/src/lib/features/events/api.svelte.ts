@@ -99,6 +99,7 @@ export interface GetEventsParams {
     after?: string;
     before?: string;
     filter?: string;
+    include?: 'total';
     limit?: number;
     mode?: GetEventsMode;
     offset?: string;
