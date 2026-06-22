@@ -1589,6 +1589,7 @@ public partial class EventControllerTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath("events")
             .QueryString("limit", "1")
+            .QueryString("include", "total")
             .QueryString("page", 1)
             .StatusCodeShouldBeOk()
         );
@@ -1610,6 +1611,7 @@ public partial class EventControllerTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath("events")
             .QueryString("limit", "1")
+            .QueryString("include", "total")
             .QueryString("page", nextPage)
             .StatusCodeShouldBeOk()
         );
@@ -1634,6 +1636,7 @@ public partial class EventControllerTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath("events")
             .QueryString("limit", "1")
+            .QueryString("include", "total")
             .QueryString("page", nextPage)
             .StatusCodeShouldBeOk()
         );
@@ -1655,6 +1658,7 @@ public partial class EventControllerTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath("events")
             .QueryString("limit", "1")
+            .QueryString("include", "total")
             .QueryString("page", previousPage)
             .StatusCodeShouldBeOk()
         );
@@ -1686,6 +1690,7 @@ public partial class EventControllerTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath("events")
             .QueryString("limit", "1")
+            .QueryString("include", "total")
             .StatusCodeShouldBeOk()
         );
 
@@ -1710,6 +1715,7 @@ public partial class EventControllerTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath("events")
             .QueryString("limit", "1")
+            .QueryString("include", "total")
             .QueryString("after", after)
             .StatusCodeShouldBeOk()
         );
@@ -1735,6 +1741,7 @@ public partial class EventControllerTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath("events")
             .QueryString("limit", "1")
+            .QueryString("include", "total")
             .QueryString("after", after)
             .StatusCodeShouldBeOk()
         );
@@ -1760,6 +1767,7 @@ public partial class EventControllerTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath("events")
             .QueryString("limit", "1")
+            .QueryString("include", "total")
             .QueryString("before", before)
             .StatusCodeShouldBeOk()
         );

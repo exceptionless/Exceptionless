@@ -160,7 +160,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organizations.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-        return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, includeTotal: ShouldIncludeTotal(message.Include));
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetEventsByOrganization message)
@@ -175,7 +175,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organization);
-        return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, includeTotal: ShouldIncludeTotal(message.Include));
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetEventsByProject message)
@@ -194,7 +194,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
-        return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, includeTotal: ShouldIncludeTotal(message.Include));
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetEventsByStack message)
@@ -213,7 +213,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(stack, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(stack, organization);
-        return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, includeTotal: ShouldIncludeTotal(message.Include));
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetEventsByReferenceId message)
@@ -225,7 +225,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(null, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organizations.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-        return await GetInternalAsync(sf, ti, httpContext, String.Concat("reference:", message.ReferenceId), null, message.Mode, message.Page, message.Limit, message.Before, message.After, ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, String.Concat("reference:", message.ReferenceId), null, message.Mode, message.Page, message.Limit, message.Before, message.After, includeTotal: ShouldIncludeTotal(message.Include));
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetEventsByReferenceIdAndProject message)
@@ -244,7 +244,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(null, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
-        return await GetInternalAsync(sf, ti, httpContext, String.Concat("reference:", message.ReferenceId), null, message.Mode, message.Page, message.Limit, message.Before, message.After, ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, String.Concat("reference:", message.ReferenceId), null, message.Mode, message.Page, message.Limit, message.Before, message.After, includeTotal: ShouldIncludeTotal(message.Include));
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetEventsBySessionId message)
@@ -256,7 +256,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organizations.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-        return await GetInternalAsync(sf, ti, httpContext, $"(reference:{message.SessionId} OR ref.session:{message.SessionId}) {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, true, ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, $"(reference:{message.SessionId} OR ref.session:{message.SessionId}) {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, usesPremiumFeatures: true, includeTotal: ShouldIncludeTotal(message.Include));
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetEventsBySessionIdAndProject message)
@@ -275,7 +275,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
-        return await GetInternalAsync(sf, ti, httpContext, $"(reference:{message.SessionId} OR ref.session:{message.SessionId}) {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, true, ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, $"(reference:{message.SessionId} OR ref.session:{message.SessionId}) {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, usesPremiumFeatures: true, includeTotal: ShouldIncludeTotal(message.Include));
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetSessions message)
@@ -287,7 +287,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organizations.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-        return await GetInternalAsync(sf, ti, httpContext, $"type:{Event.KnownTypes.Session} {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, true, ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, $"type:{Event.KnownTypes.Session} {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, usesPremiumFeatures: true, includeTotal: ShouldIncludeTotal(message.Include));
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetSessionsByOrganization message)
@@ -302,7 +302,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organization);
-        return await GetInternalAsync(sf, ti, httpContext, $"type:{Event.KnownTypes.Session} {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, true, ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, $"type:{Event.KnownTypes.Session} {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, usesPremiumFeatures: true, includeTotal: ShouldIncludeTotal(message.Include));
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetSessionsByProject message)
@@ -321,7 +321,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
-        return await GetInternalAsync(sf, ti, httpContext, $"type:{Event.KnownTypes.Session} {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, true, ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, $"type:{Event.KnownTypes.Session} {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, usesPremiumFeatures: true, includeTotal: ShouldIncludeTotal(message.Include));
     }
 
     public async Task<Result> Handle(SetEventUserDescription message)

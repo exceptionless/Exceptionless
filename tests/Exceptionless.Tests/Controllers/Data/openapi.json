@@ -7424,6 +7424,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "description": "Optional response metadata to include. Specify total to include the total result count in response headers.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -7601,6 +7609,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "description": "Optional response metadata to include. Specify total to include the total result count in response headers.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -7728,6 +7744,14 @@
             "name": "after",
             "in": "query",
             "description": "The after parameter is a cursor used for pagination and defines your place in the list of results.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "description": "Optional response metadata to include. Specify total to include the total result count in response headers.",
             "schema": {
               "type": "string"
             }
@@ -7928,6 +7952,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "description": "Optional response metadata to include. Specify total to include the total result count in response headers.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -8034,6 +8066,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "description": "Optional response metadata to include. Specify total to include the total result count in response headers.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -8137,6 +8177,14 @@
             "name": "after",
             "in": "query",
             "description": "The after parameter is a cursor used for pagination and defines your place in the list of results.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "description": "Optional response metadata to include. Specify total to include the total result count in response headers.",
             "schema": {
               "type": "string"
             }
@@ -8270,6 +8318,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "description": "Optional response metadata to include. Specify total to include the total result count in response headers.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -8400,6 +8456,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "description": "Optional response metadata to include. Specify total to include the total result count in response headers.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -8520,6 +8584,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "description": "Optional response metadata to include. Specify total to include the total result count in response headers.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -8627,6 +8699,14 @@
             "name": "after",
             "in": "query",
             "description": "The after parameter is a cursor used for pagination and defines your place in the list of results.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "description": "Optional response metadata to include. Specify total to include the total result count in response headers.",
             "schema": {
               "type": "string"
             }
@@ -8757,6 +8837,14 @@
             "name": "after",
             "in": "query",
             "description": "The after parameter is a cursor used for pagination and defines your place in the list of results.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "description": "Optional response metadata to include. Specify total to include the total result count in response headers.",
             "schema": {
               "type": "string"
             }
