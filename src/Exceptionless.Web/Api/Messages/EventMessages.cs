@@ -11,19 +11,19 @@ public record GetEventCountByProject(string ProjectId, string? Filter, string? A
 
 // Get events
 public record GetEventById(string Id, string? Time, string? Offset, HttpContext Context);
-public record GetAllEvents(string? Filter, string? Sort, string? Time, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, HttpContext Context);
-public record GetEventsByOrganization(string OrganizationId, string? Filter, string? Sort, string? Time, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, HttpContext Context);
-public record GetEventsByProject(string ProjectId, string? Filter, string? Sort, string? Time, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, HttpContext Context);
-public record GetEventsByStack(string StackId, string? Filter, string? Sort, string? Time, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, HttpContext Context);
-public record GetEventsByReferenceId(string ReferenceId, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, HttpContext Context);
-public record GetEventsByReferenceIdAndProject(string ReferenceId, string ProjectId, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, HttpContext Context);
+public record GetAllEvents(string? Filter, string? Sort, string? Time, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, string? Include, HttpContext Context);
+public record GetEventsByOrganization(string OrganizationId, string? Filter, string? Sort, string? Time, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, string? Include, HttpContext Context);
+public record GetEventsByProject(string ProjectId, string? Filter, string? Sort, string? Time, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, string? Include, HttpContext Context);
+public record GetEventsByStack(string StackId, string? Filter, string? Sort, string? Time, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, string? Include, HttpContext Context);
+public record GetEventsByReferenceId(string ReferenceId, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, string? Include, HttpContext Context);
+public record GetEventsByReferenceIdAndProject(string ReferenceId, string ProjectId, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, string? Include, HttpContext Context);
 
 // Sessions
-public record GetEventsBySessionId(string SessionId, string? Filter, string? Sort, string? Time, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, HttpContext Context);
-public record GetEventsBySessionIdAndProject(string SessionId, string ProjectId, string? Filter, string? Sort, string? Time, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, HttpContext Context);
-public record GetSessions(string? Filter, string? Sort, string? Time, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, HttpContext Context);
-public record GetSessionsByOrganization(string OrganizationId, string? Filter, string? Sort, string? Time, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, HttpContext Context);
-public record GetSessionsByProject(string ProjectId, string? Filter, string? Sort, string? Time, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, HttpContext Context);
+public record GetEventsBySessionId(string SessionId, string? Filter, string? Sort, string? Time, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, string? Include, HttpContext Context);
+public record GetEventsBySessionIdAndProject(string SessionId, string ProjectId, string? Filter, string? Sort, string? Time, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, string? Include, HttpContext Context);
+public record GetSessions(string? Filter, string? Sort, string? Time, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, string? Include, HttpContext Context);
+public record GetSessionsByOrganization(string OrganizationId, string? Filter, string? Sort, string? Time, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, string? Include, HttpContext Context);
+public record GetSessionsByProject(string ProjectId, string? Filter, string? Sort, string? Time, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, string? Include, HttpContext Context);
 
 // User description
 public record SetEventUserDescription(string ReferenceId, UserDescription Description, string? ProjectId, HttpContext Context);

@@ -110,8 +110,8 @@ public static class EventEndpoints
         });
 
         // Get all
-        group.MapGet("events", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
-            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetAllEvents(filter, sort, time, offset, mode, page, limit, before, after, httpContext))).ToHttpResult(resultMapper))
+        group.MapGet("events", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? include = null)
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetAllEvents(filter, sort, time, offset, mode, page, limit, before, after, include, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -128,6 +128,7 @@ public static class EventEndpoints
                 ["limit"] = "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
                 ["before"] = "The before parameter is a cursor used for pagination and defines your place in the list of results.",
                 ["after"] = "The after parameter is a cursor used for pagination and defines your place in the list of results.",
+                ["include"] = "Optional response metadata to include. Specify total to include the total result count in response headers.",
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
@@ -136,8 +137,8 @@ public static class EventEndpoints
         });
 
         // Get by organization
-        group.MapGet("organizations/{organizationId:objectid}/events", async (string organizationId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
-            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetEventsByOrganization(organizationId, filter, sort, time, offset, mode, page, limit, before, after, httpContext))).ToHttpResult(resultMapper))
+        group.MapGet("organizations/{organizationId:objectid}/events", async (string organizationId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? include = null)
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetEventsByOrganization(organizationId, filter, sort, time, offset, mode, page, limit, before, after, include, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -156,6 +157,7 @@ public static class EventEndpoints
                 ["limit"] = "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
                 ["before"] = "The before parameter is a cursor used for pagination and defines your place in the list of results.",
                 ["after"] = "The after parameter is a cursor used for pagination and defines your place in the list of results.",
+                ["include"] = "Optional response metadata to include. Specify total to include the total result count in response headers.",
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
@@ -165,8 +167,8 @@ public static class EventEndpoints
         });
 
         // Get by project
-        group.MapGet("projects/{projectId:objectid}/events", async (string projectId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
-            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetEventsByProject(projectId, filter, sort, time, offset, mode, page, limit, before, after, httpContext))).ToHttpResult(resultMapper))
+        group.MapGet("projects/{projectId:objectid}/events", async (string projectId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? include = null)
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetEventsByProject(projectId, filter, sort, time, offset, mode, page, limit, before, after, include, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -185,6 +187,7 @@ public static class EventEndpoints
                 ["limit"] = "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
                 ["before"] = "The before parameter is a cursor used for pagination and defines your place in the list of results.",
                 ["after"] = "The after parameter is a cursor used for pagination and defines your place in the list of results.",
+                ["include"] = "Optional response metadata to include. Specify total to include the total result count in response headers.",
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
@@ -194,8 +197,8 @@ public static class EventEndpoints
         });
 
         // Get by stack
-        group.MapGet("stacks/{stackId:objectid}/events", async (string stackId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
-            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetEventsByStack(stackId, filter, sort, time, offset, mode, page, limit, before, after, httpContext))).ToHttpResult(resultMapper))
+        group.MapGet("stacks/{stackId:objectid}/events", async (string stackId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? include = null)
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetEventsByStack(stackId, filter, sort, time, offset, mode, page, limit, before, after, include, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -214,6 +217,7 @@ public static class EventEndpoints
                 ["limit"] = "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
                 ["before"] = "The before parameter is a cursor used for pagination and defines your place in the list of results.",
                 ["after"] = "The after parameter is a cursor used for pagination and defines your place in the list of results.",
+                ["include"] = "Optional response metadata to include. Specify total to include the total result count in response headers.",
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
@@ -223,8 +227,8 @@ public static class EventEndpoints
         });
 
         // Get by reference id
-        group.MapGet("events/by-ref/{referenceId:identifier}", async (string referenceId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
-            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetEventsByReferenceId(referenceId, offset, mode, page, limit, before, after, httpContext))).ToHttpResult(resultMapper))
+        group.MapGet("events/by-ref/{referenceId:identifier}", async (string referenceId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? include = null)
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetEventsByReferenceId(referenceId, offset, mode, page, limit, before, after, include, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -239,6 +243,7 @@ public static class EventEndpoints
                 ["limit"] = "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
                 ["before"] = "The before parameter is a cursor used for pagination and defines your place in the list of results.",
                 ["after"] = "The after parameter is a cursor used for pagination and defines your place in the list of results.",
+                ["include"] = "Optional response metadata to include. Specify total to include the total result count in response headers.",
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
@@ -247,8 +252,8 @@ public static class EventEndpoints
         });
 
         // Get by reference id + project
-        group.MapGet("projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}", async (string referenceId, string projectId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
-            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetEventsByReferenceIdAndProject(referenceId, projectId, offset, mode, page, limit, before, after, httpContext))).ToHttpResult(resultMapper))
+        group.MapGet("projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}", async (string referenceId, string projectId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? include = null)
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetEventsByReferenceIdAndProject(referenceId, projectId, offset, mode, page, limit, before, after, include, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -265,6 +270,7 @@ public static class EventEndpoints
                 ["limit"] = "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
                 ["before"] = "The before parameter is a cursor used for pagination and defines your place in the list of results.",
                 ["after"] = "The after parameter is a cursor used for pagination and defines your place in the list of results.",
+                ["include"] = "Optional response metadata to include. Specify total to include the total result count in response headers.",
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
@@ -274,8 +280,8 @@ public static class EventEndpoints
         });
 
         // Sessions by session id
-        group.MapGet("events/sessions/{sessionId:identifier}", async (string sessionId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
-            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetEventsBySessionId(sessionId, filter, sort, time, offset, mode, page, limit, before, after, httpContext))).ToHttpResult(resultMapper))
+        group.MapGet("events/sessions/{sessionId:identifier}", async (string sessionId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? include = null)
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetEventsBySessionId(sessionId, filter, sort, time, offset, mode, page, limit, before, after, include, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -293,6 +299,7 @@ public static class EventEndpoints
                 ["limit"] = "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
                 ["before"] = "The before parameter is a cursor used for pagination and defines your place in the list of results.",
                 ["after"] = "The after parameter is a cursor used for pagination and defines your place in the list of results.",
+                ["include"] = "Optional response metadata to include. Specify total to include the total result count in response headers.",
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
@@ -301,8 +308,8 @@ public static class EventEndpoints
         });
 
         // Sessions by session id + project
-        group.MapGet("projects/{projectId:objectid}/events/sessions/{sessionId:identifier}", async (string sessionId, string projectId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
-            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetEventsBySessionIdAndProject(sessionId, projectId, filter, sort, time, offset, mode, page, limit, before, after, httpContext))).ToHttpResult(resultMapper))
+        group.MapGet("projects/{projectId:objectid}/events/sessions/{sessionId:identifier}", async (string sessionId, string projectId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? include = null)
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetEventsBySessionIdAndProject(sessionId, projectId, filter, sort, time, offset, mode, page, limit, before, after, include, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -322,6 +329,7 @@ public static class EventEndpoints
                 ["limit"] = "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
                 ["before"] = "The before parameter is a cursor used for pagination and defines your place in the list of results.",
                 ["after"] = "The after parameter is a cursor used for pagination and defines your place in the list of results.",
+                ["include"] = "Optional response metadata to include. Specify total to include the total result count in response headers.",
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
@@ -331,8 +339,8 @@ public static class EventEndpoints
         });
 
         // All sessions
-        group.MapGet("events/sessions", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
-            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetSessions(filter, sort, time, offset, mode, page, limit, before, after, httpContext))).ToHttpResult(resultMapper))
+        group.MapGet("events/sessions", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? include = null)
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetSessions(filter, sort, time, offset, mode, page, limit, before, after, include, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -348,6 +356,7 @@ public static class EventEndpoints
                 ["limit"] = "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
                 ["before"] = "The before parameter is a cursor used for pagination and defines your place in the list of results.",
                 ["after"] = "The after parameter is a cursor used for pagination and defines your place in the list of results.",
+                ["include"] = "Optional response metadata to include. Specify total to include the total result count in response headers.",
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
@@ -355,8 +364,8 @@ public static class EventEndpoints
         });
 
         // Sessions by organization
-        group.MapGet("organizations/{organizationId:objectid}/events/sessions", async (string organizationId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
-            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetSessionsByOrganization(organizationId, filter, sort, time, offset, mode, page, limit, before, after, httpContext))).ToHttpResult(resultMapper))
+        group.MapGet("organizations/{organizationId:objectid}/events/sessions", async (string organizationId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? include = null)
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetSessionsByOrganization(organizationId, filter, sort, time, offset, mode, page, limit, before, after, include, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -375,6 +384,7 @@ public static class EventEndpoints
                 ["limit"] = "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
                 ["before"] = "The before parameter is a cursor used for pagination and defines your place in the list of results.",
                 ["after"] = "The after parameter is a cursor used for pagination and defines your place in the list of results.",
+                ["include"] = "Optional response metadata to include. Specify total to include the total result count in response headers.",
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
@@ -384,8 +394,8 @@ public static class EventEndpoints
         });
 
         // Sessions by project
-        group.MapGet("projects/{projectId:objectid}/events/sessions", async (string projectId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
-            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetSessionsByProject(projectId, filter, sort, time, offset, mode, page, limit, before, after, httpContext))).ToHttpResult(resultMapper))
+        group.MapGet("projects/{projectId:objectid}/events/sessions", async (string projectId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? include = null)
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetSessionsByProject(projectId, filter, sort, time, offset, mode, page, limit, before, after, include, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -404,6 +414,7 @@ public static class EventEndpoints
                 ["limit"] = "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
                 ["before"] = "The before parameter is a cursor used for pagination and defines your place in the list of results.",
                 ["after"] = "The after parameter is a cursor used for pagination and defines your place in the list of results.",
+                ["include"] = "Optional response metadata to include. Specify total to include the total result count in response headers.",
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
