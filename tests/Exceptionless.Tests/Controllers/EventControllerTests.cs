@@ -1610,8 +1610,62 @@ public partial class EventControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task CanEventsWithStablePagingAsync()
+    public async Task GetEvents_WithPartialLastCursorPage_DoesNotReturnNextLinkAsync()
     {
+        // Arrange
+        await CreateDataAsync(d =>
+        {
+            d.Event().TestProject().Type(Event.KnownTypes.Log);
+            d.Event().TestProject().Type(Event.KnownTypes.Log);
+            d.Event().TestProject().Type(Event.KnownTypes.Log);
+        });
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("limit", "2")
+            .QueryString("include", "total")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
+
+        var links = ParseLinkHeaderValue(response.Headers.GetValues(HeaderNames.Link).ToArray());
+        Assert.True(links.TryGetValue("next", out var nextLink));
+
+        string? after = GetQueryStringValue(nextLink, "after");
+        Assert.NotNull(after);
+
+        var result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>(TestCancellationToken);
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Count);
+
+        // Act
+        response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("limit", "2")
+            .QueryString("after", after)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        links = ParseLinkHeaderValue(response.Headers.GetValues(HeaderNames.Link).ToArray());
+        Assert.Single(links);
+        Assert.True(links.ContainsKey("previous"));
+        Assert.False(links.ContainsKey("next"));
+
+        result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>(TestCancellationToken);
+        Assert.NotNull(result);
+        Assert.Single(result);
+    }
+
+    [Fact]
+    public async Task GetEvents_WithStableCursorPaging_ReturnsExpectedDirectionalLinksAsync()
+    {
+        // Arrange
         await CreateDataAsync(d =>
         {
             d.Event().TestProject().Type(Event.KnownTypes.Log);
@@ -1623,6 +1677,7 @@ public partial class EventControllerTests : IntegrationTestsBase
         Log.SetLogLevel<StackRepository>(LogLevel.Trace);
         Log.SetLogLevel<EventStackFilterQueryBuilder>(LogLevel.Trace);
 
+        // Act
         var response = await SendRequestAsync(r => r
             .AsGlobalAdminUser()
             .AppendPath("events")
@@ -1631,6 +1686,7 @@ public partial class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        // Assert
         Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
 
         var links = ParseLinkHeaderValue(response.Headers.GetValues(HeaderNames.Link).ToArray());
@@ -1647,7 +1703,7 @@ public partial class EventControllerTests : IntegrationTestsBase
         Assert.NotNull(result);
         string firstEventId = result.Single().Id;
 
-        // Go to second page
+        // Act
         response = await SendRequestAsync(r => r
             .AsGlobalAdminUser()
             .AppendPath("events")
@@ -1657,6 +1713,7 @@ public partial class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        // Assert
         Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
         links = ParseLinkHeaderValue(response.Headers.GetValues(HeaderNames.Link).ToArray());
         Assert.Equal(2, links.Count);
@@ -1673,7 +1730,7 @@ public partial class EventControllerTests : IntegrationTestsBase
         string secondEventId = result.Single().Id;
         Assert.NotEqual(firstEventId, secondEventId);
 
-        // Go to last page
+        // Act
         response = await SendRequestAsync(r => r
             .AsGlobalAdminUser()
             .AppendPath("events")
@@ -1683,23 +1740,21 @@ public partial class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        // Assert
         Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
         links = ParseLinkHeaderValue(response.Headers.GetValues(HeaderNames.Link).ToArray());
-        Assert.Equal(2, links.Count);
+        Assert.Single(links);
 
         before = GetQueryStringValue(links["previous"], "before");
         Assert.NotNull(before);
-
-        after = GetQueryStringValue(links["next"], "after");
-        Assert.NotNull(after);
-        Assert.Equal(before, after);
+        Assert.False(links.ContainsKey("next"));
 
         result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>(TestCancellationToken);
         Assert.NotNull(result);
         string thirdEventId = result.Single().Id;
         Assert.NotEqual(secondEventId, thirdEventId);
 
-        // go to previous page
+        // Act
         response = await SendRequestAsync(r => r
             .AsGlobalAdminUser()
             .AppendPath("events")
@@ -1709,6 +1764,7 @@ public partial class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        // Assert
         Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
         links = ParseLinkHeaderValue(response.Headers.GetValues(HeaderNames.Link).ToArray());
         Assert.Equal(2, links.Count);
