@@ -20,7 +20,7 @@
     <PackageReference Include="Riok.Mapperly" Version="4.3.1" />
     <PackageReference Include="MiniValidation" Version="0.10.0" />
     <PackageReference Include="OAuth2" Version="1.0.0" />
-    <PackageReference Include="Scalar.AspNetCore" Version="2.16.4" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.16.5" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="Serilog.Enrichers.Span" Version="3.1.0" />
     <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
