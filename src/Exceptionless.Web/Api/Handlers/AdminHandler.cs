@@ -324,7 +324,7 @@ public class AdminHandler(
                             Status: s.State ?? String.Empty,
                             StartTime: s.StartTime?.UtcDateTime,
                             EndTime: s.EndTime?.UtcDateTime,
-                            Duration: s.Duration?.ToString() ?? String.Empty,
+                            Duration: FormatSnapshotDuration(s.Duration?.ToString(), s.DurationInMillis, s.StartTime?.UtcDateTime, s.EndTime?.UtcDateTime),
                             IndicesCount: s.Indices?.Count ?? 0,
                             SuccessfulShards: s.Shards?.Successful ?? 0,
                             FailedShards: s.Shards?.Failed ?? 0,
@@ -379,6 +379,18 @@ public class AdminHandler(
             _logger.LogError(ex, "Unable to retrieve snapshot information");
             return Result.Error("Unable to retrieve snapshot information.");
         }
+    }
+
+    internal static string FormatSnapshotDuration(string? duration, TimeSpan? durationInMillis, DateTime? startTime, DateTime? endTime)
+    {
+        if (!String.IsNullOrWhiteSpace(duration))
+            return duration;
+
+        var elapsed = durationInMillis;
+        if (elapsed is null && startTime.HasValue && endTime.HasValue)
+            elapsed = endTime.Value - startTime.Value;
+
+        return elapsed?.Round(TimeSpan.FromMilliseconds(100)).ToWords(shortForm: true, maxParts: 2) ?? String.Empty;
     }
 
     [HandlerEndpoint(HandlerMethod.Post, "generate-sample-events", Group = "Admin")]

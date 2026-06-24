@@ -29,6 +29,8 @@ public sealed class EventParserTests : TestWithServices
         ["{ \"message\": \"simple string\" }", 1, new [] { "simple string" }, Event.KnownTypes.Log],
         ["{ \"message\": \"simple string\", \"data\": { \"" + Event.KnownDataKeys.Error + "\": {} } }", 1, new [] { "simple string" }, Event.KnownTypes.Error
         ],
+        ["[null]", 1, new [] { "[null]" }, Event.KnownTypes.Log],
+        ["[null, { \"message\": \"simple string\" }]", 1, new [] { "simple string" }, Event.KnownTypes.Log],
         ["[simple string", 1, new [] { "[simple string" }, Event.KnownTypes.Log], ["[simple string,simple string]", 1, new [] { "[simple string,simple string]" }, Event.KnownTypes.Log
         ],
             new object?[] { "simple string\r\nsimple string", 2, new [] { "simple string", "simple string" }, Event.KnownTypes.Log }
