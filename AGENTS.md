@@ -58,6 +58,7 @@ tests/                         # C# tests and HTTP samples
 - Dogfood, browser automation, E2E, and API smoke tests must target local URLs only unless the user explicitly provides an external URL and asks to use it.
 - Never use production URLs such as `be.exceptionless.io` in scripts, tests, or browser automation.
 - If infrastructure is required, start or verify Aspire once. If it still blocks verification, report the exact blocker and command output instead of looping.
+- For bug reports, work on reproducing the reported behavior locally before attempting a fix. If reproduction is blocked, document the exact blocker and get confirmation before moving from diagnosis to implementation.
 
 - Use `npm ci` (not `npm install`)
 - Never commit secrets — use environment variables
