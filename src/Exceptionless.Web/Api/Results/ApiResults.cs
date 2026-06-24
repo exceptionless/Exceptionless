@@ -24,7 +24,7 @@ public static class ApiResults
 
         var linkValues = page.HasValue
             ? GetPagedLinks(new Uri(context.Request.GetDisplayUrl()), page.Value, hasMore)
-            : GetBeforeAndAfterLinks(new Uri(context.Request.GetDisplayUrl()), before, after);
+            : GetBeforeAndAfterLinks(new Uri(context.Request.GetDisplayUrl()), before, after, hasMore);
 
         if (linkValues.Count > 0)
             headers[HeaderNames.Link.ToString()] = linkValues.ToArray();
@@ -91,7 +91,7 @@ public static class ApiResults
         return links;
     }
 
-    public static List<string> GetBeforeAndAfterLinks(Uri url, string? before, string? after)
+    public static List<string> GetBeforeAndAfterLinks(Uri url, string? before, string? after, bool hasMore)
     {
         var previousParameters = HttpUtility.ParseQueryString(url.Query);
         previousParameters.Remove("before");
@@ -105,7 +105,7 @@ public static class ApiResults
         var links = new List<string>(2);
         if (!String.IsNullOrEmpty(before))
             links.Add($"<{baseUrl}?{previousParameters.ToQueryString()}>; rel=\"previous\"");
-        if (!String.IsNullOrEmpty(after))
+        if (hasMore && !String.IsNullOrEmpty(after))
             links.Add($"<{baseUrl}?{nextParameters.ToQueryString()}>; rel=\"next\"");
 
         return links;

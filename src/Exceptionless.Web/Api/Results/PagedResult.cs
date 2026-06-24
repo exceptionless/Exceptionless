@@ -56,7 +56,7 @@ internal sealed class PagedHttpResult : IResult
 
         var linkValues = _paged.Page.HasValue
             ? GetPagedLinks(new Uri(httpContext.Request.GetDisplayUrl()), _paged.Page.Value, _paged.HasMore)
-            : GetBeforeAndAfterLinks(new Uri(httpContext.Request.GetDisplayUrl()), _paged.Before, _paged.After);
+            : GetBeforeAndAfterLinks(new Uri(httpContext.Request.GetDisplayUrl()), _paged.Before, _paged.After, _paged.HasMore);
 
         if (linkValues.Count > 0)
             httpContext.Response.Headers[HeaderNames.Link.ToString()] = linkValues.ToArray();
@@ -86,7 +86,7 @@ internal sealed class PagedHttpResult : IResult
         return links;
     }
 
-    private static List<string> GetBeforeAndAfterLinks(Uri url, string? before, string? after)
+    private static List<string> GetBeforeAndAfterLinks(Uri url, string? before, string? after, bool hasMore)
     {
         var previousParameters = HttpUtility.ParseQueryString(url.Query);
         previousParameters.Remove("before");
@@ -100,7 +100,7 @@ internal sealed class PagedHttpResult : IResult
         var links = new List<string>(2);
         if (!String.IsNullOrEmpty(before))
             links.Add($"<{baseUrl}?{previousParameters.ToQueryString()}>; rel=\"previous\"");
-        if (!String.IsNullOrEmpty(after))
+        if (hasMore && !String.IsNullOrEmpty(after))
             links.Add($"<{baseUrl}?{nextParameters.ToQueryString()}>; rel=\"next\"");
         return links;
     }
