@@ -46,7 +46,7 @@ export function savedViewHref(savedView: SavedViewLink): string {
 }
 
 export function savedViewResolvedSlug(savedView: Pick<SavedViewLink, 'name' | 'slug'>): string {
-    return savedView.slug ?? '';
+    return savedView.slug || savedViewSlug(savedView.name);
 }
 
 export function savedViewSlug(value: string): string {
