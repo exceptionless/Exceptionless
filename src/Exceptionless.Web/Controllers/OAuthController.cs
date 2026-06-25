@@ -1,7 +1,10 @@
+using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Services;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Extensions;
+using Foundatio.Caching;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json.Serialization;
@@ -9,8 +12,10 @@ using System.Text.Json.Serialization;
 namespace Exceptionless.Web.Controllers;
 
 [Route("")]
-public sealed class OAuthController(OAuthService oauthService, TimeProvider timeProvider) : ExceptionlessApiController(timeProvider)
+public sealed class OAuthController(OAuthService oauthService, AppOptions appOptions, ICacheClient cacheClient, TimeProvider timeProvider) : ExceptionlessApiController(timeProvider)
 {
+    private const int DynamicClientRegistrationIpLimit = 20;
+
     [HttpGet(".well-known/oauth-authorization-server")]
     [AllowAnonymous]
     public ActionResult<OAuthAuthorizationServerMetadata> GetAuthorizationServerMetadataAsync()
@@ -74,6 +79,13 @@ public sealed class OAuthController(OAuthService oauthService, TimeProvider time
     [AllowAnonymous]
     public async Task<ActionResult<OAuthClientRegistrationResponse>> RegisterAsync([FromBody] OAuthClientRegistrationRequest request)
     {
+        if (await IsDynamicClientRegistrationRateLimitedAsync())
+            return StatusCode(StatusCodes.Status429TooManyRequests, new OAuthErrorResponse
+            {
+                Error = "temporarily_unavailable",
+                ErrorDescription = "Too many dynamic client registration attempts."
+            });
+
         var result = await oauthService.RegisterClientAsync(request);
         if (!result.IsSuccess)
             return OAuthError(result.Error, result.ErrorDescription);
@@ -114,9 +126,16 @@ public sealed class OAuthController(OAuthService oauthService, TimeProvider time
         return Ok();
     }
 
+    private async Task<bool> IsDynamicClientRegistrationRateLimitedAsync()
+    {
+        string cacheKey = $"ip:{Request.GetClientIpAddress()}:oauth-dcr:attempts";
+        long attempts = await cacheClient.IncrementAsync(cacheKey, 1, _timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromHours(1)));
+        return attempts > DynamicClientRegistrationIpLimit;
+    }
+
     private string GetOrigin()
     {
-        return $"{Request.Scheme}://{Request.Host}";
+        return new Uri(appOptions.BaseURL).GetLeftPart(UriPartial.Authority);
     }
 
     private string GetMcpResource()

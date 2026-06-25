@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
+using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -30,13 +31,15 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
     private readonly IUserRepository _userRepository;
     private readonly OAuthService _oauthService;
     private readonly TimeProvider _timeProvider;
+    private readonly AppOptions _appOptions;
 
-    public ApiKeyAuthenticationHandler(ITokenRepository tokenRepository, IUserRepository userRepository, OAuthService oauthService, IOptionsMonitor<ApiKeyAuthenticationOptions> options,
+    public ApiKeyAuthenticationHandler(ITokenRepository tokenRepository, IUserRepository userRepository, OAuthService oauthService, AppOptions appOptions, IOptionsMonitor<ApiKeyAuthenticationOptions> options,
         TimeProvider timeProvider, ILoggerFactory logger, UrlEncoder encoder) : base(options, logger, encoder)
     {
         _tokenRepository = tokenRepository;
         _userRepository = userRepository;
         _oauthService = oauthService;
+        _appOptions = appOptions;
         _timeProvider = timeProvider;
     }
 
@@ -159,7 +162,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
 
         if (Request.Path.StartsWithSegments("/mcp"))
         {
-            string origin = $"{Request.Scheme}://{Request.Host}";
+            string origin = GetCanonicalOrigin();
             Response.Headers.WWWAuthenticate = $"Bearer resource_metadata=\"{origin}/.well-known/oauth-protected-resource\"";
         }
     }
@@ -196,21 +199,24 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         if (!String.IsNullOrEmpty(resourceUri.Query) || !String.IsNullOrEmpty(resourceUri.Fragment))
             return false;
 
-        if (!String.Equals(Request.Scheme, resourceUri.Scheme, StringComparison.OrdinalIgnoreCase))
-            return false;
+        var expectedResourceUri = new Uri($"{GetCanonicalOrigin()}/mcp");
+        int resourcePort = resourceUri.IsDefaultPort ? GetDefaultPort(resourceUri.Scheme) : resourceUri.Port;
+        int expectedResourcePort = expectedResourceUri.IsDefaultPort ? GetDefaultPort(expectedResourceUri.Scheme) : expectedResourceUri.Port;
+        return String.Equals(resourceUri.Scheme, expectedResourceUri.Scheme, StringComparison.OrdinalIgnoreCase)
+            && String.Equals(resourceUri.Host, expectedResourceUri.Host, StringComparison.OrdinalIgnoreCase)
+            && resourcePort == expectedResourcePort
+            && String.Equals(resourceUri.AbsolutePath.TrimEnd('/'), expectedResourceUri.AbsolutePath.TrimEnd('/'), StringComparison.Ordinal)
+            && Request.Path.StartsWithSegments(new PathString(expectedResourceUri.AbsolutePath), StringComparison.OrdinalIgnoreCase);
+    }
 
-        if (!String.Equals(Request.Host.Host, resourceUri.Host, StringComparison.OrdinalIgnoreCase))
-            return false;
+    private string GetCanonicalOrigin()
+    {
+        return new Uri(_appOptions.BaseURL).GetLeftPart(UriPartial.Authority);
+    }
 
-        int requestPort = Request.Host.Port ?? (String.Equals(Request.Scheme, "https", StringComparison.OrdinalIgnoreCase) ? 443 : 80);
-        if (requestPort != resourceUri.Port)
-            return false;
-
-        string resourcePath = resourceUri.AbsolutePath.TrimEnd('/');
-        if (String.IsNullOrEmpty(resourcePath))
-            return false;
-
-        return Request.Path.StartsWithSegments(new PathString(resourcePath), StringComparison.OrdinalIgnoreCase);
+    private static int GetDefaultPort(string scheme)
+    {
+        return String.Equals(scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase) ? 443 : 80;
     }
 }
 

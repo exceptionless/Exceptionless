@@ -1,20 +1,26 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
+using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
 
 namespace Exceptionless.Core.Services;
 
-public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, IOAuthApplicationRepository oauthApplicationRepository, IOAuthClientMetadataService oauthClientMetadataService, ITokenRepository tokenRepository, TimeProvider timeProvider)
+public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, ILockProvider lockProvider, IOAuthApplicationRepository oauthApplicationRepository, IOAuthClientMetadataService oauthClientMetadataService, ITokenRepository tokenRepository, TimeProvider timeProvider)
 {
     public const string CodeChallengeMethod = "S256";
+    public const int ClientIdLength = 32;
+    public const int PkceCodeChallengeLength = 43;
+    public const int PkceCodeVerifierMinLength = 43;
+    public const int PkceCodeVerifierMaxLength = 128;
     public static readonly IReadOnlyCollection<string> SupportedScopes =
     [
         AuthorizationRoles.McpRead,
@@ -25,9 +31,20 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         AuthorizationRoles.OfflineAccess
     ];
 
+    public static readonly IReadOnlyCollection<string> DefaultScopes =
+    [
+        AuthorizationRoles.McpRead,
+        AuthorizationRoles.ProjectsRead,
+        AuthorizationRoles.StacksRead,
+        AuthorizationRoles.EventsRead
+    ];
+
     private const string AuthorizationCodeCachePrefix = "oauth:code:";
+    private const string RefreshTokenLockPrefix = "oauth:refresh:";
     private const string ClientMetadataNotes = "Discovered from OAuth client metadata document.";
     private const string DynamicClientRegistrationNotes = "Registered through OAuth dynamic client registration.";
+    private static readonly Regex CodeChallengeRegex = new("^[A-Za-z0-9_-]{43}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private static readonly Regex CodeVerifierRegex = new("^[A-Za-z0-9._~-]{43,128}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     public bool ClientIdMetadataDocumentSupported => options.EnableClientIdMetadataDocuments;
 
@@ -60,7 +77,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
         var scopes = NormalizeScopes(request.Scope);
         if (scopes.Count == 0)
-            scopes = SupportedScopes;
+            scopes = DefaultScopes;
 
         if (scopes.Any(s => !SupportedScopes.Contains(s, StringComparer.Ordinal)))
             return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", "One or more scopes are not supported.");
@@ -186,7 +203,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         var metadataScopes = NormalizeScopes(metadata.Scope);
         var scopes = metadataScopes.Count > 0
             ? metadataScopes.Where(s => SupportedScopes.Contains(s, StringComparer.Ordinal)).Distinct(StringComparer.Ordinal).ToArray()
-            : SupportedScopes.ToArray();
+            : DefaultScopes.ToArray();
 
         if (scopes.Length == 0)
             return false;
@@ -236,12 +253,11 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
     {
         while (true)
         {
-            string clientId = $"dcr_{StringExtensions.GetNewToken()}";
+            string clientId = $"dcr_{StringExtensions.GetRandomString(ClientIdLength)}";
             if (await oauthApplicationRepository.GetByClientIdAsync(clientId) is null)
                 return clientId;
         }
     }
-
 
     public IReadOnlyCollection<string> GetAllowedScopes(OAuthClientOptions client)
     {
@@ -274,7 +290,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!IsRedirectUriAllowed(request.RedirectUri, client.RedirectUris))
             return OAuthValidationResult.Invalid("invalid_request", "Invalid redirect_uri.");
 
-        if (String.IsNullOrWhiteSpace(request.CodeChallenge) || !String.Equals(request.CodeChallengeMethod, CodeChallengeMethod, StringComparison.Ordinal))
+        if (!IsValidCodeChallenge(request.CodeChallenge) || !String.Equals(request.CodeChallengeMethod, CodeChallengeMethod, StringComparison.Ordinal))
             return OAuthValidationResult.Invalid("invalid_request", "PKCE S256 is required.");
 
         if (!IsExpectedResource(request.Resource, expectedResource))
@@ -282,7 +298,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
         var requestedScopes = NormalizeScopes(request.Scope);
         if (requestedScopes.Count == 0)
-            requestedScopes = [AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead, AuthorizationRoles.StacksRead, AuthorizationRoles.EventsRead];
+            requestedScopes = DefaultScopes;
 
         var allowedScopes = GetAllowedScopes(client);
         if (requestedScopes.Any(s => !allowedScopes.Contains(s, StringComparer.Ordinal)))
@@ -306,7 +322,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         };
 
         if (authorizationCode.Scopes.Count == 0)
-            authorizationCode.Scopes = [AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead, AuthorizationRoles.StacksRead, AuthorizationRoles.EventsRead];
+            authorizationCode.Scopes = DefaultScopes;
 
         await cacheClient.SetAsync(GetAuthorizationCodeCacheKey(code), authorizationCode, options.AuthorizationCodeLifetime);
         return code;
@@ -322,6 +338,9 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
         if (await GetClientAsync(request.ClientId) is null)
             return OAuthTokenIssueResult.Invalid("invalid_client", "Unknown OAuth client.");
+
+        if (!IsValidCodeVerifier(request.CodeVerifier))
+            return OAuthTokenIssueResult.Invalid("invalid_grant", "Invalid PKCE verifier.");
 
         var cacheKey = GetAuthorizationCodeCacheKey(request.Code);
         var codeResult = await cacheClient.GetAsync<OAuthAuthorizationCode>(cacheKey);
@@ -346,6 +365,10 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
         if (await GetClientAsync(request.ClientId) is null)
             return OAuthTokenIssueResult.Invalid("invalid_client", "Unknown OAuth client.");
+
+        await using var refreshTokenLock = await lockProvider.TryAcquireAsync(GetRefreshTokenLockKey(request.RefreshToken), TimeSpan.FromSeconds(30), CancellationToken.None);
+        if (refreshTokenLock is null)
+            return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
 
         var results = await tokenRepository.GetByRefreshTokenAsync(request.RefreshToken, o => o.ImmediateConsistency());
         var token = results.Documents.FirstOrDefault();
@@ -422,6 +445,19 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         return String.Equals(challenge, CreateCodeChallenge(verifier), StringComparison.Ordinal);
     }
 
+    private static bool IsValidCodeChallenge(string? challenge)
+    {
+        return !String.IsNullOrWhiteSpace(challenge) && challenge.Length == PkceCodeChallengeLength && CodeChallengeRegex.IsMatch(challenge);
+    }
+
+    private static bool IsValidCodeVerifier(string? verifier)
+    {
+        return !String.IsNullOrWhiteSpace(verifier)
+            && verifier.Length >= PkceCodeVerifierMinLength
+            && verifier.Length <= PkceCodeVerifierMaxLength
+            && CodeVerifierRegex.IsMatch(verifier);
+    }
+
     private static bool IsExpectedResource(string? resource, string expectedResource)
     {
         if (String.IsNullOrWhiteSpace(resource) || !Uri.TryCreate(resource, UriKind.Absolute, out var resourceUri) || !Uri.TryCreate(expectedResource, UriKind.Absolute, out var expectedResourceUri))
@@ -492,6 +528,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
     }
 
     private static string GetAuthorizationCodeCacheKey(string code) => AuthorizationCodeCachePrefix + code;
+    private static string GetRefreshTokenLockKey(string refreshToken) => RefreshTokenLockPrefix + Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(refreshToken))).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 }
 
 public static class OAuthGrantTypes

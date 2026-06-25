@@ -17,8 +17,8 @@ public interface IOAuthClientMetadataService
 public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthServerOptions options, ICacheClient cacheClient, ILogger<OAuthClientMetadataService> logger) : IOAuthClientMetadataService
 {
     private const string CachePrefix = "oauth:cimd:";
-
-    private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
+    private const string FailureCachePrefix = "oauth:cimd-failure:";
+    private static readonly TimeSpan FailureCacheLifetime = TimeSpan.FromMinutes(5);
 
     public async Task<OAuthClientMetadataDocument?> GetClientMetadataAsync(string clientId)
     {
@@ -26,6 +26,11 @@ public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthServe
             return null;
 
         string cacheKey = GetCacheKey(clientId);
+        string failureCacheKey = GetFailureCacheKey(clientId);
+        var cachedFailure = await cacheClient.GetAsync<bool>(failureCacheKey);
+        if (cachedFailure.HasValue)
+            return null;
+
         var cached = await cacheClient.GetAsync<OAuthClientMetadataDocument>(cacheKey);
         if (cached.HasValue)
             return cached.Value;
@@ -34,55 +39,35 @@ public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthServe
         {
             using var cts = new CancellationTokenSource(options.ClientMetadataDocumentRequestTimeout);
             if (!await IsPublicHostAsync(uri, cts.Token))
-                return null;
+                return await CacheFailureAsync(failureCacheKey);
 
             using var request = new HttpRequestMessage(HttpMethod.Get, uri);
             request.Headers.Accept.ParseAdd("application/json");
 
             using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token);
             if (!response.IsSuccessStatusCode)
-                return null;
+                return await CacheFailureAsync(failureCacheKey);
 
             if (response.Content.Headers.ContentLength > options.ClientMetadataDocumentMaxBytes)
-                return null;
+                return await CacheFailureAsync(failureCacheKey);
 
             await using var responseStream = await response.Content.ReadAsStreamAsync(cts.Token);
             await using var metadataStream = await ReadLimitedAsync(responseStream, options.ClientMetadataDocumentMaxBytes, cts.Token);
-            var metadata = await JsonSerializer.DeserializeAsync<OAuthClientMetadataDocument>(metadataStream, JsonSerializerOptions, cts.Token);
+            var metadata = await JsonSerializer.DeserializeAsync<OAuthClientMetadataDocument>(metadataStream, cancellationToken: cts.Token);
             if (metadata is null)
-                return null;
+                return await CacheFailureAsync(failureCacheKey);
 
             await cacheClient.SetAsync(cacheKey, metadata, options.ClientMetadataDocumentCacheLifetime);
             return metadata;
         }
         catch (OperationCanceledException)
         {
-            return null;
+            return await CacheFailureAsync(failureCacheKey);
         }
-        catch (HttpRequestException ex)
+        catch (Exception ex) when (IsExpectedFetchError(ex))
         {
             LogUnableToFetchMetadata(ex, clientId);
-            return null;
-        }
-        catch (JsonException ex)
-        {
-            LogUnableToFetchMetadata(ex, clientId);
-            return null;
-        }
-        catch (IOException ex)
-        {
-            LogUnableToFetchMetadata(ex, clientId);
-            return null;
-        }
-        catch (CryptographicException ex)
-        {
-            LogUnableToFetchMetadata(ex, clientId);
-            return null;
-        }
-        catch (InvalidOperationException ex)
-        {
-            LogUnableToFetchMetadata(ex, clientId);
-            return null;
+            return await CacheFailureAsync(failureCacheKey);
         }
     }
 
@@ -90,6 +75,18 @@ public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthServe
     {
         logger.LogWarning(ex, "Unable to fetch OAuth client metadata document for {ClientId}.", clientId);
     }
+
+    private async Task<OAuthClientMetadataDocument?> CacheFailureAsync(string failureCacheKey)
+    {
+        await cacheClient.SetAsync(failureCacheKey, true, FailureCacheLifetime);
+        return null;
+    }
+
+    private static bool IsExpectedFetchError(Exception ex)
+    {
+        return ex is HttpRequestException or JsonException or IOException or CryptographicException or InvalidOperationException;
+    }
+
     public static bool TryCreateClientMetadataDocumentUri(string clientId, out Uri uri)
     {
         uri = null!;
@@ -136,7 +133,7 @@ public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthServe
         return addresses.Length > 0 && addresses.All(IsPublicAddress);
     }
 
-    private static bool IsPublicAddress(IPAddress address)
+    public static bool IsPublicAddress(IPAddress address)
     {
         if (address.IsIPv4MappedToIPv6)
             address = address.MapToIPv4();
@@ -156,13 +153,24 @@ public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthServe
             && octets[0] != 127
             && !(octets[0] == 169 && octets[1] == 254)
             && !(octets[0] == 172 && octets[1] >= 16 && octets[1] <= 31)
-            && !(octets[0] == 192 && octets[1] == 168);
+            && !(octets[0] == 100 && octets[1] >= 64 && octets[1] <= 127)
+            && !(octets[0] == 192 && octets[1] == 168)
+            && !(octets[0] == 198 && (octets[1] == 18 || octets[1] == 19));
     }
 
     private static string GetCacheKey(string clientId)
     {
-        var hash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(clientId))).TrimEnd('=').Replace('+', '-').Replace('/', '_');
-        return CachePrefix + hash;
+        return CachePrefix + GetCacheKeyHash(clientId);
+    }
+
+    private static string GetFailureCacheKey(string clientId)
+    {
+        return FailureCachePrefix + GetCacheKeyHash(clientId);
+    }
+
+    private static string GetCacheKeyHash(string clientId)
+    {
+        return Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(clientId))).TrimEnd('=').Replace('+', '-').Replace('/', '_');
     }
 }
 

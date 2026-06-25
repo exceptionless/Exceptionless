@@ -28,7 +28,9 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     private const string MetadataRedirectUri = "https://oauth.example/callback";
     private const string ClaudeMetadataClientId = "https://claude.ai/oauth/claude-code-client-metadata";
     private const string ClaudeLoopbackRedirectUri = "http://localhost:48272/callback";
-    private const string Resource = "http://localhost/mcp";
+    private const string Resource = "http://localhost:7110/mcp";
+    private const string PkceVerifier = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~";
+    private const string WrongPkceVerifier = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
 
     private readonly IOAuthApplicationRepository _oauthApplicationRepository;
     private readonly ITokenRepository _tokenRepository;
@@ -63,10 +65,10 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var metadata = await DeserializeResponseAsync<OAuthAuthorizationServerMetadata>(response);
         Assert.NotNull(metadata);
-        Assert.Equal("http://localhost", metadata.Issuer);
-        Assert.Equal("http://localhost/api/v2/oauth/authorize", metadata.AuthorizationEndpoint);
-        Assert.Equal("http://localhost/api/v2/oauth/token", metadata.TokenEndpoint);
-        Assert.Equal("http://localhost/api/v2/oauth/register", metadata.RegistrationEndpoint);
+        Assert.Equal("http://localhost:7110", metadata.Issuer);
+        Assert.Equal("http://localhost:7110/api/v2/oauth/authorize", metadata.AuthorizationEndpoint);
+        Assert.Equal("http://localhost:7110/api/v2/oauth/token", metadata.TokenEndpoint);
+        Assert.Equal("http://localhost:7110/api/v2/oauth/register", metadata.RegistrationEndpoint);
         Assert.Contains(OAuthGrantTypes.AuthorizationCode, metadata.GrantTypesSupported);
         Assert.Contains(OAuthService.CodeChallengeMethod, metadata.CodeChallengeMethodsSupported);
         Assert.Contains(AuthorizationRoles.McpRead, metadata.ScopesSupported);
@@ -107,6 +109,66 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task RegisterAsync_WithoutScope_DefaultsToReadOnlyScopes()
+    {
+        using var client = CreateHttpClient();
+
+        var response = await client.PostAsJsonAsync("oauth/register", new OAuthClientRegistrationRequest
+        {
+            ClientName = "Read Only Client",
+            RedirectUris = ["http://127.0.0.1:49152/callback"],
+            GrantTypes = [OAuthGrantTypes.AuthorizationCode],
+            ResponseTypes = ["code"],
+            TokenEndpointAuthMethod = "none"
+        }, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var registration = await DeserializeResponseAsync<OAuthClientRegistrationResponse>(response);
+        Assert.NotNull(registration);
+        Assert.Contains(AuthorizationRoles.McpRead, registration.Scope);
+        Assert.Contains(AuthorizationRoles.ProjectsRead, registration.Scope);
+        Assert.Contains(AuthorizationRoles.StacksRead, registration.Scope);
+        Assert.Contains(AuthorizationRoles.EventsRead, registration.Scope);
+        Assert.DoesNotContain(AuthorizationRoles.StacksWrite, registration.Scope);
+        Assert.DoesNotContain(AuthorizationRoles.OfflineAccess, registration.Scope);
+    }
+
+
+    [Fact]
+    public async Task RegisterAsync_TooManyAttempts_ReturnsTooManyRequests()
+    {
+        using var client = CreateHttpClient();
+
+        for (int i = 0; i < 20; i++)
+        {
+            var allowedResponse = await client.PostAsJsonAsync("oauth/register", new OAuthClientRegistrationRequest
+            {
+                ClientName = $"Client {i}",
+                RedirectUris = ["http://127.0.0.1:49152/callback"],
+                GrantTypes = [OAuthGrantTypes.AuthorizationCode],
+                ResponseTypes = ["code"],
+                TokenEndpointAuthMethod = "none"
+            }, TestContext.Current.CancellationToken);
+
+            Assert.Equal(HttpStatusCode.Created, allowedResponse.StatusCode);
+        }
+
+        var limitedResponse = await client.PostAsJsonAsync("oauth/register", new OAuthClientRegistrationRequest
+        {
+            ClientName = "Limited Client",
+            RedirectUris = ["http://127.0.0.1:49152/callback"],
+            GrantTypes = [OAuthGrantTypes.AuthorizationCode],
+            ResponseTypes = ["code"],
+            TokenEndpointAuthMethod = "none"
+        }, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, limitedResponse.StatusCode);
+        var error = await limitedResponse.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
+        Assert.NotNull(error);
+        Assert.Equal("temporarily_unavailable", error.Error);
+    }
+
+    [Fact]
     public async Task RegisterAsync_InvalidRedirectUri_ReturnsBadRequest()
     {
         using var client = CreateHttpClient();
@@ -137,7 +199,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         var metadata = await DeserializeResponseAsync<OAuthProtectedResourceMetadata>(response);
         Assert.NotNull(metadata);
         Assert.Equal(Resource, metadata.Resource);
-        Assert.Contains("http://localhost", metadata.AuthorizationServers);
+        Assert.Contains("http://localhost:7110", metadata.AuthorizationServers);
         Assert.Contains("header", metadata.BearerMethodsSupported);
     }
 
@@ -155,7 +217,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         var challenge = Assert.Single(response.Headers.WwwAuthenticate);
         Assert.Equal("Bearer", challenge.Scheme);
-        Assert.Equal("resource_metadata=\"http://localhost/.well-known/oauth-protected-resource\"", challenge.Parameter);
+        Assert.Equal("resource_metadata=\"http://localhost:7110/.well-known/oauth-protected-resource\"", challenge.Parameter);
     }
 
     [Fact]
@@ -170,7 +232,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         var challenge = Assert.Single(response.Headers.WwwAuthenticate);
         Assert.Equal("Bearer", challenge.Scheme);
-        Assert.Equal("resource_metadata=\"http://localhost/.well-known/oauth-protected-resource\"", challenge.Parameter);
+        Assert.Equal("resource_metadata=\"http://localhost:7110/.well-known/oauth-protected-resource\"", challenge.Parameter);
     }
 
     [Fact]
@@ -190,7 +252,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     public async Task AuthorizeAsync_AnonymousUser_RedirectsToAuthorizeBridge()
     {
         using var client = CreateHttpClient();
-        using var request = CreateAuthorizeRequest("valid-test-code-verifier", authenticate: false);
+        using var request = CreateAuthorizeRequest(PkceVerifier, authenticate: false);
 
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
@@ -210,7 +272,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     public async Task AuthorizeAsync_WithoutResource_RedirectsToAuthorizeBridgeWithDefaultResource()
     {
         using var client = CreateHttpClient();
-        using var request = CreateAuthorizeRequest("valid-test-code-verifier", resource: null, authenticate: false);
+        using var request = CreateAuthorizeRequest(PkceVerifier, resource: null, authenticate: false);
 
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
@@ -227,7 +289,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     public async Task AuthorizeAsync_AuthenticatedUser_RedirectsToAuthorizeBridge()
     {
         using var client = CreateHttpClient();
-        using var request = CreateAuthorizeRequest("valid-test-code-verifier");
+        using var request = CreateAuthorizeRequest(PkceVerifier);
 
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
@@ -240,7 +302,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     public async Task CompleteAuthorizeAsync_ValidRequest_ReturnsRedirectUri()
     {
         using var client = CreateHttpClient();
-        using var request = CreateAuthorizeJsonRequest("valid-test-code-verifier");
+        using var request = CreateAuthorizeJsonRequest(PkceVerifier);
 
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
@@ -259,7 +321,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     public async Task CompleteAuthorizeAsync_WithoutResource_ReturnsRedirectUri()
     {
         using var client = CreateHttpClient();
-        using var request = CreateAuthorizeJsonRequest("valid-test-code-verifier", resource: null);
+        using var request = CreateAuthorizeJsonRequest(PkceVerifier, resource: null);
 
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
@@ -319,7 +381,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     public async Task CompleteAuthorizeAsync_InvalidResource_ReturnsBadRequest()
     {
         using var client = CreateHttpClient();
-        using var request = CreateAuthorizeJsonRequest("bad-verifier", resource: "http://localhost");
+        using var request = CreateAuthorizeJsonRequest("bad-verifier", resource: "http://localhost:7110");
 
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
@@ -330,9 +392,37 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task CompleteAuthorizeAsync_InvalidCodeChallenge_ReturnsBadRequest()
+    {
+        using var client = CreateHttpClient();
+        var request = new HttpRequestMessage(HttpMethod.Post, "oauth/authorize")
+        {
+            Content = JsonContent.Create(new OAuthAuthorizeForm
+            {
+                ClientId = ClientId,
+                ResponseType = "code",
+                RedirectUri = RedirectUri,
+                Scope = $"{AuthorizationRoles.McpRead} {AuthorizationRoles.ProjectsRead}",
+                State = "state-value",
+                CodeChallenge = "short",
+                CodeChallengeMethod = OAuthService.CodeChallengeMethod,
+                Resource = Resource
+            })
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes($"{SampleDataService.TEST_USER_EMAIL}:{SampleDataService.TEST_USER_PASSWORD}")));
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
+        Assert.NotNull(error);
+        Assert.Equal("invalid_request", error.Error);
+    }
+
+    [Fact]
     public async Task CompleteAuthorizeAsync_ClientMetadataDocument_PersistsObservedApplication()
     {
-        await CreateAuthorizationCodeAsync("valid-test-code-verifier", MetadataRedirectUri, clientId: MetadataClientId);
+        await CreateAuthorizationCodeAsync(PkceVerifier, MetadataRedirectUri, clientId: MetadataClientId);
 
         var application = await _oauthApplicationRepository.GetByClientIdAsync(MetadataClientId, o => o.ImmediateConsistency());
 
@@ -346,7 +436,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     [Fact]
     public async Task CompleteAuthorizeAsync_ObservedClientMetadataDocumentMissingNewScope_RefreshesScopes()
     {
-        await CreateAuthorizationCodeAsync("valid-test-code-verifier", ClaudeLoopbackRedirectUri, clientId: ClaudeMetadataClientId);
+        await CreateAuthorizationCodeAsync(PkceVerifier, ClaudeLoopbackRedirectUri, clientId: ClaudeMetadataClientId);
         var application = await _oauthApplicationRepository.GetByClientIdAsync(ClaudeMetadataClientId, o => o.ImmediateConsistency());
         Assert.NotNull(application);
         application.Scopes = application.Scopes.Where(s => !String.Equals(s, AuthorizationRoles.StacksWrite, StringComparison.Ordinal)).ToArray();
@@ -354,7 +444,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
 
         using var client = CreateHttpClient();
         using var request = CreateAuthorizeJsonRequest(
-            "valid-test-code-verifier",
+            PkceVerifier,
             ClaudeLoopbackRedirectUri,
             clientId: ClaudeMetadataClientId,
             scope: $"{AuthorizationRoles.McpRead} {AuthorizationRoles.ProjectsRead} {AuthorizationRoles.StacksRead} {AuthorizationRoles.StacksWrite} {AuthorizationRoles.EventsRead} {AuthorizationRoles.OfflineAccess}");
@@ -373,7 +463,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     public async Task CompleteAuthorizeAsync_ClientMetadataDocumentLoopbackRedirectUriWithPort_ReturnsRedirectUri()
     {
         using var client = CreateHttpClient();
-        using var request = CreateAuthorizeJsonRequest("valid-test-code-verifier", ClaudeLoopbackRedirectUri, clientId: ClaudeMetadataClientId);
+        using var request = CreateAuthorizeJsonRequest(PkceVerifier, ClaudeLoopbackRedirectUri, clientId: ClaudeMetadataClientId);
 
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
@@ -443,7 +533,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     [Fact]
     public async Task TokenAsync_WithoutResource_ReturnsOAuthTokens()
     {
-        string verifier = "valid-test-code-verifier";
+        string verifier = PkceVerifier;
         string code = await CreateAuthorizationCodeAsync(verifier);
         using var client = CreateHttpClient();
 
@@ -503,11 +593,11 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     [Fact]
     public async Task TokenAsync_InvalidCodeVerifier_ReturnsBadRequestAndConsumesCode()
     {
-        string verifier = "valid-test-code-verifier";
+        string verifier = PkceVerifier;
         string code = await CreateAuthorizationCodeAsync(verifier);
         using var client = CreateHttpClient();
 
-        var response = await client.PostAsync("oauth/token", CreateTokenExchangeContent(code, "wrong-verifier"), TestContext.Current.CancellationToken);
+        var response = await client.PostAsync("oauth/token", CreateTokenExchangeContent(code, WrongPkceVerifier), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
@@ -516,6 +606,23 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
 
         response = await client.PostAsync("oauth/token", CreateTokenExchangeContent(code, verifier), TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task TokenAsync_InvalidCodeVerifierShape_ReturnsBadRequestWithoutConsumingCode()
+    {
+        string code = await CreateAuthorizationCodeAsync(PkceVerifier);
+        using var client = CreateHttpClient();
+
+        var response = await client.PostAsync("oauth/token", CreateTokenExchangeContent(code, "short-verifier"), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
+        Assert.NotNull(error);
+        Assert.Equal("invalid_grant", error.Error);
+
+        response = await client.PostAsync("oauth/token", CreateTokenExchangeContent(code, PkceVerifier), TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
@@ -551,6 +658,33 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task TokenAsync_ConcurrentRefreshTokenUse_AllowsOnlyOneRefresh()
+    {
+        var token = await IssueTokenAsync();
+        Assert.NotNull(token.RefreshToken);
+        using var client = CreateHttpClient();
+        using var firstRefreshContent = new FormUrlEncodedContent(new Dictionary<string, string?>
+        {
+            ["grant_type"] = OAuthGrantTypes.RefreshToken,
+            ["client_id"] = ClientId,
+            ["refresh_token"] = token.RefreshToken
+        });
+        using var secondRefreshContent = new FormUrlEncodedContent(new Dictionary<string, string?>
+        {
+            ["grant_type"] = OAuthGrantTypes.RefreshToken,
+            ["client_id"] = ClientId,
+            ["refresh_token"] = token.RefreshToken
+        });
+
+        var responses = await Task.WhenAll(
+            client.PostAsync("oauth/token", firstRefreshContent, TestContext.Current.CancellationToken),
+            client.PostAsync("oauth/token", secondRefreshContent, TestContext.Current.CancellationToken));
+
+        Assert.Contains(responses, r => r.StatusCode == HttpStatusCode.OK);
+        Assert.Contains(responses, r => r.StatusCode == HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
     public async Task RevokeAsync_DisablesOAuthToken()
     {
         var token = await IssueTokenAsync();
@@ -575,7 +709,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         var token = await IssueTokenAsync();
         var storedToken = await _tokenRepository.GetByIdAsync(token.AccessToken, o => o.ImmediateConsistency());
         Assert.NotNull(storedToken);
-        storedToken.OAuthResource = "http://localhost";
+        storedToken.OAuthResource = "http://localhost:7110";
         await _tokenRepository.SaveAsync(storedToken, o => o.ImmediateConsistency());
 
         await SendRequestAsync(r => r
@@ -587,7 +721,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
 
     private async Task<OAuthTokenResponse> IssueTokenAsync(string clientId = ClientId, string redirectUri = RedirectUri)
     {
-        string verifier = "valid-test-code-verifier";
+        string verifier = PkceVerifier;
         string code = await CreateAuthorizationCodeAsync(verifier, redirectUri, clientId: clientId);
         using var client = CreateHttpClient();
         var response = await client.PostAsync("oauth/token", CreateTokenExchangeContent(code, verifier, redirectUri, clientId: clientId), TestContext.Current.CancellationToken);

@@ -34,13 +34,8 @@
     const organizations = $derived(organizationsQuery.data?.data ?? []);
     const visibleOrganizations = $derived(organizations.slice(0, 6));
     const hiddenOrganizationCount = $derived(Math.max(organizations.length - visibleOrganizations.length, 0));
-    const requestedScopes = $derived(
-        page.url.searchParams
-            .get('scope')
-            ?.split(/\s+/)
-            .map((scope) => scope.trim())
-            .filter(Boolean) ?? []
-    );
+    const defaultRequestedScopes = ['mcp:read', 'projects:read', 'stacks:read', 'events:read'];
+    const requestedScopes = $derived(getRequestedScopes());
 
     $effect(() => {
         if (!browser || accessToken.current) {
@@ -95,6 +90,17 @@
             response.problem?.detail ||
             response.problem?.title ||
             'Unable to authorize application.';
+    }
+
+    function getRequestedScopes(): string[] {
+        const scopes =
+            page.url.searchParams
+                .get('scope')
+                ?.split(/\s+/)
+                .map((scope) => scope.trim())
+                .filter(Boolean) ?? [];
+
+        return scopes.length > 0 ? scopes : defaultRequestedScopes;
     }
 
     function cancelAuthorization() {
@@ -162,8 +168,6 @@
                     <div class="mt-2 flex flex-wrap gap-1.5">
                         {#each requestedScopes as scope (scope)}
                             <Badge variant="secondary">{scope}</Badge>
-                        {:else}
-                            <Badge variant="outline">Default MCP read access</Badge>
                         {/each}
                     </div>
                 </div>
