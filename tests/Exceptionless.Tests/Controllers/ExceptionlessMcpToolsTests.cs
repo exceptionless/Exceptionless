@@ -24,7 +24,6 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly IStackRepository _stackRepository;
-    private readonly IUserRepository _userRepository;
 
     public ExceptionlessMcpToolsTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
@@ -32,7 +31,6 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         _organizationRepository = GetService<IOrganizationRepository>();
         _projectRepository = GetService<IProjectRepository>();
         _stackRepository = GetService<IStackRepository>();
-        _userRepository = GetService<IUserRepository>();
     }
 
     protected override async Task ResetDataAsync()
@@ -50,7 +48,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
         Assert.True(result.Ok);
         Assert.Null(result.Error);
-        Assert.Contains(result.Items, p => p.Id == TestConstants.ProjectId);
+        Assert.Contains(Items(result), p => p.Id == TestConstants.ProjectId);
     }
 
     [Fact]
@@ -63,7 +61,22 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
         Assert.True(result.Ok);
         Assert.Null(result.Error);
-        Assert.Contains(result.Items, s => s.Id == stacks[0].Id);
+        Assert.Contains(Items(result), s => s.Id == stacks[0].Id);
+    }
+
+    [Fact]
+    public async Task SearchEventsAsync_EventsScope_ReturnsProjectEvents()
+    {
+        const string referenceId = "mcp-search-events";
+        var (_, events) = await CreateDataAsync(d => d.Event().TestProject().ReferenceId(referenceId).Message("MCP event search"));
+        await RefreshDataAsync();
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.SearchEventsAsync(TestConstants.ProjectId, filter: $"reference:{referenceId}", limit: 50);
+
+        Assert.True(result.Ok);
+        Assert.Null(result.Error);
+        Assert.Contains(Items(result), e => e.Id == events[0].Id);
     }
 
     [Fact]
@@ -76,9 +89,8 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         var result = await tools.GetEventAsync(events[0].Id);
 
         Assert.True(result.Ok);
-        Assert.True(result.Found);
         Assert.Null(result.Error);
-        Assert.Equal(events[0].Id, result.Item?.Id);
+        Assert.Equal(events[0].Id, Data(result).Id);
     }
 
     [Fact]
@@ -103,17 +115,17 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
 
         var result = await tools.GetEventAsync(ev.Id);
+        var item = Data(result);
 
         Assert.True(result.Ok);
-        Assert.True(result.Found);
         Assert.Null(result.Error);
-        Assert.NotNull(result.Item?.Details);
-        Assert.False(result.Item.Details.IsTruncated);
-        var error = Assert.IsType<SimpleError>(result.Item.Details.Error);
+        Assert.NotNull(item.Details);
+        Assert.False(item.Details.IsTruncated);
+        var error = Assert.IsType<SimpleError>(item.Details.Error);
         Assert.Equal("Boom", error.Message);
         Assert.Equal("at Test.Throw() in Test.cs:line 42", error.StackTrace);
-        Assert.Equal("/broken", result.Item.Details.Request?.Path);
-        Assert.Equal("custom-value", result.Item.Details.Data?["custom"]);
+        Assert.Equal("/broken", item.Details.Request?.Path);
+        Assert.Equal("custom-value", item.Details.Data?["custom"]);
     }
 
     [Fact]
@@ -125,9 +137,8 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         var result = await tools.SearchStacksAsync(TestConstants.ProjectId);
 
         Assert.False(result.Ok);
-        Assert.NotNull(result.Error);
-        Assert.Equal(McpErrorCodes.NotAccessible, result.ErrorInfo?.Code);
-        Assert.Empty(result.Items);
+        Assert.Equal(McpErrorCodes.NotAccessible, result.Error?.Code);
+        Assert.Null(result.Data);
     }
 
     [Fact]
@@ -138,9 +149,9 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         var result = await tools.SearchStacksAsync(TestConstants.ProjectId, sort: "-this_field_does_not_exist");
 
         Assert.False(result.Ok);
-        Assert.Equal(McpErrorCodes.InvalidSort, result.ErrorInfo?.Code);
-        Assert.Contains("Unknown sort field", result.Error);
-        Assert.Empty(result.Items);
+        Assert.Equal(McpErrorCodes.InvalidSort, result.Error?.Code);
+        Assert.Contains("Unknown sort field", result.Error?.Message);
+        Assert.Null(result.Data);
     }
 
     [Fact]
@@ -151,9 +162,9 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         var result = await tools.SearchStacksAsync(TestConstants.ProjectId, filter: "nonexistentfield:foo");
 
         Assert.False(result.Ok);
-        Assert.Equal(McpErrorCodes.UnknownFilterField, result.ErrorInfo?.Code);
-        Assert.Equal("Unknown filter field 'nonexistentfield'.", result.Error);
-        Assert.Empty(result.Items);
+        Assert.Equal(McpErrorCodes.UnknownFilterField, result.Error?.Code);
+        Assert.Equal("Unknown filter field 'nonexistentfield'.", result.Error?.Message);
+        Assert.Null(result.Data);
     }
 
     [Fact]
@@ -164,9 +175,9 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         var result = await tools.SearchStacksAsync(TestConstants.ProjectId, filter: "type:::((( garbage");
 
         Assert.False(result.Ok);
-        Assert.Equal(McpErrorCodes.InvalidFilter, result.ErrorInfo?.Code);
-        Assert.StartsWith("Invalid filter:", result.Error);
-        Assert.Empty(result.Items);
+        Assert.Equal(McpErrorCodes.InvalidFilter, result.Error?.Code);
+        Assert.StartsWith("Invalid filter:", result.Error?.Message);
+        Assert.Null(result.Data);
     }
 
     [Theory]
@@ -179,9 +190,9 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         var result = await tools.SearchStacksAsync(TestConstants.ProjectId, limit: limit);
 
         Assert.False(result.Ok);
-        Assert.Equal(McpErrorCodes.InvalidLimit, result.ErrorInfo?.Code);
-        Assert.Equal("Limit must be between 1 and 50.", result.Error);
-        Assert.Empty(result.Items);
+        Assert.Equal(McpErrorCodes.InvalidLimit, result.Error?.Code);
+        Assert.Equal("Limit must be between 1 and 100.", result.Error?.Message);
+        Assert.Null(result.Data);
     }
 
     [Fact]
@@ -194,8 +205,51 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
         Assert.True(result.Ok);
         Assert.Null(result.Error);
-        Assert.Equal(50, result.Limit);
-        Assert.Equal("Limit was capped at 50.", result.Warning);
+        Assert.Equal(100, result.Pagination?.Limit);
+        Assert.Equal("Limit was capped at 100.", result.Warning);
+    }
+
+    [Fact]
+    public async Task SearchEventsAsync_InvalidTimeRange_ReturnsError()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.SearchEventsAsync(TestConstants.ProjectId, last: "24h", startUtc: "2026-06-25T00:00:00Z");
+
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.InvalidTimeRange, result.Error?.Code);
+        Assert.Null(result.Data);
+    }
+
+    [Fact]
+    public async Task CountEventsAsync_LastAndInterval_ReturnsEventCounts()
+    {
+        const string referenceId = "mcp-count-events";
+        await CreateDataAsync(d => d.Event().TestProject().ReferenceId(referenceId).Message("MCP count event"));
+        await RefreshDataAsync();
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.CountEventsAsync(TestConstants.ProjectId, filter: $"reference:{referenceId}", last: "24h", interval: "1h");
+        var data = Data(result);
+
+        Assert.True(result.Ok);
+        Assert.Null(result.Error);
+        Assert.True(data.Events >= 1);
+        Assert.True(data.Occurrences >= 1);
+        Assert.Equal("1h", data.Interval);
+        Assert.NotEmpty(data.Trend);
+    }
+
+    [Fact]
+    public async Task CountEventsAsync_InvalidInterval_ReturnsError()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.CountEventsAsync(TestConstants.ProjectId, interval: "garbage");
+
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.InvalidInterval, result.Error?.Code);
+        Assert.Null(result.Data);
     }
 
     [Fact]
@@ -206,9 +260,9 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         var result = await tools.ListProjectsAsync(filter: "(((((");
 
         Assert.False(result.Ok);
-        Assert.Equal(McpErrorCodes.InvalidFilter, result.ErrorInfo?.Code);
-        Assert.StartsWith("Invalid filter:", result.Error);
-        Assert.Empty(result.Items);
+        Assert.Equal(McpErrorCodes.InvalidFilter, result.Error?.Code);
+        Assert.StartsWith("Invalid filter:", result.Error?.Message);
+        Assert.Null(result.Data);
     }
 
     [Theory]
@@ -221,8 +275,8 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         var result = await tools.GetProjectAsync(projectId);
 
         Assert.False(result.Ok);
-        Assert.False(result.Found);
-        Assert.Equal(McpErrorCodes.InvalidId, result.ErrorInfo?.Code);
+        Assert.Null(result.Data);
+        Assert.Equal(McpErrorCodes.InvalidId, result.Error?.Code);
     }
 
     [Fact]
@@ -233,8 +287,8 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         var result = await tools.SearchStacksAsync("bad-project-id");
 
         Assert.False(result.Ok);
-        Assert.Equal(McpErrorCodes.InvalidId, result.ErrorInfo?.Code);
-        Assert.Empty(result.Items);
+        Assert.Equal(McpErrorCodes.InvalidId, result.Error?.Code);
+        Assert.Null(result.Data);
     }
 
     [Fact]
@@ -245,8 +299,8 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         var result = await tools.GetEventAsync("bad-event-id");
 
         Assert.False(result.Ok);
-        Assert.False(result.Found);
-        Assert.Equal(McpErrorCodes.InvalidId, result.ErrorInfo?.Code);
+        Assert.Null(result.Data);
+        Assert.Equal(McpErrorCodes.InvalidId, result.Error?.Code);
     }
 
     [Fact]
@@ -266,14 +320,14 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
 
         var result = await tools.GetEventAsync(ev.Id, maxDetailSize: 1024);
+        var item = Data(result);
 
         Assert.True(result.Ok);
-        Assert.True(result.Found);
-        Assert.NotNull(result.Item?.Details);
-        Assert.True(result.Item.Details.IsTruncated);
-        Assert.Null(result.Item.Details.Data);
-        Assert.True(result.Item.Details.Size > result.Item.Details.MaxSize);
-        Assert.NotNull(result.Item.Details.TruncationMessage);
+        Assert.NotNull(item.Details);
+        Assert.True(item.Details.IsTruncated);
+        Assert.Null(item.Details.Data);
+        Assert.True(item.Details.Size > item.Details.MaxSize);
+        Assert.NotNull(item.Details.TruncationMessage);
     }
 
     [Fact]
@@ -285,7 +339,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         var result = await tools.GetEventAsync(events[0].Id, maxDetailSize: 100);
 
         Assert.False(result.Ok);
-        Assert.Equal(McpErrorCodes.InvalidDetailSize, result.ErrorInfo?.Code);
+        Assert.Equal(McpErrorCodes.InvalidDetailSize, result.Error?.Code);
     }
 
     [Fact]
@@ -294,11 +348,9 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead);
 
         var result = tools.GetFilterFields();
+        var item = Data(result);
 
         Assert.True(result.Ok);
-        Assert.True(result.Found);
-        Assert.NotNull(result.Item);
-        var item = result.Item;
         Assert.Contains("name", item.Projects.FilterFields);
         Assert.Contains("status", item.Stacks.FilterFields);
         Assert.Contains("path", item.Events.FilterFields);
@@ -316,21 +368,22 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
         Assert.True(firstPage.Ok);
         Assert.Null(firstPage.Error);
-        Assert.True(firstPage.HasMore);
-        Assert.NotNull(firstPage.After);
+        Assert.True(firstPage.Pagination?.HasMore);
+        Assert.NotNull(firstPage.Pagination?.After);
 
-        var secondPage = await tools.GetStackEventsAsync(stacks[0].Id, limit: 1, after: firstPage.After);
+        var secondPage = await tools.GetStackEventsAsync(stacks[0].Id, limit: 1, after: firstPage.Pagination.After);
 
         Assert.True(secondPage.Ok);
         Assert.Null(secondPage.Error);
-        Assert.NotEmpty(secondPage.Items);
-        Assert.DoesNotContain(secondPage.Items, e => e.Id == firstPage.Items.Single().Id);
+        Assert.NotEmpty(Items(secondPage));
+        Assert.DoesNotContain(Items(secondPage), e => e.Id == Items(firstPage).Single().Id);
     }
 
     [Theory]
     [InlineData(nameof(ExceptionlessMcpTools.ListProjectsAsync))]
     [InlineData(nameof(ExceptionlessMcpTools.SearchStacksAsync))]
     [InlineData(nameof(ExceptionlessMcpTools.GetStackEventsAsync))]
+    [InlineData(nameof(ExceptionlessMcpTools.SearchEventsAsync))]
     public async Task PagedTools_SchemaIncludesCursorParameters(string methodName)
     {
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead, AuthorizationRoles.StacksRead, AuthorizationRoles.EventsRead);
@@ -345,7 +398,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
         var limit = properties.GetProperty("limit");
         string? limitDescription = limit.GetProperty("description").GetString();
-        Assert.Contains("capped at 50", limitDescription, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("capped at 100", limitDescription, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("cursor", limitDescription, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -353,6 +406,8 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     [InlineData(nameof(ExceptionlessMcpTools.ListProjectsAsync))]
     [InlineData(nameof(ExceptionlessMcpTools.SearchStacksAsync))]
     [InlineData(nameof(ExceptionlessMcpTools.GetStackEventsAsync))]
+    [InlineData(nameof(ExceptionlessMcpTools.SearchEventsAsync))]
+    [InlineData(nameof(ExceptionlessMcpTools.CountEventsAsync))]
     public async Task FilteredTools_SchemaDescribesSupportedFilterFields(string methodName)
     {
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead, AuthorizationRoles.StacksRead, AuthorizationRoles.EventsRead);
@@ -363,6 +418,26 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
         string? description = filter.GetProperty("description").GetString();
         Assert.Contains("Supported fields", description, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData(nameof(ExceptionlessMcpTools.SearchStacksAsync))]
+    [InlineData(nameof(ExceptionlessMcpTools.GetStackEventsAsync))]
+    [InlineData(nameof(ExceptionlessMcpTools.SearchEventsAsync))]
+    [InlineData(nameof(ExceptionlessMcpTools.CountEventsAsync))]
+    public async Task TimeScopedTools_SchemaIncludesTimeRangeParameters(string methodName)
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksRead, AuthorizationRoles.EventsRead);
+        var method = typeof(ExceptionlessMcpTools).GetMethod(methodName) ?? throw new InvalidOperationException($"Could not find {methodName}.");
+        var tool = McpServerTool.Create(method, tools, new McpServerToolCreateOptions());
+        var properties = tool.ProtocolTool.InputSchema.GetProperty("properties");
+
+        Assert.True(properties.TryGetProperty("last", out var last), "The last time range must be advertised in the MCP tool schema.");
+        Assert.True(properties.TryGetProperty("startUtc", out var startUtc), "The startUtc time range must be advertised in the MCP tool schema.");
+        Assert.True(properties.TryGetProperty("endUtc", out var endUtc), "The endUtc time range must be advertised in the MCP tool schema.");
+        Assert.Contains("24h", last.GetProperty("description").GetString(), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("UTC", startUtc.GetProperty("description").GetString(), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("UTC", endUtc.GetProperty("description").GetString(), StringComparison.OrdinalIgnoreCase);
     }
 
     private Task<ExceptionlessMcpTools> CreateToolsAsync(params string[] scopes)
@@ -406,6 +481,19 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
             GetService<StackQueryValidator>(),
             GetService<PersistentEventQueryValidator>(),
             GetService<ITextSerializer>(),
-            GetService<ILogger<ExceptionlessMcpTools>>()));
+            GetService<ILogger<ExceptionlessMcpTools>>(),
+            TimeProvider));
+    }
+
+    private static IReadOnlyCollection<T> Items<T>(McpResponse<McpListData<T>> result)
+    {
+        Assert.NotNull(result.Data);
+        return result.Data!.Items;
+    }
+
+    private static T Data<T>(McpResponse<T> result)
+    {
+        Assert.NotNull(result.Data);
+        return result.Data!;
     }
 }
