@@ -544,6 +544,55 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task AddStackReferenceLinkAsync_StacksWriteScope_AddsReference()
+    {
+        var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP write reference"));
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksWrite);
+
+        var result = await tools.AddStackReferenceLinkAsync(stacks[0].Id, " https://github.com/exceptionless/Exceptionless/issues/123 ");
+        var data = Data(result);
+
+        Assert.True(result.Ok);
+        Assert.Null(result.Error);
+        Assert.True(data.Changed);
+        Assert.Contains("https://github.com/exceptionless/Exceptionless/issues/123", data.Stack.References);
+
+        var stack = await _stackRepository.GetByIdAsync(stacks[0].Id, o => o.ImmediateConsistency());
+        Assert.NotNull(stack);
+        Assert.Contains("https://github.com/exceptionless/Exceptionless/issues/123", stack.References);
+    }
+
+    [Fact]
+    public async Task AddStackReferenceLinkAsync_DuplicateReference_ReturnsUnchanged()
+    {
+        const string url = "https://github.com/exceptionless/Exceptionless/issues/123";
+        var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().StackReference(url).Message("MCP write duplicate reference"));
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksWrite);
+
+        var result = await tools.AddStackReferenceLinkAsync(stacks[0].Id, url);
+        var data = Data(result);
+
+        Assert.True(result.Ok);
+        Assert.Null(result.Error);
+        Assert.False(data.Changed);
+        Assert.Single(data.Stack.References);
+        Assert.Contains(url, data.Stack.References);
+    }
+
+    [Fact]
+    public async Task AddStackReferenceLinkAsync_EmptyUrl_ReturnsError()
+    {
+        var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP write empty reference"));
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksWrite);
+
+        var result = await tools.AddStackReferenceLinkAsync(stacks[0].Id, " ");
+
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.InvalidReferenceLink, result.Error?.Code);
+        Assert.Null(result.Data);
+    }
+
+    [Fact]
     public async Task GetStackEventsAsync_WithAfterCursor_ReturnsNextPage()
     {
         var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP cursor").Create(1));
@@ -676,6 +725,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     [InlineData(nameof(ExceptionlessMcpTools.UpdateStackStatusAsync))]
     [InlineData(nameof(ExceptionlessMcpTools.SnoozeStackAsync))]
     [InlineData(nameof(ExceptionlessMcpTools.SetStackCriticalAsync))]
+    [InlineData(nameof(ExceptionlessMcpTools.AddStackReferenceLinkAsync))]
     public async Task StackWriteTools_SchemaAdvertisesWriteInputs(string methodName)
     {
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksWrite);
@@ -696,6 +746,9 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
                 break;
             case nameof(ExceptionlessMcpTools.SetStackCriticalAsync):
                 Assert.True(properties.TryGetProperty("critical", out _), "The critical input must be advertised in the MCP tool schema.");
+                break;
+            case nameof(ExceptionlessMcpTools.AddStackReferenceLinkAsync):
+                Assert.True(properties.TryGetProperty("url", out _), "The url input must be advertised in the MCP tool schema.");
                 break;
         }
     }

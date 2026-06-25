@@ -635,6 +635,49 @@ public sealed class ExceptionlessMcpTools
         }
     }
 
+    [McpServerTool(Name = "add_stack_reference_link", ReadOnly = false, UseStructuredContent = true)]
+    [Description("Adds a reference link to a stack. Use this to attach an external issue, pull request, deployment, or incident URL to an Exceptionless issue.")]
+    public async Task<McpResponse<McpStackUpdateResult>> AddStackReferenceLinkAsync(
+        [Description("The Exceptionless stack id.")]
+        string stackId,
+        [Description("The reference link to add to the stack, such as an issue, pull request, deployment, or incident URL.")]
+        string url)
+    {
+        try
+        {
+            EnsureScope(AuthorizationRoles.StacksWrite);
+            if (!TryValidateId(stackId, "stackId", out var idError))
+                return McpResponse<McpStackUpdateResult>.Failed(idError);
+
+            string? referenceLink = NormalizeReferenceLink(url);
+            if (referenceLink is null)
+                return McpResponse<McpStackUpdateResult>.Failed(McpErrors.InvalidReferenceLink("url is required.", url));
+
+            var stack = await GetAccessibleStackForWriteAsync(stackId);
+            bool changed = !stack.References.Contains(referenceLink);
+            if (changed)
+            {
+                stack.References.Add(referenceLink);
+                await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency());
+            }
+
+            return McpResponse<McpStackUpdateResult>.Success(new McpStackUpdateResult(
+                ToStackResult(stack),
+                changed,
+                changed
+                    ? $"Reference link was added to stack {stack.Id}."
+                    : $"Stack {stack.Id} already has that reference link."));
+        }
+        catch (Exception ex) when (IsLookupError(ex))
+        {
+            return McpResponse<McpStackUpdateResult>.Failed(ToLookupError("Stack", stackId, ex));
+        }
+        catch (Exception)
+        {
+            return McpResponse<McpStackUpdateResult>.Failed(McpErrors.QueryFailed("Unable to add stack reference link. Check the stack id and url."));
+        }
+    }
+
     [McpServerTool(Name = "get_filter_fields", ReadOnly = true, UseStructuredContent = true)]
     [Description("Lists supported Exceptionless MCP filter and sort fields for projects, stacks, and events. Dynamic data.* and idx.* filter fields are allowed for stacks and events.")]
     public McpResponse<McpFilterFieldsResult> GetFilterFields()
@@ -1094,6 +1137,11 @@ public sealed class ExceptionlessMcpTools
         return String.IsNullOrWhiteSpace(fixedInVersion) ? null : fixedInVersion.Trim();
     }
 
+    private static string? NormalizeReferenceLink(string? url)
+    {
+        return String.IsNullOrWhiteSpace(url) ? null : url.Trim();
+    }
+
     private static bool TryValidateId(string id, string fieldName, out McpErrorInfo error)
     {
         if (!String.IsNullOrWhiteSpace(id) && IdRegex.IsMatch(id))
@@ -1470,6 +1518,7 @@ public static class McpErrorCodes
     public const string InvalidId = "invalid_id";
     public const string InvalidInterval = "invalid_interval";
     public const string InvalidLimit = "invalid_limit";
+    public const string InvalidReferenceLink = "invalid_reference_link";
     public const string InvalidSnooze = "invalid_snooze";
     public const string InvalidSort = "invalid_sort";
     public const string InvalidStatus = "invalid_status";
@@ -1539,6 +1588,15 @@ public static class McpErrors
             ["value"] = value,
             ["min"] = 1,
             ["max"] = max
+        });
+    }
+
+    public static McpErrorInfo InvalidReferenceLink(string message, string? url)
+    {
+        return new McpErrorInfo(McpErrorCodes.InvalidReferenceLink, message, new Dictionary<string, object?>
+        {
+            ["field"] = "url",
+            ["value"] = url
         });
     }
 
