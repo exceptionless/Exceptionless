@@ -12,7 +12,7 @@ using Foundatio.Repositories.Utility;
 
 namespace Exceptionless.Core.Services;
 
-public class OAuthService(OAuthOptions options, ICacheClient cacheClient, IOAuthApplicationRepository oauthApplicationRepository, IOAuthClientMetadataService oauthClientMetadataService, ITokenRepository tokenRepository, TimeProvider timeProvider)
+public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, IOAuthApplicationRepository oauthApplicationRepository, IOAuthClientMetadataService oauthClientMetadataService, ITokenRepository tokenRepository, TimeProvider timeProvider)
 {
     public const string CodeChallengeMethod = "S256";
     public static readonly IReadOnlyCollection<string> SupportedScopes =

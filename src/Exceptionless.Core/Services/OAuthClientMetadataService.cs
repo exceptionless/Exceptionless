@@ -14,7 +14,7 @@ public interface IOAuthClientMetadataService
     Task<OAuthClientMetadataDocument?> GetClientMetadataAsync(string clientId);
 }
 
-public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthOptions options, ICacheClient cacheClient, ILogger<OAuthClientMetadataService> logger) : IOAuthClientMetadataService
+public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthServerOptions options, ICacheClient cacheClient, ILogger<OAuthClientMetadataService> logger) : IOAuthClientMetadataService
 {
     private const string CachePrefix = "oauth:cimd:";
 

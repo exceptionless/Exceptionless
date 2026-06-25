@@ -2,7 +2,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace Exceptionless.Core.Configuration;
 
-public class OAuthOptions
+public class OAuthServerOptions
 {
     public TimeSpan AuthorizationCodeLifetime { get; internal set; } = TimeSpan.FromMinutes(5);
     public TimeSpan AccessTokenLifetime { get; internal set; } = TimeSpan.FromHours(1);
@@ -12,16 +12,16 @@ public class OAuthOptions
     public TimeSpan ClientMetadataDocumentRequestTimeout { get; internal set; } = TimeSpan.FromSeconds(5);
     public int ClientMetadataDocumentMaxBytes { get; internal set; } = 32 * 1024;
 
-    public static OAuthOptions ReadFromConfiguration(IConfiguration config)
+    public static OAuthServerOptions ReadFromConfiguration(IConfiguration config)
     {
-        var options = new OAuthOptions();
-        options.AuthorizationCodeLifetime = TimeSpan.FromMinutes(config.GetValue("OAuth:AuthorizationCodeLifetimeMinutes", 5));
-        options.AccessTokenLifetime = TimeSpan.FromMinutes(config.GetValue("OAuth:AccessTokenLifetimeMinutes", 60));
-        options.RefreshTokenLifetime = TimeSpan.FromDays(config.GetValue("OAuth:RefreshTokenLifetimeDays", 30));
-        options.EnableClientIdMetadataDocuments = config.GetValue("OAuth:EnableClientIdMetadataDocuments", true);
-        options.ClientMetadataDocumentCacheLifetime = TimeSpan.FromMinutes(config.GetValue("OAuth:ClientMetadataDocumentCacheLifetimeMinutes", 60));
-        options.ClientMetadataDocumentRequestTimeout = TimeSpan.FromSeconds(config.GetValue("OAuth:ClientMetadataDocumentRequestTimeoutSeconds", 5));
-        options.ClientMetadataDocumentMaxBytes = config.GetValue("OAuth:ClientMetadataDocumentMaxBytes", 32 * 1024);
+        var options = new OAuthServerOptions();
+        options.AuthorizationCodeLifetime = TimeSpan.FromMinutes(config.GetValue("OAuthServer:AuthorizationCodeLifetimeMinutes", 5));
+        options.AccessTokenLifetime = TimeSpan.FromMinutes(config.GetValue("OAuthServer:AccessTokenLifetimeMinutes", 60));
+        options.RefreshTokenLifetime = TimeSpan.FromDays(config.GetValue("OAuthServer:RefreshTokenLifetimeDays", 30));
+        options.EnableClientIdMetadataDocuments = config.GetValue("OAuthServer:EnableClientIdMetadataDocuments", true);
+        options.ClientMetadataDocumentCacheLifetime = TimeSpan.FromMinutes(config.GetValue("OAuthServer:ClientMetadataDocumentCacheLifetimeMinutes", 60));
+        options.ClientMetadataDocumentRequestTimeout = TimeSpan.FromSeconds(config.GetValue("OAuthServer:ClientMetadataDocumentRequestTimeoutSeconds", 5));
+        options.ClientMetadataDocumentMaxBytes = config.GetValue("OAuthServer:ClientMetadataDocumentMaxBytes", 32 * 1024);
         return options;
     }
 }
