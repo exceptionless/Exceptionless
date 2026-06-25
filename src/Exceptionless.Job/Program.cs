@@ -59,7 +59,7 @@ public class Program
                     c.Enrich.WithMachineName();
 
                     if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
-                        c.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Information);
+                        c.WriteTo.Exceptionless(restrictedToMinimumLevel: LogEventLevel.Information);
                 }, writeToProviders: true)
                 .AddApm(apmConfig);
 

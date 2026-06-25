@@ -228,7 +228,7 @@ public class WebHookHandler(
             return [];
 
         var results = new List<WebHook>();
-        foreach (var webHook in webHooks)
+        foreach (var webHook in webHooks.Where(webHook => !String.IsNullOrEmpty(webHook.OrganizationId) || !String.IsNullOrEmpty(webHook.ProjectId)))
         {
             if ((!String.IsNullOrEmpty(webHook.OrganizationId) && HttpContext.Request.IsInOrganization(webHook.OrganizationId))
                 || (!String.IsNullOrEmpty(webHook.ProjectId) && await IsInProjectAsync(webHook.ProjectId)))

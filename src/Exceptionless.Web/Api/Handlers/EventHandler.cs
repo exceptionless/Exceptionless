@@ -678,7 +678,11 @@ public class EventHandler(
             {
                 throw;
             }
-            catch (Exception ex)
+            catch (TimeoutException ex)
+            {
+                _logger.LogWarning(ex, "Failed to increment deleted usage metrics for org {OrganizationId} project {ProjectId}: {Message}", projectGroup.Key.OrganizationId, projectGroup.Key.ProjectId, ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 _logger.LogWarning(ex, "Failed to increment deleted usage metrics for org {OrganizationId} project {ProjectId}: {Message}", projectGroup.Key.OrganizationId, projectGroup.Key.ProjectId, ex.Message);
             }

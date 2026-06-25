@@ -20,7 +20,15 @@ public class UtilityHandler(
                 Message = eventResults.Message ?? stackResults.Message
             };
         }
-        catch (Exception)
+        catch (FormatException)
+        {
+            return new AppQueryValidator.QueryProcessResult
+            {
+                IsValid = false,
+                Message = $"Error parsing query: \"{message.Query}\""
+            };
+        }
+        catch (ArgumentException)
         {
             return new AppQueryValidator.QueryProcessResult
             {

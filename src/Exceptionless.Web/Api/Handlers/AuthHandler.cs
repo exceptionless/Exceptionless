@@ -69,7 +69,16 @@ public class AuthHandler(
         {
             user = await userRepository.GetByEmailAddressAsync(email);
         }
-        catch (Exception ex)
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (TimeoutException ex)
+        {
+            logger.LogCritical(ex, "Login failed for {EmailAddress}: {Message}", email, ex.Message);
+            return Result.Unauthorized("Login failed.");
+        }
+        catch (InvalidOperationException ex)
         {
             logger.LogCritical(ex, "Login failed for {EmailAddress}: {Message}", email, ex.Message);
             return Result.Unauthorized("Login failed.");
@@ -710,7 +719,11 @@ public class AuthHandler(
             long total = await tokenRepository.RemoveAllByUserIdAsync(user.Id);
             logger.RemovedUserTokens(total, user.EmailAddress);
         }
-        catch (Exception ex)
+        catch (TimeoutException ex)
+        {
+            logger.LogCritical(ex, "Error removing user tokens for {EmailAddress}: {Message}", user.EmailAddress, ex.Message);
+        }
+        catch (InvalidOperationException ex)
         {
             logger.LogCritical(ex, "Error removing user tokens for {EmailAddress}: {Message}", user.EmailAddress, ex.Message);
         }
