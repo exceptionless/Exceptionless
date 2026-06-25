@@ -231,6 +231,8 @@
     let showChart = $state(true);
     const savedViewsState = useSavedViews({
         baseHref: resolve('/(app)/stack'),
+        defaultFilter: DEFAULT_FILTER,
+        defaultTime: DEFAULT_TIME_RANGE,
         filterCacheKey,
         getColumnOrder: () => table.state.columnOrder,
         getColumnVisibility: () => table.state.columnVisibility,
@@ -655,7 +657,10 @@
         }
 
         clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
-            params: eventsQueryParameters as Record<string, unknown>
+            params: {
+                ...eventsQueryParameters,
+                include: !eventsQueryParameters.page || eventsQueryParameters.page <= 1 ? 'total' : undefined
+            } as Record<string, unknown>
         });
 
         showBillingDialogOnUpgradeProblem(clientResponse.problem, organization.current, () => loadData());
@@ -829,4 +834,11 @@
     </div>
 </div>
 
-<StackDetailSheet stackId={selectedStackId} filterChanged={onFilterChanged} onClose={() => (selectedStackId = undefined)} onError={handleStackError} />
+<StackDetailSheet
+    stackId={selectedStackId}
+    filterChanged={onFilterChanged}
+    onClose={() => {
+        selectedStackId = undefined;
+    }}
+    onError={handleStackError}
+/>

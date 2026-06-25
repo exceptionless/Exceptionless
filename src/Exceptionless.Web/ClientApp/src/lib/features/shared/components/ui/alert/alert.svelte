@@ -7,7 +7,7 @@
 			variant: {
 				default: "bg-card text-card-foreground",
 				destructive: "text-destructive bg-card *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current",
-				// Custom variants — adapted to new *:[svg] selector format from *:data-[slot=alert-description]
+				// CUSTOM: KEEP EXCEPTIONLESS-SPECIFIC INFO/SUCCESS STATE TONE FOR ALERT MESSAGES.
 				information:
 					"border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-900/30 dark:bg-blue-900/10 dark:text-blue-100 *:data-[slot=alert-description]:text-blue-800 dark:*:data-[slot=alert-description]:text-blue-200 *:[svg]:text-blue-600 dark:*:[svg]:text-blue-400",
 				success:

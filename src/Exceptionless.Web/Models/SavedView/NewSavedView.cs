@@ -15,9 +15,9 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
     public static readonly IReadOnlyDictionary<string, IReadOnlySet<string>> ValidColumnIds =
         new Dictionary<string, IReadOnlySet<string>>
         {
-            ["events"] = new HashSet<string> { "summary", "user", "date", "message", "type", "source", "name", "level" },
+            ["events"] = new HashSet<string> { "summary", "user", "date", "message", "type", "exception_type", "source", "name", "level" },
             ["stacks"] = new HashSet<string> { "summary", "status", "users", "events", "first", "last" },
-            ["stream"] = new HashSet<string> { "summary", "user", "date", "message", "type", "source", "name", "level" }
+            ["stream"] = new HashSet<string> { "summary", "user", "date", "message", "type", "exception_type", "source", "name", "level" }
         };
 
     /// <summary>Union of all valid column IDs across all views.</summary>
@@ -43,7 +43,7 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
     public string? Sort { get; set; }
 
     [MaxLength(100)]
-    [RegularExpression("^[a-z0-9]+(?:-[a-z0-9]+)*$")]
+    [RegularExpression(SavedView.SlugPattern)]
     public string? Slug { get; set; }
 
     [Required]

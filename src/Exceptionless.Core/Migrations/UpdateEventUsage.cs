@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Elastic.Clients.Elasticsearch;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -8,7 +9,6 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
 using Foundatio.Repositories.Models;
 using Microsoft.Extensions.Logging;
-using Nest;
 
 namespace Exceptionless.Core.Migrations;
 
@@ -116,7 +116,6 @@ public sealed class UpdateEventUsage : MigrationBase
         var projectResults = await _projectRepository.GetByOrganizationIdAsync(organization.Id, o => o.SoftDeleteMode(SoftDeleteQueryMode.All).SearchAfterPaging().PageLimit(100));
         _logger.LogInformation("Updating usage for {ProjectTotal} projects(s)", projectResults.Total);
 
-        var sw = Stopwatch.StartNew();
         while (projectResults.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
         {
             foreach (var project in projectResults.Documents)

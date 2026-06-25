@@ -4,90 +4,88 @@ name = "Exceptionless Aspire"
 
 [setup]
 script = '''
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
+set -e
 
-Set-Location $env:CODEX_WORKTREE_PATH
+cd "${CODEX_WORKTREE_PATH:?CODEX_WORKTREE_PATH is required}"
 
-Write-Host "Setting up Exceptionless Aspire worktree: $env:CODEX_WORKTREE_PATH"
+echo "Setting up Exceptionless Aspire worktree: $CODEX_WORKTREE_PATH"
 
-if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
-    throw "dotnet is not installed or not on PATH. Exceptionless requires .NET 10."
-}
+if ! command -v dotnet >/dev/null 2>&1; then
+  echo "dotnet is not installed or not on PATH. Exceptionless requires .NET 10." >&2
+  exit 1
+fi
 
-if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-    throw "node is not installed or not on PATH. Exceptionless requires Node 24+."
-}
+if ! command -v node >/dev/null 2>&1; then
+  echo "node is not installed or not on PATH. Exceptionless requires Node 24+." >&2
+  exit 1
+fi
 
-if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
-    throw "npm is not installed or not on PATH."
-}
+if ! command -v npm >/dev/null 2>&1; then
+  echo "npm is not installed or not on PATH." >&2
+  exit 1
+fi
 
-Write-Host "dotnet:"
+echo "dotnet:"
 dotnet --version
 
-Write-Host "node:"
+echo "node:"
 node --version
 
-Write-Host "npm:"
+echo "npm:"
 npm --version
 
-Write-Host "Restoring .NET workloads..."
+echo "Restoring .NET workloads..."
 dotnet workload restore
 
-Write-Host "Restoring Exceptionless.slnx..."
-dotnet restore Exceptionless.slnx
+echo "Restoring Exceptionless.slnx..."
+dotnet restore Exceptionless.slnx -p:WarningsNotAsErrors=NU1903
 
-Write-Host "Installing Svelte frontend dependencies..."
+echo "Installing Svelte frontend dependencies..."
 npm ci --prefix src/Exceptionless.Web/ClientApp --prefer-offline --no-audit
 
-Write-Host "Installing legacy Angular frontend dependencies..."
+echo "Installing legacy Angular frontend dependencies..."
 npm ci --prefix src/Exceptionless.Web/ClientApp.angular --prefer-offline --no-audit
 
-Write-Host "Setup complete. Use the Run Aspire action to start the app."
+echo "Setup complete. Use the Run Aspire action to start the app."
 '''
 
 [cleanup]
 script = '''
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Continue"
+set +e
 
-Set-Location $env:CODEX_WORKTREE_PATH
+cd "${CODEX_WORKTREE_PATH:?CODEX_WORKTREE_PATH is required}"
 
-Write-Host "Cleaning Exceptionless worktree-local output only: $env:CODEX_WORKTREE_PATH"
+echo "Cleaning Exceptionless worktree-local output only: $CODEX_WORKTREE_PATH"
 
-Write-Host "Removing repo-local temp/test output only..."
+echo "Removing repo-local temp/test output only..."
 
-Remove-Item -Recurse -Force .cache/tmp -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force .aspire -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force TestResults -ErrorAction SilentlyContinue
+rm -rf .cache/tmp
+rm -rf .aspire
+rm -rf TestResults
 
-Get-ChildItem -Recurse -Directory -Force -ErrorAction SilentlyContinue |
-    Where-Object { $_.Name -in @("TestResults", ".vite", ".svelte-kit") } |
-    Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+find . -type d \( -name TestResults -o -name .vite -o -name .svelte-kit \) -exec rm -rf {} +
 
-Write-Host "Cleanup complete."
-Write-Host "Aspire infrastructure containers and Docker volumes were intentionally left alone."
+echo "Cleanup complete."
+echo "Aspire infrastructure containers and Docker volumes were intentionally left alone."
 '''
 
 [[actions]]
 name = "Run Aspire"
 icon = "run"
 command = '''
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
+set -e
 
-Set-Location $env:CODEX_WORKTREE_PATH
+cd "${CODEX_WORKTREE_PATH:?CODEX_WORKTREE_PATH is required}"
 
-$env:AppMode = "Development"
-$env:DOTNET_ENVIRONMENT = "Development"
-$env:ASPNETCORE_ENVIRONMENT = "Development"
+export AppMode=Development
+export DOTNET_ENVIRONMENT=Development
+export ASPNETCORE_ENVIRONMENT=Development
 
-if (Get-Command aspire -ErrorAction SilentlyContinue) {
-    aspire run
-} else {
-    dotnet run --project src/Exceptionless.AppHost/Exceptionless.AppHost.csproj
-}
+if command -v aspire >/dev/null 2>&1; then
+  aspire run
+else
+  dotnet run --project src/Exceptionless.AppHost/Exceptionless.AppHost.csproj
+fi
 '''
 
 [[actions]]

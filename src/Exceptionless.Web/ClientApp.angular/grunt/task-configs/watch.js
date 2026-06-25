@@ -1,8 +1,10 @@
 module.exports = function (grunt) {
+    var liveReloadPort = Number(process.env.LIVERELOAD_PORT) || 35729;
+
     return {
         main: {
             options: {
-                livereload: true,
+                livereload: liveReloadPort,
                 livereloadOnError: false,
                 spawn: false,
             },

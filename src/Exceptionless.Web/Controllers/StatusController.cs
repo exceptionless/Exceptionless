@@ -53,6 +53,7 @@ public class StatusController : ExceptionlessApiController
         {
             _appOptions.InformationalVersion,
             AppMode = _appOptions.AppMode.ToString(),
+            _appOptions.AppScope,
             Environment.MachineName
         });
     }

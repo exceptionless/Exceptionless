@@ -3,7 +3,7 @@
     import { Button } from '$comp/ui/button';
     import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
-    import { changePassword } from '$features/auth/index.svelte';
+    import { changePassword } from '$features/auth/api.svelte';
     import { ChangePasswordSchema, ChangePasswordWithCurrentSchema } from '$features/auth/schemas';
     import { getMeQuery } from '$features/users/api.svelte';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';

@@ -16,6 +16,7 @@ import StackStatusCell from './stack-status-cell.svelte';
 import StackUsersSummaryCell from './stack-users-summary-cell.svelte';
 
 export const defaultEventColumnVisibility: ColumnVisibilityState = {
+    exception_type: false,
     level: false,
     message: false,
     name: false,
@@ -93,10 +94,19 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 }
             },
             {
-                accessorFn: (row) => getSummaryDataValue(row, 'Type'),
+                accessorKey: nameof<EventSummaryModel<SummaryTemplateKeys>>('type'),
                 cell: (prop) => formatTextColumn(prop.getValue()),
                 header: 'Type',
                 id: 'type',
+                meta: {
+                    class: 'w-28'
+                }
+            },
+            {
+                accessorFn: (row) => getSummaryDataValue(row, 'Type'),
+                cell: (prop) => formatTextColumn(prop.getValue()),
+                header: 'Exception Type',
+                id: 'exception_type',
                 meta: {
                     class: 'w-36'
                 }

@@ -15,6 +15,7 @@
     import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
     import { Spinner } from '$comp/ui/spinner';
+    import { login } from '$features/auth/api.svelte';
     import {
         enableAccountCreation,
         enableOAuthLogin,
@@ -25,7 +26,6 @@
         googleClientId,
         googleLogin,
         liveLogin,
-        login,
         microsoftClientId
     } from '$features/auth/index.svelte';
     import { type LoginFormData, LoginSchema } from '$features/auth/schemas';

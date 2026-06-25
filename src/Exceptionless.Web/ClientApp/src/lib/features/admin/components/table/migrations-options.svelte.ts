@@ -84,13 +84,15 @@ export function getTableOptions(queryParameters: TableMemoryPagingParameters, ge
             return getColumns();
         },
         configureOptions: (options) => {
-            options.getRowId = (row) => row.id;
-            options._rowModels = { ...options._rowModels, sortedRowModel: createSortedRowModel(sortFns) };
-            options.initialState = {
-                sorting: [{ desc: true, id: 'version' }]
+            return {
+                ...options,
+                _rowModels: { ...options._rowModels, sortedRowModel: createSortedRowModel(sortFns) },
+                getRowId: (row) => row.id,
+                initialState: {
+                    sorting: [{ desc: true, id: 'version' }]
+                },
+                manualSorting: false
             };
-            options.manualSorting = false;
-            return options;
         },
         defaultColumnVisibility: {
             completed_utc: false,

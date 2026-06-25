@@ -5,11 +5,11 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
+using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models.Admin;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
-using Foundatio.Repositories.Migrations;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Utility;
 using Xunit;
@@ -506,6 +506,7 @@ public class AdminControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(elasticsearch);
+        Assert.NotNull(elasticsearch.IndexDetails);
         Assert.All(elasticsearch.IndexDetails, indexDetail =>
         {
             Assert.True(indexDetail.DocsCount >= 0);
@@ -546,6 +547,33 @@ public class AdminControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public void FormatSnapshotDuration_WhenDurationInMillisIsPresent_ReturnsCompactDuration()
+    {
+        // Arrange
+        var durationInMillis = TimeSpan.FromMilliseconds(7416);
+
+        // Act
+        var duration = AdminController.FormatSnapshotDuration(null, durationInMillis, null, null);
+
+        // Assert
+        Assert.Equal("7.4s", duration);
+    }
+
+    [Fact]
+    public void FormatSnapshotDuration_WhenTypedDurationIsMissing_FallsBackToStartAndEndTime()
+    {
+        // Arrange
+        var startTime = new DateTime(2026, 6, 22, 13, 59, 59, 962, DateTimeKind.Utc);
+        var endTime = new DateTime(2026, 6, 22, 14, 0, 7, 378, DateTimeKind.Utc);
+
+        // Act
+        var duration = AdminController.FormatSnapshotDuration(null, null, startTime, endTime);
+
+        // Assert
+        Assert.Equal("7.4s", duration);
+    }
+
+    [Fact]
     public async Task GetSettings_AsGlobalAdmin_ReturnsAppOptions()
     {
         // Act
@@ -556,7 +584,7 @@ public class AdminControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(options);
-        Assert.True(options.ContainsKey("base_u_r_l"));
+        Assert.True(options.ContainsKey("base_url"));
         Assert.True(options.ContainsKey("app_mode"));
     }
 

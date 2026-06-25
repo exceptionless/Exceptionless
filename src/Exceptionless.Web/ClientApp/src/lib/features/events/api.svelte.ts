@@ -16,15 +16,15 @@ export async function invalidatePersistentEventQueries(queryClient: QueryClient,
     }
 
     if (stack_id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.stacks(stack_id) });
+        await queryClient.invalidateQueries({ exact: true, queryKey: queryKeys.stacks(stack_id) });
     }
 
     if (project_id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.projects(project_id) });
+        await queryClient.invalidateQueries({ exact: true, queryKey: queryKeys.projects(project_id) });
     }
 
     if (organization_id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.organizations(organization_id) });
+        await queryClient.invalidateQueries({ exact: true, queryKey: queryKeys.organizations(organization_id) });
     }
 
     if (!id && !stack_id) {
@@ -41,7 +41,8 @@ export const queryKeys = {
     organizationsCount: (id: string | undefined, params?: GetOrganizationCountRequest['params']) => [...queryKeys.organizations(id), 'count', params] as const,
     projects: (id: string | undefined) => [...queryKeys.type, 'projects', id] as const,
     projectsCount: (id: string | undefined, params?: GetProjectCountRequest['params']) => [...queryKeys.projects(id), 'count', params] as const,
-    sessionEvents: (id: string | undefined, params?: GetSessionEventsRequest['params']) => [...queryKeys.type, 'sessions', 'session', id, params] as const,
+    sessionEvents: (id: string | undefined, projectId?: string | undefined, params?: GetSessionEventsRequest['params']) =>
+        [...queryKeys.type, 'sessions', 'session', id, projectId, params] as const,
     sessions: (id: string | undefined) => [...queryKeys.type, 'sessions', 'organizations', id] as const,
     sessionsCount: (id: string | undefined, params?: GetOrganizationSessionsCountRequest['params']) => [...queryKeys.sessions(id), 'count', params] as const,
     stackEvents: (id: string | undefined, params?: GetStackEventsRequest['params']) => [...queryKeys.stacks(id), 'events', params] as const,
@@ -68,6 +69,7 @@ export interface EventWithNavigation {
 
 export interface GetEventRequest {
     params?: {
+        expected_stack_id?: string;
         offset?: string;
         time?: string;
     };
@@ -97,6 +99,7 @@ export interface GetEventsParams {
     after?: string;
     before?: string;
     filter?: string;
+    include?: 'total';
     limit?: number;
     mode?: GetEventsMode;
     offset?: string;
@@ -156,6 +159,7 @@ export interface GetSessionEventsRequest {
         time?: string;
     };
     route: {
+        projectId?: string | undefined;
         sessionId: string | undefined;
     };
 }
@@ -283,7 +287,7 @@ export function getEventWithNavigationQuery(request: GetEventRequest) {
                 }
             };
         },
-        queryKey: [...queryKeys.id(request.route.id), 'withNavigation']
+        queryKey: [...queryKeys.id(request.route.id), 'withNavigation', request.params]
     }));
 }
 
@@ -366,7 +370,10 @@ export function getSessionEventsQuery(request: GetSessionEventsRequest) {
         enabled: () => !!accessToken.current && !!request.route.sessionId,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
-            const response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`events/sessions/${request.route.sessionId}`, {
+            const path = request.route.projectId
+                ? `projects/${request.route.projectId}/events/sessions/${request.route.sessionId}`
+                : `events/sessions/${request.route.sessionId}`;
+            const response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(path, {
                 params: {
                     ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
                     mode: 'summary',
@@ -377,7 +384,7 @@ export function getSessionEventsQuery(request: GetSessionEventsRequest) {
 
             return response.data!;
         },
-        queryKey: queryKeys.sessionEvents(request.route.sessionId, request.params)
+        queryKey: queryKeys.sessionEvents(request.route.sessionId, request.route.projectId, request.params)
     }));
 }
 

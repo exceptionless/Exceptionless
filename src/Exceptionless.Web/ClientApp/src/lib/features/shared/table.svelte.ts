@@ -17,7 +17,7 @@ import {
 } from '@tanstack/svelte-table';
 import { PersistedState } from 'runed';
 
-import { DEFAULT_LIMIT } from './api/api.svelte';
+import { DEFAULT_LIMIT } from './api/constants';
 
 export type PaginationStrategy = 'cursor' | 'memory' | 'offset';
 export type QueryMeta = FetchClientResponse<unknown>['meta'];
@@ -25,7 +25,7 @@ export type QueryMeta = FetchClientResponse<unknown>['meta'];
 export interface TableConfiguration<TData extends RowData, TPaginationStrategy extends PaginationStrategy = PaginationStrategy> {
     columnPersistenceKey: string;
     columns: ColumnDef<StockFeatures, TData, unknown>[];
-    configureOptions?: (options: TableOptions<StockFeatures, TData>) => TableOptions<StockFeatures, TData>;
+    configureOptions?: (options: TableOptions<StockFeatures, TData>) => TableOptions<StockFeatures, TData> | void;
     defaultColumnOrder?: ColumnOrderState;
     defaultColumnVisibility?: ColumnVisibilityState;
     paginationStrategy: TPaginationStrategy;
@@ -196,9 +196,7 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
             (configuration.paginationStrategy === 'offset'
                 ? (configuration.queryParameters as TableOffsetPagingParameters).page
                 : (configuration.queryParameters as TableMemoryPagingParameters).page) ?? 1;
-        const total = isMemoryPaging ? allData().length : (meta?.total as number | undefined);
-        const totalPages = total != null ? Math.ceil(total / limit) : meta?.links?.next ? currentPage + 1 : currentPage;
-        setPageCount(totalPages);
+        setPageCount(resolvePageCount(configuration.paginationStrategy, meta, currentPage, limit, pageCount(), allData().length));
 
         // // Only adjust pagination for offset pagination here
         // // Memory pagination adjusts in setDataImpl to avoid duplication
@@ -240,8 +238,7 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
         }
     });
 
-    const configureOptions = configuration.configureOptions ?? ((options) => options);
-    return configureOptions({
+    const tableOptions: TableOptions<StockFeatures, TData> = {
         _features: stockFeatures,
         _rowModels: { coreRowModel: createCoreRowModel<StockFeatures, TData>() },
         get columns() {
@@ -297,7 +294,9 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
                 return sorting();
             }
         }
-    });
+    };
+
+    return resolveConfiguredTableOptions(tableOptions, configuration.configureOptions?.(tableOptions));
 }
 
 export function isTableEmpty<TData extends RowData>(table: Table<StockFeatures, TData>): boolean {
@@ -315,7 +314,10 @@ export function removeTableData<TData extends RowData>(
     predicate: (value: TData, index: number, array: TData[]) => boolean
 ): boolean {
     if ([...table.options.data].some(predicate)) {
-        table.options.data = [...table.options.data].filter((value, index, array) => !predicate(value, index, array));
+        table.setOptions((previousOptions) => ({
+            ...previousOptions,
+            data: [...previousOptions.data].filter((value, index, array) => !predicate(value, index, array))
+        }));
 
         return true;
     }
@@ -343,6 +345,59 @@ export function removeTableSelection<TData extends RowData>(table: Table<StockFe
     }
 
     return false;
+}
+
+export function resolveConfiguredTableOptions<TData extends RowData>(
+    baseOptions: TableOptions<StockFeatures, TData>,
+    configuredOptions: TableOptions<StockFeatures, TData> | void
+): TableOptions<StockFeatures, TData> {
+    if (!configuredOptions || configuredOptions === baseOptions) {
+        return baseOptions;
+    }
+
+    for (const key of Reflect.ownKeys(configuredOptions)) {
+        const baseDescriptor = Object.getOwnPropertyDescriptor(baseOptions, key);
+        const configuredDescriptor = Object.getOwnPropertyDescriptor(configuredOptions, key);
+
+        if (!configuredDescriptor) {
+            continue;
+        }
+
+        if (baseDescriptor && (baseDescriptor.get || baseDescriptor.set) && 'value' in configuredDescriptor) {
+            continue;
+        }
+
+        Object.defineProperty(baseOptions, key, configuredDescriptor);
+    }
+
+    return baseOptions;
+}
+
+export function resolvePageCount(
+    strategy: PaginationStrategy,
+    meta: QueryMeta | undefined,
+    currentPage: number,
+    limit: number,
+    previousPageCount: number,
+    memoryDataLength: number = 0
+): number {
+    const total = strategy === 'memory' ? memoryDataLength : (meta?.total as number | undefined);
+    const totalPages = total != null ? Math.ceil(total / limit) : undefined;
+    const hasNextPage = Boolean(meta?.links?.next);
+
+    if (strategy === 'cursor') {
+        if (currentPage <= 1) {
+            return totalPages ?? (hasNextPage ? 2 : 1);
+        }
+
+        if (!hasNextPage) {
+            return currentPage;
+        }
+
+        return Math.max(previousPageCount, currentPage + 1, totalPages ?? 0);
+    }
+
+    return totalPages ?? (hasNextPage ? Math.max(previousPageCount, currentPage + 1) : currentPage);
 }
 
 export function resolvePaginationChange(previousPageInfo: PaginationState, currentPageInfo: PaginationState) {

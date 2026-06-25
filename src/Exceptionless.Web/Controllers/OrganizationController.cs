@@ -522,6 +522,13 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             return ValidationProblem(ModelState);
         }
 
+        if (plan.IsHidden && !String.Equals(organization.PlanId, plan.Id, StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning("Hidden plan {PlanId} is not selectable for organization {OrganizationId}", model.PlanId, id);
+            ModelState.AddModelError("general", "Invalid plan. Please select a valid plan.");
+            return ValidationProblem(ModelState);
+        }
+
         if (String.Equals(organization.PlanId, plan.Id) && String.Equals(_plans.FreePlan.Id, plan.Id))
             return Ok(ChangePlanResult.SuccessWithMessage("Your plan was not changed as you were already on the free plan."));
 

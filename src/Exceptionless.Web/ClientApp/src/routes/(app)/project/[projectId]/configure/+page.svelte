@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
     import { Notification, NotificationDescription, NotificationTitle } from '$comp/notification';
@@ -11,16 +12,21 @@
     import { getIntercom } from '$features/intercom';
     import { openSupportChat } from '$features/intercom/chat';
     import { organization } from '$features/organizations/context.svelte';
+    import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
     import { generateSampleData } from '$features/projects/api.svelte';
     import { getProjectDefaultTokenQuery, patchToken } from '$features/tokens/api.svelte';
     import EnableTokenDialog from '$features/tokens/components/dialogs/enable-token-dialog.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
+    import Events from '@lucide/svelte/icons/calendar-days';
     import Database from '@lucide/svelte/icons/database';
+    import NotificationSettings from '@lucide/svelte/icons/mail';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener } from 'runed';
     import { toast } from 'svelte-sonner';
 
     import { redirectToEventsWithFilter } from '../../../redirect-to-events.svelte';
+
+    useHideOrganizationNotifications();
 
     // Project ID from route params
     const projectId = $derived(page.params.projectId || '');
@@ -89,6 +95,23 @@
         platform: string;
     }
 
+    type CodeBlockLanguage = 'csharp' | 'javascript' | 'json' | 'powershell' | 'shellscript' | 'xml';
+
+    interface JavaScriptConfigurationStep {
+        code: string;
+        description: string;
+        language: CodeBlockLanguage;
+        note?: string;
+    }
+
+    interface JavaScriptClientConfiguration {
+        extraSteps?: JavaScriptConfigurationStep[];
+        installCommand: string;
+        installNote?: string;
+        packageName: string;
+        startupCode: string;
+    }
+
     const projectTypes: ProjectType[] = [
         { id: 'bash', label: 'Bash Shell', platform: 'Command Line' },
         { id: 'powershell', label: 'PowerShell', platform: 'Command Line' },
@@ -100,6 +123,8 @@
 
         { id: 'javascript-browser', label: 'Browser applications', package: 'Exceptionless.JavaScript', platform: 'JavaScript' },
         { id: 'javascript-nodejs', label: 'Node.js', package: 'Exceptionless.Node', platform: 'JavaScript' },
+        { id: 'javascript-react-native', label: 'React Native', package: '@exceptionless/react-native', platform: 'JavaScript' },
+        { id: 'javascript-expo', label: 'Expo', package: '@exceptionless/react-native', platform: 'JavaScript' },
 
         { id: 'dotnet-legacy-console', label: 'Console and Service applications', package: 'Exceptionless', platform: '.NET Legacy' },
         { config: 'web.config', id: 'dotnet-legacy-mvc', label: 'ASP.NET MVC', package: 'Exceptionless.Mvc', platform: '.NET Legacy' },
@@ -142,11 +167,14 @@
     const isDotNet = $derived(selectedProjectType?.platform === '.NET');
     const isDotNetLegacy = $derived(selectedProjectType?.platform === '.NET Legacy');
     const isJavaScript = $derived(selectedProjectType?.platform === 'JavaScript');
-    const isNode = $derived(selectedProjectType?.package === 'Exceptionless.Node');
     const isBashShell = $derived(selectedProjectType?.id === 'bash');
     const clientDocumentationUrl = $derived.by(() => {
         if (isDotNet || isDotNetLegacy) {
             return 'https://exceptionless.com/docs/clients/dotnet/';
+        }
+
+        if (selectedProjectType?.id === 'javascript-react-native' || selectedProjectType?.id === 'javascript-expo') {
+            return 'https://github.com/exceptionless/Exceptionless.JavaScript/tree/main/packages/react-native';
         }
 
         if (isJavaScript) {
@@ -201,6 +229,18 @@ $header = @{
 
 Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -Headers $header`,
 
+        reactNativeExpoPlugin: `{
+  "expo": {
+    "plugins": ["@exceptionless/react-native/expo-plugin"]
+  }
+}`,
+
+        reactNativeJs: `import { Exceptionless } from "@exceptionless/react-native";
+
+await Exceptionless.startup(c => {
+  c.apiKey = "${apiKey}";
+});`,
+
         webApi: `public static void Register(HttpConfiguration config) {
   config.AddExceptionless("${apiKey}");
 }`,
@@ -242,6 +282,47 @@ public partial class App : Application {
     ExceptionlessClient.Default.Register();
   }
 }`
+    });
+
+    const javascriptClientConfiguration = $derived.by((): JavaScriptClientConfiguration | null => {
+        switch (selectedProjectType?.id) {
+            case 'javascript-browser':
+                return {
+                    installCommand: 'npm install @exceptionless/browser --save',
+                    packageName: '@exceptionless/browser',
+                    startupCode: codeSamples.browserJs
+                };
+            case 'javascript-expo':
+                return {
+                    extraSteps: [
+                        {
+                            code: codeSamples.reactNativeExpoPlugin,
+                            description: 'Add the Exceptionless config plugin to app.json when using development or standalone builds.',
+                            language: 'json',
+                            note: 'Native iOS crash reporting requires an Expo development build or standalone build. JavaScript error reporting works in Expo Go.'
+                        }
+                    ],
+                    installCommand: 'npx expo install @exceptionless/react-native @react-native-async-storage/async-storage',
+                    installNote: 'The AsyncStorage package is a peer dependency used for persistent event queue storage, so install it alongside the client.',
+                    packageName: '@exceptionless/react-native',
+                    startupCode: codeSamples.reactNativeJs
+                };
+            case 'javascript-nodejs':
+                return {
+                    installCommand: 'npm install @exceptionless/node --save',
+                    packageName: '@exceptionless/node',
+                    startupCode: codeSamples.nodeJs
+                };
+            case 'javascript-react-native':
+                return {
+                    installCommand: 'npm install @exceptionless/react-native @react-native-async-storage/async-storage',
+                    installNote: 'The AsyncStorage package is a peer dependency used for persistent event queue storage, so install it alongside the client.',
+                    packageName: '@exceptionless/react-native',
+                    startupCode: codeSamples.reactNativeJs
+                };
+            default:
+                return null;
+        }
     });
 
     useEventListener(document, 'PersistentEventChanged', async (event) => {
@@ -557,40 +638,40 @@ public partial class App : Application {
                 {/if}
             {/if}
 
-            {#if isJavaScript}
+            {#if isJavaScript && javascriptClientConfiguration}
                 <li>
                     <P
-                        >Install the <strong>{selectedProjectType.package}</strong> npm package in your JavaScript project by running this command in the project
-                        directory.</P
+                        >Install the <strong>{javascriptClientConfiguration.packageName}</strong> npm package in your JavaScript project by running this command
+                        in the project directory. {javascriptClientConfiguration.installNote ?? ''}</P
                     >
                     <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
-                        {#if isNode}
-                            <CodeBlock code="npm install @exceptionless/node --save" language="shellscript" />
-                            <div class="absolute top-2 right-2">
-                                <CopyToClipboardButton value="npm install @exceptionless/node --save" />
-                            </div>
-                        {:else}
-                            <CodeBlock code="npm install @exceptionless/browser --save" language="shellscript" />
-                            <div class="absolute top-2 right-2">
-                                <CopyToClipboardButton value="npm install @exceptionless/browser --save" />
-                            </div>
-                        {/if}
+                        <CodeBlock code={javascriptClientConfiguration.installCommand} language="shellscript" />
+                        <div class="absolute top-2 right-2">
+                            <CopyToClipboardButton value={javascriptClientConfiguration.installCommand} />
+                        </div>
                     </div>
                 </li>
+                {#each javascriptClientConfiguration.extraSteps ?? [] as step (step.description)}
+                    <li>
+                        <P>{step.description}</P>
+                        <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                            <CodeBlock code={step.code} language={step.language} />
+                            <div class="absolute top-2 right-2">
+                                <CopyToClipboardButton value={step.code} />
+                            </div>
+                        </div>
+                        {#if step.note}
+                            <P>{step.note}</P>
+                        {/if}
+                    </li>
+                {/each}
                 <li>
                     <P>Configure the ExceptionlessClient with your Exceptionless API key.</P>
                     <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
-                        {#if !isNode}
-                            <CodeBlock code={codeSamples.browserJs} language="javascript" />
-                            <div class="absolute top-2 right-2">
-                                <CopyToClipboardButton value={codeSamples.browserJs} />
-                            </div>
-                        {:else}
-                            <CodeBlock code={codeSamples.nodeJs} language="javascript" />
-                            <div class="absolute top-2 right-2">
-                                <CopyToClipboardButton value={codeSamples.nodeJs} />
-                            </div>
-                        {/if}
+                        <CodeBlock code={javascriptClientConfiguration.startupCode} language="javascript" />
+                        <div class="absolute top-2 right-2">
+                            <CopyToClipboardButton value={javascriptClientConfiguration.startupCode} />
+                        </div>
                     </div>
                 </li>
             {/if}
@@ -635,6 +716,9 @@ public partial class App : Application {
     {/if}
 
     <div class="border-border flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end">
+        <Button variant="secondary" href={`${resolve('/(app)/account/notifications')}?project=${projectId}`}>
+            <NotificationSettings class="mr-2 size-4" aria-hidden="true" /> Notifications
+        </Button>
         <Button variant="success" onclick={generateProjectSampleData} disabled={generateSampleDataMutation.isPending}>
             {#if generateSampleDataMutation.isPending}
                 <Spinner /> Generating...
@@ -642,7 +726,9 @@ public partial class App : Application {
                 <Database class="mr-2 size-4" aria-hidden="true" /> Generate Sample Data
             {/if}
         </Button>
-        <Button variant="secondary" onclick={goToProjectEvents}>View Events</Button>
+        <Button variant="secondary" onclick={goToProjectEvents}>
+            <Events class="mr-2 size-4" aria-hidden="true" /> View Events
+        </Button>
     </div>
 
     {#if isTokenDisabled}

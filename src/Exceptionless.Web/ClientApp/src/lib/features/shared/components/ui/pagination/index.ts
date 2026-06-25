@@ -23,7 +23,7 @@ export {
 	//
 	Root as Pagination,
 	Content as PaginationContent,
-    FirstButton as PaginationFirstButton,
+	FirstButton as PaginationFirstButton,
 	Item as PaginationItem,
 	Link as PaginationLink,
 	PrevButton as PaginationPrevButton, // old

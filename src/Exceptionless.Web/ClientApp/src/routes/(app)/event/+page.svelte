@@ -243,6 +243,8 @@
     const savedViewsState = useSavedViews({
         baseHref: resolve('/(app)/event'),
         defaultColumnVisibility: defaultEventColumnVisibility,
+        defaultFilter: DEFAULT_FILTER,
+        defaultTime: DEFAULT_TIME_RANGE,
         filterCacheKey,
         getColumnOrder: () => table.state.columnOrder,
         getColumnVisibility: () => table.state.columnVisibility,
@@ -687,7 +689,10 @@
             return;
         }
 
-        const params = { ...eventsQueryParameters };
+        const params = {
+            ...eventsQueryParameters,
+            include: !eventsQueryParameters.after && !eventsQueryParameters.before ? 'total' : undefined
+        };
         delete params.page;
         clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, { params });
 
@@ -884,4 +889,11 @@
     </div>
 </div>
 
-<EventDetailSheet eventId={selectedEventId} filterChanged={onFilterChanged} onClose={() => (selectedEventId = null)} onError={handleEventError} />
+<EventDetailSheet
+    eventId={selectedEventId}
+    filterChanged={onFilterChanged}
+    onClose={() => {
+        selectedEventId = null;
+    }}
+    onError={handleEventError}
+/>

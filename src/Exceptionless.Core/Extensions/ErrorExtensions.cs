@@ -1,6 +1,7 @@
-using System.Text.Json;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Foundatio.Serializer;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Extensions;
 
@@ -46,7 +47,7 @@ public static class ErrorExtensions
         // fallback to default
         var defaultError = error.GetInnermostError();
         var defaultMethod = defaultError.StackTrace?.FirstOrDefault();
-        if (defaultMethod is null && error.StackTrace is not null)
+        if (defaultMethod is null && error.StackTrace is { Count: > 0 })
         {
             defaultMethod = error.StackTrace?.FirstOrDefault();
             defaultError = error;
@@ -59,9 +60,9 @@ public static class ErrorExtensions
         };
     }
 
-    public static StackingTarget? GetStackingTarget(this Event ev, JsonSerializerOptions options)
+    public static StackingTarget? GetStackingTarget(this Event ev, ITextSerializer serializer, ILogger logger)
     {
-        var error = ev.GetError(options);
+        var error = ev.GetError(serializer, logger);
         return error?.GetStackingTarget();
     }
 
