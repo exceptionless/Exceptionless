@@ -16,7 +16,9 @@
     import { useFetchClient } from '@exceptionless/fetchclient';
 
     interface OAuthAuthorizeResponse {
-        redirect_uri: string;
+        error?: string;
+        error_description?: string;
+        redirect_uri?: string;
     }
 
     let errorMessage = $state<null | string>(null);
@@ -87,7 +89,12 @@
             return;
         }
 
-        errorMessage = response.problem?.detail || response.problem?.title || 'Unable to authorize application.';
+        errorMessage =
+            response.data?.error_description ||
+            response.data?.error ||
+            response.problem?.detail ||
+            response.problem?.title ||
+            'Unable to authorize application.';
     }
 
     function cancelAuthorization() {

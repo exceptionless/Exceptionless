@@ -228,7 +228,7 @@ public class OAuthService(OAuthOptions options, ICacheClient cacheClient, IOAuth
         if (!String.Equals(request.ResponseType, "code", StringComparison.Ordinal))
             return OAuthValidationResult.Invalid("unsupported_response_type", "Only the code response type is supported.");
 
-        if (String.IsNullOrWhiteSpace(request.RedirectUri) || !client.RedirectUris.Contains(request.RedirectUri, StringComparer.Ordinal))
+        if (!IsRedirectUriAllowed(request.RedirectUri, client.RedirectUris))
             return OAuthValidationResult.Invalid("invalid_request", "Invalid redirect_uri.");
 
         if (String.IsNullOrWhiteSpace(request.CodeChallenge) || !String.Equals(request.CodeChallengeMethod, CodeChallengeMethod, StringComparison.Ordinal))
@@ -398,6 +398,43 @@ public class OAuthService(OAuthOptions options, ICacheClient cacheClient, IOAuth
     private static int GetDefaultPort(string scheme)
     {
         return String.Equals(scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase) ? 443 : 80;
+    }
+
+    private static bool IsRedirectUriAllowed(string? redirectUri, IReadOnlyCollection<string> allowedRedirectUris)
+    {
+        if (String.IsNullOrWhiteSpace(redirectUri))
+            return false;
+
+        if (allowedRedirectUris.Contains(redirectUri, StringComparer.Ordinal))
+            return true;
+
+        if (!Uri.TryCreate(redirectUri, UriKind.Absolute, out var requestedUri))
+            return false;
+
+        foreach (string allowedRedirectUri in allowedRedirectUris)
+        {
+            if (!Uri.TryCreate(allowedRedirectUri, UriKind.Absolute, out var registeredUri))
+                continue;
+
+            if (!IsLoopbackHttpRedirectUri(registeredUri) || !IsLoopbackHttpRedirectUri(requestedUri))
+                continue;
+
+            if (!registeredUri.IsDefaultPort && registeredUri.Port != requestedUri.Port)
+                continue;
+
+            if (String.Equals(registeredUri.Host, requestedUri.Host, StringComparison.OrdinalIgnoreCase)
+                && String.Equals(registeredUri.AbsolutePath, requestedUri.AbsolutePath, StringComparison.Ordinal)
+                && String.Equals(registeredUri.Query, requestedUri.Query, StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsLoopbackHttpRedirectUri(Uri uri)
+    {
+        return String.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
+            && (uri.IsLoopback || String.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase));
     }
 
     public static string CreateCodeChallenge(string verifier)

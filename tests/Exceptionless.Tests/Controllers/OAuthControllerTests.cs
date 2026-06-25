@@ -26,6 +26,8 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     private const string RedirectUri = "http://localhost/callback";
     private const string MetadataClientId = "https://oauth.example/client.json";
     private const string MetadataRedirectUri = "https://oauth.example/callback";
+    private const string ClaudeMetadataClientId = "https://claude.ai/oauth/claude-code-client-metadata";
+    private const string ClaudeLoopbackRedirectUri = "http://localhost:48272/callback";
     private const string Resource = "http://localhost/mcp";
 
     private readonly IOAuthApplicationRepository _oauthApplicationRepository;
@@ -338,6 +340,24 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.Equal(OAuthApplication.SystemUserId, application.CreatedByUserId);
         Assert.Contains(MetadataRedirectUri, application.RedirectUris);
         Assert.Contains(AuthorizationRoles.McpRead, application.Scopes);
+    }
+
+    [Fact]
+    public async Task CompleteAuthorizeAsync_ClientMetadataDocumentLoopbackRedirectUriWithPort_ReturnsRedirectUri()
+    {
+        using var client = CreateHttpClient();
+        using var request = CreateAuthorizeJsonRequest("valid-test-code-verifier", ClaudeLoopbackRedirectUri, clientId: ClaudeMetadataClientId);
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var authorization = await DeserializeResponseAsync<OAuthAuthorizeResponse>(response);
+        Assert.NotNull(authorization);
+        var redirectUri = new Uri(authorization.RedirectUri);
+        Assert.Equal(ClaudeLoopbackRedirectUri, redirectUri.GetLeftPart(UriPartial.Path));
+        var query = QueryHelpers.ParseQuery(redirectUri.Query);
+        Assert.True(query.TryGetValue("code", out var code));
+        Assert.False(String.IsNullOrEmpty(code.ToString()));
     }
 
     [Fact]
@@ -660,6 +680,16 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
                     ClientName = "Example AI Client",
                     RedirectUris = [MetadataRedirectUri],
                     GrantTypes = [OAuthGrantTypes.AuthorizationCode],
+                    ResponseTypes = ["code"],
+                    Scope = String.Join(' ', OAuthService.SupportedScopes),
+                    TokenEndpointAuthMethod = "none"
+                },
+                ClaudeMetadataClientId => new OAuthClientMetadataDocument
+                {
+                    ClientId = ClaudeMetadataClientId,
+                    ClientName = "Claude Code",
+                    RedirectUris = ["http://localhost/callback", "http://127.0.0.1/callback"],
+                    GrantTypes = [OAuthGrantTypes.AuthorizationCode, OAuthGrantTypes.RefreshToken],
                     ResponseTypes = ["code"],
                     Scope = String.Join(' ', OAuthService.SupportedScopes),
                     TokenEndpointAuthMethod = "none"
