@@ -198,8 +198,22 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.StartsWith("/next/oauth/authorize?", location);
         var bridgeQuery = QueryHelpers.ParseQuery(location[(location.IndexOf('?') + 1)..]);
         Assert.Equal(ClientId, bridgeQuery["client_id"].ToString());
+        Assert.Equal("code", bridgeQuery["response_type"].ToString());
         Assert.Equal(RedirectUri, bridgeQuery["redirect_uri"].ToString());
         Assert.Equal(Resource, bridgeQuery["resource"].ToString());
+    }
+
+    [Fact]
+    public async Task AuthorizeAsync_AuthenticatedUser_RedirectsToAuthorizeBridge()
+    {
+        using var client = CreateHttpClient();
+        using var request = CreateAuthorizeRequest("valid-test-code-verifier");
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.NotNull(response.Headers.Location);
+        Assert.StartsWith("/next/oauth/authorize?", response.Headers.Location.ToString());
     }
 
     [Fact]
@@ -222,10 +236,10 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task AuthorizeAsync_InvalidRedirectUri_ReturnsBadRequest()
+    public async Task CompleteAuthorizeAsync_InvalidRedirectUri_ReturnsBadRequest()
     {
         using var client = CreateHttpClient();
-        using var request = CreateAuthorizeRequest("bad-verifier", "https://attacker.example/callback");
+        using var request = CreateAuthorizeJsonRequest("bad-verifier", "https://attacker.example/callback");
 
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
@@ -236,10 +250,10 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task AuthorizeAsync_UnknownClient_ReturnsBadRequest()
+    public async Task CompleteAuthorizeAsync_UnknownClient_ReturnsBadRequest()
     {
         using var client = CreateHttpClient();
-        using var request = CreateAuthorizeRequest("bad-verifier", clientId: "unknown-oauth-client");
+        using var request = CreateAuthorizeJsonRequest("bad-verifier", clientId: "unknown-oauth-client");
 
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
@@ -250,7 +264,35 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task AuthorizeAsync_ClientMetadataDocument_PersistsObservedApplication()
+    public async Task CompleteAuthorizeAsync_InvalidResponseType_ReturnsBadRequest()
+    {
+        using var client = CreateHttpClient();
+        using var request = CreateAuthorizeJsonRequest("bad-verifier", responseType: "token");
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
+        Assert.NotNull(error);
+        Assert.Equal("unsupported_response_type", error.Error);
+    }
+
+    [Fact]
+    public async Task CompleteAuthorizeAsync_InvalidResource_ReturnsBadRequest()
+    {
+        using var client = CreateHttpClient();
+        using var request = CreateAuthorizeJsonRequest("bad-verifier", resource: "http://localhost");
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
+        Assert.NotNull(error);
+        Assert.Equal("invalid_target", error.Error);
+    }
+
+    [Fact]
+    public async Task CompleteAuthorizeAsync_ClientMetadataDocument_PersistsObservedApplication()
     {
         await CreateAuthorizationCodeAsync("valid-test-code-verifier", MetadataRedirectUri, clientId: MetadataClientId);
 
@@ -264,10 +306,10 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task AuthorizeAsync_InsecureClientMetadataDocument_ReturnsBadRequest()
+    public async Task CompleteAuthorizeAsync_InsecureClientMetadataDocument_ReturnsBadRequest()
     {
         using var client = CreateHttpClient();
-        using var request = CreateAuthorizeRequest("bad-verifier", MetadataRedirectUri, clientId: "http://oauth.example/client.json");
+        using var request = CreateAuthorizeJsonRequest("bad-verifier", MetadataRedirectUri, clientId: "http://oauth.example/client.json");
 
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
@@ -278,11 +320,11 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task AuthorizeAsync_ClientMetadataDocumentMismatch_ReturnsBadRequest()
+    public async Task CompleteAuthorizeAsync_ClientMetadataDocumentMismatch_ReturnsBadRequest()
     {
         const string clientId = "https://oauth.example/mismatch.json";
         using var client = CreateHttpClient();
-        using var request = CreateAuthorizeRequest("bad-verifier", MetadataRedirectUri, clientId: clientId);
+        using var request = CreateAuthorizeJsonRequest("bad-verifier", MetadataRedirectUri, clientId: clientId);
 
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
@@ -428,15 +470,13 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task OAuthBearer_WithMismatchedResource_ReturnsUnauthorized()
+    public async Task OAuthBearer_WithRootResource_ReturnsUnauthorized()
     {
-        string verifier = "valid-test-code-verifier";
-        string code = await CreateAuthorizationCodeAsync(verifier, resource: "http://localhost/not-api");
-        using var client = CreateHttpClient();
-        var tokenResponse = await client.PostAsync("oauth/token", CreateTokenExchangeContent(code, verifier, resource: "http://localhost/not-api"), TestContext.Current.CancellationToken);
-        tokenResponse.EnsureSuccessStatusCode();
-        var token = await DeserializeResponseAsync<OAuthTokenResponse>(tokenResponse);
-        Assert.NotNull(token);
+        var token = await IssueTokenAsync();
+        var storedToken = await _tokenRepository.GetByIdAsync(token.AccessToken, o => o.ImmediateConsistency());
+        Assert.NotNull(storedToken);
+        storedToken.OAuthResource = "http://localhost";
+        await _tokenRepository.SaveAsync(storedToken, o => o.ImmediateConsistency());
 
         await SendRequestAsync(r => r
             .BearerToken(token.AccessToken)
@@ -460,13 +500,15 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     private async Task<string> CreateAuthorizationCodeAsync(string verifier, string redirectUri = RedirectUri, string resource = Resource, string clientId = ClientId)
     {
         using var client = CreateHttpClient();
-        using var request = CreateAuthorizeRequest(verifier, redirectUri, resource, clientId);
+        using var request = CreateAuthorizeJsonRequest(verifier, redirectUri, resource, clientId);
 
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-        Assert.NotNull(response.Headers.Location);
-        var query = QueryHelpers.ParseQuery(response.Headers.Location.Query);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var authorization = await DeserializeResponseAsync<OAuthAuthorizeResponse>(response);
+        Assert.NotNull(authorization);
+        var redirect = new Uri(authorization.RedirectUri);
+        var query = QueryHelpers.ParseQuery(redirect.Query);
         Assert.True(query.TryGetValue("code", out var code));
         Assert.Equal("state-value", query["state"].ToString());
         return code.ToString();
@@ -507,13 +549,14 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         });
     }
 
-    private static HttpRequestMessage CreateAuthorizeJsonRequest(string verifier, string redirectUri = RedirectUri, string resource = Resource, string clientId = ClientId)
+    private static HttpRequestMessage CreateAuthorizeJsonRequest(string verifier, string redirectUri = RedirectUri, string resource = Resource, string clientId = ClientId, string responseType = "code")
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "oauth/authorize")
         {
             Content = JsonContent.Create(new OAuthAuthorizeForm
             {
                 ClientId = clientId,
+                ResponseType = responseType,
                 RedirectUri = redirectUri,
                 Scope = $"{AuthorizationRoles.McpRead} {AuthorizationRoles.ProjectsRead} {AuthorizationRoles.StacksRead} {AuthorizationRoles.EventsRead} {AuthorizationRoles.OfflineAccess}",
                 State = "state-value",
@@ -531,6 +574,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         string url = QueryHelpers.AddQueryString("oauth/authorize", new Dictionary<string, string?>
         {
             ["client_id"] = clientId,
+            ["response_type"] = "code",
             ["redirect_uri"] = redirectUri,
             ["scope"] = $"{AuthorizationRoles.McpRead} {AuthorizationRoles.ProjectsRead} {AuthorizationRoles.StacksRead} {AuthorizationRoles.EventsRead} {AuthorizationRoles.OfflineAccess}",
             ["state"] = "state-value",

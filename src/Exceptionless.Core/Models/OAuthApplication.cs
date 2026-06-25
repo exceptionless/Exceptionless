@@ -49,8 +49,8 @@ public class OAuthApplication : IIdentity, IHaveDates, IValidatableObject
 
         foreach (string redirectUri in RedirectUris.Where(uri => !String.IsNullOrWhiteSpace(uri)))
         {
-            if (!Uri.TryCreate(redirectUri, UriKind.Absolute, out var uri) || !String.IsNullOrEmpty(uri.Fragment))
-                yield return new ValidationResult($"'{redirectUri}' is not a valid absolute redirect URI without a fragment.", [nameof(RedirectUris)]);
+            if (!IsValidRedirectUri(redirectUri))
+                yield return new ValidationResult($"'{redirectUri}' must be an absolute HTTPS URI or loopback HTTP URI without a fragment.", [nameof(RedirectUris)]);
         }
 
         foreach (string scope in Scopes.Where(String.IsNullOrWhiteSpace))
@@ -71,4 +71,15 @@ public class OAuthApplication : IIdentity, IHaveDates, IValidatableObject
         AuthorizationRoles.EventsRead,
         AuthorizationRoles.OfflineAccess
     ];
+
+    public static bool IsValidRedirectUri(string redirectUri)
+    {
+        if (String.IsNullOrWhiteSpace(redirectUri) || !Uri.TryCreate(redirectUri, UriKind.Absolute, out var uri) || !String.IsNullOrEmpty(uri.Fragment))
+            return false;
+
+        if (String.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return String.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) && (uri.IsLoopback || String.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase));
+    }
 }

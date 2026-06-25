@@ -102,7 +102,7 @@ Content-Type: application/json
 
 ### Authorize
 # Open this URL in a browser or send it with an authenticated user session/token.
-GET {{apiUrl}}/oauth/authorize?client_id={{clientId}}&redirect_uri={{redirectUri}}&scope=mcp:read%20projects:read%20stacks:read%20events:read%20offline_access&state=local-state&code_challenge={{codeChallenge}}&code_challenge_method=S256&resource={{resource}}
+GET {{apiUrl}}/oauth/authorize?client_id={{clientId}}&response_type=code&redirect_uri={{redirectUri}}&scope=mcp:read%20projects:read%20stacks:read%20events:read%20offline_access&state=local-state&code_challenge={{codeChallenge}}&code_challenge_method=S256&resource={{resource}}
 Authorization: Bearer {{login.response.body.token}}
 
 ### Token Exchange

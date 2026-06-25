@@ -54,7 +54,7 @@ public class OAuthService(OAuthOptions options, ICacheClient cacheClient, IOAuth
             .Distinct(StringComparer.Ordinal)
             .ToArray();
 
-        if (redirectUris.Length == 0 || redirectUris.Length > 20 || redirectUris.Any(uri => !IsSecureRedirectUri(uri)))
+        if (redirectUris.Length == 0 || redirectUris.Length > 20 || redirectUris.Any(uri => !OAuthApplication.IsValidRedirectUri(uri)))
             return OAuthClientRegistrationResult.Invalid("invalid_redirect_uri", "Redirect URIs must be absolute HTTPS URIs or loopback HTTP URIs without fragments.");
 
         var scopes = NormalizeScopes(request.Scope);
@@ -137,7 +137,7 @@ public class OAuthService(OAuthOptions options, ICacheClient cacheClient, IOAuth
             return false;
 
         var redirectUris = metadata.RedirectUris?
-            .Where(IsSecureRedirectUri)
+            .Where(OAuthApplication.IsValidRedirectUri)
             .Distinct(StringComparer.Ordinal)
             .Take(20)
             .ToArray() ?? [];
@@ -199,16 +199,6 @@ public class OAuthService(OAuthOptions options, ICacheClient cacheClient, IOAuth
         }
     }
 
-    private static bool IsSecureRedirectUri(string redirectUri)
-    {
-        if (String.IsNullOrWhiteSpace(redirectUri) || !Uri.TryCreate(redirectUri, UriKind.Absolute, out var uri) || !String.IsNullOrEmpty(uri.Fragment))
-            return false;
-
-        if (String.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        return String.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) && (uri.IsLoopback || String.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase));
-    }
 
     public IReadOnlyCollection<string> GetAllowedScopes(OAuthClientOptions client)
     {
@@ -226,7 +216,7 @@ public class OAuthService(OAuthOptions options, ICacheClient cacheClient, IOAuth
             .ToArray();
     }
 
-    public async Task<OAuthValidationResult> ValidateAuthorizationRequestAsync(OAuthAuthorizeRequest request)
+    public async Task<OAuthValidationResult> ValidateAuthorizationRequestAsync(OAuthAuthorizeRequest request, string expectedResource)
     {
         if (String.IsNullOrWhiteSpace(request.ClientId))
             return OAuthValidationResult.Invalid("invalid_request", "Missing client_id.");
@@ -235,14 +225,17 @@ public class OAuthService(OAuthOptions options, ICacheClient cacheClient, IOAuth
         if (client is null)
             return OAuthValidationResult.Invalid("invalid_client", "Unknown OAuth client.");
 
+        if (!String.Equals(request.ResponseType, "code", StringComparison.Ordinal))
+            return OAuthValidationResult.Invalid("unsupported_response_type", "Only the code response type is supported.");
+
         if (String.IsNullOrWhiteSpace(request.RedirectUri) || !client.RedirectUris.Contains(request.RedirectUri, StringComparer.Ordinal))
             return OAuthValidationResult.Invalid("invalid_request", "Invalid redirect_uri.");
 
         if (String.IsNullOrWhiteSpace(request.CodeChallenge) || !String.Equals(request.CodeChallengeMethod, CodeChallengeMethod, StringComparison.Ordinal))
             return OAuthValidationResult.Invalid("invalid_request", "PKCE S256 is required.");
 
-        if (String.IsNullOrWhiteSpace(request.Resource) || !Uri.TryCreate(request.Resource, UriKind.Absolute, out _))
-            return OAuthValidationResult.Invalid("invalid_target", "A valid resource is required.");
+        if (!IsExpectedResource(request.Resource, expectedResource))
+            return OAuthValidationResult.Invalid("invalid_target", "The requested resource is not supported.");
 
         var requestedScopes = NormalizeScopes(request.Scope);
         if (requestedScopes.Count == 0)
@@ -386,6 +379,27 @@ public class OAuthService(OAuthOptions options, ICacheClient cacheClient, IOAuth
         return String.Equals(challenge, CreateCodeChallenge(verifier), StringComparison.Ordinal);
     }
 
+    private static bool IsExpectedResource(string? resource, string expectedResource)
+    {
+        if (String.IsNullOrWhiteSpace(resource) || !Uri.TryCreate(resource, UriKind.Absolute, out var resourceUri) || !Uri.TryCreate(expectedResource, UriKind.Absolute, out var expectedResourceUri))
+            return false;
+
+        if (!String.IsNullOrEmpty(resourceUri.Query) || !String.IsNullOrEmpty(resourceUri.Fragment))
+            return false;
+
+        int resourcePort = resourceUri.IsDefaultPort ? GetDefaultPort(resourceUri.Scheme) : resourceUri.Port;
+        int expectedResourcePort = expectedResourceUri.IsDefaultPort ? GetDefaultPort(expectedResourceUri.Scheme) : expectedResourceUri.Port;
+        return String.Equals(resourceUri.Scheme, expectedResourceUri.Scheme, StringComparison.OrdinalIgnoreCase)
+            && String.Equals(resourceUri.Host, expectedResourceUri.Host, StringComparison.OrdinalIgnoreCase)
+            && resourcePort == expectedResourcePort
+            && String.Equals(resourceUri.AbsolutePath.TrimEnd('/'), expectedResourceUri.AbsolutePath.TrimEnd('/'), StringComparison.Ordinal);
+    }
+
+    private static int GetDefaultPort(string scheme)
+    {
+        return String.Equals(scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase) ? 443 : 80;
+    }
+
     public static string CreateCodeChallenge(string verifier)
     {
         var bytes = SHA256.HashData(Encoding.ASCII.GetBytes(verifier));
@@ -409,6 +423,7 @@ public static class OAuthGrantTypes
 public record OAuthAuthorizeRequest
 {
     public required string ClientId { get; init; }
+    public required string ResponseType { get; init; }
     public required string RedirectUri { get; init; }
     public string? Scope { get; init; }
     public string? State { get; init; }

@@ -50,8 +50,9 @@ public sealed class OAuthController(OAuthService oauthService, TimeProvider time
 
     [HttpGet(API_PREFIX + "/oauth/authorize")]
     [AllowAnonymous]
-    public async Task<IActionResult> AuthorizeAsync(
+    public IActionResult AuthorizeAsync(
         [FromQuery(Name = "client_id")] string clientId,
+        [FromQuery(Name = "response_type")] string responseType,
         [FromQuery(Name = "redirect_uri")] string redirectUri,
         [FromQuery] string? scope,
         [FromQuery] string? state,
@@ -59,21 +60,7 @@ public sealed class OAuthController(OAuthService oauthService, TimeProvider time
         [FromQuery(Name = "code_challenge_method")] string codeChallengeMethod,
         [FromQuery] string resource)
     {
-        if (User.Identity?.IsAuthenticated != true)
-            return RedirectToAuthorizeBridge();
-
-        var request = new OAuthAuthorizeRequest
-        {
-            ClientId = clientId,
-            RedirectUri = redirectUri,
-            Scope = scope,
-            State = state,
-            CodeChallenge = codeChallenge,
-            CodeChallengeMethod = codeChallengeMethod,
-            Resource = resource
-        };
-
-        return await CompleteAuthorizationAsync(request, jsonResponse: false);
+        return RedirectToAuthorizeBridge();
     }
 
     [HttpPost(API_PREFIX + "/oauth/authorize")]
@@ -132,6 +119,11 @@ public sealed class OAuthController(OAuthService oauthService, TimeProvider time
         return $"{Request.Scheme}://{Request.Host}";
     }
 
+    private string GetMcpResource()
+    {
+        return $"{GetOrigin()}/mcp";
+    }
+
     private ObjectResult OAuthError(string? error, string? description)
     {
         return BadRequest(new OAuthErrorResponse
@@ -143,7 +135,7 @@ public sealed class OAuthController(OAuthService oauthService, TimeProvider time
 
     private async Task<IActionResult> CompleteAuthorizationAsync(OAuthAuthorizeRequest request, bool jsonResponse)
     {
-        var validation = await oauthService.ValidateAuthorizationRequestAsync(request);
+        var validation = await oauthService.ValidateAuthorizationRequestAsync(request, GetMcpResource());
         if (!validation.IsValid)
             return OAuthError(validation.Error, validation.ErrorDescription);
 
@@ -177,6 +169,9 @@ public sealed record OAuthAuthorizeForm
     [JsonPropertyName("client_id")]
     public required string ClientId { get; init; }
 
+    [JsonPropertyName("response_type")]
+    public required string ResponseType { get; init; }
+
     [JsonPropertyName("redirect_uri")]
     public required string RedirectUri { get; init; }
 
@@ -200,6 +195,7 @@ public sealed record OAuthAuthorizeForm
         return new OAuthAuthorizeRequest
         {
             ClientId = ClientId,
+            ResponseType = ResponseType,
             RedirectUri = RedirectUri,
             Scope = Scope,
             State = State,
@@ -212,6 +208,7 @@ public sealed record OAuthAuthorizeForm
 
 public sealed record OAuthAuthorizeResponse
 {
+
     [JsonPropertyName("redirect_uri")]
     public required string RedirectUri { get; init; }
 }

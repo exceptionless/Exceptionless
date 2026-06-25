@@ -138,6 +138,28 @@ public sealed class OAuthApplicationControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task CreateAsync_InsecureRedirectUri_ReturnsUnprocessableEntity()
+    {
+        var problem = await SendRequestAsAsync<ValidationProblemDetails>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "oauth-applications")
+            .Content(new NewOAuthApplication
+            {
+                ClientId = "bad-client",
+                Name = "Bad Client",
+                RedirectUris = ["http://attacker.example/callback"],
+                Scopes = [AuthorizationRoles.McpRead],
+                Notes = null,
+                IsDisabled = false
+            })
+            .StatusCodeShouldBeUnprocessableEntity());
+
+        Assert.NotNull(problem);
+        Assert.Contains("redirect_uris", problem.Errors.Keys);
+    }
+
+    [Fact]
     public Task GetAllAsync_AsOrganizationUser_ReturnsForbidden()
     {
         return SendRequestAsync(r => r

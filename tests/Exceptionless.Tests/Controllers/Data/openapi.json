@@ -4652,6 +4652,13 @@
             }
           },
           {
+            "name": "response_type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "redirect_uri",
             "in": "query",
             "schema": {
@@ -9063,6 +9070,7 @@
       "OAuthAuthorizeForm": {
         "required": [
           "client_id",
+          "response_type",
           "redirect_uri",
           "code_challenge",
           "code_challenge_method",
@@ -9071,6 +9079,9 @@
         "type": "object",
         "properties": {
           "client_id": {
+            "type": "string"
+          },
+          "response_type": {
             "type": "string"
           },
           "redirect_uri": {

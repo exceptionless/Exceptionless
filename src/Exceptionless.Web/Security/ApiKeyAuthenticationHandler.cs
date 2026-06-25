@@ -193,6 +193,9 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         if (String.IsNullOrWhiteSpace(resource) || !Uri.TryCreate(resource, UriKind.Absolute, out var resourceUri))
             return false;
 
+        if (!String.IsNullOrEmpty(resourceUri.Query) || !String.IsNullOrEmpty(resourceUri.Fragment))
+            return false;
+
         if (!String.Equals(Request.Scheme, resourceUri.Scheme, StringComparison.OrdinalIgnoreCase))
             return false;
 
@@ -205,7 +208,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
 
         string resourcePath = resourceUri.AbsolutePath.TrimEnd('/');
         if (String.IsNullOrEmpty(resourcePath))
-            return true;
+            return false;
 
         return Request.Path.StartsWithSegments(new PathString(resourcePath), StringComparison.OrdinalIgnoreCase);
     }

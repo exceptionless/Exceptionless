@@ -24,12 +24,15 @@ export const OAuthApplicationSchema = object({
                     .every((v) => {
                         try {
                             const uri = new URL(v);
-                            return !uri.hash;
+                            const isHttps = uri.protocol === 'https:';
+                            const isLoopbackHttp =
+                                uri.protocol === 'http:' && (uri.hostname === 'localhost' || uri.hostname === '127.0.0.1' || uri.hostname === '[::1]');
+                            return !uri.hash && (isHttps || isLoopbackHttp);
                         } catch {
                             return false;
                         }
                     }),
-            'Each redirect URI must be an absolute URL without a fragment.'
+            'Each redirect URI must be HTTPS or loopback HTTP without a fragment.'
         ),
     scopes: array(string()).min(1, 'Select at least one scope.')
 });
