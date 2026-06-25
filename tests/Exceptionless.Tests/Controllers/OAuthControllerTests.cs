@@ -344,6 +344,32 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task CompleteAuthorizeAsync_ObservedClientMetadataDocumentMissingNewScope_RefreshesScopes()
+    {
+        await CreateAuthorizationCodeAsync("valid-test-code-verifier", ClaudeLoopbackRedirectUri, clientId: ClaudeMetadataClientId);
+        var application = await _oauthApplicationRepository.GetByClientIdAsync(ClaudeMetadataClientId, o => o.ImmediateConsistency());
+        Assert.NotNull(application);
+        application.Scopes = application.Scopes.Where(s => !String.Equals(s, AuthorizationRoles.StacksWrite, StringComparison.Ordinal)).ToArray();
+        await _oauthApplicationRepository.SaveAsync(application, o => o.ImmediateConsistency());
+
+        using var client = CreateHttpClient();
+        using var request = CreateAuthorizeJsonRequest(
+            "valid-test-code-verifier",
+            ClaudeLoopbackRedirectUri,
+            clientId: ClaudeMetadataClientId,
+            scope: $"{AuthorizationRoles.McpRead} {AuthorizationRoles.ProjectsRead} {AuthorizationRoles.StacksRead} {AuthorizationRoles.StacksWrite} {AuthorizationRoles.EventsRead} {AuthorizationRoles.OfflineAccess}");
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var authorization = await DeserializeResponseAsync<OAuthAuthorizeResponse>(response);
+        Assert.NotNull(authorization);
+        var refreshedApplication = await _oauthApplicationRepository.GetByClientIdAsync(ClaudeMetadataClientId, o => o.ImmediateConsistency());
+        Assert.NotNull(refreshedApplication);
+        Assert.Contains(AuthorizationRoles.StacksWrite, refreshedApplication.Scopes);
+    }
+
+    [Fact]
     public async Task CompleteAuthorizeAsync_ClientMetadataDocumentLoopbackRedirectUriWithPort_ReturnsRedirectUri()
     {
         using var client = CreateHttpClient();
@@ -624,7 +650,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         return new FormUrlEncodedContent(form);
     }
 
-    private static HttpRequestMessage CreateAuthorizeJsonRequest(string verifier, string redirectUri = RedirectUri, string? resource = Resource, string clientId = ClientId, string responseType = "code")
+    private static HttpRequestMessage CreateAuthorizeJsonRequest(string verifier, string redirectUri = RedirectUri, string? resource = Resource, string clientId = ClientId, string responseType = "code", string? scope = null)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "oauth/authorize")
         {
@@ -633,7 +659,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
                 ClientId = clientId,
                 ResponseType = responseType,
                 RedirectUri = redirectUri,
-                Scope = $"{AuthorizationRoles.McpRead} {AuthorizationRoles.ProjectsRead} {AuthorizationRoles.StacksRead} {AuthorizationRoles.EventsRead} {AuthorizationRoles.OfflineAccess}",
+                Scope = scope ?? $"{AuthorizationRoles.McpRead} {AuthorizationRoles.ProjectsRead} {AuthorizationRoles.StacksRead} {AuthorizationRoles.EventsRead} {AuthorizationRoles.OfflineAccess}",
                 State = "state-value",
                 CodeChallenge = OAuthService.CreateCodeChallenge(verifier),
                 CodeChallengeMethod = OAuthService.CodeChallengeMethod,

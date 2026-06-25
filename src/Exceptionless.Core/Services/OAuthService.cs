@@ -103,7 +103,15 @@ public class OAuthService(OAuthOptions options, ICacheClient cacheClient, IOAuth
         clientId = clientId.Trim();
         var application = await oauthApplicationRepository.GetByClientIdAsync(clientId);
         if (application is not null)
-            return application.IsDisabled ? null : MapClient(application);
+        {
+            if (application.IsDisabled)
+                return null;
+
+            if (allowClientMetadataDocument)
+                application = await RefreshObservedApplicationAsync(application);
+
+            return MapClient(application);
+        }
 
         if (!allowClientMetadataDocument || !options.EnableClientIdMetadataDocuments || !OAuthClientMetadataService.TryCreateClientMetadataDocumentUri(clientId, out _))
             return null;
@@ -119,6 +127,35 @@ public class OAuthService(OAuthOptions options, ICacheClient cacheClient, IOAuth
 
         await oauthApplicationRepository.AddAsync(application, o => o.ImmediateConsistency());
         return MapClient(application);
+    }
+
+    private async Task<OAuthApplication> RefreshObservedApplicationAsync(OAuthApplication application)
+    {
+        if (!String.Equals(application.CreatedByUserId, OAuthApplication.SystemUserId, StringComparison.Ordinal)
+            || !String.Equals(application.Notes, ClientMetadataNotes, StringComparison.Ordinal)
+            || !options.EnableClientIdMetadataDocuments
+            || !OAuthClientMetadataService.TryCreateClientMetadataDocumentUri(application.ClientId, out _))
+            return application;
+
+        var metadata = await oauthClientMetadataService.GetClientMetadataAsync(application.ClientId);
+        if (metadata is null || !TryCreateObservedApplication(application.ClientId, metadata, out var observedApplication))
+            return application;
+
+        bool changed = !String.Equals(application.Name, observedApplication.Name, StringComparison.Ordinal)
+            || !HasSameValues(application.RedirectUris, observedApplication.RedirectUris)
+            || !HasSameValues(application.Scopes, observedApplication.Scopes);
+
+        if (!changed)
+            return application;
+
+        application.Name = observedApplication.Name;
+        application.RedirectUris = observedApplication.RedirectUris;
+        application.Scopes = observedApplication.Scopes;
+        application.UpdatedByUserId = OAuthApplication.SystemUserId;
+        application.UpdatedUtc = timeProvider.GetUtcNow().UtcDateTime;
+
+        await oauthApplicationRepository.SaveAsync(application, o => o.ImmediateConsistency());
+        return application;
     }
 
     private bool TryCreateObservedApplication(string clientId, OAuthClientMetadataDocument metadata, out OAuthApplication application)
@@ -188,6 +225,11 @@ public class OAuthService(OAuthOptions options, ICacheClient cacheClient, IOAuth
     {
         string name = String.IsNullOrWhiteSpace(clientName) ? clientId : clientName.Trim();
         return name.Length <= 200 ? name : name[..200];
+    }
+
+    private static bool HasSameValues(IReadOnlyCollection<string> first, IReadOnlyCollection<string> second)
+    {
+        return first.Count == second.Count && first.Order(StringComparer.Ordinal).SequenceEqual(second.Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
     private async Task<string> CreateUniqueClientIdAsync()
