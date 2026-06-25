@@ -454,13 +454,17 @@ public class OAuthService(OAuthOptions options, ICacheClient cacheClient, IOAuth
         if (!Uri.TryCreate(redirectUri, UriKind.Absolute, out var requestedUri))
             return false;
 
-        foreach (var registeredUri in allowedRedirectUris
-            .Select(allowedRedirectUri => Uri.TryCreate(allowedRedirectUri, UriKind.Absolute, out var uri) ? uri : null)
-            .Where(uri => uri is not null)
-            .Select(uri => uri!)
-            .Where(uri => IsLoopbackHttpRedirectUri(uri) && IsLoopbackHttpRedirectUri(requestedUri))
-            .Where(uri => uri.IsDefaultPort || uri.Port == requestedUri.Port))
+        foreach (string allowedRedirectUri in allowedRedirectUris)
         {
+            if (!Uri.TryCreate(allowedRedirectUri, UriKind.Absolute, out var registeredUri))
+                continue;
+
+            if (!IsLoopbackHttpRedirectUri(registeredUri) || !IsLoopbackHttpRedirectUri(requestedUri))
+                continue;
+
+            if (!registeredUri.IsDefaultPort && registeredUri.Port != requestedUri.Port)
+                continue;
+
             if (String.Equals(registeredUri.Host, requestedUri.Host, StringComparison.OrdinalIgnoreCase)
                 && String.Equals(registeredUri.AbsolutePath, requestedUri.AbsolutePath, StringComparison.Ordinal)
                 && String.Equals(registeredUri.Query, requestedUri.Query, StringComparison.Ordinal))

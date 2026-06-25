@@ -59,13 +59,37 @@ public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthOptio
         {
             return null;
         }
-        catch (Exception ex)
+        catch (HttpRequestException ex)
         {
-            logger.LogWarning(ex, "Unable to fetch OAuth client metadata document for {ClientId}.", clientId);
+            LogUnableToFetchMetadata(ex, clientId);
+            return null;
+        }
+        catch (JsonException ex)
+        {
+            LogUnableToFetchMetadata(ex, clientId);
+            return null;
+        }
+        catch (IOException ex)
+        {
+            LogUnableToFetchMetadata(ex, clientId);
+            return null;
+        }
+        catch (CryptographicException ex)
+        {
+            LogUnableToFetchMetadata(ex, clientId);
+            return null;
+        }
+        catch (InvalidOperationException ex)
+        {
+            LogUnableToFetchMetadata(ex, clientId);
             return null;
         }
     }
 
+    private void LogUnableToFetchMetadata(Exception ex, string clientId)
+    {
+        logger.LogWarning(ex, "Unable to fetch OAuth client metadata document for {ClientId}.", clientId);
+    }
     public static bool TryCreateClientMetadataDocumentUri(string clientId, out Uri uri)
     {
         uri = null!;

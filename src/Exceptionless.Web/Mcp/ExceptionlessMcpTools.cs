@@ -125,11 +125,11 @@ public sealed class ExceptionlessMcpTools
         {
             return McpResponse<McpListData<McpProjectResult>>.Failed(McpErrors.NotAccessible("Unable to list projects. No accessible organizations were found."));
         }
-        catch (Exception ex) when (!String.IsNullOrWhiteSpace(filter))
+        catch (Exception ex) when (!String.IsNullOrWhiteSpace(filter) && IsExpectedToolError(ex))
         {
             return McpResponse<McpListData<McpProjectResult>>.Failed(McpErrors.InvalidFilter($"Invalid filter: {ex.Message}"));
         }
-        catch (Exception)
+        catch (Exception ex) when (IsExpectedToolError(ex))
         {
             return McpResponse<McpListData<McpProjectResult>>.Failed(McpErrors.QueryFailed("Unable to list projects. Check the filter, sort, and limit values."));
         }
@@ -210,7 +210,7 @@ public sealed class ExceptionlessMcpTools
         {
             return McpResponse<McpListData<McpStackResult>>.Failed(ToLookupError("Project", projectId, ex));
         }
-        catch (Exception)
+        catch (Exception ex) when (IsExpectedToolError(ex))
         {
             return McpResponse<McpListData<McpStackResult>>.Failed(McpErrors.QueryFailed("Unable to search stacks. Check the project id, filter, sort, and limit values."));
         }
@@ -291,7 +291,7 @@ public sealed class ExceptionlessMcpTools
         {
             return McpResponse<McpListData<McpEventResult>>.Failed(ToLookupError("Stack", stackId, ex));
         }
-        catch (Exception)
+        catch (Exception ex) when (IsExpectedToolError(ex))
         {
             return McpResponse<McpListData<McpEventResult>>.Failed(McpErrors.QueryFailed("Unable to list stack events. Check the stack id, filter, sort, and limit values."));
         }
@@ -351,7 +351,7 @@ public sealed class ExceptionlessMcpTools
         {
             return McpResponse<McpListData<McpEventResult>>.Failed(ToLookupError("Project", projectId, ex));
         }
-        catch (Exception)
+        catch (Exception ex) when (IsExpectedToolError(ex))
         {
             return McpResponse<McpListData<McpEventResult>>.Failed(McpErrors.QueryFailed("Unable to search events. Check the project id, filter, sort, limit, and time range values."));
         }
@@ -494,7 +494,7 @@ public sealed class ExceptionlessMcpTools
         {
             return McpResponse<McpEventCountResult>.Failed(ToLookupError("Project", projectId, ex));
         }
-        catch (Exception)
+        catch (Exception ex) when (IsExpectedToolError(ex))
         {
             return McpResponse<McpEventCountResult>.Failed(McpErrors.QueryFailed("Unable to count events. Check the project id, filter, time range, and interval values."));
         }
@@ -551,7 +551,7 @@ public sealed class ExceptionlessMcpTools
         {
             return McpResponse<McpStackUpdateResult>.Failed(ToLookupError("Stack", stackId, ex));
         }
-        catch (Exception)
+        catch (Exception ex) when (IsExpectedToolError(ex))
         {
             return McpResponse<McpStackUpdateResult>.Failed(McpErrors.QueryFailed("Unable to update stack status. Check the stack id, status, and fixed version."));
         }
@@ -593,7 +593,7 @@ public sealed class ExceptionlessMcpTools
         {
             return McpResponse<McpStackUpdateResult>.Failed(ToLookupError("Stack", stackId, ex));
         }
-        catch (Exception)
+        catch (Exception ex) when (IsExpectedToolError(ex))
         {
             return McpResponse<McpStackUpdateResult>.Failed(McpErrors.QueryFailed("Unable to snooze stack. Check the stack id and snooze duration."));
         }
@@ -629,7 +629,7 @@ public sealed class ExceptionlessMcpTools
         {
             return McpResponse<McpStackUpdateResult>.Failed(ToLookupError("Stack", stackId, ex));
         }
-        catch (Exception)
+        catch (Exception ex) when (IsExpectedToolError(ex))
         {
             return McpResponse<McpStackUpdateResult>.Failed(McpErrors.QueryFailed("Unable to update stack critical setting. Check the stack id."));
         }
@@ -672,7 +672,7 @@ public sealed class ExceptionlessMcpTools
         {
             return McpResponse<McpStackUpdateResult>.Failed(ToLookupError("Stack", stackId, ex));
         }
-        catch (Exception)
+        catch (Exception ex) when (IsExpectedToolError(ex))
         {
             return McpResponse<McpStackUpdateResult>.Failed(McpErrors.QueryFailed("Unable to add stack reference link. Check the stack id and url."));
         }
@@ -712,7 +712,7 @@ public sealed class ExceptionlessMcpTools
         {
             return McpResponse<McpStackUpdateResult>.Failed(ToLookupError("Stack", stackId, ex));
         }
-        catch (Exception)
+        catch (Exception ex) when (IsExpectedToolError(ex))
         {
             return McpResponse<McpStackUpdateResult>.Failed(McpErrors.QueryFailed("Unable to remove stack reference link. Check the stack id and url."));
         }
@@ -895,8 +895,9 @@ public sealed class ExceptionlessMcpTools
             return true;
         }
 
-        foreach (string field in sort.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(term => term.TrimStart('+', '-')))
+        foreach (string term in sort.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
+            string field = term.TrimStart('+', '-');
             if (field.Length == 0 || !allowedSortFields.Contains(field))
             {
                 error = $"Unknown sort field '{field}'. Allowed sort fields: {String.Join(", ", allowedSortFields.Order(StringComparer.OrdinalIgnoreCase))}.";
@@ -1226,6 +1227,11 @@ public sealed class ExceptionlessMcpTools
     private static bool IsLookupError(Exception ex)
     {
         return ex is ArgumentException or KeyNotFoundException or UnauthorizedAccessException;
+    }
+
+    private static bool IsExpectedToolError(Exception ex)
+    {
+        return ex is ArgumentException or FormatException or InvalidOperationException or JsonException || ex.GetType().Name == "QueryValidationException";
     }
 
     private static McpErrorInfo ToLookupError(string resourceName, string resourceId, Exception ex)
