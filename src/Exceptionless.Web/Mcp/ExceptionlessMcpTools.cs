@@ -678,6 +678,46 @@ public sealed class ExceptionlessMcpTools
         }
     }
 
+    [McpServerTool(Name = "remove_stack_reference_link", ReadOnly = false, UseStructuredContent = true)]
+    [Description("Removes a reference link from a stack.")]
+    public async Task<McpResponse<McpStackUpdateResult>> RemoveStackReferenceLinkAsync(
+        [Description("The Exceptionless stack id.")]
+        string stackId,
+        [Description("The reference link to remove from the stack.")]
+        string url)
+    {
+        try
+        {
+            EnsureScope(AuthorizationRoles.StacksWrite);
+            if (!TryValidateId(stackId, "stackId", out var idError))
+                return McpResponse<McpStackUpdateResult>.Failed(idError);
+
+            string? referenceLink = NormalizeReferenceLink(url);
+            if (referenceLink is null)
+                return McpResponse<McpStackUpdateResult>.Failed(McpErrors.InvalidReferenceLink("url is required.", url));
+
+            var stack = await GetAccessibleStackForWriteAsync(stackId);
+            bool changed = stack.References.Remove(referenceLink);
+            if (changed)
+                await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency());
+
+            return McpResponse<McpStackUpdateResult>.Success(new McpStackUpdateResult(
+                ToStackResult(stack),
+                changed,
+                changed
+                    ? $"Reference link was removed from stack {stack.Id}."
+                    : $"Stack {stack.Id} did not have that reference link."));
+        }
+        catch (Exception ex) when (IsLookupError(ex))
+        {
+            return McpResponse<McpStackUpdateResult>.Failed(ToLookupError("Stack", stackId, ex));
+        }
+        catch (Exception)
+        {
+            return McpResponse<McpStackUpdateResult>.Failed(McpErrors.QueryFailed("Unable to remove stack reference link. Check the stack id and url."));
+        }
+    }
+
     [McpServerTool(Name = "get_filter_fields", ReadOnly = true, UseStructuredContent = true)]
     [Description("Lists supported Exceptionless MCP filter and sort fields for projects, stacks, and events. Dynamic data.* and idx.* filter fields are allowed for stacks and events.")]
     public McpResponse<McpFilterFieldsResult> GetFilterFields()
@@ -708,7 +748,7 @@ public sealed class ExceptionlessMcpTools
         if (user.HasClaim(ClaimTypes.Role, AuthorizationRoles.User) || user.HasClaim(ClaimTypes.Role, scope))
             return;
 
-        throw new UnauthorizedAccessException($"Missing required scope {scope}.");
+        throw new McpForbiddenException($"Missing required scope {scope}.", scope);
     }
 
     private async Task<IReadOnlyCollection<Organization>> GetAccessibleOrganizationsAsync()
@@ -1196,6 +1236,7 @@ public sealed class ExceptionlessMcpTools
         return ex switch
         {
             ArgumentException => McpErrors.InvalidId($"{resourceName} id is invalid.", $"{resourceName.ToLowerInvariant()}Id", resourceId),
+            McpForbiddenException forbidden => McpErrors.Forbidden(forbidden.Message, forbidden.RequiredScope),
             UnauthorizedAccessException => McpErrors.NotAccessible(message, resourceName, resourceId),
             KeyNotFoundException => McpErrors.NotFound(message, $"{resourceName.ToLowerInvariant()}Id", resourceId),
             _ => McpErrors.QueryFailed(message)
@@ -1511,6 +1552,7 @@ public sealed class ExceptionlessMcpTools
 
 public static class McpErrorCodes
 {
+    public const string Forbidden = "forbidden";
     public const string InvalidCursor = "invalid_cursor";
     public const string InvalidDetailSize = "invalid_detail_size";
     public const string InvalidFilter = "invalid_filter";
@@ -1532,6 +1574,14 @@ public static class McpErrorCodes
 
 public static class McpErrors
 {
+    public static McpErrorInfo Forbidden(string message, string requiredScope)
+    {
+        return new McpErrorInfo(McpErrorCodes.Forbidden, message, new Dictionary<string, object?>
+        {
+            ["requiredScope"] = requiredScope
+        });
+    }
+
     public static McpErrorInfo InvalidCursor(string message, string field)
     {
         return new McpErrorInfo(McpErrorCodes.InvalidCursor, message, new Dictionary<string, object?>
@@ -1683,6 +1733,11 @@ public static class McpErrors
 }
 
 public sealed record McpErrorInfo(string Code, string Message, IReadOnlyDictionary<string, object?>? Details = null);
+
+public sealed class McpForbiddenException(string message, string requiredScope) : UnauthorizedAccessException(message)
+{
+    public string RequiredScope { get; } = requiredScope;
+}
 
 public sealed record McpResponse<T>(bool Ok, T? Data = default, McpErrorInfo? Error = null, string? Warning = null, McpPagination? Pagination = null)
 {
