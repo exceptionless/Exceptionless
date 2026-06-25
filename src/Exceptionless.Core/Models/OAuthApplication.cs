@@ -47,20 +47,14 @@ public class OAuthApplication : IIdentity, IHaveDates, IValidatableObject
         foreach (string _ in RedirectUris.Where(String.IsNullOrWhiteSpace))
             yield return new ValidationResult("Redirect URI cannot be empty.", [nameof(RedirectUris)]);
 
-        foreach (string redirectUri in RedirectUris.Where(uri => !String.IsNullOrWhiteSpace(uri)))
-        {
-            if (!IsValidRedirectUri(redirectUri))
-                yield return new ValidationResult($"'{redirectUri}' must be an absolute HTTPS URI or loopback HTTP URI without a fragment.", [nameof(RedirectUris)]);
-        }
+        foreach (string redirectUri in RedirectUris.Where(uri => !String.IsNullOrWhiteSpace(uri)).Where(uri => !IsValidRedirectUri(uri)))
+            yield return new ValidationResult($"'{redirectUri}' must be an absolute HTTPS URI or loopback HTTP URI without a fragment.", [nameof(RedirectUris)]);
 
         foreach (string _ in Scopes.Where(String.IsNullOrWhiteSpace))
             yield return new ValidationResult("Scope cannot be empty.", [nameof(Scopes)]);
 
-        foreach (string scope in Scopes.Where(s => !String.IsNullOrWhiteSpace(s)))
-        {
-            if (!AllScopes.Contains(scope, StringComparer.Ordinal))
-                yield return new ValidationResult($"'{scope}' is not a supported OAuth scope.", [nameof(Scopes)]);
-        }
+        foreach (string scope in Scopes.Where(s => !String.IsNullOrWhiteSpace(s)).Where(scope => !AllScopes.Contains(scope, StringComparer.Ordinal)))
+            yield return new ValidationResult($"'{scope}' is not a supported OAuth scope.", [nameof(Scopes)]);
     }
 
     public static readonly IReadOnlyCollection<string> AllScopes =
