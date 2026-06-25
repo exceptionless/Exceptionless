@@ -7,7 +7,7 @@ namespace Exceptionless.Core.Models;
 
 public class OAuthApplication : IIdentity, IHaveDates, IValidatableObject
 {
-    public const string SystemUserId = "000000000000000000000000";
+    public const string SystemUserId = "000000000000000000000001";
 
     [ObjectId]
     public string Id { get; set; } = null!;
