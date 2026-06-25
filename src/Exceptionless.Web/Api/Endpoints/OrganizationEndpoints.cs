@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -17,6 +18,8 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using OrganizationMessages = Exceptionless.Web.Api.Messages;
 using Invoice = Exceptionless.Web.Models.Invoice;
 using Exceptionless.Web.Utility.OpenApi;
+using Microsoft.Extensions.Options;
+using HttpJsonOptions = Microsoft.AspNetCore.Http.Json.JsonOptions;
 using HttpIResult = Microsoft.AspNetCore.Http.IResult;
 using HttpResults = Microsoft.AspNetCore.Http.Results;
 
@@ -93,8 +96,8 @@ public static class OrganizationEndpoints
             }
         });
 
-        group.MapPatch("organizations/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, JsonPatchDocument<NewOrganization> patchDocument)
-            => (await mediator.InvokeAsync<Result<ViewOrganization>>(new OrganizationMessages.UpdateOrganizationMessage(id, patchDocument, httpContext))).ToHttpResult(resultMapper))
+        group.MapPatch("organizations/{id:objectid}", UpdateOrganizationAsync)
+        .WithDisplayName("HTTP: PATCH api/v2/organizations/{id:objectid}")
         .Produces<ViewOrganization>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -109,10 +112,11 @@ public static class OrganizationEndpoints
                 ["400"] = "An error occurred while updating the organization.",
                 ["404"] = "The organization could not be found.",
             }
-        });
+        })
+        .WithMetadata(new JsonPatchRequestBodyAttribute<NewOrganization>());
 
-        group.MapPut("organizations/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, JsonPatchDocument<NewOrganization> patchDocument)
-            => (await mediator.InvokeAsync<Result<ViewOrganization>>(new OrganizationMessages.UpdateOrganizationMessage(id, patchDocument, httpContext))).ToHttpResult(resultMapper))
+        group.MapPut("organizations/{id:objectid}", UpdateOrganizationAsync)
+        .WithDisplayName("HTTP: PUT api/v2/organizations/{id:objectid}")
         .Produces<ViewOrganization>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -127,7 +131,8 @@ public static class OrganizationEndpoints
                 ["400"] = "An error occurred while updating the organization.",
                 ["404"] = "The organization could not be found.",
             }
-        });
+        })
+        .WithMetadata(new JsonPatchRequestBodyAttribute<NewOrganization>());
 
         group.MapPost("organizations/{id:objectid}/icon", UploadIconAsync)
         .Accepts<IFormFile>("multipart/form-data")
@@ -387,6 +392,26 @@ public static class OrganizationEndpoints
         });
 
         return endpoints;
+    }
+
+    private static async Task<HttpIResult> UpdateOrganizationAsync(
+        string id,
+        HttpContext httpContext,
+        IMediator mediator,
+        IMediatorResultMapper<HttpIResult> resultMapper,
+        IOptions<HttpJsonOptions> jsonOptions,
+        [FromBody] JsonElement body)
+    {
+        var patchDocument = JsonPatchValidation.FromJsonBody<NewOrganization>(body, jsonOptions.Value.SerializerOptions);
+        if (patchDocument is null)
+        {
+            return HttpResults.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["patch"] = ["Invalid patch document."]
+            });
+        }
+
+        return (await mediator.InvokeAsync<Result<ViewOrganization>>(new OrganizationMessages.UpdateOrganizationMessage(id, patchDocument, httpContext))).ToHttpResult(resultMapper);
     }
 
     private static async Task<HttpIResult> UploadIconAsync(string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromServices] IFileStorage fileStorage, [FromForm] IFormFile? file, CancellationToken cancellationToken)

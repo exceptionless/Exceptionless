@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Web.Api.Filters;
@@ -11,6 +12,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using TokenMessages = Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Utility.OpenApi;
+using Microsoft.Extensions.Options;
+using HttpJsonOptions = Microsoft.AspNetCore.Http.Json.JsonOptions;
+using HttpIResult = Microsoft.AspNetCore.Http.IResult;
+using HttpResults = Microsoft.AspNetCore.Http.Results;
 
 namespace Exceptionless.Web.Api.Endpoints;
 
@@ -172,8 +177,8 @@ public static class TokenEndpoints
             }
         });
 
-        group.MapPatch("tokens/{id:tokens}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, JsonPatchDocument<UpdateToken> patchDocument)
-            => (await mediator.InvokeAsync<Result<ViewToken>>(new TokenMessages.UpdateTokenMessage(id, patchDocument))).ToHttpResult(resultMapper))
+        group.MapPatch("tokens/{id:tokens}", UpdateTokenAsync)
+        .WithDisplayName("HTTP: PATCH api/v2/tokens/{id:tokens}")
         .Produces<ViewToken>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -187,10 +192,11 @@ public static class TokenEndpoints
                 ["400"] = "An error occurred while updating the token.",
                 ["404"] = "The token could not be found.",
             }
-        });
+        })
+        .WithMetadata(new JsonPatchRequestBodyAttribute<UpdateToken>());
 
-        group.MapPut("tokens/{id:tokens}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, JsonPatchDocument<UpdateToken> patchDocument)
-            => (await mediator.InvokeAsync<Result<ViewToken>>(new TokenMessages.UpdateTokenMessage(id, patchDocument))).ToHttpResult(resultMapper))
+        group.MapPut("tokens/{id:tokens}", UpdateTokenAsync)
+        .WithDisplayName("HTTP: PUT api/v2/tokens/{id:tokens}")
         .Produces<ViewToken>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -204,7 +210,8 @@ public static class TokenEndpoints
                 ["400"] = "An error occurred while updating the token.",
                 ["404"] = "The token could not be found.",
             }
-        });
+        })
+        .WithMetadata(new JsonPatchRequestBodyAttribute<UpdateToken>());
 
         group.MapDelete("tokens/{ids:tokens}", async (string ids, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
             => (await mediator.InvokeAsync<Result<ModelActionResults>>(new TokenMessages.DeleteTokens(ids.FromDelimitedString()))).ToHttpResult(resultMapper))
@@ -226,5 +233,24 @@ public static class TokenEndpoints
         });
 
         return endpoints;
+    }
+
+    private static async Task<HttpIResult> UpdateTokenAsync(
+        string id,
+        IMediator mediator,
+        IMediatorResultMapper<HttpIResult> resultMapper,
+        IOptions<HttpJsonOptions> jsonOptions,
+        [FromBody] JsonElement body)
+    {
+        var patchDocument = JsonPatchValidation.FromJsonBody<UpdateToken>(body, jsonOptions.Value.SerializerOptions);
+        if (patchDocument is null)
+        {
+            return HttpResults.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["patch"] = ["Invalid patch document."]
+            });
+        }
+
+        return (await mediator.InvokeAsync<Result<ViewToken>>(new TokenMessages.UpdateTokenMessage(id, patchDocument))).ToHttpResult(resultMapper);
     }
 }

@@ -1608,6 +1608,27 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PatchAsync_WithLegacyPartialObject_UpdatesName()
+    {
+        // Arrange
+        var originalOrg = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(originalOrg);
+
+        // Act
+        var updated = await SendRequestAsAsync<ViewOrganization>(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
+            .Content(JsonSerializer.Serialize(new { name = "Legacy Acme" }), "application/json")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updated);
+        Assert.Equal("Legacy Acme", updated.Name);
+        Assert.True(updated.UpdatedUtc >= originalOrg.UpdatedUtc);
+    }
+    [Fact]
     public async Task PatchAsync_EmptyJsonBody_ReturnsOriginalOrganizationUnchanged()
     {
         // Arrange

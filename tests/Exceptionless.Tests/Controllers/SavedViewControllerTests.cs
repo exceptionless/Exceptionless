@@ -886,6 +886,27 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PatchAsync_WithLegacyPartialObject_UpdatesName()
+    {
+        // Arrange
+        var created = await CreateSavedViewAsync("Legacy Original Name", "status:open", "events");
+        Assert.NotNull(created);
+
+        // Act
+        var updated = await SendRequestAsAsync<ViewSavedView>(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", created.Id)
+            .Content(JsonSerializer.Serialize(new { name = "Legacy Updated Name" }), "application/json")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updated);
+        Assert.Equal("Legacy Updated Name", updated.Name);
+        Assert.NotNull(updated.UpdatedByUserId);
+    }
+    [Fact]
     public async Task PatchAsync_UpdateFilter_UpdatesFilterString()
     {
         // Arrange

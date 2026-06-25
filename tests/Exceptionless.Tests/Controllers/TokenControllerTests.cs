@@ -762,6 +762,43 @@ public sealed class TokenControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PatchAsync_WithLegacyPartialObject_UpdatesNotes()
+    {
+        // Arrange
+        var createdToken = await SendRequestAsAsync<ViewToken>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("tokens")
+            .Content(new NewToken
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                ProjectId = SampleDataService.TEST_PROJECT_ID,
+                Scopes = [AuthorizationRoles.Client],
+                Notes = "Original notes"
+            })
+            .StatusCodeShouldBeCreated()
+        );
+
+        Assert.NotNull(createdToken);
+
+        // Act
+        var updatedToken = await SendRequestAsAsync<ViewToken>(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("tokens", createdToken.Id)
+            .Content(JsonSerializer.Serialize(new { notes = "Legacy partial notes" }), "application/json")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updatedToken);
+        Assert.Equal("Legacy partial notes", updatedToken.Notes);
+
+        var token = await _tokenRepository.GetByIdAsync(createdToken.Id);
+        Assert.NotNull(token);
+        Assert.Equal("Legacy partial notes", token.Notes);
+    }
+    [Fact]
     public async Task PatchAsync_DisableToken_ChangesIsDisabledOnly()
     {
         // Arrange

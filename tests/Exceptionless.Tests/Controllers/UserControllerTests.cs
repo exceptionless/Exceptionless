@@ -389,6 +389,30 @@ public sealed class UserControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PatchAsync_WithLegacyPartialObject_UpdatesFullName()
+    {
+        // Arrange
+        var currentUser = await SendRequestAsAsync<ViewUser>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(currentUser);
+
+        // Act
+        var updatedUser = await SendRequestAsAsync<ViewUser>(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("users", currentUser.Id)
+            .Content(JsonSerializer.Serialize(new { full_name = "Legacy Updated Name" }), "application/json")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updatedUser);
+        Assert.Equal("Legacy Updated Name", updatedUser.FullName);
+    }
+    [Fact]
     public async Task PatchAsync_UpdateNotifications_ReturnsUpdatedUser()
     {
         // Arrange
