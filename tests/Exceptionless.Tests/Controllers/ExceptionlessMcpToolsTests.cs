@@ -48,6 +48,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
         var result = await tools.ListProjectsAsync(limit: 50);
 
+        Assert.True(result.Ok);
         Assert.Null(result.Error);
         Assert.Contains(result.Items, p => p.Id == TestConstants.ProjectId);
     }
@@ -60,6 +61,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
         var result = await tools.SearchStacksAsync(TestConstants.ProjectId, limit: 50);
 
+        Assert.True(result.Ok);
         Assert.Null(result.Error);
         Assert.Contains(result.Items, s => s.Id == stacks[0].Id);
     }
@@ -73,6 +75,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
         var result = await tools.GetEventAsync(events[0].Id);
 
+        Assert.True(result.Ok);
         Assert.True(result.Found);
         Assert.Null(result.Error);
         Assert.Equal(events[0].Id, result.Item?.Id);
@@ -101,9 +104,11 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
         var result = await tools.GetEventAsync(ev.Id);
 
+        Assert.True(result.Ok);
         Assert.True(result.Found);
         Assert.Null(result.Error);
         Assert.NotNull(result.Item?.Details);
+        Assert.False(result.Item.Details.IsTruncated);
         var error = Assert.IsType<SimpleError>(result.Item.Details.Error);
         Assert.Equal("Boom", error.Message);
         Assert.Equal("at Test.Throw() in Test.cs:line 42", error.StackTrace);
@@ -119,7 +124,9 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
         var result = await tools.SearchStacksAsync(TestConstants.ProjectId);
 
+        Assert.False(result.Ok);
         Assert.NotNull(result.Error);
+        Assert.Equal(McpErrorCodes.NotAccessible, result.ErrorInfo?.Code);
         Assert.Empty(result.Items);
     }
 
@@ -130,6 +137,8 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
         var result = await tools.SearchStacksAsync(TestConstants.ProjectId, sort: "-this_field_does_not_exist");
 
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.InvalidSort, result.ErrorInfo?.Code);
         Assert.Contains("Unknown sort field", result.Error);
         Assert.Empty(result.Items);
     }
@@ -141,6 +150,8 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
         var result = await tools.SearchStacksAsync(TestConstants.ProjectId, filter: "nonexistentfield:foo");
 
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.UnknownFilterField, result.ErrorInfo?.Code);
         Assert.Equal("Unknown filter field 'nonexistentfield'.", result.Error);
         Assert.Empty(result.Items);
     }
@@ -152,6 +163,8 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
         var result = await tools.SearchStacksAsync(TestConstants.ProjectId, filter: "type:::((( garbage");
 
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.InvalidFilter, result.ErrorInfo?.Code);
         Assert.StartsWith("Invalid filter:", result.Error);
         Assert.Empty(result.Items);
     }
@@ -165,6 +178,8 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
         var result = await tools.SearchStacksAsync(TestConstants.ProjectId, limit: limit);
 
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.InvalidLimit, result.ErrorInfo?.Code);
         Assert.Equal("Limit must be between 1 and 50.", result.Error);
         Assert.Empty(result.Items);
     }
@@ -177,9 +192,117 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
         var result = await tools.SearchStacksAsync(TestConstants.ProjectId, limit: 9999);
 
+        Assert.True(result.Ok);
         Assert.Null(result.Error);
         Assert.Equal(50, result.Limit);
         Assert.Equal("Limit was capped at 50.", result.Warning);
+    }
+
+    [Fact]
+    public async Task ListProjectsAsync_MalformedFilter_ReturnsSpecificError()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead);
+
+        var result = await tools.ListProjectsAsync(filter: "(((((");
+
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.InvalidFilter, result.ErrorInfo?.Code);
+        Assert.StartsWith("Invalid filter:", result.Error);
+        Assert.Empty(result.Items);
+    }
+
+    [Theory]
+    [InlineData("bad-project-id")]
+    [InlineData("")]
+    public async Task GetProjectAsync_InvalidId_ReturnsInvalidId(string projectId)
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead);
+
+        var result = await tools.GetProjectAsync(projectId);
+
+        Assert.False(result.Ok);
+        Assert.False(result.Found);
+        Assert.Equal(McpErrorCodes.InvalidId, result.ErrorInfo?.Code);
+    }
+
+    [Fact]
+    public async Task SearchStacksAsync_InvalidProjectId_ReturnsInvalidId()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksRead);
+
+        var result = await tools.SearchStacksAsync("bad-project-id");
+
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.InvalidId, result.ErrorInfo?.Code);
+        Assert.Empty(result.Items);
+    }
+
+    [Fact]
+    public async Task GetEventAsync_InvalidEventId_ReturnsInvalidId()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.GetEventAsync("bad-event-id");
+
+        Assert.False(result.Ok);
+        Assert.False(result.Found);
+        Assert.Equal(McpErrorCodes.InvalidId, result.ErrorInfo?.Code);
+    }
+
+    [Fact]
+    public async Task GetEventAsync_DetailPayloadAboveMaximum_OmitsLargeDetails()
+    {
+        var (_, events) = await CreateDataAsync(d => d.Event().TestProject().Type(Event.KnownTypes.Error).Message("MCP large detail event"));
+        var ev = events[0];
+        ev.SetSimpleError(new SimpleError
+        {
+            Message = "Boom",
+            Type = "System.InvalidOperationException",
+            StackTrace = "at Test.Throw()"
+        });
+        ev.Data!["large"] = new string('x', 10_000);
+        await _eventRepository.SaveAsync(ev, o => o.ImmediateConsistency());
+        await RefreshDataAsync();
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.GetEventAsync(ev.Id, maxDetailSize: 1024);
+
+        Assert.True(result.Ok);
+        Assert.True(result.Found);
+        Assert.NotNull(result.Item?.Details);
+        Assert.True(result.Item.Details.IsTruncated);
+        Assert.Null(result.Item.Details.Data);
+        Assert.True(result.Item.Details.Size > result.Item.Details.MaxSize);
+        Assert.NotNull(result.Item.Details.TruncationMessage);
+    }
+
+    [Fact]
+    public async Task GetEventAsync_InvalidMaxDetailSize_ReturnsError()
+    {
+        var (_, events) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP detail size"));
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.GetEventAsync(events[0].Id, maxDetailSize: 100);
+
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.InvalidDetailSize, result.ErrorInfo?.Code);
+    }
+
+    [Fact]
+    public async Task GetFilterFields_McpScope_ReturnsSupportedFields()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead);
+
+        var result = tools.GetFilterFields();
+
+        Assert.True(result.Ok);
+        Assert.True(result.Found);
+        Assert.NotNull(result.Item);
+        var item = result.Item;
+        Assert.Contains("name", item.Projects.FilterFields);
+        Assert.Contains("status", item.Stacks.FilterFields);
+        Assert.Contains("path", item.Events.FilterFields);
+        Assert.Contains("data.", item.Stacks.DynamicFilterPrefixes);
     }
 
     [Fact]
@@ -191,12 +314,14 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
         var firstPage = await tools.GetStackEventsAsync(stacks[0].Id, limit: 1);
 
+        Assert.True(firstPage.Ok);
         Assert.Null(firstPage.Error);
         Assert.True(firstPage.HasMore);
         Assert.NotNull(firstPage.After);
 
         var secondPage = await tools.GetStackEventsAsync(stacks[0].Id, limit: 1, after: firstPage.After);
 
+        Assert.True(secondPage.Ok);
         Assert.Null(secondPage.Error);
         Assert.NotEmpty(secondPage.Items);
         Assert.DoesNotContain(secondPage.Items, e => e.Id == firstPage.Items.Single().Id);
@@ -222,6 +347,22 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         string? limitDescription = limit.GetProperty("description").GetString();
         Assert.Contains("capped at 50", limitDescription, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("cursor", limitDescription, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData(nameof(ExceptionlessMcpTools.ListProjectsAsync))]
+    [InlineData(nameof(ExceptionlessMcpTools.SearchStacksAsync))]
+    [InlineData(nameof(ExceptionlessMcpTools.GetStackEventsAsync))]
+    public async Task FilteredTools_SchemaDescribesSupportedFilterFields(string methodName)
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead, AuthorizationRoles.StacksRead, AuthorizationRoles.EventsRead);
+        var method = typeof(ExceptionlessMcpTools).GetMethod(methodName) ?? throw new InvalidOperationException($"Could not find {methodName}.");
+        var tool = McpServerTool.Create(method, tools, new McpServerToolCreateOptions());
+        var properties = tool.ProtocolTool.InputSchema.GetProperty("properties");
+        var filter = properties.GetProperty("filter");
+
+        string? description = filter.GetProperty("description").GetString();
+        Assert.Contains("Supported fields", description, StringComparison.OrdinalIgnoreCase);
     }
 
     private Task<ExceptionlessMcpTools> CreateToolsAsync(params string[] scopes)

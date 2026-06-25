@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Security.Claims;
+using System.Text;
 using System.Text.RegularExpressions;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Authorization;
@@ -24,6 +25,12 @@ public sealed class ExceptionlessMcpTools
 {
     private const int DefaultLimit = 10;
     private const int MaxLimit = 50;
+    private const int DefaultMaxDetailSize = 16 * 1024;
+    private const int MaxDetailSize = 64 * 1024;
+    private const int MinDetailSize = 1024;
+    private const string ProjectFilterDescription = "Optional Exceptionless filter expression applied to projects. Supported fields: id, name, organization_id, created_utc, updated_utc, last_event_date_utc.";
+    private const string StackFilterDescription = "Optional Exceptionless filter expression. Supported fields include: stack, project, project_id, organization, organization_id, type, status, title, description, tag, tags, references, fixed, hidden, regressed, error, first, first_occurrence, last, last_occurrence, occurrences, total_occurrences, data.*, idx.*.";
+    private const string EventFilterDescription = "Optional Exceptionless filter expression applied to events. Supported fields include: id, project, project_id, stack, stack_id, organization, organization_id, type, source, message, date, tag, tags, user, user.name, user.email, path, error, error.type, error.message, error.code, status, data.*, idx.*.";
 
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IOrganizationRepository _organizationRepository;
@@ -60,7 +67,7 @@ public sealed class ExceptionlessMcpTools
     [McpServerTool(Name = "list_projects", ReadOnly = true, UseStructuredContent = true)]
     [Description("Lists projects the authenticated Exceptionless user can access. When hasMore is true, pass the returned after cursor to fetch the next page or before cursor to fetch the previous page.")]
     public async Task<McpListResult<McpProjectResult>> ListProjectsAsync(
-        [Description("Optional Exceptionless filter expression applied to projects.")]
+        [Description(ProjectFilterDescription)]
         string? filter = null,
         [Description("Optional sort expression. Defaults to project name.")]
         string? sort = null,
@@ -74,11 +81,11 @@ public sealed class ExceptionlessMcpTools
         try
         {
             EnsureScope(AuthorizationRoles.ProjectsRead);
-            if (!TryValidateLimit(limit, out int resolvedLimit, out string? limitError, out string? limitWarning))
-                return McpListResult<McpProjectResult>.Failed(limitError ?? "Invalid limit.");
+            var validation = ValidateProjectSearch(filter, sort, limit);
+            if (validation.Error is not null)
+                return McpListResult<McpProjectResult>.Failed(validation.Error);
 
-            if (!TryValidateSort(sort, ProjectSortFields, out string? sortError))
-                return McpListResult<McpProjectResult>.Failed(sortError ?? "Invalid sort.");
+            int resolvedLimit = validation.Limit;
 
             var organizations = await GetAccessibleOrganizationsAsync();
             var systemFilter = new AppFilter(organizations)
@@ -94,14 +101,22 @@ public sealed class ExceptionlessMcpTools
             return new McpListResult<McpProjectResult>(
                 results.Documents.Select(ToProjectResult).ToArray(),
                 results.HasMore,
-                Warning: limitWarning,
+                Warning: validation.Warning,
                 Before: results.Hits.FirstOrDefault()?.GetSortToken(_serializer),
                 After: results.HasMore ? results.Hits.LastOrDefault()?.GetSortToken(_serializer) : null,
                 Limit: resolvedLimit);
         }
+        catch (Exception ex) when (IsLookupError(ex))
+        {
+            return McpListResult<McpProjectResult>.Failed(McpErrors.NotAccessible("Unable to list projects. No accessible organizations were found."));
+        }
+        catch (Exception ex) when (!String.IsNullOrWhiteSpace(filter))
+        {
+            return McpListResult<McpProjectResult>.Failed(McpErrors.InvalidFilter($"Invalid filter: {ex.Message}"));
+        }
         catch (Exception)
         {
-            return McpListResult<McpProjectResult>.Failed("Unable to list projects. Check the filter, sort, and limit values.");
+            return McpListResult<McpProjectResult>.Failed(McpErrors.QueryFailed("Unable to list projects. Check the filter, sort, and limit values."));
         }
     }
 
@@ -114,12 +129,15 @@ public sealed class ExceptionlessMcpTools
         try
         {
             EnsureScope(AuthorizationRoles.ProjectsRead);
+            if (!TryValidateId(projectId, "projectId", out var idError))
+                return McpItemResult<McpProjectResult>.Failed(idError);
+
             var project = await GetAccessibleProjectAsync(projectId);
             return McpItemResult<McpProjectResult>.Success(ToProjectResult(project));
         }
         catch (Exception ex) when (IsLookupError(ex))
         {
-            return McpItemResult<McpProjectResult>.NotFound($"Project {projectId} was not found or is not accessible.");
+            return McpItemResult<McpProjectResult>.Failed(ToLookupError("Project", projectId, ex));
         }
     }
 
@@ -128,7 +146,7 @@ public sealed class ExceptionlessMcpTools
     public async Task<McpListResult<McpStackResult>> SearchStacksAsync(
         [Description("The Exceptionless project id to search within.")]
         string projectId,
-        [Description("Optional Exceptionless filter expression. Examples: type:404, status:open, error:true.")]
+        [Description(StackFilterDescription)]
         string? filter = null,
         [Description("Optional sort expression. Defaults to -last_occurrence.")]
         string? sort = "-last_occurrence",
@@ -142,6 +160,9 @@ public sealed class ExceptionlessMcpTools
         try
         {
             EnsureScope(AuthorizationRoles.StacksRead);
+            if (!TryValidateId(projectId, "projectId", out var idError))
+                return McpListResult<McpStackResult>.Failed(idError);
+
             var validation = await ValidateSearchAsync(filter, sort, limit, StackFilterFields, StackSortFields, _stackQueryValidator);
             if (validation.Error is not null)
                 return McpListResult<McpStackResult>.Failed(validation.Error);
@@ -166,11 +187,11 @@ public sealed class ExceptionlessMcpTools
         }
         catch (Exception ex) when (IsLookupError(ex))
         {
-            return McpListResult<McpStackResult>.Failed($"Project {projectId} was not found or is not accessible.");
+            return McpListResult<McpStackResult>.Failed(ToLookupError("Project", projectId, ex));
         }
         catch (Exception)
         {
-            return McpListResult<McpStackResult>.Failed("Unable to search stacks. Check the project id, filter, sort, and limit values.");
+            return McpListResult<McpStackResult>.Failed(McpErrors.QueryFailed("Unable to search stacks. Check the project id, filter, sort, and limit values."));
         }
     }
 
@@ -183,12 +204,15 @@ public sealed class ExceptionlessMcpTools
         try
         {
             EnsureScope(AuthorizationRoles.StacksRead);
+            if (!TryValidateId(stackId, "stackId", out var idError))
+                return McpItemResult<McpStackResult>.Failed(idError);
+
             var stack = await GetAccessibleStackAsync(stackId);
             return McpItemResult<McpStackResult>.Success(ToStackResult(stack));
         }
         catch (Exception ex) when (IsLookupError(ex))
         {
-            return McpItemResult<McpStackResult>.NotFound($"Stack {stackId} was not found or is not accessible.");
+            return McpItemResult<McpStackResult>.Failed(ToLookupError("Stack", stackId, ex));
         }
     }
 
@@ -197,7 +221,7 @@ public sealed class ExceptionlessMcpTools
     public async Task<McpListResult<McpEventResult>> GetStackEventsAsync(
         [Description("The Exceptionless stack id.")]
         string stackId,
-        [Description("Optional Exceptionless filter expression applied to events.")]
+        [Description(EventFilterDescription)]
         string? filter = null,
         [Description("Optional sort expression. Defaults to -date.")]
         string? sort = "-date",
@@ -211,6 +235,9 @@ public sealed class ExceptionlessMcpTools
         try
         {
             EnsureScope(AuthorizationRoles.EventsRead);
+            if (!TryValidateId(stackId, "stackId", out var idError))
+                return McpListResult<McpEventResult>.Failed(idError);
+
             var validation = await ValidateSearchAsync(filter, sort, limit, EventFilterFields, EventSortFields, _eventQueryValidator);
             if (validation.Error is not null)
                 return McpListResult<McpEventResult>.Failed(validation.Error);
@@ -235,11 +262,11 @@ public sealed class ExceptionlessMcpTools
         }
         catch (Exception ex) when (IsLookupError(ex))
         {
-            return McpListResult<McpEventResult>.Failed($"Stack {stackId} was not found or is not accessible.");
+            return McpListResult<McpEventResult>.Failed(ToLookupError("Stack", stackId, ex));
         }
         catch (Exception)
         {
-            return McpListResult<McpEventResult>.Failed("Unable to list stack events. Check the stack id, filter, sort, and limit values.");
+            return McpListResult<McpEventResult>.Failed(McpErrors.QueryFailed("Unable to list stack events. Check the stack id, filter, sort, and limit values."));
         }
     }
 
@@ -249,21 +276,47 @@ public sealed class ExceptionlessMcpTools
         [Description("The Exceptionless event id.")]
         string eventId,
         [Description("Whether to include error, request, environment, and extended data. Defaults to true.")]
-        bool includeDetails = true)
+        bool includeDetails = true,
+        [Description("Maximum serialized detail payload size in bytes when includeDetails is true. Defaults to 16384, minimum 1024, maximum 65536. Large detail sections are omitted with truncation metadata.")]
+        int maxDetailSize = DefaultMaxDetailSize)
     {
         try
         {
             EnsureScope(AuthorizationRoles.EventsRead);
+            if (!TryValidateId(eventId, "eventId", out var idError))
+                return McpItemResult<McpEventResult>.Failed(idError);
+
+            if (includeDetails && !TryValidateDetailSize(maxDetailSize, out var detailSizeError))
+                return McpItemResult<McpEventResult>.Failed(detailSizeError);
+
             var ev = await _eventRepository.GetByIdAsync(eventId, o => o.Cache());
             if (ev is null)
-                return McpItemResult<McpEventResult>.NotFound($"Event {eventId} was not found or is not accessible.");
+                return McpItemResult<McpEventResult>.Failed(McpErrors.NotFound($"Event {eventId} was not found or is not accessible.", "eventId", eventId));
 
             EnsureOrganizationAccess(ev.OrganizationId);
-            return McpItemResult<McpEventResult>.Success(ToEventResult(ev, includeDetails));
+            return McpItemResult<McpEventResult>.Success(ToEventResult(ev, includeDetails, maxDetailSize));
         }
         catch (Exception ex) when (IsLookupError(ex))
         {
-            return McpItemResult<McpEventResult>.NotFound($"Event {eventId} was not found or is not accessible.");
+            return McpItemResult<McpEventResult>.Failed(ToLookupError("Event", eventId, ex));
+        }
+    }
+
+    [McpServerTool(Name = "get_filter_fields", ReadOnly = true, UseStructuredContent = true)]
+    [Description("Lists supported Exceptionless MCP filter and sort fields for projects, stacks, and events. Dynamic data.* and idx.* filter fields are allowed for stacks and events.")]
+    public McpItemResult<McpFilterFieldsResult> GetFilterFields()
+    {
+        try
+        {
+            EnsureScope(AuthorizationRoles.McpRead);
+            return McpItemResult<McpFilterFieldsResult>.Success(new McpFilterFieldsResult(
+                ToFilterFieldSet(ProjectFilterFields, ProjectSortFields),
+                ToFilterFieldSet(StackFilterFields, StackSortFields, "data.", "idx."),
+                ToFilterFieldSet(EventFilterFields, EventSortFields, "data.", "idx.")));
+        }
+        catch (Exception ex) when (IsLookupError(ex))
+        {
+            return McpItemResult<McpFilterFieldsResult>.Failed(ToLookupError("Filter metadata", "current user", ex));
         }
     }
 
@@ -365,6 +418,21 @@ public sealed class ExceptionlessMcpTools
         return true;
     }
 
+    private static SearchValidationResult ValidateProjectSearch(string? filter, string? sort, int limit)
+    {
+        if (!TryValidateLimit(limit, out int resolvedLimit, out string? limitError, out string? warning))
+            return SearchValidationResult.Failed(McpErrors.InvalidLimit(limitError ?? "Invalid limit.", limit, MaxLimit));
+
+        if (!TryValidateSort(sort, ProjectSortFields, out string? sortError))
+            return SearchValidationResult.Failed(McpErrors.InvalidSort(sortError ?? "Invalid sort.", sort, ProjectSortFields));
+
+        string? unknownField = GetUnknownFilterField(filter, ProjectFilterFields);
+        if (unknownField is not null)
+            return SearchValidationResult.Failed(McpErrors.UnknownFilterField($"Unknown filter field '{unknownField}'.", unknownField, ProjectFilterFields));
+
+        return new SearchValidationResult(resolvedLimit, warning);
+    }
+
     private async Task<SearchValidationResult> ValidateSearchAsync(
         string? filter,
         string? sort,
@@ -374,18 +442,18 @@ public sealed class ExceptionlessMcpTools
         AppQueryValidator queryValidator)
     {
         if (!TryValidateLimit(limit, out int resolvedLimit, out string? limitError, out string? warning))
-            return SearchValidationResult.Failed(limitError ?? "Invalid limit.");
+            return SearchValidationResult.Failed(McpErrors.InvalidLimit(limitError ?? "Invalid limit.", limit, MaxLimit));
 
         if (!TryValidateSort(sort, allowedSortFields, out string? sortError))
-            return SearchValidationResult.Failed(sortError ?? "Invalid sort.");
+            return SearchValidationResult.Failed(McpErrors.InvalidSort(sortError ?? "Invalid sort.", sort, allowedSortFields));
 
         var queryValidation = await queryValidator.ValidateQueryAsync(filter);
         if (!queryValidation.IsValid)
-            return SearchValidationResult.Failed($"Invalid filter: {queryValidation.Message ?? "Unable to parse filter."}");
+            return SearchValidationResult.Failed(McpErrors.InvalidFilter($"Invalid filter: {queryValidation.Message ?? "Unable to parse filter."}"));
 
         string? unknownField = GetUnknownFilterField(filter, allowedFilterFields);
         if (unknownField is not null)
-            return SearchValidationResult.Failed($"Unknown filter field '{unknownField}'.");
+            return SearchValidationResult.Failed(McpErrors.UnknownFilterField($"Unknown filter field '{unknownField}'.", unknownField, allowedFilterFields));
 
         return new SearchValidationResult(resolvedLimit, warning);
     }
@@ -412,6 +480,30 @@ public sealed class ExceptionlessMcpTools
         return true;
     }
 
+    private static bool TryValidateId(string id, string fieldName, out McpErrorInfo error)
+    {
+        if (!String.IsNullOrWhiteSpace(id) && IdRegex.IsMatch(id))
+        {
+            error = null!;
+            return true;
+        }
+
+        error = McpErrors.InvalidId($"{fieldName} must be a 24 to 36 character alphanumeric Exceptionless id.", fieldName, id);
+        return false;
+    }
+
+    private static bool TryValidateDetailSize(int maxDetailSize, out McpErrorInfo error)
+    {
+        if (maxDetailSize is >= MinDetailSize and <= MaxDetailSize)
+        {
+            error = null!;
+            return true;
+        }
+
+        error = McpErrors.InvalidDetailSize($"maxDetailSize must be between {MinDetailSize} and {MaxDetailSize}.", maxDetailSize, MinDetailSize, MaxDetailSize);
+        return false;
+    }
+
     private static string? GetUnknownFilterField(string? filter, IReadOnlySet<string> allowedFilterFields)
     {
         if (String.IsNullOrWhiteSpace(filter))
@@ -433,6 +525,19 @@ public sealed class ExceptionlessMcpTools
     private static bool IsLookupError(Exception ex)
     {
         return ex is ArgumentException or KeyNotFoundException or UnauthorizedAccessException;
+    }
+
+    private static McpErrorInfo ToLookupError(string resourceName, string resourceId, Exception ex)
+    {
+        string message = $"{resourceName} {resourceId} was not found or is not accessible.";
+
+        return ex switch
+        {
+            ArgumentException => McpErrors.InvalidId($"{resourceName} id is invalid.", $"{resourceName.ToLowerInvariant()}Id", resourceId),
+            UnauthorizedAccessException => McpErrors.NotAccessible(message, resourceName, resourceId),
+            KeyNotFoundException => McpErrors.NotFound(message, $"{resourceName.ToLowerInvariant()}Id", resourceId),
+            _ => McpErrors.QueryFailed(message)
+        };
     }
 
     private static McpProjectResult ToProjectResult(Project project)
@@ -469,7 +574,7 @@ public sealed class ExceptionlessMcpTools
             $"/api/v2/stacks/{stack.Id}");
     }
 
-    private McpEventResult ToEventResult(PersistentEvent ev, bool includeDetails = false)
+    private McpEventResult ToEventResult(PersistentEvent ev, bool includeDetails = false, int maxDetailSize = DefaultMaxDetailSize)
     {
         return new McpEventResult(
             ev.Id,
@@ -485,16 +590,53 @@ public sealed class ExceptionlessMcpTools
             ev.IsFirstOccurrence,
             ev.CreatedUtc,
             $"/api/v2/events/{ev.Id}",
-            includeDetails ? ToEventDetails(ev) : null);
+            includeDetails ? ToEventDetails(ev, maxDetailSize) : null);
     }
 
-    private McpEventDetails ToEventDetails(PersistentEvent ev)
+    private McpEventDetails ToEventDetails(PersistentEvent ev, int maxDetailSize)
     {
-        return new McpEventDetails(
+        var details = new McpEventDetails(
             ev.GetError(_serializer, _logger) ?? (object?)ev.GetSimpleError(_serializer, _logger),
             ev.GetRequestInfo(_serializer, _logger),
             ev.GetEnvironmentInfo(_serializer, _logger),
             ev.Data);
+
+        return ApplyDetailLimit(details, maxDetailSize);
+    }
+
+    private McpEventDetails ApplyDetailLimit(McpEventDetails details, int maxDetailSize)
+    {
+        int originalSize = GetSerializedSize(details);
+        if (originalSize <= maxDetailSize)
+            return details with { Size = originalSize, MaxSize = maxDetailSize };
+
+        var withoutData = details with
+        {
+            Data = null,
+            IsTruncated = true,
+            Size = originalSize,
+            MaxSize = maxDetailSize,
+            TruncationMessage = $"Extended data was omitted because event details exceeded maxDetailSize ({maxDetailSize} bytes). Retry with a larger maxDetailSize up to {MaxDetailSize}."
+        };
+
+        if (GetSerializedSize(withoutData) <= maxDetailSize)
+            return withoutData;
+
+        return new McpEventDetails(
+            null,
+            null,
+            null,
+            null,
+            true,
+            originalSize,
+            maxDetailSize,
+            $"Event detail fields were omitted because event details exceeded maxDetailSize ({maxDetailSize} bytes). Retry with a larger maxDetailSize up to {MaxDetailSize}.");
+    }
+
+    private int GetSerializedSize<T>(T value)
+    {
+        string json = _serializer.SerializeToString(value) ?? String.Empty;
+        return Encoding.UTF8.GetByteCount(json);
     }
 
     private static string[] ToTags(IEnumerable<string?>? tags)
@@ -505,7 +647,16 @@ public sealed class ExceptionlessMcpTools
             .ToArray() ?? [];
     }
 
+    private static McpFilterFieldSet ToFilterFieldSet(IReadOnlySet<string> filterFields, IReadOnlySet<string> sortFields, params string[] dynamicFilterPrefixes)
+    {
+        return new McpFilterFieldSet(
+            filterFields.Order(StringComparer.OrdinalIgnoreCase).ToArray(),
+            sortFields.Order(StringComparer.OrdinalIgnoreCase).ToArray(),
+            dynamicFilterPrefixes);
+    }
+
     private static readonly Regex FilterFieldRegex = new(@"(?:^|[\s(])(?<field>@?[A-Za-z_][A-Za-z0-9_@.-]*):", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private static readonly Regex IdRegex = new(@"^[A-Za-z0-9]{24,36}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     private static readonly HashSet<string> ProjectSortFields = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -513,6 +664,12 @@ public sealed class ExceptionlessMcpTools
         "created_utc",
         "updated_utc",
         "last_event_date_utc"
+    };
+
+    private static readonly HashSet<string> ProjectFilterFields = new(ProjectSortFields, StringComparer.OrdinalIgnoreCase)
+    {
+        "id",
+        "organization_id"
     };
 
     private static readonly HashSet<string> StackSortFields = new(StringComparer.OrdinalIgnoreCase)
@@ -619,35 +776,142 @@ public sealed class ExceptionlessMcpTools
         "status"
     };
 
-    private sealed record SearchValidationResult(int Limit, string? Warning = null, string? Error = null)
+    private sealed record SearchValidationResult(int Limit, string? Warning = null, McpErrorInfo? Error = null)
     {
-        public static SearchValidationResult Failed(string error)
+        public static SearchValidationResult Failed(McpErrorInfo error)
         {
             return new SearchValidationResult(DefaultLimit, Error: error);
         }
     }
 }
 
-public sealed record McpListResult<T>(IReadOnlyCollection<T> Items, bool HasMore, string? Error = null, string? Warning = null, string? Before = null, string? After = null, int? Limit = null)
+public static class McpErrorCodes
 {
-    public static McpListResult<T> Failed(string error)
+    public const string InvalidDetailSize = "invalid_detail_size";
+    public const string InvalidFilter = "invalid_filter";
+    public const string InvalidId = "invalid_id";
+    public const string InvalidLimit = "invalid_limit";
+    public const string InvalidSort = "invalid_sort";
+    public const string NotAccessible = "not_accessible";
+    public const string NotFound = "not_found";
+    public const string QueryFailed = "query_failed";
+    public const string UnknownFilterField = "unknown_filter_field";
+}
+
+public static class McpErrors
+{
+    public static McpErrorInfo InvalidDetailSize(string message, int value, int min, int max)
     {
-        return new McpListResult<T>([], false, error);
+        return new McpErrorInfo(McpErrorCodes.InvalidDetailSize, message, new Dictionary<string, object?>
+        {
+            ["value"] = value,
+            ["min"] = min,
+            ["max"] = max
+        });
+    }
+
+    public static McpErrorInfo InvalidFilter(string message)
+    {
+        return new McpErrorInfo(McpErrorCodes.InvalidFilter, message);
+    }
+
+    public static McpErrorInfo InvalidId(string message, string field, string? value)
+    {
+        return new McpErrorInfo(McpErrorCodes.InvalidId, message, new Dictionary<string, object?>
+        {
+            ["field"] = field,
+            ["value"] = value
+        });
+    }
+
+    public static McpErrorInfo InvalidLimit(string message, int value, int max)
+    {
+        return new McpErrorInfo(McpErrorCodes.InvalidLimit, message, new Dictionary<string, object?>
+        {
+            ["value"] = value,
+            ["min"] = 1,
+            ["max"] = max
+        });
+    }
+
+    public static McpErrorInfo InvalidSort(string message, string? sort, IReadOnlySet<string> allowedFields)
+    {
+        return new McpErrorInfo(McpErrorCodes.InvalidSort, message, new Dictionary<string, object?>
+        {
+            ["sort"] = sort,
+            ["allowedFields"] = allowedFields.Order(StringComparer.OrdinalIgnoreCase).ToArray()
+        });
+    }
+
+    public static McpErrorInfo NotAccessible(string message, string? resource = null, string? id = null)
+    {
+        return new McpErrorInfo(McpErrorCodes.NotAccessible, message, ResourceDetails(resource, id));
+    }
+
+    public static McpErrorInfo NotFound(string message, string? field = null, string? value = null)
+    {
+        return new McpErrorInfo(McpErrorCodes.NotFound, message, ResourceDetails(field, value));
+    }
+
+    public static McpErrorInfo QueryFailed(string message)
+    {
+        return new McpErrorInfo(McpErrorCodes.QueryFailed, message);
+    }
+
+    public static McpErrorInfo UnknownFilterField(string message, string field, IReadOnlySet<string> allowedFields)
+    {
+        return new McpErrorInfo(McpErrorCodes.UnknownFilterField, message, new Dictionary<string, object?>
+        {
+            ["field"] = field,
+            ["allowedFields"] = allowedFields.Order(StringComparer.OrdinalIgnoreCase).ToArray()
+        });
+    }
+
+    private static IReadOnlyDictionary<string, object?>? ResourceDetails(string? field, string? value)
+    {
+        if (String.IsNullOrEmpty(field) && String.IsNullOrEmpty(value))
+            return null;
+
+        return new Dictionary<string, object?>
+        {
+            ["field"] = field,
+            ["value"] = value
+        };
     }
 }
 
-public sealed record McpItemResult<T>(bool Found, T? Item, string? Error = null)
+public sealed record McpErrorInfo(string Code, string Message, IReadOnlyDictionary<string, object?>? Details = null);
+
+public sealed record McpListResult<T>(IReadOnlyCollection<T> Items, bool HasMore, bool Ok = true, string? Error = null, McpErrorInfo? ErrorInfo = null, string? Warning = null, string? Before = null, string? After = null, int? Limit = null)
+{
+    public static McpListResult<T> Failed(McpErrorInfo error)
+    {
+        return new McpListResult<T>([], false, false, error.Message, error);
+    }
+}
+
+public sealed record McpItemResult<T>(bool Found, T? Item, bool Ok = true, string? Error = null, McpErrorInfo? ErrorInfo = null)
 {
     public static McpItemResult<T> Success(T item)
     {
         return new McpItemResult<T>(true, item);
     }
 
-    public static McpItemResult<T> NotFound(string error)
+    public static McpItemResult<T> Failed(McpErrorInfo error)
     {
-        return new McpItemResult<T>(false, default, error);
+        return new McpItemResult<T>(false, default, false, error.Message, error);
     }
 }
+
+public sealed record McpFilterFieldsResult(
+    McpFilterFieldSet Projects,
+    McpFilterFieldSet Stacks,
+    McpFilterFieldSet Events);
+
+public sealed record McpFilterFieldSet(
+    IReadOnlyCollection<string> FilterFields,
+    IReadOnlyCollection<string> SortFields,
+    IReadOnlyCollection<string> DynamicFilterPrefixes);
 
 public sealed record McpProjectResult(
     string Id,
@@ -697,4 +961,8 @@ public sealed record McpEventDetails(
     object? Error,
     RequestInfo? Request,
     EnvironmentInfo? Environment,
-    DataDictionary? Data);
+    DataDictionary? Data,
+    bool IsTruncated = false,
+    int? Size = null,
+    int? MaxSize = null,
+    string? TruncationMessage = null);
