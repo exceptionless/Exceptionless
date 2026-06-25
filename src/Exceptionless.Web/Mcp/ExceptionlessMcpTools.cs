@@ -11,6 +11,7 @@ using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.Core.Utility;
 using Exceptionless.Web.Extensions;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Extensions;
@@ -34,6 +35,7 @@ public sealed class ExceptionlessMcpTools
     private const string LastDescription = "Optional relative time range such as 24h, 7d, or 30m. Do not combine with startUtc or endUtc.";
     private const string StartUtcDescription = "Optional inclusive UTC start time, for example 2026-06-25T00:00:00Z. Do not combine with last.";
     private const string EndUtcDescription = "Optional exclusive UTC end time, for example 2026-06-25T01:00:00Z. Do not combine with last.";
+    private const string SnoozeDurationDescription = "Optional relative snooze duration such as 2h, 3d, or 1w. Do not combine with snoozeUntilUtc.";
     private const string ProjectFilterDescription = "Optional Exceptionless filter expression applied to projects. Supported fields: id, name, organization_id, created_utc, updated_utc, last_event_date_utc.";
     private const string StackFilterDescription = "Optional Exceptionless filter expression. Supported fields include: stack, project, project_id, organization, organization_id, type, status, title, description, tag, tags, references, fixed, hidden, regressed, error, first, first_occurrence, last, last_occurrence, occurrences, total_occurrences, data.*, idx.*.";
     private const string EventFilterDescription = "Optional Exceptionless filter expression applied to events. Supported fields include: id, project, project_id, stack, stack_id, organization, organization_id, type, source, message, date, tag, tags, user, user.name, user.email, path, error, error.type, error.message, error.code, status, data.*, idx.*.";
@@ -45,6 +47,7 @@ public sealed class ExceptionlessMcpTools
     private readonly IEventRepository _eventRepository;
     private readonly StackQueryValidator _stackQueryValidator;
     private readonly PersistentEventQueryValidator _eventQueryValidator;
+    private readonly SemanticVersionParser _semanticVersionParser;
     private readonly ITextSerializer _serializer;
     private readonly ILogger<ExceptionlessMcpTools> _logger;
     private readonly TimeProvider _timeProvider;
@@ -57,6 +60,7 @@ public sealed class ExceptionlessMcpTools
         IEventRepository eventRepository,
         StackQueryValidator stackQueryValidator,
         PersistentEventQueryValidator eventQueryValidator,
+        SemanticVersionParser semanticVersionParser,
         ITextSerializer serializer,
         ILogger<ExceptionlessMcpTools> logger,
         TimeProvider timeProvider)
@@ -68,6 +72,7 @@ public sealed class ExceptionlessMcpTools
         _eventRepository = eventRepository;
         _stackQueryValidator = stackQueryValidator;
         _eventQueryValidator = eventQueryValidator;
+        _semanticVersionParser = semanticVersionParser;
         _serializer = serializer;
         _logger = logger;
         _timeProvider = timeProvider;
@@ -440,6 +445,141 @@ public sealed class ExceptionlessMcpTools
         }
     }
 
+    [McpServerTool(Name = "update_stack_status", ReadOnly = false, UseStructuredContent = true)]
+    [Description("Changes a stack status. Use status fixed with fixedInVersion to mark an issue fixed in a release, or use open, ignored, or discarded. Snoozed stacks must use snooze_stack.")]
+    public async Task<McpResponse<McpStackUpdateResult>> UpdateStackStatusAsync(
+        [Description("The Exceptionless stack id.")]
+        string stackId,
+        [Description("Target status: open, fixed, ignored, or discarded. Regressed and snoozed cannot be set directly.")]
+        string status,
+        [Description("Optional semantic version for fixed status, such as 1.0.2. Only allowed when status is fixed.")]
+        string? fixedInVersion = null)
+    {
+        try
+        {
+            EnsureScope(AuthorizationRoles.StacksWrite);
+            if (!TryValidateId(stackId, "stackId", out var idError))
+                return McpResponse<McpStackUpdateResult>.Failed(idError);
+
+            if (!TryParseWritableStackStatus(status, out var stackStatus, out var statusError))
+                return McpResponse<McpStackUpdateResult>.Failed(statusError);
+
+            if (!String.IsNullOrWhiteSpace(fixedInVersion) && stackStatus != StackStatus.Fixed)
+                return McpResponse<McpStackUpdateResult>.Failed(McpErrors.InvalidVersion("fixedInVersion can only be used when status is fixed.", fixedInVersion));
+
+            var stack = await GetAccessibleStackForWriteAsync(stackId);
+            bool changed = stack.Status != stackStatus || (stackStatus == StackStatus.Fixed && !String.Equals(stack.FixedInVersion, NormalizeFixedVersion(fixedInVersion), StringComparison.Ordinal));
+
+            if (stackStatus == StackStatus.Fixed)
+            {
+                var semanticVersion = String.IsNullOrWhiteSpace(fixedInVersion) ? null : _semanticVersionParser.Parse(fixedInVersion);
+                if (!String.IsNullOrWhiteSpace(fixedInVersion) && semanticVersion is null)
+                    return McpResponse<McpStackUpdateResult>.Failed(McpErrors.InvalidVersion("Invalid semantic version.", fixedInVersion));
+
+                stack.MarkFixed(semanticVersion, _timeProvider);
+            }
+            else
+            {
+                stack.Status = stackStatus;
+                stack.DateFixed = null;
+                stack.FixedInVersion = null;
+                stack.SnoozeUntilUtc = null;
+            }
+
+            await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency());
+            return McpResponse<McpStackUpdateResult>.Success(new McpStackUpdateResult(
+                ToStackResult(stack),
+                changed,
+                $"Stack {stack.Id} status is {stack.Status.ToString().ToLowerInvariant()}."));
+        }
+        catch (Exception ex) when (IsLookupError(ex))
+        {
+            return McpResponse<McpStackUpdateResult>.Failed(ToLookupError("Stack", stackId, ex));
+        }
+        catch (Exception)
+        {
+            return McpResponse<McpStackUpdateResult>.Failed(McpErrors.QueryFailed("Unable to update stack status. Check the stack id, status, and fixed version."));
+        }
+    }
+
+    [McpServerTool(Name = "snooze_stack", ReadOnly = false, UseStructuredContent = true)]
+    [Description("Snoozes a stack until a future UTC time or for a relative duration. Snoozing clears fixed metadata and sets the stack status to snoozed.")]
+    public async Task<McpResponse<McpStackUpdateResult>> SnoozeStackAsync(
+        [Description("The Exceptionless stack id.")]
+        string stackId,
+        [Description(SnoozeDurationDescription)]
+        string? duration = null,
+        [Description("Optional UTC time to snooze until, for example 2026-06-26T12:00:00Z. Do not combine with duration.")]
+        string? snoozeUntilUtc = null)
+    {
+        try
+        {
+            EnsureScope(AuthorizationRoles.StacksWrite);
+            if (!TryValidateId(stackId, "stackId", out var idError))
+                return McpResponse<McpStackUpdateResult>.Failed(idError);
+
+            if (!TryResolveSnoozeUntil(duration, snoozeUntilUtc, out var untilUtc, out var snoozeError))
+                return McpResponse<McpStackUpdateResult>.Failed(snoozeError);
+
+            var stack = await GetAccessibleStackForWriteAsync(stackId);
+            bool changed = stack.Status != StackStatus.Snoozed || stack.SnoozeUntilUtc != untilUtc;
+            stack.Status = StackStatus.Snoozed;
+            stack.SnoozeUntilUtc = untilUtc;
+            stack.FixedInVersion = null;
+            stack.DateFixed = null;
+
+            await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency());
+            return McpResponse<McpStackUpdateResult>.Success(new McpStackUpdateResult(
+                ToStackResult(stack),
+                changed,
+                $"Stack {stack.Id} is snoozed until {untilUtc:O}."));
+        }
+        catch (Exception ex) when (IsLookupError(ex))
+        {
+            return McpResponse<McpStackUpdateResult>.Failed(ToLookupError("Stack", stackId, ex));
+        }
+        catch (Exception)
+        {
+            return McpResponse<McpStackUpdateResult>.Failed(McpErrors.QueryFailed("Unable to snooze stack. Check the stack id and snooze duration."));
+        }
+    }
+
+    [McpServerTool(Name = "set_stack_critical", ReadOnly = false, UseStructuredContent = true)]
+    [Description("Controls whether future events for a stack are marked critical.")]
+    public async Task<McpResponse<McpStackUpdateResult>> SetStackCriticalAsync(
+        [Description("The Exceptionless stack id.")]
+        string stackId,
+        [Description("True marks future events for this stack as critical; false clears that behavior.")]
+        bool critical)
+    {
+        try
+        {
+            EnsureScope(AuthorizationRoles.StacksWrite);
+            if (!TryValidateId(stackId, "stackId", out var idError))
+                return McpResponse<McpStackUpdateResult>.Failed(idError);
+
+            var stack = await GetAccessibleStackForWriteAsync(stackId);
+            bool changed = stack.OccurrencesAreCritical != critical;
+            stack.OccurrencesAreCritical = critical;
+
+            await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency());
+            return McpResponse<McpStackUpdateResult>.Success(new McpStackUpdateResult(
+                ToStackResult(stack),
+                changed,
+                critical
+                    ? $"Future events for stack {stack.Id} will be marked critical."
+                    : $"Future events for stack {stack.Id} will no longer be marked critical."));
+        }
+        catch (Exception ex) when (IsLookupError(ex))
+        {
+            return McpResponse<McpStackUpdateResult>.Failed(ToLookupError("Stack", stackId, ex));
+        }
+        catch (Exception)
+        {
+            return McpResponse<McpStackUpdateResult>.Failed(McpErrors.QueryFailed("Unable to update stack critical setting. Check the stack id."));
+        }
+    }
+
     [McpServerTool(Name = "get_filter_fields", ReadOnly = true, UseStructuredContent = true)]
     [Description("Lists supported Exceptionless MCP filter and sort fields for projects, stacks, and events. Dynamic data.* and idx.* filter fields are allowed for stacks and events.")]
     public McpResponse<McpFilterFieldsResult> GetFilterFields()
@@ -512,6 +652,19 @@ public sealed class ExceptionlessMcpTools
             throw new ArgumentException("Stack id is required.", nameof(stackId));
 
         var stack = await _stackRepository.GetByIdAsync(stackId, o => o.Cache());
+        if (stack is null)
+            throw new KeyNotFoundException($"Stack {stackId} was not found.");
+
+        EnsureOrganizationAccess(stack.OrganizationId);
+        return stack;
+    }
+
+    private async Task<Stack> GetAccessibleStackForWriteAsync(string stackId)
+    {
+        if (String.IsNullOrWhiteSpace(stackId))
+            throw new ArgumentException("Stack id is required.", nameof(stackId));
+
+        var stack = await _stackRepository.GetByIdAsync(stackId, o => o.Cache(false));
         if (stack is null)
             throw new KeyNotFoundException($"Stack {stackId} was not found.");
 
@@ -710,6 +863,67 @@ public sealed class ExceptionlessMcpTools
         return false;
     }
 
+    private bool TryResolveSnoozeUntil(string? duration, string? snoozeUntilUtc, out DateTime untilUtc, out McpErrorInfo error)
+    {
+        untilUtc = default;
+        bool hasDuration = !String.IsNullOrWhiteSpace(duration);
+        bool hasSnoozeUntilUtc = !String.IsNullOrWhiteSpace(snoozeUntilUtc);
+
+        if (hasDuration == hasSnoozeUntilUtc)
+        {
+            error = McpErrors.InvalidSnooze("Specify exactly one of duration or snoozeUntilUtc.", duration, snoozeUntilUtc);
+            return false;
+        }
+
+        if (hasDuration)
+        {
+            if (!TryParseRelativeTime(duration!, out var parsedDuration))
+            {
+                error = McpErrors.InvalidSnooze("duration must be a relative duration such as 30m, 2h, 3d, or 1w.", duration, snoozeUntilUtc);
+                return false;
+            }
+
+            untilUtc = _timeProvider.GetUtcNow().UtcDateTime.Add(parsedDuration);
+        }
+        else
+        {
+            if (!DateTimeOffset.TryParse(snoozeUntilUtc, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var dto))
+            {
+                error = McpErrors.InvalidSnooze("snoozeUntilUtc must be a valid UTC date/time.", duration, snoozeUntilUtc);
+                return false;
+            }
+
+            untilUtc = dto.UtcDateTime;
+        }
+
+        if (untilUtc < _timeProvider.GetUtcNow().UtcDateTime.AddMinutes(5))
+        {
+            error = McpErrors.InvalidSnooze("Must snooze for at least 5 minutes.", duration, snoozeUntilUtc);
+            return false;
+        }
+
+        error = null!;
+        return true;
+    }
+
+    private static bool TryParseWritableStackStatus(string status, out StackStatus stackStatus, out McpErrorInfo error)
+    {
+        stackStatus = default;
+        if (Enum.TryParse(status, ignoreCase: true, out stackStatus) && stackStatus is StackStatus.Open or StackStatus.Fixed or StackStatus.Ignored or StackStatus.Discarded)
+        {
+            error = null!;
+            return true;
+        }
+
+        error = McpErrors.InvalidStatus("status must be one of: open, fixed, ignored, discarded.", status);
+        return false;
+    }
+
+    private static string? NormalizeFixedVersion(string? fixedInVersion)
+    {
+        return String.IsNullOrWhiteSpace(fixedInVersion) ? null : fixedInVersion.Trim();
+    }
+
     private static bool TryValidateId(string id, string fieldName, out McpErrorInfo error)
     {
         if (!String.IsNullOrWhiteSpace(id) && IdRegex.IsMatch(id))
@@ -796,6 +1010,9 @@ public sealed class ExceptionlessMcpTools
             stack.TotalOccurrences,
             stack.FirstOccurrence,
             stack.LastOccurrence,
+            stack.DateFixed,
+            stack.FixedInVersion,
+            stack.SnoozeUntilUtc,
             ToTags(stack.Tags),
             stack.References.ToArray(),
             stack.OccurrencesAreCritical,
@@ -1060,8 +1277,11 @@ public static class McpErrorCodes
     public const string InvalidId = "invalid_id";
     public const string InvalidInterval = "invalid_interval";
     public const string InvalidLimit = "invalid_limit";
+    public const string InvalidSnooze = "invalid_snooze";
     public const string InvalidSort = "invalid_sort";
+    public const string InvalidStatus = "invalid_status";
     public const string InvalidTimeRange = "invalid_time_range";
+    public const string InvalidVersion = "invalid_version";
     public const string NotAccessible = "not_accessible";
     public const string NotFound = "not_found";
     public const string QueryFailed = "query_failed";
@@ -1112,12 +1332,30 @@ public static class McpErrors
         });
     }
 
+    public static McpErrorInfo InvalidSnooze(string message, string? duration, string? snoozeUntilUtc)
+    {
+        return new McpErrorInfo(McpErrorCodes.InvalidSnooze, message, new Dictionary<string, object?>
+        {
+            ["duration"] = duration,
+            ["snoozeUntilUtc"] = snoozeUntilUtc
+        });
+    }
+
     public static McpErrorInfo InvalidSort(string message, string? sort, IReadOnlySet<string> allowedFields)
     {
         return new McpErrorInfo(McpErrorCodes.InvalidSort, message, new Dictionary<string, object?>
         {
             ["sort"] = sort,
             ["allowedFields"] = allowedFields.Order(StringComparer.OrdinalIgnoreCase).ToArray()
+        });
+    }
+
+    public static McpErrorInfo InvalidStatus(string message, string? status)
+    {
+        return new McpErrorInfo(McpErrorCodes.InvalidStatus, message, new Dictionary<string, object?>
+        {
+            ["status"] = status,
+            ["allowedStatuses"] = new[] { "open", "fixed", "ignored", "discarded" }
         });
     }
 
@@ -1128,6 +1366,14 @@ public static class McpErrors
             ["last"] = last,
             ["startUtc"] = startUtc,
             ["endUtc"] = endUtc
+        });
+    }
+
+    public static McpErrorInfo InvalidVersion(string message, string? fixedInVersion)
+    {
+        return new McpErrorInfo(McpErrorCodes.InvalidVersion, message, new Dictionary<string, object?>
+        {
+            ["fixedInVersion"] = fixedInVersion
         });
     }
 
@@ -1238,12 +1484,20 @@ public sealed record McpStackResult(
     int TotalOccurrences,
     DateTime FirstOccurrence,
     DateTime LastOccurrence,
+    DateTime? DateFixed,
+    string? FixedInVersion,
+    DateTime? SnoozeUntilUtc,
     IReadOnlyCollection<string> Tags,
     IReadOnlyCollection<string> References,
     bool OccurrencesAreCritical,
     DateTime CreatedUtc,
     DateTime UpdatedUtc,
     string Url);
+
+public sealed record McpStackUpdateResult(
+    McpStackResult Stack,
+    bool Changed,
+    string Message);
 
 public sealed record McpEventResult(
     string Id,

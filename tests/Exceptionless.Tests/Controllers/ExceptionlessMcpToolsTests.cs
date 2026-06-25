@@ -358,6 +358,116 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task UpdateStackStatusAsync_StacksWriteScope_MarksFixedWithVersion()
+    {
+        var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP write fixed"));
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksWrite);
+
+        var result = await tools.UpdateStackStatusAsync(stacks[0].Id, "fixed", "1.0.2");
+        var data = Data(result);
+
+        Assert.True(result.Ok);
+        Assert.Null(result.Error);
+        Assert.True(data.Changed);
+        Assert.Equal("fixed", data.Stack.Status);
+        Assert.Equal("1.0.2", data.Stack.FixedInVersion);
+        Assert.NotNull(data.Stack.DateFixed);
+
+        var stack = await _stackRepository.GetByIdAsync(stacks[0].Id, o => o.ImmediateConsistency());
+        Assert.NotNull(stack);
+        Assert.Equal(StackStatus.Fixed, stack.Status);
+        Assert.Equal("1.0.2", stack.FixedInVersion);
+        Assert.NotNull(stack.DateFixed);
+    }
+
+    [Fact]
+    public async Task UpdateStackStatusAsync_MissingStacksWriteScope_ReturnsError()
+    {
+        var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP write missing scope"));
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksRead);
+
+        var result = await tools.UpdateStackStatusAsync(stacks[0].Id, "fixed");
+
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.NotAccessible, result.Error?.Code);
+        Assert.Null(result.Data);
+    }
+
+    [Fact]
+    public async Task UpdateStackStatusAsync_InvalidStatus_ReturnsError()
+    {
+        var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP write invalid status"));
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksWrite);
+
+        var result = await tools.UpdateStackStatusAsync(stacks[0].Id, "snoozed");
+
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.InvalidStatus, result.Error?.Code);
+        Assert.Null(result.Data);
+    }
+
+    [Fact]
+    public async Task SnoozeStackAsync_Duration_SnoozesStack()
+    {
+        try
+        {
+            TimeProvider.SetUtcNow(new DateTimeOffset(2026, 6, 25, 12, 0, 0, TimeSpan.Zero));
+            var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP write snooze"));
+            var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksWrite);
+
+            var result = await tools.SnoozeStackAsync(stacks[0].Id, duration: "2h");
+            var data = Data(result);
+
+            Assert.True(result.Ok);
+            Assert.Null(result.Error);
+            Assert.True(data.Changed);
+            Assert.Equal("snoozed", data.Stack.Status);
+            Assert.Equal(new DateTime(2026, 6, 25, 14, 0, 0, DateTimeKind.Utc), data.Stack.SnoozeUntilUtc);
+
+            var stack = await _stackRepository.GetByIdAsync(stacks[0].Id, o => o.ImmediateConsistency());
+            Assert.NotNull(stack);
+            Assert.Equal(StackStatus.Snoozed, stack.Status);
+            Assert.Equal(new DateTime(2026, 6, 25, 14, 0, 0, DateTimeKind.Utc), stack.SnoozeUntilUtc);
+        }
+        finally
+        {
+            TimeProvider.Restore();
+        }
+    }
+
+    [Fact]
+    public async Task SnoozeStackAsync_TooShort_ReturnsError()
+    {
+        var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP write snooze short"));
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksWrite);
+
+        var result = await tools.SnoozeStackAsync(stacks[0].Id, duration: "1m");
+
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.InvalidSnooze, result.Error?.Code);
+        Assert.Null(result.Data);
+    }
+
+    [Fact]
+    public async Task SetStackCriticalAsync_StacksWriteScope_TogglesCritical()
+    {
+        var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP write critical"));
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksWrite);
+
+        var result = await tools.SetStackCriticalAsync(stacks[0].Id, critical: true);
+        var data = Data(result);
+
+        Assert.True(result.Ok);
+        Assert.Null(result.Error);
+        Assert.True(data.Changed);
+        Assert.True(data.Stack.OccurrencesAreCritical);
+
+        var stack = await _stackRepository.GetByIdAsync(stacks[0].Id, o => o.ImmediateConsistency());
+        Assert.NotNull(stack);
+        Assert.True(stack.OccurrencesAreCritical);
+    }
+
+    [Fact]
     public async Task GetStackEventsAsync_WithAfterCursor_ReturnsNextPage()
     {
         var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP cursor").Create(1));
@@ -440,6 +550,34 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         Assert.Contains("UTC", endUtc.GetProperty("description").GetString(), StringComparison.OrdinalIgnoreCase);
     }
 
+    [Theory]
+    [InlineData(nameof(ExceptionlessMcpTools.UpdateStackStatusAsync))]
+    [InlineData(nameof(ExceptionlessMcpTools.SnoozeStackAsync))]
+    [InlineData(nameof(ExceptionlessMcpTools.SetStackCriticalAsync))]
+    public async Task StackWriteTools_SchemaAdvertisesWriteInputs(string methodName)
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksWrite);
+        var method = typeof(ExceptionlessMcpTools).GetMethod(methodName) ?? throw new InvalidOperationException($"Could not find {methodName}.");
+        var tool = McpServerTool.Create(method, tools, new McpServerToolCreateOptions());
+        var properties = tool.ProtocolTool.InputSchema.GetProperty("properties");
+
+        Assert.True(properties.TryGetProperty("stackId", out _), "The stackId input must be advertised in the MCP tool schema.");
+        switch (methodName)
+        {
+            case nameof(ExceptionlessMcpTools.UpdateStackStatusAsync):
+                Assert.True(properties.TryGetProperty("status", out _), "The status input must be advertised in the MCP tool schema.");
+                Assert.True(properties.TryGetProperty("fixedInVersion", out _), "The fixedInVersion input must be advertised in the MCP tool schema.");
+                break;
+            case nameof(ExceptionlessMcpTools.SnoozeStackAsync):
+                Assert.True(properties.TryGetProperty("duration", out _), "The duration input must be advertised in the MCP tool schema.");
+                Assert.True(properties.TryGetProperty("snoozeUntilUtc", out _), "The snoozeUntilUtc input must be advertised in the MCP tool schema.");
+                break;
+            case nameof(ExceptionlessMcpTools.SetStackCriticalAsync):
+                Assert.True(properties.TryGetProperty("critical", out _), "The critical input must be advertised in the MCP tool schema.");
+                break;
+        }
+    }
+
     private Task<ExceptionlessMcpTools> CreateToolsAsync(params string[] scopes)
     {
         var user = new User
@@ -480,6 +618,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
             _eventRepository,
             GetService<StackQueryValidator>(),
             GetService<PersistentEventQueryValidator>(),
+            GetService<SemanticVersionParser>(),
             GetService<ITextSerializer>(),
             GetService<ILogger<ExceptionlessMcpTools>>(),
             TimeProvider));

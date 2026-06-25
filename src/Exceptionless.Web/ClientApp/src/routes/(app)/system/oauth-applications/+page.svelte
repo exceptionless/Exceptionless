@@ -36,6 +36,7 @@
         { description: 'Allows connecting to the MCP endpoint.', label: 'MCP', value: 'mcp:read' },
         { description: 'Allows reading project metadata.', label: 'Projects', value: 'projects:read' },
         { description: 'Allows reading stack data.', label: 'Stacks', value: 'stacks:read' },
+        { description: 'Allows changing stack status, snooze, and critical settings.', label: 'Stacks Write', value: 'stacks:write' },
         { description: 'Allows reading event details.', label: 'Events', value: 'events:read' },
         { description: 'Allows refresh token issuance.', label: 'Offline Access', value: 'offline_access' }
     ] as const;

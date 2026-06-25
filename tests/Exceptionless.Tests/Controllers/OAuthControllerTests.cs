@@ -70,6 +70,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.Contains(OAuthGrantTypes.AuthorizationCode, metadata.GrantTypesSupported);
         Assert.Contains(OAuthService.CodeChallengeMethod, metadata.CodeChallengeMethodsSupported);
         Assert.Contains(AuthorizationRoles.McpRead, metadata.ScopesSupported);
+        Assert.Contains(AuthorizationRoles.StacksWrite, metadata.ScopesSupported);
         Assert.True(metadata.ClientIdMetadataDocumentSupported);
     }
 

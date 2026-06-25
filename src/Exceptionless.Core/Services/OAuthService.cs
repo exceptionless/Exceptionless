@@ -20,6 +20,7 @@ public class OAuthService(OAuthOptions options, ICacheClient cacheClient, IOAuth
         AuthorizationRoles.McpRead,
         AuthorizationRoles.ProjectsRead,
         AuthorizationRoles.StacksRead,
+        AuthorizationRoles.StacksWrite,
         AuthorizationRoles.EventsRead,
         AuthorizationRoles.OfflineAccess
     ];
