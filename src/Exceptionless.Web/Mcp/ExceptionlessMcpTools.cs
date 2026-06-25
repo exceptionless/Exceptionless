@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Authorization;
@@ -102,6 +103,9 @@ public sealed class ExceptionlessMcpTools
             if (validation.Error is not null)
                 return McpResponse<McpListData<McpProjectResult>>.Failed(validation.Error);
 
+            if (!TryValidatePaginationCursors(after, before, out var cursorError))
+                return McpResponse<McpListData<McpProjectResult>>.Failed(cursorError);
+
             int resolvedLimit = validation.Limit;
 
             var organizations = await GetAccessibleOrganizationsAsync();
@@ -184,6 +188,9 @@ public sealed class ExceptionlessMcpTools
             if (validation.Error is not null)
                 return McpResponse<McpListData<McpStackResult>>.Failed(validation.Error);
 
+            if (!TryValidatePaginationCursors(after, before, out var cursorError))
+                return McpResponse<McpListData<McpStackResult>>.Failed(cursorError);
+
             if (!TryResolveTimeRange(last, startUtc, endUtc, out var timeRange, out var timeError))
                 return McpResponse<McpListData<McpStackResult>>.Failed(timeError);
 
@@ -262,6 +269,9 @@ public sealed class ExceptionlessMcpTools
             if (validation.Error is not null)
                 return McpResponse<McpListData<McpEventResult>>.Failed(validation.Error);
 
+            if (!TryValidatePaginationCursors(after, before, out var cursorError))
+                return McpResponse<McpListData<McpEventResult>>.Failed(cursorError);
+
             if (!TryResolveTimeRange(last, startUtc, endUtc, out var timeRange, out var timeError))
                 return McpResponse<McpListData<McpEventResult>>.Failed(timeError);
 
@@ -318,6 +328,9 @@ public sealed class ExceptionlessMcpTools
             var validation = await ValidateSearchAsync(filter, sort, limit, EventFilterFields, EventSortFields, _eventQueryValidator);
             if (validation.Error is not null)
                 return McpResponse<McpListData<McpEventResult>>.Failed(validation.Error);
+
+            if (!TryValidatePaginationCursors(after, before, out var cursorError))
+                return McpResponse<McpListData<McpEventResult>>.Failed(cursorError);
 
             if (!TryResolveTimeRange(last, startUtc, endUtc, out var timeRange, out var timeError))
                 return McpResponse<McpListData<McpEventResult>>.Failed(timeError);
@@ -811,6 +824,61 @@ public sealed class ExceptionlessMcpTools
 
         error = null;
         return true;
+    }
+
+    private bool TryValidatePaginationCursors(string? after, string? before, out McpErrorInfo error)
+    {
+        if (!TryValidatePaginationCursor("after", after, out error))
+            return false;
+
+        if (!TryValidatePaginationCursor("before", before, out error))
+            return false;
+
+        error = null!;
+        return true;
+    }
+
+    private bool TryValidatePaginationCursor(string field, string? cursor, out McpErrorInfo error)
+    {
+        if (String.IsNullOrWhiteSpace(cursor))
+        {
+            error = null!;
+            return true;
+        }
+
+        try
+        {
+            string json = DecodeCursor(cursor.Trim());
+            var sortValues = _serializer.Deserialize<object[]>(json);
+            if (sortValues is { Length: > 0 })
+            {
+                error = null!;
+                return true;
+            }
+        }
+        catch (Exception ex) when (ex is ArgumentException or FormatException or JsonException or NotSupportedException)
+        {
+            // Invalid cursor tokens should be reported as client input errors, not query failures.
+        }
+
+        error = McpErrors.InvalidCursor($"{field} is not a valid pagination cursor.", field);
+        return false;
+    }
+
+    private static string DecodeCursor(string cursor)
+    {
+        cursor = cursor.Replace('_', '/').Replace('-', '+');
+        switch (cursor.Length % 4)
+        {
+            case 2:
+                cursor += "==";
+                break;
+            case 3:
+                cursor += "=";
+                break;
+        }
+
+        return Encoding.UTF8.GetString(Convert.FromBase64String(cursor));
     }
 
     private bool TryResolveTimeRange(string? last, string? startUtc, string? endUtc, out McpTimeRange timeRange, out McpErrorInfo error)
@@ -1395,6 +1463,7 @@ public sealed class ExceptionlessMcpTools
 
 public static class McpErrorCodes
 {
+    public const string InvalidCursor = "invalid_cursor";
     public const string InvalidDetailSize = "invalid_detail_size";
     public const string InvalidFilter = "invalid_filter";
     public const string InvalidGroupBy = "invalid_group_by";
@@ -1414,6 +1483,14 @@ public static class McpErrorCodes
 
 public static class McpErrors
 {
+    public static McpErrorInfo InvalidCursor(string message, string field)
+    {
+        return new McpErrorInfo(McpErrorCodes.InvalidCursor, message, new Dictionary<string, object?>
+        {
+            ["field"] = field
+        });
+    }
+
     public static McpErrorInfo InvalidDetailSize(string message, int value, int min, int max)
     {
         return new McpErrorInfo(McpErrorCodes.InvalidDetailSize, message, new Dictionary<string, object?>

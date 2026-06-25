@@ -566,6 +566,38 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     [Theory]
+    [InlineData(nameof(ExceptionlessMcpTools.ListProjectsAsync), "after")]
+    [InlineData(nameof(ExceptionlessMcpTools.ListProjectsAsync), "before")]
+    [InlineData(nameof(ExceptionlessMcpTools.SearchStacksAsync), "after")]
+    [InlineData(nameof(ExceptionlessMcpTools.SearchStacksAsync), "before")]
+    [InlineData(nameof(ExceptionlessMcpTools.GetStackEventsAsync), "after")]
+    [InlineData(nameof(ExceptionlessMcpTools.GetStackEventsAsync), "before")]
+    [InlineData(nameof(ExceptionlessMcpTools.SearchEventsAsync), "after")]
+    [InlineData(nameof(ExceptionlessMcpTools.SearchEventsAsync), "before")]
+    public async Task PagedTools_InvalidCursor_ReturnsInvalidCursor(string methodName, string cursorField)
+    {
+        var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP invalid cursor"));
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead, AuthorizationRoles.StacksRead, AuthorizationRoles.EventsRead);
+        string? after = cursorField == "after" ? "not-a-valid-cursor!" : null;
+        string? before = cursorField == "before" ? "not-a-valid-cursor!" : null;
+
+        (bool Ok, McpErrorInfo? Error, object? Data) result = methodName switch
+        {
+            nameof(ExceptionlessMcpTools.ListProjectsAsync) => ToResult(await tools.ListProjectsAsync(after: after, before: before)),
+            nameof(ExceptionlessMcpTools.SearchStacksAsync) => ToResult(await tools.SearchStacksAsync(TestConstants.ProjectId, after: after, before: before)),
+            nameof(ExceptionlessMcpTools.GetStackEventsAsync) => ToResult(await tools.GetStackEventsAsync(stacks[0].Id, after: after, before: before)),
+            nameof(ExceptionlessMcpTools.SearchEventsAsync) => ToResult(await tools.SearchEventsAsync(TestConstants.ProjectId, after: after, before: before)),
+            _ => throw new InvalidOperationException($"Unexpected method {methodName}.")
+        };
+
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.InvalidCursor, result.Error?.Code);
+        Assert.Equal($"{cursorField} is not a valid pagination cursor.", result.Error?.Message);
+        Assert.Equal(cursorField, result.Error?.Details?["field"]);
+        Assert.Null(result.Data);
+    }
+
+    [Theory]
     [InlineData(nameof(ExceptionlessMcpTools.ListProjectsAsync))]
     [InlineData(nameof(ExceptionlessMcpTools.SearchStacksAsync))]
     [InlineData(nameof(ExceptionlessMcpTools.GetStackEventsAsync))]
@@ -724,5 +756,10 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     {
         Assert.NotNull(result.Data);
         return result.Data!;
+    }
+
+    private static (bool Ok, McpErrorInfo? Error, object? Data) ToResult<T>(McpResponse<McpListData<T>> response)
+    {
+        return (response.Ok, response.Error, response.Data);
     }
 }
