@@ -525,12 +525,13 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.NotNull(token.RefreshToken);
         using var client = CreateHttpClient();
 
-        var refreshResponse = await client.PostAsync("oauth/token", new FormUrlEncodedContent(new Dictionary<string, string?>
+        using var refreshRequestContent = new FormUrlEncodedContent(new Dictionary<string, string?>
         {
             ["grant_type"] = OAuthGrantTypes.RefreshToken,
             ["client_id"] = ClientId,
             ["refresh_token"] = token.RefreshToken
-        }), TestContext.Current.CancellationToken);
+        });
+        var refreshResponse = await client.PostAsync("oauth/token", refreshRequestContent, TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, refreshResponse.StatusCode);
         var refreshedToken = await DeserializeResponseAsync<OAuthTokenResponse>(refreshResponse);
@@ -538,12 +539,13 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.NotEqual(token.AccessToken, refreshedToken.AccessToken);
         Assert.NotEqual(token.RefreshToken, refreshedToken.RefreshToken);
 
-        var reusedRefreshResponse = await client.PostAsync("oauth/token", new FormUrlEncodedContent(new Dictionary<string, string?>
+        using var reusedRefreshRequestContent = new FormUrlEncodedContent(new Dictionary<string, string?>
         {
             ["grant_type"] = OAuthGrantTypes.RefreshToken,
             ["client_id"] = ClientId,
             ["refresh_token"] = token.RefreshToken
-        }), TestContext.Current.CancellationToken);
+        });
+        var reusedRefreshResponse = await client.PostAsync("oauth/token", reusedRefreshRequestContent, TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, reusedRefreshResponse.StatusCode);
     }
@@ -554,10 +556,11 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         var token = await IssueTokenAsync();
         using var client = CreateHttpClient();
 
-        var response = await client.PostAsync("oauth/revoke", new FormUrlEncodedContent(new Dictionary<string, string?>
+        using var revokeContent = new FormUrlEncodedContent(new Dictionary<string, string?>
         {
             ["token"] = token.AccessToken
-        }), TestContext.Current.CancellationToken);
+        });
+        var response = await client.PostAsync("oauth/revoke", revokeContent, TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var storedToken = await _tokenRepository.GetByIdAsync(token.AccessToken);

@@ -654,10 +654,12 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
         Assert.True(firstPage.Ok);
         Assert.Null(firstPage.Error);
-        Assert.True(firstPage.Pagination?.HasMore);
-        Assert.NotNull(firstPage.Pagination?.After);
+        var pagination = firstPage.Pagination;
+        Assert.NotNull(pagination);
+        Assert.True(pagination.HasMore);
+        Assert.NotNull(pagination.After);
 
-        var secondPage = await tools.GetStackEventsAsync(stacks[0].Id, limit: 1, after: firstPage.Pagination.After);
+        var secondPage = await tools.GetStackEventsAsync(stacks[0].Id, limit: 1, after: pagination.After);
 
         Assert.True(secondPage.Ok);
         Assert.Null(secondPage.Error);

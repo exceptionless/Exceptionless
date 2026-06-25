@@ -895,9 +895,8 @@ public sealed class ExceptionlessMcpTools
             return true;
         }
 
-        foreach (string term in sort.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        foreach (string field in sort.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(term => term.TrimStart('+', '-')))
         {
-            string field = term.TrimStart('+', '-');
             if (field.Length == 0 || !allowedSortFields.Contains(field))
             {
                 error = $"Unknown sort field '{field}'. Allowed sort fields: {String.Join(", ", allowedSortFields.Order(StringComparer.OrdinalIgnoreCase))}.";
