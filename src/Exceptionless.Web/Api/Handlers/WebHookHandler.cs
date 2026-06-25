@@ -227,15 +227,23 @@ public class WebHookHandler(
         if (webHooks.Count == 0)
             return [];
 
-        var results = new List<WebHook>();
-        foreach (var webHook in webHooks.Where(webHook => !String.IsNullOrEmpty(webHook.OrganizationId) || !String.IsNullOrEmpty(webHook.ProjectId)))
-        {
-            if ((!String.IsNullOrEmpty(webHook.OrganizationId) && HttpContext.Request.IsInOrganization(webHook.OrganizationId))
-                || (!String.IsNullOrEmpty(webHook.ProjectId) && await IsInProjectAsync(webHook.ProjectId)))
-                results.Add(webHook);
-        }
+        var organizationMatches = webHooks
+            .Where(webHook => !String.IsNullOrEmpty(webHook.OrganizationId) && HttpContext.Request.IsInOrganization(webHook.OrganizationId))
+            .ToList();
 
-        return results;
+        var projectAccessChecks = webHooks
+            .Where(webHook => !organizationMatches.Contains(webHook) && !String.IsNullOrEmpty(webHook.ProjectId))
+            .Select(async webHook => new
+            {
+                WebHook = webHook,
+                HasAccess = await IsInProjectAsync(webHook.ProjectId!)
+            });
+
+        var projectMatches = (await Task.WhenAll(projectAccessChecks))
+            .Where(result => result.HasAccess)
+            .Select(result => result.WebHook);
+
+        return organizationMatches.Concat(projectMatches).ToList();
     }
 
     private async Task<Project?> GetProjectAsync(string projectId, bool useCache = true)
