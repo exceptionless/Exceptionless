@@ -257,7 +257,7 @@ public class OAuthService(OAuthOptions options, ICacheClient cacheClient, IOAuth
             RedirectUri = request.RedirectUri,
             UserId = userId,
             CodeChallenge = request.CodeChallenge,
-            Resource = request.Resource,
+            Resource = request.Resource ?? throw new InvalidOperationException("OAuth resource must be validated before creating an authorization code."),
             Scopes = NormalizeScopes(request.Scope),
             CreatedUtc = timeProvider.GetUtcNow().UtcDateTime
         };
@@ -429,7 +429,7 @@ public record OAuthAuthorizeRequest
     public string? State { get; init; }
     public required string CodeChallenge { get; init; }
     public required string CodeChallengeMethod { get; init; }
-    public required string Resource { get; init; }
+    public string? Resource { get; init; }
 }
 
 public record OAuthTokenRequest

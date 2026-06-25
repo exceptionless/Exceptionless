@@ -9073,8 +9073,7 @@
           "response_type",
           "redirect_uri",
           "code_challenge",
-          "code_challenge_method",
-          "resource"
+          "code_challenge_method"
         ],
         "type": "object",
         "properties": {
@@ -9106,7 +9105,10 @@
             "type": "string"
           },
           "resource": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

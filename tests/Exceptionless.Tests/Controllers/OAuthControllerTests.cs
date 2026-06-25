@@ -204,6 +204,23 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task AuthorizeAsync_WithoutResource_RedirectsToAuthorizeBridgeWithDefaultResource()
+    {
+        using var client = CreateHttpClient();
+        using var request = CreateAuthorizeRequest("valid-test-code-verifier", resource: null, authenticate: false);
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        var locationHeader = response.Headers.Location;
+        Assert.NotNull(locationHeader);
+        string location = locationHeader.ToString();
+        Assert.StartsWith("/next/oauth/authorize?", location);
+        var bridgeQuery = QueryHelpers.ParseQuery(location[(location.IndexOf('?') + 1)..]);
+        Assert.Equal(Resource, bridgeQuery["resource"].ToString());
+    }
+
+    [Fact]
     public async Task AuthorizeAsync_AuthenticatedUser_RedirectsToAuthorizeBridge()
     {
         using var client = CreateHttpClient();
@@ -233,6 +250,24 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.True(query.TryGetValue("code", out var code));
         Assert.False(String.IsNullOrEmpty(code.ToString()));
         Assert.Equal("state-value", query["state"].ToString());
+    }
+
+    [Fact]
+    public async Task CompleteAuthorizeAsync_WithoutResource_ReturnsRedirectUri()
+    {
+        using var client = CreateHttpClient();
+        using var request = CreateAuthorizeJsonRequest("valid-test-code-verifier", resource: null);
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var authorization = await DeserializeResponseAsync<OAuthAuthorizeResponse>(response);
+        Assert.NotNull(authorization);
+        var redirectUri = new Uri(authorization.RedirectUri);
+        Assert.Equal(RedirectUri, redirectUri.GetLeftPart(UriPartial.Path));
+        var query = QueryHelpers.ParseQuery(redirectUri.Query);
+        Assert.True(query.TryGetValue("code", out var code));
+        Assert.False(String.IsNullOrEmpty(code.ToString()));
     }
 
     [Fact]
@@ -356,6 +391,21 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.Equal(ClientId, storedToken.OAuthClientId);
         Assert.Equal(Resource, storedToken.OAuthResource);
         Assert.Contains(AuthorizationRoles.EventsRead, storedToken.Scopes);
+    }
+
+    [Fact]
+    public async Task TokenAsync_WithoutResource_ReturnsOAuthTokens()
+    {
+        string verifier = "valid-test-code-verifier";
+        string code = await CreateAuthorizationCodeAsync(verifier);
+        using var client = CreateHttpClient();
+
+        var response = await client.PostAsync("oauth/token", CreateTokenExchangeContent(code, verifier, resource: null), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var token = await DeserializeResponseAsync<OAuthTokenResponse>(response);
+        Assert.NotNull(token);
+        Assert.Equal(Resource, token.Resource);
     }
 
     [Fact]
@@ -497,7 +547,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         return token;
     }
 
-    private async Task<string> CreateAuthorizationCodeAsync(string verifier, string redirectUri = RedirectUri, string resource = Resource, string clientId = ClientId)
+    private async Task<string> CreateAuthorizationCodeAsync(string verifier, string redirectUri = RedirectUri, string? resource = Resource, string clientId = ClientId)
     {
         using var client = CreateHttpClient();
         using var request = CreateAuthorizeJsonRequest(verifier, redirectUri, resource, clientId);
@@ -536,20 +586,24 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         return application;
     }
 
-    private static FormUrlEncodedContent CreateTokenExchangeContent(string code, string verifier, string redirectUri = RedirectUri, string resource = Resource, string clientId = ClientId)
+    private static FormUrlEncodedContent CreateTokenExchangeContent(string code, string verifier, string redirectUri = RedirectUri, string? resource = Resource, string clientId = ClientId)
     {
-        return new FormUrlEncodedContent(new Dictionary<string, string?>
+        var form = new Dictionary<string, string?>
         {
             ["grant_type"] = OAuthGrantTypes.AuthorizationCode,
             ["client_id"] = clientId,
             ["code"] = code,
             ["redirect_uri"] = redirectUri,
-            ["code_verifier"] = verifier,
-            ["resource"] = resource
-        });
+            ["code_verifier"] = verifier
+        };
+
+        if (resource is not null)
+            form["resource"] = resource;
+
+        return new FormUrlEncodedContent(form);
     }
 
-    private static HttpRequestMessage CreateAuthorizeJsonRequest(string verifier, string redirectUri = RedirectUri, string resource = Resource, string clientId = ClientId, string responseType = "code")
+    private static HttpRequestMessage CreateAuthorizeJsonRequest(string verifier, string redirectUri = RedirectUri, string? resource = Resource, string clientId = ClientId, string responseType = "code")
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "oauth/authorize")
         {
@@ -569,9 +623,9 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         return request;
     }
 
-    private static HttpRequestMessage CreateAuthorizeRequest(string verifier, string redirectUri = RedirectUri, string resource = Resource, string clientId = ClientId, bool authenticate = true)
+    private static HttpRequestMessage CreateAuthorizeRequest(string verifier, string redirectUri = RedirectUri, string? resource = Resource, string clientId = ClientId, bool authenticate = true)
     {
-        string url = QueryHelpers.AddQueryString("oauth/authorize", new Dictionary<string, string?>
+        var query = new Dictionary<string, string?>
         {
             ["client_id"] = clientId,
             ["response_type"] = "code",
@@ -579,9 +633,13 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
             ["scope"] = $"{AuthorizationRoles.McpRead} {AuthorizationRoles.ProjectsRead} {AuthorizationRoles.StacksRead} {AuthorizationRoles.EventsRead} {AuthorizationRoles.OfflineAccess}",
             ["state"] = "state-value",
             ["code_challenge"] = OAuthService.CreateCodeChallenge(verifier),
-            ["code_challenge_method"] = OAuthService.CodeChallengeMethod,
-            ["resource"] = resource
-        });
+            ["code_challenge_method"] = OAuthService.CodeChallengeMethod
+        };
+
+        if (resource is not null)
+            query["resource"] = resource;
+
+        string url = QueryHelpers.AddQueryString("oauth/authorize", query);
 
         var request = new HttpRequestMessage(HttpMethod.Get, url);
         if (authenticate)

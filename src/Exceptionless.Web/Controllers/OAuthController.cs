@@ -51,14 +51,14 @@ public sealed class OAuthController(OAuthService oauthService, TimeProvider time
     [HttpGet(API_PREFIX + "/oauth/authorize")]
     [AllowAnonymous]
     public IActionResult AuthorizeAsync(
-        [FromQuery(Name = "client_id")] string clientId,
-        [FromQuery(Name = "response_type")] string responseType,
-        [FromQuery(Name = "redirect_uri")] string redirectUri,
+        [FromQuery(Name = "client_id")] string? clientId,
+        [FromQuery(Name = "response_type")] string? responseType,
+        [FromQuery(Name = "redirect_uri")] string? redirectUri,
         [FromQuery] string? scope,
         [FromQuery] string? state,
-        [FromQuery(Name = "code_challenge")] string codeChallenge,
-        [FromQuery(Name = "code_challenge_method")] string codeChallengeMethod,
-        [FromQuery] string resource)
+        [FromQuery(Name = "code_challenge")] string? codeChallenge,
+        [FromQuery(Name = "code_challenge_method")] string? codeChallengeMethod,
+        [FromQuery] string? resource)
     {
         return RedirectToAuthorizeBridge();
     }
@@ -93,7 +93,7 @@ public sealed class OAuthController(OAuthService oauthService, TimeProvider time
             ClientId = form.ClientId,
             CodeVerifier = form.CodeVerifier,
             RefreshToken = form.RefreshToken,
-            Resource = form.Resource
+            Resource = NormalizeMcpResource(form.Resource)
         };
 
         OAuthTokenIssueResult result = String.Equals(form.GrantType, OAuthGrantTypes.RefreshToken, StringComparison.Ordinal)
@@ -124,6 +124,11 @@ public sealed class OAuthController(OAuthService oauthService, TimeProvider time
         return $"{GetOrigin()}/mcp";
     }
 
+    private string NormalizeMcpResource(string? resource)
+    {
+        return String.IsNullOrWhiteSpace(resource) ? GetMcpResource() : resource;
+    }
+
     private ObjectResult OAuthError(string? error, string? description)
     {
         return BadRequest(new OAuthErrorResponse
@@ -135,6 +140,7 @@ public sealed class OAuthController(OAuthService oauthService, TimeProvider time
 
     private async Task<IActionResult> CompleteAuthorizationAsync(OAuthAuthorizeRequest request, bool jsonResponse)
     {
+        request = request with { Resource = NormalizeMcpResource(request.Resource) };
         var validation = await oauthService.ValidateAuthorizationRequestAsync(request, GetMcpResource());
         if (!validation.IsValid)
             return OAuthError(validation.Error, validation.ErrorDescription);
@@ -159,7 +165,18 @@ public sealed class OAuthController(OAuthService oauthService, TimeProvider time
 
     private RedirectResult RedirectToAuthorizeBridge()
     {
-        string authorizeUrl = "/next/oauth/authorize" + Request.QueryString;
+        string authorizeUrl;
+        if (String.IsNullOrWhiteSpace(Request.Query["resource"]))
+        {
+            var query = Request.Query.ToDictionary(kvp => kvp.Key, kvp => (string?)kvp.Value.ToString(), StringComparer.Ordinal);
+            query["resource"] = GetMcpResource();
+            authorizeUrl = Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString("/next/oauth/authorize", query);
+        }
+        else
+        {
+            authorizeUrl = "/next/oauth/authorize" + Request.QueryString;
+        }
+
         return Redirect(authorizeUrl);
     }
 }
@@ -188,7 +205,7 @@ public sealed record OAuthAuthorizeForm
     public required string CodeChallengeMethod { get; init; }
 
     [JsonPropertyName("resource")]
-    public required string Resource { get; init; }
+    public string? Resource { get; init; }
 
     public OAuthAuthorizeRequest ToRequest()
     {
