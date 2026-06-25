@@ -58,13 +58,13 @@ public sealed class ExceptionlessMcpTools
     }
 
     [McpServerTool(Name = "list_projects", ReadOnly = true, UseStructuredContent = true)]
-    [Description("Lists projects the authenticated Exceptionless user can access.")]
+    [Description("Lists projects the authenticated Exceptionless user can access. When hasMore is true, pass the returned after cursor to fetch the next page or before cursor to fetch the previous page.")]
     public async Task<McpListResult<McpProjectResult>> ListProjectsAsync(
         [Description("Optional Exceptionless filter expression applied to projects.")]
         string? filter = null,
         [Description("Optional sort expression. Defaults to project name.")]
         string? sort = null,
-        [Description("Maximum number of projects to return. Defaults to 10 and is capped at 50.")]
+        [Description("Maximum number of projects to return. Defaults to 10 and is capped at 50. Use the returned after or before cursor with the same limit to page through additional results.")]
         int limit = DefaultLimit,
         [Description("Optional cursor returned from a previous response. Fetches results after this cursor.")]
         string? after = null,
@@ -124,7 +124,7 @@ public sealed class ExceptionlessMcpTools
     }
 
     [McpServerTool(Name = "search_stacks", ReadOnly = true, UseStructuredContent = true)]
-    [Description("Searches stacks in an Exceptionless project, useful for top issues, top 404s, or recent problem groups.")]
+    [Description("Searches stacks in an Exceptionless project, useful for top issues, top 404s, or recent problem groups. When hasMore is true, pass the returned after cursor to fetch the next page or before cursor to fetch the previous page.")]
     public async Task<McpListResult<McpStackResult>> SearchStacksAsync(
         [Description("The Exceptionless project id to search within.")]
         string projectId,
@@ -132,7 +132,7 @@ public sealed class ExceptionlessMcpTools
         string? filter = null,
         [Description("Optional sort expression. Defaults to -last_occurrence.")]
         string? sort = "-last_occurrence",
-        [Description("Maximum number of stacks to return. Defaults to 10 and is capped at 50.")]
+        [Description("Maximum number of stacks to return. Defaults to 10 and is capped at 50. Use the returned after or before cursor with the same limit to page through additional results.")]
         int limit = DefaultLimit,
         [Description("Optional cursor returned from a previous response. Fetches results after this cursor.")]
         string? after = null,
@@ -193,7 +193,7 @@ public sealed class ExceptionlessMcpTools
     }
 
     [McpServerTool(Name = "get_stack_events", ReadOnly = true, UseStructuredContent = true)]
-    [Description("Lists recent events in a specific Exceptionless stack.")]
+    [Description("Lists recent events in a specific Exceptionless stack. When hasMore is true, pass the returned after cursor to fetch the next page or before cursor to fetch the previous page.")]
     public async Task<McpListResult<McpEventResult>> GetStackEventsAsync(
         [Description("The Exceptionless stack id.")]
         string stackId,
@@ -201,7 +201,7 @@ public sealed class ExceptionlessMcpTools
         string? filter = null,
         [Description("Optional sort expression. Defaults to -date.")]
         string? sort = "-date",
-        [Description("Maximum number of events to return. Defaults to 10 and is capped at 50.")]
+        [Description("Maximum number of events to return. Defaults to 10 and is capped at 50. Use the returned after or before cursor with the same limit to page through additional results.")]
         int limit = DefaultLimit,
         [Description("Optional cursor returned from a previous response. Fetches results after this cursor.")]
         string? after = null,

@@ -50,3 +50,24 @@ Accept: application/json, text/event-stream
   "method": "tools/list",
   "params": {}
 }
+
+### Search stacks with cursor paging
+# Use the "after" cursor returned by this response with the same limit to fetch the next page.
+POST {{rootUrl}}/mcp
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Accept: application/json, text/event-stream
+
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "name": "search_stacks",
+    "arguments": {
+      "projectId": "replace-with-project-id",
+      "limit": 10,
+      "after": "replace-with-after-cursor"
+    }
+  }
+}

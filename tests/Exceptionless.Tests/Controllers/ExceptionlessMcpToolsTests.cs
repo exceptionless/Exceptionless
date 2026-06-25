@@ -13,6 +13,7 @@ using Foundatio.Repositories.Extensions;
 using Foundatio.Serializer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using ModelContextProtocol.Server;
 using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
@@ -199,6 +200,28 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         Assert.Null(secondPage.Error);
         Assert.NotEmpty(secondPage.Items);
         Assert.DoesNotContain(secondPage.Items, e => e.Id == firstPage.Items.Single().Id);
+    }
+
+    [Theory]
+    [InlineData(nameof(ExceptionlessMcpTools.ListProjectsAsync))]
+    [InlineData(nameof(ExceptionlessMcpTools.SearchStacksAsync))]
+    [InlineData(nameof(ExceptionlessMcpTools.GetStackEventsAsync))]
+    public async Task PagedTools_SchemaIncludesCursorParameters(string methodName)
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead, AuthorizationRoles.StacksRead, AuthorizationRoles.EventsRead);
+        var method = typeof(ExceptionlessMcpTools).GetMethod(methodName) ?? throw new InvalidOperationException($"Could not find {methodName}.");
+        var tool = McpServerTool.Create(method, tools, new McpServerToolCreateOptions());
+        var properties = tool.ProtocolTool.InputSchema.GetProperty("properties");
+
+        Assert.True(properties.TryGetProperty("after", out var after), "The after cursor must be advertised in the MCP tool schema.");
+        Assert.True(properties.TryGetProperty("before", out var before), "The before cursor must be advertised in the MCP tool schema.");
+        Assert.Contains("cursor", after.GetProperty("description").GetString(), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("cursor", before.GetProperty("description").GetString(), StringComparison.OrdinalIgnoreCase);
+
+        var limit = properties.GetProperty("limit");
+        string? limitDescription = limit.GetProperty("description").GetString();
+        Assert.Contains("capped at 50", limitDescription, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("cursor", limitDescription, StringComparison.OrdinalIgnoreCase);
     }
 
     private Task<ExceptionlessMcpTools> CreateToolsAsync(params string[] scopes)
