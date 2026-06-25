@@ -236,7 +236,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task McpAsync_GetWithAuth_ReturnsMethodNotAllowed()
+    public async Task McpAsync_GetWithUserAuth_ReturnsForbidden()
     {
         using var client = _server.CreateClient();
         using var request = new HttpRequestMessage(HttpMethod.Get, "/mcp");
@@ -245,7 +245,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
 
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     [Fact]

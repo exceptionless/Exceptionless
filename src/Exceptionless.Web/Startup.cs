@@ -87,9 +87,7 @@ public class Startup
             o.AddPolicy(AuthorizationRoles.ClientPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.Client));
             o.AddPolicy(AuthorizationRoles.UserPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.User));
             o.AddPolicy(AuthorizationRoles.GlobalAdminPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.GlobalAdmin));
-            o.AddPolicy(AuthorizationRoles.McpPolicy, policy => policy.RequireAssertion(ctx =>
-                ctx.User.HasClaim(ClaimTypes.Role, AuthorizationRoles.User) ||
-                ctx.User.HasClaim(ClaimTypes.Role, AuthorizationRoles.McpRead)));
+            o.AddPolicy(AuthorizationRoles.McpPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.McpRead));
         });
 
         services.AddRouting(r =>

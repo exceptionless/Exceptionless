@@ -185,7 +185,7 @@ public class Bootstrapper
         services.AddSingleton<NotificationService>();
         services.AddSingleton<OrganizationService>();
         services.AddStartupAction<OrganizationService>();
-        services.AddHttpClient<IOAuthClientMetadataService, OAuthClientMetadataService>(client => client.Timeout = appOptions.OAuthServerOptions.ClientMetadataDocumentRequestTimeout)
+        services.AddHttpClient<IOAuthClientMetadataService, OAuthClientMetadataService>()
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
             {
                 AllowAutoRedirect = false,

@@ -745,7 +745,7 @@ public sealed class ExceptionlessMcpTools
         if (user is null)
             throw new UnauthorizedAccessException("No authenticated user is available.");
 
-        if (user.HasClaim(ClaimTypes.Role, AuthorizationRoles.User) || user.HasClaim(ClaimTypes.Role, scope))
+        if (user.HasClaim(ClaimTypes.Role, scope))
             return;
 
         throw new McpForbiddenException($"Missing required scope {scope}.", scope);

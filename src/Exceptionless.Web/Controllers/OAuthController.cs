@@ -244,7 +244,6 @@ public sealed record OAuthAuthorizeForm
 
 public sealed record OAuthAuthorizeResponse
 {
-
     [JsonPropertyName("redirect_uri")]
     public required string RedirectUri { get; init; }
 }

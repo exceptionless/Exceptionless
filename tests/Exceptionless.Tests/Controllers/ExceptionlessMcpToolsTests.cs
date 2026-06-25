@@ -472,6 +472,20 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task UpdateStackStatusAsync_UserRoleWithoutStacksWriteScope_ReturnsError()
+    {
+        var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP write user role missing scope"));
+        var tools = await CreateToolsWithUserRoleAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksRead);
+
+        var result = await tools.UpdateStackStatusAsync(stacks[0].Id, "fixed", fixedInVersion: "1.2.3");
+
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.Forbidden, result.Error?.Code);
+        Assert.Equal(AuthorizationRoles.StacksWrite, result.Error?.Details?["requiredScope"]);
+        Assert.Null(result.Data);
+    }
+
+    [Fact]
     public async Task UpdateStackStatusAsync_InvalidStatus_ReturnsError()
     {
         var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP write invalid status"));
@@ -812,6 +826,16 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
     private Task<ExceptionlessMcpTools> CreateToolsAsync(params string[] scopes)
     {
+        return CreateToolsAsync(includeUserRole: false, scopes);
+    }
+
+    private Task<ExceptionlessMcpTools> CreateToolsWithUserRoleAsync(params string[] scopes)
+    {
+        return CreateToolsAsync(includeUserRole: true, scopes);
+    }
+
+    private Task<ExceptionlessMcpTools> CreateToolsAsync(bool includeUserRole, params string[] scopes)
+    {
         var user = new User
         {
             Id = TestConstants.UserId,
@@ -835,9 +859,13 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
             CreatedBy = user.Id
         };
 
+        var identity = user.ToIdentity(token);
+        if (includeUserRole)
+            identity.AddClaim(new Claim(ClaimTypes.Role, AuthorizationRoles.User));
+
         var context = new DefaultHttpContext
         {
-            User = new ClaimsPrincipal(user.ToIdentity(token))
+            User = new ClaimsPrincipal(identity)
         };
         context.Request.Scheme = "http";
         context.Request.Host = new HostString("localhost");
