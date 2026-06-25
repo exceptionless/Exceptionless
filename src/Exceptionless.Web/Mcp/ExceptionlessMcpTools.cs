@@ -1,12 +1,20 @@
 using System.ComponentModel;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
+using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Web.Extensions;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Extensions;
+using Foundatio.Serializer;
+using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
 
 namespace Exceptionless.Web.Mcp;
@@ -22,19 +30,31 @@ public sealed class ExceptionlessMcpTools
     private readonly IProjectRepository _projectRepository;
     private readonly IStackRepository _stackRepository;
     private readonly IEventRepository _eventRepository;
+    private readonly StackQueryValidator _stackQueryValidator;
+    private readonly PersistentEventQueryValidator _eventQueryValidator;
+    private readonly ITextSerializer _serializer;
+    private readonly ILogger<ExceptionlessMcpTools> _logger;
 
     public ExceptionlessMcpTools(
         IHttpContextAccessor httpContextAccessor,
         IOrganizationRepository organizationRepository,
         IProjectRepository projectRepository,
         IStackRepository stackRepository,
-        IEventRepository eventRepository)
+        IEventRepository eventRepository,
+        StackQueryValidator stackQueryValidator,
+        PersistentEventQueryValidator eventQueryValidator,
+        ITextSerializer serializer,
+        ILogger<ExceptionlessMcpTools> logger)
     {
         _httpContextAccessor = httpContextAccessor;
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
         _stackRepository = stackRepository;
         _eventRepository = eventRepository;
+        _stackQueryValidator = stackQueryValidator;
+        _eventQueryValidator = eventQueryValidator;
+        _serializer = serializer;
+        _logger = logger;
     }
 
     [McpServerTool(Name = "list_projects", ReadOnly = true, UseStructuredContent = true)]
@@ -45,22 +65,39 @@ public sealed class ExceptionlessMcpTools
         [Description("Optional sort expression. Defaults to project name.")]
         string? sort = null,
         [Description("Maximum number of projects to return. Defaults to 10 and is capped at 50.")]
-        int limit = DefaultLimit)
+        int limit = DefaultLimit,
+        [Description("Optional cursor returned from a previous response. Fetches results after this cursor.")]
+        string? after = null,
+        [Description("Optional cursor returned from a previous response. Fetches results before this cursor.")]
+        string? before = null)
     {
         try
         {
             EnsureScope(AuthorizationRoles.ProjectsRead);
+            if (!TryValidateLimit(limit, out int resolvedLimit, out string? limitError, out string? limitWarning))
+                return McpListResult<McpProjectResult>.Failed(limitError ?? "Invalid limit.");
+
+            if (!TryValidateSort(sort, ProjectSortFields, out string? sortError))
+                return McpListResult<McpProjectResult>.Failed(sortError ?? "Invalid sort.");
+
             var organizations = await GetAccessibleOrganizationsAsync();
             var systemFilter = new AppFilter(organizations)
             {
                 IsUserOrganizationsFilter = true
             };
 
-            var results = await _projectRepository.GetByFilterAsync(systemFilter, filter, sort, o => o.PageLimit(ApplyLimit(limit)));
+            var results = await _projectRepository.GetByFilterAsync(systemFilter, filter, sort, o => o
+                .SearchBeforeToken(before, _serializer)
+                .SearchAfterToken(after, _serializer)
+                .PageLimit(resolvedLimit));
 
             return new McpListResult<McpProjectResult>(
                 results.Documents.Select(ToProjectResult).ToArray(),
-                results.HasMore);
+                results.HasMore,
+                Warning: limitWarning,
+                Before: results.Hits.FirstOrDefault()?.GetSortToken(_serializer),
+                After: results.HasMore ? results.Hits.LastOrDefault()?.GetSortToken(_serializer) : null,
+                Limit: resolvedLimit);
         }
         catch (Exception)
         {
@@ -96,21 +133,36 @@ public sealed class ExceptionlessMcpTools
         [Description("Optional sort expression. Defaults to -last_occurrence.")]
         string? sort = "-last_occurrence",
         [Description("Maximum number of stacks to return. Defaults to 10 and is capped at 50.")]
-        int limit = DefaultLimit)
+        int limit = DefaultLimit,
+        [Description("Optional cursor returned from a previous response. Fetches results after this cursor.")]
+        string? after = null,
+        [Description("Optional cursor returned from a previous response. Fetches results before this cursor.")]
+        string? before = null)
     {
         try
         {
             EnsureScope(AuthorizationRoles.StacksRead);
+            var validation = await ValidateSearchAsync(filter, sort, limit, StackFilterFields, StackSortFields, _stackQueryValidator);
+            if (validation.Error is not null)
+                return McpListResult<McpStackResult>.Failed(validation.Error);
+
             var (project, organization) = await GetProjectAndOrganizationAsync(projectId);
             var systemFilter = new AppFilter(project, organization);
 
             var results = await _stackRepository.FindAsync(
                 q => q.AppFilter(systemFilter).FilterExpression(filter).SortExpression(sort ?? "-last_occurrence"),
-                o => o.PageLimit(ApplyLimit(limit)));
+                o => o
+                    .SearchBeforeToken(before, _serializer)
+                    .SearchAfterToken(after, _serializer)
+                    .PageLimit(validation.Limit));
 
             return new McpListResult<McpStackResult>(
                 results.Documents.Select(ToStackResult).ToArray(),
-                results.HasMore);
+                results.HasMore,
+                Warning: validation.Warning,
+                Before: results.Hits.FirstOrDefault()?.GetSortToken(_serializer),
+                After: results.HasMore ? results.Hits.LastOrDefault()?.GetSortToken(_serializer) : null,
+                Limit: validation.Limit);
         }
         catch (Exception ex) when (IsLookupError(ex))
         {
@@ -150,21 +202,36 @@ public sealed class ExceptionlessMcpTools
         [Description("Optional sort expression. Defaults to -date.")]
         string? sort = "-date",
         [Description("Maximum number of events to return. Defaults to 10 and is capped at 50.")]
-        int limit = DefaultLimit)
+        int limit = DefaultLimit,
+        [Description("Optional cursor returned from a previous response. Fetches results after this cursor.")]
+        string? after = null,
+        [Description("Optional cursor returned from a previous response. Fetches results before this cursor.")]
+        string? before = null)
     {
         try
         {
             EnsureScope(AuthorizationRoles.EventsRead);
+            var validation = await ValidateSearchAsync(filter, sort, limit, EventFilterFields, EventSortFields, _eventQueryValidator);
+            if (validation.Error is not null)
+                return McpListResult<McpEventResult>.Failed(validation.Error);
+
             var (stack, organization) = await GetStackAndOrganizationAsync(stackId);
             var systemFilter = new AppFilter(stack, organization);
 
             var results = await _eventRepository.FindAsync(
                 q => q.AppFilter(systemFilter).FilterExpression(filter).EnforceEventStackFilter().SortExpression(sort ?? "-date"),
-                o => o.PageLimit(ApplyLimit(limit)));
+                o => o
+                    .SearchBeforeToken(before, _serializer)
+                    .SearchAfterToken(after, _serializer)
+                    .PageLimit(validation.Limit));
 
             return new McpListResult<McpEventResult>(
-                results.Documents.Select(ToEventResult).ToArray(),
-                results.HasMore);
+                results.Documents.Select(ev => ToEventResult(ev)).ToArray(),
+                results.HasMore,
+                Warning: validation.Warning,
+                Before: results.Hits.FirstOrDefault()?.GetSortToken(_serializer),
+                After: results.HasMore ? results.Hits.LastOrDefault()?.GetSortToken(_serializer) : null,
+                Limit: validation.Limit);
         }
         catch (Exception ex) when (IsLookupError(ex))
         {
@@ -177,10 +244,12 @@ public sealed class ExceptionlessMcpTools
     }
 
     [McpServerTool(Name = "get_event", ReadOnly = true, UseStructuredContent = true)]
-    [Description("Gets compact details for a specific Exceptionless event.")]
+    [Description("Gets details for a specific Exceptionless event, including error, request, environment, and extended data when available.")]
     public async Task<McpItemResult<McpEventResult>> GetEventAsync(
         [Description("The Exceptionless event id.")]
-        string eventId)
+        string eventId,
+        [Description("Whether to include error, request, environment, and extended data. Defaults to true.")]
+        bool includeDetails = true)
     {
         try
         {
@@ -190,7 +259,7 @@ public sealed class ExceptionlessMcpTools
                 return McpItemResult<McpEventResult>.NotFound($"Event {eventId} was not found or is not accessible.");
 
             EnsureOrganizationAccess(ev.OrganizationId);
-            return McpItemResult<McpEventResult>.Success(ToEventResult(ev));
+            return McpItemResult<McpEventResult>.Success(ToEventResult(ev, includeDetails));
         }
         catch (Exception ex) when (IsLookupError(ex))
         {
@@ -275,9 +344,90 @@ public sealed class ExceptionlessMcpTools
             throw new UnauthorizedAccessException("The current user cannot access the requested organization.");
     }
 
-    private static int ApplyLimit(int limit)
+    private static bool TryValidateLimit(int limit, out int resolvedLimit, out string? error, out string? warning)
     {
-        return Math.Clamp(limit <= 0 ? DefaultLimit : limit, 1, MaxLimit);
+        resolvedLimit = limit;
+        warning = null;
+
+        if (limit <= 0)
+        {
+            error = $"Limit must be between 1 and {MaxLimit}.";
+            return false;
+        }
+
+        if (limit > MaxLimit)
+        {
+            resolvedLimit = MaxLimit;
+            warning = $"Limit was capped at {MaxLimit}.";
+        }
+
+        error = null;
+        return true;
+    }
+
+    private async Task<SearchValidationResult> ValidateSearchAsync(
+        string? filter,
+        string? sort,
+        int limit,
+        IReadOnlySet<string> allowedFilterFields,
+        IReadOnlySet<string> allowedSortFields,
+        AppQueryValidator queryValidator)
+    {
+        if (!TryValidateLimit(limit, out int resolvedLimit, out string? limitError, out string? warning))
+            return SearchValidationResult.Failed(limitError ?? "Invalid limit.");
+
+        if (!TryValidateSort(sort, allowedSortFields, out string? sortError))
+            return SearchValidationResult.Failed(sortError ?? "Invalid sort.");
+
+        var queryValidation = await queryValidator.ValidateQueryAsync(filter);
+        if (!queryValidation.IsValid)
+            return SearchValidationResult.Failed($"Invalid filter: {queryValidation.Message ?? "Unable to parse filter."}");
+
+        string? unknownField = GetUnknownFilterField(filter, allowedFilterFields);
+        if (unknownField is not null)
+            return SearchValidationResult.Failed($"Unknown filter field '{unknownField}'.");
+
+        return new SearchValidationResult(resolvedLimit, warning);
+    }
+
+    private static bool TryValidateSort(string? sort, IReadOnlySet<string> allowedSortFields, out string? error)
+    {
+        if (String.IsNullOrWhiteSpace(sort))
+        {
+            error = null;
+            return true;
+        }
+
+        foreach (string term in sort.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            string field = term.TrimStart('+', '-');
+            if (field.Length == 0 || !allowedSortFields.Contains(field))
+            {
+                error = $"Unknown sort field '{field}'. Allowed sort fields: {String.Join(", ", allowedSortFields.Order(StringComparer.OrdinalIgnoreCase))}.";
+                return false;
+            }
+        }
+
+        error = null;
+        return true;
+    }
+
+    private static string? GetUnknownFilterField(string? filter, IReadOnlySet<string> allowedFilterFields)
+    {
+        if (String.IsNullOrWhiteSpace(filter))
+            return null;
+
+        foreach (Match match in FilterFieldRegex.Matches(filter))
+        {
+            string field = match.Groups["field"].Value;
+            if (field.StartsWith("data.", StringComparison.OrdinalIgnoreCase) || field.StartsWith("idx.", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (!allowedFilterFields.Contains(field))
+                return field;
+        }
+
+        return null;
     }
 
     private static bool IsLookupError(Exception ex)
@@ -319,7 +469,7 @@ public sealed class ExceptionlessMcpTools
             $"/api/v2/stacks/{stack.Id}");
     }
 
-    private static McpEventResult ToEventResult(PersistentEvent ev)
+    private McpEventResult ToEventResult(PersistentEvent ev, bool includeDetails = false)
     {
         return new McpEventResult(
             ev.Id,
@@ -334,7 +484,17 @@ public sealed class ExceptionlessMcpTools
             ev.ReferenceId,
             ev.IsFirstOccurrence,
             ev.CreatedUtc,
-            $"/api/v2/events/{ev.Id}");
+            $"/api/v2/events/{ev.Id}",
+            includeDetails ? ToEventDetails(ev) : null);
+    }
+
+    private McpEventDetails ToEventDetails(PersistentEvent ev)
+    {
+        return new McpEventDetails(
+            ev.GetError(_serializer, _logger) ?? (object?)ev.GetSimpleError(_serializer, _logger),
+            ev.GetRequestInfo(_serializer, _logger),
+            ev.GetEnvironmentInfo(_serializer, _logger),
+            ev.Data);
     }
 
     private static string[] ToTags(IEnumerable<string?>? tags)
@@ -344,9 +504,131 @@ public sealed class ExceptionlessMcpTools
             .Select(t => t!)
             .ToArray() ?? [];
     }
+
+    private static readonly Regex FilterFieldRegex = new(@"(?:^|[\s(])(?<field>@?[A-Za-z_][A-Za-z0-9_@.-]*):", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+    private static readonly HashSet<string> ProjectSortFields = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "name",
+        "created_utc",
+        "updated_utc",
+        "last_event_date_utc"
+    };
+
+    private static readonly HashSet<string> StackSortFields = new(StringComparer.OrdinalIgnoreCase)
+    {
+        StackIndex.Alias.FirstOccurrence,
+        "first_occurrence",
+        StackIndex.Alias.LastOccurrence,
+        "last_occurrence",
+        StackIndex.Alias.TotalOccurrences,
+        "total_occurrences",
+        StackIndex.Alias.Type,
+        StackIndex.Alias.Status,
+        StackIndex.Alias.DateFixed,
+        "date_fixed",
+        StackIndex.Alias.OccurrencesAreCritical,
+        "occurrences_are_critical",
+        "created_utc",
+        "updated_utc"
+    };
+
+    private static readonly HashSet<string> StackFilterFields = new(StackSortFields, StringComparer.OrdinalIgnoreCase)
+    {
+        StackIndex.Alias.Stack,
+        StackIndex.Alias.OrganizationId,
+        "organization_id",
+        StackIndex.Alias.ProjectId,
+        "project_id",
+        StackIndex.Alias.SignatureHash,
+        "signature_hash",
+        StackIndex.Alias.Title,
+        StackIndex.Alias.Description,
+        StackIndex.Alias.Tags,
+        "tags",
+        StackIndex.Alias.References,
+        StackIndex.Alias.IsFixed,
+        StackIndex.Alias.FixedInVersion,
+        "fixed_in_version",
+        StackIndex.Alias.IsHidden,
+        StackIndex.Alias.IsRegressed,
+        "error"
+    };
+
+    private static readonly HashSet<string> EventSortFields = new(StringComparer.OrdinalIgnoreCase)
+    {
+        EventIndex.Alias.Date,
+        EventIndex.Alias.Type,
+        EventIndex.Alias.Source,
+        EventIndex.Alias.Message,
+        EventIndex.Alias.Value,
+        EventIndex.Alias.Count,
+        EventIndex.Alias.IsFirstOccurrence,
+        "is_first_occurrence",
+        EventIndex.Alias.ReferenceId,
+        "reference_id",
+        "created_utc"
+    };
+
+    private static readonly HashSet<string> EventFilterFields = new(EventSortFields, StringComparer.OrdinalIgnoreCase)
+    {
+        EventIndex.Alias.OrganizationId,
+        "organization_id",
+        EventIndex.Alias.ProjectId,
+        "project_id",
+        EventIndex.Alias.StackId,
+        "stack_id",
+        EventIndex.Alias.Id,
+        EventIndex.Alias.Tags,
+        "tags",
+        EventIndex.Alias.Geo,
+        EventIndex.Alias.IDX,
+        EventIndex.Alias.Version,
+        EventIndex.Alias.Level,
+        EventIndex.Alias.SubmissionMethod,
+        EventIndex.Alias.IpAddress,
+        EventIndex.Alias.RequestUserAgent,
+        EventIndex.Alias.RequestPath,
+        EventIndex.Alias.Browser,
+        EventIndex.Alias.BrowserVersion,
+        EventIndex.Alias.BrowserMajorVersion,
+        EventIndex.Alias.RequestIsBot,
+        EventIndex.Alias.ClientVersion,
+        EventIndex.Alias.ClientUserAgent,
+        EventIndex.Alias.Device,
+        EventIndex.Alias.OperatingSystem,
+        EventIndex.Alias.OperatingSystemVersion,
+        EventIndex.Alias.OperatingSystemMajorVersion,
+        EventIndex.Alias.CommandLine,
+        EventIndex.Alias.MachineName,
+        EventIndex.Alias.MachineArchitecture,
+        EventIndex.Alias.User,
+        EventIndex.Alias.UserName,
+        EventIndex.Alias.UserEmail,
+        EventIndex.Alias.UserDescription,
+        EventIndex.Alias.LocationCountry,
+        EventIndex.Alias.LocationLevel1,
+        EventIndex.Alias.LocationLevel2,
+        EventIndex.Alias.LocationLocality,
+        EventIndex.Alias.Error,
+        EventIndex.Alias.ErrorCode,
+        EventIndex.Alias.ErrorType,
+        EventIndex.Alias.ErrorMessage,
+        EventIndex.Alias.ErrorTargetType,
+        EventIndex.Alias.ErrorTargetMethod,
+        "status"
+    };
+
+    private sealed record SearchValidationResult(int Limit, string? Warning = null, string? Error = null)
+    {
+        public static SearchValidationResult Failed(string error)
+        {
+            return new SearchValidationResult(DefaultLimit, Error: error);
+        }
+    }
 }
 
-public sealed record McpListResult<T>(IReadOnlyCollection<T> Items, bool HasMore, string? Error = null)
+public sealed record McpListResult<T>(IReadOnlyCollection<T> Items, bool HasMore, string? Error = null, string? Warning = null, string? Before = null, string? After = null, int? Limit = null)
 {
     public static McpListResult<T> Failed(string error)
     {
@@ -408,4 +690,11 @@ public sealed record McpEventResult(
     string? ReferenceId,
     bool IsFirstOccurrence,
     DateTime CreatedUtc,
-    string Url);
+    string Url,
+    McpEventDetails? Details = null);
+
+public sealed record McpEventDetails(
+    object? Error,
+    RequestInfo? Request,
+    EnvironmentInfo? Environment,
+    DataDictionary? Data);

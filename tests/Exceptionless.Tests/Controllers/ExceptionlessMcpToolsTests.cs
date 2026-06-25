@@ -2,11 +2,17 @@ using System.Security.Claims;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
+using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Mcp;
+using Foundatio.Repositories;
+using Foundatio.Repositories.Extensions;
+using Foundatio.Serializer;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
@@ -72,6 +78,39 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetEventAsync_EventsScope_ReturnsEventDetails()
+    {
+        var (_, events) = await CreateDataAsync(d => d.Event().TestProject().Type(Event.KnownTypes.Error).Message("MCP detail event"));
+        var ev = events[0];
+        ev.SetSimpleError(new SimpleError
+        {
+            Message = "Boom",
+            Type = "System.InvalidOperationException",
+            StackTrace = "at Test.Throw() in Test.cs:line 42"
+        });
+        ev.Data![Event.KnownDataKeys.RequestInfo] = new RequestInfo
+        {
+            HttpMethod = "GET",
+            Path = "/broken"
+        };
+        ev.Data!["custom"] = "custom-value";
+        await _eventRepository.SaveAsync(ev, o => o.ImmediateConsistency());
+        await RefreshDataAsync();
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.GetEventAsync(ev.Id);
+
+        Assert.True(result.Found);
+        Assert.Null(result.Error);
+        Assert.NotNull(result.Item?.Details);
+        var error = Assert.IsType<SimpleError>(result.Item.Details.Error);
+        Assert.Equal("Boom", error.Message);
+        Assert.Equal("at Test.Throw() in Test.cs:line 42", error.StackTrace);
+        Assert.Equal("/broken", result.Item.Details.Request?.Path);
+        Assert.Equal("custom-value", result.Item.Details.Data?["custom"]);
+    }
+
+    [Fact]
     public async Task SearchStacksAsync_MissingStacksScope_ReturnsError()
     {
         await CreateDataAsync(d => d.Event().TestProject().Message("MCP stack"));
@@ -81,6 +120,85 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
         Assert.NotNull(result.Error);
         Assert.Empty(result.Items);
+    }
+
+    [Fact]
+    public async Task SearchStacksAsync_InvalidSort_ReturnsError()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksRead);
+
+        var result = await tools.SearchStacksAsync(TestConstants.ProjectId, sort: "-this_field_does_not_exist");
+
+        Assert.Contains("Unknown sort field", result.Error);
+        Assert.Empty(result.Items);
+    }
+
+    [Fact]
+    public async Task SearchStacksAsync_UnknownFilterField_ReturnsError()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksRead);
+
+        var result = await tools.SearchStacksAsync(TestConstants.ProjectId, filter: "nonexistentfield:foo");
+
+        Assert.Equal("Unknown filter field 'nonexistentfield'.", result.Error);
+        Assert.Empty(result.Items);
+    }
+
+    [Fact]
+    public async Task SearchStacksAsync_MalformedFilter_ReturnsSpecificError()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksRead);
+
+        var result = await tools.SearchStacksAsync(TestConstants.ProjectId, filter: "type:::((( garbage");
+
+        Assert.StartsWith("Invalid filter:", result.Error);
+        Assert.Empty(result.Items);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-5)]
+    public async Task SearchStacksAsync_InvalidLimit_ReturnsError(int limit)
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksRead);
+
+        var result = await tools.SearchStacksAsync(TestConstants.ProjectId, limit: limit);
+
+        Assert.Equal("Limit must be between 1 and 50.", result.Error);
+        Assert.Empty(result.Items);
+    }
+
+    [Fact]
+    public async Task SearchStacksAsync_LimitAboveMaximum_IsCappedWithWarning()
+    {
+        await CreateDataAsync(d => d.Event().TestProject().Message("MCP stack"));
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksRead);
+
+        var result = await tools.SearchStacksAsync(TestConstants.ProjectId, limit: 9999);
+
+        Assert.Null(result.Error);
+        Assert.Equal(50, result.Limit);
+        Assert.Equal("Limit was capped at 50.", result.Warning);
+    }
+
+    [Fact]
+    public async Task GetStackEventsAsync_WithAfterCursor_ReturnsNextPage()
+    {
+        var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP cursor").Create(1));
+        await RefreshDataAsync();
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var firstPage = await tools.GetStackEventsAsync(stacks[0].Id, limit: 1);
+
+        Assert.Null(firstPage.Error);
+        Assert.True(firstPage.HasMore);
+        Assert.NotNull(firstPage.After);
+
+        var secondPage = await tools.GetStackEventsAsync(stacks[0].Id, limit: 1, after: firstPage.After);
+
+        Assert.Null(secondPage.Error);
+        Assert.NotEmpty(secondPage.Items);
+        Assert.DoesNotContain(secondPage.Items, e => e.Id == firstPage.Items.Single().Id);
     }
 
     private Task<ExceptionlessMcpTools> CreateToolsAsync(params string[] scopes)
@@ -120,6 +238,10 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
             _organizationRepository,
             _projectRepository,
             _stackRepository,
-            _eventRepository));
+            _eventRepository,
+            GetService<StackQueryValidator>(),
+            GetService<PersistentEventQueryValidator>(),
+            GetService<ITextSerializer>(),
+            GetService<ILogger<ExceptionlessMcpTools>>()));
     }
 }
