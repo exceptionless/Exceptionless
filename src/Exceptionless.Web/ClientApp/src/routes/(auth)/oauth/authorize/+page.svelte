@@ -11,6 +11,8 @@
     import * as Card from '$comp/ui/card';
     import { Spinner } from '$comp/ui/spinner';
     import { accessToken } from '$features/auth/index.svelte';
+    import { getOrganizationsQuery } from '$features/organizations/api.svelte';
+    import { getMeQuery } from '$features/users/api.svelte';
     import { useFetchClient } from '@exceptionless/fetchclient';
 
     interface OAuthAuthorizeResponse {
@@ -20,9 +22,16 @@
     let errorMessage = $state<null | string>(null);
     let isAuthorizing = $state(false);
 
+    const meQuery = getMeQuery();
+    const organizationsQuery = getOrganizationsQuery({ params: { mode: null } });
+
     const clientId = $derived(page.url.searchParams.get('client_id') ?? 'Unknown application');
     const redirectUri = $derived(page.url.searchParams.get('redirect_uri') ?? 'Unknown redirect URI');
     const resource = $derived(page.url.searchParams.get('resource') ?? 'Unknown resource');
+    const accountDisplayName = $derived(meQuery.data?.full_name || meQuery.data?.email_address || 'Unknown account');
+    const organizations = $derived(organizationsQuery.data?.data ?? []);
+    const visibleOrganizations = $derived(organizations.slice(0, 6));
+    const hiddenOrganizationCount = $derived(Math.max(organizations.length - visibleOrganizations.length, 0));
     const requestedScopes = $derived(
         page.url.searchParams
             .get('scope')
@@ -86,7 +95,7 @@
     }
 </script>
 
-<div class="mx-auto flex w-[calc(100vw-2rem)] max-w-lg flex-col items-center">
+<div class="mx-auto flex w-[calc(100vw-2rem)] max-w-xl flex-col items-center">
     <Card.Root class="w-full">
         <Card.Header>
             <Logo />
@@ -94,6 +103,40 @@
             <Card.Description>Review the requested Exceptionless access before continuing.</Card.Description>
         </Card.Header>
         <Card.Content class="space-y-5">
+            <div class="space-y-3 rounded-md border p-3 text-sm">
+                <div>
+                    <Muted>Signed in as</Muted>
+                    {#if meQuery.isLoading}
+                        <p class="text-muted-foreground">Loading account...</p>
+                    {:else if meQuery.isError}
+                        <p class="text-destructive">Unable to load account details.</p>
+                    {:else}
+                        <p class="font-medium">{accountDisplayName}</p>
+                        <p class="break-all font-mono text-xs text-muted-foreground">{meQuery.data?.email_address}</p>
+                    {/if}
+                </div>
+                <div>
+                    <Muted>Organizations</Muted>
+                    {#if organizationsQuery.isLoading}
+                        <p class="text-muted-foreground">Loading organizations...</p>
+                    {:else if organizationsQuery.isError}
+                        <p class="text-destructive">Unable to load organizations.</p>
+                    {:else if organizations.length > 0}
+                        <p class="text-muted-foreground">Access applies to these organizations.</p>
+                        <div class="mt-2 flex flex-wrap gap-1.5">
+                            {#each visibleOrganizations as organization (organization.id)}
+                                <Badge variant="outline">{organization.name}</Badge>
+                            {/each}
+                            {#if hiddenOrganizationCount > 0}
+                                <Badge variant="secondary">+{hiddenOrganizationCount} more</Badge>
+                            {/if}
+                        </div>
+                    {:else}
+                        <p class="text-muted-foreground">This account is not a member of any organizations.</p>
+                    {/if}
+                </div>
+            </div>
+
             <div class="space-y-3 text-sm">
                 <div>
                     <Muted>Application</Muted>
