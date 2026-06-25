@@ -241,6 +241,82 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task CountEventsAsync_GroupByVersion_ReturnsVersionCounts()
+    {
+        const string referenceId = "mcp-count-events-version";
+        await CreateDataAsync(d => d.Event().TestProject().ReferenceId(referenceId).Version("1.0.2").Message("MCP count event 1.0.2"));
+        await CreateDataAsync(d => d.Event().TestProject().ReferenceId(referenceId).Version("1.0.3").Message("MCP count event 1.0.3"));
+        await RefreshDataAsync();
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.CountEventsAsync(TestConstants.ProjectId, filter: $"reference:{referenceId}", groupBy: "version");
+        var data = Data(result);
+
+        Assert.True(result.Ok);
+        Assert.Null(result.Error);
+        Assert.Equal("version", data.GroupBy);
+        Assert.NotNull(data.Groups);
+        Assert.Contains(data.Groups, g => g.Key == "1.0.2" && g.Events >= 1);
+        Assert.Contains(data.Groups, g => g.Key == "1.0.3" && g.Events >= 1);
+    }
+
+    [Fact]
+    public async Task CountEventsAsync_GroupByVersionAndInterval_ReturnsGroupedTrend()
+    {
+        try
+        {
+            TimeProvider.SetUtcNow(new DateTimeOffset(2026, 6, 25, 12, 0, 0, TimeSpan.Zero));
+            const string referenceId = "mcp-count-events-version-trend";
+            await CreateDataAsync(d => d.Event().TestProject().ReferenceId(referenceId).Version("1.0.2").Date(new DateTimeOffset(2026, 6, 24, 12, 0, 0, TimeSpan.Zero)).Message("MCP count event 1.0.2 trend"));
+            await CreateDataAsync(d => d.Event().TestProject().ReferenceId(referenceId).Version("1.0.3").Date(new DateTimeOffset(2026, 6, 25, 12, 0, 0, TimeSpan.Zero)).Message("MCP count event 1.0.3 trend"));
+            await RefreshDataAsync();
+            var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+            var result = await tools.CountEventsAsync(TestConstants.ProjectId, filter: $"reference:{referenceId}", last: "7d", interval: "1d", groupBy: "version");
+            var data = Data(result);
+
+            Assert.True(result.Ok);
+            Assert.Null(result.Error);
+            Assert.Equal("version", data.GroupBy);
+            Assert.NotEmpty(data.Trend);
+            Assert.NotNull(data.Groups);
+            Assert.Contains(data.Groups, g => g.Key == "1.0.2" && g.Trend.Count > 0);
+            Assert.Contains(data.Groups, g => g.Key == "1.0.3" && g.Trend.Count > 0);
+        }
+        finally
+        {
+            TimeProvider.Restore();
+        }
+    }
+
+    [Fact]
+    public async Task CountEventsAsync_InvalidGroupBy_ReturnsError()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.CountEventsAsync(TestConstants.ProjectId, groupBy: "client.version");
+
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.InvalidGroupBy, result.Error?.Code);
+        Assert.Null(result.Data);
+    }
+
+    [Fact]
+    public async Task CountEventsAsync_GroupLimitAboveMaximum_IsCappedWithWarning()
+    {
+        const string referenceId = "mcp-count-events-group-limit";
+        await CreateDataAsync(d => d.Event().TestProject().ReferenceId(referenceId).Version("1.0.2").Message("MCP count event group limit"));
+        await RefreshDataAsync();
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.CountEventsAsync(TestConstants.ProjectId, filter: $"reference:{referenceId}", groupBy: "version", groupLimit: 999);
+
+        Assert.True(result.Ok);
+        Assert.Null(result.Error);
+        Assert.Equal("groupLimit was capped at 25.", result.Warning);
+    }
+
+    [Fact]
     public async Task CountEventsAsync_InvalidInterval_ReturnsError()
     {
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
@@ -548,6 +624,20 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         Assert.Contains("24h", last.GetProperty("description").GetString(), StringComparison.OrdinalIgnoreCase);
         Assert.Contains("UTC", startUtc.GetProperty("description").GetString(), StringComparison.OrdinalIgnoreCase);
         Assert.Contains("UTC", endUtc.GetProperty("description").GetString(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task CountEventsAsync_SchemaIncludesGroupByParameters()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+        var method = typeof(ExceptionlessMcpTools).GetMethod(nameof(ExceptionlessMcpTools.CountEventsAsync)) ?? throw new InvalidOperationException("Could not find CountEventsAsync.");
+        var tool = McpServerTool.Create(method, tools, new McpServerToolCreateOptions());
+        var properties = tool.ProtocolTool.InputSchema.GetProperty("properties");
+
+        Assert.True(properties.TryGetProperty("groupBy", out var groupBy), "The groupBy input must be advertised in the MCP tool schema.");
+        Assert.True(properties.TryGetProperty("groupLimit", out var groupLimit), "The groupLimit input must be advertised in the MCP tool schema.");
+        Assert.Contains("version", groupBy.GetProperty("description").GetString(), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("capped at 25", groupLimit.GetProperty("description").GetString(), StringComparison.OrdinalIgnoreCase);
     }
 
     [Theory]

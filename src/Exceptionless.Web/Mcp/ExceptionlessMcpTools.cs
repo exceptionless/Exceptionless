@@ -28,6 +28,8 @@ public sealed class ExceptionlessMcpTools
 {
     private const int DefaultLimit = 10;
     private const int MaxSummaryLimit = 100;
+    private const int DefaultGroupLimit = 10;
+    private const int MaxGroupLimit = 25;
     private const int DefaultMaxDetailSize = 16 * 1024;
     private const int MaxDetailSize = 64 * 1024;
     private const int MinDetailSize = 1024;
@@ -35,6 +37,7 @@ public sealed class ExceptionlessMcpTools
     private const string LastDescription = "Optional relative time range such as 24h, 7d, or 30m. Do not combine with startUtc or endUtc.";
     private const string StartUtcDescription = "Optional inclusive UTC start time, for example 2026-06-25T00:00:00Z. Do not combine with last.";
     private const string EndUtcDescription = "Optional exclusive UTC end time, for example 2026-06-25T01:00:00Z. Do not combine with last.";
+    private const string EventGroupByDescription = "Optional dimension to group counts by. Supported values: version, type, source, status, tag, stack, user, level, error.type, error.code, os, os.version, browser.";
     private const string SnoozeDurationDescription = "Optional relative snooze duration such as 2h, 3d, or 1w. Do not combine with snoozeUntilUtc.";
     private const string ProjectFilterDescription = "Optional Exceptionless filter expression applied to projects. Supported fields: id, name, organization_id, created_utc, updated_utc, last_event_date_utc.";
     private const string StackFilterDescription = "Optional Exceptionless filter expression. Supported fields include: stack, project, project_id, organization, organization_id, type, status, title, description, tag, tags, references, fixed, hidden, regressed, error, first, first_occurrence, last, last_occurrence, occurrences, total_occurrences, data.*, idx.*.";
@@ -374,7 +377,7 @@ public sealed class ExceptionlessMcpTools
     }
 
     [McpServerTool(Name = "count_events", ReadOnly = true, UseStructuredContent = true)]
-    [Description("Counts Exceptionless events and occurrences in a project, with optional time buckets for trend questions like occurrences in the last day or over the last 7 days.")]
+    [Description("Counts Exceptionless events and occurrences in a project, with optional time buckets and groupBy dimensions for questions like occurrences by version, tag, user, or error type.")]
     public async Task<McpResponse<McpEventCountResult>> CountEventsAsync(
         [Description("The Exceptionless project id to count within.")]
         string projectId,
@@ -387,7 +390,11 @@ public sealed class ExceptionlessMcpTools
         [Description(EndUtcDescription)]
         string? endUtc = null,
         [Description("Optional date histogram interval for trend buckets, such as 1h, 1d, or 1w. Leave blank for a total only.")]
-        string? interval = null)
+        string? interval = null,
+        [Description(EventGroupByDescription)]
+        string? groupBy = null,
+        [Description("Maximum number of groups to return when groupBy is specified. Defaults to 10 and is capped at 25.")]
+        int groupLimit = DefaultGroupLimit)
     {
         try
         {
@@ -405,11 +412,19 @@ public sealed class ExceptionlessMcpTools
             if (!TryValidateInterval(interval, out var intervalError))
                 return McpResponse<McpEventCountResult>.Failed(intervalError);
 
+            if (!TryResolveEventGroupBy(groupBy, out var resolvedGroupBy, out var groupByError))
+                return McpResponse<McpEventCountResult>.Failed(groupByError);
+
+            if (!TryValidateGroupLimit(groupLimit, out int resolvedGroupLimit, out var groupLimitError, out var groupLimitWarning))
+                return McpResponse<McpEventCountResult>.Failed(groupLimitError);
+
             var (project, organization) = await GetProjectAndOrganizationAsync(projectId);
             var systemFilter = new AppFilter(project, organization);
-            string aggregations = String.IsNullOrWhiteSpace(interval)
-                ? "sum:count~1 cardinality:stack_id cardinality:user"
-                : $"date:(date~{interval} sum:count~1) sum:count~1 cardinality:stack_id cardinality:user";
+            string aggregations = BuildCountEventsAggregations(interval, resolvedGroupBy, resolvedGroupLimit);
+
+            var aggregationValidation = await _eventQueryValidator.ValidateAggregationsAsync(aggregations);
+            if (!aggregationValidation.IsValid)
+                return McpResponse<McpEventCountResult>.Failed(McpErrors.InvalidGroupBy($"Invalid aggregation: {aggregationValidation.Message ?? "Unable to validate aggregation."}", groupBy, EventGroupByFields.Keys));
 
             var countQuery = ApplyEventTimeRange(new RepositoryQuery<PersistentEvent>().AppFilter(systemFilter), timeRange);
             var result = await _eventRepository.CountAsync(_ => countQuery
@@ -425,6 +440,30 @@ public sealed class ExceptionlessMcpTools
                     GetNumericAggregationValue(b.Aggregations.Sum("sum_count")?.Value, Convert.ToDouble(b.Total, CultureInfo.InvariantCulture))))
                 .ToArray() ?? [];
 
+            IReadOnlyCollection<McpEventCountGroup> groups = [];
+            if (resolvedGroupBy is not null)
+            {
+                var groupTerms = result.Aggregations.Terms<string>(GetTermsAggregationName(resolvedGroupBy));
+                groups = groupTerms?.Buckets?
+                    .Select(b =>
+                    {
+                        var groupHistogram = String.IsNullOrWhiteSpace(interval) ? null : b.Aggregations.DateHistogram("date_date");
+                        var groupTrend = groupHistogram?.Buckets?
+                            .Select(bucket => new McpEventTrendBucket(
+                                bucket.Date.ToString("O", CultureInfo.InvariantCulture),
+                                Convert.ToInt64(bucket.Total, CultureInfo.InvariantCulture),
+                                GetNumericAggregationValue(bucket.Aggregations.Sum("sum_count")?.Value, Convert.ToDouble(bucket.Total, CultureInfo.InvariantCulture))))
+                            .ToArray() ?? [];
+
+                        return new McpEventCountGroup(
+                            b.KeyAsString ?? b.Key?.ToString() ?? String.Empty,
+                            Convert.ToInt64(b.Total, CultureInfo.InvariantCulture),
+                            GetNumericAggregationValue(b.Aggregations.Sum("sum_count")?.Value, Convert.ToDouble(b.Total, CultureInfo.InvariantCulture)),
+                            groupTrend);
+                    })
+                    .ToArray() ?? [];
+            }
+
             return McpResponse<McpEventCountResult>.Success(new McpEventCountResult(
                 result.Total,
                 GetNumericAggregationValue(result.Aggregations.Sum("sum_count")?.Value, result.Total),
@@ -433,7 +472,10 @@ public sealed class ExceptionlessMcpTools
                 interval,
                 timeRange.StartUtc,
                 timeRange.EndUtc,
-                buckets));
+                buckets,
+                resolvedGroupBy?.Name,
+                groups),
+                groupLimitWarning);
         }
         catch (Exception ex) when (IsLookupError(ex))
         {
@@ -863,6 +905,66 @@ public sealed class ExceptionlessMcpTools
         return false;
     }
 
+    private static bool TryResolveEventGroupBy(string? groupBy, out McpEventGroupBy? resolvedGroupBy, out McpErrorInfo error)
+    {
+        resolvedGroupBy = null;
+        if (String.IsNullOrWhiteSpace(groupBy))
+        {
+            error = null!;
+            return true;
+        }
+
+        if (EventGroupByFields.TryGetValue(groupBy.Trim(), out resolvedGroupBy))
+        {
+            error = null!;
+            return true;
+        }
+
+        error = McpErrors.InvalidGroupBy($"Unsupported groupBy field '{groupBy}'.", groupBy, EventGroupByFields.Keys);
+        return false;
+    }
+
+    private static bool TryValidateGroupLimit(int groupLimit, out int resolvedGroupLimit, out McpErrorInfo error, out string? warning)
+    {
+        resolvedGroupLimit = groupLimit;
+        warning = null;
+        if (groupLimit <= 0)
+        {
+            error = McpErrors.InvalidLimit($"groupLimit must be between 1 and {MaxGroupLimit}.", groupLimit, MaxGroupLimit);
+            return false;
+        }
+
+        if (groupLimit > MaxGroupLimit)
+        {
+            resolvedGroupLimit = MaxGroupLimit;
+            warning = $"groupLimit was capped at {MaxGroupLimit}.";
+        }
+
+        error = null!;
+        return true;
+    }
+
+    private static string BuildCountEventsAggregations(string? interval, McpEventGroupBy? groupBy, int groupLimit)
+    {
+        string rootAggregations = String.IsNullOrWhiteSpace(interval)
+            ? "sum:count~1 cardinality:stack_id cardinality:user"
+            : $"date:(date~{interval} sum:count~1) sum:count~1 cardinality:stack_id cardinality:user";
+
+        if (groupBy is null)
+            return rootAggregations;
+
+        string groupAggregations = String.IsNullOrWhiteSpace(interval)
+            ? "sum:count~1"
+            : $"sum:count~1 date:(date~{interval} sum:count~1)";
+
+        return $"terms:({groupBy.AggregationField}~{groupLimit} {groupAggregations}) {rootAggregations}";
+    }
+
+    private static string GetTermsAggregationName(McpEventGroupBy groupBy)
+    {
+        return $"terms_{groupBy.AggregationField}";
+    }
+
     private bool TryResolveSnoozeUntil(string? duration, string? snoozeUntilUtc, out DateTime untilUtc, out McpErrorInfo error)
     {
         untilUtc = default;
@@ -1143,6 +1245,25 @@ public sealed class ExceptionlessMcpTools
     private static readonly Regex RelativeTimeRegex = new(@"^(?<value>\d+)(?<unit>[mhdw])$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
     private static readonly Regex IntervalRegex = new(@"^\d+[mhdwM]$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
+    private static readonly IReadOnlyDictionary<string, McpEventGroupBy> EventGroupByFields = new Dictionary<string, McpEventGroupBy>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["version"] = new("version", EventIndex.Alias.Version),
+        ["type"] = new("type", EventIndex.Alias.Type),
+        ["source"] = new("source", EventIndex.Alias.Source),
+        ["status"] = new("status", "status"),
+        ["tag"] = new("tag", "tags"),
+        ["tags"] = new("tag", "tags"),
+        ["stack"] = new("stack", EventIndex.Alias.StackId),
+        ["stack_id"] = new("stack", "stack_id"),
+        ["user"] = new("user", EventIndex.Alias.User),
+        ["level"] = new("level", EventIndex.Alias.Level),
+        ["error.type"] = new("error.type", EventIndex.Alias.ErrorType),
+        ["error.code"] = new("error.code", EventIndex.Alias.ErrorCode),
+        ["os"] = new("os", "os"),
+        ["os.version"] = new("os.version", "os.version"),
+        ["browser"] = new("browser", EventIndex.Alias.Browser)
+    };
+
     private static readonly HashSet<string> ProjectSortFields = new(StringComparer.OrdinalIgnoreCase)
     {
         "name",
@@ -1268,12 +1389,15 @@ public sealed class ExceptionlessMcpTools
             return new SearchValidationResult(DefaultLimit, Error: error);
         }
     }
+
+    private sealed record McpEventGroupBy(string Name, string AggregationField);
 }
 
 public static class McpErrorCodes
 {
     public const string InvalidDetailSize = "invalid_detail_size";
     public const string InvalidFilter = "invalid_filter";
+    public const string InvalidGroupBy = "invalid_group_by";
     public const string InvalidId = "invalid_id";
     public const string InvalidInterval = "invalid_interval";
     public const string InvalidLimit = "invalid_limit";
@@ -1303,6 +1427,15 @@ public static class McpErrors
     public static McpErrorInfo InvalidFilter(string message)
     {
         return new McpErrorInfo(McpErrorCodes.InvalidFilter, message);
+    }
+
+    public static McpErrorInfo InvalidGroupBy(string message, string? groupBy, IEnumerable<string> allowedFields)
+    {
+        return new McpErrorInfo(McpErrorCodes.InvalidGroupBy, message, new Dictionary<string, object?>
+        {
+            ["groupBy"] = groupBy,
+            ["allowedFields"] = allowedFields.Order(StringComparer.OrdinalIgnoreCase).ToArray()
+        });
     }
 
     public static McpErrorInfo InvalidId(string message, string field, string? value)
@@ -1456,12 +1589,20 @@ public sealed record McpEventCountResult(
     string? Interval,
     DateTime? StartUtc,
     DateTime? EndUtc,
-    IReadOnlyCollection<McpEventTrendBucket> Trend);
+    IReadOnlyCollection<McpEventTrendBucket> Trend,
+    string? GroupBy = null,
+    IReadOnlyCollection<McpEventCountGroup>? Groups = null);
 
 public sealed record McpEventTrendBucket(
     string Date,
     long Events,
     double Occurrences);
+
+public sealed record McpEventCountGroup(
+    string Key,
+    long Events,
+    double Occurrences,
+    IReadOnlyCollection<McpEventTrendBucket> Trend);
 
 public sealed record McpProjectResult(
     string Id,
