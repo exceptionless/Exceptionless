@@ -38,9 +38,6 @@ public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthServe
         try
         {
             using var cts = new CancellationTokenSource(options.ClientMetadataDocumentRequestTimeout);
-            if (!await IsPublicHostAsync(uri, cts.Token))
-                return await CacheFailureAsync(failureCacheKey);
-
             using var request = new HttpRequestMessage(HttpMethod.Get, uri);
             request.Headers.Accept.ParseAdd("application/json");
 
@@ -122,16 +119,6 @@ public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthServe
         return memoryStream;
     }
 
-    private static async Task<bool> IsPublicHostAsync(Uri uri, CancellationToken cancellationToken)
-    {
-        IPAddress[] addresses;
-        if (IPAddress.TryParse(uri.Host, out var address))
-            addresses = [address];
-        else
-            addresses = await Dns.GetHostAddressesAsync(uri.Host, cancellationToken);
-
-        return addresses.Length > 0 && addresses.All(IsPublicAddress);
-    }
 
     public static bool IsPublicAddress(IPAddress address)
     {

@@ -261,7 +261,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
     public IReadOnlyCollection<string> GetAllowedScopes(OAuthClientOptions client)
     {
-        return client.Scopes.Count > 0 ? client.Scopes : SupportedScopes;
+        return client.Scopes.Count > 0 ? client.Scopes : DefaultScopes;
     }
 
     public IReadOnlyCollection<string> NormalizeScopes(string? scopes)

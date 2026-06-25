@@ -214,7 +214,7 @@ public class Bootstrapper
                 await socket.ConnectAsync(new IPEndPoint(address, context.DnsEndPoint.Port), cancellationToken);
                 return new NetworkStream(socket, ownsSocket: true);
             }
-            catch (Exception ex)
+            catch (SocketException ex)
             {
                 lastException = ex;
                 socket.Dispose();

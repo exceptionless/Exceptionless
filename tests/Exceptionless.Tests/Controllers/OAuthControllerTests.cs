@@ -11,6 +11,7 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Controllers;
+using Exceptionless.Web.Models.OAuth;
 using FluentRest;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
@@ -25,6 +26,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     private const string ClientId = "test-oauth-client";
     private const string RedirectUri = "http://localhost/callback";
     private const string MetadataClientId = "https://oauth.example/client.json";
+    private const string MetadataNoScopeClientId = "https://oauth.example/no-scope-client.json";
     private const string MetadataRedirectUri = "https://oauth.example/callback";
     private const string ClaudeMetadataClientId = "https://claude.ai/oauth/claude-code-client-metadata";
     private const string ClaudeLoopbackRedirectUri = "http://localhost:48272/callback";
@@ -395,7 +397,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     public async Task CompleteAuthorizeAsync_InvalidCodeChallenge_ReturnsBadRequest()
     {
         using var client = CreateHttpClient();
-        var request = new HttpRequestMessage(HttpMethod.Post, "oauth/authorize")
+        using var request = new HttpRequestMessage(HttpMethod.Post, "oauth/authorize")
         {
             Content = JsonContent.Create(new OAuthAuthorizeForm
             {
@@ -431,6 +433,26 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.Equal(OAuthApplication.SystemUserId, application.CreatedByUserId);
         Assert.Contains(MetadataRedirectUri, application.RedirectUris);
         Assert.Contains(AuthorizationRoles.McpRead, application.Scopes);
+    }
+
+    [Fact]
+    public async Task CompleteAuthorizeAsync_ClientMetadataDocumentWithoutScope_DefaultsToReadOnlyScopes()
+    {
+        await CreateAuthorizationCodeAsync(
+            PkceVerifier,
+            MetadataRedirectUri,
+            clientId: MetadataNoScopeClientId,
+            scope: String.Join(' ', OAuthService.DefaultScopes));
+
+        var application = await _oauthApplicationRepository.GetByClientIdAsync(MetadataNoScopeClientId, o => o.ImmediateConsistency());
+
+        Assert.NotNull(application);
+        Assert.Contains(AuthorizationRoles.McpRead, application.Scopes);
+        Assert.Contains(AuthorizationRoles.ProjectsRead, application.Scopes);
+        Assert.Contains(AuthorizationRoles.StacksRead, application.Scopes);
+        Assert.Contains(AuthorizationRoles.EventsRead, application.Scopes);
+        Assert.DoesNotContain(AuthorizationRoles.StacksWrite, application.Scopes);
+        Assert.DoesNotContain(AuthorizationRoles.OfflineAccess, application.Scopes);
     }
 
     [Fact]
@@ -731,10 +753,10 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         return token;
     }
 
-    private async Task<string> CreateAuthorizationCodeAsync(string verifier, string redirectUri = RedirectUri, string? resource = Resource, string clientId = ClientId)
+    private async Task<string> CreateAuthorizationCodeAsync(string verifier, string redirectUri = RedirectUri, string? resource = Resource, string clientId = ClientId, string? scope = null)
     {
         using var client = CreateHttpClient();
-        using var request = CreateAuthorizeJsonRequest(verifier, redirectUri, resource, clientId);
+        using var request = CreateAuthorizeJsonRequest(verifier, redirectUri, resource, clientId, scope: scope);
 
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
@@ -838,6 +860,15 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         {
             return Task.FromResult(clientId switch
             {
+                MetadataNoScopeClientId => new OAuthClientMetadataDocument
+                {
+                    ClientId = MetadataNoScopeClientId,
+                    ClientName = "No Scope AI Client",
+                    RedirectUris = [MetadataRedirectUri],
+                    GrantTypes = [OAuthGrantTypes.AuthorizationCode],
+                    ResponseTypes = ["code"],
+                    TokenEndpointAuthMethod = "none"
+                },
                 MetadataClientId => new OAuthClientMetadataDocument
                 {
                     ClientId = MetadataClientId,
