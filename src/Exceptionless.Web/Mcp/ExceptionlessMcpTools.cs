@@ -49,6 +49,7 @@ public sealed class ExceptionlessMcpTools
     private readonly IProjectRepository _projectRepository;
     private readonly IStackRepository _stackRepository;
     private readonly IEventRepository _eventRepository;
+    private readonly ITokenRepository _tokenRepository;
     private readonly StackQueryValidator _stackQueryValidator;
     private readonly PersistentEventQueryValidator _eventQueryValidator;
     private readonly SemanticVersionParser _semanticVersionParser;
@@ -62,6 +63,7 @@ public sealed class ExceptionlessMcpTools
         IProjectRepository projectRepository,
         IStackRepository stackRepository,
         IEventRepository eventRepository,
+        ITokenRepository tokenRepository,
         StackQueryValidator stackQueryValidator,
         PersistentEventQueryValidator eventQueryValidator,
         SemanticVersionParser semanticVersionParser,
@@ -74,6 +76,7 @@ public sealed class ExceptionlessMcpTools
         _projectRepository = projectRepository;
         _stackRepository = stackRepository;
         _eventRepository = eventRepository;
+        _tokenRepository = tokenRepository;
         _stackQueryValidator = stackQueryValidator;
         _eventQueryValidator = eventQueryValidator;
         _semanticVersionParser = semanticVersionParser;
@@ -153,6 +156,83 @@ public sealed class ExceptionlessMcpTools
         catch (Exception ex) when (IsLookupError(ex))
         {
             return McpResponse<McpProjectResult>.Failed(ToLookupError("Project", projectId, ex));
+        }
+    }
+
+    [McpServerTool(Name = "get_client_setup_instructions", ReadOnly = true, UseStructuredContent = true)]
+    [Description("Gets project-specific Exceptionless client setup instructions for sending events from an app. Use this for setup questions such as Expo or React Native apps.")]
+    public async Task<McpResponse<McpClientSetupInstructionsResult>> GetClientSetupInstructionsAsync(
+        [Description("The Exceptionless project id to configure.")]
+        string projectId,
+        [Description("Client platform to configure. Supported values: expo, react-native. Use expo for Expo apps.")]
+        string platform = "expo")
+    {
+        try
+        {
+            EnsureScope(AuthorizationRoles.ProjectsRead);
+            if (!TryValidateId(projectId, "projectId", out var idError))
+                return McpResponse<McpClientSetupInstructionsResult>.Failed(idError);
+
+            string normalizedPlatform = platform.Trim().ToLowerInvariant();
+            if (!ClientSetupPlatforms.Contains(normalizedPlatform))
+                return McpResponse<McpClientSetupInstructionsResult>.Failed(McpErrors.InvalidClientPlatform($"Unsupported client platform '{platform}'.", platform, ClientSetupPlatforms));
+
+            var project = await GetAccessibleProjectAsync(projectId);
+            var tokenResults = await _tokenRepository.GetByTypeAndProjectIdAsync(TokenType.Access, project.Id, o => o.PageLimit(10));
+            var token = tokenResults.Documents.FirstOrDefault(t => !t.IsDisabled && !t.IsSuspended);
+            string apiKey = token?.Id ?? "YOUR_API_KEY";
+
+            var notes = new List<string>
+            {
+                "Call Exceptionless.startup once when the app starts, before rendering your root component if possible.",
+                "After startup, unhandled JavaScript errors are captured automatically. You can also submit handled exceptions explicitly."
+            };
+
+            if (token is null)
+                notes.Add("No active project API key was found. Create or enable a project API key in Exceptionless, then replace YOUR_API_KEY.");
+
+            string packageName;
+            string documentationUrl;
+            List<McpClientSetupStep> steps;
+
+            if (normalizedPlatform == "expo")
+            {
+                packageName = "@exceptionless/react-native";
+                documentationUrl = "https://github.com/exceptionless/Exceptionless.JavaScript/tree/main/packages/react-native";
+                notes.Add("Native iOS crash reporting requires an Expo development build or standalone build. JavaScript error reporting works in Expo Go.");
+                steps = BuildReactNativeClientSetupSteps(
+                    apiKey,
+                    "npx expo install @exceptionless/react-native @react-native-async-storage/async-storage",
+                    includeExpoPlugin: true);
+            }
+            else
+            {
+                packageName = "@exceptionless/react-native";
+                documentationUrl = "https://github.com/exceptionless/Exceptionless.JavaScript/tree/main/packages/react-native";
+                steps = BuildReactNativeClientSetupSteps(
+                    apiKey,
+                    "npm install @exceptionless/react-native @react-native-async-storage/async-storage",
+                    includeExpoPlugin: false);
+            }
+
+            return McpResponse<McpClientSetupInstructionsResult>.Success(new McpClientSetupInstructionsResult(
+                project.Id,
+                project.Name,
+                normalizedPlatform,
+                packageName,
+                apiKey,
+                token is not null,
+                documentationUrl,
+                steps,
+                notes));
+        }
+        catch (Exception ex) when (IsLookupError(ex))
+        {
+            return McpResponse<McpClientSetupInstructionsResult>.Failed(ToLookupError("Project", projectId, ex));
+        }
+        catch (Exception ex) when (IsExpectedToolError(ex))
+        {
+            return McpResponse<McpClientSetupInstructionsResult>.Failed(McpErrors.QueryFailed("Unable to build client setup instructions. Check the project id and platform."));
         }
     }
 
@@ -1344,6 +1424,62 @@ public sealed class ExceptionlessMcpTools
             $"Event detail fields were omitted because event details exceeded maxDetailSize ({maxDetailSize} bytes). Retry with a larger maxDetailSize up to {MaxDetailSize}.");
     }
 
+    private static List<McpClientSetupStep> BuildReactNativeClientSetupSteps(string apiKey, string installCommand, bool includeExpoPlugin)
+    {
+        var steps = new List<McpClientSetupStep>
+        {
+            new(
+                "Install the client",
+                "Install the Exceptionless React Native client and AsyncStorage peer dependency.",
+                Command: installCommand,
+                Language: "shellscript")
+        };
+
+        if (includeExpoPlugin)
+        {
+            steps.Add(new McpClientSetupStep(
+                "Configure Expo",
+                "Add the Exceptionless config plugin to app.json when using Expo development or standalone builds.",
+                Code: String.Join('\n', new[]
+                {
+                    "{",
+                    "  \"expo\": {",
+                    "    \"plugins\": [\"@exceptionless/react-native/expo-plugin\"]",
+                    "  }",
+                    "}"
+                }),
+                Language: "json"));
+        }
+
+        steps.Add(new McpClientSetupStep(
+            "Start Exceptionless",
+            "Initialize Exceptionless during app startup.",
+            Code: String.Join('\n', new[]
+            {
+                "import { Exceptionless } from \"@exceptionless/react-native\";",
+                String.Empty,
+                "await Exceptionless.startup(c => {",
+                $"  c.apiKey = \"{apiKey}\";",
+                "});"
+            }),
+            Language: "javascript"));
+
+        steps.Add(new McpClientSetupStep(
+            "Send a handled exception",
+            "Use this pattern when you catch an exception and still want to send it to Exceptionless.",
+            Code: String.Join('\n', new[]
+            {
+                "try {",
+                "  throw new Error(\"Hello from Expo\");",
+                "} catch (error) {",
+                "  await Exceptionless.submitException(error);",
+                "}"
+            }),
+            Language: "javascript"));
+
+        return steps;
+    }
+
     private int GetSerializedSize<T>(T value)
     {
         string json = _serializer.SerializeToString(value) ?? String.Empty;
@@ -1401,6 +1537,8 @@ public sealed class ExceptionlessMcpTools
     {
         return value is null ? defaultValue : Convert.ToDouble(value, CultureInfo.InvariantCulture);
     }
+
+    private static readonly HashSet<string> ClientSetupPlatforms = new(StringComparer.OrdinalIgnoreCase) { "expo", "react-native" };
 
     private static readonly Regex FilterFieldRegex = new(@"(?:^|[\s(])(?<field>@?[A-Za-z_][A-Za-z0-9_@.-]*):", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex IdRegex = new(@"^[A-Za-z0-9]{24,36}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);

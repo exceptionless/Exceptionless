@@ -7,6 +7,7 @@ namespace Exceptionless.Web.Mcp;
 public static class McpErrorCodes
 {
     public const string Forbidden = "forbidden";
+    public const string InvalidClientPlatform = "invalid_client_platform";
     public const string InvalidCursor = "invalid_cursor";
     public const string InvalidDetailSize = "invalid_detail_size";
     public const string InvalidFilter = "invalid_filter";
@@ -33,6 +34,15 @@ public static class McpErrors
         return new McpErrorInfo(McpErrorCodes.Forbidden, message, new Dictionary<string, object?>
         {
             ["requiredScope"] = requiredScope
+        });
+    }
+
+    public static McpErrorInfo InvalidClientPlatform(string message, string? platform, IEnumerable<string> allowedPlatforms)
+    {
+        return new McpErrorInfo(McpErrorCodes.InvalidClientPlatform, message, new Dictionary<string, object?>
+        {
+            ["platform"] = platform,
+            ["allowedPlatforms"] = allowedPlatforms.Order(StringComparer.OrdinalIgnoreCase).ToArray()
         });
     }
 

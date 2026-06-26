@@ -70,6 +70,24 @@ public sealed record McpProjectResult(
     DateTime UpdatedUtc,
     string Url);
 
+public sealed record McpClientSetupInstructionsResult(
+    string ProjectId,
+    string ProjectName,
+    string Platform,
+    string PackageName,
+    string ApiKey,
+    bool HasApiKey,
+    string DocumentationUrl,
+    IReadOnlyCollection<McpClientSetupStep> Steps,
+    IReadOnlyCollection<string> Notes);
+
+public sealed record McpClientSetupStep(
+    string Title,
+    string Instructions,
+    string? Command = null,
+    string? Code = null,
+    string? Language = null);
+
 public sealed record McpStackResult(
     string Id,
     string OrganizationId,

@@ -24,6 +24,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly IStackRepository _stackRepository;
+    private readonly ITokenRepository _tokenRepository;
 
     public ExceptionlessMcpToolsTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
@@ -31,6 +32,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         _organizationRepository = GetService<IOrganizationRepository>();
         _projectRepository = GetService<IProjectRepository>();
         _stackRepository = GetService<IStackRepository>();
+        _tokenRepository = GetService<ITokenRepository>();
     }
 
     protected override async Task ResetDataAsync()
@@ -49,6 +51,38 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         Assert.True(result.Ok);
         Assert.Null(result.Error);
         Assert.Contains(Items(result), p => p.Id == TestConstants.ProjectId);
+    }
+
+    [Fact]
+    public async Task GetClientSetupInstructionsAsync_Expo_ReturnsProjectSpecificInstructions()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead);
+
+        var result = await tools.GetClientSetupInstructionsAsync(TestConstants.ProjectId, "expo");
+
+        Assert.True(result.Ok);
+        Assert.Null(result.Error);
+        var setup = Data(result);
+        Assert.Equal(TestConstants.ProjectId, setup.ProjectId);
+        Assert.Equal("expo", setup.Platform);
+        Assert.Equal("@exceptionless/react-native", setup.PackageName);
+        Assert.Equal(SampleDataService.TEST_API_KEY, setup.ApiKey);
+        Assert.True(setup.HasApiKey);
+        Assert.Contains(setup.Steps, step => step.Command?.Contains("npx expo install", StringComparison.OrdinalIgnoreCase) == true);
+        Assert.Contains(setup.Steps, step => step.Code?.Contains("@exceptionless/react-native/expo-plugin", StringComparison.OrdinalIgnoreCase) == true);
+        Assert.Contains(setup.Steps, step => step.Code?.Contains(SampleDataService.TEST_API_KEY, StringComparison.OrdinalIgnoreCase) == true);
+        Assert.Contains(setup.Notes, note => note.Contains("Expo", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task GetClientSetupInstructionsAsync_InvalidPlatform_ReturnsInvalidClientPlatform()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead);
+
+        var result = await tools.GetClientSetupInstructionsAsync(TestConstants.ProjectId, "banana");
+
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.InvalidClientPlatform, result.Error?.Code);
     }
 
     [Fact]
@@ -788,6 +822,19 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         Assert.Contains("capped at 25", groupLimit.GetProperty("description").GetString(), StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task GetClientSetupInstructionsAsync_SchemaAdvertisesExpoPlatform()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead);
+        var method = typeof(ExceptionlessMcpTools).GetMethod(nameof(ExceptionlessMcpTools.GetClientSetupInstructionsAsync)) ?? throw new InvalidOperationException("Could not find GetClientSetupInstructionsAsync.");
+        var tool = McpServerTool.Create(method, tools, new McpServerToolCreateOptions());
+        var properties = tool.ProtocolTool.InputSchema.GetProperty("properties");
+
+        Assert.True(properties.TryGetProperty("projectId", out _), "The projectId input must be advertised in the MCP tool schema.");
+        Assert.True(properties.TryGetProperty("platform", out var platform), "The platform input must be advertised in the MCP tool schema.");
+        Assert.Contains("expo", platform.GetProperty("description").GetString(), StringComparison.OrdinalIgnoreCase);
+    }
+
     [Theory]
     [InlineData(nameof(ExceptionlessMcpTools.UpdateStackStatusAsync))]
     [InlineData(nameof(ExceptionlessMcpTools.SnoozeStackAsync))]
@@ -876,6 +923,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
             _projectRepository,
             _stackRepository,
             _eventRepository,
+            _tokenRepository,
             GetService<StackQueryValidator>(),
             GetService<PersistentEventQueryValidator>(),
             GetService<SemanticVersionParser>(),
