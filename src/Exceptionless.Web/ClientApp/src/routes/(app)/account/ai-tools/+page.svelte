@@ -112,12 +112,7 @@
     ];
 </script>
 
-<div class="space-y-6">
-    <section class="space-y-2">
-        <h4 class="text-base font-semibold">Exceptionless MCP Server</h4>
-        <Muted>Connect AI tools to Exceptionless so they can search projects, events, stacks, and perform approved actions.</Muted>
-    </section>
-
+<div>
     <Card.Root>
         <Card.Header>
             <Card.Title class="text-sm font-medium">Setup Instructions</Card.Title>
