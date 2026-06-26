@@ -89,7 +89,7 @@
         "d3-scale": "^4.0.2",
         "dompurify": "^3.4.10",
         "kit-query-params": "^0.0.26",
-        "layerchart": "^2.0.0-next.64",
+        "layerchart": "^2.0.0-next.65",
         "mode-watcher": "^1.1.0",
         "oidc-client-ts": "^3.5.0",
         "pretty-ms": "^9.3.0",
