@@ -142,7 +142,7 @@ public class EventPostService
 
             await Task.WhenAll(tasks);
         }
-        catch (Exception ex)
+        catch (StorageException ex)
         {
             using (_logger.BeginScope(new ExceptionlessState().Organization(data.OrganizationId).Property(nameof(EventPostInfo), data)))
                 _logger.LogWarning(ex, "Unable to delete rejected event post payload");
