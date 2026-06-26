@@ -2,17 +2,14 @@
     import { browser } from '$app/environment';
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
     import { CodeBlock, Muted, P } from '$comp/typography';
-    import { Badge } from '$comp/ui/badge';
     import * as Card from '$comp/ui/card';
-    import * as Tabs from '$comp/ui/tabs';
-    import Bot from '@lucide/svelte/icons/bot';
-    import ShieldCheck from '@lucide/svelte/icons/shield-check';
-    import Terminal from '@lucide/svelte/icons/terminal';
+    import * as Select from '$comp/ui/select';
 
     type AiToolId = 'claude' | 'codex' | 'opencode';
 
     type CommandStep = {
         code: string;
+        description: string;
         language: 'json' | 'shellscript';
         title: string;
     };
@@ -46,51 +43,57 @@
 
     const aiTools = $derived<AiTool[]>([
         {
-            description: 'Add the hosted MCP server, then sign in through the OAuth browser flow.',
+            description: 'Use Claude Code with the hosted Exceptionless MCP server.',
             id: 'claude',
             name: 'Claude Code',
             steps: [
                 {
                     code: `claude mcp add --transport http exceptionless ${mcpEndpoint}`,
+                    description: 'Add the hosted MCP server to Claude Code.',
                     language: 'shellscript',
                     title: 'Add the server'
                 },
                 {
                     code: 'claude mcp login exceptionless',
+                    description: 'Start the OAuth browser flow and approve access.',
                     language: 'shellscript',
                     title: 'Authenticate'
                 }
             ]
         },
         {
-            description: 'Register the streamable HTTP server, then authenticate the saved server entry.',
+            description: 'Use Codex CLI with the hosted Exceptionless MCP server.',
             id: 'codex',
             name: 'Codex CLI',
             steps: [
                 {
                     code: `codex mcp add exceptionless --url ${mcpEndpoint}`,
+                    description: 'Register the streamable HTTP MCP server with Codex.',
                     language: 'shellscript',
                     title: 'Add the server'
                 },
                 {
                     code: 'codex mcp login exceptionless',
+                    description: 'Start the OAuth browser flow and approve access.',
                     language: 'shellscript',
                     title: 'Authenticate'
                 }
             ]
         },
         {
-            description: 'OpenCode configures remote MCP servers in opencode.json, then authenticates them from the CLI.',
+            description: 'Use OpenCode with the hosted Exceptionless MCP server.',
             id: 'opencode',
             name: 'OpenCode',
             steps: [
                 {
                     code: openCodeConfiguration,
+                    description: 'Add this server entry to your opencode.json file.',
                     language: 'json',
-                    title: 'Add to opencode.json'
+                    title: 'Add the server configuration'
                 },
                 {
                     code: 'opencode mcp auth exceptionless',
+                    description: 'Start the OAuth browser flow and approve access.',
                     language: 'shellscript',
                     title: 'Authenticate'
                 }
@@ -99,89 +102,72 @@
     ]);
 
     const selectedTool = $derived(aiTools.find((tool) => tool.id === selectedToolId) ?? aiTools[0]!);
+
+    const examplePrompts = [
+        'What are my top issues this week?',
+        'Show me the top 404s in my project.',
+        'What changed after version 1.0.2?',
+        'Find recent errors for this user or order id.',
+        'Mark this stack fixed in version 1.0.2.'
+    ];
 </script>
 
 <div class="space-y-6">
     <section class="space-y-2">
-        <div class="flex flex-wrap items-center gap-2">
-            <h4 class="text-base font-semibold">Exceptionless MCP Server</h4>
-            <Badge variant="secondary" class="gap-1">
-                <Bot class="size-3" aria-hidden="true" />
-                OAuth
-            </Badge>
-        </div>
-        <Muted>Connect AI tools to your Exceptionless projects so they can search projects, events, stacks, and perform approved actions.</Muted>
+        <h4 class="text-base font-semibold">Exceptionless MCP Server</h4>
+        <Muted>Connect AI tools to Exceptionless so they can search projects, events, stacks, and perform approved actions.</Muted>
     </section>
 
     <Card.Root>
-        <Card.Header class="gap-4">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div class="space-y-1">
-                    <Card.Title class="text-sm font-medium">Setup Instructions</Card.Title>
-                    <Card.Description>Pick your AI tool, then run the commands shown below.</Card.Description>
-                </div>
-
-                <Tabs.Root bind:value={selectedToolId} class="shrink-0">
-                    <Tabs.List class="w-full sm:w-auto">
-                        {#each aiTools as tool (tool.id)}
-                            <Tabs.Trigger value={tool.id} class="min-w-24 px-3">{tool.name}</Tabs.Trigger>
-                        {/each}
-                    </Tabs.List>
-                </Tabs.Root>
-            </div>
+        <Card.Header>
+            <Card.Title class="text-sm font-medium">Setup Instructions</Card.Title>
+            <Card.Description>Choose an AI tool, then run each command in order.</Card.Description>
         </Card.Header>
 
         <Card.Content class="space-y-6">
-            <div class="border-border bg-muted/30 flex flex-col gap-3 rounded-md border p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div class="min-w-0">
-                    <div class="text-sm font-medium">MCP endpoint</div>
-                    <code class="text-muted-foreground block truncate pt-1 text-sm">{mcpEndpoint}</code>
-                </div>
-                <CopyToClipboardButton value={mcpEndpoint} variant="outline" size="sm">Copy URL</CopyToClipboardButton>
-            </div>
+            <ol class="ml-6 list-decimal space-y-6">
+                <li class="pl-1">
+                    <P>Select your AI tool.</P>
+                    <Select.Root
+                        type="single"
+                        value={selectedToolId}
+                        onValueChange={(value) => {
+                            selectedToolId = value as AiToolId;
+                        }}
+                    >
+                        <Select.Trigger class="mt-2 w-full max-w-md">
+                            <span>{selectedTool.name}</span>
+                        </Select.Trigger>
+                        <Select.Content>
+                            {#each aiTools as tool (tool.id)}
+                                <Select.Item value={tool.id}>{tool.name}</Select.Item>
+                            {/each}
+                        </Select.Content>
+                    </Select.Root>
+                    <Muted class="mt-2 block text-sm">{selectedTool.description}</Muted>
+                </li>
 
-            <div class="grid gap-3 lg:grid-cols-2">
-                <div class="border-border rounded-md border p-4">
-                    <div class="flex items-center gap-2 text-sm font-medium">
-                        <ShieldCheck class="size-4 text-green-600" aria-hidden="true" />
-                        Permissions
-                    </div>
-                    <P class="text-muted-foreground mt-2 text-sm">
-                        The client will request OAuth scopes during setup. Read tools can inspect your accessible data; write scopes allow stack updates such as
-                        status changes, snoozing, critical events, and reference links.
-                    </P>
-                </div>
-                <div class="border-border rounded-md border p-4">
-                    <div class="flex items-center gap-2 text-sm font-medium">
-                        <Terminal class="size-4 text-blue-600" aria-hidden="true" />
-                        First use
-                    </div>
-                    <P class="text-muted-foreground mt-2 text-sm">
-                        After authentication, ask your AI tool to use Exceptionless for questions like top issues, 404s, event details, or stack triage.
-                    </P>
-                </div>
-            </div>
-
-            <div class="border-border rounded-md border p-4">
-                <div class="space-y-1">
-                    <h5 class="text-sm font-semibold">{selectedTool.name}</h5>
-                    <P class="text-muted-foreground text-sm">{selectedTool.description}</P>
-                </div>
-
-                <div class="mt-4 grid gap-4 lg:grid-cols-2">
-                    {#each selectedTool.steps as step (step.title)}
-                        <div class="space-y-2">
-                            <div class="text-sm font-medium">{step.title}</div>
-                            <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
-                                <CodeBlock code={step.code} language={step.language} class="max-h-80 overflow-auto pr-12" />
-                                <div class="absolute top-2 right-2">
-                                    <CopyToClipboardButton value={step.code} variant="default" />
-                                </div>
+                {#each selectedTool.steps as step (step.title)}
+                    <li class="pl-1">
+                        <P>{step.description}</P>
+                        <div class="bg-muted relative mt-2 min-h-13 overflow-hidden rounded-md">
+                            <CodeBlock code={step.code} language={step.language} class="max-h-80 overflow-auto pr-12" />
+                            <div class="absolute top-2 right-2">
+                                <CopyToClipboardButton value={step.code} />
                             </div>
                         </div>
+                    </li>
+                {/each}
+            </ol>
+
+            <section class="border-border border-t pt-5">
+                <h5 class="text-sm font-semibold">Try asking</h5>
+                <ul class="mt-3 grid gap-2 sm:grid-cols-2">
+                    {#each examplePrompts as prompt (prompt)}
+                        <li class="bg-muted/40 rounded-md px-3 py-2 text-sm">{prompt}</li>
                     {/each}
-                </div>
-            </div>
+                </ul>
+            </section>
         </Card.Content>
     </Card.Root>
 </div>
