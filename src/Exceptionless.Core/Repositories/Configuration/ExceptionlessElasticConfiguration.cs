@@ -43,6 +43,7 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
         AddIndex(Events = new EventIndex(this, serviceProvider, appOptions));
         AddIndex(Migrations = new MigrationIndex(this, _appOptions.ElasticsearchOptions.ScopePrefix + "migrations", appOptions.ElasticsearchOptions.NumberOfReplicas));
         AddIndex(Organizations = new OrganizationIndex(this));
+        AddIndex(OAuthApplications = new OAuthApplicationIndex(this));
         AddIndex(Projects = new ProjectIndex(this));
         AddIndex(SavedViews = new SavedViewIndex(this));
         AddIndex(Tokens = new TokenIndex(this));
@@ -71,6 +72,7 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
     public EventIndex Events { get; }
     public MigrationIndex Migrations { get; }
     public OrganizationIndex Organizations { get; }
+    public OAuthApplicationIndex OAuthApplications { get; }
     public ProjectIndex Projects { get; }
     public SavedViewIndex SavedViews { get; }
     public TokenIndex Tokens { get; }

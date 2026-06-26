@@ -19,6 +19,7 @@
     import BadgeCheck from '@lucide/svelte/icons/badge-check';
     import Bell from '@lucide/svelte/icons/bell';
     import BookOpen from '@lucide/svelte/icons/book-open';
+    import Bot from '@lucide/svelte/icons/bot';
     import Braces from '@lucide/svelte/icons/braces';
     import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
     import Help from '@lucide/svelte/icons/circle-help';
@@ -183,6 +184,10 @@
                         <DropdownMenu.Item onSelect={() => navigateTo(resolve('/(app)/account/notifications'))}>
                             <Bell />
                             <span class="w-full">Notifications</span>
+                        </DropdownMenu.Item>
+                        <DropdownMenu.Item onSelect={() => navigateTo(resolve('/(app)/account/ai-tools'))}>
+                            <Bot />
+                            <span class="w-full">AI Tools</span>
                         </DropdownMenu.Item>
                         {#if currentOrganizationId}
                             <DropdownMenu.Item

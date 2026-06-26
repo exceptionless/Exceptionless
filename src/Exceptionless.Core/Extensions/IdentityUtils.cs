@@ -13,6 +13,8 @@ public static class IdentityUtils
     public const string OrganizationIdsClaim = "OrganizationIds";
     public const string ProjectIdClaim = "ProjectId";
     public const string DefaultProjectIdClaim = "DefaultProjectId";
+    public const string OAuthClientIdClaim = "OAuthClientId";
+    public const string OAuthResourceClaim = "OAuthResource";
 
     public static ClaimsIdentity ToIdentity(this Token token)
     {
@@ -60,9 +62,20 @@ public static class IdentityUtils
 
             if (!String.IsNullOrEmpty(token.DefaultProjectId))
                 claims.Add(new Claim(DefaultProjectIdClaim, token.DefaultProjectId));
+
+            if (!String.IsNullOrEmpty(token.OAuthClientId))
+                claims.Add(new Claim(OAuthClientIdClaim, token.OAuthClientId));
+
+            if (!String.IsNullOrEmpty(token.OAuthResource))
+                claims.Add(new Claim(OAuthResourceClaim, token.OAuthResource));
         }
 
-        if (user.Roles.Count > 0)
+        if (token is { OAuthType: OAuthTokenType.Access } && token.Scopes.Count > 0)
+        {
+            foreach (string scope in token.Scopes)
+                claims.Add(new Claim(ClaimTypes.Role, scope));
+        }
+        else if (user.Roles.Count > 0)
         {
             // add implied scopes
             var roles = user.Roles.ToHashSet();
