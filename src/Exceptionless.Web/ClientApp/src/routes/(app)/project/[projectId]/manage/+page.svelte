@@ -132,24 +132,6 @@
 
 <div class="space-y-6">
     <Muted>General project settings</Muted>
-    <div class="flex flex-col gap-4 rounded-lg border bg-card p-5 text-card-foreground shadow-xs sm:flex-row sm:items-center sm:justify-between">
-        <div class="flex gap-4">
-            <div class="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-md">
-                <Bot class="size-5" aria-hidden="true" />
-            </div>
-            <div class="space-y-1">
-                <h2 class="text-base font-semibold">Use AI with this project</h2>
-                <p class="text-muted-foreground text-sm">
-                    Connect Claude Code, Codex CLI, OpenCode, or another MCP client to search events, triage stacks, and take approved actions.
-                </p>
-            </div>
-        </div>
-        <Button class="shrink-0" href={resolve('/(app)/account/ai-tools')}>
-            <Bot class="mr-2 size-4" />
-            Set Up AI Tools
-        </Button>
-    </div>
-
     <form
         onsubmit={(e) => {
             e.preventDefault();
@@ -196,6 +178,9 @@
             </Button>
             <Button variant="secondary" href={`${resolve('/(app)/account/notifications')}?project=${projectId}`}>
                 <NotificationSettings class="mr-2 size-4" /> Notifications
+            </Button>
+            <Button variant="success" href={resolve('/(app)/account/ai-tools')}>
+                <Bot class="mr-2 size-4" /> Set Up AI Tools
             </Button>
             <Button variant="secondary" onclick={generateProjectSampleData} disabled={generateSampleDataMutation.isPending}>
                 {#if generateSampleDataMutation.isPending}
