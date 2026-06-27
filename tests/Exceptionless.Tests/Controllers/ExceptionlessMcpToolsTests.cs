@@ -901,6 +901,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
             OAuthClientId = "test-client",
             OAuthResource = "http://localhost/mcp",
             Scopes = scopes.ToHashSet(StringComparer.Ordinal),
+            OAuthOrganizationIds = [TestConstants.OrganizationId],
             CreatedUtc = utcNow,
             UpdatedUtc = utcNow,
             CreatedBy = user.Id

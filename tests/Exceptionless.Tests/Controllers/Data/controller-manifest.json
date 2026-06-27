@@ -16,9 +16,24 @@
   },
   {
     "Controller": "OAuthController",
-    "Action": "GetProtectedResourceMetadataAsync",
+    "Action": "GetRestApiProtectedResourceMetadataAsync",
     "HttpMethod": "GET",
-    "Route": "/.well-known/oauth-protected-resource",
+    "Route": "/.well-known/oauth-protected-resource/api/v2",
+    "Authorization": [
+      "AllowAnonymous"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OAuthController",
+    "Action": "GetMcpProtectedResourceMetadataAsync",
+    "HttpMethod": "GET",
+    "Route": "/.well-known/oauth-protected-resource/mcp",
     "Authorization": [
       "AllowAnonymous"
     ],
@@ -255,7 +270,7 @@
     "HttpMethod": "POST",
     "Route": "/api/v1/stack/addlink",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)"
+      "Authorize(Policy=StacksWritePolicy)"
     ],
     "Consumes": [
       "application/json"
@@ -272,7 +287,7 @@
     "HttpMethod": "POST",
     "Route": "/api/v1/stack/markfixed",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)"
+      "Authorize(Policy=StacksWritePolicy)"
     ],
     "Consumes": [
       "application/json"
@@ -817,8 +832,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/events",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -851,8 +865,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/events/by-ref/{referenceId:identifier}",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -884,8 +897,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/events/count",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -915,8 +927,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/events/sessions",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -931,8 +942,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/events/sessions/{sessionId:identifier}",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -978,8 +988,7 @@
     "Route": "/api/v2/events/{id:objectid}",
     "Name": "GetPersistentEventById",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -994,7 +1003,6 @@
     "HttpMethod": "DELETE",
     "Route": "/api/v2/events/{ids:objectids}",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -1501,8 +1509,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/organizations/{organizationId:objectid}/events",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -1517,8 +1524,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/organizations/{organizationId:objectid}/events/count",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -1533,8 +1539,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/organizations/{organizationId:objectid}/events/sessions",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -1549,8 +1554,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/organizations/{organizationId:objectid}/projects",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=ProjectsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -1565,7 +1569,6 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/organizations/{organizationId:objectid}/projects/check-name",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -1659,8 +1662,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/organizations/{organizationId:objectid}/stacks",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=StacksReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -1722,8 +1724,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/projects",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=ProjectsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -1738,7 +1739,6 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/projects",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [
@@ -1756,7 +1756,6 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/projects/check-name",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -1788,8 +1787,7 @@
     "Route": "/api/v2/projects/{id:objectid}",
     "Name": "GetProjectById",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=ProjectsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -1804,7 +1802,6 @@
     "HttpMethod": "PATCH",
     "Route": "/api/v2/projects/{id:objectid}",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [
@@ -1822,7 +1819,6 @@
     "HttpMethod": "PUT",
     "Route": "/api/v2/projects/{id:objectid}",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [
@@ -1840,7 +1836,6 @@
     "HttpMethod": "DELETE",
     "Route": "/api/v2/projects/{id:objectid}/config",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -1871,7 +1866,6 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/projects/{id:objectid}/config",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [
@@ -1889,7 +1883,6 @@
     "HttpMethod": "DELETE",
     "Route": "/api/v2/projects/{id:objectid}/data",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -1905,7 +1898,6 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/projects/{id:objectid}/data",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [
@@ -1923,7 +1915,6 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/projects/{id:objectid}/notifications",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=GlobalAdminPolicy)"
     ],
     "Consumes": [],
@@ -1939,7 +1930,6 @@
     "HttpMethod": "DELETE",
     "Route": "/api/v2/projects/{id:objectid}/promotedtabs",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -1955,7 +1945,6 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/projects/{id:objectid}/promotedtabs",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [
@@ -1973,7 +1962,6 @@
     "HttpMethod": "PUT",
     "Route": "/api/v2/projects/{id:objectid}/promotedtabs",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [
@@ -1991,7 +1979,6 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/projects/{id:objectid}/reset-data",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -2007,7 +1994,6 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/projects/{id:objectid}/reset-data",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -2023,7 +2009,6 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/projects/{id:objectid}/sample-data",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -2039,7 +2024,6 @@
     "HttpMethod": "DELETE",
     "Route": "/api/v2/projects/{id:objectid}/slack",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -2055,7 +2039,6 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/projects/{id:objectid}/slack",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [
@@ -2073,7 +2056,6 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/projects/{id:objectid}/{integration:minlength(1)}/notifications",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -2089,7 +2071,6 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/projects/{id:objectid}/{integration:minlength(1)}/notifications",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [
@@ -2107,7 +2088,6 @@
     "HttpMethod": "PUT",
     "Route": "/api/v2/projects/{id:objectid}/{integration:minlength(1)}/notifications",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [
@@ -2125,7 +2105,6 @@
     "HttpMethod": "DELETE",
     "Route": "/api/v2/projects/{ids:objectids}",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -2141,8 +2120,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/projects/{projectId:objectid}/events",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -2175,8 +2153,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -2208,8 +2185,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/projects/{projectId:objectid}/events/count",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -2224,8 +2200,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/projects/{projectId:objectid}/events/sessions",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -2240,8 +2215,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/projects/{projectId:objectid}/events/sessions/{sessionId:identifier}",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -2286,8 +2260,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/projects/{projectId:objectid}/stacks",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=StacksReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -2525,8 +2498,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/stacks",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=StacksReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -2541,7 +2513,7 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/stacks/add-link",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)"
+      "Authorize(Policy=StacksWritePolicy)"
     ],
     "Consumes": [
       "application/json"
@@ -2558,7 +2530,7 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/stacks/mark-fixed",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)"
+      "Authorize(Policy=StacksWritePolicy)"
     ],
     "Consumes": [
       "application/json"
@@ -2576,8 +2548,7 @@
     "Route": "/api/v2/stacks/{id:objectid}",
     "Name": "GetStackById",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=StacksReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -2592,8 +2563,7 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/stacks/{id:objectid}/add-link",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=StacksWritePolicy)"
     ],
     "Consumes": [
       "application/json"
@@ -2610,7 +2580,6 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/stacks/{id:objectid}/promote",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -2626,8 +2595,7 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/stacks/{id:objectid}/remove-link",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=StacksWritePolicy)"
     ],
     "Consumes": [
       "application/json"
@@ -2644,7 +2612,6 @@
     "HttpMethod": "DELETE",
     "Route": "/api/v2/stacks/{ids:objectids}",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -2660,8 +2627,7 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/stacks/{ids:objectids}/change-status",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=StacksWritePolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -2676,8 +2642,7 @@
     "HttpMethod": "DELETE",
     "Route": "/api/v2/stacks/{ids:objectids}/mark-critical",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=StacksWritePolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -2692,8 +2657,7 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/stacks/{ids:objectids}/mark-critical",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=StacksWritePolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -2708,8 +2672,7 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/stacks/{ids:objectids}/mark-fixed",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=StacksWritePolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -2724,8 +2687,7 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/stacks/{ids:objectids}/mark-snoozed",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=StacksWritePolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -2740,8 +2702,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/stacks/{stackId:objectid}/events",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -3096,7 +3057,6 @@
     "HttpMethod": "DELETE",
     "Route": "/api/v2/users/{userId:objectid}/projects/{id:objectid}/notifications",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -3112,7 +3072,6 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/users/{userId:objectid}/projects/{id:objectid}/notifications",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -3128,7 +3087,6 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/users/{userId:objectid}/projects/{id:objectid}/notifications",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [
@@ -3146,7 +3104,6 @@
     "HttpMethod": "PUT",
     "Route": "/api/v2/users/{userId:objectid}/projects/{id:objectid}/notifications",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [

@@ -30,6 +30,9 @@ public sealed record OAuthAuthorizeForm
     [JsonPropertyName("resource")]
     public string? Resource { get; init; }
 
+    [JsonPropertyName("organization_ids")]
+    public string[]? OrganizationIds { get; init; }
+
     public OAuthAuthorizeRequest ToRequest()
     {
         return new OAuthAuthorizeRequest
@@ -41,7 +44,8 @@ public sealed record OAuthAuthorizeForm
             State = State,
             CodeChallenge = CodeChallenge,
             CodeChallengeMethod = CodeChallengeMethod,
-            Resource = Resource
+            Resource = Resource,
+            OrganizationIds = OrganizationIds ?? []
         };
     }
 }

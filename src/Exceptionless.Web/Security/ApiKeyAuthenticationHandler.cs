@@ -137,6 +137,9 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             if (!IsOAuthResourceValid(tokenRecord.OAuthResource))
                 return AuthenticateResult.Fail("Token resource is not valid");
 
+            if (tokenRecord.OAuthOrganizationIds.Count == 0)
+                return AuthenticateResult.Fail("Token organization access is not valid");
+
             if (String.IsNullOrEmpty(tokenRecord.OAuthClientId) || await _oauthService.GetClientAsync(tokenRecord.OAuthClientId) is null)
                 return AuthenticateResult.Fail("OAuth client is not valid");
         }
@@ -160,11 +163,10 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
     {
         await base.HandleChallengeAsync(properties);
 
-        if (Request.Path.StartsWithSegments("/mcp"))
-        {
-            string origin = GetCanonicalOrigin();
-            Response.Headers.WWWAuthenticate = $"Bearer resource_metadata=\"{origin}/.well-known/oauth-protected-resource\"";
-        }
+        if (!TryGetOAuthResourceForRequest(out var resourceDefinition, out _))
+            return;
+
+        Response.Headers.WWWAuthenticate = $"Bearer resource_metadata=\"{GetCanonicalOrigin()}/.well-known/oauth-protected-resource{resourceDefinition.Path}\"";
     }
 
     private AuthenticationTicket CreateUserAuthenticationTicket(User user, Token? token = null)
@@ -193,30 +195,32 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
 
     private bool IsOAuthResourceValid(string? resource)
     {
-        if (String.IsNullOrWhiteSpace(resource) || !Uri.TryCreate(resource, UriKind.Absolute, out var resourceUri))
+        if (!TryGetOAuthResourceForRequest(out _, out string expectedResource))
             return false;
 
-        if (!String.IsNullOrEmpty(resourceUri.Query) || !String.IsNullOrEmpty(resourceUri.Fragment))
-            return false;
+        return OAuthService.IsExpectedResource(resource, expectedResource);
+    }
 
-        var expectedResourceUri = new Uri($"{GetCanonicalOrigin()}/mcp");
-        int resourcePort = resourceUri.IsDefaultPort ? GetDefaultPort(resourceUri.Scheme) : resourceUri.Port;
-        int expectedResourcePort = expectedResourceUri.IsDefaultPort ? GetDefaultPort(expectedResourceUri.Scheme) : expectedResourceUri.Port;
-        return String.Equals(resourceUri.Scheme, expectedResourceUri.Scheme, StringComparison.OrdinalIgnoreCase)
-            && String.Equals(resourceUri.Host, expectedResourceUri.Host, StringComparison.OrdinalIgnoreCase)
-            && resourcePort == expectedResourcePort
-            && String.Equals(resourceUri.AbsolutePath.TrimEnd('/'), expectedResourceUri.AbsolutePath.TrimEnd('/'), StringComparison.Ordinal)
-            && Request.Path.StartsWithSegments(new PathString(expectedResourceUri.AbsolutePath), StringComparison.OrdinalIgnoreCase);
+    private bool TryGetOAuthResourceForRequest(out OAuthResourceDefinition resourceDefinition, out string expectedResource)
+    {
+        foreach (var candidate in OAuthService.ProtectedResources)
+        {
+            if (!Request.Path.StartsWithSegments(new PathString(candidate.Path), StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            resourceDefinition = candidate;
+            expectedResource = OAuthService.CreateResourceUri(GetCanonicalOrigin(), candidate);
+            return true;
+        }
+
+        resourceDefinition = null!;
+        expectedResource = String.Empty;
+        return false;
     }
 
     private string GetCanonicalOrigin()
     {
         return new Uri(_appOptions.BaseURL).GetLeftPart(UriPartial.Authority);
-    }
-
-    private static int GetDefaultPort(string scheme)
-    {
-        return String.Equals(scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase) ? 443 : 80;
     }
 }
 

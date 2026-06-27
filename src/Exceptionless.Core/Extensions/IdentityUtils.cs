@@ -50,10 +50,14 @@ public static class IdentityUtils
 
     public static ClaimsIdentity ToIdentity(this User user, Token? token = null)
     {
+        var organizationIds = token is { OAuthType: OAuthTokenType.Access }
+            ? token.OAuthOrganizationIds
+            : user.OrganizationIds;
+
         var claims = new List<Claim>(7 + user.Roles.Count) {
                     new(ClaimTypes.Name, user.EmailAddress),
                     new(ClaimTypes.NameIdentifier, user.Id),
-                    new(OrganizationIdsClaim, String.Join(",", user.OrganizationIds))
+                    new(OrganizationIdsClaim, String.Join(",", organizationIds))
                 };
 
         if (token is not null)

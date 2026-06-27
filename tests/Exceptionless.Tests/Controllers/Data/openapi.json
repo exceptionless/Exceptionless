@@ -4619,7 +4619,26 @@
         }
       }
     },
-    "/.well-known/oauth-protected-resource": {
+    "/.well-known/oauth-protected-resource/mcp": {
+      "get": {
+        "tags": [
+          "OAuth"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthProtectedResourceMetadata"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/.well-known/oauth-protected-resource/api/v2": {
       "get": {
         "tags": [
           "OAuth"
@@ -9109,6 +9128,15 @@
               "null",
               "string"
             ]
+          },
+          "organization_ids": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

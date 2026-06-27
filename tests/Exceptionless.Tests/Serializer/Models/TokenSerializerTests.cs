@@ -1,3 +1,4 @@
+using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Models;
 using Foundatio.Serializer;
 using Xunit;
@@ -101,6 +102,40 @@ public class TokenSerializerTests : TestWithServices
         Assert.NotNull(result);
         Assert.True(result.IsDisabled);
         Assert.True(result.IsSuspended);
+    }
+
+    [Fact]
+    public void RoundTrip_WithOAuthAccessToken_PreservesOAuthOrganizationIds()
+    {
+        // Arrange
+        var token = new Token
+        {
+            Id = "650000000000000000000005",
+            OrganizationId = "",
+            ProjectId = "",
+            UserId = "660000000000000000000001",
+            Type = TokenType.Access,
+            OAuthType = OAuthTokenType.Access,
+            OAuthClientId = "test-oauth-client",
+            OAuthResource = "http://localhost:7110/api/v2",
+            OAuthOrganizationIds = ["550000000000000000000001", "550000000000000000000002"],
+            Scopes = [AuthorizationRoles.ProjectsRead],
+            CreatedBy = "660000000000000000000001",
+            CreatedUtc = DateTime.UtcNow,
+            UpdatedUtc = DateTime.UtcNow
+        };
+
+        // Act
+        string? json = _serializer.SerializeToString(token);
+        var result = _serializer.Deserialize<Token>(json);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(OAuthTokenType.Access, result.OAuthType);
+        Assert.Equal("test-oauth-client", result.OAuthClientId);
+        Assert.Equal("http://localhost:7110/api/v2", result.OAuthResource);
+        Assert.Contains("550000000000000000000001", result.OAuthOrganizationIds);
+        Assert.Contains("550000000000000000000002", result.OAuthOrganizationIds);
     }
 
     [Fact]

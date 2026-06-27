@@ -9,11 +9,13 @@
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
+    import { Checkbox } from '$comp/ui/checkbox';
     import { Spinner } from '$comp/ui/spinner';
     import { accessToken } from '$features/auth/index.svelte';
     import { getOrganizationsQuery } from '$features/organizations/api.svelte';
     import { getMeQuery } from '$features/users/api.svelte';
     import { useFetchClient } from '@exceptionless/fetchclient';
+    import { SvelteSet } from 'svelte/reactivity';
 
     interface OAuthAuthorizeResponse {
         error?: string;
@@ -23,6 +25,7 @@
 
     let errorMessage = $state<null | string>(null);
     let isAuthorizing = $state(false);
+    const selectedOrganizationIds = new SvelteSet<string>();
 
     const meQuery = getMeQuery();
     const organizationsQuery = getOrganizationsQuery({ params: { mode: null } });
@@ -32,10 +35,8 @@
     const resource = $derived(page.url.searchParams.get('resource') ?? 'Unknown resource');
     const accountDisplayName = $derived(meQuery.data?.full_name || meQuery.data?.email_address || 'Unknown account');
     const organizations = $derived(organizationsQuery.data?.data ?? []);
-    const visibleOrganizations = $derived(organizations.slice(0, 6));
-    const hiddenOrganizationCount = $derived(Math.max(organizations.length - visibleOrganizations.length, 0));
-    const defaultRequestedScopes = ['mcp:read', 'projects:read', 'stacks:read', 'events:read'];
     const requestedScopes = $derived(getRequestedScopes());
+    const hasSelectedOrganizations = $derived(selectedOrganizationIds.size > 0);
 
     $effect(() => {
         if (!browser || accessToken.current) {
@@ -47,8 +48,34 @@
         void goto(loginUrl, { replaceState: true });
     });
 
+    $effect(() => {
+        const organizationIds = organizations.map((organization) => organization.id).filter((id): id is string => Boolean(id));
+        if (organizationIds.length === 0) {
+            if (selectedOrganizationIds.size > 0) {
+                selectedOrganizationIds.clear();
+            }
+
+            return;
+        }
+
+        const validSelectedOrganizationIds = [...selectedOrganizationIds].filter((id) => organizationIds.includes(id));
+        if (validSelectedOrganizationIds.length === selectedOrganizationIds.size && selectedOrganizationIds.size > 0) {
+            return;
+        }
+
+        selectedOrganizationIds.clear();
+        for (const organizationId of validSelectedOrganizationIds.length > 0 ? validSelectedOrganizationIds : organizationIds) {
+            selectedOrganizationIds.add(organizationId);
+        }
+    });
+
     async function approveAuthorization(): Promise<void> {
         if (isAuthorizing) {
+            return;
+        }
+
+        if (!hasSelectedOrganizations) {
+            errorMessage = 'Select at least one organization.';
             return;
         }
 
@@ -61,6 +88,7 @@
                 client_id: page.url.searchParams.get('client_id'),
                 code_challenge: page.url.searchParams.get('code_challenge'),
                 code_challenge_method: page.url.searchParams.get('code_challenge_method'),
+                organization_ids: [...selectedOrganizationIds],
                 redirect_uri: page.url.searchParams.get('redirect_uri'),
                 resource: page.url.searchParams.get('resource'),
                 response_type: page.url.searchParams.get('response_type'),
@@ -100,7 +128,19 @@
                 .map((scope) => scope.trim())
                 .filter(Boolean) ?? [];
 
-        return scopes.length > 0 ? scopes : defaultRequestedScopes;
+        return scopes;
+    }
+
+    function toggleOrganization(organizationId: string | undefined, checked: 'indeterminate' | boolean): void {
+        if (!organizationId) {
+            return;
+        }
+
+        if (checked === true) {
+            selectedOrganizationIds.add(organizationId);
+        } else {
+            selectedOrganizationIds.delete(organizationId);
+        }
     }
 
     function cancelAuthorization() {
@@ -128,21 +168,23 @@
                         <p class="break-all font-mono text-xs text-muted-foreground">{meQuery.data?.email_address}</p>
                     {/if}
                 </div>
-                <div>
+                <div class="space-y-2">
                     <Muted>Organizations</Muted>
                     {#if organizationsQuery.isLoading}
                         <p class="text-muted-foreground">Loading organizations...</p>
                     {:else if organizationsQuery.isError}
                         <p class="text-destructive">Unable to load organizations.</p>
                     {:else if organizations.length > 0}
-                        <p class="text-muted-foreground">Access applies to these organizations.</p>
-                        <div class="mt-2 flex flex-wrap gap-1.5">
-                            {#each visibleOrganizations as organization (organization.id)}
-                                <Badge variant="outline">{organization.name}</Badge>
+                        <div class="max-h-56 space-y-2 overflow-y-auto rounded-md border p-2">
+                            {#each organizations as organization (organization.id)}
+                                <label class="flex items-center gap-3 rounded-sm px-2 py-1.5 text-sm hover:bg-muted/50">
+                                    <Checkbox
+                                        checked={selectedOrganizationIds.has(organization.id)}
+                                        onCheckedChange={(checked) => toggleOrganization(organization.id, checked)}
+                                    />
+                                    <span class="min-w-0 flex-1 truncate font-medium">{organization.name}</span>
+                                </label>
                             {/each}
-                            {#if hiddenOrganizationCount > 0}
-                                <Badge variant="secondary">+{hiddenOrganizationCount} more</Badge>
-                            {/if}
                         </div>
                     {:else}
                         <p class="text-muted-foreground">This account is not a member of any organizations.</p>
@@ -166,9 +208,13 @@
                 <div>
                     <Muted>Scopes</Muted>
                     <div class="mt-2 flex flex-wrap gap-1.5">
-                        {#each requestedScopes as scope (scope)}
-                            <Badge variant="secondary">{scope}</Badge>
-                        {/each}
+                        {#if requestedScopes.length > 0}
+                            {#each requestedScopes as scope (scope)}
+                                <Badge variant="secondary">{scope}</Badge>
+                            {/each}
+                        {:else}
+                            <p class="text-muted-foreground">No scopes requested.</p>
+                        {/if}
                     </div>
                 </div>
             </div>
@@ -179,7 +225,11 @@
         </Card.Content>
         <Card.Footer class="flex justify-end gap-2">
             <Button type="button" variant="outline" onclick={cancelAuthorization} disabled={isAuthorizing}>Cancel</Button>
-            <Button type="button" onclick={() => void approveAuthorization()} disabled={isAuthorizing}>
+            <Button
+                type="button"
+                onclick={() => void approveAuthorization()}
+                disabled={isAuthorizing || organizationsQuery.isLoading || organizationsQuery.isError || !hasSelectedOrganizations}
+            >
                 {#if isAuthorizing}
                     <Spinner />
                     Authorizing...

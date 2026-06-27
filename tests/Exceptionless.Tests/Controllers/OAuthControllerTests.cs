@@ -31,6 +31,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     private const string ClaudeMetadataClientId = "https://claude.ai/oauth/claude-code-client-metadata";
     private const string ClaudeLoopbackRedirectUri = "http://localhost:48272/callback";
     private const string Resource = "http://localhost:7110/mcp";
+    private const string RestApiResource = "http://localhost:7110/api/v2";
     private const string PkceVerifier = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~";
     private const string WrongPkceVerifier = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
 
@@ -111,7 +112,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RegisterAsync_WithoutScope_DefaultsToReadOnlyScopes()
+    public async Task RegisterAsync_WithoutScope_ReturnsBadRequest()
     {
         using var client = CreateHttpClient();
 
@@ -124,15 +125,10 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
             TokenEndpointAuthMethod = "none"
         }, TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        var registration = await DeserializeResponseAsync<OAuthClientRegistrationResponse>(response);
-        Assert.NotNull(registration);
-        Assert.Contains(AuthorizationRoles.McpRead, registration.Scope);
-        Assert.Contains(AuthorizationRoles.ProjectsRead, registration.Scope);
-        Assert.Contains(AuthorizationRoles.StacksRead, registration.Scope);
-        Assert.Contains(AuthorizationRoles.EventsRead, registration.Scope);
-        Assert.DoesNotContain(AuthorizationRoles.StacksWrite, registration.Scope);
-        Assert.DoesNotContain(AuthorizationRoles.OfflineAccess, registration.Scope);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
+        Assert.NotNull(error);
+        Assert.Equal("invalid_client_metadata", error.Error);
     }
 
 
@@ -149,6 +145,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
                 RedirectUris = ["http://127.0.0.1:49152/callback"],
                 GrantTypes = [OAuthGrantTypes.AuthorizationCode],
                 ResponseTypes = ["code"],
+            Scope = AuthorizationRoles.McpRead,
                 TokenEndpointAuthMethod = "none"
             }, TestContext.Current.CancellationToken);
 
@@ -161,6 +158,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
             RedirectUris = ["http://127.0.0.1:49152/callback"],
             GrantTypes = [OAuthGrantTypes.AuthorizationCode],
             ResponseTypes = ["code"],
+                Scope = AuthorizationRoles.McpRead,
             TokenEndpointAuthMethod = "none"
         }, TestContext.Current.CancellationToken);
 
@@ -191,11 +189,11 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetProtectedResourceMetadataAsync_ReturnsMcpResourceMetadata()
+    public async Task GetMcpProtectedResourceMetadataAsync_ReturnsMcpResourceMetadata()
     {
         using var client = _server.CreateClient();
 
-        var response = await client.GetAsync("/.well-known/oauth-protected-resource", TestContext.Current.CancellationToken);
+        var response = await client.GetAsync("/.well-known/oauth-protected-resource/mcp", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var metadata = await DeserializeResponseAsync<OAuthProtectedResourceMetadata>(response);
@@ -203,6 +201,24 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.Equal(Resource, metadata.Resource);
         Assert.Contains("http://localhost:7110", metadata.AuthorizationServers);
         Assert.Contains("header", metadata.BearerMethodsSupported);
+        Assert.Contains(AuthorizationRoles.McpRead, metadata.ScopesSupported);
+    }
+
+    [Fact]
+    public async Task GetRestApiProtectedResourceMetadataAsync_ReturnsRestApiResourceMetadata()
+    {
+        using var client = _server.CreateClient();
+
+        var response = await client.GetAsync("/.well-known/oauth-protected-resource/api/v2", TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var metadata = await DeserializeResponseAsync<OAuthProtectedResourceMetadata>(response);
+        Assert.NotNull(metadata);
+        Assert.Equal(RestApiResource, metadata.Resource);
+        Assert.Contains("http://localhost:7110", metadata.AuthorizationServers);
+        Assert.Contains("header", metadata.BearerMethodsSupported);
+        Assert.Contains(AuthorizationRoles.ProjectsRead, metadata.ScopesSupported);
+        Assert.DoesNotContain(AuthorizationRoles.McpRead, metadata.ScopesSupported);
     }
 
     [Fact]
@@ -219,7 +235,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         var challenge = Assert.Single(response.Headers.WwwAuthenticate);
         Assert.Equal("Bearer", challenge.Scheme);
-        Assert.Equal("resource_metadata=\"http://localhost:7110/.well-known/oauth-protected-resource\"", challenge.Parameter);
+        Assert.Equal("resource_metadata=\"http://localhost:7110/.well-known/oauth-protected-resource/mcp\"", challenge.Parameter);
     }
 
     [Fact]
@@ -234,7 +250,21 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         var challenge = Assert.Single(response.Headers.WwwAuthenticate);
         Assert.Equal("Bearer", challenge.Scheme);
-        Assert.Equal("resource_metadata=\"http://localhost:7110/.well-known/oauth-protected-resource\"", challenge.Parameter);
+        Assert.Equal("resource_metadata=\"http://localhost:7110/.well-known/oauth-protected-resource/mcp\"", challenge.Parameter);
+    }
+
+    [Fact]
+    public async Task RestApiAsync_WithoutAuth_ReturnsProtectedResourceChallenge()
+    {
+        using var client = _server.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v2/projects");
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        var challenge = Assert.Single(response.Headers.WwwAuthenticate);
+        Assert.Equal("Bearer", challenge.Scheme);
+        Assert.Equal("resource_metadata=\"http://localhost:7110/.well-known/oauth-protected-resource/api/v2\"", challenge.Parameter);
     }
 
     [Fact]
@@ -271,7 +301,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task AuthorizeAsync_WithoutResource_RedirectsToAuthorizeBridgeWithDefaultResource()
+    public async Task AuthorizeAsync_WithoutResource_RedirectsToAuthorizeBridgeWithoutResource()
     {
         using var client = CreateHttpClient();
         using var request = CreateAuthorizeRequest(PkceVerifier, resource: null, authenticate: false);
@@ -284,7 +314,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         string location = locationHeader.ToString();
         Assert.StartsWith("/next/oauth/authorize?", location);
         var bridgeQuery = QueryHelpers.ParseQuery(location[(location.IndexOf('?') + 1)..]);
-        Assert.Equal(Resource, bridgeQuery["resource"].ToString());
+        Assert.False(bridgeQuery.ContainsKey("resource"));
     }
 
     [Fact]
@@ -320,21 +350,32 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task CompleteAuthorizeAsync_WithoutResource_ReturnsRedirectUri()
+    public async Task CompleteAuthorizeAsync_WithoutOrganizations_ReturnsBadRequest()
+    {
+        using var client = CreateHttpClient();
+        using var request = CreateAuthorizeJsonRequest(PkceVerifier, organizationIds: []);
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
+        Assert.NotNull(error);
+        Assert.Equal("invalid_request", error.Error);
+        Assert.Equal("Select at least one organization.", error.ErrorDescription);
+    }
+
+    [Fact]
+    public async Task CompleteAuthorizeAsync_WithoutResource_ReturnsBadRequest()
     {
         using var client = CreateHttpClient();
         using var request = CreateAuthorizeJsonRequest(PkceVerifier, resource: null);
 
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var authorization = await DeserializeResponseAsync<OAuthAuthorizeResponse>(response);
-        Assert.NotNull(authorization);
-        var redirectUri = new Uri(authorization.RedirectUri);
-        Assert.Equal(RedirectUri, redirectUri.GetLeftPart(UriPartial.Path));
-        var query = QueryHelpers.ParseQuery(redirectUri.Query);
-        Assert.True(query.TryGetValue("code", out var code));
-        Assert.False(String.IsNullOrEmpty(code.ToString()));
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
+        Assert.NotNull(error);
+        Assert.Equal("invalid_target", error.Error);
     }
 
     [Fact]
@@ -436,23 +477,20 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task CompleteAuthorizeAsync_ClientMetadataDocumentWithoutScope_DefaultsToReadOnlyScopes()
+    public async Task CompleteAuthorizeAsync_ClientMetadataDocumentWithoutScope_ReturnsBadRequest()
     {
-        await CreateAuthorizationCodeAsync(
-            PkceVerifier,
-            MetadataRedirectUri,
-            clientId: MetadataNoScopeClientId,
-            scope: String.Join(' ', OAuthService.DefaultScopes));
+        using var client = CreateHttpClient();
+        using var request = CreateAuthorizeJsonRequest(PkceVerifier, MetadataRedirectUri, clientId: MetadataNoScopeClientId, scope: AuthorizationRoles.McpRead);
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
+        Assert.NotNull(error);
+        Assert.Equal("invalid_client", error.Error);
 
         var application = await _oauthApplicationRepository.GetByClientIdAsync(MetadataNoScopeClientId, o => o.ImmediateConsistency());
-
-        Assert.NotNull(application);
-        Assert.Contains(AuthorizationRoles.McpRead, application.Scopes);
-        Assert.Contains(AuthorizationRoles.ProjectsRead, application.Scopes);
-        Assert.Contains(AuthorizationRoles.StacksRead, application.Scopes);
-        Assert.Contains(AuthorizationRoles.EventsRead, application.Scopes);
-        Assert.DoesNotContain(AuthorizationRoles.StacksWrite, application.Scopes);
-        Assert.DoesNotContain(AuthorizationRoles.OfflineAccess, application.Scopes);
+        Assert.Null(application);
     }
 
     [Fact]
@@ -550,10 +588,11 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.Equal(ClientId, storedToken.OAuthClientId);
         Assert.Equal(Resource, storedToken.OAuthResource);
         Assert.Contains(AuthorizationRoles.EventsRead, storedToken.Scopes);
+        Assert.Equal([TestConstants.OrganizationId], storedToken.OAuthOrganizationIds);
     }
 
     [Fact]
-    public async Task TokenAsync_WithoutResource_ReturnsOAuthTokens()
+    public async Task TokenAsync_WithoutResource_ReturnsBadRequest()
     {
         string verifier = PkceVerifier;
         string code = await CreateAuthorizationCodeAsync(verifier);
@@ -561,10 +600,10 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
 
         var response = await client.PostAsync("oauth/token", CreateTokenExchangeContent(code, verifier, resource: null), TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var token = await DeserializeResponseAsync<OAuthTokenResponse>(response);
-        Assert.NotNull(token);
-        Assert.Equal(Resource, token.Resource);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
+        Assert.NotNull(error);
+        Assert.Equal("invalid_request", error.Error);
     }
 
     [Fact]
@@ -596,19 +635,87 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task OAuthBearer_RestApiResourceWithProjectsRead_ReturnsProjects()
+    {
+        var token = await IssueTokenAsync(resource: RestApiResource, scope: AuthorizationRoles.ProjectsRead);
+
+        await SendRequestAsync(r => r
+            .BearerToken(token.AccessToken)
+            .AppendPath("projects")
+            .StatusCodeShouldBeOk());
+    }
+
+    [Fact]
+    public async Task OAuthBearer_McpResourceForRestApi_ReturnsUnauthorized()
+    {
+        var token = await IssueTokenAsync();
+
+        await SendRequestAsync(r => r
+            .BearerToken(token.AccessToken)
+            .AppendPath("projects")
+            .StatusCodeShouldBeUnauthorized());
+    }
+
+    [Fact]
+    public async Task OAuthBearer_RestApiResourceForMcp_ReturnsUnauthorized()
+    {
+        var token = await IssueTokenAsync(resource: RestApiResource, scope: AuthorizationRoles.ProjectsRead);
+        using var client = _server.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/mcp")
+        {
+            Content = new StringContent("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}", Encoding.UTF8, "application/json")
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task OAuthBearer_RestApiResourceMissingScope_ReturnsForbidden()
+    {
+        var token = await IssueTokenAsync(resource: RestApiResource, scope: AuthorizationRoles.ProjectsRead);
+
+        await SendRequestAsync(r => r
+            .BearerToken(token.AccessToken)
+            .AppendPath("events")
+            .StatusCodeShouldBeForbidden());
+    }
+
+    [Fact]
+    public async Task OAuthBearer_RestApiResourceUsesSelectedOrganizations()
+    {
+        var token = await IssueTokenAsync(resource: RestApiResource, scope: AuthorizationRoles.ProjectsRead, organizationIds: [TestConstants.OrganizationId]);
+        var user = await GetService<IUserRepository>().GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        string unselectedOrganizationId = Assert.Single(user.OrganizationIds, id => !String.Equals(id, TestConstants.OrganizationId, StringComparison.Ordinal));
+
+        await SendRequestAsync(r => r
+            .BearerToken(token.AccessToken)
+            .AppendPath($"organizations/{TestConstants.OrganizationId}/projects")
+            .StatusCodeShouldBeOk());
+
+        await SendRequestAsync(r => r
+            .BearerToken(token.AccessToken)
+            .AppendPath($"organizations/{unselectedOrganizationId}/projects")
+            .StatusCodeShouldBeNotFound());
+    }
+
+    [Fact]
     public async Task OAuthBearer_DisabledStoredOAuthApplication_ReturnsUnauthorized()
     {
         const string clientId = "stored-disabled-client";
         const string redirectUri = "http://localhost/stored-disabled-callback";
         var application = await CreateStoredOAuthApplicationAsync(clientId, redirectUri);
-        var token = await IssueTokenAsync(clientId, redirectUri);
+        var token = await IssueTokenAsync(clientId, redirectUri, RestApiResource, AuthorizationRoles.ProjectsRead);
 
         application.IsDisabled = true;
         await _oauthApplicationRepository.SaveAsync(application, o => o.ImmediateConsistency());
 
         await SendRequestAsync(r => r
             .BearerToken(token.AccessToken)
-            .AppendPath("users/me")
+            .AppendPath("projects")
             .StatusCodeShouldBeUnauthorized());
     }
 
@@ -728,7 +835,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     [Fact]
     public async Task OAuthBearer_WithRootResource_ReturnsUnauthorized()
     {
-        var token = await IssueTokenAsync();
+        var token = await IssueTokenAsync(resource: RestApiResource, scope: AuthorizationRoles.ProjectsRead);
         var storedToken = await _tokenRepository.GetByIdAsync(token.AccessToken, o => o.ImmediateConsistency());
         Assert.NotNull(storedToken);
         storedToken.OAuthResource = "http://localhost:7110";
@@ -736,27 +843,27 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
 
         await SendRequestAsync(r => r
             .BearerToken(token.AccessToken)
-            .AppendPath("users/me")
+            .AppendPath("projects")
             .StatusCodeShouldBeUnauthorized()
         );
     }
 
-    private async Task<OAuthTokenResponse> IssueTokenAsync(string clientId = ClientId, string redirectUri = RedirectUri)
+    private async Task<OAuthTokenResponse> IssueTokenAsync(string clientId = ClientId, string redirectUri = RedirectUri, string? resource = Resource, string? scope = null, IReadOnlyCollection<string>? organizationIds = null)
     {
         string verifier = PkceVerifier;
-        string code = await CreateAuthorizationCodeAsync(verifier, redirectUri, clientId: clientId);
+        string code = await CreateAuthorizationCodeAsync(verifier, redirectUri, resource, clientId, scope, organizationIds);
         using var client = CreateHttpClient();
-        var response = await client.PostAsync("oauth/token", CreateTokenExchangeContent(code, verifier, redirectUri, clientId: clientId), TestContext.Current.CancellationToken);
+        var response = await client.PostAsync("oauth/token", CreateTokenExchangeContent(code, verifier, redirectUri, resource, clientId), TestContext.Current.CancellationToken);
         response.EnsureSuccessStatusCode();
         var token = await DeserializeResponseAsync<OAuthTokenResponse>(response);
         Assert.NotNull(token);
         return token;
     }
 
-    private async Task<string> CreateAuthorizationCodeAsync(string verifier, string redirectUri = RedirectUri, string? resource = Resource, string clientId = ClientId, string? scope = null)
+    private async Task<string> CreateAuthorizationCodeAsync(string verifier, string redirectUri = RedirectUri, string? resource = Resource, string clientId = ClientId, string? scope = null, IReadOnlyCollection<string>? organizationIds = null)
     {
         using var client = CreateHttpClient();
-        using var request = CreateAuthorizeJsonRequest(verifier, redirectUri, resource, clientId, scope: scope);
+        using var request = CreateAuthorizeJsonRequest(verifier, redirectUri, resource, clientId, scope: scope, organizationIds: organizationIds);
 
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
@@ -809,7 +916,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         return new FormUrlEncodedContent(form);
     }
 
-    private static HttpRequestMessage CreateAuthorizeJsonRequest(string verifier, string redirectUri = RedirectUri, string? resource = Resource, string clientId = ClientId, string responseType = "code", string? scope = null)
+    private static HttpRequestMessage CreateAuthorizeJsonRequest(string verifier, string redirectUri = RedirectUri, string? resource = Resource, string clientId = ClientId, string responseType = "code", string? scope = null, IReadOnlyCollection<string>? organizationIds = null)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "oauth/authorize")
         {
@@ -822,7 +929,8 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
                 State = "state-value",
                 CodeChallenge = OAuthService.CreateCodeChallenge(verifier),
                 CodeChallengeMethod = OAuthService.CodeChallengeMethod,
-                Resource = resource
+                Resource = resource,
+                OrganizationIds = organizationIds?.ToArray() ?? [TestConstants.OrganizationId]
             })
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes($"{SampleDataService.TEST_USER_EMAIL}:{SampleDataService.TEST_USER_PASSWORD}")));
