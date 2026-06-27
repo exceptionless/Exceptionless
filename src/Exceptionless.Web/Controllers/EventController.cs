@@ -320,6 +320,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                             TemplateKey = summaryData.TemplateKey,
                             Date = e.Date,
                             Type = e.Type,
+                            Version = e.GetVersion(),
                             Data = summaryData.Data
                         };
                     }).ToList(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, includeTotal ? events.Total : null, events.Hits.FirstOrDefault()?.GetSortToken(_serializer), events.Hits.LastOrDefault()?.GetSortToken(_serializer));
