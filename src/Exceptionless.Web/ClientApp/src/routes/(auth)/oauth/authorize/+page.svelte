@@ -23,9 +23,13 @@
         redirect_uri?: string;
     }
 
+    const offlineAccessScope = 'offline_access';
+    const mcpReadScope = 'mcp:read';
+
     let errorMessage = $state<null | string>(null);
     let isAuthorizing = $state(false);
     const selectedOrganizationIds = new SvelteSet<string>();
+    const selectedScopes = new SvelteSet<string>();
 
     const meQuery = getMeQuery();
     const organizationsQuery = getOrganizationsQuery({ params: { mode: null } });
@@ -36,7 +40,13 @@
     const accountDisplayName = $derived(meQuery.data?.full_name || meQuery.data?.email_address || 'Unknown account');
     const organizations = $derived(organizationsQuery.data?.data ?? []);
     const requestedScopes = $derived(getRequestedScopes());
+    const requiredScopes = $derived(getRequiredScopes(resource));
+    const missingRequiredScopes = $derived(requiredScopes.filter((scope) => !requestedScopes.includes(scope)));
+    const selectedScopeValues = $derived(getSelectedScopesInRequestOrder());
     const hasSelectedOrganizations = $derived(selectedOrganizationIds.size > 0);
+    const hasSelectedResourceScope = $derived(selectedScopeValues.some((scope) => scope !== offlineAccessScope));
+    const hasRequiredScopes = $derived(missingRequiredScopes.length === 0 && requiredScopes.every((scope) => selectedScopes.has(scope)));
+    const canApprove = $derived(hasSelectedOrganizations && hasSelectedResourceScope && hasRequiredScopes);
 
     $effect(() => {
         if (!browser || accessToken.current) {
@@ -69,6 +79,13 @@
         }
     });
 
+    $effect(() => {
+        selectedScopes.clear();
+        for (const scope of requestedScopes) {
+            selectedScopes.add(scope);
+        }
+    });
+
     async function approveAuthorization(): Promise<void> {
         if (isAuthorizing) {
             return;
@@ -76,6 +93,16 @@
 
         if (!hasSelectedOrganizations) {
             errorMessage = 'Select at least one organization.';
+            return;
+        }
+
+        if (!hasRequiredScopes) {
+            errorMessage = `Missing required scope: ${missingRequiredScopes.map(formatScope).join(', ')}.`;
+            return;
+        }
+
+        if (!hasSelectedResourceScope) {
+            errorMessage = 'Select at least one access scope.';
             return;
         }
 
@@ -92,7 +119,7 @@
                 redirect_uri: page.url.searchParams.get('redirect_uri'),
                 resource: page.url.searchParams.get('resource'),
                 response_type: page.url.searchParams.get('response_type'),
-                scope: page.url.searchParams.get('scope'),
+                scope: selectedScopeValues.join(' '),
                 state: page.url.searchParams.get('state')
             },
             { expectedStatusCodes: [400, 401] }
@@ -131,6 +158,22 @@
         return scopes;
     }
 
+    function getRequiredScopes(resourceValue: string): string[] {
+        if (resourceValue.endsWith('/mcp')) {
+            return [mcpReadScope];
+        }
+
+        return [];
+    }
+
+    function getSelectedScopesInRequestOrder(): string[] {
+        return requestedScopes.filter((scope) => selectedScopes.has(scope));
+    }
+
+    function isRequiredScope(scope: string): boolean {
+        return requiredScopes.includes(scope);
+    }
+
     function toggleOrganization(organizationId: string | undefined, checked: 'indeterminate' | boolean): void {
         if (!organizationId) {
             return;
@@ -140,6 +183,38 @@
             selectedOrganizationIds.add(organizationId);
         } else {
             selectedOrganizationIds.delete(organizationId);
+        }
+    }
+
+    function toggleScope(scope: string, checked: 'indeterminate' | boolean): void {
+        if (isRequiredScope(scope)) {
+            selectedScopes.add(scope);
+            return;
+        }
+
+        if (checked === true) {
+            selectedScopes.add(scope);
+        } else {
+            selectedScopes.delete(scope);
+        }
+    }
+
+    function formatScope(scope: string): string {
+        switch (scope) {
+            case 'events:read':
+                return 'Events Read';
+            case mcpReadScope:
+                return 'MCP';
+            case offlineAccessScope:
+                return 'Offline Access';
+            case 'projects:read':
+                return 'Projects Read';
+            case 'stacks:read':
+                return 'Stacks Read';
+            case 'stacks:write':
+                return 'Stacks Write';
+            default:
+                return scope;
         }
     }
 
@@ -205,17 +280,38 @@
                     <Muted>Resource</Muted>
                     <p class="break-all font-mono text-xs">{resource}</p>
                 </div>
-                <div>
+                <div class="space-y-2">
                     <Muted>Scopes</Muted>
-                    <div class="mt-2 flex flex-wrap gap-1.5">
-                        {#if requestedScopes.length > 0}
+                    {#if requestedScopes.length > 0}
+                        <div class="space-y-2">
                             {#each requestedScopes as scope (scope)}
-                                <Badge variant="secondary">{scope}</Badge>
+                                <label class="flex items-start gap-3 rounded-sm border px-2 py-2 text-sm hover:bg-muted/50">
+                                    <Checkbox
+                                        checked={selectedScopes.has(scope)}
+                                        disabled={isRequiredScope(scope)}
+                                        onCheckedChange={(checked) => toggleScope(scope, checked)}
+                                    />
+                                    <span class="min-w-0 flex-1">
+                                        <span class="flex flex-wrap items-center gap-2">
+                                            <span class="font-medium">{formatScope(scope)}</span>
+                                            {#if isRequiredScope(scope)}
+                                                <Badge variant="outline">Required</Badge>
+                                            {/if}
+                                        </span>
+                                        <span class="text-muted-foreground block break-all font-mono text-xs">{scope}</span>
+                                    </span>
+                                </label>
                             {/each}
-                        {:else}
-                            <p class="text-muted-foreground">No scopes requested.</p>
+                        </div>
+                        {#if !hasSelectedResourceScope}
+                            <p class="text-destructive text-xs">Select at least one access scope.</p>
                         {/if}
-                    </div>
+                        {#if missingRequiredScopes.length > 0}
+                            <p class="text-destructive text-xs">Missing required scope: {missingRequiredScopes.map(formatScope).join(', ')}.</p>
+                        {/if}
+                    {:else}
+                        <p class="text-muted-foreground">No scopes requested.</p>
+                    {/if}
                 </div>
             </div>
 
@@ -228,7 +324,7 @@
             <Button
                 type="button"
                 onclick={() => void approveAuthorization()}
-                disabled={isAuthorizing || organizationsQuery.isLoading || organizationsQuery.isError || !hasSelectedOrganizations}
+                disabled={isAuthorizing || organizationsQuery.isLoading || organizationsQuery.isError || !canApprove}
             >
                 {#if isAuthorizing}
                     <Spinner />

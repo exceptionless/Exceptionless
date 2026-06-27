@@ -592,6 +592,24 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task TokenAsync_AuthorizationCodeWithReducedScopes_IssuesSelectedScopes()
+    {
+        var token = await IssueTokenAsync(scope: $"{AuthorizationRoles.McpRead} {AuthorizationRoles.ProjectsRead}");
+
+        Assert.NotNull(token);
+        Assert.Equal($"{AuthorizationRoles.McpRead} {AuthorizationRoles.ProjectsRead}", token.Scope);
+        Assert.Null(token.RefreshToken);
+
+        var storedToken = await _tokenRepository.GetByIdAsync(token.AccessToken);
+        Assert.NotNull(storedToken);
+        Assert.Contains(AuthorizationRoles.McpRead, storedToken.Scopes);
+        Assert.Contains(AuthorizationRoles.ProjectsRead, storedToken.Scopes);
+        Assert.DoesNotContain(AuthorizationRoles.StacksWrite, storedToken.Scopes);
+        Assert.DoesNotContain(AuthorizationRoles.EventsRead, storedToken.Scopes);
+        Assert.DoesNotContain(AuthorizationRoles.OfflineAccess, storedToken.Scopes);
+    }
+
+    [Fact]
     public async Task TokenAsync_WithoutResource_ReturnsBadRequest()
     {
         string verifier = PkceVerifier;
