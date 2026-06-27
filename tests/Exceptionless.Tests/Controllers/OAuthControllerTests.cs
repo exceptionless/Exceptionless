@@ -821,6 +821,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
             .AppendPath("projects")
             .StatusCodeShouldBeUnauthorized());
     }
+
     [Fact]
     public async Task TokenAsync_InvalidCodeVerifier_ReturnsBadRequestAndConsumesCode()
     {
@@ -938,6 +939,64 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         var storedToken = await _tokenRepository.GetByIdAsync(refreshedToken.AccessToken, o => o.ImmediateConsistency());
         Assert.NotNull(storedToken);
         Assert.Equal([TestConstants.OrganizationId], storedToken.OAuthOrganizationIds);
+    }
+
+    [Fact]
+    public async Task TokenAsync_RefreshTokenWithRemovedOptionalClientScopes_IssuesReducedScopes()
+    {
+        var token = await IssueTokenAsync(
+            resource: RestApiResource,
+            scope: $"{AuthorizationRoles.ProjectsRead} {AuthorizationRoles.EventsRead} {AuthorizationRoles.OfflineAccess}");
+        Assert.NotNull(token.RefreshToken);
+        await SetStoredOAuthApplicationScopesAsync(ClientId, AuthorizationRoles.ProjectsRead, AuthorizationRoles.OfflineAccess);
+
+        using var client = CreateHttpClient();
+        using var refreshRequestContent = CreateRefreshTokenContent(token.RefreshToken);
+        var refreshResponse = await client.PostAsync("oauth/token", refreshRequestContent, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, refreshResponse.StatusCode);
+        var refreshedToken = await DeserializeResponseAsync<OAuthTokenResponse>(refreshResponse);
+        Assert.NotNull(refreshedToken);
+        Assert.NotNull(refreshedToken.RefreshToken);
+        Assert.Equal($"{AuthorizationRoles.ProjectsRead} {AuthorizationRoles.OfflineAccess}", refreshedToken.Scope);
+
+        var refreshedStoredToken = await _tokenRepository.GetByIdAsync(refreshedToken.AccessToken, o => o.ImmediateConsistency());
+        Assert.NotNull(refreshedStoredToken);
+        Assert.Equal(2, refreshedStoredToken.Scopes.Count);
+        Assert.Contains(AuthorizationRoles.ProjectsRead, refreshedStoredToken.Scopes);
+        Assert.Contains(AuthorizationRoles.OfflineAccess, refreshedStoredToken.Scopes);
+        Assert.DoesNotContain(AuthorizationRoles.EventsRead, refreshedStoredToken.Scopes);
+    }
+
+    [Fact]
+    public async Task TokenAsync_RefreshTokenWithRemovedOfflineAccess_RevokesGrantFamily()
+    {
+        var token = await IssueTokenAsync(
+            resource: RestApiResource,
+            scope: $"{AuthorizationRoles.ProjectsRead} {AuthorizationRoles.OfflineAccess}");
+        await SetStoredOAuthApplicationScopesAsync(ClientId, AuthorizationRoles.ProjectsRead);
+
+        await AssertRefreshFailsAndRevokesGrantFamilyAsync(token);
+    }
+
+    [Fact]
+    public async Task TokenAsync_RefreshTokenWithRemovedRequiredResourceScope_RevokesGrantFamily()
+    {
+        var token = await IssueTokenAsync(scope: $"{AuthorizationRoles.McpRead} {AuthorizationRoles.ProjectsRead} {AuthorizationRoles.OfflineAccess}");
+        await SetStoredOAuthApplicationScopesAsync(ClientId, AuthorizationRoles.ProjectsRead, AuthorizationRoles.OfflineAccess);
+
+        await AssertRefreshFailsAndRevokesGrantFamilyAsync(token);
+    }
+
+    [Fact]
+    public async Task TokenAsync_RefreshTokenWithoutRemainingResourceScope_RevokesGrantFamily()
+    {
+        var token = await IssueTokenAsync(
+            resource: RestApiResource,
+            scope: $"{AuthorizationRoles.ProjectsRead} {AuthorizationRoles.OfflineAccess}");
+        await SetStoredOAuthApplicationScopesAsync(ClientId, AuthorizationRoles.OfflineAccess);
+
+        await AssertRefreshFailsAndRevokesGrantFamilyAsync(token);
     }
 
     [Fact]
@@ -1080,6 +1139,44 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
 
         await _oauthApplicationRepository.AddAsync(application, o => o.ImmediateConsistency());
         return application;
+    }
+
+    private async Task SetStoredOAuthApplicationScopesAsync(string clientId, params string[] scopes)
+    {
+        var application = await _oauthApplicationRepository.GetByClientIdAsync(clientId, o => o.ImmediateConsistency());
+        Assert.NotNull(application);
+        application.Scopes = scopes;
+        application.UpdatedUtc = TimeProvider.GetUtcNow().UtcDateTime;
+        await _oauthApplicationRepository.SaveAsync(application, o => o.ImmediateConsistency());
+    }
+
+    private async Task AssertRefreshFailsAndRevokesGrantFamilyAsync(OAuthTokenResponse token)
+    {
+        Assert.NotNull(token.RefreshToken);
+        using var client = CreateHttpClient();
+        using var refreshRequestContent = CreateRefreshTokenContent(token.RefreshToken);
+        var refreshResponse = await client.PostAsync("oauth/token", refreshRequestContent, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, refreshResponse.StatusCode);
+        await AssertGrantFamilyRevokedAsync(token.AccessToken);
+    }
+
+    private async Task AssertGrantFamilyRevokedAsync(string accessToken)
+    {
+        var storedToken = await _tokenRepository.GetByIdAsync(accessToken, o => o.ImmediateConsistency());
+        Assert.NotNull(storedToken);
+        Assert.True(storedToken.IsDisabled);
+        Assert.Null(storedToken.Refresh);
+    }
+
+    private static FormUrlEncodedContent CreateRefreshTokenContent(string? refreshToken, string clientId = ClientId)
+    {
+        return new FormUrlEncodedContent(new Dictionary<string, string?>
+        {
+            ["grant_type"] = OAuthGrantTypes.RefreshToken,
+            ["client_id"] = clientId,
+            ["refresh_token"] = refreshToken
+        });
     }
 
     private static FormUrlEncodedContent CreateTokenExchangeContent(string code, string verifier, string redirectUri = RedirectUri, string? resource = Resource, string clientId = ClientId)
