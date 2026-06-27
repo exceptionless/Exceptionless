@@ -7,6 +7,7 @@
     import Percentage from '$comp/formatters/percentage.svelte';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
     import Muted from '$comp/typography/muted.svelte';
+    import { Button } from '$comp/ui/button';
     import * as ButtonGroup from '$comp/ui/button-group';
     import * as Card from '$comp/ui/card';
     import { Skeleton } from '$comp/ui/skeleton';
@@ -23,6 +24,7 @@
     import LastOccurrence from '@lucide/svelte/icons/arrow-right-circle';
     import Calendar from '@lucide/svelte/icons/calendar';
     import Clock from '@lucide/svelte/icons/clock';
+    import EventsIcon from '@lucide/svelte/icons/calendar-days';
     import Filter from '@lucide/svelte/icons/filter';
     import Info from '@lucide/svelte/icons/info';
     import Users from '@lucide/svelte/icons/users';
@@ -161,18 +163,35 @@
                             <Calendar aria-hidden="true" class={metricIconClass} />
                             <Card.Title class={metricTitleClass}>Total Events</Card.Title>
                         </div>
-                        <Tooltip.Root>
-                            <Tooltip.Trigger
-                                class="text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded-sm outline-none focus-visible:ring-2"
-                                aria-label="About total events"
+                        <div class="flex shrink-0 items-center gap-1">
+                            <Button
+                                aria-label="Open events for this stack"
+                                onclick={() => filterChanged(new StringFilter('stack', stack.id))}
+                                size="icon-xs"
+                                title="Open events for this stack"
+                                variant="ghost"
                             >
-                                <Info aria-hidden="true" class="size-3.5" />
-                            </Tooltip.Trigger>
-                            <Tooltip.Content sideOffset={6}><Number value={totalOccurrences} /> All Time</Tooltip.Content>
-                        </Tooltip.Root>
+                                <EventsIcon aria-hidden="true" class="size-3.5" />
+                            </Button>
+                            <Tooltip.Root>
+                                <Tooltip.Trigger
+                                    class="text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded-sm outline-none focus-visible:ring-2"
+                                    aria-label="About total events"
+                                >
+                                    <Info aria-hidden="true" class="size-3.5" />
+                                </Tooltip.Trigger>
+                                <Tooltip.Content sideOffset={6}><Number value={totalOccurrences} /> All Time</Tooltip.Content>
+                            </Tooltip.Root>
+                        </div>
                     </Card.Header>
                     <Card.Content class="px-3">
-                        <button class={metricValueClass} onclick={() => filterChanged(new StringFilter('stack', stack.id))} type="button">
+                        <button
+                            aria-label="Open events for this stack"
+                            class={metricValueClass}
+                            onclick={() => filterChanged(new StringFilter('stack', stack.id))}
+                            title="Open events for this stack"
+                            type="button"
+                        >
                             <Number value={totalOccurrences} />
                         </button>
                     </Card.Content>

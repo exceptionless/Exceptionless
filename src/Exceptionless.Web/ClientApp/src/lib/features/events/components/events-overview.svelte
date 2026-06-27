@@ -20,7 +20,7 @@
     import Braces from '@lucide/svelte/icons/braces';
     import ChevronLeft from '@lucide/svelte/icons/chevron-left';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
-    import Funnel from '@lucide/svelte/icons/funnel';
+    import EventsIcon from '@lucide/svelte/icons/calendar-days';
     import { onMount, tick } from 'svelte';
     import { toast } from 'svelte-sonner';
 
@@ -321,7 +321,7 @@
                     title="Show all events"
                     variant="outline"
                 >
-                    <Funnel class="size-4" />
+                    <EventsIcon class="size-4" />
                 </Button>
             {/if}
             {#if onNavigate && (navigation?.previousId || navigation?.nextId)}
