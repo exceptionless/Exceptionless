@@ -21,7 +21,8 @@ export const defaultEventColumnVisibility: ColumnVisibilityState = {
     message: false,
     name: false,
     source: false,
-    type: false
+    type: false,
+    version: false
 };
 
 export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(
@@ -100,6 +101,16 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 id: 'type',
                 meta: {
                     class: 'w-28'
+                }
+            },
+            {
+                accessorKey: nameof<EventSummaryModel<SummaryTemplateKeys>>('version'),
+                cell: (prop) => formatTextColumn(prop.getValue()),
+                enableSorting: false,
+                header: 'Version',
+                id: 'version',
+                meta: {
+                    class: 'w-32'
                 }
             },
             {
