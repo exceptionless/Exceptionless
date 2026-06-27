@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Web;
+using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
@@ -26,6 +27,7 @@ using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Serializer;
+using Foundatio.Storage;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
 using Xunit;
@@ -313,6 +315,30 @@ public partial class EventControllerTests : IntegrationTestsBase
 
         var ev = (await _eventRepository.GetAllAsync()).Documents.Single();
         Assert.Equal(message, ev.Message);
+    }
+
+    [Fact]
+    public async Task PostEvent_WithUnknownLengthPayloadOverLimit_ReturnsRequestEntityTooLargeAsync()
+    {
+        var options = GetService<AppOptions>();
+        byte[] payload = Encoding.UTF8.GetBytes(new string('x', (int)options.MaximumEventPostSize + 1));
+        using var content = new UnknownLengthByteArrayContent(payload, "application/json");
+        var client = CreateHttpClient();
+        client.DefaultRequestHeaders.Add("Authorization", "Bearer " + TestConstants.ApiKey);
+
+        var response = await client.PostAsync("events", content, TestCancellationToken);
+
+        Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
+
+        var stats = await _eventQueue.GetQueueStatsAsync();
+        Assert.Equal(0, stats.Enqueued);
+
+        var usage = await GetService<UsageService>().GetUsageAsync(TestConstants.OrganizationId, TestConstants.ProjectId);
+        Assert.Equal(1, usage.CurrentUsage.TooBig);
+        Assert.Equal(1, usage.CurrentHourUsage.TooBig);
+
+        var files = await GetService<IFileStorage>().GetFileListAsync(cancellationToken: TestCancellationToken);
+        Assert.Empty(files);
     }
 
     [Fact]
@@ -2193,5 +2219,32 @@ public partial class EventControllerTests : IntegrationTestsBase
         var project = await _projectRepository.GetByIdAsync(firstEvent.ProjectId);
         Assert.NotNull(project);
         Assert.Equal(3, project.Usage.Sum(u => u.Deleted));
+    }
+
+    private sealed class UnknownLengthByteArrayContent : HttpContent
+    {
+        private readonly byte[] _payload;
+
+        public UnknownLengthByteArrayContent(byte[] payload, string mediaType)
+        {
+            _payload = payload;
+            Headers.ContentType = new MediaTypeHeaderValue(mediaType);
+        }
+
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
+        {
+            return stream.WriteAsync(_payload, 0, _payload.Length);
+        }
+
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+        {
+            return stream.WriteAsync(_payload, cancellationToken).AsTask();
+        }
+
+        protected override bool TryComputeLength(out long length)
+        {
+            length = 0;
+            return false;
+        }
     }
 }
