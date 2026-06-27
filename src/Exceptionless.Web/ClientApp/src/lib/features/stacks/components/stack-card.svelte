@@ -23,8 +23,8 @@
     import FirstOccurrence from '@lucide/svelte/icons/arrow-left-circle';
     import LastOccurrence from '@lucide/svelte/icons/arrow-right-circle';
     import Calendar from '@lucide/svelte/icons/calendar';
-    import Clock from '@lucide/svelte/icons/clock';
     import EventsIcon from '@lucide/svelte/icons/calendar-days';
+    import Clock from '@lucide/svelte/icons/clock';
     import Filter from '@lucide/svelte/icons/filter';
     import Info from '@lucide/svelte/icons/info';
     import Users from '@lucide/svelte/icons/users';

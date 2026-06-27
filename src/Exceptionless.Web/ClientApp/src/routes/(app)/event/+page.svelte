@@ -872,7 +872,11 @@
         {/if}
 
         {#if showChart}
-            <EventsDashboardChart data={chartData()} isLoading={isSavedViewRoutePending || (chartDataQuery.isLoading && !chartDataQuery.isSuccess)} {onRangeSelect} />
+            <EventsDashboardChart
+                data={chartData()}
+                isLoading={isSavedViewRoutePending || (chartDataQuery.isLoading && !chartDataQuery.isSuccess)}
+                {onRangeSelect}
+            />
         {/if}
 
         <EventsDataTable bind:limit={eventsQueryParameters.limit!} isLoading={isSavedViewRoutePending || clientStatus.isLoading} {rowClick} {rowHref} {table}>

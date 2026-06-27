@@ -18,9 +18,9 @@
     import { getProjectQuery, updateProject } from '$features/projects/api.svelte';
     import StackCard from '$features/stacks/components/stack-card.svelte';
     import Braces from '@lucide/svelte/icons/braces';
+    import EventsIcon from '@lucide/svelte/icons/calendar-days';
     import ChevronLeft from '@lucide/svelte/icons/chevron-left';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
-    import EventsIcon from '@lucide/svelte/icons/calendar-days';
     import { onMount, tick } from 'svelte';
     import { toast } from 'svelte-sonner';
 
