@@ -1781,6 +1781,28 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         );
     }
 
+    [Theory]
+    [InlineData("events")]
+    [InlineData("stream")]
+    public Task PostAsync_VersionColumnForEventViews_Succeeds(string viewType)
+    {
+        // Arrange & Act & Assert
+        return SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .Content(new NewSavedView
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Name = $"Valid {viewType} Version Column",
+                ViewType = viewType,
+                Columns = new Dictionary<string, bool> { ["summary"] = true, ["version"] = false },
+                ColumnOrder = ["summary", "version"]
+            })
+            .StatusCodeShouldBeCreated()
+        );
+    }
+
     [Fact]
     public Task PostAsync_InvalidColumnOrderKey_ReturnsUnprocessableEntity()
     {
