@@ -300,10 +300,11 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     {
         try
         {
-            TimeProvider.SetUtcNow(new DateTimeOffset(2026, 6, 25, 12, 0, 0, TimeSpan.Zero));
+            var now = TimeProvider.GetUtcNow();
+            TimeProvider.SetUtcNow(now);
             const string referenceId = "mcp-count-events-version-trend";
-            await CreateDataAsync(d => d.Event().TestProject().ReferenceId(referenceId).Version("1.0.2").Date(new DateTimeOffset(2026, 6, 24, 12, 0, 0, TimeSpan.Zero)).Message("MCP count event 1.0.2 trend"));
-            await CreateDataAsync(d => d.Event().TestProject().ReferenceId(referenceId).Version("1.0.3").Date(new DateTimeOffset(2026, 6, 25, 12, 0, 0, TimeSpan.Zero)).Message("MCP count event 1.0.3 trend"));
+            await CreateDataAsync(d => d.Event().TestProject().ReferenceId(referenceId).Version("1.0.2").Date(now.AddDays(-1)).Message("MCP count event 1.0.2 trend"));
+            await CreateDataAsync(d => d.Event().TestProject().ReferenceId(referenceId).Version("1.0.3").Date(now.AddHours(-1)).Message("MCP count event 1.0.3 trend"));
             await RefreshDataAsync();
             var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
 
