@@ -59,6 +59,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
     private const string AuthorizationCodeCachePrefix = "oauth:code:";
     private const string RefreshTokenLockPrefix = "oauth:refresh:";
+    private const int OAuthGrantFamilyPageLimit = 1000;
     private const string ClientMetadataNotes = "Discovered from OAuth client metadata document.";
     private const string DynamicClientRegistrationNotes = "Registered through OAuth dynamic client registration.";
     private static readonly Regex CodeChallengeRegex = new("^[A-Za-z0-9_-]{43}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -398,8 +399,14 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
         var results = await tokenRepository.GetByRefreshTokenAsync(request.RefreshToken, o => o.ImmediateConsistency());
         var token = results.Documents.FirstOrDefault();
-        if (token is null || token.IsDisabled || token.IsSuspended || token.OAuthType != OAuthTokenType.Access || !String.Equals(token.OAuthClientId, request.ClientId, StringComparison.Ordinal))
+        if (token is null || token.OAuthType != OAuthTokenType.Access || !String.Equals(token.OAuthClientId, request.ClientId, StringComparison.Ordinal))
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
+
+        if (token.IsDisabled || token.IsSuspended)
+        {
+            await RevokeOAuthGrantFamilyAsync(token);
+            return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
+        }
 
         if (token.OAuthOrganizationIds.Count == 0)
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
@@ -410,19 +417,19 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         var user = await userRepository.GetByIdAsync(token.UserId!, o => o.ImmediateConsistency());
         if (user is null || !user.IsActive)
         {
-            await DisableTokenAsync(token);
+            await RevokeOAuthGrantFamilyAsync(token);
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
         }
 
         var activeOrganizationIds = user.GetActiveOAuthOrganizationIds(token);
         if (activeOrganizationIds.Count == 0)
         {
-            await DisableTokenAsync(token);
+            await RevokeOAuthGrantFamilyAsync(token);
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
         }
 
-        await DisableTokenAsync(token);
-        return OAuthTokenIssueResult.Success(await CreateTokenAsync(token.UserId!, token.OAuthClientId!, token.OAuthResource!, token.Scopes, activeOrganizationIds));
+        await DisableTokenAsync(token, clearRefresh: false);
+        return OAuthTokenIssueResult.Success(await CreateTokenAsync(token.UserId!, token.OAuthClientId!, token.OAuthResource!, token.Scopes, activeOrganizationIds, token.OAuthGrantId));
     }
 
     public async Task<bool> RevokeAsync(string? tokenValue, string? clientId)
@@ -441,19 +448,39 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (token is null || token.OAuthType != OAuthTokenType.Access || !String.Equals(token.OAuthClientId, clientId, StringComparison.Ordinal))
             return false;
 
-        await DisableTokenAsync(token);
+        if (String.Equals(token.Refresh, tokenValue, StringComparison.Ordinal))
+            await RevokeOAuthGrantFamilyAsync(token);
+        else
+            await DisableTokenAsync(token);
+
         return true;
     }
 
-    private Task DisableTokenAsync(Token token)
+    private async Task RevokeOAuthGrantFamilyAsync(Token token)
+    {
+        if (String.IsNullOrWhiteSpace(token.OAuthGrantId))
+        {
+            await DisableTokenAsync(token);
+            return;
+        }
+
+        var results = await tokenRepository.GetOAuthAccessTokensByGrantIdAsync(token.OAuthGrantId, o => o.ImmediateConsistency().PageLimit(OAuthGrantFamilyPageLimit));
+        IEnumerable<Token> familyTokens = results.Documents.Count > 0 ? results.Documents : [token];
+        foreach (var familyToken in familyTokens.Where(t => t.OAuthType == OAuthTokenType.Access && String.Equals(t.OAuthGrantId, token.OAuthGrantId, StringComparison.Ordinal)))
+            await DisableTokenAsync(familyToken);
+    }
+
+    private Task DisableTokenAsync(Token token, bool clearRefresh = true)
     {
         token.IsDisabled = true;
-        token.Refresh = null;
+        if (clearRefresh)
+            token.Refresh = null;
+
         token.UpdatedUtc = timeProvider.GetUtcNow().UtcDateTime;
         return tokenRepository.SaveAsync(token, o => o.ImmediateConsistency());
     }
 
-    private async Task<OAuthTokenResponse> CreateTokenAsync(string userId, string clientId, string resource, IReadOnlyCollection<string> scopes, IReadOnlyCollection<string> organizationIds)
+    private async Task<OAuthTokenResponse> CreateTokenAsync(string userId, string clientId, string resource, IReadOnlyCollection<string> scopes, IReadOnlyCollection<string> organizationIds, string? grantId = null)
     {
         var utcNow = timeProvider.GetUtcNow().UtcDateTime;
         var accessToken = StringExtensions.GetNewToken();
@@ -465,6 +492,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             Type = TokenType.Access,
             OAuthType = OAuthTokenType.Access,
             OAuthClientId = clientId,
+            OAuthGrantId = String.IsNullOrWhiteSpace(grantId) ? StringExtensions.GetNewToken() : grantId,
             OAuthResource = resource,
             Refresh = refreshToken,
             Scopes = scopes.ToHashSet(StringComparer.Ordinal),

@@ -1,4 +1,4 @@
-﻿using Elastic.Clients.Elasticsearch.IndexManagement;
+using Elastic.Clients.Elasticsearch.IndexManagement;
 using Elastic.Clients.Elasticsearch.Mapping;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
@@ -10,7 +10,7 @@ public sealed class TokenIndex : VersionedIndex<Models.Token>
     internal const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
     private readonly ExceptionlessElasticConfiguration _configuration;
 
-    public TokenIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "tokens", 2)
+    public TokenIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "tokens", 3)
     {
         _configuration = configuration;
     }
@@ -29,6 +29,7 @@ public sealed class TokenIndex : VersionedIndex<Models.Token>
                 .Keyword(e => e.CreatedBy)
                 .Keyword(e => e.Refresh)
                 .Keyword(e => e.OAuthClientId)
+                .Keyword(e => e.OAuthGrantId)
                 .Keyword(e => e.OAuthResource)
                 .Keyword(e => e.OAuthOrganizationIds)
                 .Keyword(e => e.Scopes)

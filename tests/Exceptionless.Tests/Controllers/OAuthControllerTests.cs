@@ -617,6 +617,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.Equal(TokenType.Access, storedToken.Type);
         Assert.Equal(OAuthTokenType.Access, storedToken.OAuthType);
         Assert.Equal(ClientId, storedToken.OAuthClientId);
+        Assert.False(String.IsNullOrWhiteSpace(storedToken.OAuthGrantId));
         Assert.Equal(Resource, storedToken.OAuthResource);
         Assert.Contains(AuthorizationRoles.EventsRead, storedToken.Scopes);
         Assert.Equal([TestConstants.OrganizationId], storedToken.OAuthOrganizationIds);
@@ -842,6 +843,17 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.NotEqual(token.AccessToken, refreshedToken.AccessToken);
         Assert.NotEqual(token.RefreshToken, refreshedToken.RefreshToken);
 
+        var spentToken = await _tokenRepository.GetByIdAsync(token.AccessToken, o => o.ImmediateConsistency());
+        Assert.NotNull(spentToken);
+        Assert.True(spentToken.IsDisabled);
+        Assert.Equal(token.RefreshToken, spentToken.Refresh);
+
+        var refreshedStoredToken = await _tokenRepository.GetByIdAsync(refreshedToken.AccessToken, o => o.ImmediateConsistency());
+        Assert.NotNull(refreshedStoredToken);
+        Assert.False(refreshedStoredToken.IsDisabled);
+        Assert.NotNull(refreshedStoredToken.Refresh);
+        Assert.Equal(spentToken.OAuthGrantId, refreshedStoredToken.OAuthGrantId);
+
         using var reusedRefreshRequestContent = new FormUrlEncodedContent(new Dictionary<string, string?>
         {
             ["grant_type"] = OAuthGrantTypes.RefreshToken,
@@ -851,6 +863,15 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         var reusedRefreshResponse = await client.PostAsync("oauth/token", reusedRefreshRequestContent, TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, reusedRefreshResponse.StatusCode);
+
+        spentToken = await _tokenRepository.GetByIdAsync(token.AccessToken, o => o.ImmediateConsistency());
+        refreshedStoredToken = await _tokenRepository.GetByIdAsync(refreshedToken.AccessToken, o => o.ImmediateConsistency());
+        Assert.NotNull(spentToken);
+        Assert.NotNull(refreshedStoredToken);
+        Assert.True(spentToken.IsDisabled);
+        Assert.True(refreshedStoredToken.IsDisabled);
+        Assert.Null(spentToken.Refresh);
+        Assert.Null(refreshedStoredToken.Refresh);
     }
 
     [Fact]

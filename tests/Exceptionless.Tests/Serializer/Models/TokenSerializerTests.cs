@@ -117,6 +117,7 @@ public class TokenSerializerTests : TestWithServices
             Type = TokenType.Access,
             OAuthType = OAuthTokenType.Access,
             OAuthClientId = "test-oauth-client",
+            OAuthGrantId = "test-grant-id",
             OAuthResource = "http://localhost:7110/api/v2",
             OAuthOrganizationIds = ["550000000000000000000001", "550000000000000000000002"],
             Scopes = [AuthorizationRoles.ProjectsRead],
@@ -133,6 +134,7 @@ public class TokenSerializerTests : TestWithServices
         Assert.NotNull(result);
         Assert.Equal(OAuthTokenType.Access, result.OAuthType);
         Assert.Equal("test-oauth-client", result.OAuthClientId);
+        Assert.Equal("test-grant-id", result.OAuthGrantId);
         Assert.Equal("http://localhost:7110/api/v2", result.OAuthResource);
         Assert.Contains("550000000000000000000001", result.OAuthOrganizationIds);
         Assert.Contains("550000000000000000000002", result.OAuthOrganizationIds);

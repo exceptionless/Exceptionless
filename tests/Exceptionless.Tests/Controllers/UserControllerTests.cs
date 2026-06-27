@@ -706,6 +706,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
             Type = TokenType.Access,
             OAuthType = OAuthTokenType.Access,
             OAuthClientId = clientId,
+            OAuthGrantId = StringExtensions.GetNewToken(),
             OAuthResource = resource,
             Refresh = scopes.Contains(AuthorizationRoles.OfflineAccess, StringComparer.Ordinal) ? StringExtensions.GetNewToken() : null,
             Scopes = scopes.ToHashSet(StringComparer.Ordinal),

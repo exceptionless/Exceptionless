@@ -894,6 +894,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
             Type = TokenType.Access,
             OAuthType = OAuthTokenType.Access,
             OAuthClientId = "test-client",
+            OAuthGrantId = "test-grant",
             OAuthResource = "http://localhost/mcp",
             Scopes = scopes.ToHashSet(StringComparer.Ordinal),
             OAuthOrganizationIds = [TestConstants.OrganizationId],

@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using Exceptionless.Core.Attributes;
 using Foundatio.Repositories.Models;
 
@@ -38,6 +38,7 @@ public class Token : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, IVa
     public TokenType Type { get; set; }
     public OAuthTokenType OAuthType { get; set; }
     public string? OAuthClientId { get; set; }
+    public string? OAuthGrantId { get; set; }
     public string? OAuthResource { get; set; }
     public DateTime? OAuthRefreshExpiresUtc { get; set; }
     public HashSet<string> OAuthOrganizationIds { get; set; } = new();
@@ -95,6 +96,9 @@ public class Token : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, IVa
 
             if (String.IsNullOrWhiteSpace(OAuthClientId))
                 yield return new ValidationResult("OAuth tokens must specify a client id.", [nameof(OAuthClientId)]);
+
+            if (String.IsNullOrWhiteSpace(OAuthGrantId))
+                yield return new ValidationResult("OAuth tokens must specify a grant id.", [nameof(OAuthGrantId)]);
 
             if (String.IsNullOrWhiteSpace(OAuthResource))
                 yield return new ValidationResult("OAuth tokens must specify a resource.", [nameof(OAuthResource)]);
