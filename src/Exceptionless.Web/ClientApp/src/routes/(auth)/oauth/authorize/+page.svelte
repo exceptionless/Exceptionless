@@ -23,11 +23,38 @@
         redirect_uri?: string;
     }
 
+    interface OAuthAuthorizeConsentResponse {
+        client_id?: string;
+        client_name?: string;
+        error?: string;
+        error_description?: string;
+        redirect_uri?: string;
+        required_scopes?: string[];
+        resource?: string;
+        scopes?: string[];
+    }
+
+    interface OAuthAuthorizeRequestBody {
+        client_id: null | string;
+        code_challenge: null | string;
+        code_challenge_method: null | string;
+        organization_ids: string[];
+        redirect_uri: null | string;
+        resource: null | string;
+        response_type: null | string;
+        scope: null | string;
+        state: null | string;
+    }
+
     const offlineAccessScope = 'offline_access';
     const mcpReadScope = 'mcp:read';
 
     let errorMessage = $state<null | string>(null);
+    let consentDetails = $state<null | OAuthAuthorizeConsentResponse>(null);
+    let consentErrorMessage = $state<null | string>(null);
     let isAuthorizing = $state(false);
+    let isLoadingConsent = $state(false);
+    let loadedConsentKey = $state<null | string>(null);
     const selectedOrganizationIds = new SvelteSet<string>();
     const selectedScopes = new SvelteSet<string>();
 
@@ -37,16 +64,20 @@
     const clientId = $derived(page.url.searchParams.get('client_id') ?? 'Unknown application');
     const redirectUri = $derived(page.url.searchParams.get('redirect_uri') ?? 'Unknown redirect URI');
     const resource = $derived(page.url.searchParams.get('resource') ?? 'Unknown resource');
+    const applicationClientId = $derived(consentDetails?.client_id ?? clientId);
+    const applicationDisplayName = $derived(consentDetails?.client_name || applicationClientId);
+    const displayRedirectUri = $derived(consentDetails?.redirect_uri ?? redirectUri);
+    const displayResource = $derived(consentDetails?.resource ?? resource);
     const accountDisplayName = $derived(meQuery.data?.full_name || meQuery.data?.email_address || 'Unknown account');
     const organizations = $derived(organizationsQuery.data?.data ?? []);
-    const requestedScopes = $derived(getRequestedScopes());
-    const requiredScopes = $derived(getRequiredScopes(resource));
+    const requestedScopes = $derived(consentDetails?.scopes ?? getRequestedScopes());
+    const requiredScopes = $derived(consentDetails?.required_scopes ?? getRequiredScopes(displayResource));
     const missingRequiredScopes = $derived(requiredScopes.filter((scope) => !requestedScopes.includes(scope)));
     const selectedScopeValues = $derived(getSelectedScopesInRequestOrder());
     const hasSelectedOrganizations = $derived(selectedOrganizationIds.size > 0);
     const hasSelectedResourceScope = $derived(selectedScopeValues.some((scope) => scope !== offlineAccessScope));
     const hasRequiredScopes = $derived(missingRequiredScopes.length === 0 && requiredScopes.every((scope) => selectedScopes.has(scope)));
-    const canApprove = $derived(hasSelectedOrganizations && hasSelectedResourceScope && hasRequiredScopes);
+    const canApprove = $derived(!isLoadingConsent && !consentErrorMessage && hasSelectedOrganizations && hasSelectedResourceScope && hasRequiredScopes);
 
     $effect(() => {
         if (!browser || accessToken.current) {
@@ -56,6 +87,20 @@
         const returnUrl = `${page.url.pathname}${page.url.search}`;
         const loginUrl = `${resolve('/(auth)/login')}?redirect=${encodeURIComponent(returnUrl)}`;
         void goto(loginUrl, { replaceState: true });
+    });
+
+    $effect(() => {
+        if (!browser || !accessToken.current) {
+            return;
+        }
+
+        const consentKey = page.url.search;
+        if (loadedConsentKey === consentKey) {
+            return;
+        }
+
+        loadedConsentKey = consentKey;
+        void loadConsentDetails();
     });
 
     $effect(() => {
@@ -69,12 +114,12 @@
         }
 
         const validSelectedOrganizationIds = [...selectedOrganizationIds].filter((id) => organizationIds.includes(id));
-        if (validSelectedOrganizationIds.length === selectedOrganizationIds.size && selectedOrganizationIds.size > 0) {
+        if (validSelectedOrganizationIds.length === selectedOrganizationIds.size) {
             return;
         }
 
         selectedOrganizationIds.clear();
-        for (const organizationId of validSelectedOrganizationIds.length > 0 ? validSelectedOrganizationIds : organizationIds) {
+        for (const organizationId of validSelectedOrganizationIds) {
             selectedOrganizationIds.add(organizationId);
         }
     });
@@ -85,6 +130,36 @@
             selectedScopes.add(scope);
         }
     });
+
+    async function loadConsentDetails(): Promise<void> {
+        isLoadingConsent = true;
+        consentErrorMessage = null;
+        const client = useFetchClient();
+        const response = await client.postJSON<OAuthAuthorizeConsentResponse>(
+            'oauth/authorize/consent',
+            getAuthorizationRequestBody([], page.url.searchParams.get('scope')),
+            { expectedStatusCodes: [400, 401] }
+        );
+
+        isLoadingConsent = false;
+        if (response.ok && response.data) {
+            consentDetails = response.data;
+            return;
+        }
+
+        if (response.status === 401) {
+            await redirectToLogin();
+            return;
+        }
+
+        consentDetails = null;
+        consentErrorMessage =
+            response.data?.error_description ||
+            response.data?.error ||
+            response.problem?.detail ||
+            response.problem?.title ||
+            'Unable to load application details.';
+    }
 
     async function approveAuthorization(): Promise<void> {
         if (isAuthorizing) {
@@ -111,17 +186,7 @@
         const client = useFetchClient();
         const response = await client.postJSON<OAuthAuthorizeResponse>(
             'oauth/authorize',
-            {
-                client_id: page.url.searchParams.get('client_id'),
-                code_challenge: page.url.searchParams.get('code_challenge'),
-                code_challenge_method: page.url.searchParams.get('code_challenge_method'),
-                organization_ids: [...selectedOrganizationIds],
-                redirect_uri: page.url.searchParams.get('redirect_uri'),
-                resource: page.url.searchParams.get('resource'),
-                response_type: page.url.searchParams.get('response_type'),
-                scope: selectedScopeValues.join(' '),
-                state: page.url.searchParams.get('state')
-            },
+            getAuthorizationRequestBody([...selectedOrganizationIds], selectedScopeValues.join(' ')),
             { expectedStatusCodes: [400, 401] }
         );
 
@@ -132,10 +197,7 @@
 
         isAuthorizing = false;
         if (response.status === 401) {
-            accessToken.current = null;
-            const returnUrl = `${page.url.pathname}${page.url.search}`;
-            const loginUrl = `${resolve('/(auth)/login')}?redirect=${encodeURIComponent(returnUrl)}`;
-            await goto(loginUrl, { replaceState: true });
+            await redirectToLogin();
             return;
         }
 
@@ -145,6 +207,27 @@
             response.problem?.detail ||
             response.problem?.title ||
             'Unable to authorize application.';
+    }
+
+    async function redirectToLogin(): Promise<void> {
+        accessToken.current = null;
+        const returnUrl = `${page.url.pathname}${page.url.search}`;
+        const loginUrl = `${resolve('/(auth)/login')}?redirect=${encodeURIComponent(returnUrl)}`;
+        await goto(loginUrl, { replaceState: true });
+    }
+
+    function getAuthorizationRequestBody(organizationIds: string[], scope: null | string): OAuthAuthorizeRequestBody {
+        return {
+            client_id: page.url.searchParams.get('client_id'),
+            code_challenge: page.url.searchParams.get('code_challenge'),
+            code_challenge_method: page.url.searchParams.get('code_challenge_method'),
+            organization_ids: organizationIds,
+            redirect_uri: page.url.searchParams.get('redirect_uri'),
+            resource: page.url.searchParams.get('resource'),
+            response_type: page.url.searchParams.get('response_type'),
+            scope,
+            state: page.url.searchParams.get('state')
+        };
     }
 
     function getRequestedScopes(): string[] {
@@ -270,15 +353,22 @@
             <div class="space-y-3 text-sm">
                 <div>
                     <Muted>Application</Muted>
-                    <p class="break-all font-medium">{clientId}</p>
+                    {#if isLoadingConsent}
+                        <p class="text-muted-foreground">Loading application...</p>
+                    {:else}
+                        <p class="break-all font-medium">{applicationDisplayName}</p>
+                        {#if applicationClientId !== applicationDisplayName}
+                            <p class="break-all font-mono text-xs text-muted-foreground">{applicationClientId}</p>
+                        {/if}
+                    {/if}
                 </div>
                 <div>
                     <Muted>Redirect URI</Muted>
-                    <p class="break-all font-mono text-xs">{redirectUri}</p>
+                    <p class="break-all font-mono text-xs">{displayRedirectUri}</p>
                 </div>
                 <div>
                     <Muted>Resource</Muted>
-                    <p class="break-all font-mono text-xs">{resource}</p>
+                    <p class="break-all font-mono text-xs">{displayResource}</p>
                 </div>
                 <div class="space-y-2">
                     <Muted>Scopes</Muted>
@@ -315,8 +405,8 @@
                 </div>
             </div>
 
-            {#if errorMessage}
-                <ErrorMessage message={errorMessage}></ErrorMessage>
+            {#if errorMessage || consentErrorMessage}
+                <ErrorMessage message={errorMessage ?? consentErrorMessage ?? ''}></ErrorMessage>
             {/if}
         </Card.Content>
         <Card.Footer class="flex justify-end gap-2">
@@ -324,7 +414,12 @@
             <Button
                 type="button"
                 onclick={() => void approveAuthorization()}
-                disabled={isAuthorizing || organizationsQuery.isLoading || organizationsQuery.isError || !canApprove}
+                disabled={isAuthorizing ||
+                    isLoadingConsent ||
+                    Boolean(consentErrorMessage) ||
+                    organizationsQuery.isLoading ||
+                    organizationsQuery.isError ||
+                    !canApprove}
             >
                 {#if isAuthorizing}
                     <Spinner />

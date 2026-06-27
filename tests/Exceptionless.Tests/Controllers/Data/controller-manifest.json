@@ -1111,6 +1111,21 @@
   },
   {
     "Controller": "OAuthController",
+    "Action": "GetAuthorizeConsentAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/oauth/authorize/consent",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OAuthController",
     "Action": "RegisterAsync",
     "HttpMethod": "POST",
     "Route": "/api/v2/oauth/register",

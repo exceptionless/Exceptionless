@@ -37,11 +37,13 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
 
     private readonly IOAuthApplicationRepository _oauthApplicationRepository;
     private readonly ITokenRepository _tokenRepository;
+    private readonly IUserRepository _userRepository;
 
     public OAuthControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _oauthApplicationRepository = GetService<IOAuthApplicationRepository>();
         _tokenRepository = GetService<ITokenRepository>();
+        _userRepository = GetService<IUserRepository>();
     }
 
     protected override void RegisterServices(IServiceCollection services)
@@ -463,6 +465,35 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetAuthorizeConsentAsync_ValidRequest_ReturnsValidatedClientDetails()
+    {
+        const string clientId = "named-oauth-client";
+        const string redirectUri = "http://localhost/named-callback";
+        await CreateStoredOAuthApplicationAsync(clientId, redirectUri, name: "Named OAuth Client");
+        using var client = CreateHttpClient();
+        using var request = CreateAuthorizeJsonRequest(
+            PkceVerifier,
+            redirectUri,
+            RestApiResource,
+            clientId,
+            scope: $"{AuthorizationRoles.ProjectsRead} {AuthorizationRoles.OfflineAccess}",
+            organizationIds: []);
+        request.RequestUri = new Uri("oauth/authorize/consent", UriKind.Relative);
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var consent = await DeserializeResponseAsync<OAuthAuthorizeConsentResponse>(response);
+        Assert.NotNull(consent);
+        Assert.Equal(clientId, consent.ClientId);
+        Assert.Equal("Named OAuth Client", consent.ClientName);
+        Assert.Equal(redirectUri, consent.RedirectUri);
+        Assert.Equal(RestApiResource, consent.Resource);
+        Assert.Equal([AuthorizationRoles.ProjectsRead, AuthorizationRoles.OfflineAccess], consent.Scopes);
+        Assert.Empty(consent.RequiredScopes);
+    }
+
+    [Fact]
     public async Task CompleteAuthorizeAsync_ClientMetadataDocument_PersistsObservedApplication()
     {
         await CreateAuthorizationCodeAsync(PkceVerifier, MetadataRedirectUri, clientId: MetadataClientId);
@@ -721,6 +752,24 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task OAuthBearer_RemovedOrganizationAccess_ReturnsUnauthorizedAndDisablesToken()
+    {
+        var token = await IssueTokenAsync(resource: RestApiResource, scope: AuthorizationRoles.ProjectsRead, organizationIds: [TestConstants.OrganizationId]);
+
+        await RemoveTestUserFromOrganizationAsync(TestConstants.OrganizationId);
+
+        await SendRequestAsync(r => r
+            .BearerToken(token.AccessToken)
+            .AppendPath("projects")
+            .StatusCodeShouldBeUnauthorized());
+
+        var storedToken = await _tokenRepository.GetByIdAsync(token.AccessToken, o => o.ImmediateConsistency());
+        Assert.NotNull(storedToken);
+        Assert.True(storedToken.IsDisabled);
+        Assert.Null(storedToken.Refresh);
+    }
+
+    [Fact]
     public async Task OAuthBearer_DisabledStoredOAuthApplication_ReturnsUnauthorized()
     {
         const string clientId = "stored-disabled-client";
@@ -805,6 +854,38 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task TokenAsync_RefreshToken_UsesCurrentOrganizationMembership()
+    {
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        var originalOrganizationIds = user.OrganizationIds.ToArray();
+        string removedOrganizationId = Assert.Single(originalOrganizationIds, id => !String.Equals(id, TestConstants.OrganizationId, StringComparison.Ordinal));
+        var token = await IssueTokenAsync(
+            resource: RestApiResource,
+            scope: $"{AuthorizationRoles.ProjectsRead} {AuthorizationRoles.OfflineAccess}",
+            organizationIds: originalOrganizationIds);
+        Assert.NotNull(token.RefreshToken);
+
+        await RemoveTestUserFromOrganizationAsync(removedOrganizationId);
+        using var client = CreateHttpClient();
+        using var refreshRequestContent = new FormUrlEncodedContent(new Dictionary<string, string?>
+        {
+            ["grant_type"] = OAuthGrantTypes.RefreshToken,
+            ["client_id"] = ClientId,
+            ["refresh_token"] = token.RefreshToken
+        });
+
+        var refreshResponse = await client.PostAsync("oauth/token", refreshRequestContent, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, refreshResponse.StatusCode);
+        var refreshedToken = await DeserializeResponseAsync<OAuthTokenResponse>(refreshResponse);
+        Assert.NotNull(refreshedToken);
+        var storedToken = await _tokenRepository.GetByIdAsync(refreshedToken.AccessToken, o => o.ImmediateConsistency());
+        Assert.NotNull(storedToken);
+        Assert.Equal([TestConstants.OrganizationId], storedToken.OAuthOrganizationIds);
+    }
+
+    [Fact]
     public async Task TokenAsync_ConcurrentRefreshTokenUse_AllowsOnlyOneRefresh()
     {
         var token = await IssueTokenAsync();
@@ -839,6 +920,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
 
         using var revokeContent = new FormUrlEncodedContent(new Dictionary<string, string?>
         {
+            ["client_id"] = ClientId,
             ["token"] = token.AccessToken
         });
         var response = await client.PostAsync("oauth/revoke", revokeContent, TestContext.Current.CancellationToken);
@@ -848,6 +930,26 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.NotNull(storedToken);
         Assert.True(storedToken.IsDisabled);
         Assert.Null(storedToken.Refresh);
+    }
+
+    [Fact]
+    public async Task RevokeAsync_WithDifferentClientId_DoesNotDisableOAuthToken()
+    {
+        var token = await IssueTokenAsync();
+        using var client = CreateHttpClient();
+
+        using var revokeContent = new FormUrlEncodedContent(new Dictionary<string, string?>
+        {
+            ["client_id"] = "other-oauth-client",
+            ["token"] = token.AccessToken
+        });
+        var response = await client.PostAsync("oauth/revoke", revokeContent, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var storedToken = await _tokenRepository.GetByIdAsync(token.AccessToken, o => o.ImmediateConsistency());
+        Assert.NotNull(storedToken);
+        Assert.False(storedToken.IsDisabled);
+        Assert.NotNull(storedToken.Refresh);
     }
 
     [Fact]
@@ -864,6 +966,14 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
             .AppendPath("projects")
             .StatusCodeShouldBeUnauthorized()
         );
+    }
+
+    private async Task RemoveTestUserFromOrganizationAsync(string organizationId)
+    {
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        user.OrganizationIds.Remove(organizationId);
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency());
     }
 
     private async Task<OAuthTokenResponse> IssueTokenAsync(string clientId = ClientId, string redirectUri = RedirectUri, string? resource = Resource, string? scope = null, IReadOnlyCollection<string>? organizationIds = null)
@@ -895,14 +1005,14 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         return code.ToString();
     }
 
-    private async Task<OAuthApplication> CreateStoredOAuthApplicationAsync(string clientId, string redirectUri, bool isDisabled = false)
+    private async Task<OAuthApplication> CreateStoredOAuthApplicationAsync(string clientId, string redirectUri, bool isDisabled = false, string? name = null)
     {
         var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
         var application = new OAuthApplication
         {
             Id = ObjectId.GenerateNewId().ToString(),
             ClientId = clientId,
-            Name = clientId,
+            Name = name ?? clientId,
             RedirectUris = [redirectUri],
             Scopes = [AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead, AuthorizationRoles.StacksRead, AuthorizationRoles.EventsRead, AuthorizationRoles.OfflineAccess],
             Notes = null,

@@ -153,6 +153,22 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
                 return AuthenticateResult.Fail("Token is not valid");
             }
 
+            if (tokenRecord.OAuthType == OAuthTokenType.Access)
+            {
+                if (!user.IsActive)
+                {
+                    await DisableOAuthTokenAsync(tokenRecord);
+                    return AuthenticateResult.Fail("User is not valid");
+                }
+
+                var activeOrganizationIds = user.GetActiveOAuthOrganizationIds(tokenRecord);
+                if (activeOrganizationIds.Count == 0)
+                {
+                    await DisableOAuthTokenAsync(tokenRecord);
+                    return AuthenticateResult.Fail("Token organization access is not valid");
+                }
+            }
+
             return AuthenticateResult.Success(CreateUserAuthenticationTicket(user, tokenRecord));
         }
 
@@ -167,6 +183,14 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             return;
 
         Response.Headers.WWWAuthenticate = $"Bearer resource_metadata=\"{GetCanonicalOrigin()}/.well-known/oauth-protected-resource{resourceDefinition.Path}\"";
+    }
+
+    private Task DisableOAuthTokenAsync(Token token)
+    {
+        token.IsDisabled = true;
+        token.Refresh = null;
+        token.UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime;
+        return _tokenRepository.SaveAsync(token, o => o.ImmediateConsistency());
     }
 
     private AuthenticationTicket CreateUserAuthenticationTicket(User user, Token? token = null)

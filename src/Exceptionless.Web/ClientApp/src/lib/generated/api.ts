@@ -211,6 +211,15 @@ export interface OAuthAuthorizationServerMetadata {
   client_id_metadata_document_supported: boolean;
 }
 
+export interface OAuthAuthorizeConsentResponse {
+  client_id: string;
+  client_name: string;
+  redirect_uri: string;
+  resource: string;
+  scopes: string[];
+  required_scopes: string[];
+}
+
 export interface OAuthAuthorizeForm {
   client_id: string;
   response_type: string;

@@ -299,6 +299,18 @@ export type OAuthAuthorizationServerMetadataFormData = Infer<
   typeof OAuthAuthorizationServerMetadataSchema
 >;
 
+export const OAuthAuthorizeConsentResponseSchema = object({
+  client_id: string().min(1, "Client id is required"),
+  client_name: string().min(1, "Client name is required"),
+  redirect_uri: string().min(1, "Redirect uri is required"),
+  resource: string().min(1, "Resource is required"),
+  scopes: array(string()),
+  required_scopes: array(string()),
+});
+export type OAuthAuthorizeConsentResponseFormData = Infer<
+  typeof OAuthAuthorizeConsentResponseSchema
+>;
+
 export const OAuthAuthorizeFormSchema = object({
   client_id: string().min(1, "Client id is required"),
   response_type: string().min(1, "Response type is required"),

@@ -105,6 +105,21 @@ Content-Type: application/json
   "is_disabled": false
 }
 
+### Preview OAuth Consent For REST API Resource
+POST {{apiUrl}}/oauth/authorize/consent
+Authorization: Bearer {{login.response.body.token}}
+Content-Type: application/json
+
+{
+  "client_id": "{{clientId}}",
+  "response_type": "code",
+  "redirect_uri": "{{redirectUri}}",
+  "scope": "projects:read events:read offline_access",
+  "state": "local-state",
+  "code_challenge": "{{codeChallenge}}",
+  "code_challenge_method": "S256",
+  "resource": "{{apiResource}}"
+}
 ### Complete Authorize For REST API Resource
 POST {{apiUrl}}/oauth/authorize
 Authorization: Bearer {{login.response.body.token}}
@@ -145,7 +160,7 @@ grant_type=refresh_token&client_id={{clientId}}&refresh_token=replace-with-refre
 POST {{apiUrl}}/oauth/revoke
 Content-Type: application/x-www-form-urlencoded
 
-token=replace-with-access-or-refresh-token
+client_id={{clientId}}&token=replace-with-access-or-refresh-token
 
 ### MCP with OAuth Bearer Token
 POST {{rootUrl}}/mcp

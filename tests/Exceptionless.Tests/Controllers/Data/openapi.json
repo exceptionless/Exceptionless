@@ -4773,6 +4773,55 @@
         }
       }
     },
+    "/api/v2/oauth/authorize/consent": {
+      "post": {
+        "tags": [
+          "OAuth"
+        ],
+        "requestBody": {
+          "content": {
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthAuthorizeForm"
+              }
+            },
+            "application/octet-stream": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthAuthorizeForm"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthAuthorizeForm"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthAuthorizeForm"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthAuthorizeForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthAuthorizeConsentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/oauth/register": {
       "post": {
         "tags": [
@@ -4886,6 +4935,9 @@
                 "type": "object",
                 "properties": {
                   "token": {
+                    "type": "string"
+                  },
+                  "client_id": {
                     "type": "string"
                   }
                 }
@@ -9137,6 +9189,43 @@
           },
           "client_id_metadata_document_supported": {
             "type": "boolean"
+          }
+        }
+      },
+      "OAuthAuthorizeConsentResponse": {
+        "required": [
+          "client_id",
+          "client_name",
+          "redirect_uri",
+          "resource",
+          "scopes",
+          "required_scopes"
+        ],
+        "type": "object",
+        "properties": {
+          "client_id": {
+            "type": "string"
+          },
+          "client_name": {
+            "type": "string"
+          },
+          "redirect_uri": {
+            "type": "string"
+          },
+          "resource": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "required_scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

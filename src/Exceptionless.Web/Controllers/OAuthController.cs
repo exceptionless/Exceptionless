@@ -1,5 +1,6 @@
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Services;
 using Exceptionless.DateTimeExtensions;
@@ -86,6 +87,26 @@ public sealed class OAuthController(OAuthService oauthService, AppOptions appOpt
         return CompleteAuthorizationAsync(form.ToRequest(), jsonResponse: true);
     }
 
+    [HttpPost(API_PREFIX + "/oauth/authorize/consent")]
+    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    public async Task<ActionResult<OAuthAuthorizeConsentResponse>> GetAuthorizeConsentAsync([FromBody] OAuthAuthorizeForm form)
+    {
+        var request = form.ToRequest();
+        var validation = await ValidateAuthorizeRequestAsync(request);
+        if (!validation.IsValid)
+            return OAuthError(validation.Error, validation.ErrorDescription);
+
+        return Ok(new OAuthAuthorizeConsentResponse
+        {
+            ClientId = validation.Client!.ClientId,
+            ClientName = validation.Client.Name,
+            RedirectUri = request.RedirectUri,
+            Resource = validation.Resource!,
+            Scopes = validation.Scopes,
+            RequiredScopes = validation.ResourceDefinition!.RequiredScopes
+        });
+    }
+
     [HttpPost(API_PREFIX + "/oauth/register")]
     [AllowAnonymous]
     public async Task<ActionResult<OAuthClientRegistrationResponse>> RegisterAsync([FromBody] OAuthClientRegistrationRequest request)
@@ -133,7 +154,7 @@ public sealed class OAuthController(OAuthService oauthService, AppOptions appOpt
     [AllowAnonymous]
     public async Task<IActionResult> RevokeAsync([FromForm] OAuthRevokeForm form)
     {
-        await oauthService.RevokeAsync(form.Token);
+        await oauthService.RevokeAsync(form.Token, form.ClientId);
         return Ok();
     }
 
@@ -163,12 +184,22 @@ public sealed class OAuthController(OAuthService oauthService, AppOptions appOpt
         });
     }
 
-    private async Task<IActionResult> CompleteAuthorizationAsync(OAuthAuthorizeRequest request, bool jsonResponse)
+    private async Task<AuthorizeRequestValidationResult> ValidateAuthorizeRequestAsync(OAuthAuthorizeRequest request)
     {
         if (!OAuthService.TryGetProtectedResource(request.Resource, GetOrigin(), out var resourceDefinition))
-            return OAuthError("invalid_target", "The requested resource is not supported.");
+            return AuthorizeRequestValidationResult.Invalid("invalid_target", "The requested resource is not supported.");
 
-        var validation = await oauthService.ValidateAuthorizationRequestAsync(request, GetResource(resourceDefinition), resourceDefinition);
+        string resource = GetResource(resourceDefinition);
+        var validation = await oauthService.ValidateAuthorizationRequestAsync(request, resource, resourceDefinition);
+        if (!validation.IsValid)
+            return AuthorizeRequestValidationResult.Invalid(validation.Error, validation.ErrorDescription);
+
+        return AuthorizeRequestValidationResult.Valid(validation.Client!, validation.Scopes, resourceDefinition, resource);
+    }
+
+    private async Task<IActionResult> CompleteAuthorizationAsync(OAuthAuthorizeRequest request, bool jsonResponse)
+    {
+        var validation = await ValidateAuthorizeRequestAsync(request);
         if (!validation.IsValid)
             return OAuthError(validation.Error, validation.ErrorDescription);
 
@@ -217,4 +248,10 @@ internal sealed record OrganizationValidationResult(bool IsValid, IReadOnlyColle
 {
     public static OrganizationValidationResult Valid(IReadOnlyCollection<string> organizationIds) => new(true, organizationIds, null);
     public static OrganizationValidationResult Invalid(string errorDescription) => new(false, [], errorDescription);
+}
+
+internal sealed record AuthorizeRequestValidationResult(bool IsValid, OAuthClientOptions? Client, IReadOnlyCollection<string> Scopes, OAuthResourceDefinition? ResourceDefinition, string? Resource, string? Error, string? ErrorDescription)
+{
+    public static AuthorizeRequestValidationResult Valid(OAuthClientOptions client, IReadOnlyCollection<string> scopes, OAuthResourceDefinition resourceDefinition, string resource) => new(true, client, scopes, resourceDefinition, resource, null, null);
+    public static AuthorizeRequestValidationResult Invalid(string? error, string? errorDescription) => new(false, null, [], null, null, error, errorDescription);
 }

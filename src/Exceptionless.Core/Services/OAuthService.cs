@@ -14,7 +14,7 @@ using Foundatio.Repositories.Utility;
 
 namespace Exceptionless.Core.Services;
 
-public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, ILockProvider lockProvider, IOAuthApplicationRepository oauthApplicationRepository, IOAuthClientMetadataService oauthClientMetadataService, ITokenRepository tokenRepository, TimeProvider timeProvider)
+public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, ILockProvider lockProvider, IOAuthApplicationRepository oauthApplicationRepository, IOAuthClientMetadataService oauthClientMetadataService, ITokenRepository tokenRepository, IUserRepository userRepository, TimeProvider timeProvider)
 {
     public const string CodeChallengeMethod = "S256";
     public const int ClientIdLength = 32;
@@ -407,18 +407,30 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (token.OAuthRefreshExpiresUtc.HasValue && token.OAuthRefreshExpiresUtc.Value < timeProvider.GetUtcNow().UtcDateTime)
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is expired.");
 
-        token.IsDisabled = true;
-        token.Refresh = null;
-        await tokenRepository.SaveAsync(token, o => o.ImmediateConsistency());
+        var user = await userRepository.GetByIdAsync(token.UserId!, o => o.ImmediateConsistency());
+        if (user is null || !user.IsActive)
+        {
+            await DisableTokenAsync(token);
+            return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
+        }
 
-        return OAuthTokenIssueResult.Success(await CreateTokenAsync(token.UserId!, token.OAuthClientId!, token.OAuthResource!, token.Scopes, token.OAuthOrganizationIds));
+        var activeOrganizationIds = user.GetActiveOAuthOrganizationIds(token);
+        if (activeOrganizationIds.Count == 0)
+        {
+            await DisableTokenAsync(token);
+            return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
+        }
+
+        await DisableTokenAsync(token);
+        return OAuthTokenIssueResult.Success(await CreateTokenAsync(token.UserId!, token.OAuthClientId!, token.OAuthResource!, token.Scopes, activeOrganizationIds));
     }
 
-    public async Task<bool> RevokeAsync(string? tokenValue)
+    public async Task<bool> RevokeAsync(string? tokenValue, string? clientId)
     {
-        if (String.IsNullOrWhiteSpace(tokenValue))
+        if (String.IsNullOrWhiteSpace(tokenValue) || String.IsNullOrWhiteSpace(clientId))
             return false;
 
+        clientId = clientId.Trim();
         var token = await tokenRepository.GetByIdAsync(tokenValue, o => o.ImmediateConsistency());
         if (token is null)
         {
@@ -426,13 +438,19 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             token = results.Documents.FirstOrDefault();
         }
 
-        if (token is null || token.OAuthType != OAuthTokenType.Access)
+        if (token is null || token.OAuthType != OAuthTokenType.Access || !String.Equals(token.OAuthClientId, clientId, StringComparison.Ordinal))
             return false;
 
+        await DisableTokenAsync(token);
+        return true;
+    }
+
+    private Task DisableTokenAsync(Token token)
+    {
         token.IsDisabled = true;
         token.Refresh = null;
-        await tokenRepository.SaveAsync(token, o => o.ImmediateConsistency());
-        return true;
+        token.UpdatedUtc = timeProvider.GetUtcNow().UtcDateTime;
+        return tokenRepository.SaveAsync(token, o => o.ImmediateConsistency());
     }
 
     private async Task<OAuthTokenResponse> CreateTokenAsync(string userId, string clientId, string resource, IReadOnlyCollection<string> scopes, IReadOnlyCollection<string> organizationIds)

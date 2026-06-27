@@ -50,9 +50,9 @@ public static class IdentityUtils
 
     public static ClaimsIdentity ToIdentity(this User user, Token? token = null)
     {
-        var organizationIds = token is { OAuthType: OAuthTokenType.Access }
-            ? token.OAuthOrganizationIds
-            : user.OrganizationIds;
+        IReadOnlyCollection<string> organizationIds = token is { OAuthType: OAuthTokenType.Access }
+            ? user.GetActiveOAuthOrganizationIds(token)
+            : user.OrganizationIds.ToArray();
 
         var claims = new List<Claim>(7 + user.Roles.Count) {
                     new(ClaimTypes.Name, user.EmailAddress),
@@ -100,6 +100,15 @@ public static class IdentityUtils
 
         string authenticationType = token is { Type: TokenType.Access } ? TokenAuthenticationType : UserAuthenticationType;
         return new ClaimsIdentity(claims, authenticationType);
+    }
+
+    public static IReadOnlyCollection<string> GetActiveOAuthOrganizationIds(this User user, Token token)
+    {
+        if (token.OAuthType != OAuthTokenType.Access)
+            return user.OrganizationIds.ToArray();
+
+        var userOrganizationIds = user.OrganizationIds.ToHashSet(StringComparer.Ordinal);
+        return token.OAuthOrganizationIds.Where(userOrganizationIds.Contains).Distinct(StringComparer.Ordinal).ToArray();
     }
 
     public static bool IsAuthenticated(this ClaimsPrincipal principal)
