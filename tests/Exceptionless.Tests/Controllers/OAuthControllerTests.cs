@@ -11,6 +11,7 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Controllers;
+using Exceptionless.Web.Models.Admin;
 using Exceptionless.Web.Models.OAuth;
 using FluentRest;
 using Foundatio.Repositories;
@@ -787,6 +788,39 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeUnauthorized());
     }
 
+    [Fact]
+    public async Task OAuthBearer_DisabledStoredOAuthApplicationAfterCachedAccess_ReturnsUnauthorized()
+    {
+        const string clientId = "cached-disabled-client";
+        const string redirectUri = "http://localhost/cached-disabled-callback";
+        var application = await CreateStoredOAuthApplicationAsync(clientId, redirectUri);
+        var token = await IssueTokenAsync(clientId, redirectUri, RestApiResource, AuthorizationRoles.ProjectsRead);
+
+        await SendRequestAsync(r => r
+            .BearerToken(token.AccessToken)
+            .AppendPath("projects")
+            .StatusCodeShouldBeOk());
+
+        await SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "oauth-applications", application.Id)
+            .Content(new UpdateOAuthApplication
+            {
+                ClientId = clientId,
+                Name = application.Name,
+                RedirectUris = application.RedirectUris,
+                Scopes = application.Scopes,
+                Notes = application.Notes,
+                IsDisabled = true
+            })
+            .StatusCodeShouldBeOk());
+
+        await SendRequestAsync(r => r
+            .BearerToken(token.AccessToken)
+            .AppendPath("projects")
+            .StatusCodeShouldBeUnauthorized());
+    }
     [Fact]
     public async Task TokenAsync_InvalidCodeVerifier_ReturnsBadRequestAndConsumesCode()
     {

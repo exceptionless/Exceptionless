@@ -50,7 +50,12 @@ public static class IdentityUtils
 
     public static ClaimsIdentity ToIdentity(this User user, Token? token = null)
     {
-        IReadOnlyCollection<string> organizationIds = token is { OAuthType: OAuthTokenType.Access }
+        return user.ToIdentity(token, null);
+    }
+
+    public static ClaimsIdentity ToIdentity(this User user, Token? token, IReadOnlyCollection<string>? organizationIds)
+    {
+        organizationIds ??= token is { OAuthType: OAuthTokenType.Access }
             ? user.GetActiveOAuthOrganizationIds(token)
             : user.OrganizationIds.ToArray();
 

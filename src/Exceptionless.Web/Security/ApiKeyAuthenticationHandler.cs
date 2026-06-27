@@ -129,6 +129,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             return AuthenticateResult.Fail("Token is not valid");
         }
 
+        IReadOnlyCollection<string>? activeOAuthOrganizationIds = null;
         if (tokenRecord.OAuthType == OAuthTokenType.Access)
         {
             if (!isAuthorizationHeaderToken || scheme != BearerScheme)
@@ -140,7 +141,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             if (tokenRecord.OAuthOrganizationIds.Count == 0)
                 return AuthenticateResult.Fail("Token organization access is not valid");
 
-            if (String.IsNullOrEmpty(tokenRecord.OAuthClientId) || await _oauthService.GetClientAsync(tokenRecord.OAuthClientId) is null)
+            if (!await _oauthService.IsAccessTokenClientValidAsync(tokenRecord.OAuthClientId))
                 return AuthenticateResult.Fail("OAuth client is not valid");
         }
 
@@ -161,15 +162,15 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
                     return AuthenticateResult.Fail("User is not valid");
                 }
 
-                var activeOrganizationIds = user.GetActiveOAuthOrganizationIds(tokenRecord);
-                if (activeOrganizationIds.Count == 0)
+                activeOAuthOrganizationIds = user.GetActiveOAuthOrganizationIds(tokenRecord);
+                if (activeOAuthOrganizationIds.Count == 0)
                 {
                     await DisableOAuthTokenAsync(tokenRecord);
                     return AuthenticateResult.Fail("Token organization access is not valid");
                 }
             }
 
-            return AuthenticateResult.Success(CreateUserAuthenticationTicket(user, tokenRecord));
+            return AuthenticateResult.Success(CreateUserAuthenticationTicket(user, tokenRecord, activeOAuthOrganizationIds));
         }
 
         return AuthenticateResult.Success(CreateTokenAuthenticationTicket(tokenRecord));
@@ -193,11 +194,11 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         return _tokenRepository.SaveAsync(token, o => o.ImmediateConsistency());
     }
 
-    private AuthenticationTicket CreateUserAuthenticationTicket(User user, Token? token = null)
+    private AuthenticationTicket CreateUserAuthenticationTicket(User user, Token? token = null, IReadOnlyCollection<string>? organizationIds = null)
     {
         Request.SetUser(user);
 
-        var principal = new ClaimsPrincipal(user.ToIdentity(token));
+        var principal = new ClaimsPrincipal(user.ToIdentity(token, organizationIds));
         return new AuthenticationTicket(principal, CreateAuthenticationProperties(token), Options.AuthenticationScheme);
     }
 

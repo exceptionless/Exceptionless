@@ -59,7 +59,9 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
     private const string AuthorizationCodeCachePrefix = "oauth:code:";
     private const string RefreshTokenLockPrefix = "oauth:refresh:";
+    private const string AccessTokenClientValidityCachePrefix = "oauth:client-valid:";
     private const int OAuthGrantFamilyPageLimit = 1000;
+    private static readonly TimeSpan AccessTokenClientValidityCacheLifetime = TimeSpan.FromSeconds(30);
     private const string ClientMetadataNotes = "Discovered from OAuth client metadata document.";
     private const string DynamicClientRegistrationNotes = "Registered through OAuth dynamic client registration.";
     private static readonly Regex CodeChallengeRegex = new("^[A-Za-z0-9_-]{43}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -118,6 +120,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         };
 
         await oauthApplicationRepository.AddAsync(application, o => o.ImmediateConsistency());
+        await ClearAccessTokenClientValidityCacheAsync(application.ClientId);
         return OAuthClientRegistrationResult.Success(new OAuthClientRegistrationResponse
         {
             ClientId = application.ClientId,
@@ -155,6 +158,30 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         return await GetClientFromMetadataDocumentAsync(clientId);
     }
 
+    public async Task<bool> IsAccessTokenClientValidAsync(string? clientId)
+    {
+        if (String.IsNullOrWhiteSpace(clientId))
+            return false;
+
+        clientId = clientId.Trim();
+        string cacheKey = GetAccessTokenClientValidityCacheKey(clientId);
+        bool? cached = await cacheClient.GetAsync<bool?>(cacheKey, null);
+        if (cached.HasValue)
+            return cached.Value;
+
+        var application = await oauthApplicationRepository.GetByClientIdAsync(clientId);
+        bool isValid = application is { IsDisabled: false };
+        await cacheClient.SetAsync(cacheKey, isValid, AccessTokenClientValidityCacheLifetime);
+        return isValid;
+    }
+
+    public Task ClearAccessTokenClientValidityCacheAsync(string? clientId)
+    {
+        return String.IsNullOrWhiteSpace(clientId)
+            ? Task.CompletedTask
+            : cacheClient.RemoveAsync(GetAccessTokenClientValidityCacheKey(clientId.Trim()));
+    }
+
     private async Task<OAuthClientOptions?> GetClientFromMetadataDocumentAsync(string clientId)
     {
         var metadata = await oauthClientMetadataService.GetClientMetadataAsync(clientId);
@@ -162,6 +189,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             return null;
 
         await oauthApplicationRepository.AddAsync(application, o => o.ImmediateConsistency());
+        await ClearAccessTokenClientValidityCacheAsync(application.ClientId);
         return MapClient(application);
     }
 
@@ -191,6 +219,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         application.UpdatedUtc = timeProvider.GetUtcNow().UtcDateTime;
 
         await oauthApplicationRepository.SaveAsync(application, o => o.ImmediateConsistency());
+        await ClearAccessTokenClientValidityCacheAsync(application.ClientId);
         return application;
     }
 
@@ -625,6 +654,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
     private static string GetAuthorizationCodeCacheKey(string code) => AuthorizationCodeCachePrefix + code;
     private static string GetRefreshTokenLockKey(string refreshToken) => RefreshTokenLockPrefix + Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(refreshToken))).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    private static string GetAccessTokenClientValidityCacheKey(string clientId) => AccessTokenClientValidityCachePrefix + Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(clientId))).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 }
 
 public static class OAuthGrantTypes
