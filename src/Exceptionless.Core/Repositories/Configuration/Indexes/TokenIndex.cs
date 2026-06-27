@@ -10,7 +10,7 @@ public sealed class TokenIndex : VersionedIndex<Models.Token>
     internal const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
     private readonly ExceptionlessElasticConfiguration _configuration;
 
-    public TokenIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "tokens", 1)
+    public TokenIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "tokens", 2)
     {
         _configuration = configuration;
     }
@@ -28,10 +28,14 @@ public sealed class TokenIndex : VersionedIndex<Models.Token>
                 .Keyword(e => e.UserId)
                 .Keyword(e => e.CreatedBy)
                 .Keyword(e => e.Refresh)
+                .Keyword(e => e.OAuthClientId)
+                .Keyword(e => e.OAuthResource)
+                .Keyword(e => e.OAuthOrganizationIds)
                 .Keyword(e => e.Scopes)
                 .Boolean(e => e.IsDisabled)
                 .Boolean(e => e.IsSuspended)
-                .ByteNumber(e => e.Type));
+                .ByteNumber(e => e.Type)
+                .ByteNumber(e => e.OAuthType));
     }
 
     public override void ConfigureIndex(CreateIndexRequestDescriptor idx)

@@ -44,6 +44,16 @@ public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, I
         return FindAsync(q => q.FieldEquals(t => t.Refresh, refreshToken).SortDescending(f => f.CreatedUtc), options);
     }
 
+    public Task<FindResults<Token>> GetOAuthAccessTokensByUserIdAsync(string userId, CommandOptionsDescriptor<Token>? options = null)
+    {
+        return FindAsync(q => q.FieldEquals(t => t.UserId, userId).FieldEquals(t => t.Type, (int)TokenType.Access).FieldEquals(t => t.OAuthType, (int)OAuthTokenType.Access).SortDescending(f => f.UpdatedUtc), options);
+    }
+
+    public Task<FindResults<Token>> GetOAuthAccessTokensByUserIdAndClientIdAsync(string userId, string clientId, CommandOptionsDescriptor<Token>? options = null)
+    {
+        return FindAsync(q => q.FieldEquals(t => t.UserId, userId).FieldEquals(t => t.OAuthClientId, clientId).FieldEquals(t => t.Type, (int)TokenType.Access).FieldEquals(t => t.OAuthType, (int)OAuthTokenType.Access).SortDescending(f => f.UpdatedUtc), options);
+    }
+
     public override Task<FindResults<Token>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<Token>? options = null)
     {
         return FindAsync(q => q

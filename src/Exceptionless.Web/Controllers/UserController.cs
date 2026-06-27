@@ -9,6 +9,7 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
+using Exceptionless.Web.Models.OAuth;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.OpenApi;
 using Foundatio.Caching;
@@ -26,6 +27,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
 {
     private readonly IOrganizationRepository _organizationRepository;
     private readonly ITokenRepository _tokenRepository;
+    private readonly IOAuthApplicationRepository _oauthApplicationRepository;
     private readonly ICacheClient _cache;
     private readonly IFileStorage _fileStorage;
     private readonly IMailer _mailer;
@@ -33,12 +35,13 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
 
     public UserController(
         IUserRepository userRepository, IFileStorage fileStorage,
-        IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer,
+        IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, IOAuthApplicationRepository oauthApplicationRepository, ICacheClient cacheClient, IMailer mailer,
         ApiMapper mapper, IAppQueryValidator validator, IntercomOptions intercomOptions,
         TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(userRepository, mapper, validator, timeProvider, loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _tokenRepository = tokenRepository;
+        _oauthApplicationRepository = oauthApplicationRepository;
         _cache = new ScopedCacheClient(cacheClient, "User");
         _fileStorage = fileStorage;
         _mailer = mailer;
@@ -62,6 +65,56 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
             return NotFound();
 
         return Ok(MapToViewCurrentUser(currentUser));
+    }
+
+    /// <summary>
+    /// Get current user OAuth grants
+    /// </summary>
+    [HttpGet("me/oauth-grants")]
+    public async Task<ActionResult<IReadOnlyCollection<ViewOAuthGrant>>> GetOAuthGrantsAsync()
+    {
+        var results = await _tokenRepository.GetOAuthAccessTokensByUserIdAsync(CurrentUser.Id, o => o.PageLimit(MAXIMUM_SKIP));
+        var tokens = results.Documents.Where(IsActiveOAuthGrantToken).ToArray();
+        if (tokens.Length == 0)
+            return Ok(Array.Empty<ViewOAuthGrant>());
+
+        var applicationsByClientId = new Dictionary<string, OAuthApplication?>(StringComparer.Ordinal);
+        foreach (string clientId in tokens.Select(t => t.OAuthClientId!).Distinct(StringComparer.Ordinal))
+            applicationsByClientId[clientId] = await _oauthApplicationRepository.GetByClientIdAsync(clientId);
+
+        var grants = tokens
+            .GroupBy(t => t.OAuthClientId!, StringComparer.Ordinal)
+            .Select(group => MapToOAuthGrant(group.ToArray(), applicationsByClientId[group.Key]))
+            .OrderBy(g => g.ApplicationName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(g => g.ClientId, StringComparer.Ordinal)
+            .ToArray();
+
+        return Ok(grants);
+    }
+
+    /// <summary>
+    /// Revoke current user OAuth grant
+    /// </summary>
+    /// <param name="id">The representative OAuth access token id.</param>
+    /// <response code="404">The OAuth grant could not be found.</response>
+    [HttpDelete("me/oauth-grants/{id:minlength(1)}")]
+    public async Task<IActionResult> RevokeOAuthGrantAsync(string id)
+    {
+        var token = await _tokenRepository.GetByIdAsync(id, o => o.ImmediateConsistency());
+        if (token is null || token.OAuthType != OAuthTokenType.Access || !String.Equals(token.UserId, CurrentUser.Id, StringComparison.Ordinal) || String.IsNullOrWhiteSpace(token.OAuthClientId))
+            return NotFound();
+
+        var results = await _tokenRepository.GetOAuthAccessTokensByUserIdAndClientIdAsync(CurrentUser.Id, token.OAuthClientId, o => o.ImmediateConsistency().PageLimit(MAXIMUM_SKIP));
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        foreach (var oauthToken in results.Documents.Where(t => t.OAuthType == OAuthTokenType.Access))
+        {
+            oauthToken.IsDisabled = true;
+            oauthToken.Refresh = null;
+            oauthToken.UpdatedUtc = utcNow;
+            await _tokenRepository.SaveAsync(oauthToken, o => o.ImmediateConsistency());
+        }
+
+        return NoContent();
     }
 
     /// <summary>
@@ -482,6 +535,59 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
 
     private ViewCurrentUser MapToViewCurrentUser(User user)
         => new(user, _intercomOptions) { AvatarUrl = GetUserAvatarUrl(user.Id, user.AvatarFileName) };
+
+    private bool IsActiveOAuthGrantToken(Token token)
+    {
+        if (token is { OAuthType: not OAuthTokenType.Access } || token.IsDisabled || token.IsSuspended || String.IsNullOrWhiteSpace(token.OAuthClientId))
+            return false;
+
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        bool hasActiveAccessToken = !token.ExpiresUtc.HasValue || token.ExpiresUtc.Value >= utcNow;
+        bool hasActiveRefreshToken = !String.IsNullOrEmpty(token.Refresh) && (!token.OAuthRefreshExpiresUtc.HasValue || token.OAuthRefreshExpiresUtc.Value >= utcNow);
+        return hasActiveAccessToken || hasActiveRefreshToken;
+    }
+
+    private static ViewOAuthGrant MapToOAuthGrant(IReadOnlyCollection<Token> tokens, OAuthApplication? application)
+    {
+        var latestToken = tokens
+            .OrderByDescending(t => t.UpdatedUtc)
+            .ThenByDescending(t => t.CreatedUtc)
+            .First();
+
+        return new ViewOAuthGrant
+        {
+            Id = latestToken.Id,
+            ClientId = latestToken.OAuthClientId!,
+            ApplicationName = application?.Name ?? latestToken.OAuthClientId!,
+            IsApplicationDisabled = application?.IsDisabled ?? false,
+            Scopes = tokens
+                .SelectMany(t => t.Scopes)
+                .Distinct(StringComparer.Ordinal)
+                .Order(StringComparer.Ordinal)
+                .ToArray(),
+            OrganizationIds = tokens
+                .SelectMany(t => t.OAuthOrganizationIds)
+                .Where(id => !String.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.Ordinal)
+                .Order(StringComparer.Ordinal)
+                .ToArray(),
+            Resources = tokens
+                .Where(t => !String.IsNullOrWhiteSpace(t.OAuthResource))
+                .GroupBy(t => t.OAuthResource!, StringComparer.Ordinal)
+                .Select(group => new ViewOAuthGrantResource
+                {
+                    Resource = group.Key,
+                    Scopes = group.SelectMany(t => t.Scopes).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray(),
+                    OrganizationIds = group.SelectMany(t => t.OAuthOrganizationIds).Where(id => !String.IsNullOrWhiteSpace(id)).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray()
+                })
+                .OrderBy(r => r.Resource, StringComparer.Ordinal)
+                .ToArray(),
+            CreatedUtc = tokens.Min(t => t.CreatedUtc),
+            UpdatedUtc = tokens.Max(t => t.UpdatedUtc),
+            ExpiresUtc = tokens.Select(t => t.ExpiresUtc).Max(),
+            RefreshExpiresUtc = tokens.Select(t => t.OAuthRefreshExpiresUtc).Max()
+        };
+    }
 
     private string? GetUserAvatarUrl(string id, string? fileName)
     {

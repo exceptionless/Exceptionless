@@ -7880,6 +7880,60 @@
         }
       }
     },
+    "/api/v2/users/me/oauth-grants": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Get current user OAuth grants",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ViewOAuthGrant"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/users/me/oauth-grants/{id}": {
+      "delete": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Revoke current user OAuth grant",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The representative OAuth access token id.",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
+          },
+          "404": {
+            "description": "The OAuth grant could not be found."
+          }
+        }
+      }
+    },
     "/api/v2/users/{id}": {
       "get": {
         "tags": [
@@ -10246,6 +10300,99 @@
           },
           "roles": {
             "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ViewOAuthGrant": {
+        "required": [
+          "id",
+          "client_id",
+          "application_name",
+          "scopes",
+          "organization_ids",
+          "resources",
+          "is_application_disabled",
+          "created_utc",
+          "updated_utc"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "client_id": {
+            "type": "string"
+          },
+          "application_name": {
+            "type": "string"
+          },
+          "is_application_disabled": {
+            "type": "boolean"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "organization_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "resources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ViewOAuthGrantResource"
+            }
+          },
+          "created_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_utc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "refresh_expires_utc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "ViewOAuthGrantResource": {
+        "required": [
+          "resource",
+          "scopes",
+          "organization_ids"
+        ],
+        "type": "object",
+        "properties": {
+          "resource": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "organization_ids": {
             "type": "array",
             "items": {
               "type": "string"

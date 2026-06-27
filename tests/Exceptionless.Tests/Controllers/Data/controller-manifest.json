@@ -2843,6 +2843,36 @@
   },
   {
     "Controller": "UserController",
+    "Action": "GetOAuthGrantsAsync",
+    "HttpMethod": "GET",
+    "Route": "/api/v2/users/me/oauth-grants",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "UserController",
+    "Action": "RevokeOAuthGrantAsync",
+    "HttpMethod": "DELETE",
+    "Route": "/api/v2/users/me/oauth-grants/{id:minlength(1)}",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "UserController",
     "Action": "UnverifyEmailAddressAsync",
     "HttpMethod": "POST",
     "Route": "/api/v2/users/unverify-email-address",
