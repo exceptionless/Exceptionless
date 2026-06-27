@@ -1,9 +1,12 @@
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
+using Exceptionless.Core;
+using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Exceptionless.Web.Extensions;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Authentication;
@@ -26,13 +29,17 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
 
     private readonly ITokenRepository _tokenRepository;
     private readonly IUserRepository _userRepository;
+    private readonly OAuthService _oauthService;
     private readonly TimeProvider _timeProvider;
+    private readonly AppOptions _appOptions;
 
-    public ApiKeyAuthenticationHandler(ITokenRepository tokenRepository, IUserRepository userRepository, IOptionsMonitor<ApiKeyAuthenticationOptions> options,
+    public ApiKeyAuthenticationHandler(ITokenRepository tokenRepository, IUserRepository userRepository, OAuthService oauthService, AppOptions appOptions, IOptionsMonitor<ApiKeyAuthenticationOptions> options,
         TimeProvider timeProvider, ILoggerFactory logger, UrlEncoder encoder) : base(options, logger, encoder)
     {
         _tokenRepository = tokenRepository;
         _userRepository = userRepository;
+        _oauthService = oauthService;
+        _appOptions = appOptions;
         _timeProvider = timeProvider;
     }
 
@@ -43,11 +50,13 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         if (!String.IsNullOrEmpty(authHeaderValue) && !AuthenticationHeaderValue.TryParse(authHeaderValue, out authHeader))
             return AuthenticateResult.Fail("Unable to parse header");
 
-        string? scheme = authHeader?.Scheme.ToLower();
+        string? scheme = authHeader?.Scheme.ToLowerInvariant();
         string? token = null;
+        bool isAuthorizationHeaderToken = false;
         if (authHeader is not null && (scheme == BearerScheme || scheme == TokenScheme))
         {
             token = authHeader.Parameter;
+            isAuthorizationHeaderToken = true;
         }
         else if (authHeader is not null && scheme == BasicScheme)
         {
@@ -101,7 +110,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         var tokenRecord = await _tokenRepository.GetByIdAsync(token, o => o.Cache());
         if (tokenRecord is null)
         {
-            Logger.LogInformation("Token {Token} for {Path} not found", token, Request.Path);
+            Logger.LogInformation("Token for {Path} not found", Request.Path);
             return AuthenticateResult.Fail("Token is not valid");
         }
 
@@ -110,14 +119,26 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             if (Request.IsEventPost())
                 AppDiagnostics.PostsBlocked.Add(1);
 
-            Logger.LogInformation("Token {Token} is disabled or account is suspended for {Path}", token, Request.Path);
+            Logger.LogInformation("Token is disabled or account is suspended for {Path}", Request.Path);
             return AuthenticateResult.Fail("Token is not valid");
         }
 
         if (tokenRecord.ExpiresUtc.HasValue && tokenRecord.ExpiresUtc.Value < _timeProvider.GetUtcNow().UtcDateTime)
         {
-            Logger.LogInformation("Token {Token} for {Path} expired on {TokenExpiresUtc}", token, Request.Path, tokenRecord.ExpiresUtc.Value);
+            Logger.LogInformation("Token for {Path} expired on {TokenExpiresUtc}", Request.Path, tokenRecord.ExpiresUtc.Value);
             return AuthenticateResult.Fail("Token is not valid");
+        }
+
+        if (tokenRecord.OAuthType == OAuthTokenType.Access)
+        {
+            if (!isAuthorizationHeaderToken || scheme != BearerScheme)
+                return AuthenticateResult.Fail("OAuth tokens must be sent with the Authorization Bearer scheme");
+
+            if (!IsOAuthResourceValid(tokenRecord.OAuthResource))
+                return AuthenticateResult.Fail("Token resource is not valid");
+
+            if (String.IsNullOrEmpty(tokenRecord.OAuthClientId) || await _oauthService.GetClientAsync(tokenRecord.OAuthClientId) is null)
+                return AuthenticateResult.Fail("OAuth client is not valid");
         }
 
         if (!String.IsNullOrEmpty(tokenRecord.UserId))
@@ -125,7 +146,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             var user = await _userRepository.GetByIdAsync(tokenRecord.UserId, o => o.Cache());
             if (user is null)
             {
-                Logger.LogInformation("Could not find user for token {Token} with user {UserId} for {Path}", token, tokenRecord.UserId, Request.Path);
+                Logger.LogInformation("Could not find user {UserId} for token on {Path}", tokenRecord.UserId, Request.Path);
                 return AuthenticateResult.Fail("Token is not valid");
             }
 
@@ -133,6 +154,17 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         }
 
         return AuthenticateResult.Success(CreateTokenAuthenticationTicket(tokenRecord));
+    }
+
+    protected override async Task HandleChallengeAsync(AuthenticationProperties properties)
+    {
+        await base.HandleChallengeAsync(properties);
+
+        if (Request.Path.StartsWithSegments("/mcp"))
+        {
+            string origin = GetCanonicalOrigin();
+            Response.Headers.WWWAuthenticate = $"Bearer resource_metadata=\"{origin}/.well-known/oauth-protected-resource\"";
+        }
     }
 
     private AuthenticationTicket CreateUserAuthenticationTicket(User user, Token? token = null)
@@ -157,6 +189,34 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             ExpiresUtc = token?.ExpiresUtc ?? utcNow.AddHours(12),
             IssuedUtc = token?.CreatedUtc ?? utcNow
         };
+    }
+
+    private bool IsOAuthResourceValid(string? resource)
+    {
+        if (String.IsNullOrWhiteSpace(resource) || !Uri.TryCreate(resource, UriKind.Absolute, out var resourceUri))
+            return false;
+
+        if (!String.IsNullOrEmpty(resourceUri.Query) || !String.IsNullOrEmpty(resourceUri.Fragment))
+            return false;
+
+        var expectedResourceUri = new Uri($"{GetCanonicalOrigin()}/mcp");
+        int resourcePort = resourceUri.IsDefaultPort ? GetDefaultPort(resourceUri.Scheme) : resourceUri.Port;
+        int expectedResourcePort = expectedResourceUri.IsDefaultPort ? GetDefaultPort(expectedResourceUri.Scheme) : expectedResourceUri.Port;
+        return String.Equals(resourceUri.Scheme, expectedResourceUri.Scheme, StringComparison.OrdinalIgnoreCase)
+            && String.Equals(resourceUri.Host, expectedResourceUri.Host, StringComparison.OrdinalIgnoreCase)
+            && resourcePort == expectedResourcePort
+            && String.Equals(resourceUri.AbsolutePath.TrimEnd('/'), expectedResourceUri.AbsolutePath.TrimEnd('/'), StringComparison.Ordinal)
+            && Request.Path.StartsWithSegments(new PathString(expectedResourceUri.AbsolutePath), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string GetCanonicalOrigin()
+    {
+        return new Uri(_appOptions.BaseURL).GetLeftPart(UriPartial.Authority);
+    }
+
+    private static int GetDefaultPort(string scheme)
+    {
+        return String.Equals(scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase) ? 443 : 80;
     }
 }
 

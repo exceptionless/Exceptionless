@@ -58,6 +58,7 @@ tests/                         # C# tests and HTTP samples
 - Dogfood, browser automation, E2E, and API smoke tests must target local URLs only unless the user explicitly provides an external URL and asks to use it.
 - Never use production URLs such as `be.exceptionless.io` in scripts, tests, or browser automation.
 - If infrastructure is required, start or verify Aspire once. If it still blocks verification, report the exact blocker and command output instead of looping.
+- For bug reports, work on reproducing the reported behavior locally before attempting a fix. If reproduction is blocked, document the exact blocker and get confirmation before moving from diagnosis to implementation.
 
 - Use `npm ci` (not `npm install`)
 - Never commit secrets — use environment variables
@@ -93,6 +94,7 @@ tests/                         # C# tests and HTTP samples
 ## Pull Requests
 
 - Fill out the existing PR template when creating a PR.
+- Use `feature/` for feature branch names and `issue/` for bug fix or issue branch names; keep PR titles neutral and project-facing, and do not add `codex/`, `[codex]`, or other agent branding unless the user explicitly asks for it.
 - Keep descriptions concise: what changed, why, affected APIs/behaviors, verification, and breaking changes.
 - For dependency upgrades, review release notes/changelogs, identify breaking changes, search affected APIs, check security advisories, note release age, run the appropriate full test suite before push, and document the evidence in the PR.
 

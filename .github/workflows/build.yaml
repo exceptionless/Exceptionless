@@ -33,7 +33,7 @@ jobs:
     steps:
       - name: Resolve preview pull request
         id: pr
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             if (context.eventName === "repository_dispatch") {

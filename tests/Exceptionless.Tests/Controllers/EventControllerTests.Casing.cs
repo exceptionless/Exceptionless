@@ -1,10 +1,12 @@
 using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Jobs;
 using Foundatio.Repositories;
+using Foundatio.Serializer;
 using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
@@ -226,6 +228,53 @@ public partial class EventControllerTests
 
         Assert.IsType<string>(dateOnly);
         Assert.Equal("2026-01-15", dateOnly);
+    }
+
+    [Fact]
+    public async Task PostEvent_JsonStringKnownUserData_SavesTypedUserInfo()
+    {
+        // Arrange
+        var serializer = GetService<ITextSerializer>();
+        var recentDate = GetRecentDate();
+        string recentDateStr = FormatDate(recentDate);
+        string requestJson = $$"""
+        {
+            "type": "error",
+            "message": "Known data string",
+            "reference_id": "json-user-001",
+            "date": "{{recentDateStr}}",
+            "@user": "{\"identity\":\"user-123\",\"name\":null}",
+            "@error": {
+                "message": "Test exception",
+                "type": "System.Exception",
+                "stack_trace": []
+            }
+        }
+        """;
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content(requestJson, "application/json")
+            .StatusCodeShouldBeAccepted()
+        );
+
+        var job = GetService<EventPostsJob>();
+        await job.RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        // Assert
+        var events = await _eventRepository.GetAllAsync();
+        var ev = events.Documents.FirstOrDefault(e =>
+            String.Equals(e.ReferenceId, "json-user-001", StringComparison.OrdinalIgnoreCase));
+
+        Assert.NotNull(ev);
+        var userInfo = ev.GetUserIdentity(serializer, _logger);
+        Assert.NotNull(userInfo);
+        Assert.Equal("user-123", userInfo.Identity);
+        Assert.Null(userInfo.Name);
     }
 
     [Fact]

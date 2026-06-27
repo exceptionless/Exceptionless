@@ -1196,6 +1196,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [RequestBodyContentAttribute]
     [ConfigurationResponseFilter]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status413RequestEntityTooLarge)]
     public Task<IActionResult> PostV1Async(string? projectId = null, [FromHeader][UserAgent] string? userAgent = null)
     {
         return PostAsync(projectId, 1, userAgent);
@@ -1254,6 +1255,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [RequestBodyContentAttribute]
     [ConfigurationResponseFilter]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status413RequestEntityTooLarge)]
     public Task<IActionResult> PostV2Async([FromHeader][UserAgent] string? userAgent = null)
     {
         return PostAsync(null, 2, userAgent);
@@ -1313,6 +1315,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [RequestBodyContentAttribute]
     [ConfigurationResponseFilter]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status413RequestEntityTooLarge)]
     public Task<IActionResult> PostByProjectV2Async(string? projectId = null, [FromHeader][UserAgent] string? userAgent = null)
     {
         return PostAsync(projectId, 2, userAgent);
@@ -1354,7 +1357,11 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                 charSet = contentType.Charset.ToString();
             }
 
-            await _eventPostService.EnqueueAsync(new EventPost(_appOptions.EnableArchive)
+            Stream requestBody = _appOptions.MaximumEventPostSize > 0
+                ? new EventPostRequestBodyStream(Request.Body, _appOptions.MaximumEventPostSize)
+                : Request.Body;
+
+            var result = await _eventPostService.SaveAndEnqueueAsync(new EventPost(_appOptions.EnableArchive)
             {
                 ApiVersion = apiVersion,
                 CharSet = charSet,
@@ -1364,7 +1371,15 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                 OrganizationId = project.OrganizationId,
                 ProjectId = project.Id,
                 UserAgent = userAgent,
-            }, Request.Body);
+            }, requestBody, HttpContext.RequestAborted);
+
+            if (result.IsRejected)
+            {
+                if (result.RejectedStatusCode == StatusCodes.Status413RequestEntityTooLarge)
+                    await _usageService.IncrementTooBigAsync(project.OrganizationId, project.Id);
+
+                return StatusCode(result.RejectedStatusCode.GetValueOrDefault(StatusCodes.Status400BadRequest));
+            }
         }
         catch (Exception ex)
         {

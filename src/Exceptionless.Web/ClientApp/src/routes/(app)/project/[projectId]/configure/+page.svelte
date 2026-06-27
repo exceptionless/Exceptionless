@@ -700,6 +700,15 @@ public partial class App : Application {
         </P>
 
         <Notification>
+            <NotificationTitle>Next, use AI to ask about this project</NotificationTitle>
+            <NotificationDescription>
+                <P>
+                    After your client is configured and your first events arrive,
+                    <A href={resolve('/(app)/account/ai-tools')}>set up AI Tools</A> to ask about top issues, 404s, event details, and stack triage.
+                </P>
+            </NotificationDescription>
+        </Notification>
+        <Notification>
             <NotificationTitle>Need more help?</NotificationTitle>
             <NotificationDescription>
                 <P>

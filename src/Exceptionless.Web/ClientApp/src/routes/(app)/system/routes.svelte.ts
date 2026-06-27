@@ -3,6 +3,7 @@ import Bell from '@lucide/svelte/icons/bell';
 import Bookmark from '@lucide/svelte/icons/bookmark';
 import Database from '@lucide/svelte/icons/database';
 import DatabaseZap from '@lucide/svelte/icons/database-zap';
+import KeyRound from '@lucide/svelte/icons/key-round';
 import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
 import Play from '@lucide/svelte/icons/play';
 
@@ -44,6 +45,13 @@ export function routes(): NavigationItem[] {
             icon: Bookmark,
             show: (context) => context.user?.roles?.includes('global') ?? false,
             title: 'Saved Views'
+        },
+        {
+            group: 'System',
+            href: resolve('/(app)/system/oauth-applications'),
+            icon: KeyRound,
+            show: (context) => context.user?.roles?.includes('global') ?? false,
+            title: 'OAuth Apps'
         },
         {
             group: 'System',

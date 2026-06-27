@@ -25,7 +25,7 @@ export type QueryMeta = FetchClientResponse<unknown>['meta'];
 export interface TableConfiguration<TData extends RowData, TPaginationStrategy extends PaginationStrategy = PaginationStrategy> {
     columnPersistenceKey: string;
     columns: ColumnDef<StockFeatures, TData, unknown>[];
-    configureOptions?: (options: TableOptions<StockFeatures, TData>) => TableOptions<StockFeatures, TData>;
+    configureOptions?: (options: TableOptions<StockFeatures, TData>) => TableOptions<StockFeatures, TData> | void;
     defaultColumnOrder?: ColumnOrderState;
     defaultColumnVisibility?: ColumnVisibilityState;
     paginationStrategy: TPaginationStrategy;
@@ -238,8 +238,7 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
         }
     });
 
-    const configureOptions = configuration.configureOptions ?? ((options) => options);
-    return configureOptions({
+    const tableOptions: TableOptions<StockFeatures, TData> = {
         _features: stockFeatures,
         _rowModels: { coreRowModel: createCoreRowModel<StockFeatures, TData>() },
         get columns() {
@@ -295,7 +294,9 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
                 return sorting();
             }
         }
-    });
+    };
+
+    return resolveConfiguredTableOptions(tableOptions, configuration.configureOptions?.(tableOptions));
 }
 
 export function isTableEmpty<TData extends RowData>(table: Table<StockFeatures, TData>): boolean {
@@ -344,6 +345,32 @@ export function removeTableSelection<TData extends RowData>(table: Table<StockFe
     }
 
     return false;
+}
+
+export function resolveConfiguredTableOptions<TData extends RowData>(
+    baseOptions: TableOptions<StockFeatures, TData>,
+    configuredOptions: TableOptions<StockFeatures, TData> | void
+): TableOptions<StockFeatures, TData> {
+    if (!configuredOptions || configuredOptions === baseOptions) {
+        return baseOptions;
+    }
+
+    for (const key of Reflect.ownKeys(configuredOptions)) {
+        const baseDescriptor = Object.getOwnPropertyDescriptor(baseOptions, key);
+        const configuredDescriptor = Object.getOwnPropertyDescriptor(configuredOptions, key);
+
+        if (!configuredDescriptor) {
+            continue;
+        }
+
+        if (baseDescriptor && (baseDescriptor.get || baseDescriptor.set) && 'value' in configuredDescriptor) {
+            continue;
+        }
+
+        Object.defineProperty(baseOptions, key, configuredDescriptor);
+    }
+
+    return baseOptions;
 }
 
 export function resolvePageCount(

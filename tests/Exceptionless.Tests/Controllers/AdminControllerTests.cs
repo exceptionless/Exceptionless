@@ -5,6 +5,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
+using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models.Admin;
 using Foundatio.Jobs;
 using Foundatio.Queues;
@@ -543,6 +544,33 @@ public class AdminControllerTests : IntegrationTestsBase
         return SendRequestAsync(r => r
             .AppendPaths("admin", "elasticsearch", "snapshots")
             .StatusCodeShouldBeUnauthorized());
+    }
+
+    [Fact]
+    public void FormatSnapshotDuration_WhenDurationInMillisIsPresent_ReturnsCompactDuration()
+    {
+        // Arrange
+        var durationInMillis = TimeSpan.FromMilliseconds(7416);
+
+        // Act
+        var duration = AdminController.FormatSnapshotDuration(null, durationInMillis, null, null);
+
+        // Assert
+        Assert.Equal("7.4s", duration);
+    }
+
+    [Fact]
+    public void FormatSnapshotDuration_WhenTypedDurationIsMissing_FallsBackToStartAndEndTime()
+    {
+        // Arrange
+        var startTime = new DateTime(2026, 6, 22, 13, 59, 59, 962, DateTimeKind.Utc);
+        var endTime = new DateTime(2026, 6, 22, 14, 0, 7, 378, DateTimeKind.Utc);
+
+        // Act
+        var duration = AdminController.FormatSnapshotDuration(null, null, startTime, endTime);
+
+        // Assert
+        Assert.Equal("7.4s", duration);
     }
 
     [Fact]

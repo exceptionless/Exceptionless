@@ -21,7 +21,7 @@ jobs:
     steps:
       - name: Prepare Preview
         id: preview
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const owner = context.repo.owner;
@@ -136,7 +136,7 @@ jobs:
 
       - name: Dispatch Preview
         if: ${{ steps.preview.outputs.pr-number != '' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           PR_NUMBER: ${{ steps.preview.outputs.pr-number }}
           HEAD_REF: ${{ steps.preview.outputs.head-ref }}

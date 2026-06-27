@@ -18,6 +18,7 @@
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
+    import Bot from '@lucide/svelte/icons/bot';
     import Database from '@lucide/svelte/icons/database';
     import Stacks from '@lucide/svelte/icons/layers';
     import NotificationSettings from '@lucide/svelte/icons/mail';
@@ -131,7 +132,6 @@
 
 <div class="space-y-6">
     <Muted>General project settings</Muted>
-
     <form
         onsubmit={(e) => {
             e.preventDefault();
@@ -178,6 +178,9 @@
             </Button>
             <Button variant="secondary" href={`${resolve('/(app)/account/notifications')}?project=${projectId}`}>
                 <NotificationSettings class="mr-2 size-4" /> Notifications
+            </Button>
+            <Button variant="success" href={resolve('/(app)/account/ai-tools')}>
+                <Bot class="mr-2 size-4" /> Set Up AI Tools
             </Button>
             <Button variant="secondary" onclick={generateProjectSampleData} disabled={generateSampleDataMutation.isPending}>
                 {#if generateSampleDataMutation.isPending}

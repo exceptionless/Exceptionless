@@ -16,6 +16,7 @@
     import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
     import Eye from '@lucide/svelte/icons/eye';
     import EyeOff from '@lucide/svelte/icons/eye-off';
+    import Folder from '@lucide/svelte/icons/folder';
     import Plus from '@lucide/svelte/icons/plus';
     import Settings from '@lucide/svelte/icons/settings';
     import UserRoundSearch from '@lucide/svelte/icons/user-round-search';
@@ -192,6 +193,12 @@
                                 <span class="text-muted-foreground font-medium">Manage Organization</span>
                             </DropdownMenu.Item>
                         {/if}
+                        <DropdownMenu.Item onSelect={() => void navigateTo(resolve('/(app)/project/list'))}>
+                            <div class="bg-background flex size-6 items-center justify-center rounded-md border">
+                                <Folder class="size-4" aria-hidden="true" />
+                            </div>
+                            <span class="text-muted-foreground font-medium">Projects</span>
+                        </DropdownMenu.Item>
                         <DropdownMenu.Item onSelect={() => void navigateTo(resolve('/(app)/organization/add'))}>
                             <div class="bg-background flex size-6 items-center justify-center rounded-md border">
                                 <Plus class="size-4" aria-hidden="true" />
