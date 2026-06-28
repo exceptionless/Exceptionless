@@ -8025,7 +8025,7 @@
           {
             "name": "id",
             "in": "path",
-            "description": "The representative OAuth access token id.",
+            "description": "The OAuth grant identifier.",
             "required": true,
             "schema": {
               "minLength": 1,
