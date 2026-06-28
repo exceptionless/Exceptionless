@@ -671,13 +671,21 @@ function updateOrganizationCache(queryClient: QueryClient, id: string | undefine
     });
 }
 
-function updateOrganizationQueryData(
-    queryClient: ReturnType<typeof useQueryClient>,
-    id: string | undefined,
-    updater: (organization: ViewOrganization) => ViewOrganization
-) {
-    // Keep both cached variants in sync because the same organization can be loaded with or without stats mode.
+function updateOrganizationQueryData(queryClient: QueryClient, id: string | undefined, updater: (organization: ViewOrganization) => ViewOrganization) {
     for (const mode of [undefined, 'stats'] as const) {
         queryClient.setQueryData<undefined | ViewOrganization>(queryKeys.id(id, mode), (organization) => (organization ? updater(organization) : organization));
     }
+
+    queryClient.setQueriesData<FetchClientResponse<ViewOrganization[]> | undefined>({ queryKey: queryKeys.type }, (response) => {
+        if (!Array.isArray(response?.data) || !response.data.some((organization) => organization.id === id)) {
+            return response;
+        }
+
+        return {
+            ...response,
+            data: response.data.map((organization) => {
+                return organization.id === id ? updater(organization) : organization;
+            })
+        };
+    });
 }

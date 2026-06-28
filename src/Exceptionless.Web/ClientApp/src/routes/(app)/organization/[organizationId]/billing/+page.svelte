@@ -1,10 +1,12 @@
 <script lang="ts">
     import { resolve } from '$app/paths';
+    import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
     import DateTime from '$comp/formatters/date-time.svelte';
-    import { A, H4, Large, Muted } from '$comp/typography';
+    import { A, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
+    import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
@@ -17,19 +19,30 @@
         normalizeOrganizationBillingInformationValue,
         organizationBillingInformationDataKeys
     } from '$features/organizations/billing-information';
-    import { organization } from '$features/organizations/context.svelte';
+    import { type OrganizationBillingInformationFormData, OrganizationBillingInformationSchema } from '$features/organizations/schemas';
+    import { ariaInvalid, getFormErrorMessages, getProblemMessage, mapFieldErrors } from '$features/shared/validation';
     import GlobalUser from '$features/users/components/global-user.svelte';
     import CreditCard from '@lucide/svelte/icons/credit-card';
     import File from '@lucide/svelte/icons/file';
     import MoreHorizontal from '@lucide/svelte/icons/more-horizontal';
+    import { createForm } from '@tanstack/svelte-form';
     import { queryParamsState } from 'kit-query-params';
+    import { onDestroy } from 'svelte';
     import { toast } from 'svelte-sonner';
     import { debounce } from 'throttle-debounce';
 
+    const billingInformationFields = [
+        { key: organizationBillingInformationDataKeys.name, name: 'name' },
+        { key: organizationBillingInformationDataKeys.address, name: 'address' },
+        { key: organizationBillingInformationDataKeys.vatNumber, name: 'vatNumber' },
+        { key: organizationBillingInformationDataKeys.vatId, name: 'vatId' }
+    ] as const;
+
+    const organizationId = $derived(page.params.organizationId || '');
     const organizationQuery = getOrganizationQuery({
         route: {
             get id() {
-                return organization.current;
+                return organizationId;
             }
         }
     });
@@ -37,7 +50,7 @@
     const invoicesQuery = getInvoicesQuery({
         route: {
             get organizationId() {
-                return organization.current!;
+                return organizationId;
             }
         }
     });
@@ -45,7 +58,7 @@
     const updateOrganizationData = postOrganizationData({
         route: {
             get id() {
-                return organization.current;
+                return organizationId;
             }
         }
     });
@@ -53,7 +66,7 @@
     const removeOrganizationData = deleteOrganizationData({
         route: {
             get id() {
-                return organization.current;
+                return organizationId;
             }
         }
     });
@@ -68,16 +81,55 @@
     });
 
     let changePlanDialogOpen = $state(!!params.changePlan);
-    let currentToastId = $state<number | string>();
-    let billingName = $state('');
-    let billingAddress = $state('');
-    let billingVatNumber = $state('');
-    let billingVatId = $state('');
+    let toastId = $state<number | string>();
 
-    const billingNameIsDirty = $derived(billingName !== billingInformation.name);
-    const billingAddressIsDirty = $derived(billingAddress !== billingInformation.address);
-    const billingVatNumberIsDirty = $derived(billingVatNumber !== billingInformation.vatNumber);
-    const billingVatIdIsDirty = $derived(billingVatId !== billingInformation.vatId);
+    const form = createForm(() => ({
+        defaultValues: { ...billingInformation } as OrganizationBillingInformationFormData,
+        validators: {
+            onSubmit: OrganizationBillingInformationSchema,
+            onSubmitAsync: async ({ value }) => {
+                if (!organizationId) {
+                    return { form: 'Organization ID is required.' };
+                }
+
+                const currentBillingInformation = getOrganizationBillingInformation(organizationQuery.data);
+                const changedFields = billingInformationFields.filter((field) => value[field.name] !== currentBillingInformation[field.name]);
+                if (changedFields.length === 0) {
+                    return null;
+                }
+
+                toast.dismiss(toastId);
+
+                try {
+                    await Promise.all(
+                        changedFields.map((field) => {
+                            const normalizedValue = normalizeOrganizationBillingInformationValue(value[field.name]);
+                            if (normalizedValue) {
+                                return updateOrganizationData.mutateAsync({ key: field.key, value: normalizedValue });
+                            }
+
+                            return removeOrganizationData.mutateAsync({ key: field.key });
+                        })
+                    );
+
+                    toastId = toast.success('Successfully updated billing information.');
+                    return null;
+                } catch (error: unknown) {
+                    const message = getProblemMessage(error, 'Please try again.');
+                    toastId = toast.error(`Error saving billing information. ${message}`);
+                    return { form: `Error saving billing information. ${message}` };
+                }
+            }
+        }
+    }));
+
+    const debouncedFormSubmit = debounce(1000, (targetOrganizationId: string) => {
+        if (targetOrganizationId === organizationId) {
+            void form.handleSubmit();
+        }
+    });
+
+    onDestroy(() => debouncedFormSubmit.cancel());
 
     function handleChangePlan() {
         changePlanDialogOpen = true;
@@ -96,114 +148,123 @@
     function handleViewStripeInvoice(invoiceId: string) {
         window.open(`https://manage.stripe.com/invoices/in_${encodeURIComponent(invoiceId)}`, '_blank');
     }
-
-    async function updateOrRemoveOrganizationBillingInformation(key: string, value: string, label: string) {
-        toast.dismiss(currentToastId);
-
-        try {
-            const normalizedValue = normalizeOrganizationBillingInformationValue(value);
-            if (normalizedValue) {
-                await updateOrganizationData.mutateAsync({ key, value: normalizedValue });
-            } else {
-                await removeOrganizationData.mutateAsync({ key });
-            }
-
-            currentToastId = toast.success(`Successfully updated ${label}.`);
-        } catch {
-            currentToastId = toast.error(`Error updating ${label}. Please try again.`);
-        }
-    }
-
-    async function saveBillingName() {
-        if (!billingNameIsDirty) {
-            return;
-        }
-
-        await updateOrRemoveOrganizationBillingInformation(organizationBillingInformationDataKeys.name, billingName, 'billing name');
-    }
-
-    async function saveBillingAddress() {
-        if (!billingAddressIsDirty) {
-            return;
-        }
-
-        await updateOrRemoveOrganizationBillingInformation(organizationBillingInformationDataKeys.address, billingAddress, 'billing address');
-    }
-
-    async function saveBillingVatNumber() {
-        if (!billingVatNumberIsDirty) {
-            return;
-        }
-
-        await updateOrRemoveOrganizationBillingInformation(organizationBillingInformationDataKeys.vatNumber, billingVatNumber, 'VAT number');
-    }
-
-    async function saveBillingVatId() {
-        if (!billingVatIdIsDirty) {
-            return;
-        }
-
-        await updateOrRemoveOrganizationBillingInformation(organizationBillingInformationDataKeys.vatId, billingVatId, 'VAT ID');
-    }
-
-    const debouncedSaveBillingName = debounce(500, saveBillingName);
-    const debouncedSaveBillingAddress = debounce(500, saveBillingAddress);
-    const debouncedSaveBillingVatNumber = debounce(500, saveBillingVatNumber);
-    const debouncedSaveBillingVatId = debounce(500, saveBillingVatId);
-
-    $effect(() => {
-        if (organizationQuery.dataUpdatedAt) {
-            billingName = billingInformation.name;
-            billingAddress = billingInformation.address;
-            billingVatNumber = billingInformation.vatNumber;
-            billingVatId = billingInformation.vatId;
-        }
-    });
 </script>
 
-<div class="space-y-6">
+<div class="flex flex-col gap-6">
+    <Muted>Billing information and invoices</Muted>
+
     {#if organizationQuery.isLoading}
-        <div class="space-y-4">
+        <div class="flex flex-col gap-4">
             <Skeleton class="h-12 w-3/4" />
             <Skeleton class="h-50 w-full" />
         </div>
     {:else if organizationQuery.error}
         <ErrorMessage message="Unable to load organization data." />
     {:else}
-        <div class="space-y-6">
-            <section class="space-y-4">
-                <div class="space-y-2">
-                    <H4>Billing information</H4>
-                    <Muted>Add the details that should appear on billing documents for this organization.</Muted>
-                </div>
+        <div class="flex flex-col gap-6">
+            <form
+                onsubmit={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    void form.handleSubmit();
+                }}
+            >
+                <form.Subscribe selector={(state) => state.errors}>
+                    {#snippet children(errors)}
+                        <ErrorMessage message={getFormErrorMessages(errors)}></ErrorMessage>
+                    {/snippet}
+                </form.Subscribe>
 
-                <div class="grid gap-4 md:grid-cols-2">
-                    <div class="space-y-2">
-                        <Large>Organization name</Large>
-                        <Input type="text" placeholder="Example: Acme, Inc." bind:value={billingName} oninput={debouncedSaveBillingName} />
-                    </div>
+                <Field.Group class="grid gap-5 md:grid-cols-2">
+                    <form.Field name="name">
+                        {#snippet children(field)}
+                            <Field.Field data-invalid={ariaInvalid(field)}>
+                                <Field.Label for={field.name}>Billing name</Field.Label>
+                                <Input
+                                    id={field.name}
+                                    name={field.name}
+                                    type="text"
+                                    placeholder="Acme, Inc."
+                                    value={field.state.value}
+                                    onblur={field.handleBlur}
+                                    oninput={(e) => {
+                                        field.handleChange(e.currentTarget.value);
+                                        debouncedFormSubmit(organizationId);
+                                    }}
+                                    aria-invalid={ariaInvalid(field)}
+                                />
+                                <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                            </Field.Field>
+                        {/snippet}
+                    </form.Field>
 
-                    <div class="space-y-2">
-                        <Large>VAT ID</Large>
-                        <Input type="text" placeholder="Example: DE123456789" bind:value={billingVatId} oninput={debouncedSaveBillingVatId} />
-                    </div>
+                    <form.Field name="vatId">
+                        {#snippet children(field)}
+                            <Field.Field data-invalid={ariaInvalid(field)}>
+                                <Field.Label for={field.name}>VAT ID</Field.Label>
+                                <Input
+                                    id={field.name}
+                                    name={field.name}
+                                    type="text"
+                                    placeholder="DE123456789"
+                                    value={field.state.value}
+                                    onblur={field.handleBlur}
+                                    oninput={(e) => {
+                                        field.handleChange(e.currentTarget.value);
+                                        debouncedFormSubmit(organizationId);
+                                    }}
+                                    aria-invalid={ariaInvalid(field)}
+                                />
+                                <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                            </Field.Field>
+                        {/snippet}
+                    </form.Field>
 
-                    <div class="space-y-2 md:col-span-2">
-                        <Large>Organization address</Large>
-                        <Textarea
-                            rows={4}
-                            placeholder="Example: 123 Main Street&#10;Anytown, ST 12345&#10;United States"
-                            bind:value={billingAddress}
-                            oninput={debouncedSaveBillingAddress}
-                        />
-                    </div>
+                    <form.Field name="address">
+                        {#snippet children(field)}
+                            <Field.Field data-invalid={ariaInvalid(field)} class="md:col-span-2">
+                                <Field.Label for={field.name}>Billing address</Field.Label>
+                                <Textarea
+                                    id={field.name}
+                                    name={field.name}
+                                    rows={4}
+                                    placeholder="123 Main Street&#10;Anytown, ST 12345&#10;United States"
+                                    value={field.state.value}
+                                    onblur={field.handleBlur}
+                                    oninput={(e) => {
+                                        field.handleChange(e.currentTarget.value);
+                                        debouncedFormSubmit(organizationId);
+                                    }}
+                                    aria-invalid={ariaInvalid(field)}
+                                />
+                                <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                            </Field.Field>
+                        {/snippet}
+                    </form.Field>
 
-                    <div class="space-y-2">
-                        <Large>VAT Number</Large>
-                        <Input type="text" placeholder="Example: 123456789" bind:value={billingVatNumber} oninput={debouncedSaveBillingVatNumber} />
-                    </div>
-                </div>
-            </section>
+                    <form.Field name="vatNumber">
+                        {#snippet children(field)}
+                            <Field.Field data-invalid={ariaInvalid(field)}>
+                                <Field.Label for={field.name}>VAT number</Field.Label>
+                                <Input
+                                    id={field.name}
+                                    name={field.name}
+                                    type="text"
+                                    placeholder="123456789"
+                                    value={field.state.value}
+                                    onblur={field.handleBlur}
+                                    oninput={(e) => {
+                                        field.handleChange(e.currentTarget.value);
+                                        debouncedFormSubmit(organizationId);
+                                    }}
+                                    aria-invalid={ariaInvalid(field)}
+                                />
+                                <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                            </Field.Field>
+                        {/snippet}
+                    </form.Field>
+                </Field.Group>
+            </form>
 
             <p>
                 You are currently on the
@@ -220,7 +281,7 @@
             </p>
 
             {#if invoicesQuery.isLoading}
-                <div class="space-y-2">
+                <div class="flex flex-col gap-2">
                     <Skeleton class="h-8 w-full" />
                     <Skeleton class="h-8 w-full" />
                     <Skeleton class="h-8 w-full" />
@@ -262,16 +323,18 @@
                                                     {/snippet}
                                                 </DropdownMenu.Trigger>
                                                 <DropdownMenu.Content align="end">
-                                                    <DropdownMenu.Item onclick={() => handleOpenInvoice(invoice.id)}>
-                                                        <File class="mr-2 size-4" />
-                                                        View Payment
-                                                    </DropdownMenu.Item>
-                                                    <GlobalUser>
-                                                        <DropdownMenu.Item onclick={() => handleViewStripeInvoice(invoice.id)}>
-                                                            <CreditCard class="mr-2 size-4" />
-                                                            View Stripe Invoice
+                                                    <DropdownMenu.Group>
+                                                        <DropdownMenu.Item onclick={() => handleOpenInvoice(invoice.id)}>
+                                                            <File class="mr-2 size-4" />
+                                                            View Payment
                                                         </DropdownMenu.Item>
-                                                    </GlobalUser>
+                                                        <GlobalUser>
+                                                            <DropdownMenu.Item onclick={() => handleViewStripeInvoice(invoice.id)}>
+                                                                <CreditCard class="mr-2 size-4" />
+                                                                View Stripe Invoice
+                                                            </DropdownMenu.Item>
+                                                        </GlobalUser>
+                                                    </DropdownMenu.Group>
                                                 </DropdownMenu.Content>
                                             </DropdownMenu.Root>
                                         </Table.Cell>
