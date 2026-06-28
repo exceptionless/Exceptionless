@@ -29,10 +29,10 @@ public static class JsonNodeFormattingExtensions
             {
                 if (prop.Value is JsonValue val && val.GetValueKind() == JsonValueKind.String)
                 {
-                    var strValue = val.GetValue<string>();
+                    string? strValue = val.GetValue<string>();
                     if (strValue is not null && IsIso8601DateWithZ(strValue))
                     {
-                        var normalized = NormalizeDateString(strValue);
+                        string normalized = NormalizeDateString(strValue);
                         if (normalized != strValue)
                             propertiesToUpdate.Add((prop.Key, normalized));
                     }
@@ -52,10 +52,10 @@ public static class JsonNodeFormattingExtensions
             {
                 if (arr[i] is JsonValue val && val.GetValueKind() == JsonValueKind.String)
                 {
-                    var strValue = val.GetValue<string>();
+                    string? strValue = val.GetValue<string>();
                     if (strValue is not null && IsIso8601DateWithZ(strValue))
                     {
-                        var normalized = NormalizeDateString(strValue);
+                        string normalized = NormalizeDateString(strValue);
                         if (normalized != strValue)
                             arr[i] = JsonValue.Create(normalized);
                     }

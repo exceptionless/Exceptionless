@@ -299,27 +299,35 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     [Fact]
     public async Task CountEventsAsync_GroupByVersionAndInterval_ReturnsGroupedTrend()
     {
-        const string referenceId = "mcp-count-events-version-trend";
-        await CreateDataAsync(d => d.Event().TestProject().ReferenceId(referenceId).Version("1.0.2").Message("MCP count event 1.0.2 trend"));
-        await CreateDataAsync(d => d.Event().TestProject().ReferenceId(referenceId).Version("1.0.3").Message("MCP count event 1.0.3 trend"));
-        await RefreshDataAsync();
-        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+        try
+        {
+            var now = TimeProvider.GetUtcNow();
+            TimeProvider.SetUtcNow(now);
+            const string referenceId = "mcp-count-events-version-trend";
+            await CreateDataAsync(d => d.Event().TestProject().ReferenceId(referenceId).Version("1.0.2").Date(now.AddDays(-1)).Message("MCP count event 1.0.2 trend"));
+            await CreateDataAsync(d => d.Event().TestProject().ReferenceId(referenceId).Version("1.0.3").Date(now.AddHours(-1)).Message("MCP count event 1.0.3 trend"));
+            await RefreshDataAsync();
+            var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
 
-        var result = await tools.CountEventsAsync(TestConstants.ProjectId, filter: $"reference:{referenceId}", last: "7d", interval: "1d", groupBy: "version");
-        var data = Data(result);
+            var result = await tools.CountEventsAsync(TestConstants.ProjectId, filter: $"reference:{referenceId}", last: "7d", interval: "1d", groupBy: "version");
+            var data = Data(result);
 
-        Assert.True(result.Ok);
-        Assert.Null(result.Error);
-        Assert.True(data.Events >= 2);
-        Assert.True(data.Occurrences >= 2);
-        Assert.Equal("version", data.GroupBy);
-        Assert.NotEmpty(data.Trend);
-        Assert.NotNull(data.Groups);
-        var groups = data.Groups!;
-        Assert.Contains(groups, g => g.Key == "1.0.2" && g.Trend.Count > 0);
-        Assert.Contains(groups, g => g.Key == "1.0.3" && g.Trend.Count > 0);
+            Assert.True(result.Ok);
+            Assert.Null(result.Error);
+            Assert.True(data.Events >= 2);
+            Assert.True(data.Occurrences >= 2);
+            Assert.Equal("version", data.GroupBy);
+            Assert.NotEmpty(data.Trend);
+            Assert.NotNull(data.Groups);
+            var groups = data.Groups!;
+            Assert.Contains(groups, g => g.Key == "1.0.2" && g.Trend.Count > 0);
+            Assert.Contains(groups, g => g.Key == "1.0.3" && g.Trend.Count > 0);
+        }
+        finally
+        {
+            TimeProvider.Restore();
+        }
     }
-
     [Fact]
     public async Task CountEventsAsync_InvalidGroupBy_ReturnsError()
     {

@@ -2,16 +2,16 @@ using System.Reflection;
 using Aspire.Hosting.JavaScript;
 using Microsoft.Extensions.Hosting;
 
-var scope = WorktreeScope.Resolve();
-var isScoped = !String.IsNullOrWhiteSpace(scope);
+string? scope = WorktreeScope.Resolve();
+bool isScoped = !String.IsNullOrWhiteSpace(scope);
 var worktreePorts = isScoped ? WorktreeScope.AssignFreePorts() : null;
 var builder = DistributedApplication.CreateBuilder(args);
-var servicesOnly = args.Any(arg => StringComparer.OrdinalIgnoreCase.Equals(arg, "--services-only") || StringComparer.OrdinalIgnoreCase.Equals(arg, "services-only"));
-var oldAppHttpPort = worktreePorts?.OldAppHttp ?? 7120;
-var oldAppPort = worktreePorts?.OldAppHttps ?? 7121;
-var oldAppLiveReloadPort = worktreePorts?.OldAppLiveReload ?? 35729;
-var oldAppAspNetCoreUrls = String.Concat("http://localhost:", oldAppHttpPort);
-var appPort = worktreePorts?.AppHttps ?? 7131;
+bool servicesOnly = args.Any(arg => StringComparer.OrdinalIgnoreCase.Equals(arg, "--services-only") || StringComparer.OrdinalIgnoreCase.Equals(arg, "services-only"));
+int oldAppHttpPort = worktreePorts?.OldAppHttp ?? 7120;
+int oldAppPort = worktreePorts?.OldAppHttps ?? 7121;
+int oldAppLiveReloadPort = worktreePorts?.OldAppLiveReload ?? 35729;
+string oldAppAspNetCoreUrls = String.Concat("http://localhost:", oldAppHttpPort);
+int appPort = worktreePorts?.AppHttps ?? 7131;
 const string SharedEmailConnectionString = "smtp://localhost:1025";
 
 var elastic = builder.AddElasticsearch("Elasticsearch", port: 9200)

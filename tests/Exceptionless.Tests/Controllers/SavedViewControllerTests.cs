@@ -1220,7 +1220,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
 
         await RefreshDataAsync();
 
-        var countBefore = await _savedViewRepository.CountByOrganizationIdAsync(SampleDataService.TEST_ORG_ID);
+        long countBefore = await _savedViewRepository.CountByOrganizationIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.True(countBefore >= 2);
 
         // Act
@@ -1231,7 +1231,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         await RefreshDataAsync();
 
         // Assert
-        var countAfter = await _savedViewRepository.CountByOrganizationIdAsync(SampleDataService.TEST_ORG_ID);
+        long countAfter = await _savedViewRepository.CountByOrganizationIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.Equal(0, countAfter);
     }
 
@@ -1266,7 +1266,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         await RefreshDataAsync();
 
         // Act
-        var removed = await _organizationService.RemoveUserSavedViewsAsync(SampleDataService.TEST_ORG_ID, testUser.Id);
+        long removed = await _organizationService.RemoveUserSavedViewsAsync(SampleDataService.TEST_ORG_ID, testUser.Id);
         await RefreshDataAsync();
 
         // Assert
@@ -1781,6 +1781,28 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         );
     }
 
+    [Theory]
+    [InlineData("events")]
+    [InlineData("stream")]
+    public Task PostAsync_VersionColumnForEventViews_Succeeds(string viewType)
+    {
+        // Arrange & Act & Assert
+        return SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .Content(new NewSavedView
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Name = $"Valid {viewType} Version Column",
+                ViewType = viewType,
+                Columns = new Dictionary<string, bool> { ["summary"] = true, ["version"] = false },
+                ColumnOrder = ["summary", "version"]
+            })
+            .StatusCodeShouldBeCreated()
+        );
+    }
+
     [Fact]
     public Task PostAsync_InvalidColumnOrderKey_ReturnsUnprocessableEntity()
     {
@@ -2093,7 +2115,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         await RefreshDataAsync();
 
         // Act
-        var count = await _savedViewRepository.CountByOrganizationIdAsync(SampleDataService.TEST_ORG_ID);
+        long count = await _savedViewRepository.CountByOrganizationIdAsync(SampleDataService.TEST_ORG_ID);
 
         // Assert
         Assert.True(count >= 2);
@@ -2173,7 +2195,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         await RefreshDataAsync();
 
         // Act
-        var removed = await _savedViewRepository.RemovePrivateByUserIdAsync(SampleDataService.TEST_ORG_ID, testUser.Id);
+        long removed = await _savedViewRepository.RemovePrivateByUserIdAsync(SampleDataService.TEST_ORG_ID, testUser.Id);
         await RefreshDataAsync();
 
         // Assert

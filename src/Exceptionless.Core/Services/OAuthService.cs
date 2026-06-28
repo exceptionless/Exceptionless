@@ -58,6 +58,14 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         AuthorizationRoles.OfflineAccess
     ];
 
+    public static readonly IReadOnlyCollection<string> DefaultScopes =
+    [
+        AuthorizationRoles.McpRead,
+        AuthorizationRoles.ProjectsRead,
+        AuthorizationRoles.StacksRead,
+        AuthorizationRoles.EventsRead
+    ];
+
     private const string AuthorizationCodeCachePrefix = "oauth:code:";
     private const string RefreshTokenLockPrefix = "oauth:refresh:";
     private const string AccessTokenClientValidityCachePrefix = "oauth:client-valid:";
@@ -88,7 +96,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (request.RedirectUris is null || request.RedirectUris.Length == 0)
             return OAuthClientRegistrationResult.Invalid("invalid_redirect_uri", "At least one redirect_uri is required.");
 
-        var redirectUris = request.RedirectUris
+        string[] redirectUris = request.RedirectUris
             .Where(uri => !String.IsNullOrWhiteSpace(uri))
             .Select(uri => uri.Trim())
             .Distinct(StringComparer.Ordinal)
@@ -99,7 +107,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
         var scopes = NormalizeScopes(request.Scope);
         if (scopes.Count == 0)
-            return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", "At least one scope is required.");
+            scopes = DefaultScopes;
 
         if (scopes.Any(s => !SupportedScopes.Contains(s, StringComparer.Ordinal)))
             return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", "One or more scopes are not supported.");
@@ -240,7 +248,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!String.IsNullOrWhiteSpace(metadata.TokenEndpointAuthMethod) && !String.Equals(metadata.TokenEndpointAuthMethod, "none", StringComparison.Ordinal))
             return false;
 
-        var redirectUris = metadata.RedirectUris?
+        string[] redirectUris = metadata.RedirectUris?
             .Where(OAuthApplication.IsValidRedirectUri)
             .Distinct(StringComparer.Ordinal)
             .Take(20)
@@ -250,10 +258,9 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             return false;
 
         var metadataScopes = NormalizeScopes(metadata.Scope);
-        if (metadataScopes.Count == 0)
-            return false;
-
-        var scopes = metadataScopes.Where(s => SupportedScopes.Contains(s, StringComparer.Ordinal)).Distinct(StringComparer.Ordinal).ToArray();
+        string[] scopes = metadataScopes.Count > 0
+            ? metadataScopes.Where(s => SupportedScopes.Contains(s, StringComparer.Ordinal)).Distinct(StringComparer.Ordinal).ToArray()
+            : DefaultScopes.ToArray();
 
         if (scopes.Length == 0)
             return false;
@@ -399,7 +406,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!IsValidCodeVerifier(request.CodeVerifier))
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Invalid PKCE verifier.");
 
-        var cacheKey = GetAuthorizationCodeCacheKey(request.Code);
+        string cacheKey = GetAuthorizationCodeCacheKey(request.Code);
         var codeResult = await cacheClient.GetAsync<OAuthAuthorizationCode>(cacheKey);
         if (!codeResult.HasValue)
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Authorization code is invalid or expired.");
@@ -692,7 +699,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
     public static string CreateCodeChallenge(string verifier)
     {
-        var bytes = SHA256.HashData(Encoding.ASCII.GetBytes(verifier));
+        byte[] bytes = SHA256.HashData(Encoding.ASCII.GetBytes(verifier));
         return Base64UrlEncode(bytes);
     }
 

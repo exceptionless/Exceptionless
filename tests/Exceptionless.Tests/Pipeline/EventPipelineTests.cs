@@ -1331,9 +1331,9 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
         var targetInfo = error.Data?.GetValue<SettingsDictionary>(Error.KnownDataKeys.TargetInfo, _serializer);
         Assert.NotNull(targetInfo);
-        Assert.True(targetInfo.TryGetValue("ExceptionType", out var exceptionType), "@target should contain ExceptionType");
+        Assert.True(targetInfo.TryGetValue("ExceptionType", out string? exceptionType), "@target should contain ExceptionType");
         Assert.Equal("System.InvalidOperationException", exceptionType);
-        Assert.True(targetInfo.TryGetValue("Method", out var method), "@target should contain Method");
+        Assert.True(targetInfo.TryGetValue("Method", out string? method), "@target should contain Method");
         Assert.Contains("TestService.DoWork", method);
 
         // Assert - is_signature_target should be set on stack frames (FINDING-3b)
@@ -1373,7 +1373,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
         var targetInfo = error.Data?.GetValue<SettingsDictionary>(Error.KnownDataKeys.TargetInfo, _serializer);
         Assert.NotNull(targetInfo);
-        Assert.True(targetInfo.TryGetValue("ExceptionType", out var exceptionType), "@target should contain ExceptionType");
+        Assert.True(targetInfo.TryGetValue("ExceptionType", out string? exceptionType), "@target should contain ExceptionType");
         Assert.Equal("System.ArgumentNullException", exceptionType);
     }
 

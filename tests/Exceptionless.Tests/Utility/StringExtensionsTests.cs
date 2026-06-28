@@ -12,7 +12,7 @@ public class StringExtensionsTests : TestWithLoggingBase
     public void AnyWildcardMatches_EndsWithWildcard_MatchesPrefix()
     {
         // Arrange
-        var patterns = new[] { "hello*" };
+        string[] patterns = new[] { "hello*" };
 
         // Act
         bool result = "hello world".AnyWildcardMatches(patterns);
@@ -25,7 +25,7 @@ public class StringExtensionsTests : TestWithLoggingBase
     public void AnyWildcardMatches_ExactPattern_MatchesExactValue()
     {
         // Arrange
-        var patterns = new[] { "hello" };
+        string[] patterns = new[] { "hello" };
 
         // Act
         bool result = "hello".AnyWildcardMatches(patterns);
@@ -38,7 +38,7 @@ public class StringExtensionsTests : TestWithLoggingBase
     public void AnyWildcardMatches_ExactPattern_DoesNotMatchDifferentValue()
     {
         // Arrange
-        var patterns = new[] { "hello" };
+        string[] patterns = new[] { "hello" };
 
         // Act
         bool result = "world".AnyWildcardMatches(patterns);
@@ -51,7 +51,7 @@ public class StringExtensionsTests : TestWithLoggingBase
     public void AnyWildcardMatches_IgnoreCase_MatchesCaseInsensitive()
     {
         // Arrange
-        var patterns = new[] { "HELLO*" };
+        string[] patterns = new[] { "HELLO*" };
 
         // Act
         bool result = "hello world".AnyWildcardMatches(patterns, ignoreCase: true);
@@ -64,7 +64,7 @@ public class StringExtensionsTests : TestWithLoggingBase
     public void AnyWildcardMatches_MultiplePatterns_MatchesAny()
     {
         // Arrange
-        var patterns = new[] { "foo*", "bar*" };
+        string[] patterns = new[] { "foo*", "bar*" };
 
         // Act
         bool result = "bar baz".AnyWildcardMatches(patterns);
@@ -77,7 +77,7 @@ public class StringExtensionsTests : TestWithLoggingBase
     public void AnyWildcardMatches_StartsWithWildcard_MatchesSuffix()
     {
         // Arrange
-        var patterns = new[] { "*world" };
+        string[] patterns = new[] { "*world" };
 
         // Act
         bool result = "hello world".AnyWildcardMatches(patterns);
@@ -90,7 +90,7 @@ public class StringExtensionsTests : TestWithLoggingBase
     public void AnyWildcardMatches_SurroundingWildcards_MatchesContains()
     {
         // Arrange
-        var patterns = new[] { "*llo wor*" };
+        string[] patterns = new[] { "*llo wor*" };
 
         // Act
         bool result = "hello world".AnyWildcardMatches(patterns);

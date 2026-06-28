@@ -50,7 +50,7 @@ public class RequiredPropertySchemaTransformer : IOpenApiSchemaTransformer
         foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
             // Use JsonTypeInfo to get the effective JSON property name (respects [JsonPropertyName] and naming policy)
-            var schemaPropertyName = JsonPropertyNameResolver.GetJsonPropertyName(context.JsonTypeInfo, property);
+            string? schemaPropertyName = JsonPropertyNameResolver.GetJsonPropertyName(context.JsonTypeInfo, property);
             if (schemaPropertyName is null)
                 continue;
 
@@ -70,7 +70,7 @@ public class RequiredPropertySchemaTransformer : IOpenApiSchemaTransformer
         }
 
         // Add required properties to schema
-        foreach (var propertyName in requiredProperties)
+        foreach (string propertyName in requiredProperties)
         {
             schema.Required.Add(propertyName);
         }

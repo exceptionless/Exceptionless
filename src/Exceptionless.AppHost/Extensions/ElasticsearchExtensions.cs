@@ -128,7 +128,7 @@ internal sealed class ElasticsearchConnectionHealthCheck(Func<string?> connectio
 {
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
-        var connectionString = connectionStringFactory();
+        string? connectionString = connectionStringFactory();
         if (string.IsNullOrEmpty(connectionString))
             return new HealthCheckResult(context.Registration.FailureStatus, "Connection string not available.");
 

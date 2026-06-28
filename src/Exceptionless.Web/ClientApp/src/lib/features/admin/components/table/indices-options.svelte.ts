@@ -2,8 +2,8 @@ import type { ElasticsearchIndexDetail } from '$features/admin/models';
 
 import Bytes from '$comp/formatters/bytes.svelte';
 import Number from '$comp/formatters/number.svelte';
-import { getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';
-import { type ColumnDef, createSortedRowModel, renderComponent, sortFns, type StockFeatures } from '@tanstack/svelte-table';
+import { getSharedTableOptions, type TableMemoryPagingParameters, withClientSortedRowModel } from '$features/shared/table.svelte';
+import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
 
 import HealthBadgeCell from './health-badge-cell.svelte';
 import UnassignedShardsCell from './unassigned-shards-cell.svelte';
@@ -87,8 +87,7 @@ export function getTableOptions(queryParameters: TableMemoryPagingParameters, ge
         },
         configureOptions: (options) => {
             return {
-                ...options,
-                _rowModels: { ...options._rowModels, sortedRowModel: createSortedRowModel(sortFns) },
+                ...withClientSortedRowModel(options),
                 initialState: { sorting: [{ desc: true, id: 'store_size_in_bytes' }] },
                 manualSorting: false
             };

@@ -115,7 +115,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RegisterAsync_WithoutScope_ReturnsBadRequest()
+    public async Task RegisterAsync_WithoutScope_DefaultsToReadOnlyScopes()
     {
         using var client = CreateHttpClient();
 
@@ -128,10 +128,24 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
             TokenEndpointAuthMethod = "none"
         }, TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
-        Assert.NotNull(error);
-        Assert.Equal("invalid_client_metadata", error.Error);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var registration = await DeserializeResponseAsync<OAuthClientRegistrationResponse>(response);
+        Assert.NotNull(registration);
+        Assert.Contains(AuthorizationRoles.McpRead, registration.Scope);
+        Assert.Contains(AuthorizationRoles.ProjectsRead, registration.Scope);
+        Assert.Contains(AuthorizationRoles.StacksRead, registration.Scope);
+        Assert.Contains(AuthorizationRoles.EventsRead, registration.Scope);
+        Assert.DoesNotContain(AuthorizationRoles.StacksWrite, registration.Scope);
+        Assert.DoesNotContain(AuthorizationRoles.OfflineAccess, registration.Scope);
+
+        var application = await _oauthApplicationRepository.GetByClientIdAsync(registration.ClientId, o => o.ImmediateConsistency());
+        Assert.NotNull(application);
+        Assert.Contains(AuthorizationRoles.McpRead, application.Scopes);
+        Assert.Contains(AuthorizationRoles.ProjectsRead, application.Scopes);
+        Assert.Contains(AuthorizationRoles.StacksRead, application.Scopes);
+        Assert.Contains(AuthorizationRoles.EventsRead, application.Scopes);
+        Assert.DoesNotContain(AuthorizationRoles.StacksWrite, application.Scopes);
+        Assert.DoesNotContain(AuthorizationRoles.OfflineAccess, application.Scopes);
     }
 
     [Fact]
@@ -508,20 +522,23 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task CompleteAuthorizeAsync_ClientMetadataDocumentWithoutScope_ReturnsBadRequest()
+    public async Task CompleteAuthorizeAsync_ClientMetadataDocumentWithoutScope_DefaultsToReadOnlyScopes()
     {
-        using var client = CreateHttpClient();
-        using var request = CreateAuthorizeJsonRequest(PkceVerifier, MetadataRedirectUri, clientId: MetadataNoScopeClientId, scope: AuthorizationRoles.McpRead);
-
-        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
-        Assert.NotNull(error);
-        Assert.Equal("invalid_client", error.Error);
+        await CreateAuthorizationCodeAsync(
+            PkceVerifier,
+            MetadataRedirectUri,
+            clientId: MetadataNoScopeClientId,
+            scope: String.Join(' ', OAuthService.DefaultScopes));
 
         var application = await _oauthApplicationRepository.GetByClientIdAsync(MetadataNoScopeClientId, o => o.ImmediateConsistency());
-        Assert.Null(application);
+
+        Assert.NotNull(application);
+        Assert.Contains(AuthorizationRoles.McpRead, application.Scopes);
+        Assert.Contains(AuthorizationRoles.ProjectsRead, application.Scopes);
+        Assert.Contains(AuthorizationRoles.StacksRead, application.Scopes);
+        Assert.Contains(AuthorizationRoles.EventsRead, application.Scopes);
+        Assert.DoesNotContain(AuthorizationRoles.StacksWrite, application.Scopes);
+        Assert.DoesNotContain(AuthorizationRoles.OfflineAccess, application.Scopes);
     }
 
     [Fact]
