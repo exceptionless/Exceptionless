@@ -3,11 +3,11 @@
     import { Muted } from '$comp/typography';
     import * as Tabs from '$comp/ui/tabs';
     import OAuthApplicationsManager from '$features/admin/components/oauth-applications-manager.svelte';
-    import AiToolsSetup from '$features/ai-tools/components/ai-tools-setup.svelte';
+    import McpSetup from '$features/mcp/components/mcp-setup.svelte';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
 
     const organizationId = $derived(page.params.organizationId || '');
-    let selectedTab = $state('ai-tools');
+    let selectedTab = $state('mcp');
     const organizationQuery = getOrganizationQuery({
         route: {
             get id() {
@@ -20,18 +20,18 @@
 <div class="space-y-6">
     <div class="space-y-1">
         <Muted>
-            Connect AI tools and OAuth-based integrations for {organizationQuery.data?.name ?? 'this organization'}.
+            Connect MCP clients and OAuth-based integrations for {organizationQuery.data?.name ?? 'this organization'}.
         </Muted>
     </div>
 
     <Tabs.Root bind:value={selectedTab}>
         <Tabs.List>
-            <Tabs.Trigger value="ai-tools">AI Tools</Tabs.Trigger>
+            <Tabs.Trigger value="mcp">MCP</Tabs.Trigger>
             <Tabs.Trigger value="oauth-applications">OAuth Applications</Tabs.Trigger>
         </Tabs.List>
 
-        <Tabs.Content value="ai-tools" class="mt-6">
-            <AiToolsSetup />
+        <Tabs.Content value="mcp" class="mt-6">
+            <McpSetup />
         </Tabs.Content>
 
         <Tabs.Content value="oauth-applications" class="mt-6">

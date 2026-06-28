@@ -2,27 +2,33 @@
     import { browser } from '$app/environment';
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
     import { CodeBlock, Muted, P } from '$comp/typography';
+    import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import * as Select from '$comp/ui/select';
+    import ExternalLink from '@lucide/svelte/icons/external-link';
 
-    type AiToolId = 'claude' | 'codex' | 'github-copilot' | 'opencode';
+    type McpClientId = 'claude' | 'codex' | 'github-copilot-vscode' | 'opencode';
 
     type CommandStep = {
+        action?: {
+            href: string;
+            label: string;
+        };
         code: string;
         description: string;
         language: 'json' | 'shellscript';
         title: string;
     };
 
-    type AiTool = {
+    type McpClient = {
         description: string;
-        id: AiToolId;
+        id: McpClientId;
         name: string;
         steps: CommandStep[];
     };
 
     let mcpEndpoint = $state('/mcp');
-    let selectedToolId = $state<AiToolId>('github-copilot');
+    let selectedClientId = $state<McpClientId>('github-copilot-vscode');
 
     $effect(() => {
         if (browser) {
@@ -50,15 +56,30 @@
   }
 }`);
 
-    const aiTools = $derived<AiTool[]>([
+    const visualStudioCodeInstallUrl = $derived.by(() => {
+        const serverConfiguration = {
+            name: 'exceptionless',
+            type: 'http',
+            url: mcpEndpoint
+        };
+
+        return `vscode:mcp/install?${encodeURIComponent(JSON.stringify(serverConfiguration))}`;
+    });
+
+    const mcpClients = $derived<McpClient[]>([
         {
             description: 'Use GitHub Copilot Chat in VS Code with the hosted Exceptionless MCP server.',
-            id: 'github-copilot',
-            name: 'GitHub Copilot',
+            id: 'github-copilot-vscode',
+            name: 'GitHub Copilot in VS Code',
             steps: [
                 {
+                    action: {
+                        href: visualStudioCodeInstallUrl,
+                        label: 'Add to VS Code'
+                    },
                     code: `code --add-mcp '{"name":"exceptionless","type":"http","url":"${mcpEndpoint}"}'`,
-                    description: 'Add the remote MCP server to your VS Code user profile.',
+                    description:
+                        'Add the remote MCP server to your VS Code user profile. Use the button, or copy the command if your browser blocks the VS Code prompt.',
                     language: 'shellscript',
                     title: 'Add the server'
                 },
@@ -135,7 +156,7 @@
         }
     ]);
 
-    const selectedTool = $derived(aiTools.find((tool) => tool.id === selectedToolId) ?? aiTools[0]!);
+    const selectedClient = $derived(mcpClients.find((client) => client.id === selectedClientId) ?? mcpClients[0]!);
 
     const examplePrompts = [
         'What are my top issues this week?',
@@ -148,36 +169,44 @@
 
 <Card.Root>
     <Card.Header>
-        <Card.Title class="text-sm font-medium">Setup Instructions</Card.Title>
-        <Card.Description>Choose an AI tool, then follow the setup steps.</Card.Description>
+        <Card.Title class="text-sm font-medium">MCP Setup</Card.Title>
+        <Card.Description>Choose an MCP client, then follow the setup steps.</Card.Description>
     </Card.Header>
 
-    <Card.Content class="space-y-6">
-        <ol class="ml-6 list-decimal space-y-6">
+    <Card.Content class="flex flex-col gap-6">
+        <ol class="ml-6 flex list-decimal flex-col gap-6">
             <li class="pl-1">
-                <P>Select your AI tool.</P>
+                <P>Select your MCP client.</P>
                 <Select.Root
                     type="single"
-                    value={selectedToolId}
+                    value={selectedClientId}
                     onValueChange={(value) => {
-                        selectedToolId = value as AiToolId;
+                        selectedClientId = value as McpClientId;
                     }}
                 >
                     <Select.Trigger class="mt-2 w-full max-w-md">
-                        <span>{selectedTool.name}</span>
+                        <span>{selectedClient.name}</span>
                     </Select.Trigger>
                     <Select.Content>
-                        {#each aiTools as tool (tool.id)}
-                            <Select.Item value={tool.id}>{tool.name}</Select.Item>
-                        {/each}
+                        <Select.Group>
+                            {#each mcpClients as client (client.id)}
+                                <Select.Item value={client.id}>{client.name}</Select.Item>
+                            {/each}
+                        </Select.Group>
                     </Select.Content>
                 </Select.Root>
-                <Muted class="mt-2 block text-sm">{selectedTool.description}</Muted>
+                <Muted class="mt-2 block text-sm">{selectedClient.description}</Muted>
             </li>
 
-            {#each selectedTool.steps as step (step.title)}
+            {#each selectedClient.steps as step (step.title)}
                 <li class="pl-1">
                     <P>{step.description}</P>
+                    {#if step.action}
+                        <Button href={step.action.href} variant="outline" class="mt-2">
+                            <ExternalLink data-icon="inline-start" />
+                            {step.action.label}
+                        </Button>
+                    {/if}
                     <div class="bg-muted relative mt-2 min-h-13 overflow-hidden rounded-md">
                         <CodeBlock code={step.code} language={step.language} class="max-h-80 overflow-auto pr-12" />
                         <div class="absolute top-2 right-2">

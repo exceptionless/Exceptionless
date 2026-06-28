@@ -705,11 +705,11 @@ public partial class App : Application {
         </P>
 
         <Notification>
-            <NotificationTitle>Next, use AI to ask about this project</NotificationTitle>
+            <NotificationTitle>Next, connect an MCP client</NotificationTitle>
             <NotificationDescription>
                 <P>
                     After your client is configured and your first events arrive,
-                    <A href={aiToolsHref}>set up AI Tools</A> to ask about top issues, 404s, event details, and stack triage.
+                    <A href={aiToolsHref}>set up MCP</A> to ask about top issues, 404s, event details, and stack triage.
                 </P>
             </NotificationDescription>
         </Notification>

@@ -11,7 +11,7 @@
 
 - Keep OAuth applications as global client definitions.
 - Add organization integrations as organization-owned installations or grants.
-- Treat AI tools as integration setup surfaces that initiate OAuth, not as the same object as a registered OAuth application.
+- Treat MCP clients as integration setup surfaces that initiate OAuth, not as the same object as a registered OAuth application.
 - Treat external logins separately because they answer "how this user signs in," not "what this organization connected."
 
 ## Backend Work
@@ -43,7 +43,7 @@
 
 ## Frontend Work
 
-- The organization settings area now has an Integrations tab with AI tool setup, including GitHub Copilot.
+- The organization settings area now has an Integrations tab with MCP client setup, including GitHub Copilot in VS Code.
 - The Integrations page also has an OAuth Applications tab that reuses the same list, create, edit, disable, and delete management flow as the System OAuth Apps page.
 - Once the backend endpoints exist, add an organization integrations feature slice with TanStack Query hooks and render connected OAuth/MCP clients on the same tab.
 - Keep the System OAuth Apps screen for global client registration and administration.

@@ -186,7 +186,7 @@
                 <NotificationSettings class="mr-2 size-4" /> Notifications
             </Button>
             <Button variant="success" href={aiToolsHref}>
-                <Bot class="mr-2 size-4" /> Set Up AI Tools
+                <Bot data-icon="inline-start" /> Set Up MCP
             </Button>
             <Button variant="secondary" onclick={generateProjectSampleData} disabled={generateSampleDataMutation.isPending}>
                 {#if generateSampleDataMutation.isPending}
