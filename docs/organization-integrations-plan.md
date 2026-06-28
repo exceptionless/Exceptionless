@@ -43,7 +43,9 @@
 
 ## Frontend Work
 
-- The organization settings area now has an Integrations tab with MCP client setup, including GitHub Copilot in VS Code.
+- The organization settings area now has an Integrations tab with URL-addressable MCP and OAuth Applications sub-tabs.
+- The MCP setup dropdown focuses on VS Code MCP, Cursor MCP, and GitHub Copilot CLI, with direct setup commands or install links where the client supports them.
 - The Integrations page also has an OAuth Applications tab that reuses the same list, create, edit, disable, and delete management flow as the System OAuth Apps page.
+- The legacy account-level AI Tools redirect has been removed so integrations remain organization-scoped.
 - Once the backend endpoints exist, add an organization integrations feature slice with TanStack Query hooks and render connected OAuth/MCP clients on the same tab.
 - Keep the System OAuth Apps screen for global client registration and administration.

@@ -7,13 +7,16 @@
     import * as Select from '$comp/ui/select';
     import ExternalLink from '@lucide/svelte/icons/external-link';
 
-    type McpClientId = 'claude' | 'codex' | 'github-copilot-vscode' | 'opencode';
+    type McpClientId = 'cursor-mcp' | 'github-copilot-cli' | 'vs-code-mcp';
+
+    type ActionLink = {
+        href: string;
+        label: string;
+        variant?: 'default' | 'outline';
+    };
 
     type CommandStep = {
-        action?: {
-            href: string;
-            label: string;
-        };
+        actions?: ActionLink[];
         code: string;
         description: string;
         language: 'json' | 'shellscript';
@@ -23,12 +26,13 @@
     type McpClient = {
         description: string;
         id: McpClientId;
+        links: ActionLink[];
         name: string;
         steps: CommandStep[];
     };
 
     let mcpEndpoint = $state('/mcp');
-    let selectedClientId = $state<McpClientId>('github-copilot-vscode');
+    let selectedClientId = $state<McpClientId>('vs-code-mcp');
 
     $effect(() => {
         if (browser) {
@@ -36,13 +40,30 @@
         }
     });
 
-    const openCodeConfiguration = $derived(`{
-  "$schema": "https://opencode.ai/config.json",
-  "mcp": {
+    const cursorConfiguration = $derived(`{
+  "mcpServers": {
     "exceptionless": {
-      "type": "remote",
+      "url": "${mcpEndpoint}"
+    }
+  }
+}`);
+
+    const cursorInstallUrl = $derived.by(() => {
+        const serverConfiguration = {
+            url: mcpEndpoint
+        };
+
+        const encodedConfiguration = btoa(JSON.stringify(serverConfiguration));
+
+        return `cursor://anysphere.cursor-deeplink/mcp/install?name=exceptionless&config=${encodeURIComponent(encodedConfiguration)}`;
+    });
+
+    const githubCopilotCliConfiguration = $derived(`{
+  "mcpServers": {
+    "exceptionless": {
+      "type": "http",
       "url": "${mcpEndpoint}",
-      "oauth": {}
+      "tools": ["*"]
     }
   }
 }`);
@@ -68,15 +89,28 @@
 
     const mcpClients = $derived<McpClient[]>([
         {
-            description: 'Use GitHub Copilot Chat in VS Code with the hosted Exceptionless MCP server.',
-            id: 'github-copilot-vscode',
-            name: 'GitHub Copilot in VS Code',
+            description: 'Use any MCP-capable VS Code chat experience with the hosted Exceptionless MCP server.',
+            id: 'vs-code-mcp',
+            links: [
+                {
+                    href: 'https://code.visualstudio.com/docs/agent-customization/mcp-servers',
+                    label: 'VS Code MCP docs'
+                },
+                {
+                    href: 'https://code.visualstudio.com/',
+                    label: 'Get VS Code'
+                }
+            ],
+            name: 'VS Code MCP',
             steps: [
                 {
-                    action: {
-                        href: visualStudioCodeInstallUrl,
-                        label: 'Add to VS Code'
-                    },
+                    actions: [
+                        {
+                            href: visualStudioCodeInstallUrl,
+                            label: 'Add to VS Code',
+                            variant: 'default'
+                        }
+                    ],
                     code: `code --add-mcp '{"name":"exceptionless","type":"http","url":"${mcpEndpoint}"}'`,
                     description:
                         'Add the remote MCP server to your VS Code user profile. Use the button, or copy the command if your browser blocks the VS Code prompt.',
@@ -98,57 +132,72 @@
             ]
         },
         {
-            description: 'Use Claude Code with the hosted Exceptionless MCP server.',
-            id: 'claude',
-            name: 'Claude Code',
-            steps: [
+            description: 'Use Cursor with the hosted Exceptionless MCP server.',
+            id: 'cursor-mcp',
+            links: [
                 {
-                    code: `claude mcp add --transport http exceptionless ${mcpEndpoint}`,
-                    description: 'Add the hosted MCP server to Claude Code.',
-                    language: 'shellscript',
-                    title: 'Add the server'
+                    href: 'https://cursor.com/docs/mcp',
+                    label: 'Cursor MCP docs'
                 },
                 {
-                    code: 'claude mcp login exceptionless',
-                    description: 'Start the OAuth browser flow and approve access.',
-                    language: 'shellscript',
-                    title: 'Authenticate'
+                    href: 'https://cursor.com/downloads',
+                    label: 'Get Cursor'
                 }
-            ]
-        },
-        {
-            description: 'Use Codex CLI with the hosted Exceptionless MCP server.',
-            id: 'codex',
-            name: 'Codex CLI',
+            ],
+            name: 'Cursor MCP',
             steps: [
                 {
-                    code: `codex mcp add exceptionless --url ${mcpEndpoint}`,
-                    description: 'Register the streamable HTTP MCP server with Codex.',
-                    language: 'shellscript',
-                    title: 'Add the server'
-                },
-                {
-                    code: 'codex mcp login exceptionless',
-                    description: 'Start the OAuth browser flow and approve access.',
-                    language: 'shellscript',
-                    title: 'Authenticate'
-                }
-            ]
-        },
-        {
-            description: 'Use OpenCode with the hosted Exceptionless MCP server.',
-            id: 'opencode',
-            name: 'OpenCode',
-            steps: [
-                {
-                    code: openCodeConfiguration,
-                    description: 'Add this server entry to your opencode.json file.',
+                    actions: [
+                        {
+                            href: cursorInstallUrl,
+                            label: 'Add to Cursor',
+                            variant: 'default'
+                        }
+                    ],
+                    code: cursorConfiguration,
+                    description:
+                        'Install the remote MCP server into Cursor. Use the button, or add this configuration to .cursor/mcp.json for a project setup or ~/.cursor/mcp.json for a user setup.',
                     language: 'json',
-                    title: 'Add the server configuration'
+                    title: 'Add the server'
                 },
                 {
-                    code: 'opencode mcp auth exceptionless',
-                    description: 'Start the OAuth browser flow and approve access.',
+                    code: 'Cursor Settings > Tools & Integrations > MCP Tools',
+                    description: 'Open Cursor MCP tools, enable Exceptionless, and approve the OAuth browser flow when prompted.',
+                    language: 'shellscript',
+                    title: 'Authenticate'
+                }
+            ]
+        },
+        {
+            description: 'Use GitHub Copilot CLI with the hosted Exceptionless MCP server.',
+            id: 'github-copilot-cli',
+            links: [
+                {
+                    href: 'https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers',
+                    label: 'Copilot CLI MCP docs'
+                },
+                {
+                    href: 'https://docs.github.com/en/copilot/how-tos/copilot-cli/cli-getting-started',
+                    label: 'Get Copilot CLI'
+                }
+            ],
+            name: 'GitHub Copilot CLI',
+            steps: [
+                {
+                    code: `copilot mcp add --transport http exceptionless ${mcpEndpoint}`,
+                    description: 'Add the remote MCP server to GitHub Copilot CLI user configuration.',
+                    language: 'shellscript',
+                    title: 'Add the server'
+                },
+                {
+                    code: githubCopilotCliConfiguration,
+                    description: 'For manual setup, add this server entry to ~/.copilot/mcp-config.json.',
+                    language: 'json',
+                    title: 'Manual configuration'
+                },
+                {
+                    code: 'copilot mcp list\ncopilot',
+                    description: 'Confirm the server is listed, then start Copilot CLI and approve the OAuth browser flow when prompted.',
                     language: 'shellscript',
                     title: 'Authenticate'
                 }
@@ -157,6 +206,7 @@
     ]);
 
     const selectedClient = $derived(mcpClients.find((client) => client.id === selectedClientId) ?? mcpClients[0]!);
+    const isWebUrl = (href: string) => href.startsWith('http://') || href.startsWith('https://');
 
     const examplePrompts = [
         'What are my top issues this week?',
@@ -196,16 +246,39 @@
                     </Select.Content>
                 </Select.Root>
                 <Muted class="mt-2 block text-sm">{selectedClient.description}</Muted>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    {#each selectedClient.links as link (link.label)}
+                        <Button
+                            href={link.href}
+                            variant={link.variant ?? 'outline'}
+                            target={isWebUrl(link.href) ? '_blank' : undefined}
+                            rel={isWebUrl(link.href) ? 'noreferrer' : undefined}
+                        >
+                            <ExternalLink data-icon="inline-start" />
+                            {link.label}
+                        </Button>
+                    {/each}
+                </div>
             </li>
 
             {#each selectedClient.steps as step (step.title)}
                 <li class="pl-1">
+                    <h5 class="text-sm font-medium">{step.title}</h5>
                     <P>{step.description}</P>
-                    {#if step.action}
-                        <Button href={step.action.href} variant="outline" class="mt-2">
-                            <ExternalLink data-icon="inline-start" />
-                            {step.action.label}
-                        </Button>
+                    {#if step.actions?.length}
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            {#each step.actions as action (action.label)}
+                                <Button
+                                    href={action.href}
+                                    variant={action.variant ?? 'outline'}
+                                    target={isWebUrl(action.href) ? '_blank' : undefined}
+                                    rel={isWebUrl(action.href) ? 'noreferrer' : undefined}
+                                >
+                                    <ExternalLink data-icon="inline-start" />
+                                    {action.label}
+                                </Button>
+                            {/each}
+                        </div>
                     {/if}
                     <div class="bg-muted relative mt-2 min-h-13 overflow-hidden rounded-md">
                         <CodeBlock code={step.code} language={step.language} class="max-h-80 overflow-auto pr-12" />
