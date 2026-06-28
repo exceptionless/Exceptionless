@@ -4,11 +4,11 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
@@ -508,7 +508,7 @@ public sealed class ExceptionlessMcpTools
             if (!TryResolveEventGroupBy(groupBy, out var resolvedGroupBy, out var groupByError))
                 return McpResponse<McpEventCountResult>.Failed(groupByError);
 
-            if (!TryValidateGroupLimit(groupLimit, out int resolvedGroupLimit, out var groupLimitError, out var groupLimitWarning))
+            if (!TryValidateGroupLimit(groupLimit, out int resolvedGroupLimit, out var groupLimitError, out string? groupLimitWarning))
                 return McpResponse<McpEventCountResult>.Failed(groupLimitError);
 
             var (project, organization) = await GetProjectAndOrganizationAsync(projectId);
@@ -1012,7 +1012,7 @@ public sealed class ExceptionlessMcpTools
         try
         {
             string json = DecodeCursor(cursor.Trim());
-            var sortValues = _serializer.Deserialize<object[]>(json);
+            object[]? sortValues = _serializer.Deserialize<object[]>(json);
             if (sortValues is { Length: > 0 })
             {
                 error = null!;

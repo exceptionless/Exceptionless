@@ -81,7 +81,7 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
 
                 if (!doc.RemoveIfNullOrEmpty("Message"))
                 {
-                    var messageValue = doc["Message"]?.GetValue<string>();
+                    string? messageValue = doc["Message"]?.GetValue<string>();
                     if (messageValue is not null)
                         error.Add("Message", JsonValue.Create(messageValue));
                 }

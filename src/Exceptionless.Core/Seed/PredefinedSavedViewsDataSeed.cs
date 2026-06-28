@@ -128,7 +128,7 @@ public class PredefinedSavedViewsDataSeed : IDataSeed
 
     private static string GetSeedFilePath()
     {
-        var seedFileName = Path.GetFileName(SeedFileName);
+        string seedFileName = Path.GetFileName(SeedFileName);
         return Path.Combine(AppContext.BaseDirectory, "Seed", seedFileName);
     }
 

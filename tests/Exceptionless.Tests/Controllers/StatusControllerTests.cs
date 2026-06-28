@@ -169,7 +169,7 @@ public class StatusControllerTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath("notifications/system")
             .StatusCodeShouldBeOk());
-        var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        string content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.DoesNotContain("To be removed", content);
     }
 

@@ -1630,7 +1630,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
 
     private static MultipartFormDataContent CreateProfileImageContent()
     {
-        var bytes = new byte[256 * 1024];
+        byte[] bytes = new byte[256 * 1024];
         byte[] pngHeader = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
         Array.Copy(pngHeader, bytes, pngHeader.Length);
         Assert.True(bytes.Length < ProfileImageStorage.MaxFileSize);

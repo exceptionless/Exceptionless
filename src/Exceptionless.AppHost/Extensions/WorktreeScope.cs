@@ -24,7 +24,7 @@ public static class WorktreeScope
 {
     public static string? Resolve()
     {
-        var explicitScope = Environment.GetEnvironmentVariable("Scope");
+        string? explicitScope = Environment.GetEnvironmentVariable("Scope");
         if (!String.IsNullOrWhiteSpace(explicitScope))
         {
             return Sanitize(explicitScope);
@@ -32,7 +32,7 @@ public static class WorktreeScope
 
         for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir != null; dir = dir.Parent)
         {
-            var dotGit = Path.Combine(dir.FullName, ".git");
+            string dotGit = Path.Combine(dir.FullName, ".git");
             if (File.Exists(dotGit))
             {
                 return Sanitize(ResolveGitWorktreeName(dotGit) ?? dir.Name);
@@ -49,7 +49,7 @@ public static class WorktreeScope
 
     public static WorktreePorts AssignFreePorts()
     {
-        var ports = FreePorts(11);
+        int[] ports = FreePorts(11);
         var assignments = new WorktreePorts(
             ports[0],
             ports[1],
@@ -75,7 +75,7 @@ public static class WorktreeScope
         var listeners = new List<TcpListener>(count);
         try
         {
-            for (var i = 0; i < count; i++)
+            for (int i = 0; i < count; i++)
             {
                 var listener = new TcpListener(IPAddress.Loopback, 0);
                 listener.Start();
@@ -95,26 +95,26 @@ public static class WorktreeScope
 
     private static string? ResolveGitWorktreeName(string dotGitPath)
     {
-        var content = File.ReadAllText(dotGitPath).Trim();
+        string content = File.ReadAllText(dotGitPath).Trim();
         const string gitDirPrefix = "gitdir:";
         if (!content.StartsWith(gitDirPrefix, StringComparison.OrdinalIgnoreCase))
         {
             return null;
         }
 
-        var gitDir = content[gitDirPrefix.Length..].Trim().TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        string gitDir = content[gitDirPrefix.Length..].Trim().TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         return Path.GetFileName(gitDir);
     }
 
     private static string Sanitize(string value)
     {
         var builder = new StringBuilder(value.Length);
-        foreach (var ch in value.ToLowerInvariant())
+        foreach (char ch in value.ToLowerInvariant())
         {
             builder.Append(Char.IsLetterOrDigit(ch) ? ch : '-');
         }
 
-        var cleaned = builder.ToString().Trim('-');
+        string cleaned = builder.ToString().Trim('-');
         while (cleaned.Contains("--", StringComparison.Ordinal))
         {
             cleaned = cleaned.Replace("--", "-", StringComparison.Ordinal);

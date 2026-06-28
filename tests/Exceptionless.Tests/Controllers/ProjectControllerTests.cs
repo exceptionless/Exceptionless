@@ -919,7 +919,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
         Assert.NotNull(project);
         Assert.NotNull(project.Data);
-        Assert.True(project.Data.TryGetValue("TestDataKey", out var dataValue));
+        Assert.True(project.Data.TryGetValue("TestDataKey", out object? dataValue));
         Assert.Equal("TestDataValue", dataValue);
     }
 

@@ -61,7 +61,7 @@ public static class JsonPropertyNameResolver
     {
         propertySchema = null;
 
-        var jsonPropertyName = GetJsonPropertyName(jsonTypeInfo, clrProperty);
+        string? jsonPropertyName = GetJsonPropertyName(jsonTypeInfo, clrProperty);
         if (jsonPropertyName is null)
             return false;
 

@@ -553,7 +553,7 @@ public class AdminControllerTests : IntegrationTestsBase
         var durationInMillis = TimeSpan.FromMilliseconds(7416);
 
         // Act
-        var duration = AdminController.FormatSnapshotDuration(null, durationInMillis, null, null);
+        string duration = AdminController.FormatSnapshotDuration(null, durationInMillis, null, null);
 
         // Assert
         Assert.Equal("7.4s", duration);
@@ -567,7 +567,7 @@ public class AdminControllerTests : IntegrationTestsBase
         var endTime = new DateTime(2026, 6, 22, 14, 0, 7, 378, DateTimeKind.Utc);
 
         // Act
-        var duration = AdminController.FormatSnapshotDuration(null, null, startTime, endTime);
+        string duration = AdminController.FormatSnapshotDuration(null, null, startTime, endTime);
 
         // Assert
         Assert.Equal("7.4s", duration);
@@ -761,7 +761,7 @@ public class AdminControllerTests : IntegrationTestsBase
     {
         // Arrange
         var organizationRepository = GetService<IOrganizationRepository>();
-        var expiresUtc = TimeProvider.GetUtcNow().AddDays(30).ToString("o");
+        string expiresUtc = TimeProvider.GetUtcNow().AddDays(30).ToString("o");
 
         // Act
         await SendRequestAsync(r => r

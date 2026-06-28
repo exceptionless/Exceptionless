@@ -13,13 +13,13 @@ using Exceptionless.Core.Repositories.Base;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Validation;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.OpenApi;
-using Exceptionless.Core.Validation;
 using Foundatio.Caching;
 using Foundatio.Queues;
 using Foundatio.Repositories;
@@ -837,7 +837,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (!isValid)
         {
             foreach (var error in errors)
-                foreach (var message in error.Value)
+                foreach (string message in error.Value)
                     ModelState.AddModelError(error.Key, message);
 
             return ValidationProblem(ModelState);
