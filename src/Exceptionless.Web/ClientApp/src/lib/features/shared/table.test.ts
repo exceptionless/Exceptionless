@@ -9,14 +9,13 @@ describe('resolveConfiguredTableOptions', () => {
         // Arrange
         let rows = [{ id: 'one' }];
         const baseOptions = {
-            _features: {},
-            _rowModels: {},
             get columns() {
                 return [];
             },
             get data() {
                 return rows;
-            }
+            },
+            features: {}
         } as unknown as TableOptions<StockFeatures, { id: string }>;
 
         // Act

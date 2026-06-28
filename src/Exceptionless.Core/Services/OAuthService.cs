@@ -66,7 +66,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (request.RedirectUris is null || request.RedirectUris.Length == 0)
             return OAuthClientRegistrationResult.Invalid("invalid_redirect_uri", "At least one redirect_uri is required.");
 
-        var redirectUris = request.RedirectUris
+        string[] redirectUris = request.RedirectUris
             .Where(uri => !String.IsNullOrWhiteSpace(uri))
             .Select(uri => uri.Trim())
             .Distinct(StringComparer.Ordinal)
@@ -191,7 +191,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!String.IsNullOrWhiteSpace(metadata.TokenEndpointAuthMethod) && !String.Equals(metadata.TokenEndpointAuthMethod, "none", StringComparison.Ordinal))
             return false;
 
-        var redirectUris = metadata.RedirectUris?
+        string[] redirectUris = metadata.RedirectUris?
             .Where(OAuthApplication.IsValidRedirectUri)
             .Distinct(StringComparer.Ordinal)
             .Take(20)
@@ -201,7 +201,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             return false;
 
         var metadataScopes = NormalizeScopes(metadata.Scope);
-        var scopes = metadataScopes.Count > 0
+        string[] scopes = metadataScopes.Count > 0
             ? metadataScopes.Where(s => SupportedScopes.Contains(s, StringComparer.Ordinal)).Distinct(StringComparer.Ordinal).ToArray()
             : DefaultScopes.ToArray();
 
@@ -342,7 +342,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!IsValidCodeVerifier(request.CodeVerifier))
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Invalid PKCE verifier.");
 
-        var cacheKey = GetAuthorizationCodeCacheKey(request.Code);
+        string cacheKey = GetAuthorizationCodeCacheKey(request.Code);
         var codeResult = await cacheClient.GetAsync<OAuthAuthorizationCode>(cacheKey);
         if (!codeResult.HasValue)
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Authorization code is invalid or expired.");
@@ -409,8 +409,8 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
     private async Task<OAuthTokenResponse> CreateTokenAsync(string userId, string clientId, string resource, IReadOnlyCollection<string> scopes)
     {
         var utcNow = timeProvider.GetUtcNow().UtcDateTime;
-        var accessToken = StringExtensions.GetNewToken();
-        var refreshToken = scopes.Contains(AuthorizationRoles.OfflineAccess, StringComparer.Ordinal) ? StringExtensions.GetNewToken() : null;
+        string accessToken = StringExtensions.GetNewToken();
+        string? refreshToken = scopes.Contains(AuthorizationRoles.OfflineAccess, StringComparer.Ordinal) ? StringExtensions.GetNewToken() : null;
         var token = new Token
         {
             Id = accessToken,
@@ -518,7 +518,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
     public static string CreateCodeChallenge(string verifier)
     {
-        var bytes = SHA256.HashData(Encoding.ASCII.GetBytes(verifier));
+        byte[] bytes = SHA256.HashData(Encoding.ASCII.GetBytes(verifier));
         return Base64UrlEncode(bytes);
     }
 

@@ -5,13 +5,15 @@ import {
     type ColumnOrderState,
     type ColumnSort,
     type ColumnVisibilityState,
-    createCoreRowModel,
+    createSortedRowModel,
     type PaginationState,
     type RowData,
     type RowSelectionState,
+    sortFns,
     stockFeatures,
     type StockFeatures,
     type Table,
+    tableFeatures,
     type TableOptions,
     type Updater
 } from '@tanstack/svelte-table';
@@ -21,6 +23,8 @@ import { DEFAULT_LIMIT } from './api/constants';
 
 export type PaginationStrategy = 'cursor' | 'memory' | 'offset';
 export type QueryMeta = FetchClientResponse<unknown>['meta'];
+
+const sharedTableFeatures = tableFeatures(stockFeatures);
 
 export interface TableConfiguration<TData extends RowData, TPaginationStrategy extends PaginationStrategy = PaginationStrategy> {
     columnPersistenceKey: string;
@@ -239,8 +243,6 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
     });
 
     const tableOptions: TableOptions<StockFeatures, TData> = {
-        _features: stockFeatures,
-        _rowModels: { coreRowModel: createCoreRowModel<StockFeatures, TData>() },
         get columns() {
             return columns();
         },
@@ -256,6 +258,7 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
         enableMultiRowSelection: true,
         enableRowSelection: true,
         enableSortingRemoval: false,
+        features: sharedTableFeatures,
         getRowId: (originalRow) => {
             return originalRow && typeof originalRow === 'object' && 'id' in originalRow && originalRow.id != null
                 ? String(originalRow.id)
@@ -371,6 +374,19 @@ export function resolveConfiguredTableOptions<TData extends RowData>(
     }
 
     return baseOptions;
+}
+
+export function withClientSortedRowModel<TData extends RowData>(options: TableOptions<StockFeatures, TData>): TableOptions<StockFeatures, TData> {
+    const features = tableFeatures({
+        ...options.features,
+        sortedRowModel: createSortedRowModel<StockFeatures, TData>(),
+        sortFns
+    });
+
+    return {
+        ...options,
+        features
+    };
 }
 
 export function resolvePageCount(

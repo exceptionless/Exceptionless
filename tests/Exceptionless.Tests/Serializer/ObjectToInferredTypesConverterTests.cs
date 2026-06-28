@@ -31,7 +31,7 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
 
         // Assert
         Assert.NotNull(result);
-        Assert.True(result.TryGetValue("value", out var value));
+        Assert.True(result.TryGetValue("value", out object? value));
         Assert.IsType<bool>(value);
         Assert.True((bool)value);
     }
@@ -218,7 +218,7 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
 
         // Assert
         Assert.NotNull(result);
-        Assert.True(result.TryGetValue("nothing", out var value));
+        Assert.True(result.TryGetValue("nothing", out object? value));
         Assert.Null(value);
     }
 
@@ -720,7 +720,7 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
         var element = doc.RootElement;
 
         // Act
-        var result = JsonElementConverter.Convert(element);
+        object? result = JsonElementConverter.Convert(element);
 
         // Assert
         Assert.IsType<double>(result);
@@ -735,7 +735,7 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
         var element = doc.RootElement;
 
         // Act
-        var result = JsonElementConverter.Convert(element);
+        object? result = JsonElementConverter.Convert(element);
 
         // Assert
         Assert.IsType<decimal>(result);
@@ -750,7 +750,7 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
         var element = doc.RootElement;
 
         // Act
-        var result = JsonElementConverter.Convert(element);
+        object? result = JsonElementConverter.Convert(element);
 
         // Assert
         Assert.IsType<decimal>(result);
@@ -764,7 +764,7 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
         var element = doc.RootElement;
 
         // Act
-        var result = JsonElementConverter.Convert(element);
+        object? result = JsonElementConverter.Convert(element);
 
         // Assert
         Assert.IsType<double>(result);

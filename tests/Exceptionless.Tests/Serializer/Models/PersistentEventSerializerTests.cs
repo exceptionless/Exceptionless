@@ -414,9 +414,9 @@ public class PersistentEventSerializerTests : TestWithServices
 
         // Unknown root properties are merged into Data via OnDeserialized
         Assert.NotNull(ev.Data);
-        Assert.True(ev.Data.TryGetValue("unknown_property", out var unknownProperty));
+        Assert.True(ev.Data.TryGetValue("unknown_property", out object? unknownProperty));
         Assert.Equal("should_be_captured", unknownProperty);
-        Assert.True(ev.Data.TryGetValue("another_unknown", out var anotherUnknown));
+        Assert.True(ev.Data.TryGetValue("another_unknown", out object? anotherUnknown));
         Assert.Equal(123, anotherUnknown);
     }
 

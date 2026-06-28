@@ -1220,7 +1220,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
 
         await RefreshDataAsync();
 
-        var countBefore = await _savedViewRepository.CountByOrganizationIdAsync(SampleDataService.TEST_ORG_ID);
+        long countBefore = await _savedViewRepository.CountByOrganizationIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.True(countBefore >= 2);
 
         // Act
@@ -1231,7 +1231,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         await RefreshDataAsync();
 
         // Assert
-        var countAfter = await _savedViewRepository.CountByOrganizationIdAsync(SampleDataService.TEST_ORG_ID);
+        long countAfter = await _savedViewRepository.CountByOrganizationIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.Equal(0, countAfter);
     }
 
@@ -1266,7 +1266,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         await RefreshDataAsync();
 
         // Act
-        var removed = await _organizationService.RemoveUserSavedViewsAsync(SampleDataService.TEST_ORG_ID, testUser.Id);
+        long removed = await _organizationService.RemoveUserSavedViewsAsync(SampleDataService.TEST_ORG_ID, testUser.Id);
         await RefreshDataAsync();
 
         // Assert
@@ -2115,7 +2115,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         await RefreshDataAsync();
 
         // Act
-        var count = await _savedViewRepository.CountByOrganizationIdAsync(SampleDataService.TEST_ORG_ID);
+        long count = await _savedViewRepository.CountByOrganizationIdAsync(SampleDataService.TEST_ORG_ID);
 
         // Assert
         Assert.True(count >= 2);
@@ -2195,7 +2195,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         await RefreshDataAsync();
 
         // Act
-        var removed = await _savedViewRepository.RemovePrivateByUserIdAsync(SampleDataService.TEST_ORG_ID, testUser.Id);
+        long removed = await _savedViewRepository.RemovePrivateByUserIdAsync(SampleDataService.TEST_ORG_ID, testUser.Id);
         await RefreshDataAsync();
 
         // Assert

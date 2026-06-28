@@ -110,7 +110,7 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
             : AllValidColumnIds;
 
         var invalidKeys = columns.Keys.Where(key => !validKeys.Contains(key));
-        foreach (var key in invalidKeys)
+        foreach (string key in invalidKeys)
         {
             yield return new ValidationResult(
                 $"Column key '{key}' is not a valid column. Valid columns are: {String.Join(", ", validKeys.Order())}.",
@@ -131,7 +131,7 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
             : AllValidColumnIds;
 
         var invalidKeys = columnOrder.Where(key => !validKeys.Contains(key)).Distinct();
-        foreach (var key in invalidKeys)
+        foreach (string key in invalidKeys)
         {
             yield return new ValidationResult(
                 $"Column order key '{key}' is not a valid column. Valid columns are: {String.Join(", ", validKeys.Order())}.",
@@ -140,7 +140,7 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
         }
 
         var duplicateKeys = columnOrder.GroupBy(key => key).Where(group => group.Count() > 1).Select(group => group.Key);
-        foreach (var key in duplicateKeys)
+        foreach (string key in duplicateKeys)
         {
             yield return new ValidationResult(
                 $"Column order key '{key}' cannot be repeated.",

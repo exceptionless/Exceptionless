@@ -362,7 +362,7 @@ public class AdminController : ExceptionlessApiController
             if (repositoryResponse.Repositories is null || !repositoryResponse.Repositories.Any())
                 return Ok(new ElasticsearchSnapshotsResponse([], []));
 
-            var repositoryNames = repositoryResponse.Repositories.Select(r => r.Key).ToArray();
+            string[] repositoryNames = repositoryResponse.Repositories.Select(r => r.Key).ToArray();
 
             var snapshotTasks = repositoryNames
                 .Select(async repositoryName =>
@@ -419,7 +419,7 @@ public class AdminController : ExceptionlessApiController
                 .OrderByDescending(s => s.StartTime)
                 .ToArray();
 
-            var successfulRepositoryNames = successfulSnapshotResults
+            string[] successfulRepositoryNames = successfulSnapshotResults
                 .Select(r => r.RepositoryName)
                 .ToArray();
 

@@ -20,7 +20,7 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
 
     public AppWebHostFactory()
     {
-        if (!s_pool.TryDequeue(out var instanceId))
+        if (!s_pool.TryDequeue(out int instanceId))
             instanceId = Interlocked.Increment(ref s_counter);
 
         InstanceId = instanceId;

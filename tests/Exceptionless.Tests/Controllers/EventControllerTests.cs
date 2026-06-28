@@ -639,16 +639,16 @@ public partial class EventControllerTests : IntegrationTestsBase
     [Fact]
     public async Task WillGetStackEvents()
     {
-        var now = TimeProvider.GetUtcNow();
+        var utcNow = TimeProvider.GetUtcNow();
 
         // Create events on different days for the same stack so they land in different
         // daily index partitions. Dates must stay within org.CreatedUtc - 3d to avoid
         // being filtered by the org creation cutoff (see GetRetentionUtcCutoff).
         var (stacks, _) = await CreateDataAsync(d =>
         {
-            var ev = d.Event().TestProject().Date(now);
-            d.Event().Stack(ev).Date(now.AddDays(-1));
-            d.Event().Stack(ev).Date(now.AddDays(-2));
+            var ev = d.Event().TestProject().Date(utcNow);
+            d.Event().Stack(ev).Date(utcNow.AddDays(-1));
+            d.Event().Stack(ev).Date(utcNow.AddDays(-2));
         });
 
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
@@ -674,7 +674,7 @@ public partial class EventControllerTests : IntegrationTestsBase
             d.Event().TestProject().StackId("2ecd0826e447a44e78877ab2");
         });
 
-        var expectedStackId = stacks.Single(s => s.Id == "2ecd0826e447a44e78877ab2").Id;
+        string expectedStackId = stacks.Single(s => s.Id == "2ecd0826e447a44e78877ab2").Id;
         var actualEvent = events.Single(e => e.StackId == "1ecd0826e447a44e78877ab1");
         string actualStackId = actualEvent.StackId ?? throw new InvalidOperationException("Expected test event to have a stack id.");
 
@@ -1659,7 +1659,7 @@ public partial class EventControllerTests : IntegrationTestsBase
         Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
 
         var links = ParseLinkHeaderValue(response.Headers.GetValues(HeaderNames.Link).ToArray());
-        Assert.True(links.TryGetValue("next", out var nextLink));
+        Assert.True(links.TryGetValue("next", out string? nextLink));
 
         string? after = GetQueryStringValue(nextLink, "after");
         Assert.NotNull(after);
@@ -2011,7 +2011,7 @@ public partial class EventControllerTests : IntegrationTestsBase
         // Verify complex properties are captured in Data via JsonExtensionData + OnDeserialized
         Assert.NotNull(ev.Data);
         // Verify nested object structure is preserved
-        Assert.True(ev.Data.TryGetValue("metadata", out var metadataRaw), "metadata key should be captured in Data");
+        Assert.True(ev.Data.TryGetValue("metadata", out object? metadataRaw), "metadata key should be captured in Data");
         var metadata = Assert.IsType<Dictionary<string, object?>>(metadataRaw);
         Assert.Equal("value1", metadata["key1"]);
         Assert.Equal(42L, metadata["key2"]);
@@ -2019,7 +2019,7 @@ public partial class EventControllerTests : IntegrationTestsBase
         Assert.Equal("value", nested["inner"]);
 
         // Verify array structure is preserved
-        Assert.True(ev.Data.TryGetValue("tags_list", out var tagsListRaw), "tags_list key should be captured in Data");
+        Assert.True(ev.Data.TryGetValue("tags_list", out object? tagsListRaw), "tags_list key should be captured in Data");
         var tagsList = Assert.IsType<List<object?>>(tagsListRaw);
         Assert.Equal(3, tagsList.Count);
         Assert.Equal("tag1", tagsList[0]);
@@ -2192,7 +2192,7 @@ public partial class EventControllerTests : IntegrationTestsBase
         var targetEvents = events.Documents.Where(e => e.Message is not null && e.Message.StartsWith("test-multi-delete-", StringComparison.Ordinal)).ToList();
         Assert.Equal(3, targetEvents.Count);
 
-        var ids = String.Join(",", targetEvents.Select(e => e.Id));
+        string ids = String.Join(",", targetEvents.Select(e => e.Id));
 
         // Act
         await SendRequestAsync(r => r

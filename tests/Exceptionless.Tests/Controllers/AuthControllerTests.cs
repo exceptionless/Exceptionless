@@ -1205,7 +1205,7 @@ public class AuthControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(problemDetails);
-        Assert.True(problemDetails.Errors.TryGetValue("intercom", out var intercomErrors));
+        Assert.True(problemDetails.Errors.TryGetValue("intercom", out string[]? intercomErrors));
         Assert.Contains("Intercom is not enabled.", intercomErrors);
     }
 

@@ -240,17 +240,17 @@ public class CasingCompatibilityTests : TestWithServices
         Assert.NotNull(ev);
         Assert.NotNull(ev.Data);
 
-        var dateOnly = ev.Data["date_only"];
+        object? dateOnly = ev.Data["date_only"];
         Assert.IsType<string>(dateOnly);
         Assert.Equal("2026-01-15", dateOnly);
 
         // Invalid date strings should always stay as strings
-        var notADate = ev.Data["not_a_date"];
+        object? notADate = ev.Data["not_a_date"];
         Assert.IsType<string>(notADate);
         Assert.Equal("2026-13-45T99:99:99Z", notADate);
 
         // Full ISO dates ARE expected to parse to DateTimeOffset
-        var isoUtc = ev.Data["iso_utc"];
+        object? isoUtc = ev.Data["iso_utc"];
         Assert.IsType<DateTimeOffset>(isoUtc);
     }
 
@@ -279,22 +279,22 @@ public class CasingCompatibilityTests : TestWithServices
         Assert.NotNull(ev.Data);
 
         // Integer 0 should be int (or long in ES mode)
-        var zeroInt = ev.Data["zero_int"];
+        object? zeroInt = ev.Data["zero_int"];
         Assert.IsType<int>(zeroInt);
         Assert.Equal(0, zeroInt);
 
         // 0.0 should be decimal (floating-point preserved)
-        var zeroFloat = ev.Data["zero_float"];
+        object? zeroFloat = ev.Data["zero_float"];
         Assert.IsType<decimal>(zeroFloat);
         Assert.Equal(0.0m, zeroFloat);
 
         // 1.0 should be decimal
-        var oneFloat = ev.Data["one_point_zero"];
+        object? oneFloat = ev.Data["one_point_zero"];
         Assert.IsType<decimal>(oneFloat);
         Assert.Equal(1.0m, oneFloat);
 
         // 1 should be int
-        var oneInt = ev.Data["one_int"];
+        object? oneInt = ev.Data["one_int"];
         Assert.IsType<int>(oneInt);
         Assert.Equal(1, oneInt);
     }
