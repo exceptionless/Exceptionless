@@ -44,5 +44,6 @@
 ## Frontend Work
 
 - The organization settings area now has an Integrations tab with AI tool setup, including GitHub Copilot.
+- The Integrations page also has an OAuth Applications tab that reuses the same list, create, edit, disable, and delete management flow as the System OAuth Apps page.
 - Once the backend endpoints exist, add an organization integrations feature slice with TanStack Query hooks and render connected OAuth/MCP clients on the same tab.
 - Keep the System OAuth Apps screen for global client registration and administration.
