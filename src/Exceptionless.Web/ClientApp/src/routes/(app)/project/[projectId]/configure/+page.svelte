@@ -30,6 +30,11 @@
 
     // Project ID from route params
     const projectId = $derived(page.params.projectId || '');
+    const aiToolsHref = $derived(
+        organization.current
+            ? resolve('/(app)/organization/[organizationId]/integrations', { organizationId: organization.current })
+            : resolve('/(app)/organization/list')
+    );
 
     const defaultTokenQuery = getProjectDefaultTokenQuery({
         route: {
@@ -704,7 +709,7 @@ public partial class App : Application {
             <NotificationDescription>
                 <P>
                     After your client is configured and your first events arrive,
-                    <A href={resolve('/(app)/account/ai-tools')}>set up AI Tools</A> to ask about top issues, 404s, event details, and stack triage.
+                    <A href={aiToolsHref}>set up AI Tools</A> to ask about top issues, 404s, event details, and stack triage.
                 </P>
             </NotificationDescription>
         </Notification>

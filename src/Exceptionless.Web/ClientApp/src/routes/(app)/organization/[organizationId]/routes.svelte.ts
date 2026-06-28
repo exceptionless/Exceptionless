@@ -3,6 +3,7 @@ import { page } from '$app/state';
 import { organization } from '$features/organizations/context.svelte';
 import Usage from '@lucide/svelte/icons/bar-chart';
 import Billing from '@lucide/svelte/icons/credit-card';
+import Integrations from '@lucide/svelte/icons/plug';
 import Settings from '@lucide/svelte/icons/settings';
 import Users from '@lucide/svelte/icons/users';
 import Zap from '@lucide/svelte/icons/zap';
@@ -34,6 +35,12 @@ export function routes(): NavigationItem[] {
             href: resolve('/(app)/organization/[organizationId]/users', { organizationId }),
             icon: Users,
             title: 'Users'
+        },
+        {
+            group: 'Organization Settings',
+            href: resolve('/(app)/organization/[organizationId]/integrations', { organizationId }),
+            icon: Integrations,
+            title: 'Integrations'
         },
         {
             group: 'Organization Settings',

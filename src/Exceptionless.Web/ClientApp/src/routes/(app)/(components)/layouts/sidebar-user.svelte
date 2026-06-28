@@ -185,11 +185,14 @@
                             <Bell />
                             <span class="w-full">Notifications</span>
                         </DropdownMenu.Item>
-                        <DropdownMenu.Item onSelect={() => navigateTo(resolve('/(app)/account/ai-tools'))}>
-                            <Bot />
-                            <span class="w-full">AI Tools</span>
-                        </DropdownMenu.Item>
                         {#if currentOrganizationId}
+                            <DropdownMenu.Item
+                                onSelect={() =>
+                                    navigateTo(resolve('/(app)/organization/[organizationId]/integrations', { organizationId: currentOrganizationId }))}
+                            >
+                                <Bot />
+                                <span class="w-full">Integrations</span>
+                            </DropdownMenu.Item>
                             <DropdownMenu.Item
                                 onSelect={() => navigateTo(resolve('/(app)/organization/[organizationId]/manage', { organizationId: currentOrganizationId }))}
                             >

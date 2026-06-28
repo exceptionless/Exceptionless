@@ -11,6 +11,7 @@
     import { Input } from '$comp/ui/input';
     import { Spinner } from '$comp/ui/spinner';
     import * as Tooltip from '$comp/ui/tooltip';
+    import { organization } from '$features/organizations/context.svelte';
     import { deleteProject, generateSampleData, getProjectQuery, resetData, updateProject } from '$features/projects/api.svelte';
     import RemoveProjectDialog from '$features/projects/components/dialogs/remove-project-dialog.svelte';
     import ResetProjectDataDialog from '$features/projects/components/dialogs/reset-project-data-dialog.svelte';
@@ -31,6 +32,11 @@
     let toastId = $state<number | string>();
 
     const projectId = $derived(page.params.projectId || '');
+    const aiToolsHref = $derived(
+        organization.current
+            ? resolve('/(app)/organization/[organizationId]/integrations', { organizationId: organization.current })
+            : resolve('/(app)/organization/list')
+    );
     const projectQuery = getProjectQuery({
         route: {
             get id() {
@@ -179,7 +185,7 @@
             <Button variant="secondary" href={`${resolve('/(app)/account/notifications')}?project=${projectId}`}>
                 <NotificationSettings class="mr-2 size-4" /> Notifications
             </Button>
-            <Button variant="success" href={resolve('/(app)/account/ai-tools')}>
+            <Button variant="success" href={aiToolsHref}>
                 <Bot class="mr-2 size-4" /> Set Up AI Tools
             </Button>
             <Button variant="secondary" onclick={generateProjectSampleData} disabled={generateSampleDataMutation.isPending}>
