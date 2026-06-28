@@ -5,6 +5,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Authentication;
@@ -14,6 +15,7 @@ using Exceptionless.Web.Models;
 using FluentRest;
 using Foundatio.Queues;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Utility;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
 using User = Exceptionless.Core.Models.User;
@@ -27,6 +29,7 @@ public class AuthControllerTests : IntegrationTestsBase
     private readonly IUserRepository _userRepository;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly ITokenRepository _tokenRepository;
+    private readonly IOAuthTokenRepository _oauthTokenRepository;
 
     public AuthControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
@@ -38,6 +41,7 @@ public class AuthControllerTests : IntegrationTestsBase
         _organizationRepository = GetService<IOrganizationRepository>();
         _userRepository = GetService<IUserRepository>();
         _tokenRepository = GetService<ITokenRepository>();
+        _oauthTokenRepository = GetService<IOAuthTokenRepository>();
     }
 
     protected override async Task ResetDataAsync()
@@ -753,6 +757,22 @@ public class AuthControllerTests : IntegrationTestsBase
         var actualUser = await _userRepository.GetByIdAsync(token.UserId);
         Assert.NotNull(actualUser);
         Assert.Equal(email, actualUser.EmailAddress);
+        var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
+        var oauthToken = await _oauthTokenRepository.AddAsync(new OAuthToken
+        {
+            Id = ObjectId.GenerateNewId().ToString(),
+            UserId = actualUser.Id,
+            ClientId = "test-change-password-client",
+            GrantId = StringExtensions.GetNewToken(),
+            Resource = "http://localhost:7110/mcp",
+            AccessTokenHash = OAuthService.CreateTokenHash("change-password-oauth-access-token"),
+            RefreshTokenHash = OAuthService.CreateTokenHash("change-password-oauth-refresh-token"),
+            OrganizationIds = [TestConstants.OrganizationId],
+            Scopes = [AuthorizationRoles.McpRead, AuthorizationRoles.OfflineAccess],
+            CreatedBy = actualUser.Id,
+            CreatedUtc = utcNow,
+            UpdatedUtc = utcNow
+        }, o => o.ImmediateConsistency());
 
         const string newPassword = "NewP@ssword2";
         var changePasswordResult = await SendRequestAsAsync<TokenResult>(r => r
@@ -771,6 +791,7 @@ public class AuthControllerTests : IntegrationTestsBase
         Assert.NotEmpty(changePasswordResult.Token);
 
         Assert.Null(await _tokenRepository.GetByIdAsync(result.Token));
+        Assert.Null(await _oauthTokenRepository.GetByIdAsync(oauthToken.Id, o => o.ImmediateConsistency()));
         Assert.NotNull(await _tokenRepository.GetByIdAsync(changePasswordResult.Token));
     }
 
@@ -880,6 +901,22 @@ public class AuthControllerTests : IntegrationTestsBase
         var actualUser = await _userRepository.GetByIdAsync(token.UserId);
         Assert.NotNull(actualUser);
         Assert.Equal(email, actualUser.EmailAddress);
+        var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
+        var oauthToken = await _oauthTokenRepository.AddAsync(new OAuthToken
+        {
+            Id = ObjectId.GenerateNewId().ToString(),
+            UserId = actualUser.Id,
+            ClientId = "test-change-password-client",
+            GrantId = StringExtensions.GetNewToken(),
+            Resource = "http://localhost:7110/mcp",
+            AccessTokenHash = OAuthService.CreateTokenHash("change-password-oauth-access-token"),
+            RefreshTokenHash = OAuthService.CreateTokenHash("change-password-oauth-refresh-token"),
+            OrganizationIds = [TestConstants.OrganizationId],
+            Scopes = [AuthorizationRoles.McpRead, AuthorizationRoles.OfflineAccess],
+            CreatedBy = actualUser.Id,
+            CreatedUtc = utcNow,
+            UpdatedUtc = utcNow
+        }, o => o.ImmediateConsistency());
 
         const string newPassword = "NewP@ssword2";
         await SendRequestAsync(r => r
@@ -895,6 +932,7 @@ public class AuthControllerTests : IntegrationTestsBase
         );
 
         Assert.Null(await _tokenRepository.GetByIdAsync(result.Token));
+        Assert.Null(await _oauthTokenRepository.GetByIdAsync(oauthToken.Id, o => o.ImmediateConsistency()));
     }
 
     [Fact]

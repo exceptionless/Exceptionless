@@ -27,6 +27,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
 {
     private readonly IOrganizationRepository _organizationRepository;
     private readonly ITokenRepository _tokenRepository;
+    private readonly IOAuthTokenRepository _oauthTokenRepository;
     private readonly IOAuthApplicationRepository _oauthApplicationRepository;
     private readonly ICacheClient _cache;
     private readonly IFileStorage _fileStorage;
@@ -35,12 +36,13 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
 
     public UserController(
         IUserRepository userRepository, IFileStorage fileStorage,
-        IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, IOAuthApplicationRepository oauthApplicationRepository, ICacheClient cacheClient, IMailer mailer,
+        IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, IOAuthTokenRepository oauthTokenRepository, IOAuthApplicationRepository oauthApplicationRepository, ICacheClient cacheClient, IMailer mailer,
         ApiMapper mapper, IAppQueryValidator validator, IntercomOptions intercomOptions,
         TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(userRepository, mapper, validator, timeProvider, loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _tokenRepository = tokenRepository;
+        _oauthTokenRepository = oauthTokenRepository;
         _oauthApplicationRepository = oauthApplicationRepository;
         _cache = new ScopedCacheClient(cacheClient, "User");
         _fileStorage = fileStorage;
@@ -73,17 +75,17 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     [HttpGet("me/oauth-grants")]
     public async Task<ActionResult<IReadOnlyCollection<ViewOAuthGrant>>> GetOAuthGrantsAsync()
     {
-        var results = await _tokenRepository.GetOAuthAccessTokensByUserIdAsync(CurrentUser.Id, o => o.PageLimit(MAXIMUM_SKIP));
+        var results = await _oauthTokenRepository.GetByUserIdAsync(CurrentUser.Id, o => o.PageLimit(MAXIMUM_SKIP));
         var tokens = results.Documents.Where(IsActiveOAuthGrantToken).ToArray();
         if (tokens.Length == 0)
             return Ok(Array.Empty<ViewOAuthGrant>());
 
         var applicationsByClientId = new Dictionary<string, OAuthApplication?>(StringComparer.Ordinal);
-        foreach (string clientId in tokens.Select(t => t.OAuthClientId!).Distinct(StringComparer.Ordinal))
+        foreach (string clientId in tokens.Select(t => t.ClientId).Distinct(StringComparer.Ordinal))
             applicationsByClientId[clientId] = await _oauthApplicationRepository.GetByClientIdAsync(clientId);
 
         var grants = tokens
-            .GroupBy(t => t.OAuthClientId!, StringComparer.Ordinal)
+            .GroupBy(t => t.ClientId, StringComparer.Ordinal)
             .Select(group => MapToOAuthGrant(group.ToArray(), applicationsByClientId[group.Key]))
             .OrderBy(g => g.ApplicationName, StringComparer.OrdinalIgnoreCase)
             .ThenBy(g => g.ClientId, StringComparer.Ordinal)
@@ -95,23 +97,28 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     /// <summary>
     /// Revoke current user OAuth grant
     /// </summary>
-    /// <param name="id">The representative OAuth access token id.</param>
+    /// <param name="id">The OAuth grant identifier.</param>
     /// <response code="404">The OAuth grant could not be found.</response>
     [HttpDelete("me/oauth-grants/{id:minlength(1)}")]
     public async Task<IActionResult> RevokeOAuthGrantAsync(string id)
     {
-        var token = await _tokenRepository.GetByIdAsync(id, o => o.ImmediateConsistency());
-        if (token is null || token.OAuthType != OAuthTokenType.Access || !String.Equals(token.UserId, CurrentUser.Id, StringComparison.Ordinal) || String.IsNullOrWhiteSpace(token.OAuthClientId))
+        var grantResults = await _oauthTokenRepository.GetByGrantIdAsync(id, o => o.ImmediateConsistency().PageLimit(MAXIMUM_SKIP));
+        var token = grantResults.Documents.FirstOrDefault(t =>
+            String.Equals(t.UserId, CurrentUser.Id, StringComparison.Ordinal)
+            && !String.IsNullOrWhiteSpace(t.ClientId));
+        if (token is null)
             return NotFound();
 
-        var results = await _tokenRepository.GetOAuthAccessTokensByUserIdAndClientIdAsync(CurrentUser.Id, token.OAuthClientId, o => o.ImmediateConsistency().PageLimit(MAXIMUM_SKIP));
+        string clientId = token.ClientId;
+
+        var results = await _oauthTokenRepository.GetByUserIdAndClientIdAsync(CurrentUser.Id, clientId, o => o.ImmediateConsistency().PageLimit(MAXIMUM_SKIP));
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
-        foreach (var oauthToken in results.Documents.Where(t => t.OAuthType == OAuthTokenType.Access))
+        foreach (var oauthToken in results.Documents)
         {
             oauthToken.IsDisabled = true;
-            oauthToken.Refresh = null;
+            oauthToken.RefreshTokenHash = null;
             oauthToken.UpdatedUtc = utcNow;
-            await _tokenRepository.SaveAsync(oauthToken, o => o.ImmediateConsistency());
+            await _oauthTokenRepository.SaveAsync(oauthToken, o => o.ImmediateConsistency());
         }
 
         return NoContent();
@@ -527,6 +534,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         foreach (var user in values)
         {
             long removed = await _tokenRepository.RemoveAllByUserIdAsync(user.Id);
+            removed += await _oauthTokenRepository.RemoveAllByUserIdAsync(user.Id);
             _logger.RemovedTokens(removed, user.Id);
         }
 
@@ -536,18 +544,18 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     private ViewCurrentUser MapToViewCurrentUser(User user)
         => new(user, _intercomOptions) { AvatarUrl = GetUserAvatarUrl(user.Id, user.AvatarFileName) };
 
-    private bool IsActiveOAuthGrantToken(Token token)
+    private bool IsActiveOAuthGrantToken(OAuthToken token)
     {
-        if (token is { OAuthType: not OAuthTokenType.Access } || token.IsDisabled || token.IsSuspended || String.IsNullOrWhiteSpace(token.OAuthClientId))
+        if (token.IsDisabled || token.IsSuspended || String.IsNullOrWhiteSpace(token.ClientId))
             return false;
 
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         bool hasActiveAccessToken = !token.ExpiresUtc.HasValue || token.ExpiresUtc.Value >= utcNow;
-        bool hasActiveRefreshToken = !String.IsNullOrEmpty(token.Refresh) && (!token.OAuthRefreshExpiresUtc.HasValue || token.OAuthRefreshExpiresUtc.Value >= utcNow);
+        bool hasActiveRefreshToken = !String.IsNullOrEmpty(token.RefreshTokenHash) && (!token.RefreshExpiresUtc.HasValue || token.RefreshExpiresUtc.Value >= utcNow);
         return hasActiveAccessToken || hasActiveRefreshToken;
     }
 
-    private static ViewOAuthGrant MapToOAuthGrant(IReadOnlyCollection<Token> tokens, OAuthApplication? application)
+    private static ViewOAuthGrant MapToOAuthGrant(IReadOnlyCollection<OAuthToken> tokens, OAuthApplication? application)
     {
         var latestToken = tokens
             .OrderByDescending(t => t.UpdatedUtc)
@@ -556,9 +564,9 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
 
         return new ViewOAuthGrant
         {
-            Id = latestToken.Id,
-            ClientId = latestToken.OAuthClientId!,
-            ApplicationName = application?.Name ?? latestToken.OAuthClientId!,
+            Id = latestToken.GrantId,
+            ClientId = latestToken.ClientId,
+            ApplicationName = application?.Name ?? latestToken.ClientId,
             IsApplicationDisabled = application?.IsDisabled ?? false,
             Scopes = tokens
                 .SelectMany(t => t.Scopes)
@@ -566,26 +574,26 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
                 .Order(StringComparer.Ordinal)
                 .ToArray(),
             OrganizationIds = tokens
-                .SelectMany(t => t.OAuthOrganizationIds)
+                .SelectMany(t => t.OrganizationIds)
                 .Where(id => !String.IsNullOrWhiteSpace(id))
                 .Distinct(StringComparer.Ordinal)
                 .Order(StringComparer.Ordinal)
                 .ToArray(),
             Resources = tokens
-                .Where(t => !String.IsNullOrWhiteSpace(t.OAuthResource))
-                .GroupBy(t => t.OAuthResource!, StringComparer.Ordinal)
+                .Where(t => !String.IsNullOrWhiteSpace(t.Resource))
+                .GroupBy(t => t.Resource!, StringComparer.Ordinal)
                 .Select(group => new ViewOAuthGrantResource
                 {
                     Resource = group.Key,
                     Scopes = group.SelectMany(t => t.Scopes).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray(),
-                    OrganizationIds = group.SelectMany(t => t.OAuthOrganizationIds).Where(id => !String.IsNullOrWhiteSpace(id)).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray()
+                    OrganizationIds = group.SelectMany(t => t.OrganizationIds).Where(id => !String.IsNullOrWhiteSpace(id)).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray()
                 })
                 .OrderBy(r => r.Resource, StringComparer.Ordinal)
                 .ToArray(),
             CreatedUtc = tokens.Min(t => t.CreatedUtc),
             UpdatedUtc = tokens.Max(t => t.UpdatedUtc),
             ExpiresUtc = tokens.Select(t => t.ExpiresUtc).Max(),
-            RefreshExpiresUtc = tokens.Select(t => t.OAuthRefreshExpiresUtc).Max()
+            RefreshExpiresUtc = tokens.Select(t => t.RefreshExpiresUtc).Max()
         };
     }
 

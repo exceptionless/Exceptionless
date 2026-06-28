@@ -2,6 +2,7 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Controllers;
@@ -19,13 +20,13 @@ public sealed class UserControllerTests : IntegrationTestsBase
 {
     private readonly IUserRepository _userRepository;
     private readonly IOAuthApplicationRepository _oauthApplicationRepository;
-    private readonly ITokenRepository _tokenRepository;
+    private readonly IOAuthTokenRepository _oauthTokenRepository;
 
     public UserControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _userRepository = GetService<IUserRepository>();
         _oauthApplicationRepository = GetService<IOAuthApplicationRepository>();
-        _tokenRepository = GetService<ITokenRepository>();
+        _oauthTokenRepository = GetService<IOAuthTokenRepository>();
     }
 
     protected override async Task ResetDataAsync()
@@ -321,8 +322,9 @@ public sealed class UserControllerTests : IntegrationTestsBase
 
         const string clientId = "test-oauth-grant-client";
         await CreateOAuthApplicationAsync(clientId, "Test AI Client");
-        await CreateOAuthGrantTokenAsync(user.Id, clientId, "http://localhost:7110/mcp", [AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead, AuthorizationRoles.OfflineAccess]);
-        await CreateOAuthGrantTokenAsync(user.Id, clientId, "http://localhost:7110/api/v2", [AuthorizationRoles.ProjectsRead, AuthorizationRoles.StacksRead]);
+        string grantId = StringExtensions.GetNewToken();
+        await CreateOAuthGrantTokenAsync(user.Id, clientId, "http://localhost:7110/mcp", [AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead, AuthorizationRoles.OfflineAccess], grantId: grantId);
+        await CreateOAuthGrantTokenAsync(user.Id, clientId, "http://localhost:7110/api/v2", [AuthorizationRoles.ProjectsRead, AuthorizationRoles.StacksRead], grantId: grantId);
         await CreateOAuthGrantTokenAsync(user.Id, "disabled-oauth-grant-client", "http://localhost:7110/mcp", [AuthorizationRoles.McpRead], isDisabled: true);
 
         // Act
@@ -363,23 +365,23 @@ public sealed class UserControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
             .Delete()
             .AsTestOrganizationUser()
-            .AppendPaths("users", "me", "oauth-grants", firstToken.Id)
+            .AppendPaths("users", "me", "oauth-grants", firstToken.GrantId!)
             .StatusCodeShouldBeNoContent()
         );
 
         // Assert
-        var revokedFirstToken = await _tokenRepository.GetByIdAsync(firstToken.Id, o => o.ImmediateConsistency());
-        var revokedSecondToken = await _tokenRepository.GetByIdAsync(secondToken.Id, o => o.ImmediateConsistency());
-        var stillActiveToken = await _tokenRepository.GetByIdAsync(unrelatedToken.Id, o => o.ImmediateConsistency());
+        var revokedFirstToken = await _oauthTokenRepository.GetByIdAsync(firstToken.Id, o => o.ImmediateConsistency());
+        var revokedSecondToken = await _oauthTokenRepository.GetByIdAsync(secondToken.Id, o => o.ImmediateConsistency());
+        var stillActiveToken = await _oauthTokenRepository.GetByIdAsync(unrelatedToken.Id, o => o.ImmediateConsistency());
         Assert.NotNull(revokedFirstToken);
         Assert.NotNull(revokedSecondToken);
         Assert.NotNull(stillActiveToken);
         Assert.True(revokedFirstToken.IsDisabled);
         Assert.True(revokedSecondToken.IsDisabled);
-        Assert.Null(revokedFirstToken.Refresh);
-        Assert.Null(revokedSecondToken.Refresh);
+        Assert.Null(revokedFirstToken.RefreshTokenHash);
+        Assert.Null(revokedSecondToken.RefreshTokenHash);
         Assert.False(stillActiveToken.IsDisabled);
-        Assert.NotNull(stillActiveToken.Refresh);
+        Assert.NotNull(stillActiveToken.RefreshTokenHash);
     }
 
     [Fact]
@@ -397,15 +399,15 @@ public sealed class UserControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
             .Delete()
             .AsTestOrganizationUser()
-            .AppendPaths("users", "me", "oauth-grants", token.Id)
+            .AppendPaths("users", "me", "oauth-grants", token.GrantId!)
             .StatusCodeShouldBeNotFound()
         );
 
         // Assert
-        var storedToken = await _tokenRepository.GetByIdAsync(token.Id, o => o.ImmediateConsistency());
+        var storedToken = await _oauthTokenRepository.GetByIdAsync(token.Id, o => o.ImmediateConsistency());
         Assert.NotNull(storedToken);
         Assert.False(storedToken.IsDisabled);
-        Assert.NotNull(storedToken.Refresh);
+        Assert.NotNull(storedToken.RefreshTokenHash);
     }
 
     [Fact]
@@ -696,30 +698,32 @@ public sealed class UserControllerTests : IntegrationTestsBase
         return _oauthApplicationRepository.AddAsync(application, o => o.ImmediateConsistency());
     }
 
-    private Task<Token> CreateOAuthGrantTokenAsync(string userId, string clientId, string resource, string[] scopes, bool isDisabled = false, string[]? organizationIds = null)
+    private async Task<OAuthToken> CreateOAuthGrantTokenAsync(string userId, string clientId, string resource, string[] scopes, bool isDisabled = false, string[]? organizationIds = null, string? grantId = null)
     {
         var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
-        var token = new Token
+        var accessToken = StringExtensions.GetRandomString(OAuthService.OAuthTokenLength);
+        var refreshToken = scopes.Contains(AuthorizationRoles.OfflineAccess, StringComparer.Ordinal) ? StringExtensions.GetRandomString(OAuthService.OAuthTokenLength) : null;
+        var token = new OAuthToken
         {
-            Id = StringExtensions.GetNewToken(),
+            Id = ObjectId.GenerateNewId().ToString(),
             UserId = userId,
-            Type = TokenType.Access,
-            OAuthType = OAuthTokenType.Access,
-            OAuthClientId = clientId,
-            OAuthGrantId = StringExtensions.GetNewToken(),
-            OAuthResource = resource,
-            Refresh = scopes.Contains(AuthorizationRoles.OfflineAccess, StringComparer.Ordinal) ? StringExtensions.GetNewToken() : null,
+            ClientId = clientId,
+            GrantId = String.IsNullOrWhiteSpace(grantId) ? StringExtensions.GetNewToken() : grantId,
+            Resource = resource,
+            AccessTokenHash = OAuthService.CreateTokenHash(accessToken),
+            RefreshTokenHash = refreshToken is null ? null : OAuthService.CreateTokenHash(refreshToken),
             Scopes = scopes.ToHashSet(StringComparer.Ordinal),
-            OAuthOrganizationIds = (organizationIds ?? [SampleDataService.TEST_ORG_ID]).ToHashSet(StringComparer.Ordinal),
+            OrganizationIds = (organizationIds ?? [SampleDataService.TEST_ORG_ID]).ToHashSet(StringComparer.Ordinal),
             ExpiresUtc = utcNow.AddHours(1),
-            OAuthRefreshExpiresUtc = scopes.Contains(AuthorizationRoles.OfflineAccess, StringComparer.Ordinal) ? utcNow.AddDays(30) : null,
+            RefreshExpiresUtc = refreshToken is not null ? utcNow.AddDays(30) : null,
             IsDisabled = isDisabled,
             CreatedBy = userId,
             CreatedUtc = utcNow,
             UpdatedUtc = utcNow
         };
 
-        return _tokenRepository.AddAsync(token, o => o.ImmediateConsistency());
+        await _oauthTokenRepository.AddAsync(token, o => o.ImmediateConsistency());
+        return token;
     }
 
     private async Task<ViewUser> GetTestOrganizationUserAsync()

@@ -37,13 +37,13 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     private const string WrongPkceVerifier = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
 
     private readonly IOAuthApplicationRepository _oauthApplicationRepository;
-    private readonly ITokenRepository _tokenRepository;
+    private readonly IOAuthTokenRepository _oauthTokenRepository;
     private readonly IUserRepository _userRepository;
 
     public OAuthControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _oauthApplicationRepository = GetService<IOAuthApplicationRepository>();
-        _tokenRepository = GetService<ITokenRepository>();
+        _oauthTokenRepository = GetService<IOAuthTokenRepository>();
         _userRepository = GetService<IUserRepository>();
     }
 
@@ -134,7 +134,6 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.Equal("invalid_client_metadata", error.Error);
     }
 
-
     [Fact]
     public async Task RegisterAsync_TooManyAttempts_ReturnsTooManyRequests()
     {
@@ -148,7 +147,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
                 RedirectUris = ["http://127.0.0.1:49152/callback"],
                 GrantTypes = [OAuthGrantTypes.AuthorizationCode],
                 ResponseTypes = ["code"],
-            Scope = AuthorizationRoles.McpRead,
+                Scope = AuthorizationRoles.McpRead,
                 TokenEndpointAuthMethod = "none"
             }, TestContext.Current.CancellationToken);
 
@@ -161,7 +160,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
             RedirectUris = ["http://127.0.0.1:49152/callback"],
             GrantTypes = [OAuthGrantTypes.AuthorizationCode],
             ResponseTypes = ["code"],
-                Scope = AuthorizationRoles.McpRead,
+            Scope = AuthorizationRoles.McpRead,
             TokenEndpointAuthMethod = "none"
         }, TestContext.Current.CancellationToken);
 
@@ -608,20 +607,23 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
 
         Assert.NotNull(token);
         Assert.False(String.IsNullOrEmpty(token.AccessToken));
-        Assert.False(String.IsNullOrEmpty(token.RefreshToken));
+        Assert.Equal(OAuthService.OAuthTokenLength, token.AccessToken.Length);
+        Assert.NotNull(token.RefreshToken);
+        Assert.Equal(OAuthService.OAuthTokenLength, token.RefreshToken.Length);
         Assert.Equal("Bearer", token.TokenType);
         Assert.Equal(Resource, token.Resource);
         Assert.Contains(AuthorizationRoles.McpRead, token.Scope);
 
-        var storedToken = await _tokenRepository.GetByIdAsync(token.AccessToken);
+        var storedToken = await GetStoredOAuthTokenAsync(token.AccessToken);
         Assert.NotNull(storedToken);
-        Assert.Equal(TokenType.Access, storedToken.Type);
-        Assert.Equal(OAuthTokenType.Access, storedToken.OAuthType);
-        Assert.Equal(ClientId, storedToken.OAuthClientId);
-        Assert.False(String.IsNullOrWhiteSpace(storedToken.OAuthGrantId));
-        Assert.Equal(Resource, storedToken.OAuthResource);
+        Assert.NotEqual(token.AccessToken, storedToken.Id);
+        Assert.Equal(OAuthService.CreateTokenHash(token.AccessToken), storedToken.AccessTokenHash);
+        Assert.Equal(OAuthService.CreateTokenHash(token.RefreshToken), storedToken.RefreshTokenHash);
+        Assert.Equal(ClientId, storedToken.ClientId);
+        Assert.False(String.IsNullOrWhiteSpace(storedToken.GrantId));
+        Assert.Equal(Resource, storedToken.Resource);
         Assert.Contains(AuthorizationRoles.EventsRead, storedToken.Scopes);
-        Assert.Equal([TestConstants.OrganizationId], storedToken.OAuthOrganizationIds);
+        Assert.Equal([TestConstants.OrganizationId], storedToken.OrganizationIds);
     }
 
     [Fact]
@@ -633,8 +635,11 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.Equal($"{AuthorizationRoles.McpRead} {AuthorizationRoles.ProjectsRead}", token.Scope);
         Assert.Null(token.RefreshToken);
 
-        var storedToken = await _tokenRepository.GetByIdAsync(token.AccessToken);
+        var storedToken = await GetStoredOAuthTokenAsync(token.AccessToken);
         Assert.NotNull(storedToken);
+        Assert.NotEqual(token.AccessToken, storedToken.Id);
+        Assert.Equal(OAuthService.CreateTokenHash(token.AccessToken), storedToken.AccessTokenHash);
+        Assert.Null(storedToken.RefreshTokenHash);
         Assert.Contains(AuthorizationRoles.McpRead, storedToken.Scopes);
         Assert.Contains(AuthorizationRoles.ProjectsRead, storedToken.Scopes);
         Assert.DoesNotContain(AuthorizationRoles.StacksWrite, storedToken.Scopes);
@@ -667,9 +672,9 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         var token = await IssueTokenAsync(clientId, redirectUri);
 
         Assert.NotNull(token);
-        var storedToken = await _tokenRepository.GetByIdAsync(token.AccessToken);
+        var storedToken = await GetStoredOAuthTokenAsync(token.AccessToken);
         Assert.NotNull(storedToken);
-        Assert.Equal(clientId, storedToken.OAuthClientId);
+        Assert.Equal(clientId, storedToken.ClientId);
         Assert.Contains(AuthorizationRoles.McpRead, storedToken.Scopes);
     }
 
@@ -679,9 +684,9 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         var token = await IssueTokenAsync(MetadataClientId, MetadataRedirectUri);
 
         Assert.NotNull(token);
-        var storedToken = await _tokenRepository.GetByIdAsync(token.AccessToken);
+        var storedToken = await GetStoredOAuthTokenAsync(token.AccessToken);
         Assert.NotNull(storedToken);
-        Assert.Equal(MetadataClientId, storedToken.OAuthClientId);
+        Assert.Equal(MetadataClientId, storedToken.ClientId);
         Assert.Contains(AuthorizationRoles.McpRead, storedToken.Scopes);
     }
 
@@ -695,6 +700,20 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
             .AppendPath("projects")
             .StatusCodeShouldBeOk());
     }
+
+    [Fact]
+    public async Task OAuthBearer_InternalTokenId_ReturnsUnauthorized()
+    {
+        var token = await IssueTokenAsync(resource: RestApiResource, scope: AuthorizationRoles.ProjectsRead);
+        var storedToken = await GetStoredOAuthTokenAsync(token.AccessToken);
+        Assert.NotNull(storedToken);
+
+        await SendRequestAsync(r => r
+            .BearerToken(storedToken.Id)
+            .AppendPath("projects")
+            .StatusCodeShouldBeUnauthorized());
+    }
+
 
     [Fact]
     public async Task OAuthBearer_McpResourceForRestApi_ReturnsUnauthorized()
@@ -765,10 +784,10 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
             .AppendPath("projects")
             .StatusCodeShouldBeUnauthorized());
 
-        var storedToken = await _tokenRepository.GetByIdAsync(token.AccessToken, o => o.ImmediateConsistency());
+        var storedToken = await GetStoredOAuthTokenAsync(token.AccessToken);
         Assert.NotNull(storedToken);
         Assert.True(storedToken.IsDisabled);
-        Assert.Null(storedToken.Refresh);
+        Assert.Null(storedToken.RefreshTokenHash);
     }
 
     [Fact]
@@ -875,19 +894,20 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.Equal(HttpStatusCode.OK, refreshResponse.StatusCode);
         var refreshedToken = await DeserializeResponseAsync<OAuthTokenResponse>(refreshResponse);
         Assert.NotNull(refreshedToken);
+        Assert.NotNull(refreshedToken.RefreshToken);
         Assert.NotEqual(token.AccessToken, refreshedToken.AccessToken);
         Assert.NotEqual(token.RefreshToken, refreshedToken.RefreshToken);
 
-        var spentToken = await _tokenRepository.GetByIdAsync(token.AccessToken, o => o.ImmediateConsistency());
+        var spentToken = await GetStoredOAuthTokenAsync(token.AccessToken);
         Assert.NotNull(spentToken);
         Assert.True(spentToken.IsDisabled);
-        Assert.Equal(token.RefreshToken, spentToken.Refresh);
+        Assert.Equal(OAuthService.CreateTokenHash(token.RefreshToken), spentToken.RefreshTokenHash);
 
-        var refreshedStoredToken = await _tokenRepository.GetByIdAsync(refreshedToken.AccessToken, o => o.ImmediateConsistency());
+        var refreshedStoredToken = await GetStoredOAuthTokenAsync(refreshedToken.AccessToken);
         Assert.NotNull(refreshedStoredToken);
         Assert.False(refreshedStoredToken.IsDisabled);
-        Assert.NotNull(refreshedStoredToken.Refresh);
-        Assert.Equal(spentToken.OAuthGrantId, refreshedStoredToken.OAuthGrantId);
+        Assert.Equal(OAuthService.CreateTokenHash(refreshedToken.RefreshToken), refreshedStoredToken.RefreshTokenHash);
+        Assert.Equal(spentToken.GrantId, refreshedStoredToken.GrantId);
 
         using var reusedRefreshRequestContent = new FormUrlEncodedContent(new Dictionary<string, string?>
         {
@@ -899,14 +919,14 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
 
         Assert.Equal(HttpStatusCode.BadRequest, reusedRefreshResponse.StatusCode);
 
-        spentToken = await _tokenRepository.GetByIdAsync(token.AccessToken, o => o.ImmediateConsistency());
-        refreshedStoredToken = await _tokenRepository.GetByIdAsync(refreshedToken.AccessToken, o => o.ImmediateConsistency());
+        spentToken = await GetStoredOAuthTokenAsync(token.AccessToken);
+        refreshedStoredToken = await GetStoredOAuthTokenAsync(refreshedToken.AccessToken);
         Assert.NotNull(spentToken);
         Assert.NotNull(refreshedStoredToken);
         Assert.True(spentToken.IsDisabled);
         Assert.True(refreshedStoredToken.IsDisabled);
-        Assert.Null(spentToken.Refresh);
-        Assert.Null(refreshedStoredToken.Refresh);
+        Assert.Null(spentToken.RefreshTokenHash);
+        Assert.Null(refreshedStoredToken.RefreshTokenHash);
     }
 
     [Fact]
@@ -936,9 +956,9 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.Equal(HttpStatusCode.OK, refreshResponse.StatusCode);
         var refreshedToken = await DeserializeResponseAsync<OAuthTokenResponse>(refreshResponse);
         Assert.NotNull(refreshedToken);
-        var storedToken = await _tokenRepository.GetByIdAsync(refreshedToken.AccessToken, o => o.ImmediateConsistency());
+        var storedToken = await GetStoredOAuthTokenAsync(refreshedToken.AccessToken);
         Assert.NotNull(storedToken);
-        Assert.Equal([TestConstants.OrganizationId], storedToken.OAuthOrganizationIds);
+        Assert.Equal([TestConstants.OrganizationId], storedToken.OrganizationIds);
     }
 
     [Fact]
@@ -960,7 +980,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.NotNull(refreshedToken.RefreshToken);
         Assert.Equal($"{AuthorizationRoles.ProjectsRead} {AuthorizationRoles.OfflineAccess}", refreshedToken.Scope);
 
-        var refreshedStoredToken = await _tokenRepository.GetByIdAsync(refreshedToken.AccessToken, o => o.ImmediateConsistency());
+        var refreshedStoredToken = await GetStoredOAuthTokenAsync(refreshedToken.AccessToken);
         Assert.NotNull(refreshedStoredToken);
         Assert.Equal(2, refreshedStoredToken.Scopes.Count);
         Assert.Contains(AuthorizationRoles.ProjectsRead, refreshedStoredToken.Scopes);
@@ -1040,10 +1060,10 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         var response = await client.PostAsync("oauth/revoke", revokeContent, TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var storedToken = await _tokenRepository.GetByIdAsync(token.AccessToken);
+        var storedToken = await GetStoredOAuthTokenAsync(token.AccessToken);
         Assert.NotNull(storedToken);
         Assert.True(storedToken.IsDisabled);
-        Assert.Null(storedToken.Refresh);
+        Assert.Null(storedToken.RefreshTokenHash);
     }
 
     [Fact]
@@ -1060,20 +1080,20 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         var response = await client.PostAsync("oauth/revoke", revokeContent, TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var storedToken = await _tokenRepository.GetByIdAsync(token.AccessToken, o => o.ImmediateConsistency());
+        var storedToken = await GetStoredOAuthTokenAsync(token.AccessToken);
         Assert.NotNull(storedToken);
         Assert.False(storedToken.IsDisabled);
-        Assert.NotNull(storedToken.Refresh);
+        Assert.NotNull(storedToken.RefreshTokenHash);
     }
 
     [Fact]
     public async Task OAuthBearer_WithRootResource_ReturnsUnauthorized()
     {
         var token = await IssueTokenAsync(resource: RestApiResource, scope: AuthorizationRoles.ProjectsRead);
-        var storedToken = await _tokenRepository.GetByIdAsync(token.AccessToken, o => o.ImmediateConsistency());
+        var storedToken = await GetStoredOAuthTokenAsync(token.AccessToken);
         Assert.NotNull(storedToken);
-        storedToken.OAuthResource = "http://localhost:7110";
-        await _tokenRepository.SaveAsync(storedToken, o => o.ImmediateConsistency());
+        storedToken.Resource = "http://localhost:7110";
+        await _oauthTokenRepository.SaveAsync(storedToken, o => o.ImmediateConsistency());
 
         await SendRequestAsync(r => r
             .BearerToken(token.AccessToken)
@@ -1088,6 +1108,12 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.NotNull(user);
         user.OrganizationIds.Remove(organizationId);
         await _userRepository.SaveAsync(user, o => o.ImmediateConsistency());
+    }
+
+    private async Task<OAuthToken?> GetStoredOAuthTokenAsync(string accessToken)
+    {
+        var results = await _oauthTokenRepository.GetByAccessTokenHashAsync(OAuthService.CreateTokenHash(accessToken), o => o.ImmediateConsistency());
+        return results.Documents.FirstOrDefault();
     }
 
     private async Task<OAuthTokenResponse> IssueTokenAsync(string clientId = ClientId, string redirectUri = RedirectUri, string? resource = Resource, string? scope = null, IReadOnlyCollection<string>? organizationIds = null)
@@ -1163,10 +1189,10 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
 
     private async Task AssertGrantFamilyRevokedAsync(string accessToken)
     {
-        var storedToken = await _tokenRepository.GetByIdAsync(accessToken, o => o.ImmediateConsistency());
+        var storedToken = await GetStoredOAuthTokenAsync(accessToken);
         Assert.NotNull(storedToken);
         Assert.True(storedToken.IsDisabled);
-        Assert.Null(storedToken.Refresh);
+        Assert.Null(storedToken.RefreshTokenHash);
     }
 
     private static FormUrlEncodedContent CreateRefreshTokenContent(string? refreshToken, string clientId = ClientId)

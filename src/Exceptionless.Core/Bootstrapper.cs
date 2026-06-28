@@ -140,6 +140,7 @@ public class Bootstrapper
         services.AddSingleton<MigrationIndex>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().Migrations);
         services.AddSingleton<IOrganizationRepository, OrganizationRepository>();
         services.AddSingleton<IOAuthApplicationRepository, OAuthApplicationRepository>();
+        services.AddSingleton<IOAuthTokenRepository, OAuthTokenRepository>();
         services.AddSingleton<IProjectRepository, ProjectRepository>();
         services.AddSingleton<IUserRepository, UserRepository>();
         services.AddSingleton<IWebHookRepository, WebHookRepository>();

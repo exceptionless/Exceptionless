@@ -5,6 +5,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Mcp;
@@ -887,17 +888,16 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         user.OrganizationIds.Add(TestConstants.OrganizationId);
 
         var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
-        var token = new Token
+        var token = new OAuthToken
         {
             Id = "oauth-test-token",
             UserId = user.Id,
-            Type = TokenType.Access,
-            OAuthType = OAuthTokenType.Access,
-            OAuthClientId = "test-client",
-            OAuthGrantId = "test-grant",
-            OAuthResource = "http://localhost/mcp",
+            ClientId = "test-client",
+            GrantId = "test-grant",
+            Resource = "http://localhost/mcp",
+            AccessTokenHash = OAuthService.CreateTokenHash("mcp-tools-access-token"),
             Scopes = scopes.ToHashSet(StringComparer.Ordinal),
-            OAuthOrganizationIds = [TestConstants.OrganizationId],
+            OrganizationIds = [TestConstants.OrganizationId],
             CreatedUtc = utcNow,
             UpdatedUtc = utcNow,
             CreatedBy = user.Id

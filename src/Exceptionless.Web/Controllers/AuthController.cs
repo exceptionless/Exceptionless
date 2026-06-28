@@ -35,6 +35,7 @@ public class AuthController : ExceptionlessApiController
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IUserRepository _userRepository;
     private readonly ITokenRepository _tokenRepository;
+    private readonly IOAuthTokenRepository _oauthTokenRepository;
     private readonly ScopedCacheClient _cache;
     private readonly IMailer _mailer;
     private readonly ILogger _logger;
@@ -43,7 +44,7 @@ public class AuthController : ExceptionlessApiController
     private static readonly TimeSpan IntercomJwtLifetime = TimeSpan.FromMinutes(60);
 
     public AuthController(AuthOptions authOptions, IntercomOptions intercomOptions, IOrganizationRepository organizationRepository, IUserRepository userRepository,
-        ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, IDomainLoginProvider domainLoginProvider,
+        ITokenRepository tokenRepository, IOAuthTokenRepository oauthTokenRepository, ICacheClient cacheClient, IMailer mailer, IDomainLoginProvider domainLoginProvider,
         TimeProvider timeProvider, ILogger<AuthController> logger) : base(timeProvider)
     {
         _authOptions = authOptions;
@@ -52,6 +53,7 @@ public class AuthController : ExceptionlessApiController
         _organizationRepository = organizationRepository;
         _userRepository = userRepository;
         _tokenRepository = tokenRepository;
+        _oauthTokenRepository = oauthTokenRepository;
         _cache = new ScopedCacheClient(cacheClient, "Auth");
         _mailer = mailer;
         _logger = logger;
@@ -862,6 +864,7 @@ public class AuthController : ExceptionlessApiController
         try
         {
             long total = await _tokenRepository.RemoveAllByUserIdAsync(user.Id);
+            total += await _oauthTokenRepository.RemoveAllByUserIdAsync(user.Id);
             _logger.RemovedUserTokens(total, user.EmailAddress);
         }
         catch (Exception ex)

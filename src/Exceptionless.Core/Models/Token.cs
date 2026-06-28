@@ -17,7 +17,7 @@ public class Token : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, IVa
     public string OrganizationId { get; set; } = null!;
 
     /// <summary>
-    /// Null for org-scoped or user-scoped tokens.
+    /// Null for organization-scoped or user-scoped tokens.
     /// Cannot be set together with UserId.
     /// </summary>
     [ObjectId]
@@ -36,12 +36,6 @@ public class Token : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, IVa
     public string? DefaultProjectId { get; set; }
     public string? Refresh { get; set; }
     public TokenType Type { get; set; }
-    public OAuthTokenType OAuthType { get; set; }
-    public string? OAuthClientId { get; set; }
-    public string? OAuthGrantId { get; set; }
-    public string? OAuthResource { get; set; }
-    public DateTime? OAuthRefreshExpiresUtc { get; set; }
-    public HashSet<string> OAuthOrganizationIds { get; set; } = new();
     public HashSet<string> Scopes { get; set; } = new();
     public DateTime? ExpiresUtc { get; set; }
     public string? Notes { get; set; }
@@ -85,44 +79,11 @@ public class Token : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, IVa
         {
             yield return new ValidationResult("Only access tokens can be disabled", [nameof(IsDisabled)]);
         }
-
-        if (OAuthType == OAuthTokenType.Access)
-        {
-            if (Type != TokenType.Access)
-                yield return new ValidationResult("OAuth tokens must be access tokens.", [nameof(Type)]);
-
-            if (String.IsNullOrEmpty(UserId))
-                yield return new ValidationResult("OAuth tokens must be associated with a user.", [nameof(UserId)]);
-
-            if (String.IsNullOrWhiteSpace(OAuthClientId))
-                yield return new ValidationResult("OAuth tokens must specify a client id.", [nameof(OAuthClientId)]);
-
-            if (String.IsNullOrWhiteSpace(OAuthGrantId))
-                yield return new ValidationResult("OAuth tokens must specify a grant id.", [nameof(OAuthGrantId)]);
-
-            if (String.IsNullOrWhiteSpace(OAuthResource))
-                yield return new ValidationResult("OAuth tokens must specify a resource.", [nameof(OAuthResource)]);
-
-            if (Scopes.Count == 0)
-                yield return new ValidationResult("OAuth tokens must specify at least one scope.", [nameof(Scopes)]);
-
-            if (OAuthOrganizationIds.Count == 0)
-                yield return new ValidationResult("OAuth tokens must specify at least one organization id.", [nameof(OAuthOrganizationIds)]);
-
-            foreach (string _ in OAuthOrganizationIds.Where(String.IsNullOrWhiteSpace))
-                yield return new ValidationResult("OAuth organization id cannot be empty.", [nameof(OAuthOrganizationIds)]);
-        }
     }
 }
 
 public enum TokenType
 {
     Authentication,
-    Access
-}
-
-public enum OAuthTokenType
-{
-    None,
     Access
 }
