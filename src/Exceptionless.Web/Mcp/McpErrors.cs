@@ -6,6 +6,8 @@ namespace Exceptionless.Web.Mcp;
 
 public static class McpErrorCodes
 {
+    public const string ContextMismatch = "context_mismatch";
+    public const string ContextRequired = "context_required";
     public const string Forbidden = "forbidden";
     public const string InvalidClientPlatform = "invalid_client_platform";
     public const string InvalidCursor = "invalid_cursor";
@@ -29,6 +31,31 @@ public static class McpErrorCodes
 
 public static class McpErrors
 {
+    public static McpErrorInfo ContextMismatch(string message, string? activeOrganizationId, string? requestedOrganizationId, string? activeProjectId, string? requestedProjectId)
+    {
+        return new McpErrorInfo(McpErrorCodes.ContextMismatch, message, new Dictionary<string, object?>
+        {
+            ["activeOrganizationId"] = activeOrganizationId,
+            ["requestedOrganizationId"] = requestedOrganizationId,
+            ["activeProjectId"] = activeProjectId,
+            ["requestedProjectId"] = requestedProjectId
+        });
+    }
+
+    public static McpErrorInfo ContextRequired(
+        string message,
+        string selection,
+        IReadOnlyCollection<McpOrganizationResult> organizations,
+        IReadOnlyCollection<McpProjectResult> projects)
+    {
+        return new McpErrorInfo(McpErrorCodes.ContextRequired, message, new Dictionary<string, object?>
+        {
+            ["selection"] = selection,
+            ["organizations"] = organizations,
+            ["projects"] = projects
+        });
+    }
+
     public static McpErrorInfo Forbidden(string message, string requiredScope)
     {
         return new McpErrorInfo(McpErrorCodes.Forbidden, message, new Dictionary<string, object?>
@@ -201,4 +228,9 @@ public sealed record McpErrorInfo(string Code, string Message, IReadOnlyDictiona
 public sealed class McpForbiddenException(string message, string requiredScope) : UnauthorizedAccessException(message)
 {
     public string RequiredScope { get; } = requiredScope;
+}
+
+public sealed class McpContextException(McpErrorInfo error) : InvalidOperationException(error.Message)
+{
+    public McpErrorInfo Error { get; } = error;
 }
