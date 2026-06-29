@@ -328,21 +328,6 @@ export function deleteOrganization(request: DeleteOrganizationRequest) {
     }));
 }
 
-export function deleteOrganizationIcon(request: OrganizationIconRequest) {
-    const queryClient = useQueryClient();
-
-    return createMutation<ViewOrganization, ProblemDetails, void>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.id,
-        mutationFn: async () => {
-            return await fetchApiJson<ViewOrganization>(`organizations/${request.route.id}/icon`, {
-                method: 'DELETE'
-            });
-        },
-        mutationKey: queryKeys.icon(request.route.id),
-        onSuccess: (organization: ViewOrganization) => updateOrganizationCache(queryClient, request.route.id, organization)
-    }));
-}
-
 export function deleteOrganizationData(request: DeleteOrganizationDataRequest) {
     const queryClient = useQueryClient();
 
@@ -371,6 +356,22 @@ export function deleteOrganizationData(request: DeleteOrganizationDataRequest) {
         }
     }));
 }
+
+export function deleteOrganizationIcon(request: OrganizationIconRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<ViewOrganization, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async () => {
+            return await fetchApiJson<ViewOrganization>(`organizations/${request.route.id}/icon`, {
+                method: 'DELETE'
+            });
+        },
+        mutationKey: queryKeys.icon(request.route.id),
+        onSuccess: (organization: ViewOrganization) => updateOrganizationCache(queryClient, request.route.id, organization)
+    }));
+}
+
 export function deleteOrganizationUser(request: DeleteOrganizationUserRequest) {
     const queryClient = useQueryClient();
     return createMutation<void, ProblemDetails, void>(() => ({
