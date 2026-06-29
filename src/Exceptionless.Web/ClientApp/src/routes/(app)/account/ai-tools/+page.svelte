@@ -113,10 +113,11 @@
 
     const examplePrompts = [
         'What are my top issues this week?',
-        'Show me the top 404s in my project.',
+        'Fix my top error',
+        'Show me the top 404s in my project',
         'What changed after version 1.0.2?',
-        'Find recent errors for this user or order id.',
-        'Mark this stack fixed in version 1.0.2.'
+        'Find recent errors for this user or order id',
+        'Mark this stack fixed in version 1.0.2'
     ];
 </script>
 
