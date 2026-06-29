@@ -55,6 +55,7 @@
     let isAuthorizing = $state(false);
     let isLoadingConsent = $state(false);
     let loadedConsentKey = $state<null | string>(null);
+    let initializedOrganizationSelectionKey = $state<null | string>(null);
     const selectedOrganizationIds = new SvelteSet<string>();
     const selectedScopes = new SvelteSet<string>();
 
@@ -112,6 +113,17 @@
                 selectedOrganizationIds.clear();
             }
 
+            return;
+        }
+
+        const consentKey = page.url.search;
+        if (initializedOrganizationSelectionKey !== consentKey) {
+            selectedOrganizationIds.clear();
+            for (const organizationId of organizationIds) {
+                selectedOrganizationIds.add(organizationId);
+            }
+
+            initializedOrganizationSelectionKey = consentKey;
             return;
         }
 
