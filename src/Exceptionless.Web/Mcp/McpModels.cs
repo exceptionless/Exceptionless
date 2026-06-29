@@ -20,7 +20,7 @@ public sealed record McpResponse<T>(bool Ok, T? Data = default, McpErrorInfo? Er
 
 public sealed record McpListData<T>(IReadOnlyCollection<T> Items);
 
-public sealed record McpPagination(bool HasMore, string? Before, string? After, int Limit);
+public sealed record McpPagination(bool HasMore, int Limit, string? Before = null, string? After = null);
 
 public sealed record McpTimeRange(DateTime? StartUtc, DateTime? EndUtc)
 {
@@ -42,10 +42,10 @@ public sealed record McpEventCountResult(
     double Occurrences,
     long Stacks,
     long Users,
-    string? Interval,
-    DateTime? StartUtc,
-    DateTime? EndUtc,
     IReadOnlyCollection<McpEventTrendBucket> Trend,
+    string? Interval = null,
+    DateTime? StartUtc = null,
+    DateTime? EndUtc = null,
     string? GroupBy = null,
     IReadOnlyCollection<McpEventCountGroup>? Groups = null);
 
@@ -64,11 +64,11 @@ public sealed record McpProjectResult(
     string Id,
     string OrganizationId,
     string Name,
-    bool? IsConfigured,
-    DateTime? LastEventDateUtc,
     DateTime CreatedUtc,
     DateTime UpdatedUtc,
-    string Url);
+    string Url,
+    bool? IsConfigured = null,
+    DateTime? LastEventDateUtc = null);
 
 public sealed record McpClientSetupInstructionsResult(
     string ProjectId,
@@ -95,19 +95,19 @@ public sealed record McpStackResult(
     string Type,
     string Status,
     string Title,
-    string? Description,
     int TotalOccurrences,
     DateTime FirstOccurrence,
     DateTime LastOccurrence,
-    DateTime? DateFixed,
-    string? FixedInVersion,
-    DateTime? SnoozeUntilUtc,
     IReadOnlyCollection<string> Tags,
     IReadOnlyCollection<string> References,
     bool OccurrencesAreCritical,
     DateTime CreatedUtc,
     DateTime UpdatedUtc,
-    string Url);
+    string Url,
+    string? Description = null,
+    DateTime? DateFixed = null,
+    string? FixedInVersion = null,
+    DateTime? SnoozeUntilUtc = null);
 
 public sealed record McpStackUpdateResult(
     McpStackResult Stack,
@@ -119,23 +119,23 @@ public sealed record McpEventResult(
     string OrganizationId,
     string ProjectId,
     string StackId,
-    string? Type,
-    string? Source,
-    string? Message,
     DateTimeOffset Date,
     IReadOnlyCollection<string> Tags,
-    string? ReferenceId,
     bool IsFirstOccurrence,
     DateTime CreatedUtc,
     string Url,
+    string? Type = null,
+    string? Source = null,
+    string? Message = null,
+    string? ReferenceId = null,
     McpEventDetails? Details = null);
 
 public sealed record McpEventDetails(
-    object? Error,
-    RequestInfo? Request,
-    EnvironmentInfo? Environment,
-    DataDictionary? Data,
     bool IsTruncated = false,
     int? Size = null,
     int? MaxSize = null,
-    string? TruncationMessage = null);
+    string? TruncationMessage = null,
+    object? Error = null,
+    RequestInfo? Request = null,
+    EnvironmentInfo? Environment = null,
+    DataDictionary? Data = null);

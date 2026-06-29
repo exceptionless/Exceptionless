@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -751,6 +752,25 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         Assert.Null(result.Data);
     }
 
+    [Fact]
+    public async Task ListProjectsAsync_OutputSchemaDoesNotRequireNullableFields()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead);
+        var method = typeof(ExceptionlessMcpTools).GetMethod(nameof(ExceptionlessMcpTools.ListProjectsAsync)) ?? throw new InvalidOperationException("Could not find ListProjectsAsync.");
+        var tool = McpServerTool.Create(method, tools, new McpServerToolCreateOptions());
+        var outputSchema = tool.ProtocolTool.OutputSchema ?? throw new InvalidOperationException("The list_projects tool must advertise an output schema.");
+
+        var paginationSchema = GetSchemaProperty(outputSchema, outputSchema, "pagination");
+        Assert.DoesNotContain("after", RequiredProperties(paginationSchema));
+        Assert.DoesNotContain("before", RequiredProperties(paginationSchema));
+
+        var dataSchema = GetSchemaProperty(outputSchema, outputSchema, "data");
+        var itemsSchema = GetSchemaProperty(outputSchema, dataSchema, "items");
+        var projectSchema = ResolveSchema(outputSchema, itemsSchema.GetProperty("items"));
+        Assert.DoesNotContain("isConfigured", RequiredProperties(projectSchema));
+        Assert.DoesNotContain("lastEventDateUtc", RequiredProperties(projectSchema));
+    }
+
     [Theory]
     [InlineData(nameof(ExceptionlessMcpTools.ListProjectsAsync))]
     [InlineData(nameof(ExceptionlessMcpTools.SearchStacksAsync))]
@@ -941,6 +961,53 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     {
         Assert.NotNull(result.Data);
         return result.Data!.Items;
+    }
+
+    private static JsonElement GetSchemaProperty(JsonElement rootSchema, JsonElement schema, string propertyName)
+    {
+        schema = ResolveSchema(rootSchema, schema);
+        var propertySchema = schema.GetProperty("properties").GetProperty(propertyName);
+
+        return ResolveSchema(rootSchema, propertySchema);
+    }
+
+    private static JsonElement ResolveSchema(JsonElement rootSchema, JsonElement schema)
+    {
+        if (schema.TryGetProperty("$ref", out var reference))
+            return ResolveSchemaReference(rootSchema, reference.GetString() ?? throw new InvalidOperationException("Schema reference is empty."));
+
+        if (schema.TryGetProperty("anyOf", out var anyOf))
+            return anyOf.EnumerateArray().Select(candidate => ResolveSchema(rootSchema, candidate)).First(candidate => IsObjectSchema(candidate));
+
+        if (schema.TryGetProperty("oneOf", out var oneOf))
+            return oneOf.EnumerateArray().Select(candidate => ResolveSchema(rootSchema, candidate)).First(candidate => IsObjectSchema(candidate));
+
+        return schema;
+    }
+
+    private static JsonElement ResolveSchemaReference(JsonElement rootSchema, string reference)
+    {
+        if (!reference.StartsWith("#/", StringComparison.Ordinal))
+            throw new InvalidOperationException($"Only local schema references are supported. Reference: {reference}");
+
+        var current = rootSchema;
+        foreach (string segment in reference[2..].Split('/'))
+            current = current.GetProperty(segment.Replace("~1", "/", StringComparison.Ordinal).Replace("~0", "~", StringComparison.Ordinal));
+
+        return ResolveSchema(rootSchema, current);
+    }
+
+    private static IReadOnlyCollection<string> RequiredProperties(JsonElement schema)
+    {
+        schema = ResolveSchema(schema, schema);
+        return schema.TryGetProperty("required", out var required)
+            ? required.EnumerateArray().Select(property => property.GetString()!).ToArray()
+            : [];
+    }
+
+    private static bool IsObjectSchema(JsonElement schema)
+    {
+        return schema.TryGetProperty("type", out var type) && type.ValueKind == JsonValueKind.String && type.GetString() == "object";
     }
 
     private static T Data<T>(McpResponse<T> result)

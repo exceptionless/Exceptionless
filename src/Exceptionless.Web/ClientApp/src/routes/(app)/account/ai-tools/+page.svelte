@@ -30,17 +30,6 @@
         }
     });
 
-    const openCodeConfiguration = $derived(`{
-  "$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "exceptionless": {
-      "type": "remote",
-      "url": "${mcpEndpoint}",
-      "oauth": {}
-    }
-  }
-}`);
-
     const aiTools = $derived<AiTool[]>([
         {
             description: 'Use Claude Code with the hosted Exceptionless MCP server.',
@@ -105,10 +94,10 @@
             name: 'OpenCode',
             steps: [
                 {
-                    code: openCodeConfiguration,
-                    description: 'Add this server entry to your opencode.json file.',
-                    language: 'json',
-                    title: 'Add the server configuration'
+                    code: `opencode mcp add exceptionless --url ${mcpEndpoint}`,
+                    description: 'Register the hosted HTTP MCP server with OpenCode.',
+                    language: 'shellscript',
+                    title: 'Add the server'
                 },
                 {
                     code: 'opencode mcp auth exceptionless',
