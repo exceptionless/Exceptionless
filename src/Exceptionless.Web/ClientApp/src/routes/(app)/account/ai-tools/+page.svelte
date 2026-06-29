@@ -86,13 +86,13 @@
             name: 'GitHub Copilot CLI',
             steps: [
                 {
-                    code: `gh copilot -- mcp add --transport http exceptionless ${mcpEndpoint}`,
+                    code: `copilot mcp add --transport http exceptionless ${mcpEndpoint}`,
                     description: 'Register the hosted HTTP MCP server with Copilot.',
                     language: 'shellscript',
                     title: 'Add the server'
                 },
                 {
-                    code: 'gh copilot -- -i "List my Exceptionless projects"',
+                    code: 'copilot -i "List my Exceptionless projects"',
                     description: 'Start Copilot and approve the OAuth browser flow when prompted.',
                     language: 'shellscript',
                     title: 'Authenticate'
