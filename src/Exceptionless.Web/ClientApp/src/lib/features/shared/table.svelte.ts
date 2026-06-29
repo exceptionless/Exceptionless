@@ -243,7 +243,6 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
     });
 
     const tableOptions: TableOptions<StockFeatures, TData> = {
-        _features: sharedTableFeatures,
         get columns() {
             return columns();
         },
@@ -259,6 +258,7 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
         enableMultiRowSelection: true,
         enableRowSelection: true,
         enableSortingRemoval: false,
+        features: sharedTableFeatures,
         getRowId: (originalRow) => {
             return originalRow && typeof originalRow === 'object' && 'id' in originalRow && originalRow.id != null
                 ? String(originalRow.id)
@@ -426,12 +426,15 @@ export function resolvePaginationChange(previousPageInfo: PaginationState, curre
 }
 
 export function withClientSortedRowModel<TData extends RowData>(options: TableOptions<StockFeatures, TData>): TableOptions<StockFeatures, TData> {
+    const features = tableFeatures({
+        ...options.features,
+        sortedRowModel: createSortedRowModel<StockFeatures, TData>(),
+        sortFns
+    });
+
     return {
         ...options,
-        _rowModels: {
-            ...options._rowModels,
-            sortedRowModel: createSortedRowModel<StockFeatures, TData>(sortFns)
-        }
+        features
     };
 }
 
