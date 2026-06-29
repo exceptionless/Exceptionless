@@ -57,15 +57,9 @@
             steps: [
                 {
                     code: `codex mcp add exceptionless --url ${mcpEndpoint}`,
-                    description: 'Register the streamable HTTP MCP server with Codex.',
+                    description: 'Register the streamable HTTP MCP server with Codex and approve access when prompted.',
                     language: 'shellscript',
-                    title: 'Add the server'
-                },
-                {
-                    code: 'codex mcp login exceptionless',
-                    description: 'Start the OAuth browser flow and approve access.',
-                    language: 'shellscript',
-                    title: 'Authenticate'
+                    title: 'Add and authenticate'
                 }
             ]
         },
