@@ -73,6 +73,8 @@
     const requestedScopes = $derived(consentDetails?.scopes ?? getRequestedScopes());
     const requiredScopes = $derived(consentDetails?.required_scopes ?? getRequiredScopes(displayResource));
     const missingRequiredScopes = $derived(requiredScopes.filter((scope) => !requestedScopes.includes(scope)));
+    const requestedRequiredScopes = $derived(requestedScopes.filter((scope) => isRequiredScope(scope)));
+    const requestedOptionalScopes = $derived(requestedScopes.filter((scope) => !isRequiredScope(scope)));
     const selectedScopeValues = $derived(getSelectedScopesInRequestOrder());
     const hasSelectedOrganizations = $derived(selectedOrganizationIds.size > 0);
     const hasSelectedResourceScope = $derived(selectedScopeValues.some((scope) => scope !== offlineAccessScope));
@@ -376,20 +378,22 @@
                 <Muted>Scopes</Muted>
                 {#if requestedScopes.length > 0}
                     <div class="grid gap-2 sm:grid-cols-2">
-                        {#each requestedScopes as scope (scope)}
-                            <label class="flex min-h-12 items-center gap-2 rounded-sm border px-2 py-1.5 text-sm hover:bg-muted/50">
-                                <Checkbox
-                                    checked={selectedScopes.has(scope)}
-                                    disabled={isRequiredScope(scope)}
-                                    onCheckedChange={(checked) => toggleScope(scope, checked)}
-                                />
+                        {#each requestedRequiredScopes as scope (scope)}
+                            <div class="flex min-h-12 items-center gap-2 rounded-sm border bg-muted/30 px-2 py-1.5 text-sm">
                                 <span class="min-w-0 flex-1">
                                     <span class="flex min-w-0 flex-wrap items-center gap-1.5">
                                         <span class="truncate font-medium">{formatScope(scope)}</span>
-                                        {#if isRequiredScope(scope)}
-                                            <Badge variant="outline">Required</Badge>
-                                        {/if}
+                                        <Badge variant="outline">Required</Badge>
                                     </span>
+                                    <span class="block truncate font-mono text-xs text-muted-foreground">{scope}</span>
+                                </span>
+                            </div>
+                        {/each}
+                        {#each requestedOptionalScopes as scope (scope)}
+                            <label class="flex min-h-12 items-center gap-2 rounded-sm border px-2 py-1.5 text-sm hover:bg-muted/50">
+                                <Checkbox checked={selectedScopes.has(scope)} onCheckedChange={(checked) => toggleScope(scope, checked)} />
+                                <span class="min-w-0 flex-1">
+                                    <span class="block truncate font-medium">{formatScope(scope)}</span>
                                     <span class="block truncate font-mono text-xs text-muted-foreground">{scope}</span>
                                 </span>
                             </label>
