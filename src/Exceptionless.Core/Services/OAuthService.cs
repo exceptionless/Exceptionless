@@ -28,10 +28,12 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         AuthorizationRoles.ProjectsRead,
         AuthorizationRoles.StacksRead,
         AuthorizationRoles.StacksWrite,
-        AuthorizationRoles.EventsRead
+        AuthorizationRoles.EventsRead,
+        AuthorizationRoles.OfflineAccess
     ],
     [
-        AuthorizationRoles.McpRead
+        AuthorizationRoles.McpRead,
+        AuthorizationRoles.OfflineAccess
     ]);
 
     public static readonly OAuthResourceDefinition RestApiResource = new("/api/v2",
@@ -63,7 +65,8 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         AuthorizationRoles.McpRead,
         AuthorizationRoles.ProjectsRead,
         AuthorizationRoles.StacksRead,
-        AuthorizationRoles.EventsRead
+        AuthorizationRoles.EventsRead,
+        AuthorizationRoles.OfflineAccess
     ];
 
     private const string AuthorizationCodeCachePrefix = "oauth:code:";

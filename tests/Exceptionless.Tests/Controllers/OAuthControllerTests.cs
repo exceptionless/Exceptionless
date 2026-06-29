@@ -136,7 +136,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.Contains(AuthorizationRoles.StacksRead, registration.Scope);
         Assert.Contains(AuthorizationRoles.EventsRead, registration.Scope);
         Assert.DoesNotContain(AuthorizationRoles.StacksWrite, registration.Scope);
-        Assert.DoesNotContain(AuthorizationRoles.OfflineAccess, registration.Scope);
+        Assert.Contains(AuthorizationRoles.OfflineAccess, registration.Scope);
 
         var application = await _oauthApplicationRepository.GetByClientIdAsync(registration.ClientId, o => o.ImmediateConsistency());
         Assert.NotNull(application);
@@ -145,7 +145,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.Contains(AuthorizationRoles.StacksRead, application.Scopes);
         Assert.Contains(AuthorizationRoles.EventsRead, application.Scopes);
         Assert.DoesNotContain(AuthorizationRoles.StacksWrite, application.Scopes);
-        Assert.DoesNotContain(AuthorizationRoles.OfflineAccess, application.Scopes);
+        Assert.Contains(AuthorizationRoles.OfflineAccess, application.Scopes);
     }
 
     [Fact]
@@ -218,6 +218,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.Contains("http://localhost:7110", metadata.AuthorizationServers);
         Assert.Contains("header", metadata.BearerMethodsSupported);
         Assert.Contains(AuthorizationRoles.McpRead, metadata.ScopesSupported);
+        Assert.Contains(AuthorizationRoles.OfflineAccess, metadata.ScopesSupported);
     }
 
     [Fact]
@@ -538,7 +539,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.Contains(AuthorizationRoles.StacksRead, application.Scopes);
         Assert.Contains(AuthorizationRoles.EventsRead, application.Scopes);
         Assert.DoesNotContain(AuthorizationRoles.StacksWrite, application.Scopes);
-        Assert.DoesNotContain(AuthorizationRoles.OfflineAccess, application.Scopes);
+        Assert.Contains(AuthorizationRoles.OfflineAccess, application.Scopes);
     }
 
     [Fact]
@@ -646,22 +647,22 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     [Fact]
     public async Task TokenAsync_AuthorizationCodeWithReducedScopes_IssuesSelectedScopes()
     {
-        var token = await IssueTokenAsync(scope: $"{AuthorizationRoles.McpRead} {AuthorizationRoles.ProjectsRead}");
+        var token = await IssueTokenAsync(scope: $"{AuthorizationRoles.McpRead} {AuthorizationRoles.ProjectsRead} {AuthorizationRoles.OfflineAccess}");
 
         Assert.NotNull(token);
-        Assert.Equal($"{AuthorizationRoles.McpRead} {AuthorizationRoles.ProjectsRead}", token.Scope);
-        Assert.Null(token.RefreshToken);
+        Assert.Equal($"{AuthorizationRoles.McpRead} {AuthorizationRoles.ProjectsRead} {AuthorizationRoles.OfflineAccess}", token.Scope);
+        Assert.NotNull(token.RefreshToken);
 
         var storedToken = await GetStoredOAuthTokenAsync(token.AccessToken);
         Assert.NotNull(storedToken);
         Assert.NotEqual(token.AccessToken, storedToken.Id);
         Assert.Equal(OAuthService.CreateTokenHash(token.AccessToken), storedToken.AccessTokenHash);
-        Assert.Null(storedToken.RefreshTokenHash);
+        Assert.Equal(OAuthService.CreateTokenHash(token.RefreshToken), storedToken.RefreshTokenHash);
         Assert.Contains(AuthorizationRoles.McpRead, storedToken.Scopes);
         Assert.Contains(AuthorizationRoles.ProjectsRead, storedToken.Scopes);
         Assert.DoesNotContain(AuthorizationRoles.StacksWrite, storedToken.Scopes);
         Assert.DoesNotContain(AuthorizationRoles.EventsRead, storedToken.Scopes);
-        Assert.DoesNotContain(AuthorizationRoles.OfflineAccess, storedToken.Scopes);
+        Assert.Contains(AuthorizationRoles.OfflineAccess, storedToken.Scopes);
     }
 
     [Fact]

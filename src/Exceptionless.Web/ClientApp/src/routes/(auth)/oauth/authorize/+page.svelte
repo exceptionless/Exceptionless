@@ -243,7 +243,7 @@
 
     function getRequiredScopes(resourceValue: string): string[] {
         if (resourceValue.endsWith('/mcp')) {
-            return [mcpReadScope];
+            return [mcpReadScope, offlineAccessScope];
         }
 
         return [];
@@ -306,15 +306,15 @@
     }
 </script>
 
-<div class="mx-auto flex w-[calc(100vw-2rem)] max-w-xl flex-col items-center">
-    <Card.Root class="w-full">
+<div class="mx-auto flex w-full max-w-2xl flex-col items-center">
+    <Card.Root class="w-full" size="sm">
         <Card.Header>
-            <Logo />
+            <Logo class="max-h-10" />
             <Card.Title>Approve OAuth access</Card.Title>
             <Card.Description>Review the requested Exceptionless access before continuing.</Card.Description>
         </Card.Header>
-        <Card.Content class="space-y-5">
-            <div class="space-y-3 rounded-md border p-3 text-sm">
+        <Card.Content class="space-y-4">
+            <div class="space-y-2 rounded-md border p-3 text-sm">
                 <div>
                     <Muted>Signed in as</Muted>
                     {#if meQuery.isLoading}
@@ -322,8 +322,8 @@
                     {:else if meQuery.isError}
                         <p class="text-destructive">Unable to load account details.</p>
                     {:else}
-                        <p class="font-medium">{accountDisplayName}</p>
-                        <p class="break-all font-mono text-xs text-muted-foreground">{meQuery.data?.email_address}</p>
+                        <p class="truncate font-medium" title={accountDisplayName}>{accountDisplayName}</p>
+                        <p class="truncate font-mono text-xs text-muted-foreground" title={meQuery.data?.email_address}>{meQuery.data?.email_address}</p>
                     {/if}
                 </div>
                 <div class="space-y-2">
@@ -333,9 +333,9 @@
                     {:else if organizationsQuery.isError}
                         <p class="text-destructive">Unable to load organizations.</p>
                     {:else if organizations.length > 0}
-                        <div class="max-h-56 space-y-2 overflow-y-auto rounded-md border p-2">
+                        <div class="max-h-32 space-y-1 overflow-y-auto rounded-md border p-1">
                             {#each organizations as organization (organization.id)}
-                                <label class="flex items-center gap-3 rounded-sm px-2 py-1.5 text-sm hover:bg-muted/50">
+                                <label class="flex min-h-8 items-center gap-2 rounded-sm px-2 text-sm hover:bg-muted/50">
                                     <Checkbox
                                         checked={selectedOrganizationIds.has(organization.id)}
                                         onCheckedChange={(checked) => toggleOrganization(organization.id, checked)}
@@ -350,59 +350,60 @@
                 </div>
             </div>
 
-            <div class="space-y-3 text-sm">
-                <div>
+            <div class="grid gap-3 text-sm sm:grid-cols-3">
+                <div class="min-w-0">
                     <Muted>Application</Muted>
                     {#if isLoadingConsent}
                         <p class="text-muted-foreground">Loading application...</p>
                     {:else}
-                        <p class="break-all font-medium">{applicationDisplayName}</p>
+                        <p class="truncate font-medium" title={applicationDisplayName}>{applicationDisplayName}</p>
                         {#if applicationClientId !== applicationDisplayName}
-                            <p class="break-all font-mono text-xs text-muted-foreground">{applicationClientId}</p>
+                            <p class="truncate font-mono text-xs text-muted-foreground" title={applicationClientId}>{applicationClientId}</p>
                         {/if}
                     {/if}
                 </div>
-                <div>
+                <div class="min-w-0">
                     <Muted>Redirect URI</Muted>
-                    <p class="break-all font-mono text-xs">{displayRedirectUri}</p>
+                    <p class="truncate font-mono text-xs" title={displayRedirectUri}>{displayRedirectUri}</p>
                 </div>
-                <div>
+                <div class="min-w-0">
                     <Muted>Resource</Muted>
-                    <p class="break-all font-mono text-xs">{displayResource}</p>
+                    <p class="truncate font-mono text-xs" title={displayResource}>{displayResource}</p>
                 </div>
-                <div class="space-y-2">
-                    <Muted>Scopes</Muted>
-                    {#if requestedScopes.length > 0}
-                        <div class="space-y-2">
-                            {#each requestedScopes as scope (scope)}
-                                <label class="flex items-start gap-3 rounded-sm border px-2 py-2 text-sm hover:bg-muted/50">
-                                    <Checkbox
-                                        checked={selectedScopes.has(scope)}
-                                        disabled={isRequiredScope(scope)}
-                                        onCheckedChange={(checked) => toggleScope(scope, checked)}
-                                    />
-                                    <span class="min-w-0 flex-1">
-                                        <span class="flex flex-wrap items-center gap-2">
-                                            <span class="font-medium">{formatScope(scope)}</span>
-                                            {#if isRequiredScope(scope)}
-                                                <Badge variant="outline">Required</Badge>
-                                            {/if}
-                                        </span>
-                                        <span class="text-muted-foreground block break-all font-mono text-xs">{scope}</span>
+            </div>
+
+            <div class="space-y-2 text-sm">
+                <Muted>Scopes</Muted>
+                {#if requestedScopes.length > 0}
+                    <div class="grid gap-2 sm:grid-cols-2">
+                        {#each requestedScopes as scope (scope)}
+                            <label class="flex min-h-12 items-center gap-2 rounded-sm border px-2 py-1.5 text-sm hover:bg-muted/50">
+                                <Checkbox
+                                    checked={selectedScopes.has(scope)}
+                                    disabled={isRequiredScope(scope)}
+                                    onCheckedChange={(checked) => toggleScope(scope, checked)}
+                                />
+                                <span class="min-w-0 flex-1">
+                                    <span class="flex min-w-0 flex-wrap items-center gap-1.5">
+                                        <span class="truncate font-medium">{formatScope(scope)}</span>
+                                        {#if isRequiredScope(scope)}
+                                            <Badge variant="outline">Required</Badge>
+                                        {/if}
                                     </span>
-                                </label>
-                            {/each}
-                        </div>
-                        {#if !hasSelectedResourceScope}
-                            <p class="text-destructive text-xs">Select at least one access scope.</p>
-                        {/if}
-                        {#if missingRequiredScopes.length > 0}
-                            <p class="text-destructive text-xs">Missing required scope: {missingRequiredScopes.map(formatScope).join(', ')}.</p>
-                        {/if}
-                    {:else}
-                        <p class="text-muted-foreground">No scopes requested.</p>
+                                    <span class="block truncate font-mono text-xs text-muted-foreground">{scope}</span>
+                                </span>
+                            </label>
+                        {/each}
+                    </div>
+                    {#if !hasSelectedResourceScope}
+                        <p class="text-destructive text-xs">Select at least one access scope.</p>
                     {/if}
-                </div>
+                    {#if missingRequiredScopes.length > 0}
+                        <p class="text-destructive text-xs">Missing required scope: {missingRequiredScopes.map(formatScope).join(', ')}.</p>
+                    {/if}
+                {:else}
+                    <p class="text-muted-foreground">No scopes requested.</p>
+                {/if}
             </div>
 
             {#if errorMessage || consentErrorMessage}

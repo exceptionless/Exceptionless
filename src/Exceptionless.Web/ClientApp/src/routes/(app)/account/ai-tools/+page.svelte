@@ -5,7 +5,7 @@
     import * as Card from '$comp/ui/card';
     import * as Select from '$comp/ui/select';
 
-    type AiToolId = 'claude' | 'codex' | 'opencode';
+    type AiToolId = 'claude' | 'codex' | 'github-copilot' | 'opencode';
 
     type CommandStep = {
         code: string;
@@ -75,6 +75,25 @@
                 {
                     code: 'codex mcp login exceptionless',
                     description: 'Start the OAuth browser flow and approve access.',
+                    language: 'shellscript',
+                    title: 'Authenticate'
+                }
+            ]
+        },
+        {
+            description: 'Use GitHub Copilot CLI with the hosted Exceptionless MCP server.',
+            id: 'github-copilot',
+            name: 'GitHub Copilot CLI',
+            steps: [
+                {
+                    code: `gh copilot -- mcp add --transport http exceptionless ${mcpEndpoint}`,
+                    description: 'Register the hosted HTTP MCP server with Copilot.',
+                    language: 'shellscript',
+                    title: 'Add the server'
+                },
+                {
+                    code: 'gh copilot -- -i "List my Exceptionless projects"',
+                    description: 'Start Copilot and approve the OAuth browser flow when prompted.',
                     language: 'shellscript',
                     title: 'Authenticate'
                 }
