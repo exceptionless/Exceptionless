@@ -22,13 +22,19 @@
     };
 
     let mcpEndpoint = $state('/mcp');
+    let mcpServerName = $state('exceptionless');
     let selectedToolId = $state<AiToolId>('claude');
 
     $effect(() => {
         if (browser) {
             mcpEndpoint = `${window.location.origin}/mcp`;
+            mcpServerName = getMcpServerName(window.location.hostname);
         }
     });
+
+    function getMcpServerName(hostname: string): string {
+        return hostname.toLowerCase() === 'dev-app.exceptionless.io' ? 'exceptionless-dev' : 'exceptionless';
+    }
 
     const aiTools = $derived<AiTool[]>([
         {
@@ -37,13 +43,13 @@
             name: 'Claude Code',
             steps: [
                 {
-                    code: `claude mcp add --transport http exceptionless ${mcpEndpoint}`,
+                    code: `claude mcp add --transport http ${mcpServerName} ${mcpEndpoint}`,
                     description: 'Add the hosted MCP server to Claude Code.',
                     language: 'shellscript',
                     title: 'Add the server'
                 },
                 {
-                    code: 'claude mcp login exceptionless',
+                    code: `claude mcp login ${mcpServerName}`,
                     description: 'Start the OAuth browser flow and approve access.',
                     language: 'shellscript',
                     title: 'Authenticate'
@@ -56,7 +62,7 @@
             name: 'Codex',
             steps: [
                 {
-                    code: `codex mcp add exceptionless --url ${mcpEndpoint}`,
+                    code: `codex mcp add ${mcpServerName} --url ${mcpEndpoint}`,
                     description: 'Register the streamable HTTP MCP server with Codex and approve access when prompted.',
                     language: 'shellscript',
                     title: 'Add and authenticate'
@@ -69,7 +75,7 @@
             name: 'Copilot',
             steps: [
                 {
-                    code: `copilot mcp add --transport http exceptionless ${mcpEndpoint}`,
+                    code: `copilot mcp add --transport http ${mcpServerName} ${mcpEndpoint}`,
                     description: 'Register the hosted HTTP MCP server with Copilot.',
                     language: 'shellscript',
                     title: 'Add the server'
@@ -88,13 +94,13 @@
             name: 'OpenCode',
             steps: [
                 {
-                    code: `opencode mcp add exceptionless --url ${mcpEndpoint}`,
+                    code: `opencode mcp add ${mcpServerName} --url ${mcpEndpoint}`,
                     description: 'Register the hosted HTTP MCP server with OpenCode.',
                     language: 'shellscript',
                     title: 'Add the server'
                 },
                 {
-                    code: 'opencode mcp auth exceptionless',
+                    code: `opencode mcp auth ${mcpServerName}`,
                     description: 'Start the OAuth browser flow and approve access.',
                     language: 'shellscript',
                     title: 'Authenticate'
