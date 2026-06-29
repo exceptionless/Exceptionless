@@ -1,7 +1,6 @@
 <script lang="ts">
     import type { TableMemoryPagingParameters } from '$features/shared/table.svelte';
 
-    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
     import { Muted, P } from '$comp/typography';
     import { getOrganizationsQuery } from '$features/organizations/api.svelte';
     import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
@@ -62,11 +61,6 @@
     {#if grantsQuery.isError}
         <P class="text-destructive py-8 text-sm">Failed to load applications.</P>
     {:else}
-        <OAuthGrantsDataTable bind:limit={grantQueryParameters.limit!} isLoading={grantsQuery.isPending} {table}>
-            {#snippet toolbarChildren()}
-                <div class="flex-1"></div>
-                <DataTableViewOptions size="icon-lg" {table} />
-            {/snippet}
-        </OAuthGrantsDataTable>
+        <OAuthGrantsDataTable bind:limit={grantQueryParameters.limit!} isLoading={grantsQuery.isPending} {table} />
     {/if}
 </div>

@@ -2,12 +2,10 @@ import type { OAuthGrant } from '$features/users/models';
 import type { ProblemDetails } from '@exceptionless/fetchclient';
 import type { CreateQueryResult } from '@tanstack/svelte-query';
 
-import DateTime from '$comp/formatters/date-time.svelte';
 import { getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';
 import OAuthGrantAccessCell from '$features/users/components/oauth-grants/table/oauth-grant-access-cell.svelte';
 import OAuthGrantActionsCell from '$features/users/components/oauth-grants/table/oauth-grant-actions-cell.svelte';
 import OAuthGrantApplicationCell from '$features/users/components/oauth-grants/table/oauth-grant-application-cell.svelte';
-import OAuthGrantOrganizationsCell from '$features/users/components/oauth-grants/table/oauth-grant-organizations-cell.svelte';
 import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
 
 export function getColumns(organizationNamesById: ReadonlyMap<string, string>): ColumnDef<StockFeatures, OAuthGrant, unknown>[] {
@@ -19,37 +17,17 @@ export function getColumns(organizationNamesById: ReadonlyMap<string, string>): 
             enableSorting: false,
             header: 'Application',
             meta: {
-                class: 'w-72'
+                class: 'w-[22rem] min-w-[14rem] max-w-none whitespace-normal align-top'
             }
         },
         {
             accessorKey: 'resources',
-            cell: (info) => renderComponent(OAuthGrantAccessCell, { grant: info.row.original }),
-            enableHiding: true,
+            cell: (info) => renderComponent(OAuthGrantAccessCell, { grant: info.row.original, organizationNamesById }),
+            enableHiding: false,
             enableSorting: false,
             header: 'Access',
             meta: {
-                class: 'w-96'
-            }
-        },
-        {
-            accessorKey: 'organization_ids',
-            cell: (info) => renderComponent(OAuthGrantOrganizationsCell, { grant: info.row.original, organizationNamesById }),
-            enableHiding: true,
-            enableSorting: false,
-            header: 'Organizations',
-            meta: {
-                class: 'w-64'
-            }
-        },
-        {
-            accessorKey: 'updated_utc',
-            cell: (info) => renderComponent(DateTime, { value: info.getValue<string>() }),
-            enableHiding: true,
-            enableSorting: false,
-            header: 'Updated',
-            meta: {
-                class: 'w-48 whitespace-nowrap'
+                class: 'w-auto max-w-none whitespace-normal align-top'
             }
         },
         {
@@ -59,7 +37,7 @@ export function getColumns(organizationNamesById: ReadonlyMap<string, string>): 
             header: '',
             id: 'actions',
             meta: {
-                class: 'w-12 min-w-12 max-w-12 text-right'
+                class: 'w-12 min-w-12 max-w-12 text-right align-top'
             }
         }
     ];
@@ -73,7 +51,7 @@ export function getTableOptions(
     getOrganizationNamesById: () => ReadonlyMap<string, string>
 ) {
     return getSharedTableOptions<OAuthGrant, 'memory'>({
-        columnPersistenceKey: 'oauth-grants',
+        columnPersistenceKey: 'oauth-grants-compact',
         get columns() {
             return getColumns(getOrganizationNamesById());
         },

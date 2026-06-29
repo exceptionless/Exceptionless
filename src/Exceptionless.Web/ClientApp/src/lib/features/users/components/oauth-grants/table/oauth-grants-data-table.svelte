@@ -21,8 +21,6 @@
         <DataTable.Toolbar {table}>
             {@render toolbarChildren()}
         </DataTable.Toolbar>
-    {:else}
-        <DataTable.Toolbar size="icon-lg" {table} />
     {/if}
     <DataTable.Body {table}>
         {#if isLoading}
