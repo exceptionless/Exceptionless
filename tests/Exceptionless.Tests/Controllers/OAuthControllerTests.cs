@@ -149,6 +149,41 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetAuthorizeConsentAsync_DynamicClientAllowsEquivalentLoopbackHostWithDifferentPort_ReturnsClientDetails()
+    {
+        using var client = CreateHttpClient();
+
+        var registrationResponse = await client.PostAsJsonAsync("oauth/register", new OAuthClientRegistrationRequest
+        {
+            ClientName = "Copilot",
+            RedirectUris = ["http://localhost"],
+            GrantTypes = [OAuthGrantTypes.AuthorizationCode, OAuthGrantTypes.RefreshToken],
+            ResponseTypes = ["code"],
+            TokenEndpointAuthMethod = "none"
+        }, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.Created, registrationResponse.StatusCode);
+        var registration = await DeserializeResponseAsync<OAuthClientRegistrationResponse>(registrationResponse);
+        Assert.NotNull(registration);
+
+        using var request = CreateAuthorizeJsonRequest(
+            PkceVerifier,
+            "http://127.0.0.1:63952/",
+            clientId: registration.ClientId,
+            organizationIds: []);
+        request.RequestUri = new Uri("oauth/authorize/consent", UriKind.Relative);
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var consent = await DeserializeResponseAsync<OAuthAuthorizeConsentResponse>(response);
+        Assert.NotNull(consent);
+        Assert.Equal(registration.ClientId, consent.ClientId);
+        Assert.Equal("Copilot", consent.ClientName);
+        Assert.Equal("http://127.0.0.1:63952/", consent.RedirectUri);
+    }
+
+    [Fact]
     public async Task RegisterAsync_TooManyAttempts_ReturnsTooManyRequests()
     {
         using var client = CreateHttpClient();

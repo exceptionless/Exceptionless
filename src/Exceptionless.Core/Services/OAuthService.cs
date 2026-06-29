@@ -300,7 +300,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
     private static string NormalizeClientName(string? clientName, string clientId)
     {
-        string name = String.IsNullOrWhiteSpace(clientName) ? clientId : clientName.Trim();
+        string name = String.IsNullOrWhiteSpace(clientName) ? "OAuth Application" : clientName.Trim();
         return name.Length <= 200 ? name : name[..200];
     }
 
@@ -685,7 +685,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             if (!registeredUri.IsDefaultPort && registeredUri.Port != requestedUri.Port)
                 continue;
 
-            if (String.Equals(registeredUri.Host, requestedUri.Host, StringComparison.OrdinalIgnoreCase)
+            if (AreEquivalentLoopbackHosts(registeredUri, requestedUri)
                 && String.Equals(registeredUri.AbsolutePath, requestedUri.AbsolutePath, StringComparison.Ordinal)
                 && String.Equals(registeredUri.Query, requestedUri.Query, StringComparison.Ordinal))
                 return true;
@@ -698,6 +698,15 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
     {
         return String.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
             && (uri.IsLoopback || String.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool AreEquivalentLoopbackHosts(Uri registeredUri, Uri requestedUri)
+    {
+        if (registeredUri.IsLoopback && requestedUri.IsLoopback)
+            return true;
+
+        return String.Equals(registeredUri.Host, "localhost", StringComparison.OrdinalIgnoreCase)
+            && String.Equals(requestedUri.Host, "localhost", StringComparison.OrdinalIgnoreCase);
     }
 
     public static string CreateCodeChallenge(string verifier)

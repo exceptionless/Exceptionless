@@ -51,9 +51,9 @@
             ]
         },
         {
-            description: 'Use Codex CLI with the hosted Exceptionless MCP server.',
+            description: 'Use Codex with the hosted Exceptionless MCP server.',
             id: 'codex',
-            name: 'Codex CLI',
+            name: 'Codex',
             steps: [
                 {
                     code: `codex mcp add exceptionless --url ${mcpEndpoint}`,
@@ -70,9 +70,9 @@
             ]
         },
         {
-            description: 'Use GitHub Copilot CLI with the hosted Exceptionless MCP server.',
+            description: 'Use Copilot with the hosted Exceptionless MCP server.',
             id: 'github-copilot',
-            name: 'GitHub Copilot CLI',
+            name: 'Copilot',
             steps: [
                 {
                     code: `copilot mcp add --transport http exceptionless ${mcpEndpoint}`,

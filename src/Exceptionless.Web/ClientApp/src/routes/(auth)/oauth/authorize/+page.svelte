@@ -66,7 +66,7 @@
     const redirectUri = $derived(page.url.searchParams.get('redirect_uri') ?? 'Unknown redirect URI');
     const resource = $derived(page.url.searchParams.get('resource') ?? 'Unknown resource');
     const applicationClientId = $derived(consentDetails?.client_id ?? clientId);
-    const applicationDisplayName = $derived(consentDetails?.client_name || applicationClientId);
+    const applicationDisplayName = $derived(consentDetails?.client_name || 'Unknown application');
     const displayRedirectUri = $derived(consentDetails?.redirect_uri ?? redirectUri);
     const displayResource = $derived(consentDetails?.resource ?? resource);
     const accountDisplayName = $derived(meQuery.data?.full_name || meQuery.data?.email_address || 'Unknown account');
@@ -371,7 +371,7 @@
                         <p class="text-muted-foreground">Loading application...</p>
                     {:else}
                         <p class="truncate font-medium" title={applicationDisplayName}>{applicationDisplayName}</p>
-                        {#if applicationClientId !== applicationDisplayName}
+                        {#if consentDetails?.client_name && applicationClientId !== applicationDisplayName}
                             <p class="truncate font-mono text-xs text-muted-foreground" title={applicationClientId}>{applicationClientId}</p>
                         {/if}
                     {/if}
