@@ -2109,7 +2109,8 @@ public partial class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeAccepted()
         );
 
-        await GetService<EventUserDescriptionsJob>().RunAsync(TestCancellationToken);
+        var userDescriptionJob = GetService<EventUserDescriptionsJob>();
+        await userDescriptionJob.RunUntilEmptyAsync(TestCancellationToken);
         await RefreshDataAsync();
 
         // Assert

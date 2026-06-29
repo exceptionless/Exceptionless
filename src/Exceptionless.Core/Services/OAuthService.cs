@@ -14,13 +14,42 @@ using Foundatio.Repositories.Utility;
 
 namespace Exceptionless.Core.Services;
 
-public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, ILockProvider lockProvider, IOAuthApplicationRepository oauthApplicationRepository, IOAuthClientMetadataService oauthClientMetadataService, ITokenRepository tokenRepository, TimeProvider timeProvider)
+public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, ILockProvider lockProvider, IOAuthApplicationRepository oauthApplicationRepository, IOAuthClientMetadataService oauthClientMetadataService, IOAuthTokenRepository oauthTokenRepository, IUserRepository userRepository, TimeProvider timeProvider)
 {
     public const string CodeChallengeMethod = "S256";
     public const int ClientIdLength = 32;
     public const int PkceCodeChallengeLength = 43;
     public const int PkceCodeVerifierMinLength = 43;
     public const int PkceCodeVerifierMaxLength = 128;
+    public const int OAuthTokenLength = 64;
+    public static readonly OAuthResourceDefinition McpResource = new("/mcp",
+    [
+        AuthorizationRoles.McpRead,
+        AuthorizationRoles.ProjectsRead,
+        AuthorizationRoles.StacksRead,
+        AuthorizationRoles.StacksWrite,
+        AuthorizationRoles.EventsRead,
+        AuthorizationRoles.OfflineAccess
+    ],
+    [
+        AuthorizationRoles.McpRead,
+        AuthorizationRoles.OfflineAccess
+    ]);
+
+    public static readonly OAuthResourceDefinition RestApiResource = new("/api/v2",
+    [
+        AuthorizationRoles.ProjectsRead,
+        AuthorizationRoles.StacksRead,
+        AuthorizationRoles.StacksWrite,
+        AuthorizationRoles.EventsRead
+    ], []);
+
+    public static readonly IReadOnlyCollection<OAuthResourceDefinition> ProtectedResources =
+    [
+        McpResource,
+        RestApiResource
+    ];
+
     public static readonly IReadOnlyCollection<string> SupportedScopes =
     [
         AuthorizationRoles.McpRead,
@@ -36,11 +65,15 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         AuthorizationRoles.McpRead,
         AuthorizationRoles.ProjectsRead,
         AuthorizationRoles.StacksRead,
-        AuthorizationRoles.EventsRead
+        AuthorizationRoles.EventsRead,
+        AuthorizationRoles.OfflineAccess
     ];
 
     private const string AuthorizationCodeCachePrefix = "oauth:code:";
     private const string RefreshTokenLockPrefix = "oauth:refresh:";
+    private const string AccessTokenClientValidityCachePrefix = "oauth:client-valid:";
+    private const int OAuthGrantFamilyPageLimit = 1000;
+    private static readonly TimeSpan AccessTokenClientValidityCacheLifetime = TimeSpan.FromSeconds(30);
     private const string ClientMetadataNotes = "Discovered from OAuth client metadata document.";
     private const string DynamicClientRegistrationNotes = "Registered through OAuth dynamic client registration.";
     private static readonly Regex CodeChallengeRegex = new("^[A-Za-z0-9_-]{43}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -99,6 +132,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         };
 
         await oauthApplicationRepository.AddAsync(application, o => o.ImmediateConsistency());
+        await ClearAccessTokenClientValidityCacheAsync(application.ClientId);
         return OAuthClientRegistrationResult.Success(new OAuthClientRegistrationResponse
         {
             ClientId = application.ClientId,
@@ -136,6 +170,30 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         return await GetClientFromMetadataDocumentAsync(clientId);
     }
 
+    public async Task<bool> IsAccessTokenClientValidAsync(string? clientId)
+    {
+        if (String.IsNullOrWhiteSpace(clientId))
+            return false;
+
+        clientId = clientId.Trim();
+        string cacheKey = GetAccessTokenClientValidityCacheKey(clientId);
+        bool? cached = await cacheClient.GetAsync<bool?>(cacheKey, null);
+        if (cached.HasValue)
+            return cached.Value;
+
+        var application = await oauthApplicationRepository.GetByClientIdAsync(clientId);
+        bool isValid = application is { IsDisabled: false };
+        await cacheClient.SetAsync(cacheKey, isValid, AccessTokenClientValidityCacheLifetime);
+        return isValid;
+    }
+
+    public Task ClearAccessTokenClientValidityCacheAsync(string? clientId)
+    {
+        return String.IsNullOrWhiteSpace(clientId)
+            ? Task.CompletedTask
+            : cacheClient.RemoveAsync(GetAccessTokenClientValidityCacheKey(clientId.Trim()));
+    }
+
     private async Task<OAuthClientOptions?> GetClientFromMetadataDocumentAsync(string clientId)
     {
         var metadata = await oauthClientMetadataService.GetClientMetadataAsync(clientId);
@@ -143,6 +201,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             return null;
 
         await oauthApplicationRepository.AddAsync(application, o => o.ImmediateConsistency());
+        await ClearAccessTokenClientValidityCacheAsync(application.ClientId);
         return MapClient(application);
     }
 
@@ -172,6 +231,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         application.UpdatedUtc = timeProvider.GetUtcNow().UtcDateTime;
 
         await oauthApplicationRepository.SaveAsync(application, o => o.ImmediateConsistency());
+        await ClearAccessTokenClientValidityCacheAsync(application.ClientId);
         return application;
     }
 
@@ -240,7 +300,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
     private static string NormalizeClientName(string? clientName, string clientId)
     {
-        string name = String.IsNullOrWhiteSpace(clientName) ? clientId : clientName.Trim();
+        string name = String.IsNullOrWhiteSpace(clientName) ? "OAuth Application" : clientName.Trim();
         return name.Length <= 200 ? name : name[..200];
     }
 
@@ -261,7 +321,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
     public IReadOnlyCollection<string> GetAllowedScopes(OAuthClientOptions client)
     {
-        return client.Scopes.Count > 0 ? client.Scopes : DefaultScopes;
+        return client.Scopes;
     }
 
     public IReadOnlyCollection<string> NormalizeScopes(string? scopes)
@@ -275,7 +335,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             .ToArray();
     }
 
-    public async Task<OAuthValidationResult> ValidateAuthorizationRequestAsync(OAuthAuthorizeRequest request, string expectedResource)
+    public async Task<OAuthValidationResult> ValidateAuthorizationRequestAsync(OAuthAuthorizeRequest request, string expectedResource, OAuthResourceDefinition resourceDefinition)
     {
         if (String.IsNullOrWhiteSpace(request.ClientId))
             return OAuthValidationResult.Invalid("invalid_request", "Missing client_id.");
@@ -298,16 +358,26 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
         var requestedScopes = NormalizeScopes(request.Scope);
         if (requestedScopes.Count == 0)
-            requestedScopes = DefaultScopes;
+            return OAuthValidationResult.Invalid("invalid_scope", "At least one scope is required.");
 
         var allowedScopes = GetAllowedScopes(client);
         if (requestedScopes.Any(s => !allowedScopes.Contains(s, StringComparer.Ordinal)))
             return OAuthValidationResult.Invalid("invalid_scope", "One or more scopes are not allowed for this client.");
 
+        if (resourceDefinition.RequiredScopes.Any(s => !requestedScopes.Contains(s, StringComparer.Ordinal)))
+            return OAuthValidationResult.Invalid("invalid_scope", "One or more required resource scopes are missing.");
+
+        var requestedResourceScopes = requestedScopes.Where(s => !String.Equals(s, AuthorizationRoles.OfflineAccess, StringComparison.Ordinal)).ToArray();
+        if (requestedResourceScopes.Length == 0)
+            return OAuthValidationResult.Invalid("invalid_scope", "At least one resource scope is required.");
+
+        if (requestedResourceScopes.Any(s => !resourceDefinition.Scopes.Contains(s, StringComparer.Ordinal)))
+            return OAuthValidationResult.Invalid("invalid_scope", "One or more scopes are not supported by the requested resource.");
+
         return OAuthValidationResult.Valid(client, requestedScopes);
     }
 
-    public async Task<string> CreateAuthorizationCodeAsync(OAuthAuthorizeRequest request, string userId)
+    public async Task<string> CreateAuthorizationCodeAsync(OAuthAuthorizeRequest request, string userId, IReadOnlyCollection<string> organizationIds)
     {
         string code = StringExtensions.GetNewToken();
         var authorizationCode = new OAuthAuthorizationCode
@@ -318,12 +388,9 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             CodeChallenge = request.CodeChallenge,
             Resource = request.Resource ?? throw new InvalidOperationException("OAuth resource must be validated before creating an authorization code."),
             Scopes = NormalizeScopes(request.Scope),
+            OrganizationIds = organizationIds,
             CreatedUtc = timeProvider.GetUtcNow().UtcDateTime
         };
-
-        if (authorizationCode.Scopes.Count == 0)
-            authorizationCode.Scopes = DefaultScopes;
-
         await cacheClient.SetAsync(GetAuthorizationCodeCacheKey(code), authorizationCode, options.AuthorizationCodeLifetime);
         return code;
     }
@@ -355,7 +422,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!ValidateCodeVerifier(code.CodeChallenge, request.CodeVerifier))
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Invalid PKCE verifier.");
 
-        return OAuthTokenIssueResult.Success(await CreateTokenAsync(code.UserId, code.ClientId, code.Resource, code.Scopes));
+        return OAuthTokenIssueResult.Success(await CreateTokenAsync(code.UserId, code.ClientId, code.Resource, code.Scopes, code.OrganizationIds));
     }
 
     public async Task<OAuthTokenIssueResult> RefreshAsync(OAuthTokenRequest request)
@@ -363,73 +430,153 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (String.IsNullOrWhiteSpace(request.RefreshToken) || String.IsNullOrWhiteSpace(request.ClientId))
             return OAuthTokenIssueResult.Invalid("invalid_request", "Missing refresh_token or client_id.");
 
-        if (await GetClientAsync(request.ClientId) is null)
+        var client = await GetClientAsync(request.ClientId);
+        if (client is null)
             return OAuthTokenIssueResult.Invalid("invalid_client", "Unknown OAuth client.");
 
         await using var refreshTokenLock = await lockProvider.TryAcquireAsync(GetRefreshTokenLockKey(request.RefreshToken), TimeSpan.FromSeconds(30), CancellationToken.None);
         if (refreshTokenLock is null)
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
 
-        var results = await tokenRepository.GetByRefreshTokenAsync(request.RefreshToken, o => o.ImmediateConsistency());
+        var results = await oauthTokenRepository.GetByRefreshTokenHashAsync(CreateTokenHash(request.RefreshToken), o => o.ImmediateConsistency());
         var token = results.Documents.FirstOrDefault();
-        if (token is null || token.IsDisabled || token.IsSuspended || token.OAuthType != OAuthTokenType.Access || !String.Equals(token.OAuthClientId, request.ClientId, StringComparison.Ordinal))
+        if (token is null || !String.Equals(token.ClientId, request.ClientId, StringComparison.Ordinal))
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
 
-        if (token.OAuthRefreshExpiresUtc.HasValue && token.OAuthRefreshExpiresUtc.Value < timeProvider.GetUtcNow().UtcDateTime)
-            return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is expired.");
-
-        token.IsDisabled = true;
-        token.Refresh = null;
-        await tokenRepository.SaveAsync(token, o => o.ImmediateConsistency());
-
-        return OAuthTokenIssueResult.Success(await CreateTokenAsync(token.UserId!, token.OAuthClientId!, token.OAuthResource!, token.Scopes));
-    }
-
-    public async Task<bool> RevokeAsync(string? tokenValue)
-    {
-        if (String.IsNullOrWhiteSpace(tokenValue))
-            return false;
-
-        var token = await tokenRepository.GetByIdAsync(tokenValue, o => o.ImmediateConsistency());
-        if (token is null)
+        if (token.IsDisabled || token.IsSuspended)
         {
-            var results = await tokenRepository.GetByRefreshTokenAsync(tokenValue, o => o.ImmediateConsistency());
-            token = results.Documents.FirstOrDefault();
+            await RevokeOAuthGrantFamilyAsync(token);
+            return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
         }
 
-        if (token is null || token.OAuthType != OAuthTokenType.Access)
+        if (token.OrganizationIds.Count == 0)
+            return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
+
+        if (token.RefreshExpiresUtc.HasValue && token.RefreshExpiresUtc.Value < timeProvider.GetUtcNow().UtcDateTime)
+            return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is expired.");
+
+        var scopeValidation = ValidateRefreshScopes(token, client);
+        if (!scopeValidation.IsValid)
+        {
+            await RevokeOAuthGrantFamilyAsync(token);
+            return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
+        }
+
+        var user = await userRepository.GetByIdAsync(token.UserId, o => o.ImmediateConsistency());
+        if (user is null || !user.IsActive)
+        {
+            await RevokeOAuthGrantFamilyAsync(token);
+            return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
+        }
+
+        var activeOrganizationIds = user.GetActiveOAuthOrganizationIds(token);
+        if (activeOrganizationIds.Count == 0)
+        {
+            await RevokeOAuthGrantFamilyAsync(token);
+            return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
+        }
+
+        await DisableTokenAsync(token, clearRefresh: false);
+        return OAuthTokenIssueResult.Success(await CreateTokenAsync(token.UserId, token.ClientId, token.Resource, scopeValidation.Scopes, activeOrganizationIds, token.GrantId));
+    }
+
+    public async Task<bool> RevokeAsync(string? tokenValue, string? clientId)
+    {
+        if (String.IsNullOrWhiteSpace(tokenValue) || String.IsNullOrWhiteSpace(clientId))
             return false;
 
-        token.IsDisabled = true;
-        token.Refresh = null;
-        await tokenRepository.SaveAsync(token, o => o.ImmediateConsistency());
+        clientId = clientId.Trim();
+        string tokenHash = CreateTokenHash(tokenValue);
+        var accessTokenResults = await oauthTokenRepository.GetByAccessTokenHashAsync(tokenHash, o => o.ImmediateConsistency());
+        var token = accessTokenResults.Documents.FirstOrDefault();
+        bool isRefreshToken = false;
+
+        if (token is null)
+        {
+            var refreshTokenResults = await oauthTokenRepository.GetByRefreshTokenHashAsync(tokenHash, o => o.ImmediateConsistency());
+            token = refreshTokenResults.Documents.FirstOrDefault();
+            isRefreshToken = token is not null;
+        }
+
+        if (token is null || !String.Equals(token.ClientId, clientId, StringComparison.Ordinal))
+            return false;
+
+        if (isRefreshToken)
+            await RevokeOAuthGrantFamilyAsync(token);
+        else
+            await DisableTokenAsync(token);
+
         return true;
     }
 
-    private async Task<OAuthTokenResponse> CreateTokenAsync(string userId, string clientId, string resource, IReadOnlyCollection<string> scopes)
+    private async Task RevokeOAuthGrantFamilyAsync(OAuthToken token)
+    {
+        if (String.IsNullOrWhiteSpace(token.GrantId))
+        {
+            await DisableTokenAsync(token);
+            return;
+        }
+
+        var results = await oauthTokenRepository.GetByGrantIdAsync(token.GrantId, o => o.ImmediateConsistency().PageLimit(OAuthGrantFamilyPageLimit));
+        IEnumerable<OAuthToken> familyTokens = results.Documents.Count > 0 ? results.Documents : [token];
+        foreach (var familyToken in familyTokens.Where(t => String.Equals(t.GrantId, token.GrantId, StringComparison.Ordinal)))
+            await DisableTokenAsync(familyToken);
+    }
+
+    private static RefreshScopeValidationResult ValidateRefreshScopes(OAuthToken token, OAuthClientOptions client)
+    {
+        if (!TryGetProtectedResourceByResourceUri(token.Resource, out var resourceDefinition))
+            return RefreshScopeValidationResult.Invalid();
+
+        var allowedScopes = client.Scopes.ToHashSet(StringComparer.Ordinal);
+        var refreshedScopes = token.Scopes.Where(allowedScopes.Contains).ToArray();
+        if (token.Scopes.Contains(AuthorizationRoles.OfflineAccess, StringComparer.Ordinal) && !refreshedScopes.Contains(AuthorizationRoles.OfflineAccess, StringComparer.Ordinal))
+            return RefreshScopeValidationResult.Invalid();
+
+        if (resourceDefinition.RequiredScopes.Any(s => !refreshedScopes.Contains(s, StringComparer.Ordinal)))
+            return RefreshScopeValidationResult.Invalid();
+
+        var resourceScopes = refreshedScopes.Where(s => !String.Equals(s, AuthorizationRoles.OfflineAccess, StringComparison.Ordinal)).ToArray();
+        if (resourceScopes.Length == 0 || resourceScopes.Any(s => !resourceDefinition.Scopes.Contains(s, StringComparer.Ordinal)))
+            return RefreshScopeValidationResult.Invalid();
+
+        return RefreshScopeValidationResult.Valid(refreshedScopes);
+    }
+
+    private Task DisableTokenAsync(OAuthToken token, bool clearRefresh = true)
+    {
+        token.IsDisabled = true;
+        if (clearRefresh)
+            token.RefreshTokenHash = null;
+
+        token.UpdatedUtc = timeProvider.GetUtcNow().UtcDateTime;
+        return oauthTokenRepository.SaveAsync(token, o => o.ImmediateConsistency());
+    }
+
+    private async Task<OAuthTokenResponse> CreateTokenAsync(string userId, string clientId, string resource, IReadOnlyCollection<string> scopes, IReadOnlyCollection<string> organizationIds, string? grantId = null)
     {
         var utcNow = timeProvider.GetUtcNow().UtcDateTime;
-        string accessToken = StringExtensions.GetNewToken();
-        string? refreshToken = scopes.Contains(AuthorizationRoles.OfflineAccess, StringComparer.Ordinal) ? StringExtensions.GetNewToken() : null;
-        var token = new Token
+        var accessToken = CreateOAuthToken();
+        var refreshToken = scopes.Contains(AuthorizationRoles.OfflineAccess, StringComparer.Ordinal) ? CreateOAuthToken() : null;
+        var token = new OAuthToken
         {
-            Id = accessToken,
+            Id = ObjectId.GenerateNewId().ToString(),
             UserId = userId,
-            Type = TokenType.Access,
-            OAuthType = OAuthTokenType.Access,
-            OAuthClientId = clientId,
-            OAuthResource = resource,
-            Refresh = refreshToken,
+            ClientId = clientId,
+            GrantId = String.IsNullOrWhiteSpace(grantId) ? StringExtensions.GetNewToken() : grantId,
+            Resource = resource,
+            AccessTokenHash = CreateTokenHash(accessToken),
+            RefreshTokenHash = refreshToken is null ? null : CreateTokenHash(refreshToken),
             Scopes = scopes.ToHashSet(StringComparer.Ordinal),
+            OrganizationIds = organizationIds.ToHashSet(StringComparer.Ordinal),
             CreatedUtc = utcNow,
             UpdatedUtc = utcNow,
             ExpiresUtc = utcNow.Add(options.AccessTokenLifetime),
-            OAuthRefreshExpiresUtc = refreshToken is null ? null : utcNow.Add(options.RefreshTokenLifetime),
-            CreatedBy = userId,
-            Notes = $"OAuth client: {clientId}"
+            RefreshExpiresUtc = refreshToken is null ? null : utcNow.Add(options.RefreshTokenLifetime),
+            CreatedBy = userId
         };
 
-        await tokenRepository.AddAsync(token, o => o.ImmediateConsistency());
+        await oauthTokenRepository.AddAsync(token, o => o.ImmediateConsistency());
         return new OAuthTokenResponse
         {
             AccessToken = accessToken,
@@ -439,7 +586,6 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             Resource = resource
         };
     }
-
     private static bool ValidateCodeVerifier(string challenge, string verifier)
     {
         return String.Equals(challenge, CreateCodeChallenge(verifier), StringComparison.Ordinal);
@@ -458,7 +604,45 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             && CodeVerifierRegex.IsMatch(verifier);
     }
 
-    private static bool IsExpectedResource(string? resource, string expectedResource)
+    public static string CreateResourceUri(string origin, OAuthResourceDefinition resourceDefinition)
+    {
+        return $"{origin.TrimEnd('/')}{resourceDefinition.Path}";
+    }
+
+    public static bool TryGetProtectedResource(string? resource, string origin, out OAuthResourceDefinition resourceDefinition)
+    {
+        foreach (var candidate in ProtectedResources)
+        {
+            if (IsExpectedResource(resource, CreateResourceUri(origin, candidate)))
+            {
+                resourceDefinition = candidate;
+                return true;
+            }
+        }
+
+        resourceDefinition = null!;
+        return false;
+    }
+
+    private static bool TryGetProtectedResourceByResourceUri(string? resource, out OAuthResourceDefinition resourceDefinition)
+    {
+        if (!String.IsNullOrWhiteSpace(resource) && Uri.TryCreate(resource, UriKind.Absolute, out var resourceUri) && String.IsNullOrEmpty(resourceUri.Query) && String.IsNullOrEmpty(resourceUri.Fragment))
+        {
+            foreach (var candidate in ProtectedResources)
+            {
+                if (String.Equals(resourceUri.AbsolutePath.TrimEnd('/'), candidate.Path.TrimEnd('/'), StringComparison.Ordinal))
+                {
+                    resourceDefinition = candidate;
+                    return true;
+                }
+            }
+        }
+
+        resourceDefinition = null!;
+        return false;
+    }
+
+    public static bool IsExpectedResource(string? resource, string expectedResource)
     {
         if (String.IsNullOrWhiteSpace(resource) || !Uri.TryCreate(resource, UriKind.Absolute, out var resourceUri) || !Uri.TryCreate(expectedResource, UriKind.Absolute, out var expectedResourceUri))
             return false;
@@ -501,7 +685,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             if (!registeredUri.IsDefaultPort && registeredUri.Port != requestedUri.Port)
                 continue;
 
-            if (String.Equals(registeredUri.Host, requestedUri.Host, StringComparison.OrdinalIgnoreCase)
+            if (AreEquivalentLoopbackHosts(registeredUri, requestedUri)
                 && String.Equals(registeredUri.AbsolutePath, requestedUri.AbsolutePath, StringComparison.Ordinal)
                 && String.Equals(registeredUri.Query, requestedUri.Query, StringComparison.Ordinal))
                 return true;
@@ -516,11 +700,35 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             && (uri.IsLoopback || String.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase));
     }
 
+    private static bool AreEquivalentLoopbackHosts(Uri registeredUri, Uri requestedUri)
+    {
+        if (registeredUri.IsLoopback && requestedUri.IsLoopback)
+            return true;
+
+        return String.Equals(registeredUri.Host, "localhost", StringComparison.OrdinalIgnoreCase)
+            && String.Equals(requestedUri.Host, "localhost", StringComparison.OrdinalIgnoreCase);
+    }
+
     public static string CreateCodeChallenge(string verifier)
     {
         byte[] bytes = SHA256.HashData(Encoding.ASCII.GetBytes(verifier));
         return Base64UrlEncode(bytes);
     }
+
+    public static bool IsOAuthTokenFormat(string? token)
+    {
+        return token?.Length == OAuthTokenLength;
+    }
+
+    public static string CreateTokenHash(string token)
+    {
+        if (String.IsNullOrWhiteSpace(token))
+            throw new ArgumentException("Token cannot be empty.", nameof(token));
+
+        return Base64UrlEncode(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+    }
+
+    private static string CreateOAuthToken() => StringExtensions.GetRandomString(OAuthTokenLength);
 
     private static string Base64UrlEncode(byte[] bytes)
     {
@@ -528,7 +736,8 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
     }
 
     private static string GetAuthorizationCodeCacheKey(string code) => AuthorizationCodeCachePrefix + code;
-    private static string GetRefreshTokenLockKey(string refreshToken) => RefreshTokenLockPrefix + Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(refreshToken))).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    private static string GetRefreshTokenLockKey(string refreshToken) => RefreshTokenLockPrefix + CreateTokenHash(refreshToken);
+    private static string GetAccessTokenClientValidityCacheKey(string clientId) => AccessTokenClientValidityCachePrefix + Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(clientId))).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 }
 
 public static class OAuthGrantTypes
@@ -547,6 +756,7 @@ public record OAuthAuthorizeRequest
     public required string CodeChallenge { get; init; }
     public required string CodeChallengeMethod { get; init; }
     public string? Resource { get; init; }
+    public IReadOnlyCollection<string> OrganizationIds { get; init; } = [];
 }
 
 public record OAuthTokenRequest
@@ -623,6 +833,16 @@ public record OAuthAuthorizationCode
     public required string Resource { get; init; }
     public IReadOnlyCollection<string> Scopes { get; set; } = [];
     public DateTime CreatedUtc { get; init; }
+    public IReadOnlyCollection<string> OrganizationIds { get; init; } = [];
+}
+
+
+public sealed record OAuthResourceDefinition(string Path, IReadOnlyCollection<string> Scopes, IReadOnlyCollection<string> RequiredScopes);
+
+internal sealed record RefreshScopeValidationResult(bool IsValid, IReadOnlyCollection<string> Scopes)
+{
+    public static RefreshScopeValidationResult Valid(IReadOnlyCollection<string> scopes) => new(true, scopes);
+    public static RefreshScopeValidationResult Invalid() => new(false, []);
 }
 
 public record OAuthValidationResult(bool IsValid, OAuthClientOptions? Client, IReadOnlyCollection<string> Scopes, string? Error, string? ErrorDescription)

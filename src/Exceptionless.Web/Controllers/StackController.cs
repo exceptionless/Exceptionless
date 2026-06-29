@@ -26,7 +26,6 @@ using Microsoft.AspNetCore.Mvc;
 namespace Exceptionless.Web.Controllers;
 
 [Route(API_PREFIX + "/stacks")]
-[Authorize(Policy = AuthorizationRoles.ClientPolicy)]
 public class StackController : RepositoryApiController<IStackRepository, Stack, Stack, Stack, Stack>
 {
     private readonly IOrganizationRepository _organizationRepository;
@@ -87,7 +86,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <param name="offset">The time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.</param>
     /// <response code="404">The stack could not be found.</response>
     [HttpGet("{id:objectid}", Name = "GetStackById")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.StacksReadPolicy)]
     public async Task<ActionResult<Stack>> GetAsync(string id, string? offset = null)
     {
         var stack = await GetModelAsync(id);
@@ -105,7 +104,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <response code="200">The stacks were marked as fixed.</response>
     /// <response code="404">One or more stacks could not be found.</response>
     [HttpPost("{ids:objectids}/mark-fixed")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.StacksWritePolicy)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult> MarkFixedAsync(string ids, string? version = null)
     {
@@ -135,6 +134,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// </summary>
     [HttpPost("~/api/v1/stack/markfixed")]
     [HttpPost("mark-fixed")]
+    [Authorize(Policy = AuthorizationRoles.StacksWritePolicy)]
     [Consumes("application/json")]
     [ApiExplorerSettings(IgnoreApi = true)]
     public async Task<ActionResult> MarkFixedAsync(JsonDocument data)
@@ -163,7 +163,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <response code="200">The stacks were snoozed.</response>
     /// <response code="404">One or more stacks could not be found.</response>
     [HttpPost("{ids:objectids}/mark-snoozed")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.StacksWritePolicy)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> SnoozeAsync(string ids, DateTime snoozeUntilUtc)
     {
@@ -196,7 +196,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <response code="404">The stack could not be found.</response>
     [HttpPost("{id:objectid}/add-link")]
     [Consumes("application/json")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.StacksWritePolicy)]
     public async Task<IActionResult> AddLinkAsync(string id, ValueFromBody<string?> url)
     {
         if (String.IsNullOrWhiteSpace(url?.Value))
@@ -219,6 +219,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// This controller action is called by zapier to add a reference link to a stack.
     /// </summary>
     [HttpPost("~/api/v1/stack/addlink")]
+    [Authorize(Policy = AuthorizationRoles.StacksWritePolicy)]
     [HttpPost("add-link")]
     [Consumes("application/json")]
     [ApiExplorerSettings(IgnoreApi = true)]
@@ -251,7 +252,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <response code="404">The stack could not be found.</response>
     [HttpPost("{id:objectid}/remove-link")]
     [Consumes("application/json")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.StacksWritePolicy)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> RemoveLinkAsync(string id, ValueFromBody<string> url)
     {
@@ -277,7 +278,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <param name="ids">A comma-delimited list of stack identifiers.</param>
     /// <response code="404">One or more stacks could not be found.</response>
     [HttpPost("{ids:objectids}/mark-critical")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.StacksWritePolicy)]
     public async Task<IActionResult> MarkCriticalAsync(string ids)
     {
         var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
@@ -303,7 +304,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <response code="204">The stacks were marked as not critical.</response>
     /// <response code="404">One or more stacks could not be found.</response>
     [HttpDelete("{ids:objectids}/mark-critical")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.StacksWritePolicy)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> MarkNotCriticalAsync(string ids)
     {
@@ -330,7 +331,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <param name="status">The status that the stack should be changed to.</param>
     /// <response code="404">One or more stacks could not be found.</response>
     [HttpPost("{ids:objectids}/change-status")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.StacksWritePolicy)]
     public async Task<IActionResult> ChangeStatusAsync(string ids, StackStatus status)
     {
         if (status is StackStatus.Regressed or StackStatus.Snoozed)
@@ -464,7 +465,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <response code="400">Invalid filter.</response>
     [HttpGet]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.StacksReadPolicy)]
     public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetAllAsync(string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int page = 1, int limit = 10)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
@@ -524,7 +525,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <response code="404">The organization could not be found.</response>
     /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.StacksReadPolicy)]
     public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetByOrganizationAsync(string? organizationId = null, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int page = 1, int limit = 10)
     {
         var organization = await GetOrganizationAsync(organizationId);
@@ -554,7 +555,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <response code="404">The organization could not be found.</response>
     /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.StacksReadPolicy)]
     public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetByProjectAsync(string? projectId = null, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int page = 1, int limit = 10)
     {
         var project = await GetProjectAsync(projectId);

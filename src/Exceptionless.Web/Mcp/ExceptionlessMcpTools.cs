@@ -562,12 +562,12 @@ public sealed class ExceptionlessMcpTools
                 GetNumericAggregationValue(result.Aggregations.Sum("sum_count")?.Value, result.Total),
                 Convert.ToInt64(result.Aggregations.Cardinality("cardinality_stack_id")?.Value.GetValueOrDefault() ?? 0, CultureInfo.InvariantCulture),
                 Convert.ToInt64(result.Aggregations.Cardinality("cardinality_user")?.Value.GetValueOrDefault() ?? 0, CultureInfo.InvariantCulture),
-                interval,
-                timeRange.StartUtc,
-                timeRange.EndUtc,
                 buckets,
-                resolvedGroupBy?.Name,
-                groups),
+                Interval: interval,
+                StartUtc: timeRange.StartUtc,
+                EndUtc: timeRange.EndUtc,
+                GroupBy: resolvedGroupBy?.Name,
+                Groups: groups),
                 groupLimitWarning);
         }
         catch (Exception ex) when (IsLookupError(ex))
@@ -1334,11 +1334,11 @@ public sealed class ExceptionlessMcpTools
             project.Id,
             project.OrganizationId,
             project.Name,
-            project.IsConfigured,
-            project.LastEventDateUtc,
             project.CreatedUtc,
             project.UpdatedUtc,
-            $"/api/v2/projects/{project.Id}");
+            $"/api/v2/projects/{project.Id}",
+            project.IsConfigured,
+            project.LastEventDateUtc);
     }
 
     private static McpStackResult ToStackResult(Stack stack)
@@ -1350,19 +1350,19 @@ public sealed class ExceptionlessMcpTools
             stack.Type,
             stack.Status.ToString().ToLowerInvariant(),
             stack.Title,
-            stack.Description,
             stack.TotalOccurrences,
             stack.FirstOccurrence,
             stack.LastOccurrence,
-            stack.DateFixed,
-            stack.FixedInVersion,
-            stack.SnoozeUntilUtc,
             ToTags(stack.Tags),
             stack.References.ToArray(),
             stack.OccurrencesAreCritical,
             stack.CreatedUtc,
             stack.UpdatedUtc,
-            $"/api/v2/stacks/{stack.Id}");
+            $"/api/v2/stacks/{stack.Id}",
+            stack.Description,
+            stack.DateFixed,
+            stack.FixedInVersion,
+            stack.SnoozeUntilUtc);
     }
 
     private McpEventResult ToEventResult(PersistentEvent ev, bool includeDetails = false, int maxDetailSize = DefaultMaxDetailSize)
@@ -1372,25 +1372,25 @@ public sealed class ExceptionlessMcpTools
             ev.OrganizationId,
             ev.ProjectId,
             ev.StackId,
-            ev.Type,
-            ev.Source,
-            ev.Message,
             ev.Date,
             ToTags(ev.Tags),
-            ev.ReferenceId,
             ev.IsFirstOccurrence,
             ev.CreatedUtc,
             $"/api/v2/events/{ev.Id}",
+            ev.Type,
+            ev.Source,
+            ev.Message,
+            ev.ReferenceId,
             includeDetails ? ToEventDetails(ev, maxDetailSize) : null);
     }
 
     private McpEventDetails ToEventDetails(PersistentEvent ev, int maxDetailSize)
     {
         var details = new McpEventDetails(
-            ev.GetError(_serializer, _logger) ?? (object?)ev.GetSimpleError(_serializer, _logger),
-            ev.GetRequestInfo(_serializer, _logger),
-            ev.GetEnvironmentInfo(_serializer, _logger),
-            ev.Data);
+            Error: ev.GetError(_serializer, _logger) ?? (object?)ev.GetSimpleError(_serializer, _logger),
+            Request: ev.GetRequestInfo(_serializer, _logger),
+            Environment: ev.GetEnvironmentInfo(_serializer, _logger),
+            Data: ev.Data);
 
         return ApplyDetailLimit(details, maxDetailSize);
     }
@@ -1414,10 +1414,6 @@ public sealed class ExceptionlessMcpTools
             return withoutData;
 
         return new McpEventDetails(
-            null,
-            null,
-            null,
-            null,
             true,
             originalSize,
             maxDetailSize,
@@ -1514,9 +1510,9 @@ public sealed class ExceptionlessMcpTools
             warning,
             new McpPagination(
                 results.HasMore,
+                limit,
                 results.Hits.FirstOrDefault()?.GetSortToken(_serializer),
-                results.HasMore ? results.Hits.LastOrDefault()?.GetSortToken(_serializer) : null,
-                limit));
+                results.HasMore ? results.Hits.LastOrDefault()?.GetSortToken(_serializer) : null));
     }
 
     private static IRepositoryQuery<Stack> ApplyStackTimeRange(IRepositoryQuery<Stack> query, McpTimeRange timeRange)

@@ -376,19 +376,6 @@ export function resolveConfiguredTableOptions<TData extends RowData>(
     return baseOptions;
 }
 
-export function withClientSortedRowModel<TData extends RowData>(options: TableOptions<StockFeatures, TData>): TableOptions<StockFeatures, TData> {
-    const features = tableFeatures({
-        ...options.features,
-        sortedRowModel: createSortedRowModel<StockFeatures, TData>(),
-        sortFns
-    });
-
-    return {
-        ...options,
-        features
-    };
-}
-
 export function resolvePageCount(
     strategy: PaginationStrategy,
     meta: QueryMeta | undefined,
@@ -435,6 +422,19 @@ export function resolvePaginationChange(previousPageInfo: PaginationState, curre
         pageIndexChanged: true,
         pageSizeChanged,
         previousPageInfo
+    };
+}
+
+export function withClientSortedRowModel<TData extends RowData>(options: TableOptions<StockFeatures, TData>): TableOptions<StockFeatures, TData> {
+    const features = tableFeatures({
+        ...options.features,
+        sortedRowModel: createSortedRowModel<StockFeatures, TData>(),
+        sortFns
+    });
+
+    return {
+        ...options,
+        features
     };
 }
 

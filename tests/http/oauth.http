@@ -5,16 +5,21 @@
 @clientId = https://example-ai-client.dev/oauth-client.json
 @redirectUri = https://chat.openai.com/aip/g-test/oauth/callback
 @resource = http://localhost:7110/mcp
+@apiResource = http://localhost:7110/api/v2
 @codeVerifier = local-test-code-verifier
 @codeChallenge = replace-with-S256-code-challenge
+@organizationId = 537650f3b77efe23a47914f2
 @oauthApplicationId = replace-with-oauth-application-id
 @dynamicRedirectUri = http://127.0.0.1:49152/callback
 
 ### OAuth Authorization Server Metadata
 GET {{rootUrl}}/.well-known/oauth-authorization-server
 
-### OAuth Protected Resource Metadata
-GET {{rootUrl}}/.well-known/oauth-protected-resource
+### OAuth MCP Protected Resource Metadata
+GET {{rootUrl}}/.well-known/oauth-protected-resource/mcp
+
+### OAuth REST API Protected Resource Metadata
+GET {{rootUrl}}/.well-known/oauth-protected-resource/api/v2
 
 ### Dynamic Client Registration
 # @name registerOAuthClient
@@ -100,6 +105,40 @@ Content-Type: application/json
   "is_disabled": false
 }
 
+### Preview OAuth Consent For REST API Resource
+POST {{apiUrl}}/oauth/authorize/consent
+Authorization: Bearer {{login.response.body.token}}
+Content-Type: application/json
+
+{
+  "client_id": "{{clientId}}",
+  "response_type": "code",
+  "redirect_uri": "{{redirectUri}}",
+  "scope": "projects:read events:read offline_access",
+  "state": "local-state",
+  "code_challenge": "{{codeChallenge}}",
+  "code_challenge_method": "S256",
+  "resource": "{{apiResource}}"
+}
+### Complete Authorize For REST API Resource
+POST {{apiUrl}}/oauth/authorize
+Authorization: Bearer {{login.response.body.token}}
+Content-Type: application/json
+
+{
+  "client_id": "{{clientId}}",
+  "response_type": "code",
+  "redirect_uri": "{{redirectUri}}",
+  "scope": "projects:read events:read offline_access",
+  "state": "local-state",
+  "code_challenge": "{{codeChallenge}}",
+  "code_challenge_method": "S256",
+  "resource": "{{apiResource}}",
+  "organization_ids": [
+    "{{organizationId}}"
+  ]
+}
+
 ### Authorize
 # Open this URL in a browser or send it with an authenticated user session/token.
 GET {{apiUrl}}/oauth/authorize?client_id={{clientId}}&response_type=code&redirect_uri={{redirectUri}}&scope=mcp:read%20projects:read%20stacks:read%20events:read%20offline_access&state=local-state&code_challenge={{codeChallenge}}&code_challenge_method=S256&resource={{resource}}
@@ -121,7 +160,7 @@ grant_type=refresh_token&client_id={{clientId}}&refresh_token=replace-with-refre
 POST {{apiUrl}}/oauth/revoke
 Content-Type: application/x-www-form-urlencoded
 
-token=replace-with-access-or-refresh-token
+client_id={{clientId}}&token=replace-with-access-or-refresh-token
 
 ### MCP with OAuth Bearer Token
 POST {{rootUrl}}/mcp
@@ -139,3 +178,7 @@ Accept: application/json, text/event-stream
 ### Delete OAuth Application
 DELETE {{apiUrl}}/admin/oauth-applications/{{oauthApplicationId}}
 Authorization: Bearer {{login.response.body.token}}
+
+### REST API with OAuth Bearer Token
+GET {{apiUrl}}/projects
+Authorization: Bearer replace-with-api-oauth-access-token

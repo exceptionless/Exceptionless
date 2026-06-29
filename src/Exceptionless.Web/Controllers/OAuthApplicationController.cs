@@ -1,6 +1,7 @@
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Exceptionless.Web.Models.Admin;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
@@ -12,7 +13,7 @@ namespace Exceptionless.Web.Controllers;
 [Route(API_PREFIX + "/admin/oauth-applications")]
 [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
 [ApiExplorerSettings(IgnoreApi = true)]
-public class OAuthApplicationController(IOAuthApplicationRepository repository, TimeProvider timeProvider) : ExceptionlessApiController(timeProvider)
+public class OAuthApplicationController(IOAuthApplicationRepository repository, OAuthService oauthService, TimeProvider timeProvider) : ExceptionlessApiController(timeProvider)
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyCollection<ViewOAuthApplication>>> GetAllAsync()
@@ -47,6 +48,7 @@ public class OAuthApplicationController(IOAuthApplicationRepository repository, 
         };
 
         await repository.AddAsync(application, o => o.ImmediateConsistency());
+        await oauthService.ClearAccessTokenClientValidityCacheAsync(application.ClientId);
         return Created($"/api/v2/admin/oauth-applications/{application.Id}", ViewOAuthApplication.FromApplication(application));
     }
 
@@ -57,6 +59,7 @@ public class OAuthApplicationController(IOAuthApplicationRepository repository, 
         if (application is null)
             return NotFound();
 
+        string previousClientId = application.ClientId;
         if (!String.Equals(application.ClientId, model.ClientId, StringComparison.Ordinal) && !await IsClientIdAvailableAsync(model.ClientId))
         {
             ModelState.AddModelError(nameof(model.ClientId), "Client id is already in use.");
@@ -73,6 +76,8 @@ public class OAuthApplicationController(IOAuthApplicationRepository repository, 
         application.UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime;
 
         await repository.SaveAsync(application, o => o.ImmediateConsistency());
+        await oauthService.ClearAccessTokenClientValidityCacheAsync(previousClientId);
+        await oauthService.ClearAccessTokenClientValidityCacheAsync(application.ClientId);
         return Ok(ViewOAuthApplication.FromApplication(application));
     }
 
@@ -84,6 +89,7 @@ public class OAuthApplicationController(IOAuthApplicationRepository repository, 
             return NotFound();
 
         await repository.RemoveAsync(application, o => o.ImmediateConsistency());
+        await oauthService.ClearAccessTokenClientValidityCacheAsync(application.ClientId);
         return NoContent();
     }
 

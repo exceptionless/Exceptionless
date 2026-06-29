@@ -1,6 +1,8 @@
+using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Xunit;
