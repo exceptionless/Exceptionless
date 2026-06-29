@@ -2,17 +2,15 @@
     import type { OAuthGrant } from '$features/users/models';
 
     import { Badge } from '$comp/ui/badge';
+    import * as Tooltip from '$comp/ui/tooltip';
 
     interface Props {
         grant: OAuthGrant;
-        organizationNamesById: ReadonlyMap<string, string>;
     }
 
-    let { grant, organizationNamesById }: Props = $props();
+    let { grant }: Props = $props();
 
-    function formatOrganization(id: string) {
-        return organizationNamesById.get(id) ?? id;
-    }
+    const scopeCount = $derived(new Set(grant.resources.flatMap((resource) => resource.scopes)).size);
 
     function formatResource(resource: string) {
         if (resource.endsWith('/mcp')) {
@@ -24,6 +22,14 @@
         }
 
         return resource;
+    }
+
+    function formatResourceSummary() {
+        if (grant.resources.length === 1) {
+            return formatResource(grant.resources[0]!.resource);
+        }
+
+        return `${grant.resources.length} resources`;
     }
 
     function formatScope(scope: string) {
@@ -46,30 +52,31 @@
     }
 </script>
 
-<div class="min-w-0 space-y-2 whitespace-normal">
-    <div class="space-y-2">
-        {#each grant.resources as resource (resource.resource)}
-            <div class="min-w-0 space-y-1">
-                <div class="truncate text-sm font-medium" title={resource.resource}>{formatResource(resource.resource)}</div>
-                <div class="flex min-w-0 flex-wrap gap-1">
-                    {#each resource.scopes as scope (scope)}
-                        <Badge variant={scope === 'stacks:write' ? 'amber' : 'secondary'}>{formatScope(scope)}</Badge>
-                    {/each}
+<Tooltip.Root>
+    <Tooltip.Trigger>
+        {#snippet child({ props })}
+            <button
+                {...props}
+                type="button"
+                class="inline-flex max-w-full items-center gap-1 truncate rounded-sm text-left text-sm font-medium underline decoration-dotted underline-offset-4 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+                <span class="truncate">{formatResourceSummary()}</span>
+                <span class="shrink-0 text-muted-foreground">· {scopeCount} {scopeCount === 1 ? 'scope' : 'scopes'}</span>
+            </button>
+        {/snippet}
+    </Tooltip.Trigger>
+    <Tooltip.Content class="max-w-sm">
+        <div class="space-y-3">
+            {#each grant.resources as resource (resource.resource)}
+                <div class="space-y-1">
+                    <div class="text-sm font-medium">{formatResource(resource.resource)}</div>
+                    <div class="flex flex-wrap gap-1">
+                        {#each resource.scopes as scope (scope)}
+                            <Badge variant={scope === 'stacks:write' ? 'amber' : 'secondary'}>{formatScope(scope)}</Badge>
+                        {/each}
+                    </div>
                 </div>
-            </div>
-        {/each}
-    </div>
-
-    <div class="min-w-0 space-y-1 border-t pt-2">
-        <div class="text-xs font-medium text-muted-foreground">Organizations</div>
-        {#if grant.organization_ids.length > 0}
-            <div class="flex min-w-0 flex-wrap gap-1">
-                {#each grant.organization_ids as organizationId (organizationId)}
-                    <Badge class="max-w-full truncate" variant="outline" title={organizationId}>{formatOrganization(organizationId)}</Badge>
-                {/each}
-            </div>
-        {:else}
-            <span class="text-sm text-muted-foreground">-</span>
-        {/if}
-    </div>
-</div>
+            {/each}
+        </div>
+    </Tooltip.Content>
+</Tooltip.Root>

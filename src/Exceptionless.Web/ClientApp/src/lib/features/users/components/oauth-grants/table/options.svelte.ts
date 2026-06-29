@@ -6,6 +6,7 @@ import { getSharedTableOptions, type TableMemoryPagingParameters } from '$featur
 import OAuthGrantAccessCell from '$features/users/components/oauth-grants/table/oauth-grant-access-cell.svelte';
 import OAuthGrantActionsCell from '$features/users/components/oauth-grants/table/oauth-grant-actions-cell.svelte';
 import OAuthGrantApplicationCell from '$features/users/components/oauth-grants/table/oauth-grant-application-cell.svelte';
+import OAuthGrantOrganizationsCell from '$features/users/components/oauth-grants/table/oauth-grant-organizations-cell.svelte';
 import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
 
 export function getColumns(organizationNamesById: ReadonlyMap<string, string>): ColumnDef<StockFeatures, OAuthGrant, unknown>[] {
@@ -17,17 +18,27 @@ export function getColumns(organizationNamesById: ReadonlyMap<string, string>): 
             enableSorting: false,
             header: 'Application',
             meta: {
-                class: 'w-[22rem] min-w-[14rem] max-w-none whitespace-normal align-top'
+                class: 'w-[40%] max-w-none whitespace-normal'
             }
         },
         {
             accessorKey: 'resources',
-            cell: (info) => renderComponent(OAuthGrantAccessCell, { grant: info.row.original, organizationNamesById }),
+            cell: (info) => renderComponent(OAuthGrantAccessCell, { grant: info.row.original }),
             enableHiding: false,
             enableSorting: false,
             header: 'Access',
             meta: {
-                class: 'w-auto max-w-none whitespace-normal align-top'
+                class: 'w-40 max-w-none whitespace-normal'
+            }
+        },
+        {
+            accessorKey: 'organization_ids',
+            cell: (info) => renderComponent(OAuthGrantOrganizationsCell, { grant: info.row.original, organizationNamesById }),
+            enableHiding: false,
+            enableSorting: false,
+            header: 'Organizations',
+            meta: {
+                class: 'w-56 max-w-none whitespace-normal'
             }
         },
         {
@@ -37,7 +48,7 @@ export function getColumns(organizationNamesById: ReadonlyMap<string, string>): 
             header: '',
             id: 'actions',
             meta: {
-                class: 'w-12 min-w-12 max-w-12 text-right align-top'
+                class: 'w-12 min-w-12 max-w-12 text-right'
             }
         }
     ];
