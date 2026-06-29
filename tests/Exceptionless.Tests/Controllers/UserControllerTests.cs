@@ -348,6 +348,40 @@ public sealed class UserControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetOAuthGrantsAsync_WhenDisabledTokensExceedPageLimit_ReturnsActiveGrant()
+    {
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        const string clientId = "paged-oauth-grant-client";
+        await CreateOAuthApplicationAsync(clientId, "Paged OAuth Grant Client");
+        var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
+        var disabledTokens = Enumerable.Range(0, 1005)
+            .Select(i => CreateOAuthGrantToken(user.Id, $"disabled-paged-client-{i}", "http://localhost:7110/mcp", [AuthorizationRoles.McpRead], utcNow.AddMinutes(1), isDisabled: true))
+            .ToArray();
+        await _oauthTokenRepository.AddAsync(disabledTokens, o => o.ImmediateConsistency());
+        string grantId = StringExtensions.GetNewToken();
+        await _oauthTokenRepository.AddAsync(CreateOAuthGrantToken(
+            user.Id,
+            clientId,
+            "http://localhost:7110/mcp",
+            [AuthorizationRoles.McpRead, AuthorizationRoles.OfflineAccess],
+            utcNow,
+            grantId: grantId), o => o.ImmediateConsistency());
+
+        var grants = await SendRequestAsAsync<IReadOnlyCollection<ViewOAuthGrant>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("users/me/oauth-grants")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(grants);
+        var grant = Assert.Single(grants);
+        Assert.Equal(clientId, grant.ClientId);
+        Assert.Equal("Paged OAuth Grant Client", grant.ApplicationName);
+        Assert.Contains(AuthorizationRoles.McpRead, grant.Scopes);
+    }
+
+    [Fact]
     public async Task RevokeOAuthGrantAsync_WithCurrentUserGrant_DisablesAllClientTokens()
     {
         // Arrange
@@ -382,6 +416,44 @@ public sealed class UserControllerTests : IntegrationTestsBase
         Assert.Null(revokedSecondToken.RefreshTokenHash);
         Assert.False(stillActiveToken.IsDisabled);
         Assert.NotNull(stillActiveToken.RefreshTokenHash);
+    }
+
+    [Fact]
+    public async Task RevokeOAuthGrantAsync_WhenClientTokensExceedPageLimit_DisablesAllClientTokens()
+    {
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        const string clientId = "paged-revoke-client";
+        await CreateOAuthApplicationAsync(clientId, "Paged Revoke Client");
+        var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
+        var tokens = Enumerable.Range(0, 1005)
+            .Select(i => CreateOAuthGrantToken(user.Id, clientId, "http://localhost:7110/mcp", [AuthorizationRoles.McpRead, AuthorizationRoles.OfflineAccess], utcNow))
+            .ToList();
+        string targetGrantId = StringExtensions.GetNewToken();
+        var targetToken = CreateOAuthGrantToken(user.Id, clientId, "http://localhost:7110/api/v2", [AuthorizationRoles.ProjectsRead, AuthorizationRoles.OfflineAccess], utcNow, grantId: targetGrantId);
+        tokens.Add(targetToken);
+        await _oauthTokenRepository.AddAsync(tokens, o => o.ImmediateConsistency());
+
+        await SendRequestAsync(r => r
+            .Delete()
+            .AsTestOrganizationUser()
+            .AppendPaths("users", "me", "oauth-grants", targetGrantId)
+            .StatusCodeShouldBeNoContent()
+        );
+
+        var results = await _oauthTokenRepository.GetByUserIdAndClientIdForUpdateAsync(user.Id, clientId, o => o.ImmediateConsistency().SearchAfterPaging().PageLimit(1000));
+        int tokenCount = 0;
+        do
+        {
+            foreach (var token in results.Documents)
+            {
+                tokenCount++;
+                Assert.True(token.IsDisabled);
+                Assert.Null(token.RefreshTokenHash);
+            }
+        } while (await results.NextPageAsync());
+
+        Assert.Equal(tokens.Count, tokenCount);
     }
 
     [Fact]
@@ -724,6 +796,30 @@ public sealed class UserControllerTests : IntegrationTestsBase
 
         await _oauthTokenRepository.AddAsync(token, o => o.ImmediateConsistency());
         return token;
+    }
+
+    private static OAuthToken CreateOAuthGrantToken(string userId, string clientId, string resource, string[] scopes, DateTime utcNow, bool isDisabled = false, string[]? organizationIds = null, string? grantId = null)
+    {
+        var accessToken = StringExtensions.GetRandomString(OAuthService.OAuthTokenLength);
+        var refreshToken = scopes.Contains(AuthorizationRoles.OfflineAccess, StringComparer.Ordinal) ? StringExtensions.GetRandomString(OAuthService.OAuthTokenLength) : null;
+        return new OAuthToken
+        {
+            Id = ObjectId.GenerateNewId().ToString(),
+            UserId = userId,
+            ClientId = clientId,
+            GrantId = String.IsNullOrWhiteSpace(grantId) ? StringExtensions.GetNewToken() : grantId,
+            Resource = resource,
+            AccessTokenHash = OAuthService.CreateTokenHash(accessToken),
+            RefreshTokenHash = refreshToken is null ? null : OAuthService.CreateTokenHash(refreshToken),
+            Scopes = scopes.ToHashSet(StringComparer.Ordinal),
+            OrganizationIds = (organizationIds ?? [SampleDataService.TEST_ORG_ID]).ToHashSet(StringComparer.Ordinal),
+            ExpiresUtc = utcNow.AddHours(1),
+            RefreshExpiresUtc = refreshToken is not null ? utcNow.AddDays(30) : null,
+            IsDisabled = isDisabled,
+            CreatedBy = userId,
+            CreatedUtc = utcNow,
+            UpdatedUtc = utcNow
+        };
     }
 
     private async Task<ViewUser> GetTestOrganizationUserAsync()
