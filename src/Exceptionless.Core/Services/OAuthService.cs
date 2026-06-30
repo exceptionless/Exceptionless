@@ -517,10 +517,19 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             return;
         }
 
-        var results = await oauthTokenRepository.GetByGrantIdAsync(token.GrantId, o => o.ImmediateConsistency().PageLimit(OAuthGrantFamilyPageLimit));
-        IEnumerable<OAuthToken> familyTokens = results.Documents.Count > 0 ? results.Documents : [token];
-        foreach (var familyToken in familyTokens.Where(t => String.Equals(t.GrantId, token.GrantId, StringComparison.Ordinal)))
-            await DisableTokenAsync(familyToken);
+        bool disabledAny = false;
+        var results = await oauthTokenRepository.GetByGrantIdForUpdateAsync(token.GrantId, o => o.ImmediateConsistency().SearchAfterPaging().PageLimit(OAuthGrantFamilyPageLimit));
+        do
+        {
+            foreach (var familyToken in results.Documents.Where(t => String.Equals(t.GrantId, token.GrantId, StringComparison.Ordinal)))
+            {
+                disabledAny = true;
+                await DisableTokenAsync(familyToken);
+            }
+        } while (await results.NextPageAsync());
+
+        if (!disabledAny)
+            await DisableTokenAsync(token);
     }
 
     private static RefreshScopeValidationResult ValidateRefreshScopes(OAuthToken token, OAuthClientOptions client)

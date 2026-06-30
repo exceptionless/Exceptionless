@@ -75,9 +75,14 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     [HttpGet("me/oauth-grants")]
     public async Task<ActionResult<IReadOnlyCollection<ViewOAuthGrant>>> GetOAuthGrantsAsync()
     {
-        var results = await _oauthTokenRepository.GetByUserIdAsync(CurrentUser.Id, o => o.PageLimit(MAXIMUM_SKIP));
-        var tokens = results.Documents.Where(IsActiveOAuthGrantToken).ToArray();
-        if (tokens.Length == 0)
+        var tokens = new List<OAuthToken>();
+        var results = await _oauthTokenRepository.GetByUserIdAsync(CurrentUser.Id, o => o.SearchAfterPaging().PageLimit(MAXIMUM_SKIP));
+        do
+        {
+            tokens.AddRange(results.Documents.Where(IsActiveOAuthGrantToken));
+        } while (!HttpContext.RequestAborted.IsCancellationRequested && await results.NextPageAsync());
+
+        if (tokens.Count == 0)
             return Ok(Array.Empty<ViewOAuthGrant>());
 
         var applicationsByClientId = new Dictionary<string, OAuthApplication?>(StringComparer.Ordinal);
@@ -102,24 +107,34 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     [HttpDelete("me/oauth-grants/{id:minlength(1)}")]
     public async Task<IActionResult> RevokeOAuthGrantAsync(string id)
     {
-        var grantResults = await _oauthTokenRepository.GetByGrantIdAsync(id, o => o.ImmediateConsistency().PageLimit(MAXIMUM_SKIP));
-        var token = grantResults.Documents.FirstOrDefault(t =>
-            String.Equals(t.UserId, CurrentUser.Id, StringComparison.Ordinal)
-            && !String.IsNullOrWhiteSpace(t.ClientId));
+        OAuthToken? token = null;
+        var grantResults = await _oauthTokenRepository.GetByGrantIdForUpdateAsync(id, o => o.ImmediateConsistency().SearchAfterPaging().PageLimit(MAXIMUM_SKIP));
+        do
+        {
+            token = grantResults.Documents.FirstOrDefault(t =>
+                String.Equals(t.UserId, CurrentUser.Id, StringComparison.Ordinal)
+                && !String.IsNullOrWhiteSpace(t.ClientId));
+            if (token is not null)
+                break;
+        } while (!HttpContext.RequestAborted.IsCancellationRequested && await grantResults.NextPageAsync());
+
         if (token is null)
             return NotFound();
 
         string clientId = token.ClientId;
 
-        var results = await _oauthTokenRepository.GetByUserIdAndClientIdAsync(CurrentUser.Id, clientId, o => o.ImmediateConsistency().PageLimit(MAXIMUM_SKIP));
+        var results = await _oauthTokenRepository.GetByUserIdAndClientIdForUpdateAsync(CurrentUser.Id, clientId, o => o.ImmediateConsistency().SearchAfterPaging().PageLimit(MAXIMUM_SKIP));
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
-        foreach (var oauthToken in results.Documents)
+        do
         {
-            oauthToken.IsDisabled = true;
-            oauthToken.RefreshTokenHash = null;
-            oauthToken.UpdatedUtc = utcNow;
-            await _oauthTokenRepository.SaveAsync(oauthToken, o => o.ImmediateConsistency());
-        }
+            foreach (var oauthToken in results.Documents)
+            {
+                oauthToken.IsDisabled = true;
+                oauthToken.RefreshTokenHash = null;
+                oauthToken.UpdatedUtc = utcNow;
+                await _oauthTokenRepository.SaveAsync(oauthToken, o => o.ImmediateConsistency());
+            }
+        } while (!HttpContext.RequestAborted.IsCancellationRequested && await results.NextPageAsync());
 
         return NoContent();
     }

@@ -1053,6 +1053,56 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task TokenAsync_RefreshTokenWithLargeGrantFamily_RevokesAllTokens()
+    {
+        var token = await IssueTokenAsync(
+            resource: RestApiResource,
+            scope: $"{AuthorizationRoles.ProjectsRead} {AuthorizationRoles.OfflineAccess}");
+        var storedToken = await GetStoredOAuthTokenAsync(token.AccessToken);
+        Assert.NotNull(storedToken);
+        string grantId = storedToken.GrantId;
+        var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
+        var familyTokens = Enumerable.Range(0, 1005)
+            .Select(i => new OAuthToken
+            {
+                Id = ObjectId.GenerateNewId().ToString(),
+                UserId = storedToken.UserId,
+                ClientId = storedToken.ClientId,
+                GrantId = grantId,
+                Resource = storedToken.Resource,
+                AccessTokenHash = OAuthService.CreateTokenHash(StringExtensions.GetRandomString(OAuthService.OAuthTokenLength)),
+                RefreshTokenHash = OAuthService.CreateTokenHash(StringExtensions.GetRandomString(OAuthService.OAuthTokenLength)),
+                Scopes = [AuthorizationRoles.ProjectsRead, AuthorizationRoles.OfflineAccess],
+                OrganizationIds = [TestConstants.OrganizationId],
+                ExpiresUtc = utcNow.AddHours(1),
+                RefreshExpiresUtc = utcNow.AddDays(30),
+                IsDisabled = false,
+                CreatedBy = storedToken.UserId,
+                CreatedUtc = utcNow,
+                UpdatedUtc = utcNow
+            })
+            .ToArray();
+        await _oauthTokenRepository.AddAsync(familyTokens, o => o.ImmediateConsistency());
+        await SetStoredOAuthApplicationScopesAsync(ClientId, AuthorizationRoles.ProjectsRead);
+
+        await AssertRefreshFailsAndRevokesGrantFamilyAsync(token);
+
+        var results = await _oauthTokenRepository.GetByGrantIdForUpdateAsync(grantId, o => o.ImmediateConsistency().SearchAfterPaging().PageLimit(1000));
+        int tokenCount = 0;
+        do
+        {
+            foreach (var familyToken in results.Documents)
+            {
+                tokenCount++;
+                Assert.True(familyToken.IsDisabled);
+                Assert.Null(familyToken.RefreshTokenHash);
+            }
+        } while (await results.NextPageAsync());
+
+        Assert.Equal(familyTokens.Length + 1, tokenCount);
+    }
+
+    [Fact]
     public async Task TokenAsync_RefreshTokenWithRemovedRequiredResourceScope_RevokesGrantFamily()
     {
         var token = await IssueTokenAsync(scope: $"{AuthorizationRoles.McpRead} {AuthorizationRoles.ProjectsRead} {AuthorizationRoles.OfflineAccess}");

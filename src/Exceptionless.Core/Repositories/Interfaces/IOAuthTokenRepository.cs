@@ -9,7 +9,10 @@ public interface IOAuthTokenRepository : ISearchableRepository<OAuthToken>
     Task<FindResults<OAuthToken>> GetByAccessTokenHashAsync(string accessTokenHash, CommandOptionsDescriptor<OAuthToken>? options = null);
     Task<FindResults<OAuthToken>> GetByRefreshTokenHashAsync(string refreshTokenHash, CommandOptionsDescriptor<OAuthToken>? options = null);
     Task<FindResults<OAuthToken>> GetByGrantIdAsync(string grantId, CommandOptionsDescriptor<OAuthToken>? options = null);
+    Task<FindResults<OAuthToken>> GetByGrantIdForUpdateAsync(string grantId, CommandOptionsDescriptor<OAuthToken>? options = null);
     Task<FindResults<OAuthToken>> GetByUserIdAsync(string userId, CommandOptionsDescriptor<OAuthToken>? options = null);
     Task<FindResults<OAuthToken>> GetByUserIdAndClientIdAsync(string userId, string clientId, CommandOptionsDescriptor<OAuthToken>? options = null);
+    Task<FindResults<OAuthToken>> GetByUserIdAndClientIdForUpdateAsync(string userId, string clientId, CommandOptionsDescriptor<OAuthToken>? options = null);
+    Task<long> RemoveExpiredDisabledAsync(DateTime utcCutoff, CancellationToken cancellationToken = default);
     Task<long> RemoveAllByUserIdAsync(string userId, CommandOptionsDescriptor<OAuthToken>? options = null);
 }

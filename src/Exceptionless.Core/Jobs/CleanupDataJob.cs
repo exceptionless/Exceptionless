@@ -21,12 +21,15 @@ namespace Exceptionless.Core.Jobs;
 [Job(Description = "Deletes soft deleted data and enforces data retention.", IsContinuous = false)]
 public class CleanupDataJob : JobWithLockBase, IHealthCheck
 {
+    private static readonly TimeSpan OAuthTokenCleanupSafetyWindow = TimeSpan.FromDays(1);
+
     private readonly IOrganizationRepository _organizationRepository;
     private readonly OrganizationService _organizationService;
     private readonly IProjectRepository _projectRepository;
     private readonly IStackRepository _stackRepository;
     private readonly IEventRepository _eventRepository;
     private readonly ITokenRepository _tokenRepository;
+    private readonly IOAuthTokenRepository _oauthTokenRepository;
     private readonly IWebHookRepository _webHookRepository;
     private readonly BillingManager _billingManager;
     private readonly UsageService _usageService;
@@ -43,6 +46,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         IStackRepository stackRepository,
         IEventRepository eventRepository,
         ITokenRepository tokenRepository,
+        IOAuthTokenRepository oauthTokenRepository,
         IWebHookRepository webHookRepository,
         ILockProvider lockProvider,
         ICacheClient cacheClient,
@@ -61,6 +65,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         _stackRepository = stackRepository;
         _eventRepository = eventRepository;
         _tokenRepository = tokenRepository;
+        _oauthTokenRepository = oauthTokenRepository;
         _webHookRepository = webHookRepository;
         _billingManager = billingManager;
         _usageService = usageService;
@@ -80,6 +85,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         _lastRun = _timeProvider.GetUtcNow().UtcDateTime;
 
         await MarkTokensSuspended(context);
+        await CleanupOAuthTokensAsync(context);
         await CleanupSoftDeletedOrganizationsAsync(context);
         await CleanupSoftDeletedProjectsAsync(context);
         await CleanupSoftDeletedStacksAsync(context);
@@ -105,6 +111,13 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
             if (updatedCount > 0)
                 _logger.LogInformation("Marking {SuspendedTokenCount} tokens as suspended", updatedCount);
         } while (!context.CancellationToken.IsCancellationRequested && await suspendedOrganizations.NextPageAsync());
+    }
+
+    private async Task CleanupOAuthTokensAsync(JobContext context)
+    {
+        var utcCutoff = _timeProvider.GetUtcNow().UtcDateTime.Subtract(OAuthTokenCleanupSafetyWindow);
+        long removed = await _oauthTokenRepository.RemoveExpiredDisabledAsync(utcCutoff, context.CancellationToken);
+        _logger.LogInformation("Removed {OAuthTokenCount} expired disabled OAuth token(s)", removed);
     }
 
     private async Task CleanupSoftDeletedOrganizationsAsync(JobContext context)
