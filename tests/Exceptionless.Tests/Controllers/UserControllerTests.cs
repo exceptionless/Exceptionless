@@ -1,3 +1,4 @@
+using System.Net;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -186,6 +187,45 @@ public sealed class UserControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task DeleteAvatarAsync_WithExistingAvatar_RemovesAvatar()
+    {
+        // Arrange
+        var currentUser = await SendRequestAsAsync<ViewUser>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(currentUser);
+        using var content = CreateProfileImageContent();
+
+        var updatedUser = await SendRequestAsAsync<ViewUser>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("users", currentUser.Id, "avatar")
+            .Content(content)
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(updatedUser);
+        Assert.NotNull(updatedUser.AvatarUrl);
+
+        // Act
+        var userWithoutAvatar = await SendRequestAsAsync<ViewUser>(r => r
+            .Delete()
+            .AsGlobalAdminUser()
+            .AppendPaths("users", currentUser.Id, "avatar")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(userWithoutAvatar);
+        Assert.Null(userWithoutAvatar.AvatarUrl);
+
+        var storedUser = await _userRepository.GetByIdAsync(currentUser.Id);
+        Assert.NotNull(storedUser);
+        Assert.Null(storedUser.AvatarFileName);
+    }
+
+    [Fact]
     public Task DeleteCurrentUserAsync_AnonymousUser_ReturnsUnauthorized()
     {
         return SendRequestAsync(r => r
@@ -193,6 +233,28 @@ public sealed class UserControllerTests : IntegrationTestsBase
             .AppendPath("users/me")
             .StatusCodeShouldBeUnauthorized()
         );
+    }
+
+    [Fact]
+    public async Task DeleteCurrentUserAsync_WithOrganizationMembership_ReturnsBadRequest()
+    {
+        // Arrange
+        var currentUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(currentUser);
+        Assert.NotEmpty(currentUser.OrganizationIds);
+
+        // Act
+        await SendRequestAsync(r => r
+            .Delete()
+            .AsTestOrganizationUser()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        // Assert
+        var storedUser = await _userRepository.GetByIdAsync(currentUser.Id);
+        Assert.NotNull(storedUser);
+        Assert.Contains(SampleDataService.TEST_ORG_ID, storedUser.OrganizationIds);
     }
 
     [Fact]
@@ -245,6 +307,40 @@ public sealed class UserControllerTests : IntegrationTestsBase
         Assert.NotNull(user);
         Assert.Equal(currentUser.Id, user.Id);
         Assert.Equal(SampleDataService.TEST_USER_EMAIL, user.EmailAddress);
+    }
+
+    [Fact]
+    public async Task GetAvatarAsync_WithExistingAvatar_ReturnsImage()
+    {
+        // Arrange
+        var currentUser = await SendRequestAsAsync<ViewUser>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(currentUser);
+        using var content = CreateProfileImageContent();
+
+        var updatedUser = await SendRequestAsAsync<ViewUser>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("users", currentUser.Id, "avatar")
+            .Content(content)
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(updatedUser);
+        Assert.NotNull(updatedUser.AvatarUrl);
+        string avatarPath = updatedUser.AvatarUrl.TrimStart('/');
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .BaseUri(_server.BaseAddress)
+            .AppendPath(avatarPath)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.Equal("image/png", response.Content.Headers.ContentType?.MediaType);
     }
 
     [Fact]
@@ -734,13 +830,68 @@ public sealed class UserControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public Task VerifyAsync_InvalidToken_ReturnsNotFound()
+    public async Task VerifyAsync_ExpiredToken_ReturnsValidationProblem()
     {
-        return SendRequestAsync(r => r
+        // Arrange
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        user.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
+        user.VerifyEmailAddressTokenExpiration = TimeProvider.GetUtcNow().UtcDateTime.AddMinutes(-1);
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
+        string token = Assert.IsType<string>(user.VerifyEmailAddressToken);
+
+        // Act
+        await SendRequestAsync(r => r
             .AsGlobalAdminUser()
-            .AppendPaths("users", "verify-email-address", "invalidtoken1234567890ab")
+            .AppendPaths("users", "verify-email-address", token)
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+
+        // Assert
+        var updatedUser = await _userRepository.GetByIdAsync(user.Id);
+        Assert.NotNull(updatedUser);
+        Assert.False(updatedUser.IsEmailAddressVerified);
+    }
+
+    [Fact]
+    public async Task VerifyAsync_InvalidToken_ReturnsNotFound()
+    {
+        // Arrange
+        const string token = "invalidtoken1234567890ab";
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("users", "verify-email-address", token)
             .StatusCodeShouldBeNotFound()
         );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task VerifyAsync_ValidToken_VerifiesEmailAddress()
+    {
+        // Arrange
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        user.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
+        string token = Assert.IsType<string>(user.VerifyEmailAddressToken);
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("users", "verify-email-address", token)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        var updatedUser = await _userRepository.GetByIdAsync(user.Id);
+        Assert.NotNull(updatedUser);
+        Assert.True(updatedUser.IsEmailAddressVerified);
+        Assert.Null(updatedUser.VerifyEmailAddressToken);
     }
 
     private Task<OAuthApplication> CreateOAuthApplicationAsync(string clientId, string name)
