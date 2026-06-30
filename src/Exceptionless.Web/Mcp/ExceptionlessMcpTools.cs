@@ -41,10 +41,10 @@ public sealed class ExceptionlessMcpTools
     private const string EventGroupByDescription = "Optional dimension to group counts by. Supported values: version, type, source, status, tag, stack, user, level, error.type, error.code, os, os.version, browser. Multi-value fields such as tag, error.type, and error.code can place one event into multiple groups, so group totals may sum higher than the overall event total.";
     private const string SnoozeDurationDescription = "Optional relative snooze duration such as 2h, 3d, or 1w. Do not combine with snoozeUntilUtc.";
     private const string ProjectFilterDescription = "Optional Exceptionless filter expression applied to projects. Supported fields: id, name, organization_id, created_utc, updated_utc, last_event_date_utc.";
-    private const string StackFilterDescription = "Optional Exceptionless filter expression. Supported fields include: stack, project, project_id, organization, organization_id, type, status, title, description, tag, tags, references, fixed, hidden, regressed, error, first, first_occurrence, last, last_occurrence, occurrences, total_occurrences, data.*, idx.*. data.* only works for fields mapped in the search index; use idx.* for custom indexed data.";
-    private const string EventFilterDescription = "Optional Exceptionless filter expression applied to events. Supported fields include: id, project, project_id, stack, stack_id, organization, organization_id, type, source, message, date, tag, tags, user, user.name, user.email, path, error, error.type, error.message, error.code, status, data.*, idx.*. data.* only works for fields mapped in the search index; use idx.* for custom indexed data.";
+    private const string StackFilterDescription = "Optional Exceptionless filter expression. Supported fields include: stack, project, project_id, organization, organization_id, type, status, title, description, tag, tags, references, fixed, hidden, regressed, error, first, first_occurrence, last, last_occurrence, occurrences, total_occurrences.";
+    private const string EventFilterDescription = "Optional Exceptionless filter expression applied to events. Supported fields include: id, project, project_id, stack, stack_id, organization, organization_id, type, source, message, date, tag, tags, user, user.name, user.email, path, error, error.type, error.message, error.code, status, data.*. data.* works for custom data values that were indexed for search; arbitrary event detail data is returned by get_event but is not searchable unless indexed.";
 
-    private const string IndexedDataFilterNote = "data.* filters only work for fields mapped in the search index. Use idx.* for custom indexed data; arbitrary event detail data is returned by get_event but is not searchable unless it is indexed.";
+    private const string IndexedDataFilterNote = "data.* filters work for custom data values that were indexed for search. Arbitrary event detail data is returned by get_event but is not searchable unless indexed.";
 
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IOrganizationRepository _organizationRepository;
@@ -945,7 +945,7 @@ public sealed class ExceptionlessMcpTools
     }
 
     [McpServerTool(Name = "get_filter_fields", ReadOnly = true, UseStructuredContent = true)]
-    [Description("Lists supported Exceptionless MCP filter and sort fields for projects, stacks, and events. Dynamic data.* and idx.* filter prefixes are allowed for stacks and events, but data.* only works for fields mapped in the search index; use idx.* for custom indexed data.")]
+    [Description("Lists supported Exceptionless MCP filter and sort fields for projects, stacks, and events. Dynamic data.* filter prefixes are allowed for indexed custom event data.")]
     public McpResponse<McpFilterFieldsResult> GetFilterFields()
     {
         try
@@ -953,8 +953,8 @@ public sealed class ExceptionlessMcpTools
             EnsureScope(AuthorizationRoles.McpRead);
             return McpResponse<McpFilterFieldsResult>.Success(new McpFilterFieldsResult(
                 ToFilterFieldSet(ProjectFilterFields, ProjectSortFields),
-                ToFilterFieldSet(StackFilterFields, StackSortFields, "data.", "idx."),
-                ToFilterFieldSet(EventFilterFields, EventSortFields, "data.", "idx.")));
+                ToFilterFieldSet(StackFilterFields, StackSortFields),
+                ToFilterFieldSet(EventFilterFields, EventSortFields, "data.")));
         }
         catch (Exception ex) when (IsLookupError(ex))
         {
@@ -1471,7 +1471,7 @@ public sealed class ExceptionlessMcpTools
         foreach (Match match in FilterFieldRegex.Matches(filter))
         {
             string field = match.Groups["field"].Value;
-            if (field.StartsWith("data.", StringComparison.OrdinalIgnoreCase) || field.StartsWith("idx.", StringComparison.OrdinalIgnoreCase))
+            if (field.StartsWith("data.", StringComparison.OrdinalIgnoreCase))
                 continue;
 
             if (!allowedFilterFields.Contains(field))
@@ -1851,7 +1851,6 @@ public sealed class ExceptionlessMcpTools
         EventIndex.Alias.Tags,
         "tags",
         EventIndex.Alias.Geo,
-        EventIndex.Alias.IDX,
         EventIndex.Alias.Version,
         EventIndex.Alias.Level,
         EventIndex.Alias.SubmissionMethod,

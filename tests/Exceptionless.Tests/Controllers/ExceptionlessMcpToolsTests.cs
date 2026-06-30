@@ -340,6 +340,19 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task SearchEventsAsync_InternalIndexedDataFilter_ReturnsUnknownFilterField()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.SearchEventsAsync(TestConstants.ProjectId, filter: "idx.customer.email-s:user42@example.com");
+
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.UnknownFilterField, result.Error?.Code);
+        Assert.Equal("Unknown filter field 'idx.customer.email-s'.", result.Error?.Message);
+        Assert.Null(result.Data);
+    }
+
+    [Fact]
     public async Task SearchStacksAsync_MalformedFilter_ReturnsSpecificError()
     {
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksRead);
@@ -676,8 +689,11 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         Assert.Contains("name", item.Projects.FilterFields);
         Assert.Contains("status", item.Stacks.FilterFields);
         Assert.Contains("path", item.Events.FilterFields);
-        Assert.Contains("data.", item.Stacks.DynamicFilterPrefixes);
-        Assert.Contains("mapped in the search index", item.Events.Notes, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(item.Stacks.DynamicFilterPrefixes);
+        Assert.Contains("data.", item.Events.DynamicFilterPrefixes);
+        Assert.DoesNotContain("idx.", item.Events.DynamicFilterPrefixes);
+        Assert.DoesNotContain("idx", item.Events.FilterFields);
+        Assert.Contains("indexed for search", item.Events.Notes, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
