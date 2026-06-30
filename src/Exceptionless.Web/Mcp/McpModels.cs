@@ -22,6 +22,25 @@ public sealed record McpListData<T>(IReadOnlyCollection<T> Items);
 
 public sealed record McpPagination(bool HasMore, int Limit, string? Before = null, string? After = null);
 
+public sealed record McpContextResult(
+    string? ActiveOrganizationId,
+    string? ActiveOrganizationName,
+    string? ActiveProjectId,
+    string? ActiveProjectName,
+    IReadOnlyCollection<McpOrganizationResult> Organizations,
+    IReadOnlyCollection<McpProjectResult> Projects,
+    bool RequiresOrganizationSelection,
+    bool RequiresProjectSelection,
+    DateTime? UpdatedUtc = null)
+{
+    public static McpContextResult Empty { get; } = new(null, null, null, null, [], [], false, false);
+}
+
+public sealed record McpOrganizationResult(
+    string Id,
+    string Name,
+    string Url);
+
 public sealed record McpTimeRange(DateTime? StartUtc, DateTime? EndUtc)
 {
     public bool HasRange => StartUtc.HasValue || EndUtc.HasValue;
@@ -35,7 +54,8 @@ public sealed record McpFilterFieldsResult(
 public sealed record McpFilterFieldSet(
     IReadOnlyCollection<string> FilterFields,
     IReadOnlyCollection<string> SortFields,
-    IReadOnlyCollection<string> DynamicFilterPrefixes);
+    IReadOnlyCollection<string> DynamicFilterPrefixes,
+    string? Notes = null);
 
 public sealed record McpEventCountResult(
     long Events,
