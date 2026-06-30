@@ -165,10 +165,11 @@ public sealed class McpContextService(
                 []));
         }
 
-        var project = await GetAccessibleProjectAsync(projectId);
-        if (project is null)
-            return McpContextResolution.Failed(McpErrors.NotAccessible($"Project {projectId} was not found or is not accessible.", "projectId", projectId));
+        var projectAccess = await GetAccessibleProjectAsync(projectId);
+        if (projectAccess.Error is not null)
+            return McpContextResolution.Failed(projectAccess.Error);
 
+        var project = projectAccess.Project!;
         var accessibleOrganizations = await GetAccessibleOrganizationsAsync();
         var activeOrganization = accessibleOrganizations.FirstOrDefault(o => String.Equals(o.Id, project.OrganizationId, StringComparison.Ordinal));
         if (activeOrganization is null)
@@ -235,12 +236,13 @@ public sealed class McpContextService(
                 : McpProjectContextResolution.Failed(resolvedContext.Error!, resolvedContext.Context);
         }
 
-        var project = await GetAccessibleProjectAsync(projectId.Trim());
-        if (project is null)
+        var projectAccess = await GetAccessibleProjectAsync(projectId.Trim());
+        if (projectAccess.Error is not null)
         {
-            return McpProjectContextResolution.Failed(McpErrors.NotAccessible($"Project {projectId} was not found or is not accessible.", "projectId", projectId));
+            return McpProjectContextResolution.Failed(projectAccess.Error);
         }
 
+        var project = projectAccess.Project!;
         var context = await GetContextAsync(requireProject: false);
         if (!context.Succeeded)
             return McpProjectContextResolution.Failed(context.Error!, context.Context);
@@ -317,15 +319,16 @@ public sealed class McpContextService(
             .ToArray();
     }
 
-    private async Task<Project?> GetAccessibleProjectAsync(string projectId)
+    private async Task<McpProjectAccess> GetAccessibleProjectAsync(string projectId)
     {
         var project = await projectRepository.GetByIdAsync(projectId, o => o.Cache());
         if (project is null)
-            return null;
+            return McpProjectAccess.Failed(McpErrors.NotFound($"Project {projectId} was not found.", "projectId", projectId));
 
-        return Request.GetAssociatedOrganizationIds().Contains(project.OrganizationId)
-            ? project
-            : null;
+        if (!Request.GetAssociatedOrganizationIds().Contains(project.OrganizationId))
+            return McpProjectAccess.Failed(McpErrors.NotAccessible($"Project {projectId} is not accessible.", "projectId", projectId));
+
+        return McpProjectAccess.Success(project);
     }
 
     private async Task<Project?> GetValidatedProjectAsync(string? projectId, string organizationId)
@@ -440,6 +443,21 @@ public sealed record McpContextResolution(McpContextResult Context, Organization
     public static McpContextResolution Failed(McpErrorInfo error, McpContextResult? context = null, Organization? activeOrganization = null, Project? activeProject = null)
     {
         return new McpContextResolution(context ?? McpContextResult.Empty, activeOrganization, activeProject, error);
+    }
+}
+
+public sealed record McpProjectAccess(Project? Project, McpErrorInfo? Error)
+{
+    public bool Succeeded => Error is null;
+
+    public static McpProjectAccess Success(Project project)
+    {
+        return new McpProjectAccess(project, null);
+    }
+
+    public static McpProjectAccess Failed(McpErrorInfo error)
+    {
+        return new McpProjectAccess(null, error);
     }
 }
 

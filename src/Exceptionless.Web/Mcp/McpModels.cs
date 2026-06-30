@@ -54,7 +54,8 @@ public sealed record McpFilterFieldsResult(
 public sealed record McpFilterFieldSet(
     IReadOnlyCollection<string> FilterFields,
     IReadOnlyCollection<string> SortFields,
-    IReadOnlyCollection<string> DynamicFilterPrefixes);
+    IReadOnlyCollection<string> DynamicFilterPrefixes,
+    string? Notes = null);
 
 public sealed record McpEventCountResult(
     long Events,

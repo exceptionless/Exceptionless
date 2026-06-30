@@ -203,6 +203,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         Assert.Contains(setup.Steps, step => step.Command?.Contains("npx expo install", StringComparison.OrdinalIgnoreCase) == true);
         Assert.Contains(setup.Steps, step => step.Code?.Contains("@exceptionless/react-native/expo-plugin", StringComparison.OrdinalIgnoreCase) == true);
         Assert.Contains(setup.Steps, step => step.Code?.Contains(SampleDataService.TEST_API_KEY, StringComparison.OrdinalIgnoreCase) == true);
+        Assert.DoesNotContain(setup.Steps, step => step.Code?.Contains("Hello from Expo", StringComparison.OrdinalIgnoreCase) == true);
         Assert.Contains(setup.Notes, note => note.Contains("Expo", StringComparison.OrdinalIgnoreCase));
     }
 
@@ -476,6 +477,50 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task CountEventsAsync_InvalidGroupBy_ReturnsCanonicalAllowedFields()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.CountEventsAsync(TestConstants.ProjectId, groupBy: "client.version");
+
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.InvalidGroupBy, result.Error?.Code);
+        Assert.NotNull(result.Error?.Details);
+        var allowedFields = Assert.IsType<string[]>(result.Error.Details["allowedFields"]);
+        Assert.Contains("error.type", allowedFields);
+        Assert.DoesNotContain("stack_id", allowedFields);
+        Assert.DoesNotContain("tags", allowedFields);
+    }
+
+    [Fact]
+    public async Task CountEventsAsync_MultiValueGroupBy_ReturnsOverlapWarning()
+    {
+        const string referenceId = "mcp-count-events-error-type-warning";
+        var (_, events) = await CreateDataAsync(d => d.Event().TestProject().Type(Event.KnownTypes.Error).ReferenceId(referenceId).Message("MCP count error type warning"));
+        var ev = events[0];
+        ev.SetSimpleError(new SimpleError
+        {
+            Message = "Outer",
+            Type = "System.InvalidOperationException",
+            Inner = new SimpleError
+            {
+                Message = "Inner",
+                Type = "System.Exception"
+            }
+        });
+        await _eventRepository.SaveAsync(ev, o => o.ImmediateConsistency());
+        await RefreshDataAsync();
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.CountEventsAsync(TestConstants.ProjectId, filter: $"reference:{referenceId}", groupBy: "error.type");
+
+        Assert.True(result.Ok);
+        Assert.Equal("error.type", Data(result).GroupBy);
+        Assert.Contains("multi-value", result.Warning, StringComparison.OrdinalIgnoreCase);
+    }
+
+
+    [Fact]
     public async Task CountEventsAsync_GroupLimitAboveMaximum_IsCappedWithWarning()
     {
         const string referenceId = "mcp-count-events-group-limit";
@@ -529,6 +574,19 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task SearchEventsAsync_MissingProjectId_ReturnsNotFound()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.SearchEventsAsync("000000000000000000000000");
+
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.NotFound, result.Error?.Code);
+        Assert.Null(result.Data);
+    }
+
+
+    [Fact]
     public async Task SearchStacksAsync_InvalidProjectId_ReturnsInvalidId()
     {
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksRead);
@@ -551,6 +609,19 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         Assert.Null(result.Data);
         Assert.Equal(McpErrorCodes.InvalidId, result.Error?.Code);
     }
+
+    [Fact]
+    public async Task GetEventAsync_MissingEventId_ReturnsNotFound()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.GetEventAsync("000000000000000000000000");
+
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.NotFound, result.Error?.Code);
+        Assert.Null(result.Data);
+    }
+
 
     [Fact]
     public async Task GetEventAsync_DetailPayloadAboveMaximum_OmitsLargeDetails()
@@ -606,6 +677,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         Assert.Contains("status", item.Stacks.FilterFields);
         Assert.Contains("path", item.Events.FilterFields);
         Assert.Contains("data.", item.Stacks.DynamicFilterPrefixes);
+        Assert.Contains("mapped in the search index", item.Events.Notes, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -791,6 +863,23 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         Assert.Equal(McpErrorCodes.InvalidReferenceLink, result.Error?.Code);
         Assert.Null(result.Data);
     }
+
+    [Theory]
+    [InlineData("not-a-url")]
+    [InlineData("/relative")]
+    [InlineData("mailto:test@example.com")]
+    public async Task AddStackReferenceLinkAsync_InvalidUrl_ReturnsInvalidReferenceUrl(string url)
+    {
+        var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP write invalid reference"));
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksWrite);
+
+        var result = await tools.AddStackReferenceLinkAsync(stacks[0].Id, url);
+
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.InvalidReferenceUrl, result.Error?.Code);
+        Assert.Null(result.Data);
+    }
+
 
     [Fact]
     public async Task RemoveStackReferenceLinkAsync_StacksWriteScope_RemovesReference()

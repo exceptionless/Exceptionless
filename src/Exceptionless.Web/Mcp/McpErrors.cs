@@ -17,7 +17,8 @@ public static class McpErrorCodes
     public const string InvalidId = "invalid_id";
     public const string InvalidInterval = "invalid_interval";
     public const string InvalidLimit = "invalid_limit";
-    public const string InvalidReferenceLink = "invalid_reference_link";
+    public const string InvalidReferenceUrl = "invalid_reference_url";
+    public const string InvalidReferenceLink = InvalidReferenceUrl;
     public const string InvalidSnooze = "invalid_snooze";
     public const string InvalidSort = "invalid_sort";
     public const string InvalidStatus = "invalid_status";
@@ -132,13 +133,18 @@ public static class McpErrors
         });
     }
 
-    public static McpErrorInfo InvalidReferenceLink(string message, string? url)
+    public static McpErrorInfo InvalidReferenceUrl(string message, string? url)
     {
-        return new McpErrorInfo(McpErrorCodes.InvalidReferenceLink, message, new Dictionary<string, object?>
+        return new McpErrorInfo(McpErrorCodes.InvalidReferenceUrl, message, new Dictionary<string, object?>
         {
             ["field"] = "url",
             ["value"] = url
         });
+    }
+
+    public static McpErrorInfo InvalidReferenceLink(string message, string? url)
+    {
+        return InvalidReferenceUrl(message, url);
     }
 
     public static McpErrorInfo InvalidSnooze(string message, string? duration, string? snoozeUntilUtc)

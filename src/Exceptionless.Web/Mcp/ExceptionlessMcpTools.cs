@@ -38,11 +38,13 @@ public sealed class ExceptionlessMcpTools
     private const string LastDescription = "Optional relative time range such as 24h, 7d, or 30m. Do not combine with startUtc or endUtc.";
     private const string StartUtcDescription = "Optional inclusive UTC start time, for example 2026-06-25T00:00:00Z. Do not combine with last.";
     private const string EndUtcDescription = "Optional exclusive UTC end time, for example 2026-06-25T01:00:00Z. Do not combine with last.";
-    private const string EventGroupByDescription = "Optional dimension to group counts by. Supported values: version, type, source, status, tag, stack, user, level, error.type, error.code, os, os.version, browser.";
+    private const string EventGroupByDescription = "Optional dimension to group counts by. Supported values: version, type, source, status, tag, stack, user, level, error.type, error.code, os, os.version, browser. Multi-value fields such as tag, error.type, and error.code can place one event into multiple groups, so group totals may sum higher than the overall event total.";
     private const string SnoozeDurationDescription = "Optional relative snooze duration such as 2h, 3d, or 1w. Do not combine with snoozeUntilUtc.";
     private const string ProjectFilterDescription = "Optional Exceptionless filter expression applied to projects. Supported fields: id, name, organization_id, created_utc, updated_utc, last_event_date_utc.";
-    private const string StackFilterDescription = "Optional Exceptionless filter expression. Supported fields include: stack, project, project_id, organization, organization_id, type, status, title, description, tag, tags, references, fixed, hidden, regressed, error, first, first_occurrence, last, last_occurrence, occurrences, total_occurrences, data.*, idx.*.";
-    private const string EventFilterDescription = "Optional Exceptionless filter expression applied to events. Supported fields include: id, project, project_id, stack, stack_id, organization, organization_id, type, source, message, date, tag, tags, user, user.name, user.email, path, error, error.type, error.message, error.code, status, data.*, idx.*.";
+    private const string StackFilterDescription = "Optional Exceptionless filter expression. Supported fields include: stack, project, project_id, organization, organization_id, type, status, title, description, tag, tags, references, fixed, hidden, regressed, error, first, first_occurrence, last, last_occurrence, occurrences, total_occurrences, data.*, idx.*. data.* only works for fields mapped in the search index; use idx.* for custom indexed data.";
+    private const string EventFilterDescription = "Optional Exceptionless filter expression applied to events. Supported fields include: id, project, project_id, stack, stack_id, organization, organization_id, type, source, message, date, tag, tags, user, user.name, user.email, path, error, error.type, error.message, error.code, status, data.*, idx.*. data.* only works for fields mapped in the search index; use idx.* for custom indexed data.";
+
+    private const string IndexedDataFilterNote = "data.* filters only work for fields mapped in the search index. Use idx.* for custom indexed data; arbitrary event detail data is returned by get_event but is not searchable unless it is indexed.";
 
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IOrganizationRepository _organizationRepository;
@@ -660,7 +662,7 @@ public sealed class ExceptionlessMcpTools
 
             var aggregationValidation = await _eventQueryValidator.ValidateAggregationsAsync(aggregations);
             if (!aggregationValidation.IsValid)
-                return McpResponse<McpEventCountResult>.Failed(McpErrors.InvalidGroupBy($"Invalid aggregation: {aggregationValidation.Message ?? "Unable to validate aggregation."}", groupBy, EventGroupByFields.Keys));
+                return McpResponse<McpEventCountResult>.Failed(McpErrors.InvalidGroupBy($"Invalid aggregation: {aggregationValidation.Message ?? "Unable to validate aggregation."}", groupBy, EventGroupByAllowedFields));
 
             var countQuery = ApplyEventTimeRange(new RepositoryQuery<PersistentEvent>().AppFilter(systemFilter), timeRange);
             var result = await _eventRepository.CountAsync(_ => countQuery
@@ -700,6 +702,8 @@ public sealed class ExceptionlessMcpTools
                     .ToArray() ?? [];
             }
 
+            string? warning = CombineWarnings(groupLimitWarning, GetGroupByOverlapWarning(resolvedGroupBy));
+
             return McpResponse<McpEventCountResult>.Success(new McpEventCountResult(
                 result.Total,
                 GetNumericAggregationValue(result.Aggregations.Sum("sum_count")?.Value, result.Total),
@@ -711,7 +715,7 @@ public sealed class ExceptionlessMcpTools
                 EndUtc: timeRange.EndUtc,
                 GroupBy: resolvedGroupBy?.Name,
                 Groups: groups),
-                groupLimitWarning);
+                warning);
         }
         catch (Exception ex) when (IsLookupError(ex))
         {
@@ -872,9 +876,8 @@ public sealed class ExceptionlessMcpTools
             if (!TryValidateId(stackId, "stackId", out var idError))
                 return McpResponse<McpStackUpdateResult>.Failed(idError);
 
-            string? referenceLink = NormalizeReferenceLink(url);
-            if (referenceLink is null)
-                return McpResponse<McpStackUpdateResult>.Failed(McpErrors.InvalidReferenceLink("url is required.", url));
+            if (!TryNormalizeReferenceUrl(url, out string referenceLink, out var referenceError))
+                return McpResponse<McpStackUpdateResult>.Failed(referenceError);
 
             var stack = await GetAccessibleStackForWriteAsync(stackId);
             bool changed = !stack.References.Contains(referenceLink);
@@ -942,7 +945,7 @@ public sealed class ExceptionlessMcpTools
     }
 
     [McpServerTool(Name = "get_filter_fields", ReadOnly = true, UseStructuredContent = true)]
-    [Description("Lists supported Exceptionless MCP filter and sort fields for projects, stacks, and events. Dynamic data.* and idx.* filter fields are allowed for stacks and events.")]
+    [Description("Lists supported Exceptionless MCP filter and sort fields for projects, stacks, and events. Dynamic data.* and idx.* filter prefixes are allowed for stacks and events, but data.* only works for fields mapped in the search index; use idx.* for custom indexed data.")]
     public McpResponse<McpFilterFieldsResult> GetFilterFields()
     {
         try
@@ -1302,7 +1305,7 @@ public sealed class ExceptionlessMcpTools
             return true;
         }
 
-        error = McpErrors.InvalidGroupBy($"Unsupported groupBy field '{groupBy}'.", groupBy, EventGroupByFields.Keys);
+        error = McpErrors.InvalidGroupBy($"Unsupported groupBy field '{groupBy}'.", groupBy, EventGroupByAllowedFields);
         return false;
     }
 
@@ -1406,6 +1409,29 @@ public sealed class ExceptionlessMcpTools
     private static string? NormalizeFixedVersion(string? fixedInVersion)
     {
         return String.IsNullOrWhiteSpace(fixedInVersion) ? null : fixedInVersion.Trim();
+    }
+
+    private static bool TryNormalizeReferenceUrl(string? url, out string referenceUrl, out McpErrorInfo error)
+    {
+        referenceUrl = null!;
+        if (String.IsNullOrWhiteSpace(url))
+        {
+            error = McpErrors.InvalidReferenceUrl("url is required.", url);
+            return false;
+        }
+
+        referenceUrl = url.Trim();
+        if (Uri.TryCreate(referenceUrl, UriKind.Absolute, out var uri)
+            && uri.IsWellFormedOriginalString()
+            && !String.IsNullOrEmpty(uri.Host)
+            && (String.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) || String.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)))
+        {
+            error = null!;
+            return true;
+        }
+
+        error = McpErrors.InvalidReferenceUrl("url must be an absolute http or https URL.", url);
+        return false;
     }
 
     private static string? NormalizeReferenceLink(string? url)
@@ -1618,7 +1644,7 @@ public sealed class ExceptionlessMcpTools
             Code: String.Join('\n', new[]
             {
                 "try {",
-                "  throw new Error(\"Hello from Expo\");",
+                "  throw new Error(\"Handled React Native exception\");",
                 "} catch (error) {",
                 "  await Exceptionless.submitException(error);",
                 "}"
@@ -1644,10 +1670,12 @@ public sealed class ExceptionlessMcpTools
 
     private static McpFilterFieldSet ToFilterFieldSet(IReadOnlySet<string> filterFields, IReadOnlySet<string> sortFields, params string[] dynamicFilterPrefixes)
     {
+        string? notes = dynamicFilterPrefixes.Contains("data.", StringComparer.OrdinalIgnoreCase) ? IndexedDataFilterNote : null;
         return new McpFilterFieldSet(
             filterFields.Order(StringComparer.OrdinalIgnoreCase).ToArray(),
             sortFields.Order(StringComparer.OrdinalIgnoreCase).ToArray(),
-            dynamicFilterPrefixes);
+            dynamicFilterPrefixes,
+            notes);
     }
 
     private McpResponse<McpListData<TResult>> ToListResponse<TDocument, TResult>(
@@ -1686,6 +1714,19 @@ public sealed class ExceptionlessMcpTools
         return value is null ? defaultValue : Convert.ToDouble(value, CultureInfo.InvariantCulture);
     }
 
+    private static string? CombineWarnings(params string?[] warnings)
+    {
+        var values = warnings.Where(w => !String.IsNullOrWhiteSpace(w)).ToArray();
+        return values.Length == 0 ? null : String.Join(" ", values);
+    }
+
+    private static string? GetGroupByOverlapWarning(McpEventGroupBy? groupBy)
+    {
+        return groupBy?.CanOverlap == true
+            ? $"groupBy={groupBy.Name} is multi-value; one event can appear in multiple groups, so group event totals may sum higher than the overall event total."
+            : null;
+    }
+
     private static readonly HashSet<string> ClientSetupPlatforms = new(StringComparer.OrdinalIgnoreCase) { "expo", "react-native" };
 
     private static readonly Regex FilterFieldRegex = new(@"(?:^|[\s(])(?<field>@?[A-Za-z_][A-Za-z0-9_@.-]*):", RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -1693,20 +1734,37 @@ public sealed class ExceptionlessMcpTools
     private static readonly Regex RelativeTimeRegex = new(@"^(?<value>\d+)(?<unit>[mhdw])$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
     private static readonly Regex IntervalRegex = new(@"^\d+[mhdwM]$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
+    private static readonly string[] EventGroupByAllowedFields =
+    [
+        "version",
+        "type",
+        "source",
+        "status",
+        "tag",
+        "stack",
+        "user",
+        "level",
+        "error.type",
+        "error.code",
+        "os",
+        "os.version",
+        "browser"
+    ];
+
     private static readonly IReadOnlyDictionary<string, McpEventGroupBy> EventGroupByFields = new Dictionary<string, McpEventGroupBy>(StringComparer.OrdinalIgnoreCase)
     {
         ["version"] = new("version", EventIndex.Alias.Version),
         ["type"] = new("type", EventIndex.Alias.Type),
         ["source"] = new("source", EventIndex.Alias.Source),
         ["status"] = new("status", "status"),
-        ["tag"] = new("tag", "tags"),
-        ["tags"] = new("tag", "tags"),
+        ["tag"] = new("tag", "tags", CanOverlap: true),
+        ["tags"] = new("tag", "tags", CanOverlap: true),
         ["stack"] = new("stack", EventIndex.Alias.StackId),
         ["stack_id"] = new("stack", "stack_id"),
         ["user"] = new("user", EventIndex.Alias.User),
         ["level"] = new("level", EventIndex.Alias.Level),
-        ["error.type"] = new("error.type", EventIndex.Alias.ErrorType),
-        ["error.code"] = new("error.code", EventIndex.Alias.ErrorCode),
+        ["error.type"] = new("error.type", EventIndex.Alias.ErrorType, CanOverlap: true),
+        ["error.code"] = new("error.code", EventIndex.Alias.ErrorCode, CanOverlap: true),
         ["os"] = new("os", "os"),
         ["os.version"] = new("os.version", "os.version"),
         ["browser"] = new("browser", EventIndex.Alias.Browser)
@@ -1838,5 +1896,5 @@ public sealed class ExceptionlessMcpTools
         }
     }
 
-    private sealed record McpEventGroupBy(string Name, string AggregationField);
+    private sealed record McpEventGroupBy(string Name, string AggregationField, bool CanOverlap = false);
 }
