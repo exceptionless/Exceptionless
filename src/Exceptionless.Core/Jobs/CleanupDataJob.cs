@@ -72,7 +72,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
 
     protected override Task<ILock?> GetLockAsync(CancellationToken cancellationToken = default)
     {
-        return _lockProvider.TryAcquireAsync(nameof(CleanupDataJob), TimeSpan.FromMinutes(15), cancellationToken);
+        return _lockProvider.TryAcquireAsync(nameof(CleanupDataJob), TimeSpan.FromHours(2), cancellationToken);
     }
 
     protected override async Task<JobResult> RunInternalAsync(JobContext context)
@@ -114,8 +114,13 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
 
         while (organizationResults.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
         {
+            await RenewLockAsync(context);
+
             foreach (var organization in organizationResults.Documents)
             {
+                if (context.CancellationToken.IsCancellationRequested)
+                    break;
+
                 using var _ = _logger.BeginScope(new ExceptionlessState().Organization(organization.Id));
                 try
                 {
@@ -142,8 +147,13 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
 
         while (projectResults.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
         {
+            await RenewLockAsync(context);
+
             foreach (var project in projectResults.Documents)
             {
+                if (context.CancellationToken.IsCancellationRequested)
+                    break;
+
                 using var _ = _logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id));
                 try
                 {
@@ -278,8 +288,13 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         var results = await _organizationRepository.FindAsync(q => q.Include(o => o.Id, o => o.Name, o => o.RetentionDays), o => o.SearchAfterPaging().PageLimit(100));
         while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
         {
+            await RenewLockAsync(context);
+
             foreach (var organization in results.Documents)
             {
+                if (context.CancellationToken.IsCancellationRequested)
+                    break;
+
                 using var _ = _logger.BeginScope(new ExceptionlessState().Organization(organization.Id));
 
                 int retentionDays = _billingManager.GetBillingPlanByUpsellingRetentionPeriod(organization.RetentionDays)?.RetentionDays ?? _appOptions.MaximumRetentionDays;
@@ -349,6 +364,8 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
 
     private Task RenewLockAsync(JobContext context)
     {
+        // Called at each page boundary to prevent the distributed lock from expiring
+        // during long-running bulk cleanup operations that span multiple pages.
         _lastRun = _timeProvider.GetUtcNow().UtcDateTime;
         return context.RenewLockAsync();
     }
