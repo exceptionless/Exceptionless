@@ -15,6 +15,7 @@ using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
+using Exceptionless.Web.Security;
 using Exceptionless.Web.Utility;
 using Foundatio.Jobs;
 using Foundatio.Mediator;
@@ -37,6 +38,7 @@ public class ProjectHandler(
     IQueue<WorkItemData> workItemQueue,
     BillingManager billingManager,
     SlackService slackService,
+    IOAuthProviderClient oauthProviderClient,
     SampleDataService sampleDataService,
     ApiMapper mapper,
     ITextSerializer serializer,
@@ -440,7 +442,7 @@ public class ProjectHandler(
         SlackToken? token;
         try
         {
-            token = await slackService.GetAccessTokenAsync(message.Code);
+            token = await oauthProviderClient.GetSlackAccessTokenAsync(message.Code);
         }
         catch (Exception ex)
         {

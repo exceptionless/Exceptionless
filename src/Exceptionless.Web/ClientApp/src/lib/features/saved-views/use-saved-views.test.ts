@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SavedView } from './models';
 
 import { invalidateSavedViewQueries, queryKeys, removeSavedViewFromCaches, SAVED_VIEW_REFRESH_DELAY_MS, syncSavedViewCaches } from './api.svelte';
+import { savedViewHref, savedViewResolvedSlug } from './slugs';
 import {
     clearSavedViewQueryParams,
     filterDefinitionsEqual,
@@ -62,6 +63,30 @@ function buildSavedView({ id, name, ...overrides }: Partial<SavedView> & Pick<Sa
 }
 
 describe('useSavedViews', () => {
+    describe('saved view slugs', () => {
+        it('falls back to the normalized name for views created before slugs were stored', () => {
+            // Arrange
+            const savedView = buildSavedView({ id: 'view-1', name: 'Legacy Saved View', slug: '' });
+
+            // Act
+            const slug = savedViewResolvedSlug(savedView);
+
+            // Assert
+            expect(slug).toBe('legacy-saved-view');
+        });
+
+        it('builds saved-view URLs with the resolved slug', () => {
+            // Arrange
+            const savedView = buildSavedView({ id: 'view-1', name: 'Legacy Saved View', slug: '', view_type: 'events' });
+
+            // Act
+            const href = savedViewHref(savedView);
+
+            // Assert
+            expect(href).toBe('/next/event/legacy-saved-view');
+        });
+    });
+
     describe('saved view slug resolution', () => {
         it('reports a missing slug after saved views finish loading without a match', () => {
             // Arrange

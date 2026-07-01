@@ -106,6 +106,10 @@ public sealed class ApiResultMapper : IMediatorResultMapper<IResult>
         if (rateLimitError is not null)
             return HttpResults.Problem(statusCode: StatusCodes.Status429TooManyRequests, title: rateLimitError.ErrorMessage);
 
+        var requestEntityTooLargeError = errors.FirstOrDefault(error => String.Equals(error.Identifier, "request_entity_too_large", StringComparison.OrdinalIgnoreCase));
+        if (requestEntityTooLargeError is not null)
+            return HttpResults.Problem(statusCode: StatusCodes.Status413RequestEntityTooLarge, title: requestEntityTooLargeError.ErrorMessage);
+
         var errorDict = new Dictionary<string, string[]>();
         foreach (var error in errors)
         {

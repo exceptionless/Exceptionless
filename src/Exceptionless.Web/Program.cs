@@ -11,6 +11,7 @@ using Exceptionless.Web.Api;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Hubs;
+using Exceptionless.Web.Mcp;
 using Exceptionless.Web.Security;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Handlers;
@@ -107,7 +108,7 @@ public partial class Program
                 c.AddServerHeader = false;
 
                 if (options.MaximumEventPostSize > 0)
-                    c.Limits.MaxRequestBodySize = options.MaximumEventPostSize;
+                    c.Limits.MaxRequestBodySize = options.MaximumEventPostSize + EventPostRequestBodyStream.KestrelBodyLimitSlopBytes;
             });
 
             builder.Services.AddSingleton(configuration);
@@ -146,6 +147,11 @@ public partial class Program
                 o.AddPolicy(AuthorizationRoles.ClientPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.Client));
                 o.AddPolicy(AuthorizationRoles.UserPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.User));
                 o.AddPolicy(AuthorizationRoles.GlobalAdminPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.GlobalAdmin));
+                o.AddPolicy(AuthorizationRoles.McpPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.McpRead));
+                o.AddPolicy(AuthorizationRoles.ProjectsReadPolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.ProjectsRead)));
+                o.AddPolicy(AuthorizationRoles.StacksReadPolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.StacksRead)));
+                o.AddPolicy(AuthorizationRoles.StacksWritePolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.StacksWrite)));
+                o.AddPolicy(AuthorizationRoles.EventsReadPolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.EventsRead)));
             });
 
             builder.Services.AddRouting(r =>
@@ -192,6 +198,10 @@ public partial class Program
                     .MapStatus(ResultStatus.CriticalError, ApiResultMapper.MapCriticalError)
                     .MapStatus(ResultStatus.Unavailable, ApiResultMapper.MapUnavailable));
             Bootstrapper.RegisterServices(builder.Services, options, Log.Logger.ToLoggerFactory());
+            builder.Services.AddScoped<McpContextService>();
+            builder.Services.AddMcpServer()
+                .WithHttpTransport(o => o.Stateless = false)
+                .WithTools<ExceptionlessMcpTools>();
             builder.Services.AddSingleton(_ => new ThrottlingOptions
             {
                 MaxRequestsForUserIdentifierFunc = _ => options.ApiThrottleLimit,
@@ -349,6 +359,7 @@ public partial class Program
                     .AddPreferredSecuritySchemes("Bearer");
             });
             app.MapApiEndpoints();
+            app.MapMcp("/mcp").RequireAuthorization(AuthorizationRoles.McpPolicy);
             app.MapFallback("{**slug:nonfile}", CreateRequestDelegate(app, "/index.html"));
 
             await app.RunAsync();

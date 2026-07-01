@@ -459,7 +459,7 @@ public class SerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(deserialized?.Data);
-        Assert.True(deserialized!.Data!.TryGetValue("mixed", out var mixedValue));
+        Assert.True(deserialized!.Data!.TryGetValue("mixed", out object? mixedValue));
         var list = Assert.IsAssignableFrom<IEnumerable<object?>>(mixedValue);
         var items = list.ToList();
         Assert.Equal(5, items.Count);
@@ -490,7 +490,7 @@ public class SerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(deserialized?.Data);
-        Assert.True(deserialized!.Data!.TryGetValue("outer", out var outerValue));
+        Assert.True(deserialized!.Data!.TryGetValue("outer", out object? outerValue));
         var outer = Assert.IsType<Dictionary<string, object?>>(outerValue);
         var inner = Assert.IsType<Dictionary<string, object?>>(outer["inner"]);
         Assert.Equal(42, inner["deep"]);

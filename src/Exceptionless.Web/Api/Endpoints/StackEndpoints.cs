@@ -18,7 +18,6 @@ public static class StackEndpoints
     public static IEndpointRouteBuilder MapStackEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("api/v2")
-            .RequireAuthorization(AuthorizationRoles.ClientPolicy)
             .AddEndpointFilter<AutoValidationEndpointFilter>()
             .WithTags("Stack");
 
@@ -26,7 +25,7 @@ public static class StackEndpoints
         group.MapGet("stacks/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? offset = null)
             => (await mediator.InvokeAsync<Result<Stack>>(new GetStackById(id, offset, httpContext))).ToHttpResult(resultMapper))
         .WithName("GetStackById")
-        .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .RequireAuthorization(AuthorizationRoles.StacksReadPolicy)
         .Produces<Stack>()
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Get by id")
@@ -43,7 +42,7 @@ public static class StackEndpoints
         // Mark fixed
         group.MapPost("stacks/{ids:objectids}/mark-fixed", async (string ids, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? version = null)
             => (await mediator.InvokeAsync<Result>(new MarkStacksFixed(ids, version, httpContext))).ToHttpResult(resultMapper))
-        .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .RequireAuthorization(AuthorizationRoles.StacksWritePolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Mark fixed")
@@ -61,18 +60,19 @@ public static class StackEndpoints
         // Mark fixed - Zapier legacy v1
         endpoints.MapPost("api/v1/stack/markfixed", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] JsonDocument data)
             => (await mediator.InvokeAsync<Result>(new MarkStacksFixedByZapier(data, httpContext))).ToHttpResult(resultMapper))
-        .RequireAuthorization(AuthorizationRoles.ClientPolicy)
+        .RequireAuthorization(AuthorizationRoles.StacksWritePolicy)
         .ExcludeFromDescription();
 
         // Mark fixed - Zapier v2 (no id in route)
         group.MapPost("stacks/mark-fixed", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] JsonDocument data)
             => (await mediator.InvokeAsync<Result>(new MarkStacksFixedByZapier(data, httpContext))).ToHttpResult(resultMapper))
+        .RequireAuthorization(AuthorizationRoles.StacksWritePolicy)
         .ExcludeFromDescription();
 
         // Snooze
         group.MapPost("stacks/{ids:objectids}/mark-snoozed", async (string ids, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, DateTime snoozeUntilUtc)
             => (await mediator.InvokeAsync<Result>(new SnoozeStacks(ids, snoozeUntilUtc, httpContext))).ToHttpResult(resultMapper))
-        .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .RequireAuthorization(AuthorizationRoles.StacksWritePolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Mark the selected stacks as snoozed")
@@ -90,7 +90,7 @@ public static class StackEndpoints
         // Add link
         group.MapPost("stacks/{id:objectid}/add-link", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] ValueFromBody<string?> url)
             => (await mediator.InvokeAsync<Result>(new AddStackLink(id, url, httpContext))).ToHttpResult(resultMapper))
-        .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .RequireAuthorization(AuthorizationRoles.StacksWritePolicy)
         .Accepts<ValueFromBody<string?>>("application/json")
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -110,18 +110,19 @@ public static class StackEndpoints
         // Add link - Zapier legacy v1
         endpoints.MapPost("api/v1/stack/addlink", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] JsonDocument data)
             => (await mediator.InvokeAsync<Result>(new AddStackLinkByZapier(data, httpContext))).ToHttpResult(resultMapper))
-        .RequireAuthorization(AuthorizationRoles.ClientPolicy)
+        .RequireAuthorization(AuthorizationRoles.StacksWritePolicy)
         .ExcludeFromDescription();
 
         // Add link - Zapier v2 (no id in route)
         group.MapPost("stacks/add-link", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] JsonDocument data)
             => (await mediator.InvokeAsync<Result>(new AddStackLinkByZapier(data, httpContext))).ToHttpResult(resultMapper))
+        .RequireAuthorization(AuthorizationRoles.StacksWritePolicy)
         .ExcludeFromDescription();
 
         // Remove link
         group.MapPost("stacks/{id:objectid}/remove-link", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] ValueFromBody<string> url)
             => (await mediator.InvokeAsync<Result>(new RemoveStackLink(id, url, httpContext))).ToHttpResult(resultMapper))
-        .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .RequireAuthorization(AuthorizationRoles.StacksWritePolicy)
         .Accepts<ValueFromBody<string>>("application/json")
         .Produces(StatusCodes.Status204NoContent)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -142,7 +143,7 @@ public static class StackEndpoints
         // Mark critical
         group.MapPost("stacks/{ids:objectids}/mark-critical", async (string ids, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
             => (await mediator.InvokeAsync<Result>(new MarkStacksCritical(ids, httpContext))).ToHttpResult(resultMapper))
-        .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .RequireAuthorization(AuthorizationRoles.StacksWritePolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Mark future occurrences as critical")
@@ -158,7 +159,7 @@ public static class StackEndpoints
         // Mark not critical
         group.MapDelete("stacks/{ids:objectids}/mark-critical", async (string ids, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
             => (await mediator.InvokeAsync<Result>(new MarkStacksNotCritical(ids, httpContext))).ToHttpResult(resultMapper))
-        .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .RequireAuthorization(AuthorizationRoles.StacksWritePolicy)
         .Produces(StatusCodes.Status204NoContent)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Mark future occurrences as not critical")
@@ -175,7 +176,7 @@ public static class StackEndpoints
         // Change status
         group.MapPost("stacks/{ids:objectids}/change-status", async (string ids, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, StackStatus status)
             => (await mediator.InvokeAsync<Result>(new ChangeStacksStatus(ids, status, httpContext))).ToHttpResult(resultMapper))
-        .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .RequireAuthorization(AuthorizationRoles.StacksWritePolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Change stack status")
@@ -233,7 +234,7 @@ public static class StackEndpoints
         // Get all
         group.MapGet("stacks", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int page = 1, int limit = 10)
             => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetAllStacks(filter, sort, time, offset, mode, page, limit, httpContext))).ToHttpResult(resultMapper))
-        .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .RequireAuthorization(AuthorizationRoles.StacksReadPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .WithSummary("Get all")
@@ -255,7 +256,7 @@ public static class StackEndpoints
         // Get by organization
         group.MapGet("organizations/{organizationId:objectid}/stacks", async (string organizationId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int page = 1, int limit = 10)
             => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetStacksByOrganization(organizationId, filter, sort, time, offset, mode, page, limit, httpContext))).ToHttpResult(resultMapper))
-        .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .RequireAuthorization(AuthorizationRoles.StacksReadPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -282,7 +283,7 @@ public static class StackEndpoints
         // Get by project
         group.MapGet("projects/{projectId:objectid}/stacks", async (string projectId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int page = 1, int limit = 10)
             => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetStacksByProject(projectId, filter, sort, time, offset, mode, page, limit, httpContext))).ToHttpResult(resultMapper))
-        .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .RequireAuthorization(AuthorizationRoles.StacksReadPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)

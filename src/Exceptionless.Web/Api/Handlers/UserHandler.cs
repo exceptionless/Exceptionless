@@ -12,6 +12,7 @@ using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
+using Exceptionless.Web.Models.OAuth;
 using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Mediator;
@@ -24,6 +25,8 @@ public class UserHandler(
     IUserRepository repository,
     IOrganizationRepository organizationRepository,
     ITokenRepository tokenRepository,
+    IOAuthTokenRepository oauthTokenRepository,
+    IOAuthApplicationRepository oauthApplicationRepository,
     ICacheClient cacheClient,
     IMailer mailer,
     ApiMapper mapper,
@@ -43,6 +46,65 @@ public class UserHandler(
             return Result.NotFound("User not found.");
 
         return new ViewCurrentUser(currentUser, intercomOptions);
+    }
+
+    public async Task<Result<IReadOnlyCollection<ViewOAuthGrant>>> Handle(GetCurrentUserOAuthGrants message)
+    {
+        var tokens = new List<OAuthToken>();
+        var results = await oauthTokenRepository.GetByUserIdAsync(GetCurrentUserId(), o => o.SearchAfterPaging().PageLimit(Pagination.MaximumSkip));
+        do
+        {
+            tokens.AddRange(results.Documents.Where(IsActiveOAuthGrantToken));
+        } while (!HttpContext.RequestAborted.IsCancellationRequested && await results.NextPageAsync());
+
+        if (tokens.Count == 0)
+            return Array.Empty<ViewOAuthGrant>();
+
+        var applicationsByClientId = new Dictionary<string, OAuthApplication?>(StringComparer.Ordinal);
+        foreach (string clientId in tokens.Select(t => t.ClientId).Distinct(StringComparer.Ordinal))
+            applicationsByClientId[clientId] = await oauthApplicationRepository.GetByClientIdAsync(clientId);
+
+        var grants = tokens
+            .GroupBy(t => t.ClientId, StringComparer.Ordinal)
+            .Select(group => MapToOAuthGrant(group.ToArray(), applicationsByClientId[group.Key]))
+            .OrderBy(g => g.ApplicationName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(g => g.ClientId, StringComparer.Ordinal)
+            .ToArray();
+
+        return grants;
+    }
+
+    public async Task<Result> Handle(RevokeCurrentUserOAuthGrant message)
+    {
+        OAuthToken? token = null;
+        var grantResults = await oauthTokenRepository.GetByGrantIdForUpdateAsync(message.Id, o => o.ImmediateConsistency().SearchAfterPaging().PageLimit(Pagination.MaximumSkip));
+        do
+        {
+            token = grantResults.Documents.FirstOrDefault(t =>
+                String.Equals(t.UserId, GetCurrentUserId(), StringComparison.Ordinal)
+                && !String.IsNullOrWhiteSpace(t.ClientId));
+            if (token is not null)
+                break;
+        } while (!HttpContext.RequestAborted.IsCancellationRequested && await grantResults.NextPageAsync());
+
+        if (token is null)
+            return Result.NotFound("OAuth grant not found.");
+
+        string clientId = token.ClientId;
+        var results = await oauthTokenRepository.GetByUserIdAndClientIdForUpdateAsync(GetCurrentUserId(), clientId, o => o.ImmediateConsistency().SearchAfterPaging().PageLimit(Pagination.MaximumSkip));
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+        do
+        {
+            foreach (var oauthToken in results.Documents)
+            {
+                oauthToken.IsDisabled = true;
+                oauthToken.RefreshTokenHash = null;
+                oauthToken.UpdatedUtc = utcNow;
+                await oauthTokenRepository.SaveAsync(oauthToken, o => o.ImmediateConsistency());
+            }
+        } while (!HttpContext.RequestAborted.IsCancellationRequested && await results.NextPageAsync());
+
+        return Result.NoContent();
     }
 
     public async Task<Result<object>> Handle(GetUserById message)
@@ -318,6 +380,7 @@ public class UserHandler(
         foreach (var user in deletableItems)
         {
             long removed = await tokenRepository.RemoveAllByUserIdAsync(user.Id);
+            removed += await oauthTokenRepository.RemoveAllByUserIdAsync(user.Id);
             _logger.RemovedTokens(removed, user.Id);
         }
 
@@ -440,6 +503,59 @@ public class UserHandler(
         return $"/api/v2/users/{id}/avatar/{fileName}";
     }
 
+    private bool IsActiveOAuthGrantToken(OAuthToken token)
+    {
+        if (token.IsDisabled || token.IsSuspended || String.IsNullOrWhiteSpace(token.ClientId))
+            return false;
+
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+        bool hasActiveAccessToken = !token.ExpiresUtc.HasValue || token.ExpiresUtc.Value >= utcNow;
+        bool hasActiveRefreshToken = !String.IsNullOrEmpty(token.RefreshTokenHash) && (!token.RefreshExpiresUtc.HasValue || token.RefreshExpiresUtc.Value >= utcNow);
+        return hasActiveAccessToken || hasActiveRefreshToken;
+    }
+
+    private static ViewOAuthGrant MapToOAuthGrant(IReadOnlyCollection<OAuthToken> tokens, OAuthApplication? application)
+    {
+        var latestToken = tokens
+            .OrderByDescending(t => t.UpdatedUtc)
+            .ThenByDescending(t => t.CreatedUtc)
+            .First();
+
+        return new ViewOAuthGrant
+        {
+            Id = latestToken.GrantId,
+            ClientId = latestToken.ClientId,
+            ApplicationName = application?.Name ?? latestToken.ClientId,
+            IsApplicationDisabled = application?.IsDisabled ?? false,
+            Scopes = tokens
+                .SelectMany(t => t.Scopes)
+                .Distinct(StringComparer.Ordinal)
+                .Order(StringComparer.Ordinal)
+                .ToArray(),
+            OrganizationIds = tokens
+                .SelectMany(t => t.OrganizationIds)
+                .Where(id => !String.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.Ordinal)
+                .Order(StringComparer.Ordinal)
+                .ToArray(),
+            Resources = tokens
+                .Where(t => !String.IsNullOrWhiteSpace(t.Resource))
+                .GroupBy(t => t.Resource!, StringComparer.Ordinal)
+                .Select(group => new ViewOAuthGrantResource
+                {
+                    Resource = group.Key,
+                    Scopes = group.SelectMany(t => t.Scopes).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray(),
+                    OrganizationIds = group.SelectMany(t => t.OrganizationIds).Where(id => !String.IsNullOrWhiteSpace(id)).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray()
+                })
+                .OrderBy(r => r.Resource, StringComparer.Ordinal)
+                .ToArray(),
+            CreatedUtc = tokens.Min(t => t.CreatedUtc),
+            UpdatedUtc = tokens.Max(t => t.UpdatedUtc),
+            ExpiresUtc = tokens.Select(t => t.ExpiresUtc).Max(),
+            RefreshExpiresUtc = tokens.Select(t => t.RefreshExpiresUtc).Max()
+        };
+    }
+
     private static Result PermissionToResult(PermissionResult permission)
     {
         if (permission.StatusCode is StatusCodes.Status404NotFound)
@@ -447,6 +563,9 @@ public class UserHandler(
 
         if (permission.StatusCode is StatusCodes.Status422UnprocessableEntity)
             return Result.Invalid(ValidationError.Create("general", permission.Message ?? "Validation failed."));
+
+        if (permission.StatusCode is StatusCodes.Status400BadRequest)
+            return Result.BadRequest(permission.Message ?? "Bad request.");
 
         return Result.Forbidden(permission.Message ?? "Access denied.");
     }

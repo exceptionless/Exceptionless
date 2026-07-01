@@ -71,6 +71,20 @@ describe('helpers.svelte', () => {
     });
 });
 
+describe('TagFilter', () => {
+    it('quotes tag values with spaces', () => {
+        const filters = [new TagFilter(['First Chance'] as never[])];
+
+        expect(toFilter(filters)).toBe('tag:"First Chance"');
+    });
+
+    it('quotes multiple tag values with spaces', () => {
+        const filters = [new TagFilter(['First Chance', 'Second Chance'] as never[])];
+
+        expect(toFilter(filters)).toBe('(tag:"First Chance" OR tag:"Second Chance")');
+    });
+});
+
 describe('applyTimeFilter', () => {
     it('removes an existing date filter when time is explicitly empty', () => {
         // Arrange

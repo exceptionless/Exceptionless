@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 namespace Exceptionless.Web.Api.Messages;
 
 public record GetCurrentUser;
+public record GetCurrentUserOAuthGrants;
+public record RevokeCurrentUserOAuthGrant(string Id);
 public record GetUserById(string Id);
 public record GetUsersByOrganization(string OrganizationId, int Page, int Limit);
 public record UpdateUserMessage(string Id, JsonPatchDocument<UpdateUser> PatchDocument);

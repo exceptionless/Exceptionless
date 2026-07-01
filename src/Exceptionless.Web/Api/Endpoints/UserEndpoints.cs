@@ -6,6 +6,7 @@ using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
+using Exceptionless.Web.Models.OAuth;
 using Exceptionless.Web.Utility;
 using Foundatio.Storage;
 using Foundatio.Mediator;
@@ -38,6 +39,25 @@ public static class UserEndpoints
         .WithMetadata(new EndpointDocumentation {
             ResponseDescriptions = new() {
                 ["404"] = "The current user could not be found.",
+            }
+        });
+
+        group.MapGet("users/me/oauth-grants", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result<IReadOnlyCollection<ViewOAuthGrant>>>(new UserMessages.GetCurrentUserOAuthGrants())).ToHttpResult(resultMapper))
+        .Produces<IReadOnlyCollection<ViewOAuthGrant>>()
+        .WithSummary("Get current user OAuth grants");
+
+        group.MapDelete("users/me/oauth-grants/{id:minlength(1)}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+            => (await mediator.InvokeAsync<Result>(new UserMessages.RevokeCurrentUserOAuthGrant(id))).ToHttpResult(resultMapper))
+        .Produces(StatusCodes.Status204NoContent)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .WithSummary("Revoke current user OAuth grant")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["id"] = "The OAuth grant identifier.",
+            },
+            ResponseDescriptions = new() {
+                ["404"] = "The OAuth grant could not be found.",
             }
         });
 

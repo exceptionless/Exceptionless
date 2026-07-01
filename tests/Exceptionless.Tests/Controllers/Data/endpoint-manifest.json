@@ -1,5 +1,35 @@
 [
   {
+    "method": "GET",
+    "route": "/.well-known/oauth-authorization-server",
+    "displayName": "HTTP: GET .well-known/oauth-authorization-server",
+    "tags": [],
+    "allowAnonymous": true,
+    "authorizationPolicies": [],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
+    "route": "/.well-known/oauth-protected-resource/api/v2",
+    "displayName": "HTTP: GET .well-known/oauth-protected-resource/api/v2",
+    "tags": [],
+    "allowAnonymous": true,
+    "authorizationPolicies": [],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
+    "route": "/.well-known/oauth-protected-resource/mcp",
+    "displayName": "HTTP: GET .well-known/oauth-protected-resource/mcp",
+    "tags": [],
+    "allowAnonymous": true,
+    "authorizationPolicies": [],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
     "method": "POST",
     "route": "/api/v1/error",
     "displayName": "HTTP: POST api/v1/error",
@@ -125,7 +155,9 @@
     "displayName": "HTTP: POST api/v1/projecthook/unsubscribe",
     "tags": [],
     "allowAnonymous": true,
-    "authorizationPolicies": [],
+    "authorizationPolicies": [
+      "ClientPolicy"
+    ],
     "authorizationRoles": [],
     "authenticationSchemes": []
   },
@@ -178,7 +210,7 @@
     "tags": [],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy"
+      "StacksWritePolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -190,7 +222,7 @@
     "tags": [],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy"
+      "StacksWritePolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -198,10 +230,12 @@
   {
     "method": "GET",
     "route": "/api/v2/about",
-    "displayName": "HTTP: GET /api/v2/about",
+    "displayName": "HTTP: GET api/v2/about",
     "tags": [],
     "allowAnonymous": true,
-    "authorizationPolicies": [],
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
     "authorizationRoles": [],
     "authenticationSchemes": []
   },
@@ -306,6 +340,54 @@
     "tags": [
       "Admin"
     ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
+    "route": "/api/v2/admin/oauth-applications",
+    "displayName": "HTTP: GET api/v2/admin/oauth-applications",
+    "tags": [],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/admin/oauth-applications",
+    "displayName": "HTTP: POST api/v2/admin/oauth-applications",
+    "tags": [],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "DELETE",
+    "route": "/api/v2/admin/oauth-applications/{id:objectid}",
+    "displayName": "HTTP: DELETE api/v2/admin/oauth-applications/{id:objectid}",
+    "tags": [],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "PUT",
+    "route": "/api/v2/admin/oauth-applications/{id:objectid}",
+    "displayName": "HTTP: PUT api/v2/admin/oauth-applications/{id:objectid}",
+    "tags": [],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "GlobalAdminPolicy"
@@ -602,8 +684,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "EventsReadPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -631,8 +712,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "EventsReadPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -660,8 +740,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "EventsReadPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -689,8 +768,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "EventsReadPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -704,8 +782,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "EventsReadPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -747,8 +824,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "EventsReadPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -762,7 +838,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -816,6 +891,82 @@
       "GlobalAdminPolicy",
       "UserPolicy"
     ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
+    "route": "/api/v2/oauth/authorize",
+    "displayName": "HTTP: GET api/v2/oauth/authorize",
+    "tags": [
+      "OAuth"
+    ],
+    "allowAnonymous": true,
+    "authorizationPolicies": [],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/oauth/authorize",
+    "displayName": "HTTP: POST api/v2/oauth/authorize",
+    "tags": [
+      "OAuth"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/oauth/authorize/consent",
+    "displayName": "HTTP: POST api/v2/oauth/authorize/consent",
+    "tags": [
+      "OAuth"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/oauth/register",
+    "displayName": "HTTP: POST api/v2/oauth/register",
+    "tags": [
+      "OAuth"
+    ],
+    "allowAnonymous": true,
+    "authorizationPolicies": [],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/oauth/revoke",
+    "displayName": "HTTP: POST api/v2/oauth/revoke =\u003E RevokeTokenAsync",
+    "tags": [
+      "OAuth"
+    ],
+    "allowAnonymous": true,
+    "authorizationPolicies": [],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/oauth/token",
+    "displayName": "HTTP: POST api/v2/oauth/token =\u003E IssueTokenAsync",
+    "tags": [
+      "OAuth"
+    ],
+    "allowAnonymous": true,
+    "authorizationPolicies": [],
     "authorizationRoles": [],
     "authenticationSchemes": []
   },
@@ -1140,8 +1291,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "EventsReadPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -1155,8 +1305,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "EventsReadPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -1170,8 +1319,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "EventsReadPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -1185,8 +1333,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "ProjectsReadPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -1200,7 +1347,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -1286,8 +1432,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "StacksReadPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -1343,8 +1488,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "ProjectsReadPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -1358,7 +1502,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -1373,7 +1516,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -1402,8 +1544,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "ProjectsReadPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -1417,7 +1558,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -1432,7 +1572,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -1447,7 +1586,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -1476,7 +1614,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -1491,7 +1628,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -1506,7 +1642,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -1521,7 +1656,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "GlobalAdminPolicy"
     ],
     "authorizationRoles": [],
@@ -1536,7 +1670,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -1551,7 +1684,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -1566,7 +1698,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -1581,7 +1712,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -1596,7 +1726,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -1611,7 +1740,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -1626,7 +1754,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -1641,7 +1768,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -1656,7 +1782,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -1671,7 +1796,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -1686,7 +1810,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -1701,7 +1824,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -1716,8 +1838,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "EventsReadPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -1745,8 +1866,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "EventsReadPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -1774,8 +1894,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "EventsReadPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -1789,8 +1908,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "EventsReadPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -1804,8 +1922,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "EventsReadPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -1847,8 +1964,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "StacksReadPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -2060,8 +2176,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "StacksReadPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -2075,7 +2190,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy"
+      "StacksWritePolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -2089,7 +2204,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy"
+      "StacksWritePolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -2103,8 +2218,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "StacksReadPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -2118,8 +2232,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "StacksWritePolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -2133,7 +2246,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -2148,8 +2260,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "StacksWritePolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -2163,7 +2274,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -2178,8 +2288,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "StacksWritePolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -2193,8 +2302,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "StacksWritePolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -2208,8 +2316,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "StacksWritePolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -2223,8 +2330,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "StacksWritePolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -2238,8 +2344,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "StacksWritePolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -2253,8 +2358,7 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
-      "UserPolicy"
+      "EventsReadPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -2357,6 +2461,34 @@
     "method": "GET",
     "route": "/api/v2/users/me",
     "displayName": "HTTP: GET api/v2/users/me",
+    "tags": [
+      "User"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
+    "route": "/api/v2/users/me/oauth-grants",
+    "displayName": "HTTP: GET api/v2/users/me/oauth-grants",
+    "tags": [
+      "User"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "DELETE",
+    "route": "/api/v2/users/me/oauth-grants/{id:minlength(1)}",
+    "displayName": "HTTP: DELETE api/v2/users/me/oauth-grants/{id:minlength(1)}",
     "tags": [
       "User"
     ],
@@ -2562,7 +2694,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -2577,7 +2708,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -2592,7 +2722,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -2607,7 +2736,6 @@
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
-      "ClientPolicy",
       "UserPolicy"
     ],
     "authorizationRoles": [],
@@ -2716,8 +2844,8 @@
   },
   {
     "method": "POST",
-    "route": "/api/v{apiVersion:int}/webhooks/subscribe",
-    "displayName": "HTTP: POST api/v{apiVersion:int}/webhooks/subscribe",
+    "route": "/api/v{apiVersion:int=2}/webhooks/subscribe",
+    "displayName": "HTTP: POST api/v{apiVersion:int=2}/webhooks/subscribe",
     "tags": [],
     "allowAnonymous": false,
     "authorizationPolicies": [

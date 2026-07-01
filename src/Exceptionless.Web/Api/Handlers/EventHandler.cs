@@ -611,7 +611,11 @@ public class EventHandler(
                 charSet = contentType.Charset.ToString();
             }
 
-            await eventPostService.EnqueueAsync(new EventPost(appOptions.EnableArchive)
+            Stream requestBody = appOptions.MaximumEventPostSize > 0
+                ? new EventPostRequestBodyStream(httpContext.Request.Body, appOptions.MaximumEventPostSize)
+                : httpContext.Request.Body;
+
+            var result = await eventPostService.SaveAndEnqueueAsync(new EventPost(appOptions.EnableArchive)
             {
                 ApiVersion = message.ApiVersion,
                 CharSet = charSet,
@@ -621,7 +625,18 @@ public class EventHandler(
                 OrganizationId = project.OrganizationId,
                 ProjectId = project.Id,
                 UserAgent = message.UserAgent,
-            }, httpContext.Request.Body);
+            }, requestBody, httpContext.RequestAborted);
+
+            if (result.IsRejected)
+            {
+                if (result.RejectedStatusCode == StatusCodes.Status413RequestEntityTooLarge)
+                    await usageService.IncrementTooBigAsync(project.OrganizationId, project.Id);
+
+                if (result.RejectedStatusCode == StatusCodes.Status413RequestEntityTooLarge)
+                    return Result.Invalid(ValidationError.Create("request_entity_too_large", result.RejectionReason ?? "Request body too large."));
+
+                return Result.BadRequest(result.RejectionReason ?? "Request body was rejected.");
+            }
         }
         catch (Exception ex)
         {

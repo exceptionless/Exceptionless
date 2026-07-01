@@ -93,6 +93,29 @@ export type MigrationState = {
 
 export type MigrationStatus = 'Completed' | 'Failed' | 'Pending' | 'Running';
 
+export type OAuthApplication = {
+    client_id: string;
+    created_by_user_id: string;
+    created_utc: string;
+    id: string;
+    is_disabled: boolean;
+    name: string;
+    notes?: null | string;
+    redirect_uris: string[];
+    scopes: string[];
+    updated_by_user_id?: null | string;
+    updated_utc: string;
+};
+
+export type OAuthApplicationRequest = {
+    client_id: string;
+    is_disabled: boolean;
+    name: string;
+    notes?: null | string;
+    redirect_uris: string[];
+    scopes: string[];
+};
+
 export type PredefinedSavedViewDefinition = {
     columnOrder?: null | string[];
     columns?: null | Record<string, boolean>;

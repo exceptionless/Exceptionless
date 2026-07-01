@@ -258,7 +258,7 @@
                 {#if search}
                     <Command.Group>
                         <Command.Item value={CREATE_KEYWORD_FILTER_COMMAND_ITEM} onSelect={onCreateKeywordFromSearch}>
-                            Create Keyword Filter: "{search}"
+                            Create Raw Filter: "{search}"
                         </Command.Item>
                     </Command.Group>
                 {/if}

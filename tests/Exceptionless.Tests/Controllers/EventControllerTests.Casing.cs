@@ -224,7 +224,7 @@ public partial class EventControllerTests
         Assert.NotNull(ev);
         Assert.Equal(recentDate.Date, ev.Date.Date);
         Assert.NotNull(ev.Data);
-        Assert.True(ev.Data.TryGetValue("date_only", out var dateOnly));
+        Assert.True(ev.Data.TryGetValue("date_only", out object? dateOnly));
 
         Assert.IsType<string>(dateOnly);
         Assert.Equal("2026-01-15", dateOnly);

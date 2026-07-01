@@ -18,9 +18,6 @@ public class StatusHandler(
     IQueue<EventUserDescription> userDescriptionQueue,
     AppOptions appOptions)
 {
-    [HandlerAllowAnonymous]
-    [HandlerAuthorize(Policies = [AuthorizationRoles.UserPolicy])]
-    [HandlerEndpoint(HandlerMethod.Get, "/api/v2/about", Name = "GetAboutInfo", ExcludeFromDescription = true)]
     public object Handle(GetAboutInfo message)
     {
         return new

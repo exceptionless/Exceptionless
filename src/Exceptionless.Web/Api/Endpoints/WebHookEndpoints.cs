@@ -104,7 +104,7 @@ public static class WebHookEndpoints
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .ExcludeFromDescription();
 
-        endpoints.MapPost("api/v{apiVersion:int}/webhooks/subscribe", async (int apiVersion, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] JsonDocument data)
+        endpoints.MapPost("api/v{apiVersion:int=2}/webhooks/subscribe", async (int apiVersion, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] JsonDocument data)
             => (await mediator.InvokeAsync<Result<WebHook>>(new WebHookMessages.SubscribeWebHook(data, apiVersion))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .ExcludeFromDescription();
@@ -129,6 +129,7 @@ public static class WebHookEndpoints
 
         endpoints.MapPost("api/v1/projecthook/unsubscribe", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] JsonDocument data)
             => (await mediator.InvokeAsync<Result>(new WebHookMessages.UnsubscribeWebHook(data))).ToHttpResult(resultMapper))
+        .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AllowAnonymous()
         .ExcludeFromDescription();
 

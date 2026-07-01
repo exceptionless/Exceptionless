@@ -12,14 +12,11 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
+using Exceptionless.Web.Security;
 using Foundatio.Caching;
 using Foundatio.Mediator;
 using Foundatio.Repositories;
 using Microsoft.IdentityModel.Tokens;
-using OAuth2.Client;
-using OAuth2.Client.Impl;
-using OAuth2.Configuration;
-using OAuth2.Infrastructure;
 using OAuth2.Models;
 
 namespace Exceptionless.Web.Api.Handlers;
@@ -30,6 +27,8 @@ public class AuthHandler(
     IOrganizationRepository organizationRepository,
     IUserRepository userRepository,
     ITokenRepository tokenRepository,
+    IOAuthTokenRepository oauthTokenRepository,
+    IOAuthProviderClient oauthProviderClient,
     ICacheClient cacheClient,
     IMailer mailer,
     IDomainLoginProvider domainLoginProvider,
@@ -272,11 +271,7 @@ public class AuthHandler(
         return ExternalLoginAsync(message.AuthInfo, message.Context,
             authOptions.GitHubId,
             authOptions.GitHubSecret,
-            (factory, configuration) =>
-            {
-                configuration.Scope = "user:email";
-                return new GitHubClient(factory, configuration);
-            }
+            oauthProviderClient.GetGitHubUserInfoAsync
         );
     }
 
@@ -285,11 +280,7 @@ public class AuthHandler(
         return ExternalLoginAsync(message.AuthInfo, message.Context,
             authOptions.GoogleId,
             authOptions.GoogleSecret,
-            (factory, configuration) =>
-            {
-                configuration.Scope = "profile email";
-                return new GoogleClient(factory, configuration);
-            }
+            oauthProviderClient.GetGoogleUserInfoAsync
         );
     }
 
@@ -298,11 +289,7 @@ public class AuthHandler(
         return ExternalLoginAsync(message.AuthInfo, message.Context,
             authOptions.FacebookId,
             authOptions.FacebookSecret,
-            (factory, configuration) =>
-            {
-                configuration.Scope = "email";
-                return new FacebookClient(factory, configuration);
-            }
+            oauthProviderClient.GetFacebookUserInfoAsync
         );
     }
 
@@ -311,11 +298,7 @@ public class AuthHandler(
         return ExternalLoginAsync(message.AuthInfo, message.Context,
             authOptions.MicrosoftId,
             authOptions.MicrosoftSecret,
-            (factory, configuration) =>
-            {
-                configuration.Scope = "wl.emails";
-                return new WindowsLiveClient(factory, configuration);
-            }
+            oauthProviderClient.GetMicrosoftUserInfoAsync
         );
     }
 
@@ -534,23 +517,16 @@ public class AuthHandler(
             user.Roles.Add(AuthorizationRoles.GlobalAdmin);
     }
 
-    private async Task<Result<TokenResult>> ExternalLoginAsync<TClient>(ExternalAuthInfo authInfo, HttpContext httpContext, string? appId, string? appSecret, Func<IRequestFactory, IClientConfiguration, TClient> createClient) where TClient : OAuth2Client
+    private async Task<Result<TokenResult>> ExternalLoginAsync(ExternalAuthInfo authInfo, HttpContext httpContext, string? appId, string? appSecret, Func<ExternalAuthInfo, string, string, Task<UserInfo>> getUserInfoAsync)
     {
         using var _ = logger.BeginScope(new ExceptionlessState().Tag("External Login").SetHttpContext(httpContext));
         if (String.IsNullOrEmpty(appId) || String.IsNullOrEmpty(appSecret))
             throw new ConfigurationErrorsException("Missing Configuration for OAuth provider");
 
-        var client = createClient(new RequestFactory(), new OAuth2.Configuration.ClientConfiguration
-        {
-            ClientId = appId,
-            ClientSecret = appSecret,
-            RedirectUri = authInfo.RedirectUri
-        });
-
         UserInfo userInfo;
         try
         {
-            userInfo = await client.GetUserInfoAsync(authInfo.Code, authInfo.RedirectUri);
+            userInfo = await getUserInfoAsync(authInfo, appId, appSecret);
         }
         catch (Exception ex)
         {
@@ -717,13 +693,10 @@ public class AuthHandler(
         try
         {
             long total = await tokenRepository.RemoveAllByUserIdAsync(user.Id);
+            total += await oauthTokenRepository.RemoveAllByUserIdAsync(user.Id);
             logger.RemovedUserTokens(total, user.EmailAddress);
         }
-        catch (TimeoutException ex)
-        {
-            logger.LogCritical(ex, "Error removing user tokens for {EmailAddress}: {Message}", user.EmailAddress, ex.Message);
-        }
-        catch (InvalidOperationException ex)
+        catch (Exception ex)
         {
             logger.LogCritical(ex, "Error removing user tokens for {EmailAddress}: {Message}", user.EmailAddress, ex.Message);
         }

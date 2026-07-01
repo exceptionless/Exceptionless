@@ -1,4 +1,6 @@
-﻿using System.Text.Json;
+using System.Net;
+using System.Net.Sockets;
+using System.Text.Json;
 using Elastic.Clients.Elasticsearch;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Billing;
@@ -137,6 +139,8 @@ public class Bootstrapper
         services.AddSingleton<MigrationManager>();
         services.AddSingleton<MigrationIndex>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().Migrations);
         services.AddSingleton<IOrganizationRepository, OrganizationRepository>();
+        services.AddSingleton<IOAuthApplicationRepository, OAuthApplicationRepository>();
+        services.AddSingleton<IOAuthTokenRepository, OAuthTokenRepository>();
         services.AddSingleton<IProjectRepository, ProjectRepository>();
         services.AddSingleton<IUserRepository, UserRepository>();
         services.AddSingleton<IWebHookRepository, WebHookRepository>();
@@ -182,11 +186,43 @@ public class Bootstrapper
         services.AddSingleton<NotificationService>();
         services.AddSingleton<OrganizationService>();
         services.AddStartupAction<OrganizationService>();
+        services.AddHttpClient<IOAuthClientMetadataService, OAuthClientMetadataService>()
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                AllowAutoRedirect = false,
+                ConnectCallback = ConnectToPublicAddressAsync
+            });
+        services.AddSingleton<OAuthService>();
         services.AddSingleton<UsageService>();
         services.AddSingleton<SlackService>();
         services.AddSingleton<StackService>();
 
         services.AddTransient<IDomainLoginProvider, ActiveDirectoryLoginProvider>();
+    }
+
+    private static async ValueTask<Stream> ConnectToPublicAddressAsync(SocketsHttpConnectionContext context, CancellationToken cancellationToken)
+    {
+        var addresses = await Dns.GetHostAddressesAsync(context.DnsEndPoint.Host, cancellationToken);
+        Exception? lastException = null;
+        foreach (var address in addresses)
+        {
+            if (!OAuthClientMetadataService.IsPublicAddress(address))
+                continue;
+
+            var socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+            try
+            {
+                await socket.ConnectAsync(new IPEndPoint(address, context.DnsEndPoint.Port), cancellationToken);
+                return new NetworkStream(socket, ownsSocket: true);
+            }
+            catch (SocketException ex)
+            {
+                lastException = ex;
+                socket.Dispose();
+            }
+        }
+
+        throw new HttpRequestException($"OAuth client metadata host '{context.DnsEndPoint.Host}' did not resolve to a reachable public address.", lastException);
     }
 
     public static void LogConfiguration(IServiceProvider serviceProvider, AppOptions appOptions, ILogger logger)

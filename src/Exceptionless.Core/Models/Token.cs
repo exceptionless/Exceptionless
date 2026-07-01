@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using Exceptionless.Core.Attributes;
 using Foundatio.Repositories.Models;
 
@@ -17,7 +17,7 @@ public class Token : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, IVa
     public string OrganizationId { get; set; } = null!;
 
     /// <summary>
-    /// Null for org-scoped or user-scoped tokens.
+    /// Null for organization-scoped or user-scoped tokens.
     /// Cannot be set together with UserId.
     /// </summary>
     [ObjectId]
