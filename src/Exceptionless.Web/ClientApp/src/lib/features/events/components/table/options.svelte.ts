@@ -175,7 +175,6 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
             {
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('total'),
                 cell: (prop) => renderComponent(NumberFormatter, { value: prop.getValue<number>() }),
-                enableSorting: false,
                 header: 'Events',
                 id: 'events',
                 meta: {
@@ -185,7 +184,6 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
             {
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('first_occurrence'),
                 cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue<string>() }),
-                enableSorting: false,
                 header: 'First',
                 id: 'first',
                 meta: {
@@ -195,7 +193,6 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
             {
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('last_occurrence'),
                 cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue<string>() }),
-                enableSorting: false,
                 header: 'Last',
                 id: 'last',
                 meta: {
