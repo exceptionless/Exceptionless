@@ -61,6 +61,21 @@ public class StackControllerTests : IntegrationTestsBase
         Assert.Single(result);
     }
 
+    [Fact]
+    public async Task GetByProjectAsync_WithPremiumFilterOnFreeOrganization_ReturnsUpgradeRequired()
+    {
+        // Arrange
+        await CreateDataAsync(d => d.Event().FreeProject().Message("Premium restricted stack"));
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .AsFreeOrganizationUser()
+            .AppendPaths("projects", SampleDataService.FREE_PROJECT_ID, "stacks")
+            .QueryString("filter", "title:\"Premium restricted stack\"")
+            .StatusCodeShouldBeUpgradeRequired()
+        );
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("1.0.0")]

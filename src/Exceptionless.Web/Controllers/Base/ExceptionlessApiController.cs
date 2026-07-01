@@ -229,6 +229,11 @@ public abstract class ExceptionlessApiController : Controller
         return Problem(statusCode: StatusCodes.Status426UpgradeRequired, title: message);
     }
 
+    protected bool IsPremiumFeatureQueryBlocked(AppFilter filter)
+    {
+        return filter.UsesPremiumFeatures && filter.Organizations.Any(o => !o.HasPremiumFeatures);
+    }
+
     protected ObjectResult TooManyRequests(string message)
     {
         return Problem(statusCode: StatusCodes.Status429TooManyRequests, title: message);
