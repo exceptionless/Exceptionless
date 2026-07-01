@@ -266,6 +266,7 @@
         view: VIEW
     });
     const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Events');
+    const isSavedViewRoutePending = $derived(!!page.params.slug && !savedViewsState.activeSavedView);
 
     $effect(() => {
         document.title = `${pageTitle} - Exceptionless`;
@@ -449,15 +450,7 @@
 
         const newFilterParam = filterParam === baseExpressionFilterParam ? null : filterParam || (savedViewFilters && baseExpressionFilterParam ? '' : null);
         const newTimeParam = time === baseTime ? null : time ? serializeTimeQueryParam(time) : ALL_TIME_QUERY_VALUE;
-
-        updateFilterCache(filterCacheKey(filter), updatedFilters);
-        if (shouldClearPagination) {
-            clearPaginationQueryParams();
-        }
-
-        // Only skip the watch when the URL will actually change from our update.
-        // If the URL doesn't change, the watch won't fire and the flag would stay stale.
-        if (
+        const urlQueryWillChange =
             newFilterParam !== queryParams.filter ||
             newTimeParam !== queryParams.time ||
             queryFilterParams.bot !== queryParams.bot ||
@@ -470,8 +463,19 @@
             queryFilterParams.status !== queryParams.status ||
             queryFilterParams.tag !== queryParams.tag ||
             queryFilterParams.type !== queryParams.type ||
-            queryFilterParams.version !== queryParams.version
-        ) {
+            queryFilterParams.version !== queryParams.version;
+        const effectiveQueryWillChange = (filter || null) !== getEffectiveFilter() || time !== getQueryTime();
+        const shouldClearPaginationForFilter = shouldClearPagination && effectiveQueryWillChange;
+        const paginationWillChange = shouldClearPaginationForFilter && (queryParams.after != null || queryParams.before != null || queryParams.page != null);
+
+        updateFilterCache(filterCacheKey(filter), updatedFilters);
+        if (shouldClearPaginationForFilter) {
+            clearPaginationQueryParams();
+        }
+
+        // Only skip the watch when the URL will actually change from our update.
+        // If the URL doesn't change, the watch won't fire and the flag would stay stale.
+        if (paginationWillChange || urlQueryWillChange) {
             isInternalFilterUpdate = true;
         }
 
@@ -685,7 +689,7 @@
     }
 
     async function loadData() {
-        if (!organization.current) {
+        if (!organization.current || isSavedViewRoutePending) {
             return;
         }
 
@@ -735,6 +739,7 @@
     });
 
     const chartDataQuery = getOrganizationCountQuery({
+        enabled: () => !isSavedViewRoutePending,
         params: {
             get aggregations() {
                 return `date:(date${DEFAULT_OFFSET ? `^${DEFAULT_OFFSET}` : ''} cardinality:stack sum:count~1) cardinality:stack terms:(first @include:true) sum:count~1`;
@@ -859,7 +864,7 @@
         {#if showStats}
             <EventsStatsDashboard
                 eventsPerHour={stats.eventsPerHour}
-                isLoading={chartDataQuery.isLoading && !chartDataQuery.isSuccess}
+                isLoading={isSavedViewRoutePending || (chartDataQuery.isLoading && !chartDataQuery.isSuccess)}
                 newStacks={stats.newStacks}
                 totalEvents={stats.totalEvents}
                 totalStacks={stats.totalStacks}
@@ -867,10 +872,14 @@
         {/if}
 
         {#if showChart}
-            <EventsDashboardChart data={chartData()} isLoading={chartDataQuery.isLoading && !chartDataQuery.isSuccess} {onRangeSelect} />
+            <EventsDashboardChart
+                data={chartData()}
+                isLoading={isSavedViewRoutePending || (chartDataQuery.isLoading && !chartDataQuery.isSuccess)}
+                {onRangeSelect}
+            />
         {/if}
 
-        <EventsDataTable bind:limit={eventsQueryParameters.limit!} isLoading={clientStatus.isLoading} {rowClick} {rowHref} {table}>
+        <EventsDataTable bind:limit={eventsQueryParameters.limit!} isLoading={isSavedViewRoutePending || clientStatus.isLoading} {rowClick} {rowHref} {table}>
             {#snippet footerChildren()}
                 <div class="h-9 min-w-35">
                     {#if table.getSelectedRowModel().flatRows.length}

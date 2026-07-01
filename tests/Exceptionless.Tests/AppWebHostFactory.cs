@@ -20,7 +20,7 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
 
     public AppWebHostFactory()
     {
-        if (!s_pool.TryDequeue(out var instanceId))
+        if (!s_pool.TryDequeue(out int instanceId))
             instanceId = Interlocked.Increment(ref s_counter);
 
         InstanceId = instanceId;
@@ -39,7 +39,9 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
 
     private static async Task<DistributedApplication> StartSharedAppHostAsync()
     {
-        var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Exceptionless_AppHost>(["services-only"], CancellationToken.None);
+        var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Exceptionless_AppHost>(
+            ["services-only", "--Logging:LogLevel:Default=Warning"],
+            CancellationToken.None);
         var app = await appHost.BuildAsync(CancellationToken.None);
         await app.StartAsync(CancellationToken.None);
 

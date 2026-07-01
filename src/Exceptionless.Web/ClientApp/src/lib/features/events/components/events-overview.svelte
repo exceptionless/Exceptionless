@@ -18,9 +18,9 @@
     import { getProjectQuery, updateProject } from '$features/projects/api.svelte';
     import StackCard from '$features/stacks/components/stack-card.svelte';
     import Braces from '@lucide/svelte/icons/braces';
+    import EventsIcon from '@lucide/svelte/icons/calendar-days';
     import ChevronLeft from '@lucide/svelte/icons/chevron-left';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
-    import Funnel from '@lucide/svelte/icons/funnel';
     import { onMount, tick } from 'svelte';
     import { toast } from 'svelte-sonner';
 
@@ -321,7 +321,7 @@
                     title="Show all events"
                     variant="outline"
                 >
-                    <Funnel class="size-4" />
+                    <EventsIcon class="size-4" />
                 </Button>
             {/if}
             {#if onNavigate && (navigation?.previousId || navigation?.nextId)}

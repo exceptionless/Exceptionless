@@ -2214,6 +2214,21 @@
               "application/json": { }
             }
           },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "400": {
             "description": "No project id specified and no default project was found."
           },
@@ -2524,6 +2539,21 @@
             "description": "Accepted",
             "content": {
               "application/json": { }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
             }
           },
           "400": {
@@ -4503,6 +4533,21 @@
             "content": {
               "application/json": { }
             }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         },
         "deprecated": true
@@ -4553,6 +4598,21 @@
             "description": "Accepted",
             "content": {
               "application/json": { }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
             }
           }
         },
@@ -4619,7 +4679,26 @@
         }
       }
     },
-    "/.well-known/oauth-protected-resource": {
+    "/.well-known/oauth-protected-resource/mcp": {
+      "get": {
+        "tags": [
+          "OAuth"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthProtectedResourceMetadata"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/.well-known/oauth-protected-resource/api/v2": {
       "get": {
         "tags": [
           "OAuth"
@@ -4754,6 +4833,55 @@
         }
       }
     },
+    "/api/v2/oauth/authorize/consent": {
+      "post": {
+        "tags": [
+          "OAuth"
+        ],
+        "requestBody": {
+          "content": {
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthAuthorizeForm"
+              }
+            },
+            "application/octet-stream": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthAuthorizeForm"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthAuthorizeForm"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthAuthorizeForm"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthAuthorizeForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthAuthorizeConsentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/oauth/register": {
       "post": {
         "tags": [
@@ -4867,6 +4995,9 @@
                 "type": "object",
                 "properties": {
                   "token": {
+                    "type": "string"
+                  },
+                  "client_id": {
                     "type": "string"
                   }
                 }
@@ -7861,6 +7992,60 @@
         }
       }
     },
+    "/api/v2/users/me/oauth-grants": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Get current user OAuth grants",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ViewOAuthGrant"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/users/me/oauth-grants/{id}": {
+      "delete": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Revoke current user OAuth grant",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The OAuth grant identifier.",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
+          },
+          "404": {
+            "description": "The OAuth grant could not be found."
+          }
+        }
+      }
+    },
     "/api/v2/users/{id}": {
       "get": {
         "tags": [
@@ -9067,6 +9252,43 @@
           }
         }
       },
+      "OAuthAuthorizeConsentResponse": {
+        "required": [
+          "client_id",
+          "client_name",
+          "redirect_uri",
+          "resource",
+          "scopes",
+          "required_scopes"
+        ],
+        "type": "object",
+        "properties": {
+          "client_id": {
+            "type": "string"
+          },
+          "client_name": {
+            "type": "string"
+          },
+          "redirect_uri": {
+            "type": "string"
+          },
+          "resource": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "required_scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "OAuthAuthorizeForm": {
         "required": [
           "client_id",
@@ -9109,6 +9331,15 @@
               "null",
               "string"
             ]
+          },
+          "organization_ids": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -9503,6 +9734,42 @@
             "type": [
               "null",
               "boolean"
+            ]
+          }
+        }
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
             ]
           }
         }
@@ -10218,6 +10485,99 @@
           },
           "roles": {
             "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ViewOAuthGrant": {
+        "required": [
+          "id",
+          "client_id",
+          "application_name",
+          "scopes",
+          "organization_ids",
+          "resources",
+          "is_application_disabled",
+          "created_utc",
+          "updated_utc"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "client_id": {
+            "type": "string"
+          },
+          "application_name": {
+            "type": "string"
+          },
+          "is_application_disabled": {
+            "type": "boolean"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "organization_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "resources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ViewOAuthGrantResource"
+            }
+          },
+          "created_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_utc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "refresh_expires_utc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "ViewOAuthGrantResource": {
+        "required": [
+          "resource",
+          "scopes",
+          "organization_ids"
+        ],
+        "type": "object",
+        "properties": {
+          "resource": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "organization_ids": {
             "type": "array",
             "items": {
               "type": "string"

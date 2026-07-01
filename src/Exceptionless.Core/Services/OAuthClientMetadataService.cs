@@ -103,7 +103,7 @@ public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthServe
 
     private static async Task<MemoryStream> ReadLimitedAsync(Stream stream, int maxBytes, CancellationToken cancellationToken)
     {
-        var buffer = new byte[8192];
+        byte[] buffer = new byte[8192];
         var memoryStream = new MemoryStream();
 
         int read;

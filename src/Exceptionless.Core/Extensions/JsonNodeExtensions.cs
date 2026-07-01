@@ -32,7 +32,7 @@ public static class JsonNodeExtensions
             // Check for empty string
             if (target.GetValueKind() is JsonValueKind.String)
             {
-                var strValue = val.GetValue<string?>();
+                string? strValue = val.GetValue<string?>();
                 return string.IsNullOrEmpty(strValue);
             }
         }
@@ -85,7 +85,7 @@ public static class JsonNodeExtensions
         bool removed = false;
         foreach (var descendant in target.DescendantsAndSelf().OfType<JsonObject>().ToList())
         {
-            foreach (var name in names.Where(n => descendant.IsPropertyNullOrEmpty(n) && descendant.ContainsKey(n)).ToList())
+            foreach (string name in names.Where(n => descendant.IsPropertyNullOrEmpty(n) && descendant.ContainsKey(n)).ToList())
                 removed |= descendant.Remove(name);
         }
 

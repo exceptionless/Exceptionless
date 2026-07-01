@@ -352,7 +352,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         {
             var item = new InvoiceLineItem { Amount = line.Amount / 100.0m, Description = line.Description };
 
-            var priceId = line.Pricing?.PriceDetails?.PriceId;
+            string? priceId = line.Pricing?.PriceDetails?.PriceId;
             if (!String.IsNullOrEmpty(priceId))
             {
                 var billingPlan = _billingManager.GetBillingPlan(priceId);
@@ -915,7 +915,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         if (organization is null)
             return NotFound();
 
-        var normalizedFeature = feature.Trim().ToLowerInvariant();
+        string normalizedFeature = feature.Trim().ToLowerInvariant();
         if (String.IsNullOrEmpty(normalizedFeature))
             return BadRequest("Invalid feature flag.");
 
@@ -942,7 +942,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         if (organization is null)
             return NotFound();
 
-        var normalizedFeature = feature.Trim().ToLowerInvariant();
+        string normalizedFeature = feature.Trim().ToLowerInvariant();
         if (String.IsNullOrEmpty(normalizedFeature))
             return BadRequest("Invalid feature flag.");
 

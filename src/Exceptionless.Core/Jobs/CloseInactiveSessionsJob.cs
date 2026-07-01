@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -150,7 +150,7 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
 
         for (int i = 0; i < sessionKeyMap.Length; i++)
         {
-            var (sessionIdKey, userIdentityKey) = sessionKeyMap[i];
+            (string? sessionIdKey, string? userIdentityKey) = sessionKeyMap[i];
             string? matchedKey = null;
             DateTime activityUtc = default;
 

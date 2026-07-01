@@ -1,6 +1,8 @@
 using Exceptionless.Core;
+using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
@@ -8,6 +10,7 @@ using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Utility;
 using Foundatio.Storage;
 using Xunit;
@@ -28,6 +31,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
     private readonly IEventRepository _eventRepository;
     private readonly TokenData _tokenData;
     private readonly ITokenRepository _tokenRepository;
+    private readonly IOAuthTokenRepository _oauthTokenRepository;
     private readonly BillingManager _billingManager;
     private readonly BillingPlans _plans;
     private readonly IFileStorage _fileStorage;
@@ -46,6 +50,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
         _eventRepository = GetService<IEventRepository>();
         _tokenData = GetService<TokenData>();
         _tokenRepository = GetService<ITokenRepository>();
+        _oauthTokenRepository = GetService<IOAuthTokenRepository>();
         _billingManager = GetService<BillingManager>();
         _plans = GetService<BillingPlans>();
         _fileStorage = GetService<IFileStorage>();
@@ -71,6 +76,59 @@ public class CleanupDataJobTests : IntegrationTestsBase
         token = await _tokenRepository.GetByIdAsync(token.Id);
         Assert.NotNull(token);
         Assert.True(token.IsSuspended);
+    }
+
+    [Fact]
+    public async Task CanCleanupExpiredDisabledOAuthTokens()
+    {
+        var utcNow = DateTime.UtcNow;
+        var cutoff = utcNow.Subtract(TimeSpan.FromDays(1));
+        var expiredSpentToken = CreateOAuthToken(cutoff.SubtractMinutes(1), isDisabled: true, refreshTokenHash: "expired-spent-refresh", refreshExpiresUtc: cutoff.SubtractMinutes(1));
+        var retainedSpentToken = CreateOAuthToken(cutoff.SubtractMinutes(1), isDisabled: true, refreshTokenHash: "retained-spent-refresh", refreshExpiresUtc: cutoff.AddMinutes(1));
+        var activeExpiredToken = CreateOAuthToken(cutoff.SubtractMinutes(1), isDisabled: false, refreshTokenHash: "active-expired-refresh", refreshExpiresUtc: cutoff.SubtractMinutes(1));
+        var expiredClearedRefreshToken = CreateOAuthToken(cutoff.SubtractMinutes(1), isDisabled: true, refreshTokenHash: null, refreshExpiresUtc: null);
+        var retainedClearedRefreshToken = CreateOAuthToken(cutoff.AddMinutes(1), isDisabled: true, refreshTokenHash: null, refreshExpiresUtc: null);
+
+        await _oauthTokenRepository.AddAsync([
+            expiredSpentToken,
+            retainedSpentToken,
+            activeExpiredToken,
+            expiredClearedRefreshToken,
+            retainedClearedRefreshToken
+        ], o => o.ImmediateConsistency());
+
+        await _oauthTokenRepository.PatchAsync(expiredClearedRefreshToken.Id, new PartialPatch(new { updated_utc = cutoff.AddMinutes(-1) }), o => o.ImmediateConsistency());
+        await _oauthTokenRepository.PatchAsync(retainedClearedRefreshToken.Id, new PartialPatch(new { updated_utc = cutoff.AddMinutes(1) }), o => o.ImmediateConsistency());
+
+        await _job.RunAsync(TestCancellationToken);
+
+        Assert.Null(await _oauthTokenRepository.GetByIdAsync(expiredSpentToken.Id, o => o.ImmediateConsistency()));
+        Assert.NotNull(await _oauthTokenRepository.GetByIdAsync(retainedSpentToken.Id, o => o.ImmediateConsistency()));
+        Assert.NotNull(await _oauthTokenRepository.GetByIdAsync(activeExpiredToken.Id, o => o.ImmediateConsistency()));
+        Assert.Null(await _oauthTokenRepository.GetByIdAsync(expiredClearedRefreshToken.Id, o => o.ImmediateConsistency()));
+        Assert.NotNull(await _oauthTokenRepository.GetByIdAsync(retainedClearedRefreshToken.Id, o => o.ImmediateConsistency()));
+
+        OAuthToken CreateOAuthToken(DateTime updatedUtc, bool isDisabled, string? refreshTokenHash, DateTime? refreshExpiresUtc)
+        {
+            return new OAuthToken
+            {
+                Id = ObjectId.GenerateNewId().ToString(),
+                UserId = TestConstants.UserId,
+                ClientId = "cleanup-job-oauth-client",
+                GrantId = StringExtensions.GetNewToken(),
+                Resource = "http://localhost:7110/mcp",
+                AccessTokenHash = OAuthService.CreateTokenHash(StringExtensions.GetRandomString(OAuthService.OAuthTokenLength)),
+                RefreshTokenHash = refreshTokenHash,
+                Scopes = [AuthorizationRoles.McpRead, AuthorizationRoles.OfflineAccess],
+                OrganizationIds = [TestConstants.OrganizationId],
+                ExpiresUtc = utcNow.AddHours(1),
+                RefreshExpiresUtc = refreshExpiresUtc,
+                IsDisabled = isDisabled,
+                CreatedBy = TestConstants.UserId,
+                CreatedUtc = updatedUtc,
+                UpdatedUtc = updatedUtc
+            };
+        }
     }
 
     [Fact]

@@ -232,7 +232,7 @@ public class OrganizationService : IStartupAction
             .Where(key => !IsNotificationIntegrationKey(key) && (userIdsToRemove.Contains(key) || !validUserIds.Contains(key)))
             .ToList();
 
-        foreach (var key in keysToRemove)
+        foreach (string key in keysToRemove)
             project.NotificationSettings.Remove(key);
 
         return keysToRemove.Count;

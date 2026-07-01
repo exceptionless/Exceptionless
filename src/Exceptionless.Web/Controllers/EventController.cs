@@ -13,13 +13,13 @@ using Exceptionless.Core.Repositories.Base;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Validation;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.OpenApi;
-using Exceptionless.Core.Validation;
 using Foundatio.Caching;
 using Foundatio.Queues;
 using Foundatio.Repositories;
@@ -34,7 +34,6 @@ using Microsoft.Net.Http.Headers;
 namespace Exceptionless.Web.Controllers;
 
 [Route(API_PREFIX + "/events")]
-[Authorize(Policy = AuthorizationRoles.ClientPolicy)]
 public class EventController : RepositoryApiController<IEventRepository, PersistentEvent, PersistentEvent, PersistentEvent, UpdateEvent>
 {
     private static readonly HashSet<string> _ignoredKeys = new(StringComparer.OrdinalIgnoreCase) { "access_token", "api_key", "apikey" };
@@ -100,7 +99,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.</param>
     /// <response code="400">Invalid filter.</response>
     [HttpGet("count")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.EventsReadPolicy)]
     public async Task<ActionResult<CountResult>> GetCountAsync(string? filter = null, string? aggregations = null, string? time = null, string? offset = null, string? mode = null)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
@@ -123,7 +122,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.</param>
     /// <response code="400">Invalid filter.</response>
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events/count")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.EventsReadPolicy)]
     public async Task<ActionResult<CountResult>> GetCountByOrganizationAsync(string organizationId, string? filter = null, string? aggregations = null, string? time = null, string? offset = null, string? mode = null)
     {
         var organization = await GetOrganizationAsync(organizationId);
@@ -149,7 +148,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="mode">If mode is set to stack_new, then additional filters will be added.</param>
     /// <response code="400">Invalid filter.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/count")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.EventsReadPolicy)]
     public async Task<ActionResult<CountResult>> GetCountByProjectAsync(string projectId, string? filter = null, string? aggregations = null, string? time = null, string? offset = null, string? mode = null)
     {
         var project = await GetProjectAsync(projectId);
@@ -179,7 +178,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="404">The event occurrence could not be found.</response>
     /// <response code="426">Unable to view event occurrence due to plan limits.</response>
     [HttpGet("{id:objectid}", Name = "GetPersistentEventById")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.EventsReadPolicy)]
     public async Task<ActionResult<PersistentEvent>> GetAsync(string id, [FromQuery(Name = "expected_stack_id")] string? expectedStackId = null, string? time = null, string? offset = null)
     {
         var model = await GetModelAsync(id, false);
@@ -221,7 +220,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="400">Invalid filter.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.EventsReadPolicy)]
     [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
@@ -320,6 +319,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                             TemplateKey = summaryData.TemplateKey,
                             Date = e.Date,
                             Type = e.Type,
+                            Version = e.GetVersion(),
                             Data = summaryData.Data
                         };
                     }).ToList(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, includeTotal ? events.Total : null, events.Hits.FirstOrDefault()?.GetSortToken(_serializer), events.Hits.LastOrDefault()?.GetSortToken(_serializer));
@@ -456,7 +456,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="404">The organization could not be found.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.EventsReadPolicy)]
     [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
@@ -492,7 +492,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="404">The project could not be found.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.EventsReadPolicy)]
     [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
@@ -532,7 +532,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="404">The stack could not be found.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/stacks/{stackId:objectid}/events")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.EventsReadPolicy)]
     [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
@@ -568,7 +568,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="400">Invalid filter.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("by-ref/{referenceId:identifier}")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.EventsReadPolicy)]
     [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
@@ -599,7 +599,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="404">The project could not be found.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.EventsReadPolicy)]
     [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
@@ -638,7 +638,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="400">Invalid filter.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("sessions/{sessionId:identifier}")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.EventsReadPolicy)]
     [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
@@ -672,7 +672,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="404">The project could not be found.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/sessions/{sessionId:identifier}")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.EventsReadPolicy)]
     [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
@@ -709,7 +709,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="include">Optional response metadata to include. Specify total to include the total result count in response headers.</param>
     /// <response code="400">Invalid filter.</response>
     [HttpGet("sessions")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.EventsReadPolicy)]
     [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
@@ -742,7 +742,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="404">The project could not be found.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events/sessions")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.EventsReadPolicy)]
     [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
@@ -778,7 +778,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="404">The project could not be found.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/sessions")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.EventsReadPolicy)]
     [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
@@ -811,6 +811,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="404">The event occurrence with the specified reference id could not be found.</response>
     [HttpPost("by-ref/{referenceId:identifier}/user-description")]
     [HttpPost("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}/user-description")]
+    [Authorize(Policy = AuthorizationRoles.ClientPolicy)]
     [Consumes("application/json")]
     [ConfigurationResponseFilter]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
@@ -836,7 +837,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (!isValid)
         {
             foreach (var error in errors)
-                foreach (var message in error.Value)
+                foreach (string message in error.Value)
                     ModelState.AddModelError(error.Key, message);
 
             return ValidationProblem(ModelState);
@@ -864,6 +865,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
     [Obsolete("Use PATCH /api/v2/events")]
     [HttpPatch("~/api/v1/error/{id:objectid}")]
+    [Authorize(Policy = AuthorizationRoles.ClientPolicy)]
     [Consumes("application/json")]
     [ConfigurationResponseFilter]
     public async Task<IActionResult> LegacyPatchAsync(string id, Delta<UpdateEvent> changes)
@@ -891,6 +893,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="400">No project id specified and no default project was found.</response>
     /// <response code="404">No project was found.</response>
     [HttpGet("session/heartbeat")]
+    [Authorize(Policy = AuthorizationRoles.ClientPolicy)]
     public async Task<IActionResult> RecordHeartbeatAsync(string? id = null, bool close = false)
     {
         if (_appOptions.EventSubmissionDisabled || String.IsNullOrEmpty(id))
@@ -928,6 +931,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [HttpGet("~/api/v1/events/submit/{type:minlength(1)}")]
     [HttpGet("~/api/v1/projects/{projectId:objectid}/events/submit")]
     [HttpGet("~/api/v1/projects/{projectId:objectid}/events/submit/{type:minlength(1)}")]
+    [Authorize(Policy = AuthorizationRoles.ClientPolicy)]
     [ConfigurationResponseFilter]
     public Task<ActionResult> GetSubmitEventV1Async(string? projectId = null, string? type = null, [FromHeader][UserAgent] string? userAgent = null, [FromQuery][QueryStringParameters] IQueryCollection? parameters = null)
     {
@@ -963,6 +967,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="400">No project id specified and no default project was found.</response>
     /// <response code="404">No project was found.</response>
     [HttpGet("submit")]
+    [Authorize(Policy = AuthorizationRoles.ClientPolicy)]
     [ConfigurationResponseFilter]
     public Task<ActionResult> GetSubmitEventV2Async(string? type = null, string? source = null, string? message = null, string? reference = null,
         string? date = null, int? count = null, decimal? value = null, string? geo = null, string? tags = null, string? identity = null,
@@ -1000,6 +1005,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="400">No project id specified and no default project was found.</response>
     /// <response code="404">No project was found.</response>
     [HttpGet("submit/{type:minlength(1)}")]
+    [Authorize(Policy = AuthorizationRoles.ClientPolicy)]
     [ConfigurationResponseFilter]
     public Task<ActionResult> GetSubmitEventByTypeV2Async(string type, string? source = null, string? message = null, string? reference = null,
         string? date = null, int? count = null, decimal? value = null, string? geo = null, string? tags = null, string? identity = null,
@@ -1039,6 +1045,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="404">No project was found.</response>
     [HttpGet("~/api/v2/projects/{projectId:objectid}/events/submit")]
     [HttpGet("~/api/v2/projects/{projectId:objectid}/events/submit/{type:minlength(1)}")]
+    [Authorize(Policy = AuthorizationRoles.ClientPolicy)]
     [ConfigurationResponseFilter]
     public Task<ActionResult> GetSubmitEventByProjectV2Async(string projectId, string? type = null, string? source = null, string? message = null, string? reference = null,
         string? date = null, int? count = null, decimal? value = null, string? geo = null, string? tags = null, string? identity = null,
@@ -1180,6 +1187,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
     [Obsolete("Use POST /api/v2/events")]
     [HttpPost("~/api/v1/error")]
+    [Authorize(Policy = AuthorizationRoles.ClientPolicy)]
     [Consumes("application/json", "text/plain")]
     [RequestBodyContentAttribute]
     [ConfigurationResponseFilter]
@@ -1191,10 +1199,12 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [Obsolete("Use POST /api/v2/events")]
     [HttpPost("~/api/v1/events")]
     [HttpPost("~/api/v1/projects/{projectId:objectid}/events")]
+    [Authorize(Policy = AuthorizationRoles.ClientPolicy)]
     [Consumes("application/json", "text/plain")]
     [RequestBodyContentAttribute]
     [ConfigurationResponseFilter]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status413RequestEntityTooLarge)]
     public Task<IActionResult> PostV1Async(string? projectId = null, [FromHeader][UserAgent] string? userAgent = null)
     {
         return PostAsync(projectId, 1, userAgent);
@@ -1249,10 +1259,12 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     ///  <response code="400">No project id specified and no default project was found.</response>
     ///  <response code="404">No project was found.</response>
     [HttpPost]
+    [Authorize(Policy = AuthorizationRoles.ClientPolicy)]
     [Consumes("application/json", "text/plain")]
     [RequestBodyContentAttribute]
     [ConfigurationResponseFilter]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status413RequestEntityTooLarge)]
     public Task<IActionResult> PostV2Async([FromHeader][UserAgent] string? userAgent = null)
     {
         return PostAsync(null, 2, userAgent);
@@ -1308,10 +1320,12 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     ///  <response code="400">No project id specified and no default project was found.</response>
     ///  <response code="404">No project was found.</response>
     [HttpPost("~/api/v2/projects/{projectId:objectid}/events")]
+    [Authorize(Policy = AuthorizationRoles.ClientPolicy)]
     [Consumes("application/json", "text/plain")]
     [RequestBodyContentAttribute]
     [ConfigurationResponseFilter]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status413RequestEntityTooLarge)]
     public Task<IActionResult> PostByProjectV2Async(string? projectId = null, [FromHeader][UserAgent] string? userAgent = null)
     {
         return PostAsync(projectId, 2, userAgent);
@@ -1353,7 +1367,11 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                 charSet = contentType.Charset.ToString();
             }
 
-            await _eventPostService.EnqueueAsync(new EventPost(_appOptions.EnableArchive)
+            Stream requestBody = _appOptions.MaximumEventPostSize > 0
+                ? new EventPostRequestBodyStream(Request.Body, _appOptions.MaximumEventPostSize)
+                : Request.Body;
+
+            var result = await _eventPostService.SaveAndEnqueueAsync(new EventPost(_appOptions.EnableArchive)
             {
                 ApiVersion = apiVersion,
                 CharSet = charSet,
@@ -1363,7 +1381,15 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                 OrganizationId = project.OrganizationId,
                 ProjectId = project.Id,
                 UserAgent = userAgent,
-            }, Request.Body);
+            }, requestBody, HttpContext.RequestAborted);
+
+            if (result.IsRejected)
+            {
+                if (result.RejectedStatusCode == StatusCodes.Status413RequestEntityTooLarge)
+                    await _usageService.IncrementTooBigAsync(project.OrganizationId, project.Id);
+
+                return StatusCode(result.RejectedStatusCode.GetValueOrDefault(StatusCodes.Status400BadRequest));
+            }
         }
         catch (Exception ex)
         {

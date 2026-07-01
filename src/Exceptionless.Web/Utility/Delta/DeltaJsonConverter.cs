@@ -57,7 +57,7 @@ public class DeltaJsonConverter<TEntityType> : JsonConverter<Delta<TEntityType>>
         {
             // [JsonPropertyName] takes precedence over the naming policy
             var jsonPropertyNameAttr = prop.GetCustomAttribute<JsonPropertyNameAttribute>();
-            var jsonName = jsonPropertyNameAttr?.Name ?? options.PropertyNamingPolicy?.ConvertName(prop.Name) ?? prop.Name;
+            string jsonName = jsonPropertyNameAttr?.Name ?? options.PropertyNamingPolicy?.ConvertName(prop.Name) ?? prop.Name;
             _propertyNameMap[jsonName] = prop.Name;
         }
     }
@@ -88,7 +88,7 @@ public class DeltaJsonConverter<TEntityType> : JsonConverter<Delta<TEntityType>>
                 throw new JsonException("Expected PropertyName token");
             }
 
-            var jsonPropertyName = reader.GetString();
+            string? jsonPropertyName = reader.GetString();
             if (jsonPropertyName is null)
             {
                 throw new JsonException("Property name is null");
@@ -97,14 +97,14 @@ public class DeltaJsonConverter<TEntityType> : JsonConverter<Delta<TEntityType>>
             reader.Read();
 
             // Convert JSON property name (snake_case) to C# property name (PascalCase)
-            var propertyName = _propertyNameMap.TryGetValue(jsonPropertyName, out var mapped)
+            string propertyName = _propertyNameMap.TryGetValue(jsonPropertyName, out string? mapped)
                 ? mapped
                 : jsonPropertyName;
 
             // Try to get the property type from Delta
             if (delta.TryGetPropertyType(propertyName, out var propertyType) && propertyType is not null)
             {
-                var value = JsonSerializer.Deserialize(ref reader, propertyType, _options);
+                object? value = JsonSerializer.Deserialize(ref reader, propertyType, _options);
                 delta.TrySetPropertyValue(propertyName, value);
             }
             else
@@ -122,20 +122,20 @@ public class DeltaJsonConverter<TEntityType> : JsonConverter<Delta<TEntityType>>
     {
         writer.WriteStartObject();
 
-        foreach (var (propertyName, propertyValue) in value.GetChangedPropertyNames()
-            .Select(name => (Name: name, HasValue: value.TryGetPropertyValue(name, out var val), Value: val))
+        foreach ((string propertyName, object? propertyValue) in value.GetChangedPropertyNames()
+            .Select(name => (Name: name, HasValue: value.TryGetPropertyValue(name, out object? val), Value: val))
             .Where(x => x.HasValue)
             .Select(x => (x.Name, x.Value)))
         {
             // Convert property name to snake_case if needed
-            var jsonPropertyName = options.PropertyNamingPolicy?.ConvertName(propertyName) ?? propertyName;
+            string jsonPropertyName = options.PropertyNamingPolicy?.ConvertName(propertyName) ?? propertyName;
             writer.WritePropertyName(jsonPropertyName);
             JsonSerializer.Serialize(writer, propertyValue, _options);
         }
 
         foreach (var kvp in value.UnknownProperties)
         {
-            var jsonPropertyName = options.PropertyNamingPolicy?.ConvertName(kvp.Key) ?? kvp.Key;
+            string jsonPropertyName = options.PropertyNamingPolicy?.ConvertName(kvp.Key) ?? kvp.Key;
             writer.WritePropertyName(jsonPropertyName);
             JsonSerializer.Serialize(writer, kvp.Value, _options);
         }

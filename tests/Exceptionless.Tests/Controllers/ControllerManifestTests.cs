@@ -65,11 +65,11 @@ public sealed class ControllerManifestTests(ITestOutputHelper output) : TestWith
 
         foreach (var controllerType in controllerTypes)
         {
-            var controllerRoutes = controllerType.GetCustomAttributes<RouteAttribute>(true)
+            string?[] controllerRoutes = controllerType.GetCustomAttributes<RouteAttribute>(true)
                 .Select(attribute => attribute.Template)
                 .DefaultIfEmpty(null)
                 .ToArray();
-            var controllerAttributes = controllerType.GetCustomAttributes(true).ToArray();
+            object[] controllerAttributes = controllerType.GetCustomAttributes(true).ToArray();
 
             foreach (var method in controllerType.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
                          .Where(method => !method.IsSpecialName)
@@ -84,18 +84,18 @@ public sealed class ControllerManifestTests(ITestOutputHelper output) : TestWith
                     .OfType<RouteAttribute>()
                     .Where(attribute => attribute.GetType() == typeof(RouteAttribute))
                     .ToArray();
-                var methodAttributes = method.GetCustomAttributes(true).ToArray();
+                object[] methodAttributes = method.GetCustomAttributes(true).ToArray();
 
-                foreach (var controllerRoute in controllerRoutes)
+                foreach (string? controllerRoute in controllerRoutes)
                 {
                     foreach (var httpAttribute in httpAttributes)
                     {
-                        var routeTemplates = ResolveMethodRouteTemplates(httpAttribute, methodRouteAttributes);
+                        string[] routeTemplates = ResolveMethodRouteTemplates(httpAttribute, methodRouteAttributes);
                         string? routeName = httpAttribute.Name ?? methodRouteAttributes.FirstOrDefault()?.Name;
 
-                        foreach (var httpMethod in httpAttribute.HttpMethods.OrderBy(value => value, StringComparer.Ordinal))
+                        foreach (string httpMethod in httpAttribute.HttpMethods.OrderBy(value => value, StringComparer.Ordinal))
                         {
-                            foreach (var routeTemplate in routeTemplates)
+                            foreach (string routeTemplate in routeTemplates)
                             {
                                 yield return new ControllerEndpointManifest
                                 {

@@ -1,5 +1,6 @@
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Services;
 using Exceptionless.DateTimeExtensions;
@@ -36,18 +37,31 @@ public sealed class OAuthController(OAuthService oauthService, AppOptions appOpt
         });
     }
 
-    [HttpGet(".well-known/oauth-protected-resource")]
+    [HttpGet(".well-known/oauth-protected-resource/mcp")]
     [AllowAnonymous]
-    public ActionResult<OAuthProtectedResourceMetadata> GetProtectedResourceMetadataAsync()
+    public ActionResult<OAuthProtectedResourceMetadata> GetMcpProtectedResourceMetadataAsync()
+    {
+        return GetProtectedResourceMetadata(OAuthService.McpResource);
+    }
+
+    [HttpGet(".well-known/oauth-protected-resource/api/v2")]
+    [AllowAnonymous]
+    public ActionResult<OAuthProtectedResourceMetadata> GetRestApiProtectedResourceMetadataAsync()
+    {
+        return GetProtectedResourceMetadata(OAuthService.RestApiResource);
+    }
+
+    private ActionResult<OAuthProtectedResourceMetadata> GetProtectedResourceMetadata(OAuthResourceDefinition resourceDefinition)
     {
         string origin = GetOrigin();
+        string resource = OAuthService.CreateResourceUri(origin, resourceDefinition);
         return Ok(new OAuthProtectedResourceMetadata
         {
-            Resource = $"{origin}/mcp",
+            Resource = resource,
             AuthorizationServers = [origin],
-            ScopesSupported = OAuthService.SupportedScopes,
+            ScopesSupported = resourceDefinition.Scopes,
             BearerMethodsSupported = ["header"],
-            ResourceDocumentation = $"{origin}/mcp"
+            ResourceDocumentation = resource
         });
     }
 
@@ -71,6 +85,26 @@ public sealed class OAuthController(OAuthService oauthService, AppOptions appOpt
     public Task<IActionResult> CompleteAuthorizeAsync([FromBody] OAuthAuthorizeForm form)
     {
         return CompleteAuthorizationAsync(form.ToRequest(), jsonResponse: true);
+    }
+
+    [HttpPost(API_PREFIX + "/oauth/authorize/consent")]
+    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    public async Task<ActionResult<OAuthAuthorizeConsentResponse>> GetAuthorizeConsentAsync([FromBody] OAuthAuthorizeForm form)
+    {
+        var request = form.ToRequest();
+        var validation = await ValidateAuthorizeRequestAsync(request);
+        if (!validation.IsValid)
+            return OAuthError(validation.Error, validation.ErrorDescription);
+
+        return Ok(new OAuthAuthorizeConsentResponse
+        {
+            ClientId = validation.Client!.ClientId,
+            ClientName = validation.Client.Name,
+            RedirectUri = request.RedirectUri,
+            Resource = validation.Resource!,
+            Scopes = validation.Scopes,
+            RequiredScopes = validation.ResourceDefinition!.RequiredScopes
+        });
     }
 
     [HttpPost(API_PREFIX + "/oauth/register")]
@@ -103,7 +137,7 @@ public sealed class OAuthController(OAuthService oauthService, AppOptions appOpt
             ClientId = form.ClientId,
             CodeVerifier = form.CodeVerifier,
             RefreshToken = form.RefreshToken,
-            Resource = NormalizeMcpResource(form.Resource)
+            Resource = form.Resource
         };
 
         OAuthTokenIssueResult result = String.Equals(form.GrantType, OAuthGrantTypes.RefreshToken, StringComparison.Ordinal)
@@ -120,7 +154,7 @@ public sealed class OAuthController(OAuthService oauthService, AppOptions appOpt
     [AllowAnonymous]
     public async Task<IActionResult> RevokeAsync([FromForm] OAuthRevokeForm form)
     {
-        await oauthService.RevokeAsync(form.Token);
+        await oauthService.RevokeAsync(form.Token, form.ClientId);
         return Ok();
     }
 
@@ -136,14 +170,9 @@ public sealed class OAuthController(OAuthService oauthService, AppOptions appOpt
         return new Uri(appOptions.BaseURL).GetLeftPart(UriPartial.Authority);
     }
 
-    private string GetMcpResource()
+    private string GetResource(OAuthResourceDefinition resourceDefinition)
     {
-        return $"{GetOrigin()}/mcp";
-    }
-
-    private string NormalizeMcpResource(string? resource)
-    {
-        return String.IsNullOrWhiteSpace(resource) ? GetMcpResource() : resource;
+        return OAuthService.CreateResourceUri(GetOrigin(), resourceDefinition);
     }
 
     private ObjectResult OAuthError(string? error, string? description)
@@ -155,16 +184,45 @@ public sealed class OAuthController(OAuthService oauthService, AppOptions appOpt
         });
     }
 
+    private async Task<AuthorizeRequestValidationResult> ValidateAuthorizeRequestAsync(OAuthAuthorizeRequest request)
+    {
+        if (!OAuthService.TryGetProtectedResource(request.Resource, GetOrigin(), out var resourceDefinition))
+            return AuthorizeRequestValidationResult.Invalid("invalid_target", "The requested resource is not supported.");
+
+        string resource = GetResource(resourceDefinition);
+        var validation = await oauthService.ValidateAuthorizationRequestAsync(request, resource, resourceDefinition);
+        if (!validation.IsValid)
+            return AuthorizeRequestValidationResult.Invalid(validation.Error, validation.ErrorDescription);
+
+        return AuthorizeRequestValidationResult.Valid(validation.Client!, validation.Scopes, resourceDefinition, resource);
+    }
+
     private async Task<IActionResult> CompleteAuthorizationAsync(OAuthAuthorizeRequest request, bool jsonResponse)
     {
-        request = request with { Resource = NormalizeMcpResource(request.Resource) };
-        var validation = await oauthService.ValidateAuthorizationRequestAsync(request, GetMcpResource());
+        var validation = await ValidateAuthorizeRequestAsync(request);
         if (!validation.IsValid)
             return OAuthError(validation.Error, validation.ErrorDescription);
 
-        string code = await oauthService.CreateAuthorizationCodeAsync(request, CurrentUser.Id);
+        var organizationValidation = ValidateRequestedOrganizations(request.OrganizationIds);
+        if (!organizationValidation.IsValid)
+            return OAuthError("invalid_request", organizationValidation.ErrorDescription);
+
+        string code = await oauthService.CreateAuthorizationCodeAsync(request, CurrentUser.Id, organizationValidation.OrganizationIds);
         string redirectUri = BuildRedirectUri(request.RedirectUri, code, request.State);
         return jsonResponse ? Ok(new OAuthAuthorizeResponse { RedirectUri = redirectUri }) : Redirect(redirectUri);
+    }
+
+    private OrganizationValidationResult ValidateRequestedOrganizations(IReadOnlyCollection<string> requestedOrganizationIds)
+    {
+        var organizationIds = requestedOrganizationIds.Where(id => !String.IsNullOrWhiteSpace(id)).Distinct(StringComparer.Ordinal).ToArray();
+        if (organizationIds.Length == 0)
+            return OrganizationValidationResult.Invalid("Select at least one organization.");
+
+        var allowedOrganizationIds = CurrentUser.OrganizationIds.ToHashSet(StringComparer.Ordinal);
+        if (organizationIds.Any(id => !allowedOrganizationIds.Contains(id)))
+            return OrganizationValidationResult.Invalid("One or more selected organizations are not available to the current user.");
+
+        return OrganizationValidationResult.Valid(organizationIds);
     }
 
     private static string BuildRedirectUri(string redirectUri, string code, string? state)
@@ -182,18 +240,18 @@ public sealed class OAuthController(OAuthService oauthService, AppOptions appOpt
 
     private RedirectResult RedirectToAuthorizeBridge()
     {
-        string authorizeUrl;
-        if (String.IsNullOrWhiteSpace(Request.Query["resource"]))
-        {
-            var query = Request.Query.ToDictionary(kvp => kvp.Key, kvp => (string?)kvp.Value.ToString(), StringComparer.Ordinal);
-            query["resource"] = GetMcpResource();
-            authorizeUrl = Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString("/next/oauth/authorize", query);
-        }
-        else
-        {
-            authorizeUrl = "/next/oauth/authorize" + Request.QueryString;
-        }
-
-        return Redirect(authorizeUrl);
+        return Redirect("/next/oauth/authorize" + Request.QueryString);
     }
+}
+
+internal sealed record OrganizationValidationResult(bool IsValid, IReadOnlyCollection<string> OrganizationIds, string? ErrorDescription)
+{
+    public static OrganizationValidationResult Valid(IReadOnlyCollection<string> organizationIds) => new(true, organizationIds, null);
+    public static OrganizationValidationResult Invalid(string errorDescription) => new(false, [], errorDescription);
+}
+
+internal sealed record AuthorizeRequestValidationResult(bool IsValid, OAuthClientOptions? Client, IReadOnlyCollection<string> Scopes, OAuthResourceDefinition? ResourceDefinition, string? Resource, string? Error, string? ErrorDescription)
+{
+    public static AuthorizeRequestValidationResult Valid(OAuthClientOptions client, IReadOnlyCollection<string> scopes, OAuthResourceDefinition resourceDefinition, string resource) => new(true, client, scopes, resourceDefinition, resource, null, null);
+    public static AuthorizeRequestValidationResult Invalid(string? error, string? errorDescription) => new(false, null, [], null, null, error, errorDescription);
 }

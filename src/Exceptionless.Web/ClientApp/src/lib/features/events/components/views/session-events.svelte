@@ -14,7 +14,7 @@
     import Summary from '$features/events/components/summary/summary.svelte';
     import { getSessionId } from '$features/events/utils/index';
     import { organization } from '$features/organizations/context.svelte';
-    import Funnel from '@lucide/svelte/icons/funnel';
+    import EventsIcon from '@lucide/svelte/icons/calendar-days';
     import InfoIcon from '@lucide/svelte/icons/info';
 
     import SessionEventDuration from '../session-event-duration.svelte';
@@ -37,7 +37,7 @@
             return undefined;
         }
 
-        const query = new URLSearchParams({ filter: filter.toFilter(), time: '' });
+        const query = new URLSearchParams({ filter: filter.toFilter(), time: 'all' });
         return `${eventsPath}?${query.toString()}`;
     });
 
@@ -149,7 +149,7 @@
             title="Open events filtered to this session"
             variant="outline"
         >
-            <Funnel class="size-4" />
+            <EventsIcon class="size-4" />
         </Button>
     </div>
 
