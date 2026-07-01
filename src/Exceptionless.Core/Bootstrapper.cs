@@ -108,6 +108,7 @@ public class Bootstrapper
         services.AddSingleton(s => CreateQueue<WebHookNotification>(s));
         services.AddSingleton(s => CreateQueue<MailMessage>(s));
         services.AddSingleton(s => CreateQueue<WorkItemData>(s, TimeSpan.FromHours(1)));
+        services.AddSingleton(s => CreateQueue<RateNotification>(s));
 
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IQueueBehavior<WorkItemData>, WorkItemDuplicateDetectionQueueBehavior>());
 
@@ -145,6 +146,7 @@ public class Bootstrapper
         services.AddSingleton<IUserRepository, UserRepository>();
         services.AddSingleton<IWebHookRepository, WebHookRepository>();
         services.AddSingleton<ISavedViewRepository, SavedViewRepository>();
+        services.AddSingleton<IRateNotificationRuleRepository, RateNotificationRuleRepository>();
         services.AddSingleton<ITokenRepository, TokenRepository>();
 
         services.AddSingleton<IGeocodeService, NullGeocodeService>();
@@ -194,6 +196,8 @@ public class Bootstrapper
             });
         services.AddSingleton<OAuthService>();
         services.AddSingleton<UsageService>();
+        services.AddSingleton<RateCounterService>();
+        services.AddSingleton<RateNotificationRuleCache>();
         services.AddSingleton<SlackService>();
         services.AddSingleton<StackService>();
 
@@ -289,12 +293,14 @@ public class Bootstrapper
         services.AddJob<EventPostsJob>(o => o.WaitForStartupActions());
         services.AddJob<EventUserDescriptionsJob>(o => o.WaitForStartupActions());
         services.AddJob<MailMessageJob>(o => o.WaitForStartupActions());
+        services.AddJob<RateNotificationsJob>(o => o.WaitForStartupActions());
         services.AddJob<StackStatusJob>(o => o.WaitForStartupActions());
         services.AddJob<StackEventCountJob>(o => o.WaitForStartupActions());
         services.AddJob<WebHooksJob>(o => o.WaitForStartupActions());
         services.AddJob<WorkItemJob>(o => o.WaitForStartupActions());
 
         services.AddDistributedCronJob<EventUsageJob>(Cron.Minutely());
+        services.AddDistributedCronJob<RateNotificationEvaluatorJob>(Cron.Minutely());
         services.AddDistributedCronJob<CleanupDataJob>("30 */4 * * *");
         services.AddDistributedCronJob<CleanupOrphanedDataJob>("45 */8 * * *");
         services.AddDistributedCronJob<DownloadGeoIPDatabaseJob>(Cron.Daily(1));
