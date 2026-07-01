@@ -1,0 +1,246 @@
+/*** Template Standard ***/
+.cycloneslider-template-standard{
+	position:relative;
+    /*margin-bottom: 30px;*/
+}
+.cycloneslider-template-standard .cycloneslider-slides{
+	position:relative;
+	overflow:hidden;
+}
+.cycloneslider-template-standard .cycloneslider-slide{
+	/*text-align: center*/
+	margin-bottom:24px;
+	width: 100%; /* For slides in scrollHorz to work */
+	display: none; /* Hide slides to prevent FOUC */
+}
+.cycloneslider-template-standard .cycloneslider-slide:first-child, /* Show first slide */
+.cycloneslider-template-standard .cycle-sentinel + .cycloneslider-slide{ /* Select next slide when using sentinel slide */
+	display: block;
+}
+.cycloneslider-template-standard .cycloneslider-slide img{
+	display:block;
+	padding:0;
+	margin-top:42px;
+	margin-bottom:5px;
+	max-width:100%;
+	border:0;
+	border-radius: 5px;
+	-webkit-box-shadow: 0 0 7px 1px #A4B693;
+	box-shadow: 0 0 7px 1px #A4B693;
+}
+.cycloneslider-template-standard.cycloneslider-width-full .cycloneslider-slide img{
+	width:100%;
+}
+.cycloneslider-template-standard .cycloneslider-slide iframe,
+.cycloneslider-template-standard .cycloneslider-slide object,
+.cycloneslider-template-standard .cycloneslider-slide embed {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.cycloneslider-template-standard .cycloneslider-slide-youtube,
+.cycloneslider-template-standard .cycloneslider-slide-vimeo{
+	width: 100%;
+	height: 100%;
+	background: #000;
+}
+.cycloneslider-template-standard .cycloneslider-slide-custom{
+	width: 100%;
+	min-height: 100%;
+	background: none;
+}
+
+/*** Prev/Next ***/
+.cycloneslider-template-standard .cycloneslider-prev,
+.cycloneslider-template-standard .cycloneslider-next,
+.cycloneslider-template-standard .cycloneslider-pager span {
+	cursor:pointer;
+}
+.cycloneslider-template-standard .cycloneslider-prev,
+.cycloneslider-template-standard .cycloneslider-next{
+	position: absolute;
+	top: 150px;
+	height: 36px;
+	width: 30px;
+	background: #555;
+	background: rgba(0,0,0,.25);
+	/*opacity: 0;*/
+	-webkit-transition: all 0.5s ;
+	-moz-transition: all 0.5s ;
+	-ms-transition: all 0.5s ;
+	-o-transition: all 0.5s ;
+	transition: all 0.5s ;
+	/*-webkit-box-shadow: 1px 1px 2px 0px #333333;
+    box-shadow: 1px 1px 2px 0px #333333;*/
+}
+
+.cycloneslider-template-standard:hover .cycloneslider-prev,
+.cycloneslider-template-standard:hover .cycloneslider-next{
+	opacity: 0.4;
+}
+.cycloneslider-template-standard .cycloneslider-prev:hover,
+.cycloneslider-template-standard .cycloneslider-next:hover{
+	opacity: 1;
+}
+.cycloneslider-template-standard .cycloneslider-prev.disabled,
+.cycloneslider-template-standard .cycloneslider-next.disabled{
+	display: none;
+}
+.cycloneslider-template-standard .arrow{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-top: -6px;
+    width: 0;
+    height: 0;
+}
+.cycloneslider-template-standard .cycloneslider-prev{
+    left:0;
+}
+.rtl .cycloneslider-template-standard .cycloneslider-prev{
+    left:auto;
+	right:10px;
+}
+.cycloneslider-template-standard .cycloneslider-prev .arrow{
+    margin-left: -4px;
+	border-top: 6px solid transparent;
+	border-right: 6px solid #333;
+	border-bottom: 6px solid transparent;
+}
+.rtl .cycloneslider-template-standard .cycloneslider-prev .arrow{
+    margin-left: -2px;
+	border: 0;
+	border-top: 6px solid transparent;
+	border-left: 6px solid #333;
+	border-bottom: 6px solid transparent;
+}
+.cycloneslider-template-standard .cycloneslider-next{
+    right:0;
+}
+.rtl .cycloneslider-template-standard .cycloneslider-next{
+    right:auto;
+	left:10px;
+}
+.cycloneslider-template-standard .cycloneslider-next .arrow{
+    margin-left: -2px;
+	border-top: 6px solid transparent;
+	border-left: 6px solid #333;
+	border-bottom: 6px solid transparent;
+}
+.rtl .cycloneslider-template-standard .cycloneslider-next .arrow{
+    margin-left: -4px;
+	border: 0;
+	border-top: 6px solid transparent;
+	border-right: 6px solid #333;
+	border-bottom: 6px solid transparent;
+}
+
+/*** Pager ***/
+.cycloneslider-template-standard .cycloneslider-pager{
+    position:absolute;
+    bottom:-22px;
+    left:0;
+    z-index:100;
+    width: 100%;
+    height: 12px;
+    text-align: center;
+}
+.cycloneslider-template-standard .cycloneslider-pager span {
+    display: inline-block;
+    margin: 0 3px;
+    width: 12px;
+    height: 12px;
+    border-radius: 6px;
+    background: #333;
+    vertical-align: top;
+    font-size: 0;
+    line-height: 0;
+	-webkit-box-shadow: 1px 1px 2px 0px #333333;
+    box-shadow: 1px 1px 2px 0px #333333;
+}
+.ie7 .cycloneslider-template-standard .cycloneslider-pager span{
+	zoom: 1;/* IE 7 inline-block */
+	*display: inline;/* IE 7 inline-block */
+}
+.cycloneslider-template-standard .cycloneslider-pager span.cycle-pager-active {
+    background-color: #ccc;
+}
+
+/*** Caption ***/
+.cycloneslider-template-standard .cycloneslider-caption{
+    position:absolute;
+    bottom:0;
+    left:0;
+    z-index:500;
+    width:100%;
+    background: #222;
+    color:#fff;
+    opacity: 0.7;
+	text-align: left;
+}
+.rtl .cycloneslider-template-standard .cycloneslider-caption{
+	text-align: right;
+}
+.cycloneslider-template-standard .cycloneslider-caption-title{
+    margin-bottom:0;
+    padding:10px 20px 5px 20px;
+    font-size:22px;
+    line-height:1;
+}
+.cycloneslider-template-standard .cycloneslider-caption-description{
+    padding:0 20px 15px 20px;
+    font-size:12px;
+    line-height:1.5;
+}
+
+#sliderRow {
+	background:#F1F1F1;
+	border-bottom:1px solid #ddd;
+	min-height:320px;
+}
+
+#sliderContainer {
+	max-width:1140px;
+	margin:0 auto;
+	padding:0 20px;
+}
+
+.sliderLeft, .sliderRight {
+	width:46%;
+	text-align:left;
+}
+
+.sliderLeft {
+	float:left;
+	padding: 0 4% 0 0;
+}
+
+.sliderRight {
+	float:right;
+}
+
+.cycloneslider-slide p {
+	font-size:16px;
+	line-height:28px;
+	color:#777;
+	margin-bottom:20px;
+}
+
+.cycloneslider-slide h2 {
+	color: #3D3D3D;
+	margin:37px 0 20px;
+}
+
+.sliderLeft img, .sliderRight img {
+	border-radius: 5px;
+	-webkit-box-shadow: 0 0 7px 1px #A4B693;
+	box-shadow: 0 0 7px 1px #A4B693;
+}
+
+.sliderLeft img {
+	margin: 10px 0 10px 10px;
+}
+
+.sliderRight img {
+	margin: 10px 10px 10px 0;
+}

@@ -1,0 +1,4 @@
+_site/
+.cache/
+_data/generated.ts
+snapshots/
