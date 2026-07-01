@@ -207,7 +207,8 @@ public sealed class MailerTests : TestWithServices
         ev.StackId = TestConstants.StackId;
 
         await _mailer.SendEventNoticeAsync(user, ev, project, RandomData.GetBool(), RandomData.GetBool(), 1);
-        await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+        Assert.Contains("View Event Details", body, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -217,7 +218,8 @@ public sealed class MailerTests : TestWithServices
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
 
         await _mailer.SendOrganizationAddedAsync(user, organization, user);
-        await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+        Assert.Contains("View Organization", body, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -233,12 +235,8 @@ public sealed class MailerTests : TestWithServices
             Token = "1"
         });
 
-        await RunMailJobAsync();
-
-        var sender = GetService<IMailSender>() as InMemoryMailSender;
-        Assert.NotNull(sender);
-
-        Assert.Contains("Join Organization", sender.LastMessage?.Body);
+        var body = await RunMailJobAsync();
+        Assert.Contains("Join Organization", body, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -248,7 +246,8 @@ public sealed class MailerTests : TestWithServices
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
 
         await _mailer.SendOrganizationNoticeAsync(user, organization, false, true);
-        await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+        Assert.Contains("throttled", body, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -258,7 +257,8 @@ public sealed class MailerTests : TestWithServices
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
 
         await _mailer.SendOrganizationNoticeAsync(user, organization, true, false);
-        await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+        Assert.Contains("monthly plan limit", body, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -268,7 +268,8 @@ public sealed class MailerTests : TestWithServices
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
 
         await _mailer.SendOrganizationPaymentFailedAsync(user, organization);
-        await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+        Assert.Contains("Payment failed", body, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -279,7 +280,9 @@ public sealed class MailerTests : TestWithServices
         var mostFrequent = _stackData.GenerateStacks(3, generateId: true, type: Event.KnownTypes.Error);
 
         await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, null, DateTime.UtcNow.Date, true, 12, 1, 0, 1, 0, 0, false);
-        await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+        Assert.Contains("View Timeline", body, StringComparison.Ordinal);
+        Assert.Contains("Most Frequent", body, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -290,7 +293,8 @@ public sealed class MailerTests : TestWithServices
         var mostFrequent = _stackData.GenerateStacks(3, generateId: true, type: Event.KnownTypes.Error);
 
         await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, null, DateTime.UtcNow.Date, true, 123456, 1, 0, 1, 123456, 0, false);
-        await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+        Assert.Contains("discarded due to throttling", body, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -300,7 +304,8 @@ public sealed class MailerTests : TestWithServices
         var project = _projectData.GenerateSampleProject();
 
         await _mailer.SendProjectDailySummaryAsync(user, project, null, null, DateTime.UtcNow.Date, false, 0, 0, 0, 0, 0, 0, false);
-        await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+        Assert.Contains("Configure Project", body, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -310,7 +315,8 @@ public sealed class MailerTests : TestWithServices
         var project = _projectData.GenerateSampleProject();
 
         await _mailer.SendProjectDailySummaryAsync(user, project, null, null, DateTime.UtcNow.Date, true, 0, 0, 0, 10, 0, 0, false);
-        await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+        Assert.Contains("marked as fixed", body, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -320,7 +326,8 @@ public sealed class MailerTests : TestWithServices
         var project = _projectData.GenerateSampleProject();
 
         await _mailer.SendProjectDailySummaryAsync(user, project, null, null, DateTime.UtcNow.Date, true, 0, 0, 0, 10, 123456, 23, false);
-        await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+        Assert.Contains("marked as fixed", body, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -332,7 +339,20 @@ public sealed class MailerTests : TestWithServices
         var newest = _stackData.GenerateStacks(1, generateId: true, type: Event.KnownTypes.Error);
 
         await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, newest, DateTime.UtcNow.Date, true, 12, 1, 1, 2, 0, 0, true);
-        await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+        Assert.Contains("free plan", body, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task SendProjectDailySummaryWithRegressedStackAsync()
+    {
+        var user = _userData.GenerateSampleUser();
+        var project = _projectData.GenerateSampleProject();
+        var regressedStack = _stackData.GenerateStack(generateId: true, type: Event.KnownTypes.Error, status: StackStatus.Regressed);
+
+        await _mailer.SendProjectDailySummaryAsync(user, project, new[] { regressedStack }, null, DateTime.UtcNow.Date, true, 5, 3, 1, 0, 0, 0, false);
+        var body = await RunMailJobAsync();
+        Assert.Contains("[REGRESSED]", body, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -342,7 +362,8 @@ public sealed class MailerTests : TestWithServices
         user.CreatePasswordResetToken(TimeProvider);
 
         await _mailer.SendUserPasswordResetAsync(user);
-        await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+        Assert.Contains("Reset Password", body, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -352,20 +373,30 @@ public sealed class MailerTests : TestWithServices
         user.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
 
         await _mailer.SendUserEmailVerifyAsync(user);
-        await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+        Assert.Contains("Verify Address", body, StringComparison.Ordinal);
     }
 
-    private async Task RunMailJobAsync()
+    private async Task<string> RunMailJobAsync()
     {
         var job = GetService<MailMessageJob>();
         await job.RunAsync();
 
         if (GetService<IMailSender>() is not InMemoryMailSender sender)
-            return;
+            return String.Empty;
+
+        var body = sender.LastMessage?.Body ?? String.Empty;
 
         _logger.LogTrace("To:      {To}", sender.LastMessage?.To);
         _logger.LogTrace("Subject: {Subject}", sender.LastMessage?.Subject);
-        _logger.LogTrace("Body:\n{Body}", sender.LastMessage?.Body);
+        _logger.LogTrace("Body:\n{Body}", body);
+
+        Assert.NotEmpty(body);
+        Assert.Contains("<!DOCTYPE html", body, StringComparison.OrdinalIgnoreCase);
+        // Catch unrendered Handlebars tokens — any {{ remaining means a rendering failure
+        Assert.DoesNotContain("{{", body, StringComparison.Ordinal);
+
+        return body;
     }
 
     private Exception? GetException()
