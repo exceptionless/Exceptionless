@@ -1,4 +1,4 @@
-name: Docs Pages
+name: Website
 
 on:
   workflow_dispatch:
@@ -6,18 +6,18 @@ on:
     branches: [main]
     paths:
       - "docs/**"
-      - ".github/workflows/docs-pages.yml"
+      - ".github/workflows/website.yml"
   pull_request:
     paths:
       - "docs/**"
-      - ".github/workflows/docs-pages.yml"
+      - ".github/workflows/website.yml"
 
 permissions:
   contents: read
 
 jobs:
   build:
-    name: Build docs site
+    name: Build website
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -53,7 +53,7 @@ jobs:
           path: docs/_site
 
   deploy:
-    name: Deploy docs site
+    name: Deploy website
     if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
