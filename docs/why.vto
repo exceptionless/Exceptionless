@@ -1,0 +1,191 @@
+---
+title: Why Exceptionless?
+layout: layouts/base.vto
+description: Why developers use Exceptionless for real-time error monitoring and event reporting.
+---
+<style>
+    .homepage-hero-module {
+        border-right: none;
+        border-left: none;
+        position: relative;
+    }
+    .no-video .video-container video,
+    .touch .video-container video {
+        display: none;
+    }
+    .no-video .video-container .poster,
+    .touch .video-container .poster {
+        display: block !important;
+    }
+    .video-container {
+        position: relative;
+        bottom: 0%;
+        left: 0%;
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+        background: #000;
+    }
+    .video-container .poster img {
+        width: 100%;
+        bottom: -50%;
+        /*position: absolute;*/
+        z-index:0;
+        max-width:none;
+    }
+    .video-container .filter {
+        z-index: 100;
+        position: absolute;
+        background: rgba(0, 0, 0, 0.4);
+        width: 100%;
+    }
+    .video-container video {
+        position: absolute;
+        z-index: 100;
+        bottom: -75%;
+    }
+    .video-container video.fillWidth {
+        width: 100%;
+    }
+</style>
+<div class="homepage-hero-module" style="height: 400px;">
+    <div class="video-container" style="height: 400px; position: relative; overflow: hidden;">
+        <div style="text-align:center;font-size: 40px;font-weight:900;padding-top: 125px;position: absolute;z-index: 1020;margin: 0 auto;color: white;line-height: 50px;width: 100%;text-shadow:3px 3px 10px #333;">RETAIN<br>INNOVATE<br>EVOLVE</div>
+        <div class="filter" style="width: 1593px;"></div>
+        <video autoplay="" loop="" class="fillWidth fadeIn animated" style="width: 100vw;">
+            <source src="/assets/Working-Space.mp4" type="video/mp4">Your browser does not support the video tag. Please upgrade your browser.
+<!--            <source src="/assets/covers/workspace/WEBM/Working-Space.webm" type="video/webm">Your browser does not support the video tag. Please upgrade your browser.-->
+        </video>
+        <div class="poster">
+            <img src="/assets/img/covers/workspace/snapshots/Working-Space.jpg" alt="" style="width: 1593px;">
+        </div>
+    </div>
+</div>
+<script>
+    //jQuery is required to run this code
+    $( document ).ready(function() {
+
+        scaleVideoContainer();
+
+        initBannerVideoSize('.video-container .poster img');
+        initBannerVideoSize('.video-container .filter');
+        initBannerVideoSize('.video-container video');
+
+        $(window).on('resize', function() {
+            scaleVideoContainer();
+            scaleBannerVideoSize('.video-container .poster img');
+            scaleBannerVideoSize('.video-container .filter');
+            scaleBannerVideoSize('.video-container video');
+        });
+
+    });
+
+    function scaleVideoContainer() {
+
+        var height = 400;
+        var unitHeight = parseInt(height) + 'px';
+        $('.homepage-hero-module').css('height',unitHeight);
+
+    }
+
+    function initBannerVideoSize(element){
+
+        $(element).each(function(){
+            $(this).data('height', $(this).height());
+            $(this).data('width', $(this).width());
+        });
+
+        scaleBannerVideoSize(element);
+
+    }
+
+    function scaleBannerVideoSize(element){
+
+        var windowWidth = $(window).width(),
+            windowHeight = $(window).height() + 5,
+            videoWidth,
+            videoHeight;
+
+        console.log(windowHeight);
+
+        $(element).each(function(){
+            var videoAspectRatio = $(this).data('height')/$(this).data('width');
+
+            $(this).width(windowWidth);
+
+            if(windowWidth < 1000){
+                videoHeight = windowHeight;
+                videoWidth = videoHeight / videoAspectRatio;
+                $(this).css({'margin-top' : 0, 'margin-left' : -(videoWidth - windowWidth) / 2 + 'px'});
+
+                $(this).width(videoWidth).height(videoHeight);
+            }
+
+            $('.homepage-hero-module .video-container video').addClass('fadeIn animated');
+
+        });
+    }
+</script>
+<div id="wrap" class="container" role="document">
+
+    <div id="content" class="row-fluid">
+
+        <div id="main" class="span12" role="main">
+            <script>
+            var start = new Date(2015, 10, 11);
+            var rate = 23 / 1000;
+            var base = 150000000;
+            function addCommas(nStr) {
+                nStr += '';
+                x = nStr.split('.');
+                x1 = x[0];
+                x2 = x.length > 1 ? '.' + x[1] : '';
+                var rgx = /(\d+)(\d{3})/;
+                while (rgx.test(x1)) {
+                    x1 = x1.replace(rgx, '$1' + ',' + '$2');
+                }
+                return x1 + x2;}
+            setInterval(function () {
+                var cans = addCommas(Math.floor((new Date() - start) * rate) + base);
+                jQuery("#cans").html(cans);
+            }, 250);
+            </script>
+            <div class="span6"><img class="aligncenter size-full" src="/assets/img/codesmith-client-logo-bar-left.png" alt="Exceptionless Customers &amp; Users" width="588" height="150" srcset="/assets/img/codesmith-client-logo-bar-left.png 588w, /assets/img/codesmith-client-logo-bar-left-300x77.png 300w" sizes="(max-width: 588px) 100vw, 588px"></div>
+            <div class="span6"><img class="aligncenter size-full" src="/assets/img/codesmith-client-logo-bar-right.png" alt="Exceptionless Users & Customers" width="582" height="150" srcset="/assets/img/codesmith-client-logo-bar-right.png 582w, /assets/img/codesmith-client-logo-bar-right-300x77.png 300w" sizes="(max-width: 582px) 100vw, 582px"></div>
+            <div class="span6" style="clear: both;">
+                <h1 style="margin-bottom: 20px;">Why Exceptionless?</h1>
+                <h2 style="font-size: 24px; margin-bottom: 0;"><i class="icon-user icon-large" style="margin-right: 20px; color: #999;"></i><strong>You’re Losing Users</strong>, Leads, and Customers</h2>
+                <p>Chances are, you’re losing users every day because of minor or major bugs or errors that aren’t being reported in your app or website. Exceptionless catches these bugs and notifies you, allowing you to fix them quickly and <strong>retain those users</strong>.</p>
+                <h2 style="font-size: 24px; margin: 20px 0 0 0;"><i class="icon-arrow-right icon-large" style="margin-right: 20px; color: #999;"></i><strong>Innovate</strong>, Don’t Get Stuck Fixing Bugs!</h2>
+                <p>Developers should be building the next big thing or adding that revenue-doubling feature, not wasting their time tracking down bugs that could have been caught right away and fixed <strong>during</strong> the development process. <strong>Progress, not regress.</strong></p>
+                <h2 style="font-size: 24px; margin: 20px 0 0 0;"><i class="icon-star icon-large" style="margin-right: 20px; color: #999;"></i>Be <i><strong>That</strong></i> Company</h2>
+                <p>You know <em><strong>that</strong> </em>company. The one <strong>everyone loves</strong> because their systems, website, applications, tools, etc<strong> just work!</strong> You want to be those guys, and Exceptionless can help you get there by helping make sure the code powering your services is <strong>error free!</strong></p>
+            </div>
+            <div class="span6 quote smaller" style="line-height: 44px; color: #bbb; padding: 50px 50px 0 50px; text-align: center; box-sizing: border-box;">"Exceptionless is <strong>awesome</strong>. I’ve <strong>STOPPED</strong> worrying about whether I’m losing customers to bugs I don’t know about." – <strong>Eric B</strong></div>
+            <div style="clear: both; height: 0;"></div>
+            <div style="margin: 30px 0; background: #333; width: 100%; color: #fff; clear: both; font-size: 30px; box-sizing: border-box; line-height: 34px; text-align: center; font-weight: bold; padding: 30px 30px 25px 30px;"><span id="cans" style="font-size: 50px; color: #78b001;">3,711,629,930</span> EVENTS, AND COUNTING… <span style="font-weight: normal;">  //  </span> 9700+ ACTIVE PROJECTS</div>
+            <div class="span6 quote smaller" style="line-height: 44px; color: #bbb; padding: 40px 50px; text-align: center; box-sizing: border-box;">"Exceptionless allows us to <strong>prioritize fixes smarter</strong> by showing frequently occurring errors. In <strong>real time!</strong>"<br>
+                – Ryan H.</div>
+            <div class="span6">
+                <h2>Make Developer Life Easier</h2>
+                <p>Simply put, <strong>Exceptionless makes developer life easier</strong> by reporting, logging, tracking, and providing the important details about bugs in <strong>real time</strong> so action can be taken and the developer can move on to important things, like working on actual features.</p>
+                <h3>Unique Features</h3>
+                <ul>
+                    <li style="list-style-type: none;"><i class="icon-dashboard icon-large" style="margin-right: 20px;"></i><strong>Detailed</strong> Dashboard</li>
+                    <li style="list-style-type: none;"><i class="icon-group icon-large" style="margin-right: 20px;"></i><strong>Unlimited</strong> Users per Organization</li>
+                    <li style="list-style-type: none;"><i class="icon-cloud-download icon-large" style="margin-right: 20px;"></i><strong>Easy & Fast</strong> Setup</li>
+                    <li style="list-style-type: none;"><i class="icon-bullhorn icon-large" style="margin-right: 20px;"></i>Event <strong>Notifications</strong></li>
+                    <li style="list-style-type: none;"><i class="icon-ok icon-large" style="margin-right: 20px;"></i><strong>Mark Events</strong> as Fixed or Critical</li>
+                    <li style="list-style-type: none;"><i class="icon-search icon-large" style="margin-right: 20px;"></i><strong>Monitor</strong> Fixed Events for Regression</li>
+                    <li style="list-style-type: none;"><i class="icon-eye-open icon-large" style="margin-right: 20px;"></i>Detailed Error <strong>Reports</strong></li>
+                    <li style="list-style-type: none;"><i class="icon-bolt icon-large" style="margin-right: 20px;"></i><strong>Real-time</strong> View as Events Occur</li>
+                    <li style="list-style-type: none;"><i class="icon-cloud icon-large" style="margin-right: 20px;"></i><strong>Open Source</strong> – Self Host for <strong>Free</strong>! <em>(affordable hosting available)</em></li>
+                </ul>
+            </div>
+            <div style="clear: both; height: 0;"></div>
+            <div class="signup center" style="margin-top: 20px;"><a class="btn btn-large btn-primary" href="https://be.exceptionless.io/signup?domain=exceptionless.com&amp;type=organic">Sign Up For <strong>FREE</strong> Now!</a></div>
+            <p style="text-align: center;">or <a href="javascript:Intercom('showNewMessage');">contact us</a> with any questions you might have</p>
+        </div>
+
+    </div><!-- /#content -->
+</div><!-- /#wrap -->
