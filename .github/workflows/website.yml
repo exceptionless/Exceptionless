@@ -2,11 +2,7 @@ name: Website
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - "docs/**"
-      - ".github/workflows/website.yml"
+  workflow_call:
   pull_request:
     paths:
       - "docs/**"

@@ -464,6 +464,16 @@ jobs:
             echo "- **Deployment**: Skipped" >> $GITHUB_STEP_SUMMARY
           fi
 
+  deploy-website:
+    name: Deploy website
+    if: ${{ needs.version.outputs.is_prod_deploy == 'true' }}
+    needs: [version, deploy]
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/website.yml
+
   preview-comment-result:
     needs: [preview-context, version, test-api, test-client, docker-build, docker-publish, deploy]
     if: ${{ always() && needs.preview-context.outputs.pr-number != '' }}
