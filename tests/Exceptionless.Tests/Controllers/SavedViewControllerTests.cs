@@ -829,17 +829,13 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
-        var changes = new UpdateSavedView
-        {
-            Filter = "type:log level:warn",
-            FilterDefinitions = """[{"type":"type","value":["log"],"hidden":true},{"type":"level","value":["Warn"]}]"""
-        };
-
         await SendRequestAsync(r => r
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("saved-views", logs.Id)
-            .Content(changes)
+            .JsonPatchContent(
+                ("filter", "type:log level:warn"),
+                ("filter_definitions", """[{"type":"type","value":["log"],"hidden":true},{"type":"level","value":["Warn"]}]"""))
             .StatusCodeShouldBeOk()
         );
 
@@ -961,7 +957,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("saved-views", created.Id)
-            .Content(new UpdateSavedView { Name = "Updated Name" })
+            .JsonPatchContent("name", "Updated Name")
             .StatusCodeShouldBeOk()
         );
 
@@ -972,6 +968,27 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         Assert.True(updated.UpdatedUtc >= created.UpdatedUtc);
     }
 
+    [Fact]
+    public async Task PatchAsync_WithLegacyPartialObject_UpdatesName()
+    {
+        // Arrange
+        var created = await CreateSavedViewAsync("Legacy Original Name", "status:open", "events");
+        Assert.NotNull(created);
+
+        // Act
+        var updated = await SendRequestAsAsync<ViewSavedView>(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", created.Id)
+            .Content(JsonSerializer.Serialize(new { name = "Legacy Updated Name" }), "application/json")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updated);
+        Assert.Equal("Legacy Updated Name", updated.Name);
+        Assert.NotNull(updated.UpdatedByUserId);
+    }
     [Fact]
     public async Task PatchAsync_UpdateFilter_UpdatesFilterString()
     {
@@ -984,7 +1001,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("saved-views", created.Id)
-            .Content(new UpdateSavedView { Filter = "status:regressed" })
+            .JsonPatchContent("filter", "status:regressed")
             .StatusCodeShouldBeOk()
         );
 
@@ -1005,7 +1022,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("saved-views", created.Id)
-            .Content(new UpdateSavedView { Time = "[now-30D TO now]" })
+            .JsonPatchContent("time", "[now-30D TO now]")
             .StatusCodeShouldBeOk()
         );
 
@@ -1026,7 +1043,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("saved-views", created.Id)
-            .Content(new UpdateSavedView { Sort = "-date" })
+            .JsonPatchContent("sort", "-date")
             .StatusCodeShouldBeOk()
         );
 
@@ -1042,7 +1059,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("saved-views", "000000000000000000000000")
-            .Content(new UpdateSavedView { Name = "Nope" })
+            .JsonPatchContent("name", "Nope")
             .StatusCodeShouldBeNotFound()
         );
     }
@@ -1155,7 +1172,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Patch()
             .AsTestOrganizationUser()
             .AppendPaths("saved-views", created.Id)
-            .Content(new UpdateSavedView { Name = "Renamed by Organization User" })
+            .JsonPatchContent("name", "Renamed by Organization User")
             .StatusCodeShouldBeOk()
         );
 
@@ -1409,7 +1426,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Patch()
             .AsTestOrganizationUser()
             .AppendPaths("saved-views", privateView.Id)
-            .Content(new UpdateSavedView { Name = "Hacked" })
+            .JsonPatchContent("name", "Hacked")
             .StatusCodeShouldBeNotFound()
         );
 
@@ -1432,7 +1449,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("saved-views", created.Id)
-            .Content(new UpdateSavedView { FilterDefinitions = filterDefs })
+            .JsonPatchContent("filter_definitions", filterDefs)
             .StatusCodeShouldBeOk()
         );
 
@@ -1455,7 +1472,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("saved-views", created.Id)
-            .Content(new UpdateSavedView { Name = "existing patch name" })
+            .JsonPatchContent("name", "existing patch name")
             .ExpectedStatus(HttpStatusCode.Conflict)
         );
     }
@@ -1474,7 +1491,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("saved-views", created.Id)
-            .Content(new UpdateSavedView { Slug = "existing-patch-url" })
+            .JsonPatchContent("slug", "existing-patch-url")
             .ExpectedStatus(HttpStatusCode.Conflict)
         );
     }
@@ -1491,7 +1508,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("saved-views", created.Id)
-            .Content(new UpdateSavedView { Slug = "507f1f77bcf86cd799439011" })
+            .JsonPatchContent("slug", "507f1f77bcf86cd799439011")
             .StatusCodeShouldBeUnprocessableEntity()
         );
     }
@@ -1508,7 +1525,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("saved-views", created.Id)
-            .Content(new UpdateSavedView { FilterDefinitions = "not valid json" })
+            .JsonPatchContent("filter_definitions", "not valid json")
             .StatusCodeShouldBeUnprocessableEntity()
         );
     }
@@ -1681,7 +1698,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Patch()
             .AsAnonymousUser()
             .AppendPaths("saved-views", "000000000000000000000000")
-            .Content(new UpdateSavedView { Name = "Hacked" })
+            .JsonPatchContent("name", "Hacked")
             .StatusCodeShouldBeUnauthorized()
         );
     }
@@ -1843,10 +1860,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("saved-views", created.Id)
-            .Content(new UpdateSavedView
-            {
-                Columns = new Dictionary<string, bool> { ["INVALID_COLUMN"] = true }
-            })
+            .JsonPatchContent("columns", new Dictionary<string, bool> { ["INVALID_COLUMN"] = true })
             .StatusCodeShouldBeUnprocessableEntity()
         );
     }
@@ -1923,10 +1937,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("saved-views", created.Id)
-            .Content(new UpdateSavedView
-            {
-                ColumnOrder = ["summary", "summary"]
-            })
+            .JsonPatchContent("column_order", new List<string> { "summary", "summary" })
             .StatusCodeShouldBeUnprocessableEntity()
         );
     }
@@ -1943,7 +1954,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("saved-views", created.Id)
-            .Content(new UpdateSavedView { Name = new string('x', 101) })
+            .JsonPatchContent("name", new string('x', 101))
             .StatusCodeShouldBeUnprocessableEntity()
         );
     }
@@ -1960,7 +1971,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("saved-views", created.Id)
-            .Content(new UpdateSavedView { Filter = new string('x', 2001) })
+            .JsonPatchContent("filter", new string('x', 2001))
             .StatusCodeShouldBeUnprocessableEntity()
         );
     }
@@ -1977,7 +1988,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("saved-views", created.Id)
-            .Content(new UpdateSavedView { Sort = new string('x', 101) })
+            .JsonPatchContent("sort", new string('x', 101))
             .StatusCodeShouldBeUnprocessableEntity()
         );
     }
@@ -2015,7 +2026,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Patch()
             .AsTestOrganizationUser()
             .AppendPaths("saved-views", privateView.Id)
-            .Content(new UpdateSavedView { Name = "Hijacked" })
+            .JsonPatchContent("name", "Hijacked")
             .StatusCodeShouldBeNotFound()
         );
 
@@ -2063,7 +2074,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("saved-views", created.Id)
-            .Content(new { columns })
+            .JsonPatchContent("columns", columns)
             .StatusCodeShouldBeUnprocessableEntity()
         );
     }
@@ -2080,7 +2091,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("saved-views", created.Id)
-            .Content(new { name = "   " })
+            .JsonPatchContent("name", "   ")
             .StatusCodeShouldBeUnprocessableEntity()
         );
     }

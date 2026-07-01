@@ -1,8 +1,10 @@
+using System.Text.Json;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
+using RequestExtensions = Exceptionless.Tests.Extensions.RequestExtensions;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Models;
 using FluentRest;
@@ -169,11 +171,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
             .Patch()
             .BearerToken(token.Id)
             .AppendPath($"tokens/{token.Id}")
-            .Content(new UpdateToken
-            {
-                IsDisabled = true,
-                Notes = "Disabling until next release"
-            })
+            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("is_disabled", true), ("notes", "Disabling until next release"))), "application/json-patch+json")
             .StatusCodeShouldBeForbidden()
         );
 
@@ -217,7 +215,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
            .Patch()
            .AsTestOrganizationUser()
            .AppendPath($"tokens/{token.Id}")
-           .Content(updateToken)
+           .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("is_disabled", updateToken.IsDisabled), ("notes", updateToken.Notes))), "application/json-patch+json")
            .StatusCodeShouldBeOk()
         );
 
@@ -837,7 +835,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("tokens", createdToken.Id)
-            .Content(new UpdateToken { Notes = "Updated notes" })
+            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("notes", "Updated notes"))), "application/json-patch+json")
             .StatusCodeShouldBeOk()
         );
 
@@ -853,6 +851,43 @@ public sealed class TokenControllerTests : IntegrationTestsBase
         Assert.False(token.IsDisabled);
     }
 
+    [Fact]
+    public async Task PatchAsync_WithLegacyPartialObject_UpdatesNotes()
+    {
+        // Arrange
+        var createdToken = await SendRequestAsAsync<ViewToken>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("tokens")
+            .Content(new NewToken
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                ProjectId = SampleDataService.TEST_PROJECT_ID,
+                Scopes = [AuthorizationRoles.Client],
+                Notes = "Original notes"
+            })
+            .StatusCodeShouldBeCreated()
+        );
+
+        Assert.NotNull(createdToken);
+
+        // Act
+        var updatedToken = await SendRequestAsAsync<ViewToken>(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("tokens", createdToken.Id)
+            .Content(JsonSerializer.Serialize(new { notes = "Legacy partial notes" }), "application/json")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updatedToken);
+        Assert.Equal("Legacy partial notes", updatedToken.Notes);
+
+        var token = await _tokenRepository.GetByIdAsync(createdToken.Id);
+        Assert.NotNull(token);
+        Assert.Equal("Legacy partial notes", token.Notes);
+    }
     [Fact]
     public async Task PatchAsync_DisableToken_ChangesIsDisabledOnly()
     {
@@ -878,7 +913,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("tokens", createdToken.Id)
-            .Content(new UpdateToken { IsDisabled = true })
+            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("is_disabled", true))), "application/json-patch+json")
             .StatusCodeShouldBeOk()
         );
 
@@ -901,7 +936,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("tokens", "000000000000000000000000")
-            .Content(new UpdateToken { Notes = "Does not exist" })
+            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("notes", "Does not exist"))), "application/json-patch+json")
             .StatusCodeShouldBeNotFound()
         );
     }
@@ -931,7 +966,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
             .Patch()
             .BearerToken(createdToken.Id)
             .AppendPaths("tokens", createdToken.Id)
-            .Content(new UpdateToken { Notes = "Hacked" })
+            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("notes", "Hacked"))), "application/json-patch+json")
             .StatusCodeShouldBeForbidden()
         );
 

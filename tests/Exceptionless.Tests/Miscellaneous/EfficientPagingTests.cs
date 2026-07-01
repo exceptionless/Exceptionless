@@ -1,3 +1,4 @@
+using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Utility.Results;
 using Xunit;
 
@@ -76,5 +77,20 @@ public class EfficientPagingTests : TestWithServices
             Assert.Contains(links, l => l.Contains("previous") && l.Contains("page"));
         if (expectNext)
             Assert.Contains(links, l => l.Contains("next") && l.Contains("page"));
+    }
+
+    [Fact]
+    public void ApiResults_GetBeforeAndAfterLinks_WithoutMoreResults_DoesNotIncludeNextLink()
+    {
+        // Arrange
+        var url = new Uri("http://localhost?after=1");
+
+        // Act
+        var links = ApiResults.GetBeforeAndAfterLinks(url, "1", "2", false);
+
+        // Assert
+        Assert.Single(links);
+        Assert.Contains(links, l => l.Contains("previous") && l.Contains("before"));
+        Assert.DoesNotContain(links, l => l.Contains("next"));
     }
 }

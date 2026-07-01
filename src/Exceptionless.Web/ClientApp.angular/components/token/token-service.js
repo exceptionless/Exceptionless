@@ -37,7 +37,15 @@
         }
 
         function update(id, token) {
-            return Restangular.one("tokens", id).patch(token);
+            return Restangular.one("tokens", id).customPATCH(toJsonPatch(token), "", {}, { "Content-Type": "application/json-patch+json" });
+        }
+
+        function toJsonPatch(obj) {
+            return Object.keys(obj).filter(function(key) {
+                return obj[key] !== undefined;
+            }).map(function(key) {
+                return { op: "replace", path: "/" + key, value: obj[key] };
+            });
         }
 
         var service = {

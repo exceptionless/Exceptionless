@@ -1,12 +1,11 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
-using Exceptionless.Web.Controllers;
+using Exceptionless.Web.Api.Handlers;
 using Exceptionless.Web.Models.Admin;
 using Foundatio.Jobs;
 using Foundatio.Queues;
@@ -17,6 +16,7 @@ using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
 
+[Collection("EventQueue")]
 public class AdminControllerTests : IntegrationTestsBase
 {
     private readonly WorkItemJob _workItemJob;
@@ -45,24 +45,6 @@ public class AdminControllerTests : IntegrationTestsBase
         await base.ResetDataAsync();
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
-    }
-
-    [Fact]
-    public async Task RequeueAsync_WithoutPath_ReturnsEmptyEnqueuedCount()
-    {
-        // Arrange
-        const int expectedEnqueuedCount = 0;
-
-        // Act
-        var response = await SendRequestAsAsync<RequeueResult>(r => r
-            .AsGlobalAdminUser()
-            .AppendPaths("admin", "requeue")
-            .StatusCodeShouldBeOk()
-        );
-
-        // Assert
-        Assert.NotNull(response);
-        Assert.Equal(expectedEnqueuedCount, response.Enqueued);
     }
 
     [Fact]
@@ -572,7 +554,7 @@ public class AdminControllerTests : IntegrationTestsBase
         var durationInMillis = TimeSpan.FromMilliseconds(7416);
 
         // Act
-        string duration = AdminController.FormatSnapshotDuration(null, durationInMillis, null, null);
+        var duration = AdminHandler.FormatSnapshotDuration(null, durationInMillis, null, null);
 
         // Assert
         Assert.Equal("7.4s", duration);
@@ -586,7 +568,7 @@ public class AdminControllerTests : IntegrationTestsBase
         var endTime = new DateTime(2026, 6, 22, 14, 0, 7, 378, DateTimeKind.Utc);
 
         // Act
-        string duration = AdminController.FormatSnapshotDuration(null, null, startTime, endTime);
+        var duration = AdminHandler.FormatSnapshotDuration(null, null, startTime, endTime);
 
         // Assert
         Assert.Equal("7.4s", duration);
@@ -648,72 +630,6 @@ public class AdminControllerTests : IntegrationTestsBase
         return SendRequestAsync(r => r
             .AppendPaths("admin", "echo")
             .StatusCodeShouldBeUnauthorized());
-    }
-
-    [Fact]
-    public async Task GenerateSampleEventsAsync_WithInvalidDaysBack_ReturnsValidationError()
-    {
-        // Arrange
-        const int eventCount = 25;
-        const int daysBack = 0;
-
-        // Act
-        var response = await SendRequestAsync(r => r
-            .AsGlobalAdminUser()
-            .Post()
-            .AppendPaths("admin", "generate-sample-events")
-            .QueryString("eventCount", eventCount)
-            .QueryString("daysBack", daysBack)
-            .StatusCodeShouldBeUnprocessableEntity());
-
-        // Assert
-        Assert.NotNull(response);
-        var stats = await _workItemQueue.GetQueueStatsAsync();
-        Assert.Equal(0, stats.Enqueued);
-    }
-
-    [Fact]
-    public async Task GenerateSampleEventsAsync_WithInvalidEventCount_ReturnsValidationError()
-    {
-        // Arrange
-        const int eventCount = 0;
-        const int daysBack = 7;
-
-        // Act
-        var response = await SendRequestAsync(r => r
-            .AsGlobalAdminUser()
-            .Post()
-            .AppendPaths("admin", "generate-sample-events")
-            .QueryString("eventCount", eventCount)
-            .QueryString("daysBack", daysBack)
-            .StatusCodeShouldBeUnprocessableEntity());
-
-        // Assert
-        Assert.NotNull(response);
-        var stats = await _workItemQueue.GetQueueStatsAsync();
-        Assert.Equal(0, stats.Enqueued);
-    }
-
-    [Fact]
-    public async Task GenerateSampleEventsAsync_WithValidArguments_QueuesGenerateSampleEventsWorkItem()
-    {
-        // Arrange
-        const int eventCount = 25;
-        const int daysBack = 14;
-
-        // Act
-        var response = await SendRequestAsync(r => r
-            .AsGlobalAdminUser()
-            .Post()
-            .AppendPaths("admin", "generate-sample-events")
-            .QueryString("eventCount", eventCount)
-            .QueryString("daysBack", daysBack)
-            .StatusCodeShouldBeOk());
-
-        // Assert
-        Assert.NotNull(response);
-        var stats = await _workItemQueue.GetQueueStatsAsync();
-        Assert.Equal(1, stats.Enqueued);
     }
 
     [Fact]
@@ -846,7 +762,7 @@ public class AdminControllerTests : IntegrationTestsBase
     {
         // Arrange
         var organizationRepository = GetService<IOrganizationRepository>();
-        string expiresUtc = TimeProvider.GetUtcNow().AddDays(30).ToString("o");
+        var expiresUtc = TimeProvider.GetUtcNow().AddDays(30).ToString("o");
 
         // Act
         await SendRequestAsync(r => r
@@ -889,6 +805,4 @@ public class AdminControllerTests : IntegrationTestsBase
             .QueryString("bonusEvents", 1000)
             .StatusCodeShouldBeForbidden());
     }
-
-    private sealed record RequeueResult([property: JsonPropertyName("enqueued")] int Enqueued);
 }

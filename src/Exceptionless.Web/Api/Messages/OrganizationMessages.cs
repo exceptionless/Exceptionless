@@ -1,0 +1,30 @@
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories;
+using Exceptionless.Web.Models;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
+
+namespace Exceptionless.Web.Api.Messages;
+
+public record GetOrganizations(string? Filter, string? Mode, HttpContext Context);
+public record GetAdminOrganizations(string? Criteria, bool? Paid, bool? Suspended, string? Mode, int Page, int Limit, OrganizationSortBy Sort, HttpContext Context);
+public record GetOrganizationPlanStats(HttpContext Context);
+public record GetOrganizationById(string Id, string? Mode, HttpContext Context);
+public record CreateOrganization(NewOrganization Organization, HttpContext Context);
+public record UpdateOrganizationMessage(string Id, JsonPatchDocument<NewOrganization> PatchDocument, HttpContext Context);
+public record SetOrganizationIcon(string Id, string FileName, HttpContext Context);
+public record DeleteOrganizationIcon(string Id, HttpContext Context);
+public record DeleteOrganizations(string[] Ids, HttpContext Context);
+public record GetInvoice(string Id, HttpContext Context);
+public record GetInvoices(string Id, string? Before, string? After, int Limit, HttpContext Context);
+public record GetPlans(string Id, HttpContext Context);
+public record ChangeOrganizationPlan(string Id, ChangePlanRequest? Model, string? PlanId, string? StripeToken, string? Last4, string? CouponId, HttpContext Context);
+public record AddOrganizationUser(string Id, string Email, HttpContext Context);
+public record RemoveOrganizationUser(string Id, string Email, HttpContext Context);
+public record SuspendOrganization(string Id, SuspensionCode Code, string? Notes, HttpContext Context);
+public record UnsuspendOrganization(string Id, HttpContext Context);
+public record SetOrganizationData(string Id, string Key, ValueFromBody<string> Value, HttpContext Context);
+public record DeleteOrganizationData(string Id, string Key, HttpContext Context);
+public record SetOrganizationFeature(string Id, string Feature, HttpContext Context);
+public record RemoveOrganizationFeature(string Id, string Feature, HttpContext Context);
+public record CheckOrganizationName(string Name, HttpContext Context);

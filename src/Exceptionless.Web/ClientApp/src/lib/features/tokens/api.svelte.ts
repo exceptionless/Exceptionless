@@ -3,6 +3,7 @@ import type { WebSocketMessageValue } from '$features/websockets/models';
 
 import { accessToken } from '$features/auth/index.svelte';
 import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
+import { jsonPatchRequestOptions, toJsonPatch } from '$features/shared/api/json-patch';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
@@ -149,7 +150,11 @@ export function patchToken(request: PatchTokenRequest) {
     return createMutation<ViewToken, ProblemDetails, UpdateToken>(() => ({
         mutationFn: async (data: UpdateToken) => {
             const client = useFetchClient();
-            const response = await client.patchJSON<ViewToken>(`tokens/${request.route.id}`, data);
+            const response = await client.patchJSON<ViewToken>(
+                `tokens/${request.route.id}`,
+                toJsonPatch(data as unknown as Record<string, unknown>),
+                jsonPatchRequestOptions
+            );
             return response.data!;
         },
         mutationKey: queryKeys.id(request.route.id),

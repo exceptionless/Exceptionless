@@ -134,7 +134,15 @@
             }
 
             function update(id, organization) {
-                return Restangular.one("organizations", id).patch(organization);
+                return Restangular.one("organizations", id).customPATCH(toJsonPatch(organization), "", {}, { "Content-Type": "application/json-patch+json" });
+            }
+
+            function toJsonPatch(obj) {
+                return Object.keys(obj).filter(function(key) {
+                    return obj[key] !== undefined;
+                }).map(function(key) {
+                    return { op: "replace", path: "/" + key, value: obj[key] };
+                });
             }
 
             var service = {

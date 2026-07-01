@@ -26,7 +26,7 @@ namespace Exceptionless.Web.Utility.OpenApi;
 /// To add support for additional annotations, add them here and they will automatically apply to:
 /// <list type="bullet">
 ///   <item>Regular class/record properties via DataAnnotationsSchemaTransformer</item>
-///   <item>Delta&lt;T&gt; PATCH models via DeltaSchemaTransformer</item>
+///   <item>JsonPatchDocument&lt;T&gt; PATCH models via JsonPatchDocumentSchemaTransformer</item>
 /// </list>
 /// </para>
 /// </remarks>

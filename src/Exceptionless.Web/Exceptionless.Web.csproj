@@ -5,6 +5,7 @@
     <DefaultItemExcludes>
       $(DefaultItemExcludes);$(SpaRoot)node_modules\**;$(AngularSpaRoot)node_modules\**;</DefaultItemExcludes>
     <SkipSpaPublish>false</SkipSpaPublish>
+    <OpenApiGenerateDocumentsOnBuild>false</OpenApiGenerateDocumentsOnBuild>
   </PropertyGroup>
   <ItemGroup>
     <Content Remove="Mail\**" />
@@ -16,6 +17,9 @@
   <ItemGroup>
     <PackageReference Include="Exceptionless.AspNetCore" Version="6.2.0" />
     <PackageReference Include="Joonasw.AspNetCore.SecurityHeaders" Version="6.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.JsonPatch.SystemTextJson" Version="10.0.8" />
+    <PackageReference Include="Foundatio.Mediator" Version="1.3.1" />
+    <PackageReference Include="Microsoft.Extensions.ApiDescription.Server" Version="10.0.8" PrivateAssets="all" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
     <PackageReference Include="ModelContextProtocol.AspNetCore" Version="1.4.0" />
     <PackageReference Include="Riok.Mapperly" Version="4.3.1" />
@@ -42,8 +46,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="appsettings.yml" CopyToOutputDirectory="Always" />
-    <Content Include="appsettings.*.yml" DependentUpon="appsettings.yml"
-      CopyToOutputDirectory="Always" />
+    <Content Include="appsettings.*.yml" DependentUpon="appsettings.yml" CopyToOutputDirectory="Always" />
   </ItemGroup>
 
   <ItemGroup>
@@ -56,8 +59,7 @@
     <None Include="$(AngularSpaRoot)**" Exclude="$(AngularSpaRoot)node_modules\**;" />
   </ItemGroup>
 
-  <Target Name="PublishRunWebBuild" AfterTargets="ComputeFilesToPublish"
-    Condition="'$(SkipSpaPublish)' != 'true'">
+  <Target Name="PublishRunWebBuild" AfterTargets="ComputeFilesToPublish" Condition="'$(SkipSpaPublish)' != 'true'">
     <!-- As part of publishing, ensure the JS resources are freshly built in production mode -->
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm ci" />
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" />
@@ -66,8 +68,7 @@
     <!-- Include the newly-built files in the publish output -->
     <ItemGroup>
       <DistFiles Include="$(SpaRoot)build\**" />
-      <ResolvedFileToPublish Include="@(DistFiles->'%(FullPath)')"
-        Exclude="@(ResolvedFileToPublish)">
+      <ResolvedFileToPublish Include="@(DistFiles->'%(FullPath)')" Exclude="@(ResolvedFileToPublish)">
         <RelativePath>wwwroot\next\%(RecursiveDir)%(FileName)%(Extension)</RelativePath>
         <CopyToPublishDirectory>Always</CopyToPublishDirectory>
         <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
@@ -75,8 +76,7 @@
     </ItemGroup>
     <ItemGroup>
       <DistFiles Include="$(AngularSpaRoot)dist\**" />
-      <ResolvedFileToPublish Include="@(DistFiles->'%(FullPath)')"
-        Exclude="@(ResolvedFileToPublish)">
+      <ResolvedFileToPublish Include="@(DistFiles->'%(FullPath)')" Exclude="@(ResolvedFileToPublish)">
         <RelativePath>wwwroot\%(RecursiveDir)%(FileName)%(Extension)</RelativePath>
         <CopyToPublishDirectory>Always</CopyToPublishDirectory>
         <ExcludeFromSingleFile>true</ExcludeFromSingleFile>

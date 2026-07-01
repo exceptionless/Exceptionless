@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -1393,7 +1394,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     public async Task ChangePlanAsync_StripeBillingClientThrows_ReturnsFailure()
     {
         // Arrange
-        StripeBillingClient.CreateCustomerException = new InvalidOperationException("Stripe unavailable");
+        StripeBillingClient.CreateCustomerException = new StripeException("Stripe unavailable");
 
         // Act
         var result = await WithBillingEnabledAsync(() =>
@@ -1413,7 +1414,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(result);
         Assert.False(result.Success);
-        Assert.Equal("An error occurred while changing plans. Please try again.", result.Message);
+        Assert.Equal("An error occurred while changing plans. Please try again or contact support.", result.Message);
         Assert.Empty(StripeBillingClient.CreatedSubscriptionOptions);
     }
 
@@ -1422,7 +1423,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     {
         // Arrange
         StripeBillingClient.CustomerToReturn = new Customer { Id = "cus_created" };
-        StripeBillingClient.CreateSubscriptionException = new InvalidOperationException("Stripe unavailable");
+        StripeBillingClient.CreateSubscriptionException = new StripeException("Stripe unavailable");
 
         // Act
         var result = await WithBillingEnabledAsync(() =>
@@ -1442,7 +1443,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(result);
         Assert.False(result.Success);
-        Assert.Equal("An error occurred while changing plans. Please try again.", result.Message);
+        Assert.Equal("An error occurred while changing plans. Please try again or contact support.", result.Message);
 
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
         Assert.NotNull(organization);
@@ -1458,7 +1459,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         // Arrange
         await SetStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, "cus_existing");
         StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_active", "si_active"));
-        StripeBillingClient.UpdateSubscriptionException = new InvalidOperationException("Stripe unavailable");
+        StripeBillingClient.UpdateSubscriptionException = new StripeException("Stripe unavailable");
 
         // Act
         var result = await WithBillingEnabledAsync(() =>
@@ -1478,7 +1479,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(result);
         Assert.False(result.Success);
-        Assert.Equal("An error occurred while changing plans. Please try again.", result.Message);
+        Assert.Equal("An error occurred while changing plans. Please try again or contact support.", result.Message);
         Assert.NotEmpty(StripeBillingClient.UpdatedSubscriptions);
 
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
@@ -1624,7 +1625,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     public Task GetInvoiceAsync_StripeBillingClientThrows_ReturnsNotFound()
     {
         // Arrange
-        StripeBillingClient.GetInvoiceException = new InvalidOperationException("Stripe unavailable");
+        StripeBillingClient.GetInvoiceException = new StripeException("Stripe unavailable");
 
         // Act & Assert
         return WithBillingEnabledAsync(() =>
@@ -1713,7 +1714,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         return SendRequestAsync(r => r
             .Patch()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
-            .Content(new NewOrganization { Name = "Unauthorized Update" })
+            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("name", "Unauthorized Update"))), "application/json-patch+json")
             .StatusCodeShouldBeUnauthorized()
         );
     }
@@ -1731,7 +1732,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .Patch()
             .AsTestOrganizationUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
-            .Content(new NewOrganization { Name = "" })
+            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("name", ""))), "application/json-patch+json")
             .StatusCodeShouldBeBadRequest()
         );
 
@@ -1749,7 +1750,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .Patch()
             .AsTestOrganizationUser()
             .AppendPaths("organizations", "000000000000000000000000")
-            .Content(new NewOrganization { Name = "Nope" })
+            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("name", "Nope"))), "application/json-patch+json")
             .StatusCodeShouldBeNotFound()
         );
     }
@@ -1766,7 +1767,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .Patch()
             .AsTestOrganizationUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
-            .Content(new NewOrganization { Name = "Updated Acme" })
+            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("name", "Updated Acme"))), "application/json-patch+json")
             .StatusCodeShouldBeOk()
         );
 
@@ -1782,6 +1783,27 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PatchAsync_WithLegacyPartialObject_UpdatesName()
+    {
+        // Arrange
+        var originalOrg = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(originalOrg);
+
+        // Act
+        var updated = await SendRequestAsAsync<ViewOrganization>(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
+            .Content(JsonSerializer.Serialize(new { name = "Legacy Acme" }), "application/json")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updated);
+        Assert.Equal("Legacy Acme", updated.Name);
+        Assert.True(updated.UpdatedUtc >= originalOrg.UpdatedUtc);
+    }
+    [Fact]
     public async Task PatchAsync_EmptyJsonBody_ReturnsOriginalOrganizationUnchanged()
     {
         // Arrange
@@ -1793,7 +1815,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .Patch()
             .AsTestOrganizationUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
-            .Content("{}", "application/json")
+            .Content("[]", "application/json-patch+json")
             .StatusCodeShouldBeOk()
         );
 

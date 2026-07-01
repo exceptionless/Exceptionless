@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -6,6 +7,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
+using RequestExtensions = Exceptionless.Tests.Extensions.RequestExtensions;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Models.OAuth;
@@ -624,7 +626,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
             .Patch()
             .AppendPaths("users", currentUser.Id)
-            .Content(new { FullName = "Hacker" })
+            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("full_name", "Hacker"))), "application/json-patch+json")
             .StatusCodeShouldBeUnauthorized()
         );
 
@@ -650,13 +652,38 @@ public sealed class UserControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("users", currentUser.Id)
-            .Content(new { FullName = "Updated Name" })
+            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("full_name", "Updated Name"))), "application/json-patch+json")
             .StatusCodeShouldBeOk()
         );
 
         // Assert
         Assert.NotNull(updatedUser);
         Assert.Equal("Updated Name", updatedUser.FullName);
+    }
+
+    [Fact]
+    public async Task PatchAsync_WithLegacyPartialObject_UpdatesFullName()
+    {
+        // Arrange
+        var currentUser = await SendRequestAsAsync<ViewUser>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(currentUser);
+
+        // Act
+        var updatedUser = await SendRequestAsAsync<ViewUser>(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("users", currentUser.Id)
+            .Content(JsonSerializer.Serialize(new { full_name = "Legacy Updated Name" }), "application/json")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updatedUser);
+        Assert.Equal("Legacy Updated Name", updatedUser.FullName);
     }
 
     [Fact]
@@ -675,7 +702,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("users", currentUser.Id)
-            .Content(new { EmailNotificationsEnabled = false })
+            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("email_notifications_enabled", false))), "application/json-patch+json")
             .StatusCodeShouldBeOk()
         );
 
@@ -691,7 +718,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("users", "000000000000000000000000")
-            .Content(new { FullName = "Nobody" })
+            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("full_name", "Nobody"))), "application/json-patch+json")
             .StatusCodeShouldBeNotFound()
         );
     }
@@ -712,7 +739,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
             .Put()
             .AsGlobalAdminUser()
             .AppendPaths("users", currentUser.Id)
-            .Content(new { FullName = "Put Updated Name" })
+            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("full_name", "Put Updated Name"))), JsonPatchHelper.ContentType)
             .StatusCodeShouldBeOk()
         );
 

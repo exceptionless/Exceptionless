@@ -7,7 +7,7 @@ This document describes the complete serialization architecture after the Newton
 1. [Serializer Configuration](#serializer-configuration)
 2. [Serialization Paths](#serialization-paths)
 3. [Data Flow: Event Lifecycle](#data-flow-event-lifecycle)
-4. [GetValue\<T\> Dictionary Extraction](#getvaluet-dictionary-extraction)  
+4. [GetValue\<T\> Dictionary Extraction](#getvaluet-dictionary-extraction)
 5. [ObjectToInferredTypesConverter](#objecttoinferredtypesconverter)
 6. [Event Upgrade Pipeline](#event-upgrade-pipeline)
 7. [Model Annotations & Naming](#model-annotations--naming)
@@ -66,11 +66,11 @@ Every Foundatio infrastructure component (queues, cache, message bus) resolves `
 
 ### Path 1: API Responses (ASP.NET Core)
 
-**Config:** `Startup.cs` → `.AddJsonOptions(o => o.JsonSerializerOptions.ConfigureExceptionlessDefaults())`
+**Config:** `Program.cs` → `.ConfigureHttpJsonOptions(o => o.SerializerOptions.ConfigureExceptionlessApiDefaults())`
 
-- Separate `JsonSerializerOptions` instance from DI, but identically configured
-- Additional converter: `DeltaJsonConverterFactory` for PATCH operations
-- Also configured for Minimal APIs: `.ConfigureHttpJsonOptions(...)`
+- Separate `JsonSerializerOptions` instance from DI, with the same naming/converter baseline
+- API responses use `ConfigureExceptionlessApiDefaults()` so response bodies preserve empty collections where the public contract expects them
+- PATCH operations use `Microsoft.AspNetCore.JsonPatch.SystemTextJson` JSON Patch documents
 
 ### Path 2: Elasticsearch Documents
 

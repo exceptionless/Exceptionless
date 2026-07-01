@@ -6,6 +6,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
+using RequestExtensions = Exceptionless.Tests.Extensions.RequestExtensions;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
@@ -811,9 +812,13 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
 
         /* language=json */
         const string json = """
-                            {
-                                "name": "Updated Name"
-                            }
+                            [
+                                {
+                                    "op": "replace",
+                                    "path": "/name",
+                                    "value": "Updated Name"
+                                }
+                            ]
                             """;
 
         // Act
@@ -821,7 +826,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .AsTestOrganizationUser()
             .Patch()
             .AppendPaths("projects", project.Id)
-            .Content(json, "application/json")
+            .Content(json, "application/json-patch+json")
             .StatusCodeShouldBeOk()
         );
         string responseJson = await response.Content.ReadAsStringAsync(TestCancellationToken);
@@ -900,11 +905,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .AsTestOrganizationUser()
             .Patch()
             .AppendPaths("projects", "000000000000000000000000")
-            .Content(new UpdateProject
-            {
-                Name = "Should Not Exist",
-                DeleteBotDataEnabled = false
-            })
+            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("name", "Should Not Exist"), ("delete_bot_data_enabled", false))), "application/json-patch+json")
             .StatusCodeShouldBeNotFound()
         );
 
@@ -915,7 +916,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task PatchAsync_WithExtraPayloadProperties_IgnoresReadOnlyFieldsAndUpdatesKnownFields()
+    public async Task PatchAsync_WithExtraPayloadProperties_RejectsUnknownPaths()
     {
         // Arrange
         var project = await SendRequestAsAsync<ViewProject>(r => r
@@ -935,26 +936,49 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         var persistedBefore = await _projectRepository.GetByIdAsync(project.Id);
         Assert.NotNull(persistedBefore);
 
-        /* language=json */
-        string json = $$"""
-                        {
-                            "id": "000000000000000000000000",
-                            "organization_id": "{{SampleDataService.FREE_ORG_ID}}",
-                            "organization_name": "Hijacked Org",
-                            "created_utc": "2000-01-01T00:00:00Z",
-                            "name": "Patched With Extras",
-                            "delete_bot_data_enabled": false,
-                            "has_premium_features": true,
-                            "stack_count": 9999
-                        }
-                        """;
+        // Act — immutable path /organization_id is rejected at validation time
+        await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Patch()
+            .AppendPaths("projects", project.Id)
+            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("organization_id", SampleDataService.FREE_ORG_ID))), "application/json-patch+json")
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
 
-        // Act
+        // Verify entity was NOT changed
+        var persistedAfter = await _projectRepository.GetByIdAsync(project.Id);
+        Assert.NotNull(persistedAfter);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, persistedAfter.OrganizationId);
+        Assert.Equal(persistedBefore.Name, persistedAfter.Name);
+    }
+
+    [Fact]
+    public async Task PatchAsync_WithValidFields_UpdatesKnownFieldsAndPreservesOthers()
+    {
+        // Arrange
+        var project = await SendRequestAsAsync<ViewProject>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPath("projects")
+            .Content(new NewProject
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Name = "Valid Fields Project",
+                DeleteBotDataEnabled = true
+            })
+            .StatusCodeShouldBeCreated()
+        );
+        Assert.NotNull(project);
+
+        var persistedBefore = await _projectRepository.GetByIdAsync(project.Id);
+        Assert.NotNull(persistedBefore);
+
+        // Act — only send valid fields
         var response = await SendRequestAsync(r => r
             .AsTestOrganizationUser()
             .Patch()
             .AppendPaths("projects", project.Id)
-            .Content(json, "application/json")
+            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("name", "Patched With Extras"), ("delete_bot_data_enabled", false))), "application/json-patch+json")
             .StatusCodeShouldBeOk()
         );
         string responseJson = await response.Content.ReadAsStringAsync(TestCancellationToken);
@@ -982,6 +1006,50 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.False(deleteBotDataEnabled.GetBoolean());
         Assert.False(root.TryGetProperty("OrganizationId", out _), "Response must not drift back to PascalCase 'OrganizationId'.");
         Assert.False(root.TryGetProperty("DeleteBotDataEnabled", out _), "Response must not drift back to PascalCase 'DeleteBotDataEnabled'.");
+    }
+
+    [Fact]
+    public async Task PatchAsync_PathWithoutLeadingSlash_ReturnsUnprocessableEntity()
+    {
+        // Arrange
+        var project = await SendRequestAsAsync<ViewProject>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPath("projects")
+            .Content(new NewProject
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Name = "Original RFC Project",
+                DeleteBotDataEnabled = true
+            })
+            .StatusCodeShouldBeCreated()
+        );
+        Assert.NotNull(project);
+
+        /* language=json */
+        const string json = """
+                            [
+                                {
+                                    "op": "replace",
+                                    "path": "name",
+                                    "value": "Should Not Apply"
+                                }
+                            ]
+                            """;
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Patch()
+            .AppendPaths("projects", project.Id)
+            .Content(json, JsonPatchHelper.ContentType)
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+
+        // Assert
+        var persisted = await _projectRepository.GetByIdAsync(project.Id);
+        Assert.NotNull(persisted);
+        Assert.Equal("Original RFC Project", persisted.Name);
     }
 
     [Fact]
