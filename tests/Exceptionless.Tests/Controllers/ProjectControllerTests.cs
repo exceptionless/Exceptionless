@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -11,6 +12,7 @@ using Exceptionless.Web.Models;
 using FluentRest;
 using Foundatio.Jobs;
 using Foundatio.Repositories;
+using Foundatio.Serializer;
 using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
@@ -35,6 +37,58 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         await base.ResetDataAsync();
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
+    }
+
+    [Fact]
+    public async Task AddSlackAsync_WithExistingSlackToken_ReturnsNotModified()
+    {
+        // Arrange
+        var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+        project.Data ??= new DataDictionary();
+        project.Data[Project.KnownDataKeys.SlackToken] = "already-configured";
+        await _projectRepository.SaveAsync(project, o => o.ImmediateConsistency());
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "slack")
+            .QueryString("code", "valid-code")
+            .Content(new { })
+            .ExpectedStatus(HttpStatusCode.NotModified)
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotModified, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task AddSlackAsync_WithValidCode_PersistsSlackToken()
+    {
+        // Arrange
+        const string code = "valid-slack-code";
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "slack")
+            .QueryString("code", code)
+            .Content(new { })
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+        Assert.True(project.NotificationSettings.ContainsKey(Project.NotificationIntegrations.Slack));
+        var token = project.GetSlackToken(GetService<ITextSerializer>());
+        Assert.NotNull(token);
+        Assert.Equal("xoxp-valid-slack-code", token.AccessToken);
+        Assert.Equal("team-valid-slack-code", token.TeamId);
+        Assert.NotNull(token.IncomingWebhook);
+        Assert.Equal("https://hooks.slack.test/valid-slack-code", token.IncomingWebhook.Url);
     }
 
     [Fact]
@@ -135,6 +189,31 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .QueryString("key", "SomeKey")
             .StatusCodeShouldBeNotFound()
         );
+    }
+
+    [Fact]
+    public async Task DemoteTabAsync_WithExistingPromotedTab_RemovesPromotedTab()
+    {
+        // Arrange
+        var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+        project.PromotedTabs = ["regressions", "timeline"];
+        await _projectRepository.SaveAsync(project, o => o.ImmediateConsistency());
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Delete()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "promotedtabs")
+            .QueryString("name", "regressions")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        var updatedProject = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(updatedProject);
+        Assert.DoesNotContain("regressions", updatedProject.PromotedTabs ?? []);
+        Assert.Contains("timeline", updatedProject.PromotedTabs ?? []);
     }
 
     [Fact]
@@ -554,6 +633,27 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetIntegrationNotificationSettingsAsync_WithSlackIntegration_ReturnsSettings()
+    {
+        // Arrange
+        var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+        project.NotificationSettings[Project.NotificationIntegrations.Slack] = new NotificationSettings { ReportNewErrors = true };
+        await _projectRepository.SaveAsync(project, o => o.ImmediateConsistency());
+
+        // Act
+        var settings = await SendRequestAsAsync<NotificationSettings>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, Project.NotificationIntegrations.Slack, "notifications")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(settings);
+        Assert.True(settings.ReportNewErrors);
+    }
+
+    [Fact]
     public async Task GetNotificationSettingsAsync_AsGlobalAdmin_ReturnsAllSettings()
     {
         // Arrange - set notification settings for the user first
@@ -616,6 +716,23 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.NotNull(userSettings);
         Assert.True(userSettings.SendDailySummary);
         Assert.True(userSettings.ReportNewErrors);
+    }
+
+    [Fact]
+    public async Task GetV1ConfigAsync_WithClientAuth_ReturnsConfig()
+    {
+        // Act
+        var config = await SendRequestAsAsync<ClientConfiguration>(r => r
+            .BaseUri(_server.BaseAddress)
+            .AsFreeOrganizationClientUser()
+            .AppendPaths("api", "v1", "project", "config")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(config);
+        Assert.True(config.Version >= 0);
+        Assert.NotNull(config.Settings);
     }
 
     [Fact]
@@ -903,6 +1020,31 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PromoteTabAsync_WithValidName_AddsPromotedTab()
+    {
+        // Arrange
+        var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+        project.PromotedTabs = [];
+        await _projectRepository.SaveAsync(project, o => o.ImmediateConsistency());
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "promotedtabs")
+            .QueryString("name", "regressions")
+            .Content(new { })
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        var updatedProject = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(updatedProject);
+        Assert.Contains("regressions", updatedProject.PromotedTabs ?? []);
+    }
+
+    [Fact]
     public async Task PostDataAsync_ValidKeyAndValue_PersistsData()
     {
         // Act
@@ -960,6 +1102,26 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .Content(new ValueFromBody<string>("SomeValue"))
             .StatusCodeShouldBeNotFound()
         );
+    }
+
+    [Fact]
+    public async Task RemoveSlackAsync_WithoutSlackToken_ReturnsOk()
+    {
+        // Arrange
+        string projectId = SampleDataService.TEST_PROJECT_ID;
+
+        // Act
+        await SendRequestAsync(r => r
+            .Delete()
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", projectId, "slack")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        var project = await _projectRepository.GetByIdAsync(projectId);
+        Assert.NotNull(project);
+        Assert.False(project.Data?.ContainsKey(Project.KnownDataKeys.SlackToken) ?? false);
     }
 
     [Fact]
@@ -1063,6 +1225,33 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         var projectAfter = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
         Assert.NotNull(projectAfter);
         Assert.False(projectAfter.NotificationSettings.ContainsKey(TestConstants.UserId));
+    }
+
+    [Fact]
+    public async Task SetIntegrationNotificationSettingsAsync_WithSlackIntegration_PersistsSettings()
+    {
+        // Arrange
+        var settings = new NotificationSettings
+        {
+            ReportNewErrors = true,
+            ReportCriticalErrors = true
+        };
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, Project.NotificationIntegrations.Slack, "notifications")
+            .Content(settings)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+        Assert.True(project.NotificationSettings.TryGetValue(Project.NotificationIntegrations.Slack, out var savedSettings));
+        Assert.True(savedSettings.ReportNewErrors);
+        Assert.True(savedSettings.ReportCriticalErrors);
     }
 
     [Fact]

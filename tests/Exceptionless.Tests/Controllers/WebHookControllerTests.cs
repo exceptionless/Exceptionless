@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
@@ -359,6 +360,27 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task Test_WithGetRequest_ReturnsZapierTestMessages()
+    {
+        // Arrange
+        string[] expectedMessages = ["Test message 1.", "Test message 2."];
+
+        // Act
+        var messages = await SendRequestAsAsync<IReadOnlyCollection<ZapierTestMessage>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("webhooks", "test")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(messages);
+        Assert.Contains(messages, message =>
+            message.Id == 1 && String.Equals(message.Message, expectedMessages[0], StringComparison.Ordinal));
+        Assert.Contains(messages, message =>
+            message.Id == 2 && String.Equals(message.Message, expectedMessages[1], StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task UnsubscribeAsync_ExistingZapierHook_RemovesWebHook()
     {
         // Arrange - create a zapier hook via subscribe
@@ -414,4 +436,8 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeNotFound()
         );
     }
+
+    private sealed record ZapierTestMessage(
+        [property: JsonPropertyName("id")] int Id,
+        [property: JsonPropertyName("message")] string Message);
 }

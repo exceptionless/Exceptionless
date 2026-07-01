@@ -12,6 +12,7 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
+using Exceptionless.Web.Security;
 using Exceptionless.Web.Utility;
 using Foundatio.Jobs;
 using Foundatio.Queues;
@@ -35,6 +36,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     private readonly IQueue<WorkItemData> _workItemQueue;
     private readonly BillingManager _billingManager;
     private readonly SlackService _slackService;
+    private readonly IOAuthProviderClient _oauthProviderClient;
     private readonly ITextSerializer _serializer;
     private readonly AppOptions _options;
     private readonly UsageService _usageService;
@@ -49,6 +51,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         IQueue<WorkItemData> workItemQueue,
         BillingManager billingManager,
         SlackService slackService,
+        IOAuthProviderClient oauthProviderClient,
         SampleDataService sampleDataService,
         ApiMapper mapper,
         IAppQueryValidator validator,
@@ -67,6 +70,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         _workItemQueue = workItemQueue;
         _billingManager = billingManager;
         _slackService = slackService;
+        _oauthProviderClient = oauthProviderClient;
         _serializer = serializer;
         _sampleDataService = sampleDataService;
         _options = options;
@@ -679,7 +683,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         SlackToken? token;
         try
         {
-            token = await _slackService.GetAccessTokenAsync(code);
+            token = await _oauthProviderClient.GetSlackAccessTokenAsync(code);
         }
         catch (Exception ex)
         {

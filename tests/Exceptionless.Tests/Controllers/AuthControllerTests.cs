@@ -30,12 +30,12 @@ public class AuthControllerTests : IntegrationTestsBase
     private readonly IOrganizationRepository _organizationRepository;
     private readonly ITokenRepository _tokenRepository;
     private readonly IOAuthTokenRepository _oauthTokenRepository;
+    private readonly AuthOptionsState _originalAuthOptions;
 
     public AuthControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _authOptions = GetService<AuthOptions>();
-        _authOptions.EnableAccountCreation = true;
-        _authOptions.EnableActiveDirectoryAuth = false;
+        _originalAuthOptions = AuthOptionsState.Capture(_authOptions);
         _intercomOptions = GetService<IntercomOptions>();
 
         _organizationRepository = GetService<IOrganizationRepository>();
@@ -47,8 +47,29 @@ public class AuthControllerTests : IntegrationTestsBase
     protected override async Task ResetDataAsync()
     {
         await base.ResetDataAsync();
+        ConfigureAuthOptions();
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
+    }
+
+    public override ValueTask DisposeAsync()
+    {
+        _originalAuthOptions.Apply(_authOptions);
+        return base.DisposeAsync();
+    }
+
+    private void ConfigureAuthOptions()
+    {
+        _authOptions.EnableAccountCreation = true;
+        _authOptions.EnableActiveDirectoryAuth = false;
+        _authOptions.FacebookId = "facebook-client-id";
+        _authOptions.FacebookSecret = "facebook-client-secret";
+        _authOptions.GitHubId = "github-client-id";
+        _authOptions.GitHubSecret = "github-client-secret";
+        _authOptions.GoogleId = "google-client-id";
+        _authOptions.GoogleSecret = "google-client-secret";
+        _authOptions.MicrosoftId = "microsoft-client-id";
+        _authOptions.MicrosoftSecret = "microsoft-client-secret";
     }
 
     [Fact]
@@ -487,6 +508,58 @@ public class AuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task FacebookAsync_WithConfiguredProvider_ReturnsToken()
+    {
+        // Arrange
+        const string code = "facebook-user";
+
+        // Act
+        var result = await SendExternalLoginAsync("facebook", code);
+
+        // Assert
+        await AssertExternalLoginAsync(result, "facebook", code);
+    }
+
+    [Fact]
+    public async Task GitHubAsync_WithConfiguredProvider_ReturnsToken()
+    {
+        // Arrange
+        const string code = "github-user";
+
+        // Act
+        var result = await SendExternalLoginAsync("github", code);
+
+        // Assert
+        await AssertExternalLoginAsync(result, "github", code);
+    }
+
+    [Fact]
+    public async Task GoogleAsync_WithConfiguredProvider_ReturnsToken()
+    {
+        // Arrange
+        const string code = "google-user";
+
+        // Act
+        var result = await SendExternalLoginAsync("google", code);
+
+        // Assert
+        await AssertExternalLoginAsync(result, "google", code);
+    }
+
+    [Fact]
+    public async Task LiveAsync_WithConfiguredProvider_ReturnsToken()
+    {
+        // Arrange
+        const string code = "live-user";
+
+        // Act
+        var result = await SendExternalLoginAsync("live", code);
+
+        // Assert
+        await AssertExternalLoginAsync(result, "windowslive", code);
+    }
+
+    [Fact]
     public async Task LoginValidAsync()
     {
         _authOptions.EnableActiveDirectoryAuth = false;
@@ -519,6 +592,50 @@ public class AuthControllerTests : IntegrationTestsBase
 
         Assert.NotNull(result);
         Assert.False(String.IsNullOrEmpty(result.Token));
+    }
+
+    [Fact]
+    public async Task RemoveExternalLoginAsync_WithLinkedAccount_RemovesAccount()
+    {
+        // Arrange
+        const string providerName = "github";
+        const string providerUserId = "github-remove-user";
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        user.AddOAuthAccount(providerName, providerUserId, user.EmailAddress);
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
+
+        // Act
+        var result = await SendRequestAsAsync<TokenResult>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("auth", "unlink", providerName)
+            .Content(new ValueFromBody<string>(providerUserId))
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.False(String.IsNullOrEmpty(result.Token));
+        var updatedUser = await _userRepository.GetByIdAsync(user.Id);
+        Assert.NotNull(updatedUser);
+        Assert.DoesNotContain(updatedUser.OAuthAccounts, account => account.Provider == providerName && account.ProviderUserId == providerUserId);
+    }
+
+    [Fact]
+    public Task RemoveExternalLoginAsync_WithoutProviderUserId_ReturnsBadRequest()
+    {
+        // Arrange
+        var providerUserId = new ValueFromBody<string>(String.Empty);
+
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("auth", "unlink", "github")
+            .Content(providerUserId)
+            .StatusCodeShouldBeBadRequest()
+        );
     }
 
     [Fact]
@@ -1267,5 +1384,77 @@ public class AuthControllerTests : IntegrationTestsBase
         Assert.Equal(TokenType.Access, token.Type);
         Assert.False(token.IsDisabled);
         Assert.False(token.IsSuspended);
+    }
+
+    private async Task AssertExternalLoginAsync(TokenResult? result, string providerName, string providerUserId)
+    {
+        Assert.NotNull(result);
+        Assert.False(String.IsNullOrEmpty(result.Token));
+
+        var user = await _userRepository.GetByEmailAddressAsync(TestOAuthProviderClient.GetEmailAddress(providerUserId));
+        Assert.NotNull(user);
+        Assert.True(user.IsEmailAddressVerified);
+        var account = Assert.Single(user.OAuthAccounts);
+        Assert.Equal(providerName, account.Provider);
+        Assert.Equal(providerUserId, account.ProviderUserId);
+        Assert.Equal(user.EmailAddress, account.Username);
+    }
+
+    private Task<TokenResult?> SendExternalLoginAsync(string providerPath, string code)
+    {
+        return SendRequestAsAsync<TokenResult>(r => r
+            .Post()
+            .AppendPaths("auth", providerPath)
+            .Content(new ExternalAuthInfo
+            {
+                ClientId = "client-id",
+                Code = code,
+                RedirectUri = "http://localhost/callback"
+            })
+            .StatusCodeShouldBeOk()
+        );
+    }
+
+    private sealed record AuthOptionsState(
+        bool EnableAccountCreation,
+        bool EnableActiveDirectoryAuth,
+        string? FacebookId,
+        string? FacebookSecret,
+        string? GitHubId,
+        string? GitHubSecret,
+        string? GoogleId,
+        string? GoogleSecret,
+        string? MicrosoftId,
+        string? MicrosoftSecret
+    )
+    {
+        public static AuthOptionsState Capture(AuthOptions options)
+        {
+            return new AuthOptionsState(
+                options.EnableAccountCreation,
+                options.EnableActiveDirectoryAuth,
+                options.FacebookId,
+                options.FacebookSecret,
+                options.GitHubId,
+                options.GitHubSecret,
+                options.GoogleId,
+                options.GoogleSecret,
+                options.MicrosoftId,
+                options.MicrosoftSecret);
+        }
+
+        public void Apply(AuthOptions options)
+        {
+            options.EnableAccountCreation = EnableAccountCreation;
+            options.EnableActiveDirectoryAuth = EnableActiveDirectoryAuth;
+            options.FacebookId = FacebookId;
+            options.FacebookSecret = FacebookSecret;
+            options.GitHubId = GitHubId;
+            options.GitHubSecret = GitHubSecret;
+            options.GoogleId = GoogleId;
+            options.GoogleSecret = GoogleSecret;
+            options.MicrosoftId = MicrosoftId;
+            options.MicrosoftSecret = MicrosoftSecret;
+        }
     }
 }

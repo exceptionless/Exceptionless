@@ -13,6 +13,7 @@ using Exceptionless.Tests.Authentication;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Mail;
 using Exceptionless.Tests.Utility;
+using Exceptionless.Web.Security;
 using FluentRest;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -106,6 +107,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
 
         services.AddSingleton<IMailer, NullMailer>();
         services.AddSingleton<IDomainLoginProvider, TestDomainLoginProvider>();
+        services.ReplaceSingleton<IOAuthProviderClient, TestOAuthProviderClient>();
 
         services.AddSingleton<EventData>();
         services.AddTransient<EventDataBuilder>();
@@ -214,6 +216,16 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
     {
         var settings = GetService<JsonSerializerOptions>();
         return new FluentClient(CreateHttpClient(), new JsonContentSerializer(settings));
+    }
+
+    protected AppSendBuilder AppendApiV1Path(AppSendBuilder builder, params string[] segments)
+    {
+        builder.BaseUri(_server.BaseAddress).AppendPaths("api", "v1");
+
+        foreach (string segment in segments)
+            builder.AppendPath(segment);
+
+        return builder;
     }
 
     protected async Task<HttpResponseMessage> SendRequestAsync(Action<AppSendBuilder> configure)

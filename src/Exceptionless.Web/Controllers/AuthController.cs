@@ -11,16 +11,13 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
+using Exceptionless.Web.Security;
 using Foundatio.Caching;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.IdentityModel.Tokens;
-using OAuth2.Client;
-using OAuth2.Client.Impl;
-using OAuth2.Configuration;
-using OAuth2.Infrastructure;
 using OAuth2.Models;
 
 namespace Exceptionless.Web.Controllers;
@@ -36,6 +33,7 @@ public class AuthController : ExceptionlessApiController
     private readonly IUserRepository _userRepository;
     private readonly ITokenRepository _tokenRepository;
     private readonly IOAuthTokenRepository _oauthTokenRepository;
+    private readonly IOAuthProviderClient _oauthProviderClient;
     private readonly ScopedCacheClient _cache;
     private readonly IMailer _mailer;
     private readonly ILogger _logger;
@@ -44,7 +42,7 @@ public class AuthController : ExceptionlessApiController
     private static readonly TimeSpan IntercomJwtLifetime = TimeSpan.FromMinutes(60);
 
     public AuthController(AuthOptions authOptions, IntercomOptions intercomOptions, IOrganizationRepository organizationRepository, IUserRepository userRepository,
-        ITokenRepository tokenRepository, IOAuthTokenRepository oauthTokenRepository, ICacheClient cacheClient, IMailer mailer, IDomainLoginProvider domainLoginProvider,
+        ITokenRepository tokenRepository, IOAuthTokenRepository oauthTokenRepository, IOAuthProviderClient oauthProviderClient, ICacheClient cacheClient, IMailer mailer, IDomainLoginProvider domainLoginProvider,
         TimeProvider timeProvider, ILogger<AuthController> logger) : base(timeProvider)
     {
         _authOptions = authOptions;
@@ -54,6 +52,7 @@ public class AuthController : ExceptionlessApiController
         _userRepository = userRepository;
         _tokenRepository = tokenRepository;
         _oauthTokenRepository = oauthTokenRepository;
+        _oauthProviderClient = oauthProviderClient;
         _cache = new ScopedCacheClient(cacheClient, "Auth");
         _mailer = mailer;
         _logger = logger;
@@ -335,11 +334,7 @@ public class AuthController : ExceptionlessApiController
         return ExternalLoginAsync(value,
             _authOptions.GitHubId,
             _authOptions.GitHubSecret,
-            (f, c) =>
-            {
-                c.Scope = "user:email";
-                return new GitHubClient(f, c);
-            }
+            _oauthProviderClient.GetGitHubUserInfoAsync
         );
     }
 
@@ -357,11 +352,7 @@ public class AuthController : ExceptionlessApiController
         return ExternalLoginAsync(value,
             _authOptions.GoogleId,
             _authOptions.GoogleSecret,
-            (f, c) =>
-            {
-                c.Scope = "profile email";
-                return new GoogleClient(f, c);
-            }
+            _oauthProviderClient.GetGoogleUserInfoAsync
         );
     }
 
@@ -379,11 +370,7 @@ public class AuthController : ExceptionlessApiController
         return ExternalLoginAsync(value,
             _authOptions.FacebookId,
             _authOptions.FacebookSecret,
-            (f, c) =>
-            {
-                c.Scope = "email";
-                return new FacebookClient(f, c);
-            }
+            _oauthProviderClient.GetFacebookUserInfoAsync
         );
     }
 
@@ -401,11 +388,7 @@ public class AuthController : ExceptionlessApiController
         return ExternalLoginAsync(value,
             _authOptions.MicrosoftId,
             _authOptions.MicrosoftSecret,
-            (f, c) =>
-            {
-                c.Scope = "wl.emails";
-                return new WindowsLiveClient(f, c);
-            }
+            _oauthProviderClient.GetMicrosoftUserInfoAsync
         );
     }
 
@@ -672,23 +655,16 @@ public class AuthController : ExceptionlessApiController
         _isFirstUserChecked = true;
     }
 
-    private async Task<ActionResult<TokenResult>> ExternalLoginAsync<TClient>(ExternalAuthInfo authInfo, string? appId, string? appSecret, Func<IRequestFactory, IClientConfiguration, TClient> createClient) where TClient : OAuth2Client
+    private async Task<ActionResult<TokenResult>> ExternalLoginAsync(ExternalAuthInfo authInfo, string? appId, string? appSecret, Func<ExternalAuthInfo, string, string, Task<UserInfo>> getUserInfoAsync)
     {
         using var _ = _logger.BeginScope(new ExceptionlessState().Tag("External Login").SetHttpContext(HttpContext));
         if (String.IsNullOrEmpty(appId) || String.IsNullOrEmpty(appSecret))
             throw new ConfigurationErrorsException("Missing Configuration for OAuth provider");
 
-        var client = createClient(new RequestFactory(), new OAuth2.Configuration.ClientConfiguration
-        {
-            ClientId = appId,
-            ClientSecret = appSecret,
-            RedirectUri = authInfo.RedirectUri
-        });
-
         UserInfo userInfo;
         try
         {
-            userInfo = await client.GetUserInfoAsync(authInfo.Code, authInfo.RedirectUri);
+            userInfo = await getUserInfoAsync(authInfo, appId, appSecret);
         }
         catch (Exception ex)
         {
