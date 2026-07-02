@@ -1,4 +1,5 @@
 import lume from "lume/mod.ts"
+import codeHighlight from "lume/plugins/code_highlight.ts"
 import { docsNavHtml, siteDataJson } from "./scripts/site-collections.ts"
 
 const site = lume({
@@ -25,6 +26,8 @@ site.ignore(
   "site-migration-plan.md",
   "snapshots",
 )
+
+site.use(codeHighlight())
 
 site.hooks.markdownIt((markdownIt: any) => {
   const defaultHeadingOpen = markdownIt.renderer.rules.heading_open ??

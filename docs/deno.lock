@@ -33,6 +33,7 @@
     "jsr:@std/yaml@1.1.0": "1.1.0",
     "jsr:@std/yaml@^1.0.5": "1.1.0",
     "npm:esbuild@0.28.0": "0.28.0",
+    "npm:highlight.js@11.11.1": "11.11.1",
     "npm:lightningcss-wasm@1.32.0": "1.32.0",
     "npm:markdown-it-attrs@4.5.0": "4.5.0_markdown-it@14.1.1",
     "npm:markdown-it-deflist@3.0.0": "3.0.0",
@@ -323,6 +324,9 @@
       "scripts": true,
       "bin": true
     },
+    "highlight.js@11.11.1": {
+      "integrity": "sha512-Xwwo44whKBVCYoliBQwaPvtd/2tYFkRQtXDWj1nackaV2JPXx3L0+Jvd8/qCJ2p+ML0/XVkJ2q+Mr+UVdpJK5w=="
+    },
     "lightningcss-wasm@1.32.0": {
       "integrity": "sha512-SteAkCtRuSCDYPGHKhLV/dDs5Bk+7I4QUxWxfk4xwsTI1rQk8MQyYtpGcd3NECsUGzK0q2/KqoVS+YHCqKHUTQ=="
     },
@@ -452,6 +456,7 @@
     "https://cdn.jsdelivr.net/gh/lumeland/lume@3.2.6/deps/esbuild.ts": "dcdff1214c796ab5c076b054a6aad586345e291bfc6cc9e5e464387aeb0544d6",
     "https://cdn.jsdelivr.net/gh/lumeland/lume@3.2.6/deps/front_matter.ts": "f5e5780d4a0502d50cde1f42a4aa7830756dc9bd0251ba7448cecd1eaa60878f",
     "https://cdn.jsdelivr.net/gh/lumeland/lume@3.2.6/deps/fs.ts": "976956b66a86d5ad001043e8ce92cbc08bb29eb6f7703c73eda99b05f49069d4",
+    "https://cdn.jsdelivr.net/gh/lumeland/lume@3.2.6/deps/highlight.ts": "e8f830a1137ff7e8246ce21518452b8cbf8089db409458c6d9c31040c11d8428",
     "https://cdn.jsdelivr.net/gh/lumeland/lume@3.2.6/deps/http.ts": "6fd6334e70a106201e1d5159d61d6b72b0cd907d6ab9c430a9ff6232bc4d19de",
     "https://cdn.jsdelivr.net/gh/lumeland/lume@3.2.6/deps/init.ts": "8efb3ecd7a3c716e1bad9deb3b687e622d3802c5b7f3a81daefa169e1f054be3",
     "https://cdn.jsdelivr.net/gh/lumeland/lume@3.2.6/deps/jsonc.ts": "abe9c7b88ded304adac6e1eec70a858ae5dcce95ca53d91bde425a2edf3a653d",
@@ -470,6 +475,7 @@
     "https://cdn.jsdelivr.net/gh/lumeland/lume@3.2.6/middlewares/reload.ts": "9f7fa7e376b0a510f5f69b90372c2f61fd6edb1244166c9aa6a9d52f267c3b33",
     "https://cdn.jsdelivr.net/gh/lumeland/lume@3.2.6/middlewares/reload_client.js": "9026da20a25fe58ad36233539ada3f38d56d935c5b0c1c69b7fcd21511efadee",
     "https://cdn.jsdelivr.net/gh/lumeland/lume@3.2.6/mod.ts": "349b3b7fe199bc6703b1e1fb77f3ab92699fce966da2261d3419a951b1ef2c5d",
+    "https://cdn.jsdelivr.net/gh/lumeland/lume@3.2.6/plugins/code_highlight.ts": "065e0f48819cc74899b987069b16ac7d92ccd10195c5cda9463bd13d5dd7c5f0",
     "https://cdn.jsdelivr.net/gh/lumeland/lume@3.2.6/plugins/json.ts": "5c49499e56b919ec848d4118ec97dd4fe0a323a6cc4c648dc45ab55297614c12",
     "https://cdn.jsdelivr.net/gh/lumeland/lume@3.2.6/plugins/lume_cms.ts": "c7f7807c8a9c1c39acd85cf6ca41d4b9acc38f71cabf995721d9ff9c33da7604",
     "https://cdn.jsdelivr.net/gh/lumeland/lume@3.2.6/plugins/markdown.ts": "7e82d897c1e35bf119dcd18b6aec7a6ba5aa06848897b34ff9cd161ec7c8757e",

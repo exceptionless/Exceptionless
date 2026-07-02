@@ -162,3 +162,86 @@
    background: -webkit-linear-gradient(left, rgba(193, 222, 241, 0.2) 70%, rgba(221, 222, 241, 0));
    background: linear-gradient(to right, rgba(193, 222, 241, 0.2) 70%, rgba(221, 222, 241, 0));
  }
+
+/* Highlight.js token support from Lume code_highlight. */
+.hljs {
+  color: #393A34;
+  font-family: "Consolas", "Bitstream Vera Sans Mono", "Courier New", Courier, monospace;
+}
+
+pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 0;
+  background: transparent;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: #008000;
+  font-style: italic;
+}
+
+.hljs-string,
+.hljs-regexp,
+.hljs-subst {
+  color: #A31515;
+}
+
+.hljs-punctuation,
+.hljs-operator {
+  color: #393A34;
+}
+
+.hljs-number,
+.hljs-literal,
+.hljs-symbol,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-addition {
+  color: #36acaa;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-attr,
+.hljs-attribute {
+  color: #0000ff;
+}
+
+.hljs-title,
+.hljs-title.function_ {
+  color: #393A34;
+}
+
+.hljs-deletion {
+  color: #9a050f;
+}
+
+.hljs-selector-class,
+.hljs-selector-id {
+  color: #00009f;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-title.class_,
+.hljs-type,
+.hljs-built_in {
+  color: #2B91AF;
+}
+
+.hljs-name {
+  color: #800000;
+}
+
+.hljs-property,
+.hljs-meta {
+  color: #ff0000;
+}
