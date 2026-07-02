@@ -53,7 +53,7 @@ jobs:
     if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     permissions:
       contents: read
       pages: write
@@ -67,12 +67,30 @@ jobs:
 
     steps:
       - name: Setup Pages
+        id: pages
         uses: actions/configure-pages@v6
         with:
           enablement: true
 
       - name: Deploy to GitHub Pages
-        id: deployment
+        id: deploy_attempt_1
+        continue-on-error: true
         uses: actions/deploy-pages@v5
-        with:
-          timeout: 1800000
+
+      - name: Retry deploy to GitHub Pages
+        id: deploy_attempt_2
+        if: steps.deploy_attempt_1.outcome == 'failure'
+        continue-on-error: true
+        uses: actions/deploy-pages@v5
+
+      - name: Retry deploy to GitHub Pages again
+        id: deploy_attempt_3
+        if: steps.deploy_attempt_1.outcome == 'failure' && steps.deploy_attempt_2.outcome == 'failure'
+        uses: actions/deploy-pages@v5
+
+      - name: Resolve deployment URL
+        id: deployment
+        if: always()
+        run: echo "page_url=${PAGE_URL}" >> "$GITHUB_OUTPUT"
+        env:
+          PAGE_URL: ${{ steps.deploy_attempt_1.outputs.page_url || steps.deploy_attempt_2.outputs.page_url || steps.deploy_attempt_3.outputs.page_url || steps.pages.outputs.base_url }}
