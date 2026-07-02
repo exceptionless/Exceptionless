@@ -60,12 +60,17 @@ jobs:
       id-token: write
     concurrency:
       group: github-pages
-      cancel-in-progress: false
+      cancel-in-progress: ${{ github.ref == 'refs/heads/website-preview' }}
     environment:
       name: ${{ github.ref == 'refs/heads/website-preview' && 'github-pages-preview' || 'github-pages' }}
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
+      - name: Setup Pages
+        uses: actions/configure-pages@v6
+        with:
+          enablement: true
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
