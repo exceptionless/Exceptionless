@@ -16,6 +16,7 @@ type RedirectAlias = {
 }
 
 const siteUrl = "https://exceptionless.com"
+const newsPostsPerPage = 10
 const generated = JSON.parse(await Deno.readTextFile("_site/site-data.json")) as GeneratedData
 
 await copyDir("public", "_site")
@@ -191,8 +192,35 @@ async function rewriteNewsIndex(posts: ContentPage[]): Promise<void> {
     return
   }
 
+  await removeIfExists("_site/news/page")
+
+  const pageCount = Math.max(1, Math.ceil(posts.length / newsPostsPerPage))
+  for (let pageIndex = 0; pageIndex < pageCount; pageIndex++) {
+    const pageNumber = pageIndex + 1
+    const pagePosts = posts.slice(pageIndex * newsPostsPerPage, pageNumber * newsPostsPerPage)
+    const outputPath = pageNumber === 1 ? indexPath : `_site/news/page/${pageNumber}/index.html`
+    const body = [
+      await renderNewsArticles(pagePosts),
+      renderNewsPager(pageNumber, pageCount),
+    ].filter(Boolean).join("\n\n")
+
+    await Deno.mkdir(outputPath.replace(/\/index\.html$/, ""), { recursive: true })
+    await Deno.writeTextFile(outputPath, renderNewsPage(html, newsPageUrl(pageNumber), body))
+  }
+}
+
+function renderNewsPage(template: string, pageUrl: string, body: string): string {
+  const html = template.replace("<!-- NEWS_INDEX_PLACEHOLDER -->", body)
+  if (pageUrl === "/news/") {
+    return html
+  }
+
+  return html.replaceAll(`${siteUrl}/news/`, `${siteUrl}${pageUrl}`)
+}
+
+async function renderNewsArticles(posts: ContentPage[]): Promise<string> {
   const articles: string[] = []
-  for (const post of posts.slice(0, 10)) {
+  for (const post of posts) {
     try {
       const postHtml = await Deno.readTextFile(`_site${post.url}index.html`)
       const body = extractPostBody(postHtml)
@@ -207,7 +235,31 @@ async function rewriteNewsIndex(posts: ContentPage[]): Promise<void> {
     }
   }
 
-  await Deno.writeTextFile(indexPath, html.replace("<!-- NEWS_INDEX_PLACEHOLDER -->", articles.join("\n\n")))
+  return articles.join("\n\n")
+}
+
+function renderNewsPager(pageNumber: number, pageCount: number): string {
+  if (pageCount <= 1) {
+    return ""
+  }
+
+  const olderHref = pageNumber < pageCount ? newsPageUrl(pageNumber + 1) : undefined
+  const newerHref = pageNumber > 1 ? newsPageUrl(pageNumber - 1) : undefined
+
+  return [
+    '<ul class="pager">',
+    `  <li class="previous${olderHref ? "" : " disabled"}">${
+      olderHref ? `<a href="${olderHref}">Older Articles</a>` : "<span>Older Articles</span>"
+    }</li>`,
+    `  <li class="next${newerHref ? "" : " disabled"}">${
+      newerHref ? `<a href="${newerHref}">Newer Articles</a>` : "<span>Newer Articles</span>"
+    }</li>`,
+    "</ul>",
+  ].join("\n")
+}
+
+function newsPageUrl(pageNumber: number): string {
+  return pageNumber <= 1 ? "/news/" : `/news/page/${pageNumber}/`
 }
 
 function extractPostBody(html: string): string {
