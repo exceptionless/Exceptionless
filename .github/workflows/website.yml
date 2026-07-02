@@ -3,6 +3,12 @@ name: Website
 on:
   workflow_dispatch:
   workflow_call:
+  push:
+    branches:
+      - website-preview
+    paths:
+      - "docs/**"
+      - ".github/workflows/website.yml"
   pull_request:
     paths:
       - "docs/**"
