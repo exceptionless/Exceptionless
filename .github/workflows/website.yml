@@ -6,9 +6,6 @@ on:
   push:
     branches:
       - website-preview
-    paths:
-      - "docs/**"
-      - ".github/workflows/website.yml"
   pull_request:
     paths:
       - "docs/**"
