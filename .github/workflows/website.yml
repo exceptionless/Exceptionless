@@ -62,7 +62,7 @@ jobs:
       group: github-pages
       cancel-in-progress: false
     environment:
-      name: github-pages
+      name: ${{ github.ref == 'refs/heads/website-preview' && 'github-pages-preview' || 'github-pages' }}
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
