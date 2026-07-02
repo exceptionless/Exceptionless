@@ -69,6 +69,42 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ExportOrganizationSavedViewsAsync_AsGlobalAdmin_ReturnsOrganizationDefinitions()
+    {
+        // Arrange
+        var newView = new NewSavedView
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            Name = "API Surface Export View",
+            Slug = "api-surface-export-view",
+            Filter = "type:error",
+            ViewType = "events"
+        };
+
+        await SendRequestAsAsync<ViewSavedView>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .Content(newView)
+            .StatusCodeShouldBeCreated()
+        );
+        await RefreshDataAsync();
+
+        // Act
+        var definitions = await SendRequestAsAsync<IReadOnlyCollection<PredefinedSavedViewDefinition>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views", "export")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(definitions);
+        Assert.Contains(definitions, definition =>
+            String.Equals(definition.Name, "API Surface Export View", StringComparison.Ordinal)
+            && String.Equals(definition.ViewType, "events", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task GetPredefinedAsync_GlobalAdmin_ReturnsSeedJsonShape()
     {
         // Act
@@ -104,6 +140,46 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .AppendPaths("saved-views", "predefined")
             .StatusCodeShouldBeForbidden()
         );
+    }
+
+    [Fact]
+    public async Task PutPredefinedAsync_AsGlobalAdmin_ReplacesPredefinedDefinitions()
+    {
+        // Arrange
+        var definitions = new[]
+        {
+            new PredefinedSavedViewDefinition
+            {
+                Key = "events:api-surface-import",
+                Name = "API Surface Import",
+                Slug = "api-surface-import",
+                ViewType = "events",
+                Filter = "type:log",
+                Time = "last 24 hours",
+                Sort = "-date",
+                Columns = new Dictionary<string, bool> { ["message"] = true },
+                ColumnOrder = ["message"],
+                ShowChart = true,
+                ShowStats = true
+            }
+        };
+
+        // Act
+        var result = await SendRequestAsAsync<IReadOnlyCollection<PredefinedSavedViewDefinition>>(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", "predefined")
+            .Content(definitions)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(result);
+        var definition = Assert.Single(result);
+        Assert.Equal("events:api-surface-import", definition.Key);
+
+        var savedViews = await _savedViewRepository.GetByOrganizationForUserAsync(PredefinedSavedViewsDataSeed.SystemOrganizationId, PredefinedSavedViewsDataSeed.SystemUserId);
+        Assert.Contains(savedViews.Documents, view => String.Equals(view.Name, "API Surface Import", StringComparison.Ordinal));
     }
 
     [Fact]
