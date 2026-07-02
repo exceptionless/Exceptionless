@@ -73,24 +73,54 @@ jobs:
           enablement: true
 
       - name: Deploy to GitHub Pages
-        id: deploy_attempt_1
-        continue-on-error: true
-        uses: actions/deploy-pages@v5
-
-      - name: Retry deploy to GitHub Pages
-        id: deploy_attempt_2
-        if: steps.deploy_attempt_1.outcome == 'failure'
-        continue-on-error: true
-        uses: actions/deploy-pages@v5
-
-      - name: Retry deploy to GitHub Pages again
-        id: deploy_attempt_3
-        if: steps.deploy_attempt_1.outcome == 'failure' && steps.deploy_attempt_2.outcome == 'failure'
-        uses: actions/deploy-pages@v5
-
-      - name: Resolve deployment URL
         id: deployment
-        if: always()
-        run: echo "page_url=${PAGE_URL}" >> "$GITHUB_OUTPUT"
+        shell: bash
         env:
-          PAGE_URL: ${{ steps.deploy_attempt_1.outputs.page_url || steps.deploy_attempt_2.outputs.page_url || steps.deploy_attempt_3.outputs.page_url || steps.pages.outputs.base_url }}
+          GH_TOKEN: ${{ github.token }}
+          PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
+        run: |
+          set -euo pipefail
+
+          artifact_id=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts" --jq '([.artifacts[] | select(.name == "github-pages") | .id] | first)')
+          if [[ -z "${artifact_id}" || "${artifact_id}" == "null" ]]; then
+            echo "::error::Unable to find github-pages artifact for this workflow run."
+            exit 1
+          fi
+
+          oidc_token=$(curl -fsSL -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}" | jq -r '.value')
+          if [[ -z "${oidc_token}" || "${oidc_token}" == "null" ]]; then
+            echo "::error::Unable to request an OIDC token for GitHub Pages deployment."
+            exit 1
+          fi
+
+          jq -n \
+            --argjson artifact_id "${artifact_id}" \
+            --arg pages_build_version "${GITHUB_SHA}" \
+            --arg oidc_token "${oidc_token}" \
+            '{ artifact_id: $artifact_id, pages_build_version: $pages_build_version, oidc_token: $oidc_token }' \
+            | gh api --method POST "repos/${GITHUB_REPOSITORY}/pages/deployments" --input - >/dev/null
+
+          echo "page_url=${PAGES_BASE_URL}" >> "${GITHUB_OUTPUT}"
+
+          deadline=$((SECONDS + 1800))
+          while true; do
+            status=$(gh api "repos/${GITHUB_REPOSITORY}/pages/deployments/${GITHUB_SHA}" --jq '.status')
+            echo "Current status: ${status}"
+
+            case "${status}" in
+              deployment_content_ready|deployment_successful|success|succeed)
+                exit 0
+                ;;
+              deployment_cancelled|deployment_failed|cancelled|failed|error|errored)
+                echo "::error::GitHub Pages deployment ended with status ${status}."
+                exit 1
+                ;;
+            esac
+
+            if (( SECONDS >= deadline )); then
+              echo "::error::Timed out waiting for GitHub Pages deployment after 30 minutes."
+              exit 1
+            fi
+
+            sleep 15
+          done
