@@ -330,8 +330,81 @@ body, input, button, select, textarea, .search-query {
     margin: 10px 0;
 }
 
+.tour-lightbox {
+    width: min(94vw, 1100px);
+    max-height: 94vh;
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.tour-lightbox::backdrop {
+    background: rgba(0, 0, 0, 0.72);
+}
+
+.tour-lightbox-frame {
+    position: relative;
+    padding: 18px;
+    background: #fff;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.35);
+}
+
+.tour-lightbox-image {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    max-height: calc(94vh - 112px);
+    margin: 0 auto;
+}
+
+.tour-lightbox-caption {
+    min-height: 20px;
+    margin: 12px 72px 0;
+    color: #444;
+    text-align: center;
+}
+
+.tour-lightbox-close,
+.tour-lightbox-control {
+    position: absolute;
+    z-index: 1;
+    border: 0;
+    background: rgba(0, 0, 0, 0.72);
+    color: #fff;
+    font-weight: 600;
+}
+
+.tour-lightbox-close {
+    top: 18px;
+    right: 18px;
+    padding: 8px 12px;
+}
+
+.tour-lightbox-control {
+    top: 50%;
+    padding: 12px 14px;
+    transform: translateY(-50%);
+}
+
+.tour-lightbox-previous {
+    left: 18px;
+}
+
+.tour-lightbox-next {
+    right: 18px;
+}
+
 @media (max-width: 767px) {
     #sliderRow {
         min-height: 620px;
+    }
+
+    .tour-lightbox-frame {
+        padding: 12px;
+    }
+
+    .tour-lightbox-caption {
+        margin-right: 64px;
+        margin-left: 64px;
     }
 }
