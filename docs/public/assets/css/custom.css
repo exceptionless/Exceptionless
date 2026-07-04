@@ -279,14 +279,17 @@ body, input, button, select, textarea, .search-query {
     color: #555 !important;
 }
 
-#wrap a,
+#wrap a:not(.btn),
 .docs a,
 .entry-content a,
 .well a,
 .row a:not(.btn),
-.page #content p a,
-.howDoesWork a {
+.page #content p a {
     color: #386f9f !important;
+}
+
+.howDoesWork a {
+    color: #578f01 !important;
 }
 
 #footer-wrapper a {
