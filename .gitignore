@@ -80,6 +80,7 @@ k8s/ex-*-snapshots.yaml
 tmpclaude*
 dogfood-output/
 debug-storybook.log
+docs/_cache/
 
 .devcontainer/devcontainer-lock.json
 

@@ -11,14 +11,17 @@
   "imports": {
     "lume/": "https://cdn.jsdelivr.net/gh/lumeland/lume@3.2.6/"
   },
+  "nodeModulesDir": "auto",
   "permissions": {
     "lume": {
       "read": true,
       "write": [
+        "_cache",
         "_site"
       ],
       "env": true,
       "net": [
+        "cdn.jsdelivr.net",
         "localhost",
         "127.0.0.1",
         "0.0.0.0"

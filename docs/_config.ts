@@ -1,5 +1,7 @@
 import lume from "lume/mod.ts"
 import codeHighlight from "lume/plugins/code_highlight.ts"
+import picture from "lume/plugins/picture.ts"
+import transformImages from "lume/plugins/transform_images.ts"
 import { docsNavHtml, siteDataJson } from "./scripts/site-collections.ts"
 
 const site = lume({
@@ -28,6 +30,12 @@ site.ignore(
 )
 
 site.use(codeHighlight())
+site.use(picture())
+site.use(transformImages())
+site.add("public/assets/img/dashboard-2-1024x594.png", "assets/img/dashboard-2-1024x594.png")
+site.add("public/assets/img/toexceptionless.png", "assets/img/toexceptionless.png")
+site.add("public/assets/img/logs-2.jpg", "assets/img/logs-2.jpg")
+site.add("public/assets/img/slider-github.jpg", "assets/img/slider-github.jpg")
 
 site.hooks.markdownIt((markdownIt: any) => {
   const defaultHeadingOpen = markdownIt.renderer.rules.heading_open ??
