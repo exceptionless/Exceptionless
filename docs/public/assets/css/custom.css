@@ -288,6 +288,7 @@ body, input, button, select, textarea, .search-query {
     color: #386f9f !important;
 }
 
+#wrap .howDoesWork a,
 .howDoesWork a {
     color: #578f01 !important;
 }
