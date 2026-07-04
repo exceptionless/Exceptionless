@@ -4,25 +4,11 @@ layout: layouts/base.vto
 description: Real-time exception reporting for ASP.NET, Web API, WebForms, WPF, Console, and MVC applications. Includes event organization, notifications, and more.
 extraStyles:
   - /assets/cyclone-slider-pro/templates/standard/style.css
-extraScripts:
-  - /assets/js/jquery-1.9.1.min.js
-  - /assets/cyclone-slider-pro/jquery.easing.1.3.js
-  - /assets/cyclone-slider-pro/libs/cycle2/jquery.cycle2.min.js
-  - /assets/cyclone-slider-pro/libs/cycle2/jquery.cycle2.swipe.min.js
-  - /assets/cyclone-slider-pro/templates/standard/script.js
-  - /assets/cyclone-slider-pro/js/client.js
 ---
 <div id="sliderRow">
     <div class="cycloneslider cycloneslider-template-standard cycloneslider-width-responsive" id="cycloneslider-20-1" style="max-width: 100%;">
-        <div class="cycloneslider-slides cycle-slideshow" data-cycle-allow-wrap="true" data-cycle-dynamic-height="off"
-             data-cycle-auto-height="0" data-cycle-auto-height-easing="null" data-cycle-auto-height-speed="250"
-             data-cycle-delay="0" data-cycle-easing="" data-cycle-fx="fade" data-cycle-hide-non-active="true"
-             data-cycle-log="false" data-cycle-next="#cycloneslider-20-1 .cycloneslider-next"
-             data-cycle-pager="#cycloneslider-20-1 .cycloneslider-pager" data-cycle-pause-on-hover="true"
-             data-cycle-prev="#cycloneslider-20-1 .cycloneslider-prev" data-cycle-slides="> div" data-cycle-speed="1000"
-             data-cycle-swipe="true" data-cycle-tile-count="7" data-cycle-tile-delay="100"
-             data-cycle-tile-vertical="true" data-cycle-timeout="10000">
-            <div class="cycloneslider-slide cycloneslider-slide-custom cycle-slide">
+        <div class="cycloneslider-slides">
+            <div class="cycloneslider-slide cycloneslider-slide-custom is-active">
                 <div class="span6">
                     <div class="thumb thumb-left"><img src="/assets/img/dashboard-2-1024x594.png" alt="Exceptionless Dashboard" width="1024" height="594" fetchpriority="high" decoding="async"></div>
                 </div>
@@ -33,7 +19,7 @@ extraScripts:
                             class="btn btn-large btn-primary">Sign up for FREE!</a></div>
                 <div style="clear:both;"></div>
             </div>
-            <div class="cycloneslider-slide cycloneslider-slide-custom cycle-slide">
+            <div class="cycloneslider-slide cycloneslider-slide-custom">
                 <div class="span6"><h2>Exceptionless makes error reporting a breeze</h2>
                     <p>Simply install the client and begin collecting unhandled exceptions right away. Use our fluent
                         API to send additional details about critical errors and be notified immediately.</p><a
@@ -43,7 +29,7 @@ extraScripts:
                 </div>
                 <div style="clear:both;"></div>
             </div>
-            <div class="cycloneslider-slide cycloneslider-slide-custom cycle-slide">
+            <div class="cycloneslider-slide cycloneslider-slide-custom">
                 <div class="span6">
                     <div class="thumb thumb-left"><img src="/assets/img/logs-2.jpg" alt="Exceptionless logs tracking" width="705" height="319" loading="lazy" decoding="async"></div>
                 </div>
@@ -53,7 +39,7 @@ extraScripts:
                         FREE!</a></div>
                 <div style="clear:both;"></div>
             </div>
-            <div class="cycloneslider-slide cycloneslider-slide-custom cycle-slide">
+            <div class="cycloneslider-slide cycloneslider-slide-custom">
                 <div class="span6"><h2>Fork Us! Exceptionless is Open Source</h2>
                     <p>Join the community and help us make the software world a better place. Collaborate, give
                         feedback, report bugs, and host Exceptionless yourself - for free.</p><a
@@ -69,6 +55,64 @@ extraScripts:
     </a></div>
 </div>
 
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var slider = document.getElementById("cycloneslider-20-1");
+        if (!slider) {
+            return;
+        }
+
+        var slides = Array.prototype.slice.call(slider.querySelectorAll(".cycloneslider-slide"));
+        var previous = slider.querySelector(".cycloneslider-prev");
+        var next = slider.querySelector(".cycloneslider-next");
+        var index = 0;
+        var timer = null;
+
+        function showSlide(nextIndex) {
+            if (!slides.length) {
+                return;
+            }
+
+            slides[index].classList.remove("is-active");
+            index = (nextIndex + slides.length) % slides.length;
+            slides[index].classList.add("is-active");
+        }
+
+        function start() {
+            stop();
+            timer = window.setInterval(function () {
+                showSlide(index + 1);
+            }, 10000);
+        }
+
+        function stop() {
+            if (timer) {
+                window.clearInterval(timer);
+                timer = null;
+            }
+        }
+
+        if (previous) {
+            previous.addEventListener("click", function (event) {
+                event.preventDefault();
+                showSlide(index - 1);
+                start();
+            });
+        }
+
+        if (next) {
+            next.addEventListener("click", function (event) {
+                event.preventDefault();
+                showSlide(index + 1);
+                start();
+            });
+        }
+
+        slider.addEventListener("mouseenter", stop);
+        slider.addEventListener("mouseleave", start);
+        start();
+    });
+</script>
 
 <div id="wrap" class="container margin-top" role="document">
     <div id="content" class="row-fluid">
