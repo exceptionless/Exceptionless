@@ -211,3 +211,48 @@ a.deeplink:hover {
         box-sizing: border-box;
     }
 }
+
+.contact-page p {
+    font-size: 16px;
+    line-height: 1.8em;
+}
+
+.contact-form {
+    margin-top: 20px;
+}
+
+.contact-form label {
+    font-weight: 600;
+}
+
+.contact-form textarea {
+    min-height: 180px;
+    resize: vertical;
+}
+
+.contact-honeypot {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+.contact-status {
+    display: inline-block;
+    margin-left: 12px;
+    color: #598e0e;
+    vertical-align: middle;
+}
+
+.contact-status.is-error {
+    color: #b94a48;
+}
+
+@media (max-width: 767px) {
+    .contact-status {
+        display: block;
+        margin-left: 0;
+        margin-top: 10px;
+    }
+}

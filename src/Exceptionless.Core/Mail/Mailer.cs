@@ -31,6 +31,42 @@ public class Mailer : IMailer
         _logger = logger;
     }
 
+    public async Task<bool> SendContactRequestAsync(string name, string emailAddress, string? company, string? subject, string message, string? clientIpAddress, string? userAgent, string? referrer)
+    {
+        string? contactEmailAddress = _appOptions.EmailOptions.ContactEmailAddress;
+        if (String.IsNullOrWhiteSpace(contactEmailAddress))
+        {
+            _logger.LogWarning("Contact request mail was not sent: ContactEmailAddress is not configured");
+            return false;
+        }
+
+        string requestSubject = String.IsNullOrWhiteSpace(subject)
+            ? "Website contact request"
+            : subject.Trim().StripInvisible().Truncate(100);
+        string mailSubject = $"[Contact] {requestSubject}";
+        const string template = "contact-request";
+        var data = new Dictionary<string, object?> {
+                { "Subject", mailSubject },
+                { "Name", name.Trim() },
+                { "EmailAddress", emailAddress.Trim() },
+                { "Company", company?.Trim() },
+                { "RequestSubject", requestSubject },
+                { "MessageLines", message.SplitLines().ToArray() },
+                { "ClientIpAddress", clientIpAddress },
+                { "UserAgent", userAgent },
+                { "Referrer", referrer }
+            };
+
+        string? messageId = await QueueMessageAsync(new MailMessage
+        {
+            To = contactEmailAddress,
+            ReplyTo = emailAddress.Trim(),
+            Subject = mailSubject,
+            Body = RenderTemplate(template, data)
+        }, template);
+        return !String.IsNullOrEmpty(messageId);
+    }
+
     public async Task<bool> SendEventNoticeAsync(User user, PersistentEvent ev, Project project, bool isNew, bool isRegression, int totalOccurrences)
     {
         bool isCritical = ev.IsCritical();

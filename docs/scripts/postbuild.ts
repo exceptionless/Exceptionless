@@ -306,8 +306,6 @@ async function collectRedirectAliases(root: string, posts: ContentPage[]): Promi
   const aliases = new Map<string, string>()
   const postAliases = buildPostAliasMap(posts)
 
-  aliases.set("/contact/", "/")
-
   for await (const path of walk(root)) {
     if (!path.endsWith(".html")) {
       continue
