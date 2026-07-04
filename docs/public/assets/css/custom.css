@@ -312,12 +312,12 @@ body, input, button, select, textarea, .search-query {
     min-height: 376px;
 }
 
-.cycloneslider-template-standard .cycloneslider-slide {
-    display: none;
+.cycloneslider-template-standard .cycloneslider-slide:not(.is-active) {
+    display: none !important;
 }
 
 .cycloneslider-template-standard .cycloneslider-slide.is-active {
-    display: block;
+    display: block !important;
 }
 
 .cycloneslider-template-standard .cycloneslider-slide img {
