@@ -308,6 +308,31 @@ body, input, button, select, textarea, .search-query {
     color: #555 !important;
 }
 
+.social-icon-x {
+    position: relative;
+    background: #555 !important;
+    border-radius: 50%;
+    line-height: 50px;
+    text-indent: -9999px;
+}
+
+.social-icon-x::before {
+    position: absolute;
+    inset: 0;
+    color: #fff;
+    content: "X";
+    font-family: Arial, sans-serif;
+    font-size: 25px;
+    font-weight: 700;
+    line-height: 50px;
+    text-align: center;
+    text-indent: 0;
+}
+
+.social-icon-x:hover {
+    background: #111 !important;
+}
+
 .text-accent {
     color: #a84f00 !important;
 }
