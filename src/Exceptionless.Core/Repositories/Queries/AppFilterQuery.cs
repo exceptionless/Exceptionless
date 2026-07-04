@@ -1,3 +1,4 @@
+﻿using Elastic.Clients.Elasticsearch.QueryDsl;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
@@ -8,7 +9,6 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Options;
-using Nest;
 
 namespace Exceptionless.Core.Repositories
 {
@@ -107,83 +107,86 @@ namespace Exceptionless.Core.Repositories.Queries
                 return Task.CompletedTask;
 
             var allowedOrganizations = sfq.Organizations.Where(o => o.HasPremiumFeatures || (!o.HasPremiumFeatures && !sfq.UsesPremiumFeatures)).ToList();
+            bool isOrganizationIndex = typeof(T) == typeof(Organization);
+            string organizationIdFieldName = isOrganizationIndex ? "id" : _organizationIdFieldName;
             if (allowedOrganizations.Count == 0)
             {
-                ctx.Filter &= Query<T>.Term(_organizationIdFieldName, "none");
+                ctx.Filter &= new TermQuery { Field = organizationIdFieldName, Value = "none" };
                 return Task.CompletedTask;
             }
 
             var index = ctx.Options.GetElasticIndex();
-            bool shouldApplyRetentionFilter = ShouldApplyRetentionFilter(index, ctx);
-            string? field = shouldApplyRetentionFilter ? GetDateField(index) : null;
+            bool shouldApplyRetentionFilter = index is not null && ShouldApplyRetentionFilter(index, ctx);
+            string? field = shouldApplyRetentionFilter ? GetDateField(index!) : null;
 
-            if (sfq.Stack is not null)
+            if (!isOrganizationIndex && sfq.Stack is not null)
             {
                 string stackIdFieldName = typeof(T) == typeof(Stack) ? "id" : _stackIdFieldName;
-                var organization = allowedOrganizations.SingleOrDefault(o => o.Id == sfq.Stack.OrganizationId);
+                var organization = allowedOrganizations.SingleOrDefault(o => String.Equals(o.Id, sfq.Stack.OrganizationId, StringComparison.Ordinal));
                 if (organization is not null)
                 {
                     if (shouldApplyRetentionFilter)
-                        ctx.Filter &= (Query<T>.Term(stackIdFieldName, sfq.Stack.Id) && GetRetentionFilter<T>(field, organization, _options.MaximumRetentionDays, sfq.Stack.FirstOccurrence));
+                        ctx.Filter &= new TermQuery { Field = stackIdFieldName, Value = sfq.Stack.Id } & GetRetentionFilter(field, organization, _options.MaximumRetentionDays, sfq.Stack.FirstOccurrence);
                     else
                     {
-                        ctx.Filter &= Query<T>.Term(stackIdFieldName, sfq.Stack.Id);
+                        ctx.Filter &= new TermQuery { Field = stackIdFieldName, Value = sfq.Stack.Id };
                     }
                 }
                 else
                 {
-                    ctx.Filter &= Query<T>.Term(stackIdFieldName, "none");
+                    ctx.Filter &= new TermQuery { Field = stackIdFieldName, Value = "none" };
                 }
 
                 return Task.CompletedTask;
             }
 
-            QueryContainer? container = null;
-            if (sfq.Projects?.Count > 0)
+            Query? container = null;
+            if (!isOrganizationIndex && sfq.Projects?.Count > 0)
             {
-                var allowedProjects = sfq.Projects.ToDictionary(p => p, p => allowedOrganizations.SingleOrDefault(o => o.Id == p.OrganizationId)).Where(kvp => kvp.Value is not null).ToList();
+                var allowedProjects = sfq.Projects.ToDictionary(p => p, p => allowedOrganizations.SingleOrDefault(o => String.Equals(o.Id, p.OrganizationId, StringComparison.Ordinal))).Where(kvp => kvp.Value is not null).ToList();
                 if (allowedProjects.Count > 0)
                 {
                     foreach (var project in allowedProjects)
                     {
+                        Query termQuery = new TermQuery { Field = _projectIdFieldName, Value = project.Key.Id };
                         if (shouldApplyRetentionFilter)
-                            container |= (Query<T>.Term(_projectIdFieldName, project.Key.Id) && GetRetentionFilter<T>(field, project.Value!, _options.MaximumRetentionDays, project.Key.CreatedUtc.SafeSubtract(TimeSpan.FromDays(3))));
-                        else
-                            container |= Query<T>.Term(_projectIdFieldName, project.Key.Id);
+                            termQuery &= GetRetentionFilter(field, project.Value!, _options.MaximumRetentionDays, project.Key.CreatedUtc.SafeSubtract(TimeSpan.FromDays(3)));
+                        container = container is not null ? container | termQuery : termQuery;
                     }
 
-                    ctx.Filter &= container;
+                    if (container is not null)
+                        ctx.Filter &= container;
                     return Task.CompletedTask;
                 }
 
-                ctx.Filter &= (Query<T>.Term(_projectIdFieldName, "none"));
+                ctx.Filter &= new TermQuery { Field = _projectIdFieldName, Value = "none" };
                 return Task.CompletedTask;
             }
 
-            string organizationIdFieldName = typeof(T) == typeof(Organization) ? "id" : _organizationIdFieldName;
             foreach (var organization in allowedOrganizations)
             {
+                Query termQuery = new TermQuery { Field = organizationIdFieldName, Value = organization.Id };
                 if (shouldApplyRetentionFilter)
-                    container |= (Query<T>.Term(organizationIdFieldName, organization.Id) && GetRetentionFilter<T>(field, organization, _options.MaximumRetentionDays));
-                else
-                    container |= Query<T>.Term(organizationIdFieldName, organization.Id);
+                    termQuery &= GetRetentionFilter(field, organization, _options.MaximumRetentionDays);
+                container = container is not null ? container | termQuery : termQuery;
             }
 
-            ctx.Filter &= container;
+            if (container is not null)
+                ctx.Filter &= container;
             return Task.CompletedTask;
         }
 
-        private QueryContainer GetRetentionFilter<T>(string? field, Organization organization, int maximumRetentionDays, DateTime? oldestPossibleEventAge = null) where T : class, new()
+        private Query GetRetentionFilter(string? field, Organization organization, int maximumRetentionDays, DateTime? oldestPossibleEventAge = null)
         {
             if (field is null)
                 throw new ArgumentNullException(nameof(field), "Retention field not specified for this index");
 
             var retentionDate = organization.GetRetentionUtcCutoff(maximumRetentionDays, oldestPossibleEventAge, _timeProvider);
             double retentionDays = Math.Max(Math.Round(Math.Abs(_timeProvider.GetUtcNow().UtcDateTime.Subtract(retentionDate).TotalDays), MidpointRounding.AwayFromZero), 1);
-            return Query<T>.DateRange(r => r.Field(field).GreaterThanOrEquals($"now/d-{(int)retentionDays}d").LessThanOrEquals("now/d+1d"));
+            return new DateRangeQuery { Field = field, Gte = $"now/d-{(int)retentionDays}d", Lte = "now/d+1d" };
         }
 
-        private static bool ShouldApplyRetentionFilter<T>(IIndex? index, QueryBuilderContext<T> ctx) where T : class, new()
+        private static bool ShouldApplyRetentionFilter<T>(IIndex index, QueryBuilderContext<T> ctx) where T : class, new()
         {
             ArgumentNullException.ThrowIfNull(index);
 
@@ -197,7 +200,7 @@ namespace Exceptionless.Core.Repositories.Queries
             return false;
         }
 
-        private string? GetDateField(IIndex? index)
+        private string? GetDateField(IIndex index)
         {
             ArgumentNullException.ThrowIfNull(index);
 

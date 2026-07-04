@@ -30,7 +30,7 @@ public static class SchemaReferenceIdHelper
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ValueFromBody<>))
         {
             var innerType = type.GetGenericArguments()[0];
-            var typeName = innerType == typeof(string) ? "String" : innerType.Name;
+            string typeName = innerType == typeof(string) ? "String" : innerType.Name;
             return $"{typeName}ValueFromBody";
         }
 
@@ -39,8 +39,8 @@ public static class SchemaReferenceIdHelper
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
         {
             var args = type.GetGenericArguments();
-            var key = args[0] == typeof(string) ? "String" : args[0].Name;
-            var value = args[1].Name;
+            string key = args[0] == typeof(string) ? "String" : args[0].Name;
+            string value = args[1].Name;
             return $"{key}{value}KeyValuePair";
         }
 

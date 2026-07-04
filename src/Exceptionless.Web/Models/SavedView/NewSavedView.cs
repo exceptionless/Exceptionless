@@ -15,9 +15,9 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
     public static readonly IReadOnlyDictionary<string, IReadOnlySet<string>> ValidColumnIds =
         new Dictionary<string, IReadOnlySet<string>>
         {
-            ["events"] = new HashSet<string> { "summary", "user", "date", "message", "type", "exception_type", "source", "name", "level" },
+            ["events"] = new HashSet<string> { "summary", "user", "date", "message", "type", "version", "exception_type", "source", "name", "level" },
             ["stacks"] = new HashSet<string> { "summary", "status", "users", "events", "first", "last" },
-            ["stream"] = new HashSet<string> { "summary", "user", "date", "message", "type", "exception_type", "source", "name", "level" }
+            ["stream"] = new HashSet<string> { "summary", "user", "date", "message", "type", "version", "exception_type", "source", "name", "level" }
         };
 
     /// <summary>Union of all valid column IDs across all views.</summary>
@@ -43,7 +43,7 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
     public string? Sort { get; set; }
 
     [MaxLength(100)]
-    [RegularExpression("^[a-z0-9]+(?:-[a-z0-9]+)*$")]
+    [RegularExpression(SavedView.SlugPattern)]
     public string? Slug { get; set; }
 
     [Required]
@@ -110,7 +110,7 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
             : AllValidColumnIds;
 
         var invalidKeys = columns.Keys.Where(key => !validKeys.Contains(key));
-        foreach (var key in invalidKeys)
+        foreach (string key in invalidKeys)
         {
             yield return new ValidationResult(
                 $"Column key '{key}' is not a valid column. Valid columns are: {String.Join(", ", validKeys.Order())}.",
@@ -131,7 +131,7 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
             : AllValidColumnIds;
 
         var invalidKeys = columnOrder.Where(key => !validKeys.Contains(key)).Distinct();
-        foreach (var key in invalidKeys)
+        foreach (string key in invalidKeys)
         {
             yield return new ValidationResult(
                 $"Column order key '{key}' is not a valid column. Valid columns are: {String.Join(", ", validKeys.Order())}.",
@@ -140,7 +140,7 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
         }
 
         var duplicateKeys = columnOrder.GroupBy(key => key).Where(group => group.Count() > 1).Select(group => group.Key);
-        foreach (var key in duplicateKeys)
+        foreach (string key in duplicateKeys)
         {
             yield return new ValidationResult(
                 $"Column order key '{key}' cannot be repeated.",

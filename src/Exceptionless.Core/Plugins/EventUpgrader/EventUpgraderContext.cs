@@ -1,7 +1,6 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Text.Json.Nodes;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Plugins.EventUpgrader;
 
@@ -12,15 +11,15 @@ public class EventUpgraderContext : ExtensibleObject
         var jsonType = json.GetJsonType();
         if (jsonType == JsonType.Object)
         {
-            var doc = JsonConvert.DeserializeObject<JObject>(json);
+            var doc = JsonNode.Parse(json) as JsonObject;
             if (doc is not null)
-                Documents = new JArray(doc);
+                Documents = new JsonArray(doc);
             else
                 throw new ArgumentException("Invalid json object specified", nameof(json));
         }
         else if (jsonType == JsonType.Array)
         {
-            var docs = JsonConvert.DeserializeObject<JArray>(json);
+            var docs = JsonNode.Parse(json) as JsonArray;
             if (docs is not null)
                 Documents = docs;
             else
@@ -35,21 +34,21 @@ public class EventUpgraderContext : ExtensibleObject
         IsMigration = isMigration;
     }
 
-    public EventUpgraderContext(JObject doc, Version? version = null, bool isMigration = false)
+    public EventUpgraderContext(JsonObject doc, Version? version = null, bool isMigration = false)
     {
-        Documents = new JArray(doc);
+        Documents = new JsonArray(doc);
         Version = version;
         IsMigration = isMigration;
     }
 
-    public EventUpgraderContext(JArray docs, Version? version = null, bool isMigration = false)
+    public EventUpgraderContext(JsonArray docs, Version? version = null, bool isMigration = false)
     {
         Documents = docs;
         Version = version;
         IsMigration = isMigration;
     }
 
-    public JArray Documents { get; set; }
+    public JsonArray Documents { get; set; }
     public Version? Version { get; set; }
     public bool IsMigration { get; set; }
 }

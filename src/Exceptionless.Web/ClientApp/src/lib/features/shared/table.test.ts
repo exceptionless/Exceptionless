@@ -1,6 +1,33 @@
+import type { StockFeatures, TableOptions } from '@tanstack/svelte-table';
+
 import { describe, expect, it } from 'vitest';
 
-import { type QueryMeta, resolvePageCount, resolvePaginationChange } from './table.svelte';
+import { type QueryMeta, resolveConfiguredTableOptions, resolvePageCount, resolvePaginationChange } from './table.svelte';
+
+describe('resolveConfiguredTableOptions', () => {
+    it('preserves base reactive getters when configured options are returned from a spread', () => {
+        // Arrange
+        let rows = [{ id: 'one' }];
+        const baseOptions = {
+            get columns() {
+                return [];
+            },
+            get data() {
+                return rows;
+            },
+            features: {}
+        } as unknown as TableOptions<StockFeatures, { id: string }>;
+
+        // Act
+        const result = resolveConfiguredTableOptions(baseOptions, { ...baseOptions, manualSorting: false });
+        rows = [{ id: 'two' }];
+
+        // Assert
+        expect(Object.getOwnPropertyDescriptor(result, 'data')?.get).toBeTypeOf('function');
+        expect(result.data).toEqual([{ id: 'two' }]);
+        expect(result.manualSorting).toBe(false);
+    });
+});
 
 describe('resolvePaginationChange', () => {
     it('keeps the requested page when only the page index changes', () => {
@@ -113,5 +140,13 @@ describe('resolvePageCount', () => {
         const result = resolvePageCount('offset', meta, 2, 50, 1060);
 
         expect(result).toBe(424);
+    });
+
+    it('keeps a known offset page count when a later response omits total but has a next page', () => {
+        const meta = { links: { next: { page: '3', rel: 'next', url: '/events?page=3' } } } as QueryMeta;
+
+        const result = resolvePageCount('offset', meta, 2, 50, 1060);
+
+        expect(result).toBe(1060);
     });
 });

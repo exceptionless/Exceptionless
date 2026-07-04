@@ -62,7 +62,7 @@ public class AggregateDocumentTransformer : IOpenApiDocumentTransformer
             .Select(kvp => kvp.Key)
             .ToList();
 
-        foreach (var schemaName in schemasToRemove)
+        foreach (string schemaName in schemasToRemove)
         {
             document.Components.Schemas.Remove(schemaName);
         }

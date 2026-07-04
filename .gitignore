@@ -13,6 +13,7 @@ artifacts
 [Bb]uild[Ll]og.*
 coverage/
 src/Exceptionless.Web/ClientApp/playwright-report/
+audit-output/
 src/Exceptionless.Web/ClientApp/test-results/
 
 # IDE / editor
@@ -80,7 +81,6 @@ k8s/ex-*-snapshots.yaml
 tmpclaude*
 dogfood-output/
 debug-storybook.log
-
 
 .devcontainer/devcontainer-lock.json
 

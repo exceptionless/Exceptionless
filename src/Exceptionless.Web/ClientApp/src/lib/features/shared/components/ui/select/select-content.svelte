@@ -21,6 +21,7 @@
 </script>
 
 <SelectPortal {...portalProps}>
+	<!-- CUSTOM: ALLOW PAGE SCROLL TO REMAIN WHEN SELECT IS OPEN FOR CONTINUITY WITH LONG FORMS. -->
 	<SelectPrimitive.Content
 		bind:ref
 		{sideOffset}

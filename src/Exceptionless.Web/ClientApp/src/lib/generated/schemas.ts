@@ -198,7 +198,10 @@ export const NewSavedViewSchema = object({
   slug: string()
     .min(1, "Slug is required")
     .max(100, "Slug must be at most 100 characters")
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug has invalid format")
+    .regex(
+      /^(?![a-f0-9]{24}$)[a-z0-9]+(?:-[a-z0-9]+)*$/,
+      "Slug has invalid format",
+    )
     .nullable()
     .optional(),
   view_type: string().min(1, "View type is required"),
@@ -277,6 +280,105 @@ export const OAuthAccountSchema = object({
   extra_data: record(string(), string()),
 });
 export type OAuthAccountFormData = Infer<typeof OAuthAccountSchema>;
+
+export const OAuthAuthorizationServerMetadataSchema = object({
+  issuer: string().min(1, "Issuer is required"),
+  authorization_endpoint: string().min(1, "Authorization endpoint is required"),
+  token_endpoint: string().min(1, "Token endpoint is required"),
+  registration_endpoint: string().min(1, "Registration endpoint is required"),
+  revocation_endpoint: string().min(1, "Revocation endpoint is required"),
+  grant_types_supported: array(string()),
+  response_types_supported: array(string()),
+  code_challenge_methods_supported: array(string()),
+  token_endpoint_auth_methods_supported: array(string()),
+  scopes_supported: array(string()),
+  resource_documentation: string().min(1, "Resource documentation is required"),
+  client_id_metadata_document_supported: boolean(),
+});
+export type OAuthAuthorizationServerMetadataFormData = Infer<
+  typeof OAuthAuthorizationServerMetadataSchema
+>;
+
+export const OAuthAuthorizeConsentResponseSchema = object({
+  client_id: string().min(1, "Client id is required"),
+  client_name: string().min(1, "Client name is required"),
+  redirect_uri: string().min(1, "Redirect uri is required"),
+  resource: string().min(1, "Resource is required"),
+  scopes: array(string()),
+  required_scopes: array(string()),
+});
+export type OAuthAuthorizeConsentResponseFormData = Infer<
+  typeof OAuthAuthorizeConsentResponseSchema
+>;
+
+export const OAuthAuthorizeFormSchema = object({
+  client_id: string().min(1, "Client id is required"),
+  response_type: string().min(1, "Response type is required"),
+  redirect_uri: string().min(1, "Redirect uri is required"),
+  scope: string().min(1, "Scope is required").nullable().optional(),
+  state: string().min(1, "State is required").nullable().optional(),
+  code_challenge: string().min(1, "Code challenge is required"),
+  code_challenge_method: string().min(1, "Code challenge method is required"),
+  resource: string().min(1, "Resource is required").nullable().optional(),
+  organization_ids: array(string()).nullable().optional(),
+});
+export type OAuthAuthorizeFormFormData = Infer<typeof OAuthAuthorizeFormSchema>;
+
+export const OAuthClientRegistrationRequestSchema = object({
+  redirect_uris: array(string()).nullable().optional(),
+  client_name: string().min(1, "Client name is required").nullable().optional(),
+  scope: string().min(1, "Scope is required").nullable().optional(),
+  grant_types: array(string()).nullable().optional(),
+  response_types: array(string()).nullable().optional(),
+  token_endpoint_auth_method: string()
+    .min(1, "Token endpoint auth method is required")
+    .nullable()
+    .optional(),
+});
+export type OAuthClientRegistrationRequestFormData = Infer<
+  typeof OAuthClientRegistrationRequestSchema
+>;
+
+export const OAuthClientRegistrationResponseSchema = object({
+  client_id: string().min(1, "Client id is required"),
+  client_name: string().min(1, "Client name is required"),
+  redirect_uris: array(string()),
+  grant_types: array(string()),
+  response_types: array(string()),
+  scope: string().min(1, "Scope is required"),
+  token_endpoint_auth_method: string().min(
+    1,
+    "Token endpoint auth method is required",
+  ),
+  client_id_issued_at: int(),
+});
+export type OAuthClientRegistrationResponseFormData = Infer<
+  typeof OAuthClientRegistrationResponseSchema
+>;
+
+export const OAuthProtectedResourceMetadataSchema = object({
+  resource: string().min(1, "Resource is required"),
+  authorization_servers: array(string()),
+  scopes_supported: array(string()),
+  bearer_methods_supported: array(string()),
+  resource_documentation: string().min(1, "Resource documentation is required"),
+});
+export type OAuthProtectedResourceMetadataFormData = Infer<
+  typeof OAuthProtectedResourceMetadataSchema
+>;
+
+export const OAuthTokenResponseSchema = object({
+  access_token: string().min(1, "Access token is required"),
+  token_type: string().min(1, "Token type is required"),
+  expires_in: int32(),
+  refresh_token: string()
+    .min(1, "Refresh token is required")
+    .nullable()
+    .optional(),
+  scope: string().min(1, "Scope is required").nullable().optional(),
+  resource: string().min(1, "Resource is required").nullable().optional(),
+});
+export type OAuthTokenResponseFormData = Infer<typeof OAuthTokenResponseSchema>;
 
 export const PersistentEventSchema = object({
   id: string()
@@ -549,6 +651,30 @@ export const ViewCurrentUserSchema = object({
   roles: array(string()),
 });
 export type ViewCurrentUserFormData = Infer<typeof ViewCurrentUserSchema>;
+
+export const ViewOAuthGrantSchema = object({
+  id: string().min(1, "Id is required"),
+  client_id: string().min(1, "Client id is required"),
+  application_name: string().min(1, "Application name is required"),
+  is_application_disabled: boolean(),
+  scopes: array(string()),
+  organization_ids: array(string()),
+  resources: array(lazy(() => ViewOAuthGrantResourceSchema)),
+  created_utc: iso.datetime(),
+  updated_utc: iso.datetime(),
+  expires_utc: iso.datetime().nullable().optional(),
+  refresh_expires_utc: iso.datetime().nullable().optional(),
+});
+export type ViewOAuthGrantFormData = Infer<typeof ViewOAuthGrantSchema>;
+
+export const ViewOAuthGrantResourceSchema = object({
+  resource: string().min(1, "Resource is required"),
+  scopes: array(string()),
+  organization_ids: array(string()),
+});
+export type ViewOAuthGrantResourceFormData = Infer<
+  typeof ViewOAuthGrantResourceSchema
+>;
 
 export const ViewOrganizationSchema = object({
   id: string()

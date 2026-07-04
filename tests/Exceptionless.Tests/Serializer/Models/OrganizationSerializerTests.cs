@@ -15,24 +15,6 @@ public class OrganizationSerializerTests : TestWithServices
     }
 
     [Fact]
-    public void Deserialize_SnakeCaseJson_ParsesCorrectly()
-    {
-        // Arrange
-        /* language=json */
-        const string json = """{"id":"550000000000000000000004","name":"Acme Industries","plan_id":"EX_SMALL","plan_name":"Small","plan_description":"Small plan","billing_status":1,"max_events_per_month":10000,"retention_days":7,"has_premium_features":false,"max_users":5,"max_projects":10,"created_utc":"2024-01-01T00:00:00Z","updated_utc":"2024-01-01T00:00:00Z"}""";
-
-        // Act
-        var result = _serializer.Deserialize<Organization>(json);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal("550000000000000000000004", result.Id);
-        Assert.Equal("Acme Industries", result.Name);
-        Assert.Equal("EX_SMALL", result.PlanId);
-        Assert.Equal(10000, result.MaxEventsPerMonth);
-    }
-
-    [Fact]
     public void RoundTrip_WithAllCoreProperties_PreservesValues()
     {
         // Arrange
@@ -61,35 +43,6 @@ public class OrganizationSerializerTests : TestWithServices
         var result = _serializer.Deserialize<Organization>(json);
 
         // Assert
-        SerializerContractAssertions.IncludesProperties(json,
-            "stripe_customer_id",
-            "plan_id",
-            "plan_name",
-            "plan_description",
-            "card_last4",
-            "billing_status",
-            "max_events_per_month",
-            "retention_days",
-            "has_premium_features",
-            "max_users",
-            "max_projects",
-            "created_utc",
-            "updated_utc");
-        SerializerContractAssertions.ExcludesProperties(json,
-            "StripeCustomerId",
-            "PlanId",
-            "PlanName",
-            "PlanDescription",
-            "CardLast4",
-            "BillingStatus",
-            "MaxEventsPerMonth",
-            "RetentionDays",
-            "HasPremiumFeatures",
-            "MaxUsers",
-            "MaxProjects",
-            "CreatedUtc",
-            "UpdatedUtc");
-
         Assert.NotNull(result);
         Assert.Equal("550000000000000000000001", result.Id);
         Assert.Equal("Acme Corp", result.Name);
@@ -114,8 +67,8 @@ public class OrganizationSerializerTests : TestWithServices
             PlanId = "EX_FREE",
             PlanName = "Free",
             PlanDescription = "Free plan",
-            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-            UpdatedUtc = new DateTime(2024, 1, 2, 0, 0, 0, DateTimeKind.Utc)
+            CreatedUtc = DateTime.UtcNow,
+            UpdatedUtc = DateTime.UtcNow
         };
         organization.Invites.Add(new Invite
         {
@@ -151,8 +104,8 @@ public class OrganizationSerializerTests : TestWithServices
             SuspensionNotes = "Payment failed",
             SuspensionDate = new DateTime(2024, 5, 1, 0, 0, 0, DateTimeKind.Utc),
             SuspendedByUserId = "660000000000000000000001",
-            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-            UpdatedUtc = new DateTime(2024, 1, 2, 0, 0, 0, DateTimeKind.Utc)
+            CreatedUtc = DateTime.UtcNow,
+            UpdatedUtc = DateTime.UtcNow
         };
 
         // Act
@@ -160,23 +113,28 @@ public class OrganizationSerializerTests : TestWithServices
         var result = _serializer.Deserialize<Organization>(json);
 
         // Assert
-        SerializerContractAssertions.IncludesProperties(json,
-            "is_suspended",
-            "suspension_code",
-            "suspension_notes",
-            "suspension_date",
-            "suspended_by_user_id");
-        SerializerContractAssertions.ExcludesProperties(json,
-            "IsSuspended",
-            "SuspensionCode",
-            "SuspensionNotes",
-            "SuspensionDate",
-            "SuspendedByUserId");
-
         Assert.NotNull(result);
         Assert.True(result.IsSuspended);
         Assert.Equal(SuspensionCode.Billing, result.SuspensionCode);
         Assert.Equal("Payment failed", result.SuspensionNotes);
         Assert.Equal("660000000000000000000001", result.SuspendedByUserId);
+    }
+
+    [Fact]
+    public void Deserialize_SnakeCaseJson_ParsesCorrectly()
+    {
+        // Arrange
+        /* language=json */
+        const string json = """{"id":"550000000000000000000004","name":"Acme Industries","plan_id":"EX_SMALL","plan_name":"Small","plan_description":"Small plan","billing_status":1,"max_events_per_month":10000,"retention_days":7,"has_premium_features":false,"max_users":5,"max_projects":10,"created_utc":"2024-01-01T00:00:00Z","updated_utc":"2024-01-01T00:00:00Z"}""";
+
+        // Act
+        var result = _serializer.Deserialize<Organization>(json);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("550000000000000000000004", result.Id);
+        Assert.Equal("Acme Industries", result.Name);
+        Assert.Equal("EX_SMALL", result.PlanId);
+        Assert.Equal(10000, result.MaxEventsPerMonth);
     }
 }

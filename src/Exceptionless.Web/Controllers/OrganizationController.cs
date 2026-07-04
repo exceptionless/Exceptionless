@@ -352,7 +352,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         {
             var item = new InvoiceLineItem { Amount = line.Amount / 100.0m, Description = line.Description };
 
-            var priceId = line.Pricing?.PriceDetails?.PriceId;
+            string? priceId = line.Pricing?.PriceDetails?.PriceId;
             if (!String.IsNullOrEmpty(priceId))
             {
                 var billingPlan = _billingManager.GetBillingPlan(priceId);
@@ -518,6 +518,13 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         if (plan is null)
         {
             _logger.LogWarning("Plan {PlanId} not found for organization {OrganizationId}", model.PlanId, id);
+            ModelState.AddModelError("general", "Invalid plan. Please select a valid plan.");
+            return ValidationProblem(ModelState);
+        }
+
+        if (plan.IsHidden && !String.Equals(organization.PlanId, plan.Id, StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning("Hidden plan {PlanId} is not selectable for organization {OrganizationId}", model.PlanId, id);
             ModelState.AddModelError("general", "Invalid plan. Please select a valid plan.");
             return ValidationProblem(ModelState);
         }
@@ -908,7 +915,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         if (organization is null)
             return NotFound();
 
-        var normalizedFeature = feature.Trim().ToLowerInvariant();
+        string normalizedFeature = feature.Trim().ToLowerInvariant();
         if (String.IsNullOrEmpty(normalizedFeature))
             return BadRequest("Invalid feature flag.");
 
@@ -935,7 +942,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         if (organization is null)
             return NotFound();
 
-        var normalizedFeature = feature.Trim().ToLowerInvariant();
+        string normalizedFeature = feature.Trim().ToLowerInvariant();
         if (String.IsNullOrEmpty(normalizedFeature))
             return BadRequest("Invalid feature flag.");
 

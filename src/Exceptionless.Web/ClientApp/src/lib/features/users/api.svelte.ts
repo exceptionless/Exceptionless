@@ -7,7 +7,7 @@ import { fetchApiJson } from '$features/shared/api/api.svelte';
 import { type FetchClientResponse, ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
-import type { UpdateEmailAddressResult, UpdateUser, UpdateUserEmailAddress, ViewCurrentUser, ViewUser } from './models';
+import type { OAuthGrant, UpdateEmailAddressResult, UpdateUser, UpdateUserEmailAddress, ViewCurrentUser, ViewUser } from './models';
 
 export async function invalidateUserQueries(queryClient: QueryClient, message: WebSocketMessageValue<'UserChanged'>) {
     const { id } = message;
@@ -26,10 +26,12 @@ export async function invalidateUserQueries(queryClient: QueryClient, message: W
 export const queryKeys = {
     avatar: (id: string | undefined) => [...queryKeys.id(id), 'avatar'] as const,
     deleteCurrentUser: () => [...queryKeys.me(), 'delete'] as const,
+    deleteOAuthGrant: (id: string | undefined) => [...queryKeys.oauthGrants(), id, 'delete'] as const,
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
     idEmailAddress: (id?: string) => [...queryKeys.id(id), 'email-address'] as const,
     ids: (ids: string[] | undefined) => [...queryKeys.type, ...(ids ?? [])] as const,
     me: () => [...queryKeys.type, 'me'] as const,
+    oauthGrants: () => [...queryKeys.me(), 'oauth-grants'] as const,
     organization: (id: string | undefined) => [...queryKeys.type, 'organization', id] as const,
     patchUser: (id: string | undefined) => [...queryKeys.id(id), 'patch'] as const,
     postEmailAddress: (id: string | undefined) => [...queryKeys.idEmailAddress(id), 'update'] as const,
@@ -84,6 +86,21 @@ export function deleteCurrentUser() {
     }));
 }
 
+export function deleteOAuthGrantMutation() {
+    const queryClient = useQueryClient();
+    return createMutation<void, ProblemDetails, string>(() => ({
+        enabled: () => !!accessToken.current,
+        mutationFn: async (id: string) => {
+            const client = useFetchClient();
+            await client.delete(`users/me/oauth-grants/${id}`);
+        },
+        mutationKey: queryKeys.deleteOAuthGrant(undefined),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.oauthGrants() });
+        }
+    }));
+}
+
 export function deleteUserAvatar(request: UserAvatarRequest) {
     const queryClient = useQueryClient();
     return createMutation<ViewCurrentUser, ProblemDetails, void>(() => ({
@@ -124,6 +141,21 @@ export function getMeQuery() {
             return response.data!;
         },
         queryKey: queryKeys.me()
+    }));
+}
+
+export function getOAuthGrantsQuery() {
+    return createQuery<OAuthGrant[], ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<OAuthGrant[]>('users/me/oauth-grants', {
+                signal
+            });
+
+            return response.data ?? [];
+        },
+        queryKey: queryKeys.oauthGrants()
     }));
 }
 

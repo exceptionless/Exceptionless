@@ -33,7 +33,7 @@ public class SetLocationFromGeoWorkItemHandler : WorkItemHandlerBase
     public override async Task HandleItemAsync(WorkItemContext context)
     {
         var workItem = context.GetData<SetLocationFromGeoWorkItem>()!;
-        var geo = workItem.Geo;
+        string? geo = workItem.Geo;
 
         if (geo is null || !GeoResult.TryParse(geo, out var result) || result is null)
             return;

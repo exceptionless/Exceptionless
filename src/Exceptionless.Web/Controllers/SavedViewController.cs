@@ -21,7 +21,7 @@ namespace Exceptionless.App.Controllers.API;
 
 [Route(API_PREFIX + "/saved-views")]
 [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-public class SavedViewController : RepositoryApiController<ISavedViewRepository, SavedView, ViewSavedView, NewSavedView, UpdateSavedView>
+public partial class SavedViewController : RepositoryApiController<ISavedViewRepository, SavedView, ViewSavedView, NewSavedView, UpdateSavedView>
 {
     private const int MaxViewsPerOrganization = 100;
     private const string PredefinedSavedViewsDataKey = "@@PredefinedSavedViewsVersion";
@@ -186,12 +186,12 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
 
         var definitions = new List<PredefinedSavedViewDefinition>();
 
-        foreach (var viewType in NewSavedView.ValidViewTypes)
+        foreach (string viewType in NewSavedView.ValidViewTypes)
         {
             var results = await _repository.GetByViewAsync(organizationId, viewType, o => o.PageLimit(1000));
             foreach (var savedView in results.Documents.Where(v => v.UserId is null))
             {
-                var key = GetPredefinedKey(savedView);
+                string key = GetPredefinedKey(savedView);
                 definitions.Add(ToPredefinedSavedView(savedView, key));
             }
         }
@@ -209,7 +209,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
     public async Task<ActionResult<IReadOnlyCollection<PredefinedSavedViewDefinition>>> PutPredefinedAsync([FromBody] IReadOnlyCollection<PredefinedSavedViewDefinition> definitions)
     {
         // Remove all existing system predefined views
-        foreach (var viewType in NewSavedView.ValidViewTypes)
+        foreach (string viewType in NewSavedView.ValidViewTypes)
         {
             var existingViews = await GetSystemPredefinedSavedViewsAsync(viewType);
             if (existingViews.Count > 0)
@@ -217,23 +217,23 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         }
 
         var savedViews = definitions.Select(definition => new SavedView
-            {
-                OrganizationId = PredefinedSavedViewsDataSeed.SystemOrganizationId,
-                CreatedByUserId = CurrentUser.Id,
-                PredefinedKey = definition.Key,
-                Name = definition.Name,
-                Slug = definition.Slug,
-                ViewType = definition.ViewType,
-                Filter = definition.Filter,
-                Time = definition.Time,
-                Sort = definition.Sort,
-                FilterDefinitions = definition.FilterDefinitions is { } fd ? JsonSerializer.Serialize(fd) : null,
-                Columns = definition.Columns is { } cols ? new Dictionary<string, bool>(cols) : null,
-                ColumnOrder = definition.ColumnOrder?.ToList(),
-                ShowStats = definition.ShowStats,
-                ShowChart = definition.ShowChart,
-                Version = 1
-            })
+        {
+            OrganizationId = PredefinedSavedViewsDataSeed.SystemOrganizationId,
+            CreatedByUserId = CurrentUser.Id,
+            PredefinedKey = definition.Key,
+            Name = definition.Name,
+            Slug = definition.Slug,
+            ViewType = definition.ViewType,
+            Filter = definition.Filter,
+            Time = definition.Time,
+            Sort = definition.Sort,
+            FilterDefinitions = definition.FilterDefinitions is { } fd ? JsonSerializer.Serialize(fd) : null,
+            Columns = definition.Columns is { } cols ? new Dictionary<string, bool>(cols) : null,
+            ColumnOrder = definition.ColumnOrder?.ToList(),
+            ShowStats = definition.ShowStats,
+            ShowChart = definition.ShowChart,
+            Version = 1
+        })
             .ToList();
 
         if (savedViews.Count > 0)
@@ -331,7 +331,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         if (String.IsNullOrEmpty(value.OrganizationId) || !IsInOrganization(value.OrganizationId))
             return PermissionResult.Deny;
 
-        var count = await _repository.CountByOrganizationIdAsync(value.OrganizationId);
+        long count = await _repository.CountByOrganizationIdAsync(value.OrganizationId);
         if (count >= MaxViewsPerOrganization)
             return PermissionResult.DenyWithMessage($"Organization is limited to {MaxViewsPerOrganization} saved views.");
 
@@ -396,7 +396,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
             && changes.TryGetPropertyValue(nameof(UpdateSavedView.Slug), out slugValue)
             && slugValue is string changedSlug)
         {
-            var normalizedSlug = ToSlug(changedSlug);
+            string normalizedSlug = ToSlug(changedSlug);
             if (IsReservedSlug(normalizedSlug))
                 return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "URL name cannot look like an event or issue id.");
 
@@ -540,7 +540,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
             }
 
             var existing = FindPredefinedSavedView(definition, existingViews);
-            var slug = GetUniqueSlug(definition.Slug, existingViews, existing?.Id);
+            string slug = GetUniqueSlug(definition.Slug, existingViews, existing?.Id);
 
             if (existing is null)
             {
@@ -624,7 +624,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
 
     private static bool ApplyPredefinedSavedView(SavedView savedView, PredefinedSavedViewDefinition definition, string slug)
     {
-        var changed = false;
+        bool changed = false;
         changed |= SetIfChanged(savedView, definition.Key, static (view, value) => view.PredefinedKey = value, static view => view.PredefinedKey);
         changed |= SetIfChanged(savedView, definition.Name, static (view, value) => view.Name = value, static view => view.Name);
         changed |= SetIfChanged(savedView, slug, static (view, value) => view.Slug = value, static view => view.Slug);
@@ -644,10 +644,10 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
     private async Task<SavedView> UpsertSystemPredefinedSavedViewAsync(SavedView source)
     {
         var existingPredefinedViews = await GetSystemPredefinedSavedViewsAsync(source.ViewType);
-        var key = GetPredefinedKey(source);
+        string key = GetPredefinedKey(source);
         var existing = existingPredefinedViews.FirstOrDefault(view => String.Equals(view.PredefinedKey, key, StringComparison.OrdinalIgnoreCase))
             ?? existingPredefinedViews.FirstOrDefault(view => String.IsNullOrWhiteSpace(view.PredefinedKey) && String.Equals(view.Slug, source.Slug, StringComparison.OrdinalIgnoreCase));
-        var slug = GetUniqueSlug(source.Slug, existingPredefinedViews, existing?.Id);
+        string slug = GetUniqueSlug(source.Slug, existingPredefinedViews, existing?.Id);
 
         if (existing is null)
         {
@@ -696,12 +696,12 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
     {
         var definitions = new List<PredefinedSavedViewDefinition>();
 
-        foreach (var viewType in NewSavedView.ValidViewTypes)
+        foreach (string viewType in NewSavedView.ValidViewTypes)
         {
             var savedViews = await GetSystemPredefinedSavedViewsAsync(viewType);
             foreach (var savedView in savedViews)
             {
-                var key = GetPredefinedKey(savedView);
+                string key = GetPredefinedKey(savedView);
                 definitions.Add(ToPredefinedSavedView(savedView, key));
             }
         }
@@ -711,7 +711,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
 
     private async Task DeleteSystemPredefinedSavedViewAsync(SavedView source)
     {
-        var key = GetPredefinedKey(source);
+        string key = GetPredefinedKey(source);
         var existingPredefinedViews = await GetSystemPredefinedSavedViewsAsync(source.ViewType);
         var existing = existingPredefinedViews.FirstOrDefault(view => String.Equals(view.PredefinedKey, key, StringComparison.OrdinalIgnoreCase))
             ?? existingPredefinedViews.FirstOrDefault(view => String.IsNullOrWhiteSpace(view.PredefinedKey) && String.Equals(view.Slug, source.Slug, StringComparison.OrdinalIgnoreCase));
@@ -811,23 +811,23 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         if (left.Count != right.Count)
             return false;
 
-        return left.All(kvp => right.TryGetValue(kvp.Key, out var value) && value == kvp.Value);
+        return left.All(kvp => right.TryGetValue(kvp.Key, out bool value) && value == kvp.Value);
     }
 
     private static string GetUniqueSlug(string slug, IReadOnlyCollection<SavedView> existingViews, string? excludingId)
     {
-        var baseSlug = ToSlug(slug);
+        string baseSlug = ToSlug(slug);
         if (String.IsNullOrWhiteSpace(baseSlug))
             baseSlug = "saved-view";
 
         baseSlug = baseSlug.Length > 100 ? baseSlug[..100].Trim('-') : baseSlug;
-        var candidate = baseSlug;
-        var suffix = 2;
+        string candidate = baseSlug;
+        int suffix = 2;
 
         while (existingViews.Any(view => view.Id != excludingId && String.Equals(view.Slug, candidate, StringComparison.OrdinalIgnoreCase)))
         {
-            var suffixText = $"-{suffix}";
-            var maxBaseLength = 100 - suffixText.Length;
+            string suffixText = $"-{suffix}";
+            int maxBaseLength = 100 - suffixText.Length;
             candidate = $"{baseSlug[..Math.Min(baseSlug.Length, maxBaseLength)].Trim('-')}{suffixText}";
             suffix++;
         }
@@ -849,19 +849,30 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
 
     private static bool IsValidSlug(string slug)
     {
-        return Regex.IsMatch(slug, "^[a-z0-9]+(?:-[a-z0-9]+)*$") && !IsReservedSlug(slug);
+        return !IsReservedSlug(slug) && SavedView.SlugRegex().IsMatch(slug);
     }
 
     private static bool IsReservedSlug(string slug)
     {
-        return Regex.IsMatch(slug, "^[a-f0-9]{24}$");
+        return ObjectIdSlugRegex().IsMatch(slug);
     }
 
     private static string ToSlug(string value)
     {
-        var slug = Regex.Replace(value.Trim().ToLowerInvariant(), "[^a-z0-9]+", "-").Trim('-');
+        string slug = Regex.Replace(value.Trim().ToLowerInvariant(), "[^a-z0-9]+", "-").Trim('-');
         slug = Regex.Replace(slug, "-+", "-");
         return slug;
     }
 
+    private static string ToFallbackSlug(string value, string id)
+    {
+        string slug = ToSlug(value);
+        if (!String.IsNullOrWhiteSpace(slug))
+            return slug;
+
+        return String.IsNullOrWhiteSpace(id) ? "saved-view" : $"saved-view-{id}";
+    }
+
+    [GeneratedRegex("^[a-f0-9]{24}$")]
+    private static partial Regex ObjectIdSlugRegex();
 }

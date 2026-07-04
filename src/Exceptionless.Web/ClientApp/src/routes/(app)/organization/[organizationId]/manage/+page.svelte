@@ -20,7 +20,7 @@
     import RemoveOrganizationDialog from '$features/organizations/components/dialogs/remove-organization-dialog.svelte';
     import { type NewOrganizationFormData, NewOrganizationSchema } from '$features/organizations/schemas';
     import { getProfileImageFileError } from '$features/shared/profile-images';
-    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
+    import { ariaInvalid, getFormErrorMessages, getProblemMessage, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { getInitials } from '$shared/strings';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import Events from '@lucide/svelte/icons/calendar-days';
@@ -82,8 +82,7 @@
 
             await goto(resolve('/(app)/organization/list'));
         } catch (error: unknown) {
-            const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
-            toastId = toast.error(`An error occurred while trying to delete the organization: ${message}`);
+            toastId = toast.error(`An error occurred while trying to delete the organization: ${getProblemMessage(error, 'Please try again.')}`);
         }
     }
 
@@ -150,14 +149,6 @@
         } catch (error: unknown) {
             toastId = toast.error(getProblemMessage(error, 'Error removing organization icon. Please try again.'));
         }
-    }
-
-    function getProblemMessage(error: unknown, fallback: string) {
-        if (!(error instanceof ProblemDetails)) {
-            return fallback;
-        }
-
-        return error.errors.file?.[0] ?? Object.values(error.errors ?? {})[0]?.[0] ?? error.title ?? fallback;
     }
 
     // TODO: Add Skeleton

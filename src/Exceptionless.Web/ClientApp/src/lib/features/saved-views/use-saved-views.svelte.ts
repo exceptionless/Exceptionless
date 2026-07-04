@@ -54,6 +54,21 @@ export interface UseSavedViewsReturn {
     savedViews: SavedView[];
 }
 
+export function clearSavedViewQueryParams(queryParams: SavedViewQueryParams): void {
+    queryParams.filter = null;
+
+    if (supportsFiltersQueryParam(queryParams)) {
+        queryParams.filters = null;
+    }
+
+    setSortQueryParam(queryParams, null);
+    setTimeQueryParam(queryParams, null);
+
+    if (supportsSavedQueryParam(queryParams)) {
+        queryParams.saved = null;
+    }
+}
+
 export function filterDefinitionsEqual(a: null | string | undefined, b: null | string | undefined): boolean {
     return normalizeFilterDefinitions(a) === normalizeFilterDefinitions(b);
 }
@@ -303,16 +318,9 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     }
 
     function handleClearSavedView() {
-        options.queryParams.filter = null;
-        options.queryParams.filters = null;
-        setSortQueryParam(options.queryParams, null);
-        setTimeQueryParam(options.queryParams, null);
+        clearSavedViewQueryParams(options.queryParams);
         applyColumnState(undefined);
         applyDisplayState(undefined);
-
-        if (supportsSavedQueryParam(options.queryParams)) {
-            options.queryParams.saved = undefined;
-        }
 
         if (options.baseHref) {
             goto(options.baseHref);
@@ -394,6 +402,10 @@ function normalizeFilterDefinitions(value: null | string | undefined): string {
 
 function sortFilterDefinitions(filters: IFilter[]): IFilter[] {
     return [...filters].sort((a, b) => a.key.localeCompare(b.key));
+}
+
+function supportsFiltersQueryParam(queryParams: SavedViewQueryParams): queryParams is SavedViewQueryParams & { filters: null | string | undefined } {
+    return Object.prototype.hasOwnProperty.call(queryParams, 'filters');
 }
 
 function supportsSavedQueryParam(queryParams: SavedViewQueryParams): queryParams is SavedViewQueryParams & { saved: null | string | undefined } {

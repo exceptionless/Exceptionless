@@ -9,7 +9,7 @@
         title?: string;
     }
 
-    const { priority = 0, title = 'Keyword' }: Props = $props();
+    const { priority = 0, title = 'Raw Filter' }: Props = $props();
 
     // Use getters to avoid state_referenced_locally warning - props are evaluated lazily
     const builder: FacetFilterBuilder<KeywordFilter> = {

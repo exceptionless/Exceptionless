@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Security.Claims;
+using System.Text.Json;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
@@ -7,6 +8,7 @@ using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Validation;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Hubs;
+using Exceptionless.Web.Mcp;
 using Exceptionless.Web.Security;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Handlers;
@@ -58,19 +60,19 @@ public class Startup
         services.AddControllers(o =>
         {
             o.ModelBinderProviders.Insert(0, new CustomAttributesModelBinderProvider());
-            o.ModelMetadataDetailsProviders.Add(new SystemTextJsonValidationMetadataProvider(LowerCaseUnderscoreNamingPolicy.Instance));
+            o.ModelMetadataDetailsProviders.Add(new SystemTextJsonValidationMetadataProvider(JsonNamingPolicy.SnakeCaseLower));
             o.InputFormatters.Insert(0, new RawRequestBodyFormatter());
         })
         .AddJsonOptions(o =>
         {
-            o.JsonSerializerOptions.ConfigureExceptionlessDefaults();
+            o.JsonSerializerOptions.ConfigureExceptionlessApiDefaults();
             o.JsonSerializerOptions.Converters.Add(new DeltaJsonConverterFactory());
         });
 
         // Have to add this to get the open api json file to be snake case.
         services.ConfigureHttpJsonOptions(o =>
         {
-            o.SerializerOptions.ConfigureExceptionlessDefaults();
+            o.SerializerOptions.ConfigureExceptionlessApiDefaults();
             o.SerializerOptions.Converters.Add(new DeltaJsonConverterFactory());
         });
 
@@ -85,6 +87,11 @@ public class Startup
             o.AddPolicy(AuthorizationRoles.ClientPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.Client));
             o.AddPolicy(AuthorizationRoles.UserPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.User));
             o.AddPolicy(AuthorizationRoles.GlobalAdminPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.GlobalAdmin));
+            o.AddPolicy(AuthorizationRoles.McpPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.McpRead));
+            o.AddPolicy(AuthorizationRoles.ProjectsReadPolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.ProjectsRead)));
+            o.AddPolicy(AuthorizationRoles.StacksReadPolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.StacksRead)));
+            o.AddPolicy(AuthorizationRoles.StacksWritePolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.StacksWrite)));
+            o.AddPolicy(AuthorizationRoles.EventsReadPolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.EventsRead)));
         });
 
         services.AddRouting(r =>
@@ -126,6 +133,11 @@ public class Startup
 
         var appOptions = AppOptions.ReadFromConfiguration(Configuration);
         Bootstrapper.RegisterServices(services, appOptions, Log.Logger.ToLoggerFactory());
+        services.AddScoped<McpContextService>();
+        services.AddMcpServer()
+            .WithHttpTransport(o => o.Stateless = false)
+            .WithTools<ExceptionlessMcpTools>();
+
         services.AddSingleton(s =>
         {
             return new ThrottlingOptions
@@ -138,7 +150,8 @@ public class Startup
 
     private void CustomizeProblemDetails(ProblemDetailsContext ctx)
     {
-        ctx.ProblemDetails.Extensions.Add("instance", $"{ctx.HttpContext.Request.Method} {ctx.HttpContext.Request.Path}");
+        ctx.ProblemDetails.Instance = $"{ctx.HttpContext.Request.Method} {ctx.HttpContext.Request.Path}";
+
         if (ctx.HttpContext.Items.TryGetValue("reference-id", out object? refId) && refId is string referenceId)
         {
             ctx.ProblemDetails.Extensions.Add("reference-id", referenceId);
@@ -151,7 +164,7 @@ public class Startup
 
         if (ctx.ProblemDetails is ValidationProblemDetails validationProblem)
         {
-            // This might be possible to accomplish via serializer.
+            // MVC validation keys are CLR property names; normalize them to the API's snake_case contract.
             // NOTE: the key could be wrong for things like ExternalAuthInfo where the keys are camel case.
             validationProblem.Errors = validationProblem.Errors
                 .ToDictionary(
@@ -160,8 +173,6 @@ public class Startup
                 );
         }
 
-        // errors
-        // TODO: Check casing of property names of model state validation errors.
     }
 
     public void Configure(IApplicationBuilder app)
@@ -322,6 +333,7 @@ public class Startup
             });
 
             endpoints.MapControllers();
+            endpoints.MapMcp("/mcp").RequireAuthorization(AuthorizationRoles.McpPolicy);
             endpoints.MapFallback("{**slug:nonfile}", CreateRequestDelegate(endpoints, "/index.html"));
         });
     }

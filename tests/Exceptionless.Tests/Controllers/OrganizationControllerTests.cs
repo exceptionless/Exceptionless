@@ -82,6 +82,181 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         await service.CreateDataAsync();
     }
 
+    [Fact]
+    public async Task DeleteDataAsync_WithExistingKey_RemovesDataKey()
+    {
+        // Arrange
+        await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "data", "ApiSurfaceKey")
+            .Content(new ValueFromBody<string>("ApiSurfaceValue"))
+            .StatusCodeShouldBeOk()
+        );
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Delete()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "data", "ApiSurfaceKey")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        Assert.False(organization.Data?.ContainsKey("ApiSurfaceKey") ?? false);
+    }
+
+    [Fact]
+    public async Task DeleteIconAsync_WithExistingIcon_RemovesIcon()
+    {
+        // Arrange
+        using var content = CreateProfileImageContent();
+        var organization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "icon")
+            .Content(content)
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(organization);
+        Assert.NotNull(organization.IconUrl);
+
+        // Act
+        var updatedOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsGlobalAdminUser()
+            .Delete()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "icon")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updatedOrganization);
+        Assert.Null(updatedOrganization.IconUrl);
+
+        var storedOrganization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(storedOrganization);
+        Assert.Null(storedOrganization.IconFileName);
+    }
+
+    [Fact]
+    public async Task GetForAdminsAsync_AsGlobalAdmin_ReturnsOrganizations()
+    {
+        // Arrange
+        string expectedOrganizationId = SampleDataService.TEST_ORG_ID;
+
+        // Act
+        var organizations = await SendRequestAsAsync<IReadOnlyCollection<ViewOrganization>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "organizations")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(organizations);
+        Assert.Contains(organizations, organization => organization.Id == expectedOrganizationId);
+    }
+
+    [Fact]
+    public async Task GetIconAsync_WithExistingIcon_ReturnsImage()
+    {
+        // Arrange
+        using var content = CreateProfileImageContent();
+        var organization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "icon")
+            .Content(content)
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(organization);
+        Assert.NotNull(organization.IconUrl);
+        string iconPath = organization.IconUrl.TrimStart('/');
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .BaseUri(_server.BaseAddress)
+            .AppendPath(iconPath)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.Equal("image/png", response.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
+    public async Task IsNameAvailableAsync_WithExistingName_ReturnsCreated()
+    {
+        // Arrange
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", "check-name")
+            .QueryString("name", organization.Name)
+            .StatusCodeShouldBeCreated()
+        );
+    }
+
+    [Fact]
+    public Task IsNameAvailableAsync_WithNewName_ReturnsNoContent()
+    {
+        // Arrange
+        string name = "API Surface Organization " + Guid.NewGuid().ToString("N");
+
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", "check-name")
+            .QueryString("name", name)
+            .StatusCodeShouldBeNoContent()
+        );
+    }
+
+    [Fact]
+    public async Task PlanStatsAsync_AsGlobalAdmin_ReturnsPlanStats()
+    {
+        // Arrange
+        const string path = "stats";
+
+        // Act
+        var stats = await SendRequestAsAsync<BillingPlanStats>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "organizations", path)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(stats);
+    }
+
+    [Fact]
+    public async Task PostDataAsync_WithValidKey_PersistsDataKey()
+    {
+        // Arrange
+        const string key = "ApiSurfaceKey";
+        const string value = "ApiSurfaceValue";
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "data", key)
+            .Content(new ValueFromBody<string>(value))
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        Assert.NotNull(organization.Data);
+        Assert.True(organization.Data.TryGetValue(key, out object? savedValue));
+        Assert.Equal(value, savedValue);
+    }
+
     private async Task SetStripeCustomerIdAsync(string organizationId, string stripeCustomerId)
     {
         var organization = await _organizationRepository.GetByIdAsync(organizationId);
@@ -1001,6 +1176,41 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ChangePlanAsync_HiddenPlanTarget_ReturnsValidationError()
+    {
+        // Arrange
+        await SetPlanAndStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, _plans.SmallPlan.Id, "cus_existing");
+
+        // Act
+        var problemDetails = await WithBillingEnabledAsync<Microsoft.AspNetCore.Mvc.ValidationProblemDetails?>(() =>
+            SendRequestAsAsync<Microsoft.AspNetCore.Mvc.ValidationProblemDetails>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest { PlanId = _plans.UnlimitedPlan.Id })
+                .StatusCodeShouldBeUnprocessableEntity()
+            ));
+
+        // Assert
+        Assert.NotNull(problemDetails);
+        Assert.Collection(problemDetails.Errors,
+            error =>
+            {
+                Assert.Equal("general", error.Key);
+                Assert.Equal(["Invalid plan. Please select a valid plan."], error.Value);
+            });
+
+        Assert.Empty(StripeBillingClient.UpdatedSubscriptions);
+        Assert.Empty(StripeBillingClient.CreatedSubscriptionOptions);
+
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        Assert.Equal(_plans.SmallPlan.Id, organization.PlanId);
+        Assert.Equal("cus_existing", organization.StripeCustomerId);
+        Assert.Equal(BillingStatus.Active, organization.BillingStatus);
+    }
+
+    [Fact]
     public async Task ChangePlanAsync_SameFreePlan_ReturnsSuccess()
     {
         var result = await WithBillingEnabledAsync(() =>
@@ -1595,7 +1805,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
 
     private static MultipartFormDataContent CreateProfileImageContent()
     {
-        var bytes = new byte[256 * 1024];
+        byte[] bytes = new byte[256 * 1024];
         byte[] pngHeader = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
         Array.Copy(pngHeader, bytes, pngHeader.Length);
         Assert.True(bytes.Length < ProfileImageStorage.MaxFileSize);
