@@ -8,6 +8,7 @@ description: Why developers use Exceptionless for real-time error monitoring and
         border-right: none;
         border-left: none;
         position: relative;
+        height: 400px;
     }
     .no-video .video-container video,
     .touch .video-container video {
@@ -21,110 +22,59 @@ description: Why developers use Exceptionless for real-time error monitoring and
         position: relative;
         bottom: 0%;
         left: 0%;
-        height: 100%;
+        height: 400px;
         width: 100%;
         overflow: hidden;
         background: #000;
     }
+    .video-container .poster,
+    .video-container .filter,
+    .video-container video {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+    }
     .video-container .poster img {
         width: 100%;
-        bottom: -50%;
-        /*position: absolute;*/
+        height: 100%;
+        object-fit: cover;
         z-index:0;
         max-width:none;
+        display: block;
     }
     .video-container .filter {
         z-index: 100;
-        position: absolute;
         background: rgba(0, 0, 0, 0.4);
-        width: 100%;
     }
     .video-container video {
-        position: absolute;
         z-index: 100;
-        bottom: -75%;
+        object-fit: cover;
     }
     .video-container video.fillWidth {
         width: 100%;
     }
 </style>
-<div class="homepage-hero-module" style="height: 400px;">
-    <div class="video-container" style="height: 400px; position: relative; overflow: hidden;">
+<div class="homepage-hero-module">
+    <div class="video-container">
         <div style="text-align:center;font-size: 40px;font-weight:900;padding-top: 125px;position: absolute;z-index: 1020;margin: 0 auto;color: white;line-height: 50px;width: 100%;text-shadow:3px 3px 10px #333;">RETAIN<br>INNOVATE<br>EVOLVE</div>
-        <div class="filter" style="width: 1593px;"></div>
-        <video autoplay="" loop="" class="fillWidth fadeIn animated" style="width: 100vw;">
+        <div class="filter"></div>
+        <video autoplay="" loop="" muted="" playsinline="" class="fillWidth fadeIn animated">
             <source src="/assets/Working-Space.mp4" type="video/mp4">Your browser does not support the video tag. Please upgrade your browser.
 <!--            <source src="/assets/covers/workspace/WEBM/Working-Space.webm" type="video/webm">Your browser does not support the video tag. Please upgrade your browser.-->
         </video>
         <div class="poster">
-            <img src="/assets/img/covers/workspace/snapshots/Working-Space.jpg" alt="" style="width: 1593px;">
+            <img src="/assets/img/covers/workspace/snapshots/Working-Space.jpg" alt="" width="1593" height="896">
         </div>
     </div>
 </div>
 <script>
-    //jQuery is required to run this code
-    $( document ).ready(function() {
-
-        scaleVideoContainer();
-
-        initBannerVideoSize('.video-container .poster img');
-        initBannerVideoSize('.video-container .filter');
-        initBannerVideoSize('.video-container video');
-
-        $(window).on('resize', function() {
-            scaleVideoContainer();
-            scaleBannerVideoSize('.video-container .poster img');
-            scaleBannerVideoSize('.video-container .filter');
-            scaleBannerVideoSize('.video-container video');
-        });
-
+    document.addEventListener("DOMContentLoaded", function () {
+        var video = document.querySelector(".homepage-hero-module .video-container video");
+        if (video) {
+            video.classList.add("fadeIn", "animated");
+        }
     });
-
-    function scaleVideoContainer() {
-
-        var height = 400;
-        var unitHeight = parseInt(height) + 'px';
-        $('.homepage-hero-module').css('height',unitHeight);
-
-    }
-
-    function initBannerVideoSize(element){
-
-        $(element).each(function(){
-            $(this).data('height', $(this).height());
-            $(this).data('width', $(this).width());
-        });
-
-        scaleBannerVideoSize(element);
-
-    }
-
-    function scaleBannerVideoSize(element){
-
-        var windowWidth = $(window).width(),
-            windowHeight = $(window).height() + 5,
-            videoWidth,
-            videoHeight;
-
-        console.log(windowHeight);
-
-        $(element).each(function(){
-            var videoAspectRatio = $(this).data('height')/$(this).data('width');
-
-            $(this).width(windowWidth);
-
-            if(windowWidth < 1000){
-                videoHeight = windowHeight;
-                videoWidth = videoHeight / videoAspectRatio;
-                $(this).css({'margin-top' : 0, 'margin-left' : -(videoWidth - windowWidth) / 2 + 'px'});
-
-                $(this).width(videoWidth).height(videoHeight);
-            }
-
-            $('.homepage-hero-module .video-container video').addClass('fadeIn animated');
-
-        });
-    }
 </script>
 <div id="wrap" class="container" role="document">
 
@@ -137,9 +87,9 @@ description: Why developers use Exceptionless for real-time error monitoring and
             var base = 150000000;
             function addCommas(nStr) {
                 nStr += '';
-                x = nStr.split('.');
-                x1 = x[0];
-                x2 = x.length > 1 ? '.' + x[1] : '';
+                var x = nStr.split('.');
+                var x1 = x[0];
+                var x2 = x.length > 1 ? '.' + x[1] : '';
                 var rgx = /(\d+)(\d{3})/;
                 while (rgx.test(x1)) {
                     x1 = x1.replace(rgx, '$1' + ',' + '$2');
@@ -147,7 +97,10 @@ description: Why developers use Exceptionless for real-time error monitoring and
                 return x1 + x2;}
             setInterval(function () {
                 var cans = addCommas(Math.floor((new Date() - start) * rate) + base);
-                jQuery("#cans").html(cans);
+                var counter = document.getElementById("cans");
+                if (counter) {
+                    counter.textContent = cans;
+                }
             }, 250);
             </script>
             <div class="span6"><img class="aligncenter size-full" src="/assets/img/codesmith-client-logo-bar-left.png" alt="Exceptionless Customers &amp; Users" width="588" height="150" srcset="/assets/img/codesmith-client-logo-bar-left.png 588w, /assets/img/codesmith-client-logo-bar-left-300x77.png 300w" sizes="(max-width: 588px) 100vw, 588px"></div>

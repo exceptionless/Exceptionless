@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <None Remove="Mail\Templates\contact-request.html" />
     <None Remove="Mail\Templates\event-notice.html" />
     <None Remove="Mail\Templates\organization-added.html" />
     <None Remove="Mail\Templates\organization-invited.html" />
@@ -10,6 +11,7 @@
     <None Remove="Mail\Templates\user-password-reset.html" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Mail\Templates\contact-request.html" />
     <EmbeddedResource Include="Mail\Templates\event-notice.html" />
     <EmbeddedResource Include="Mail\Templates\organization-added.html" />
     <EmbeddedResource Include="Mail\Templates\organization-invited.html" />
