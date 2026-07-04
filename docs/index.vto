@@ -2,7 +2,10 @@
 title: Home
 layout: layouts/base.vto
 description: Real-time exception reporting for ASP.NET, Web API, WebForms, WPF, Console, and MVC applications. Includes event organization, notifications, and more.
+extraStyles:
+  - /assets/cyclone-slider-pro/templates/standard/style.css
 extraScripts:
+  - /assets/js/jquery-1.9.1.min.js
   - /assets/cyclone-slider-pro/jquery.easing.1.3.js
   - /assets/cyclone-slider-pro/libs/cycle2/jquery.cycle2.min.js
   - /assets/cyclone-slider-pro/libs/cycle2/jquery.cycle2.swipe.min.js
@@ -21,7 +24,7 @@ extraScripts:
              data-cycle-tile-vertical="true" data-cycle-timeout="10000">
             <div class="cycloneslider-slide cycloneslider-slide-custom cycle-slide">
                 <div class="span6">
-                    <div class="thumb thumb-left"><img src="/assets/img/dashboard-2-1024x594.png" alt="Exceptionless Dashboard"></div>
+                    <div class="thumb thumb-left"><img src="/assets/img/dashboard-2-1024x594.png" alt="Exceptionless Dashboard" width="1024" height="594" fetchpriority="high" decoding="async"></div>
                 </div>
                 <div class="span6"><h2>Don't let your users walk away in frustration</h2>
                     <p>Discover errors in your app you never knew were happening and use detailed error reports to
@@ -36,13 +39,13 @@ extraScripts:
                         API to send additional details about critical errors and be notified immediately.</p><a
                             href="tour/" class="btn btn-large btn-primary">Take the Tour</a></div>
                 <div class="span6">
-                    <div class="thumb thumb-right"><img src="/assets/img/toexceptionless.png" alt="Exceptionless submission code sample"></div>
+                    <div class="thumb thumb-right"><img src="/assets/img/toexceptionless.png" alt="Exceptionless submission code sample" width="560" height="280" loading="lazy" decoding="async"></div>
                 </div>
                 <div style="clear:both;"></div>
             </div>
             <div class="cycloneslider-slide cycloneslider-slide-custom cycle-slide">
                 <div class="span6">
-                    <div class="thumb thumb-left"><img src="/assets/img/logs-2.jpg" alt="Exceptionless logs tracking"></div>
+                    <div class="thumb thumb-left"><img src="/assets/img/logs-2.jpg" alt="Exceptionless logs tracking" width="705" height="319" loading="lazy" decoding="async"></div>
                 </div>
                 <div class="span6"><h2>Report Logs, Feature Usages, and more!</h2>
                     <p>You can send any type of event to your Exceptionless dashboard. Create tags for organization, and
@@ -57,12 +60,12 @@ extraScripts:
                             href="https://github.com/exceptionless/Exceptionless" target="_blank"
                             class="btn btn-large btn-primary">Fork Us on GitHub!</a></div>
                 <div class="span6">
-                    <div class="thumb thumb-right"><img src="/assets/img/slider-github.jpg" alt="Exceptionless on GitHub"></div>
+                    <div class="thumb thumb-right"><img src="/assets/img/slider-github.jpg" alt="Exceptionless on GitHub" width="715" height="357" loading="lazy" decoding="async"></div>
                 </div>
                 <div style="clear:both;"></div>
             </div>
         </div>
-        <a href="#" class="cycloneslider-prev"> <span></span> </a> <a href="#" class="cycloneslider-next"> <span></span>
+        <a href="#" class="cycloneslider-prev" aria-label="Previous slide"> <span aria-hidden="true"></span> </a> <a href="#" class="cycloneslider-next" aria-label="Next slide"> <span aria-hidden="true"></span>
     </a></div>
 </div>
 
@@ -75,7 +78,7 @@ extraScripts:
             <div class="span6"><img class="aligncenter size-full" src="/assets/img/codesmith-client-logo-bar-right.png" alt="Exceptionless Users &amp; Customers" width="582" height="150" srcset="/assets/img/codesmith-client-logo-bar-right.png 582w, /assets/img/codesmith-client-logo-bar-right-300x77.png 300w" sizes="(max-width: 582px) 100vw, 582px"></div>
             <h1 style="margin-bottom: 15px;">What Is Exceptionless?</h1>
             <div style="font-size: 14px;">
-                <p><strong>The definition of the word exceptionless is: <em style="color: #f27f1e;">to be without exception</em></strong>. Our product provides real-time error, feature, and log reporting for your ASP.NET, Web API, WebForms, WPF, Console, and MVC apps. It organizes the gathered information into simple actionable data that will help your app become exceptionless. Best of all, it’s <a title="Exceptionless on GitHub" href="https://github.com/exceptionless/Exceptionless" target="_blank">open source</a>!</p>
+                <p><strong>The definition of the word exceptionless is: <em class="text-accent">to be without exception</em></strong>. Our product provides real-time error, feature, and log reporting for your ASP.NET, Web API, WebForms, WPF, Console, and MVC apps. It organizes the gathered information into simple actionable data that will help your app become exceptionless. Best of all, it’s <a title="Exceptionless on GitHub" href="https://github.com/exceptionless/Exceptionless" target="_blank">open source</a>!</p>
                 <ul class="icons clearfix" style="margin-top: 20px;">
                     <li>
                         <div class="icon-bullhorn icon-large"></div>
@@ -130,17 +133,17 @@ extraScripts:
             <h2 style="margin-top: 20px;">How Does It Work?</h2>
             <div class="howDoesWork">
                 <div class="howDoesWorkSection">
-                    <h4>1. <a title="Create a free Exceptionless account" href="https://be.exceptionless.io/signup?domain=exceptionless.com&amp;type=organic">Create a free account</a></h4>
+                    <h3>1. <a title="Create a free Exceptionless account" href="https://be.exceptionless.io/signup?domain=exceptionless.com&amp;type=organic">Create a free account</a></h3>
                     <p>Signup in seconds – No credit card required</p>
                 </div>
                 <div class="howDoesWorkArrow">›</div>
                 <div class="howDoesWorkSection">
-                    <h4>2. Install the client</h4>
+                    <h3>2. Install the client</h3>
                     <p>Install the Exceptionless client from NuGet</p>
                 </div>
                 <div class="howDoesWorkArrow">›</div>
                 <div class="howDoesWorkSection">
-                    <h4>3. See your exceptions</h4>
+                    <h3>3. See your exceptions</h3>
                     <p>Done – Start tracking &amp; fixing those exceptions!</p>
                 </div>
                 <div style="clear: both;"></div>
@@ -151,5 +154,3 @@ extraScripts:
 
     </div><!-- /#content -->
 </div><!-- /#wrap -->
-
-

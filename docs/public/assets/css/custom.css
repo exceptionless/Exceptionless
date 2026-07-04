@@ -256,3 +256,74 @@ a.deeplink:hover {
         margin-top: 10px;
     }
 }
+
+/* Lighthouse remediation */
+body, input, button, select, textarea, .search-query {
+    font-family: "Open Sans", Arial, sans-serif;
+}
+
+#wrap h1,
+#wrap h2,
+#wrap h3,
+.home h1,
+.home h2,
+.home h3,
+.docs h1,
+.docs h2,
+.docs h3,
+.toc-list a {
+    color: #4f7600 !important;
+}
+
+.page-header h1 {
+    color: #555 !important;
+}
+
+#wrap a,
+.docs a,
+.entry-content a,
+.well a,
+.row a:not(.btn),
+.page #content p a,
+.howDoesWork a {
+    color: #386f9f !important;
+}
+
+#footer-wrapper a {
+    color: #d6d6d6 !important;
+}
+
+#footer-wrapper h3,
+#footer-wrapper h3 .slash,
+#footer-wrapper .copyright {
+    color: #ebebeb !important;
+}
+
+.toc-list a:only-child,
+.cycloneslider-slide p {
+    color: #555 !important;
+}
+
+.text-accent {
+    color: #a84f00 !important;
+}
+
+#sliderRow {
+    min-height: 376px;
+}
+
+.cycloneslider-template-standard .cycloneslider-slide img {
+    height: auto;
+}
+
+.howDoesWorkSection h3 {
+    font-size: 17.5px;
+    line-height: 20px;
+    margin: 10px 0;
+}
+
+@media (max-width: 767px) {
+    #sliderRow {
+        min-height: 620px;
+    }
+}
