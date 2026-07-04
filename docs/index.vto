@@ -68,14 +68,20 @@ extraStyles:
         var index = 0;
         var timer = null;
 
+        slides.forEach(function (slide, slideIndex) {
+            slide.setAttribute("aria-hidden", slideIndex === index ? "false" : "true");
+        });
+
         function showSlide(nextIndex) {
             if (!slides.length) {
                 return;
             }
 
             slides[index].classList.remove("is-active");
+            slides[index].setAttribute("aria-hidden", "true");
             index = (nextIndex + slides.length) % slides.length;
             slides[index].classList.add("is-active");
+            slides[index].setAttribute("aria-hidden", "false");
         }
 
         function start() {

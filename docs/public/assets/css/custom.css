@@ -312,12 +312,24 @@ body, input, button, select, textarea, .search-query {
     min-height: 376px;
 }
 
-.cycloneslider-template-standard .cycloneslider-slide:not(.is-active) {
-    display: none !important;
+.cycloneslider-template-standard .cycloneslider-slides {
+    display: grid;
+}
+
+.cycloneslider-template-standard .cycloneslider-slide {
+    grid-area: 1 / 1;
+    display: block !important;
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+    transition: opacity 500ms ease;
 }
 
 .cycloneslider-template-standard .cycloneslider-slide.is-active {
-    display: block !important;
+    opacity: 1;
+    pointer-events: auto;
+    visibility: visible;
+    z-index: 1;
 }
 
 .cycloneslider-template-standard .cycloneslider-slide img {
