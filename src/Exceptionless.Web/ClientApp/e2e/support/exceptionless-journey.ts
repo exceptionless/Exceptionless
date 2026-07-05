@@ -5,7 +5,15 @@ import type { E2EScenario } from '../fixtures/e2e-test';
 
 import { createRunName, E2E_ORGANIZATION_NAME_PREFIX } from '../fixtures/e2e-test';
 import { runCleanupStep, throwIfCleanupFailed } from './cleanup';
-import { getIdFromUrl, getProjectTokenFromConfigurePage, getUserToken, selectProjectType, waitForEmailValidation } from './page-helpers';
+import {
+    getIdFromUrl,
+    getProjectTokenFromConfigurePage,
+    getUserToken,
+    getVisibleRow,
+    getVisibleText,
+    selectProjectType,
+    waitForEmailValidation
+} from './page-helpers';
 import { createRepresentativeEvent } from './synthetic-event';
 
 const FIXED_VERSION = '1.0.0';
@@ -103,7 +111,7 @@ export class ExceptionlessE2EJourney {
             await this.page.getByRole('link', { name: 'add a new project' }).click();
             await expect(this.page.getByRole('heading', { name: 'Add Project' })).toBeVisible();
 
-            await this.page.getByLabel('Project Name').fill(this.projectName);
+            await this.page.getByLabel('Project Name', { exact: true }).fill(this.projectName);
             await this.page.getByRole('button', { name: 'Add Project' }).click();
 
             await this.page.waitForURL(/\/next\/project\/[^/]+\/configure/, { timeout: 30_000 });
@@ -123,50 +131,50 @@ export class ExceptionlessE2EJourney {
         expect(this.eventId).toBeTruthy();
 
         await this.page.goto(`/next/event/${this.eventId}`);
-        await expect(this.page.getByText(this.message).first()).toBeVisible({ timeout: 30_000 });
+        await expect(getVisibleText(this.page, this.message)).toBeVisible({ timeout: 30_000 });
         await expect(this.page.getByRole('tab', { name: 'Overview' })).toBeVisible();
         await expect(this.page.getByRole('tab', { name: 'Exception' })).toBeVisible();
         await expect(this.page.getByRole('tab', { name: 'Request' })).toBeVisible();
         await expect(this.page.getByRole('tab', { name: 'Environment' })).toBeVisible();
         await expect(this.page.getByRole('tab', { name: 'Extended Data' })).toBeVisible();
 
-        await expect(this.page.getByRole('row', { name: new RegExp(`^Reference\\s+${escapeRegExp(this.referenceId)}$`) })).toBeVisible();
-        await expect(this.page.getByRole('row').filter({ hasText: 'Source' }).filter({ hasText: 'playwright-e2e' })).toBeVisible();
-        await expect(this.page.getByRole('row').filter({ hasText: 'Error Type' }).filter({ hasText: 'PlaywrightOnboardingException' }).first()).toBeVisible();
+        await expect(getVisibleRow(this.page, new RegExp(`^Reference\\s+${escapeRegExp(this.referenceId)}$`))).toBeVisible();
+        await expect(getVisibleRow(this.page, 'Source', 'playwright-e2e')).toBeVisible();
+        await expect(getVisibleRow(this.page, 'Error Type', 'PlaywrightOnboardingException')).toBeVisible();
 
         await this.page.getByRole('tab', { name: 'Exception' }).click();
         const exceptionPanel = this.page.getByLabel('Exception', { exact: true });
-        await expect(this.page.getByRole('row').filter({ hasText: 'Message' }).filter({ hasText: this.message })).toBeVisible();
+        await expect(getVisibleRow(this.page, 'Message', this.message)).toBeVisible();
         await expect(exceptionPanel.getByText('exceptionless-journey.ts:42:13')).toBeVisible();
 
         await this.page.getByRole('tab', { name: 'Request' }).click();
-        await expect(this.page.getByRole('row').filter({ hasText: 'HTTP Method' }).filter({ hasText: 'GET' })).toBeVisible();
-        await expect(this.page.getByRole('row').filter({ hasText: 'URL' }).filter({ hasText: '/e2e/onboarding' })).toBeVisible();
-        await expect(this.page.getByRole('row').filter({ hasText: 'User Agent' }).filter({ hasText: 'Exceptionless Playwright E2E' })).toBeVisible();
+        await expect(getVisibleRow(this.page, 'HTTP Method', 'GET')).toBeVisible();
+        await expect(getVisibleRow(this.page, 'URL', '/e2e/onboarding')).toBeVisible();
+        await expect(getVisibleRow(this.page, 'User Agent', 'Exceptionless Playwright E2E')).toBeVisible();
 
         await this.page.getByRole('tab', { name: 'Environment' }).click();
-        await expect(this.page.getByRole('row').filter({ hasText: 'Machine Name' }).filter({ hasText: 'playwright-runner' })).toBeVisible();
-        await expect(this.page.getByRole('row').filter({ hasText: 'Process Name' }).filter({ hasText: 'e2e-tests' })).toBeVisible();
+        await expect(getVisibleRow(this.page, 'Machine Name', 'playwright-runner')).toBeVisible();
+        await expect(getVisibleRow(this.page, 'Process Name', 'e2e-tests')).toBeVisible();
 
         await this.page.getByRole('tab', { name: 'Extended Data' }).click();
-        await expect(this.page.getByText('e2e_reference').filter({ visible: true }).first()).toBeVisible();
-        await expect(this.page.getByText(this.referenceId).filter({ visible: true }).first()).toBeVisible();
-        await expect(this.page.getByText('run_id').filter({ visible: true }).first()).toBeVisible();
-        await expect(this.page.getByText(this.e2eApi.environment.runId).filter({ visible: true }).first()).toBeVisible();
+        await expect(getVisibleText(this.page, 'e2e_reference')).toBeVisible();
+        await expect(getVisibleText(this.page, this.referenceId)).toBeVisible();
+        await expect(getVisibleText(this.page, 'run_id')).toBeVisible();
+        await expect(getVisibleText(this.page, this.e2eApi.environment.runId)).toBeVisible();
     }
 
     async expectEventInPrimaryViews(): Promise<void> {
         await this.page.goto('/next/event');
         await expect(this.page.getByRole('heading', { name: 'Events' })).toBeVisible();
-        await expect(this.page.getByText(this.message).first()).toBeVisible({ timeout: 30_000 });
+        await expect(getVisibleText(this.page, this.message)).toBeVisible({ timeout: 30_000 });
 
         await this.page.goto('/next/stack');
         await expect(this.page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
-        await expect(this.page.getByText(this.message).first()).toBeVisible({ timeout: 30_000 });
+        await expect(getVisibleText(this.page, this.message)).toBeVisible({ timeout: 30_000 });
 
         await this.page.goto('/next/stream');
         await expect(this.page.getByRole('heading', { name: 'Event Stream' })).toBeVisible();
-        await expect(this.page.getByText(this.message).first()).toBeVisible({ timeout: 30_000 });
+        await expect(getVisibleText(this.page, this.message)).toBeVisible({ timeout: 30_000 });
     }
 
     async markStackFixed(version = FIXED_VERSION): Promise<void> {
@@ -177,7 +185,7 @@ export class ExceptionlessE2EJourney {
         await this.page.getByRole('button', { exact: true, name: 'Open' }).click();
         await this.page.getByRole('menuitem', { name: 'Fixed' }).click();
         await expect(this.page.getByRole('heading', { name: 'Mark Stack As Fixed' })).toBeVisible();
-        await this.page.getByLabel('Version').fill(version);
+        await this.page.getByLabel('Version', { exact: true }).fill(version);
         await this.page.getByRole('button', { name: 'Mark Stack Fixed' }).click();
 
         await expect.poll(async () => (await this.e2eApi.getStack(this.userToken!, this.stackId!)).status, { timeout: 30_000 }).toBe('fixed');
@@ -192,10 +200,10 @@ export class ExceptionlessE2EJourney {
     async signUpAndCreateOrganization(): Promise<void> {
         await this.page.goto('/next/signup');
 
-        await this.page.getByLabel('Name').fill(this.userName);
-        await this.page.getByLabel('Email').fill(this.email);
+        await this.page.getByLabel('Name', { exact: true }).fill(this.userName);
+        await this.page.getByLabel('Email', { exact: true }).fill(this.email);
         await waitForEmailValidation(this.page);
-        await this.page.getByLabel('Password').fill(PASSWORD);
+        await this.page.getByLabel('Password', { exact: true }).fill(PASSWORD);
         await this.page.getByRole('button', { name: 'Create My Account' }).click();
 
         this.userToken = await getUserToken(this.page);
@@ -207,8 +215,8 @@ export class ExceptionlessE2EJourney {
 
         await expect(setupHeading).toBeVisible({ timeout: 30_000 });
 
-        await this.page.getByLabel('Organization Name').fill(this.organizationName);
-        await this.page.getByLabel('Project Name').fill(this.projectName);
+        await this.page.getByLabel('Organization Name', { exact: true }).fill(this.organizationName);
+        await this.page.getByLabel('Project Name', { exact: true }).fill(this.projectName);
         await this.page.getByRole('button', { name: 'Continue' }).click();
 
         await this.page.waitForURL(/\/next\/project\/[^/]+\/configure/, { timeout: 30_000 });

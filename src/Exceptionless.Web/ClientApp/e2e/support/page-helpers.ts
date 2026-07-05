@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 export function getIdFromUrl(page: Page, pattern: RegExp): string {
     const match = pattern.exec(new URL(page.url()).pathname);
@@ -27,6 +27,20 @@ export async function getUserToken(page: Page): Promise<string> {
     }
 
     return token;
+}
+
+export function getVisibleRow(page: Page, ...texts: Array<RegExp | string>): Locator {
+    let row = page.getByRole('row');
+
+    for (const text of texts) {
+        row = row.filter({ hasText: text });
+    }
+
+    return row.filter({ visible: true }).first();
+}
+
+export function getVisibleText(page: Page, text: RegExp | string): Locator {
+    return page.getByText(text).filter({ visible: true }).first();
 }
 
 export async function selectProjectType(page: Page, optionName: string): Promise<void> {

@@ -1,5 +1,6 @@
 import { expect, test } from '../fixtures/e2e-test';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
+import { getVisibleText } from '../support/page-helpers';
 
 test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2eApi, e2eScenario, page }) => {
     const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
@@ -14,43 +15,47 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
 
     await test.step('save the filtered Events page as a view', async () => {
         await page.goto(`/next/event?reference=${encodeURIComponent(journey.referenceId)}&time=all`);
-        await expect(page.getByText(journey.message).first()).toBeVisible({ timeout: 30_000 });
+        await expect(getVisibleText(page, journey.message)).toBeVisible({ timeout: 30_000 });
 
-        await page.getByRole('button', { name: 'View' }).click();
+        await page.getByRole('button', { exact: true, name: 'View' }).click();
         await page.getByRole('menuitem', { name: 'Save As...' }).click();
 
         const dialog = page.getByRole('dialog', { name: 'Save View' });
         await expect(dialog).toBeVisible();
         await dialog.getByLabel('Name', { exact: true }).fill(viewName);
-        await expect(dialog.getByLabel('URL name')).toHaveValue(viewSlug);
+        await expect(dialog.getByLabel('URL name', { exact: true })).toHaveValue(viewSlug);
         await dialog.getByRole('button', { name: 'Save' }).click();
+        await expect(dialog).toBeHidden({ timeout: 30_000 });
 
         await expect(page.getByRole('heading', { name: viewName })).toBeVisible({ timeout: 30_000 });
         await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(viewSlug)}(?:[?#]|$)`));
-        await expect(page.getByText(journey.message).first()).toBeVisible();
+        await expect(getVisibleText(page, journey.message)).toBeVisible();
     });
 
     await test.step('rename the saved view without breaking the active route', async () => {
-        await page.getByRole('button', { name: 'View' }).click();
+        await page.getByRole('button', { exact: true, name: 'View' }).click();
         await page.getByRole('menuitem', { name: 'Rename' }).click();
 
         const dialog = page.getByRole('dialog', { name: 'Rename View' });
         await expect(dialog).toBeVisible();
         await dialog.getByLabel('Name', { exact: true }).fill(renamedViewName);
-        await dialog.getByLabel('URL name').fill(viewSlug);
+        await dialog.getByLabel('URL name', { exact: true }).fill(viewSlug);
         await dialog.getByRole('button', { name: 'Rename' }).click();
+        await expect(dialog).toBeHidden({ timeout: 30_000 });
 
         await expect(page.getByRole('heading', { name: renamedViewName })).toBeVisible({ timeout: 30_000 });
         await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(viewSlug)}(?:[?#]|$)`));
-        await expect(page.getByText(journey.message).first()).toBeVisible();
+        await expect(getVisibleText(page, journey.message)).toBeVisible();
     });
 
     await test.step('delete the saved view and return to the default Events view', async () => {
-        await page.getByRole('button', { name: 'View' }).click();
+        await page.getByRole('button', { exact: true, name: 'View' }).click();
         await page.getByRole('menuitem', { name: `Delete "${renamedViewName}"` }).click();
 
-        await expect(page.getByRole('heading', { name: 'Delete Saved View' })).toBeVisible();
-        await page.getByRole('button', { name: 'Delete' }).click();
+        const dialog = page.getByRole('dialog', { name: 'Delete Saved View' });
+        await expect(dialog).toBeVisible();
+        await dialog.getByRole('button', { name: 'Delete' }).click();
+        await expect(dialog).toBeHidden({ timeout: 30_000 });
 
         await expect(page.getByRole('heading', { name: 'Events' })).toBeVisible({ timeout: 30_000 });
         await expect(page).toHaveURL(/\/next\/event(?:[?#]|$)/);
