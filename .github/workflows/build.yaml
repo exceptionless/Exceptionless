@@ -33,7 +33,7 @@ jobs:
     steps:
       - name: Resolve preview pull request
         id: pr
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             if (context.eventName === "repository_dispatch") {
@@ -89,7 +89,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           ref: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_sha) || github.event.pull_request.head.sha || github.sha }}
@@ -135,7 +135,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_sha) || github.event.pull_request.head.sha || github.sha }}
 
@@ -144,7 +144,7 @@ jobs:
         with:
           dotnet-version: 10.0.301
 
-      - uses: actions/cache@v5
+      - uses: actions/cache@v6
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
@@ -187,7 +187,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_sha) || github.event.pull_request.head.sha || github.sha }}
 
@@ -197,7 +197,7 @@ jobs:
           node-version: 24
 
       - name: Cache node_modules
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         id: cache-node-modules
         with:
           path: src/Exceptionless.Web/ClientApp/node_modules
@@ -380,7 +380,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_sha) || github.event.pull_request.head.sha || github.sha }}
 
@@ -529,7 +529,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_sha) || github.event.pull_request.head.sha || github.sha }}
 
@@ -610,6 +610,16 @@ jobs:
           else
             echo "- **Deployment**: Skipped" >> $GITHUB_STEP_SUMMARY
           fi
+
+  deploy-website:
+    name: Deploy website
+    if: ${{ needs.version.outputs.is_prod_deploy == 'true' }}
+    needs: [version, deploy]
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/website.yml
 
   preview-comment-result:
     needs: [preview-context, version, test-api, test-client, docker-build, docker-publish, deploy]

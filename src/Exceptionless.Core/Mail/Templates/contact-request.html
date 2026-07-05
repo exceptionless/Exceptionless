@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{Subject}}</title>
+</head>
+<body style="font-family: Helvetica, Arial, sans-serif; color: #2c2c2c; line-height: 1.5;">
+  <h1 style="font-size: 22px; font-weight: 400;">{{Subject}}</h1>
+  <dl>
+    <dt>Name</dt>
+    <dd>{{Name}}</dd>
+    <dt>Email</dt>
+    <dd>{{EmailAddress}}</dd>
+    {{#if Company}}
+    <dt>Company</dt>
+    <dd>{{Company}}</dd>
+    {{/if}}
+    <dt>Subject</dt>
+    <dd>{{RequestSubject}}</dd>
+  </dl>
+
+  <h2 style="font-size: 18px; font-weight: 400;">Message</h2>
+  {{#each MessageLines}}
+  <p>{{this}}</p>
+  {{/each}}
+
+  <hr>
+  <dl>
+    {{#if ClientIpAddress}}
+    <dt>IP address</dt>
+    <dd>{{ClientIpAddress}}</dd>
+    {{/if}}
+    {{#if UserAgent}}
+    <dt>User agent</dt>
+    <dd>{{UserAgent}}</dd>
+    {{/if}}
+    {{#if Referrer}}
+    <dt>Referrer</dt>
+    <dd>{{Referrer}}</dd>
+    {{/if}}
+  </dl>
+</body>
+</html>

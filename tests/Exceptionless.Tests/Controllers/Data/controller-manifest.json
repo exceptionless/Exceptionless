@@ -827,6 +827,41 @@
     "ExcludeFromDescription": false
   },
   {
+    "Controller": "ContactController",
+    "Action": "PostFormAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/contact",
+    "Authorization": [
+      "AllowAnonymous"
+    ],
+    "Consumes": [
+      "application/x-www-form-urlencoded",
+      "multipart/form-data"
+    ],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": true
+  },
+  {
+    "Controller": "ContactController",
+    "Action": "PostJsonAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/contact",
+    "Authorization": [
+      "AllowAnonymous"
+    ],
+    "Consumes": [
+      "application/json"
+    ],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": true
+  },
+  {
     "Controller": "EventController",
     "Action": "GetAllAsync",
     "HttpMethod": "GET",

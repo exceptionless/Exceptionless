@@ -96,6 +96,9 @@ public class MailKitMailSender : IMailSender
         else
             throw new ArgumentException("Email SmtpFrom not configured", nameof(notification));
 
+        if (!String.IsNullOrEmpty(notification.ReplyTo))
+            message.ReplyTo.AddRange(InternetAddressList.Parse(notification.ReplyTo));
+
         if (!String.IsNullOrEmpty(notification.Body))
             builder.HtmlBody = notification.Body;
 
