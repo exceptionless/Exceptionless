@@ -4,8 +4,7 @@ on:
   workflow_dispatch:
   workflow_call:
   push:
-    branches:
-      - website-preview
+    tags: ["v*"]
   pull_request:
     paths:
       - "docs/**"
@@ -60,9 +59,9 @@ jobs:
       id-token: write
     concurrency:
       group: github-pages
-      cancel-in-progress: ${{ github.ref == 'refs/heads/website-preview' }}
+      cancel-in-progress: false
     environment:
-      name: ${{ github.ref == 'refs/heads/website-preview' && 'github-pages-preview' || 'github-pages' }}
+      name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
