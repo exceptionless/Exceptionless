@@ -130,7 +130,7 @@ export class ExceptionlessE2EJourney {
         await expect(this.page.getByRole('tab', { name: 'Environment' })).toBeVisible();
         await expect(this.page.getByRole('tab', { name: 'Extended Data' })).toBeVisible();
 
-        await expect(this.page.getByRole('row').filter({ hasText: 'Reference' }).filter({ hasText: this.referenceId })).toBeVisible();
+        await expect(this.page.getByRole('row', { name: new RegExp(`^Reference\\s+${escapeRegExp(this.referenceId)}$`) })).toBeVisible();
         await expect(this.page.getByRole('row').filter({ hasText: 'Source' }).filter({ hasText: 'playwright-e2e' })).toBeVisible();
         await expect(this.page.getByRole('row').filter({ hasText: 'Error Type' }).filter({ hasText: 'PlaywrightOnboardingException' }).first()).toBeVisible();
 
@@ -256,6 +256,10 @@ export class ExceptionlessE2EJourney {
 
         return organization.id;
     }
+}
+
+function escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function isE2EScenario(value: E2EScenario | TestInfo): value is E2EScenario {
