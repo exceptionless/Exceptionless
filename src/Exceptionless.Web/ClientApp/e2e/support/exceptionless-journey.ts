@@ -126,8 +126,32 @@ export class ExceptionlessE2EJourney {
         await expect(this.page.getByText(this.message).first()).toBeVisible({ timeout: 30_000 });
         await expect(this.page.getByRole('tab', { name: 'Overview' })).toBeVisible();
         await expect(this.page.getByRole('tab', { name: 'Exception' })).toBeVisible();
+        await expect(this.page.getByRole('tab', { name: 'Request' })).toBeVisible();
         await expect(this.page.getByRole('tab', { name: 'Environment' })).toBeVisible();
         await expect(this.page.getByRole('tab', { name: 'Extended Data' })).toBeVisible();
+
+        await expect(this.page.getByRole('row').filter({ hasText: 'Reference' }).filter({ hasText: this.referenceId })).toBeVisible();
+        await expect(this.page.getByRole('row').filter({ hasText: 'Source' }).filter({ hasText: 'playwright-e2e' })).toBeVisible();
+        await expect(this.page.getByRole('row').filter({ hasText: 'Error Type' }).filter({ hasText: 'PlaywrightOnboardingException' }).first()).toBeVisible();
+
+        await this.page.getByRole('tab', { name: 'Exception' }).click();
+        await expect(this.page.getByRole('row').filter({ hasText: 'Message' }).filter({ hasText: this.message })).toBeVisible();
+        await expect(this.page.getByText('exceptionless-journey.ts:42:13')).toBeVisible();
+
+        await this.page.getByRole('tab', { name: 'Request' }).click();
+        await expect(this.page.getByRole('row').filter({ hasText: 'HTTP Method' }).filter({ hasText: 'GET' })).toBeVisible();
+        await expect(this.page.getByRole('row').filter({ hasText: 'URL' }).filter({ hasText: '/e2e/onboarding' })).toBeVisible();
+        await expect(this.page.getByRole('row').filter({ hasText: 'User Agent' }).filter({ hasText: 'Exceptionless Playwright E2E' })).toBeVisible();
+
+        await this.page.getByRole('tab', { name: 'Environment' }).click();
+        await expect(this.page.getByRole('row').filter({ hasText: 'Machine Name' }).filter({ hasText: 'playwright-runner' })).toBeVisible();
+        await expect(this.page.getByRole('row').filter({ hasText: 'Process Name' }).filter({ hasText: 'e2e-tests' })).toBeVisible();
+
+        await this.page.getByRole('tab', { name: 'Extended Data' }).click();
+        await expect(this.page.getByText('e2e_reference')).toBeVisible();
+        await expect(this.page.getByText(this.referenceId).first()).toBeVisible();
+        await expect(this.page.getByText('run_id')).toBeVisible();
+        await expect(this.page.getByText(this.e2eApi.environment.runId).first()).toBeVisible();
     }
 
     async expectEventInPrimaryViews(): Promise<void> {
