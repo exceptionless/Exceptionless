@@ -4,6 +4,9 @@ import type { E2EApiClient } from '../fixtures/api-client';
 import type { E2EScenario } from '../fixtures/e2e-test';
 
 import { createRunName, E2E_ORGANIZATION_NAME_PREFIX } from '../fixtures/e2e-test';
+import { runCleanupStep, throwIfCleanupFailed } from './cleanup';
+import { getIdFromUrl, getProjectTokenFromConfigurePage, getUserToken, selectProjectType, waitForEmailValidation } from './page-helpers';
+import { createRepresentativeEvent } from './synthetic-event';
 
 const FIXED_VERSION = '1.0.0';
 const PASSWORD = 'tester';
@@ -194,39 +197,16 @@ export class ExceptionlessE2EJourney {
         expect(this.projectToken).toBeTruthy();
         expect(this.userToken).toBeTruthy();
 
-        await this.e2eApi.submitEvent(this.projectId!, this.projectToken!, {
-            data: {
-                '@environment': {
-                    machine_name: 'playwright-runner',
-                    process_name: 'e2e-tests'
-                },
-                '@request': {
-                    headers: {
-                        'User-Agent': ['Exceptionless Playwright E2E']
-                    },
-                    host: 'web-ex.dev.localhost',
-                    http_method: 'GET',
-                    is_secure: true,
-                    path: '/e2e/onboarding',
-                    port: 7131,
-                    query_string: {
-                        reference: this.referenceId
-                    },
-                    user_agent: 'Exceptionless Playwright E2E'
-                },
-                '@simple_error': {
-                    message: this.message,
-                    stack_trace: `Error: ${this.message}\n    at exceptionless-journey.ts:42:13`,
-                    type: 'PlaywrightOnboardingException'
-                },
-                e2e_reference: this.referenceId,
-                run_id: this.e2eApi.environment.runId
-            },
-            message: this.message,
-            reference_id: this.referenceId,
-            source: 'playwright-e2e',
-            type: 'error'
-        });
+        await this.e2eApi.submitEvent(
+            this.projectId!,
+            this.projectToken!,
+            createRepresentativeEvent({
+                appUrl: this.e2eApi.environment.appUrl,
+                message: this.message,
+                referenceId: this.referenceId,
+                runId: this.e2eApi.environment.runId
+            })
+        );
 
         const event = await this.e2eApi.pollForEventByReference(this.userToken!, this.projectId!, this.referenceId);
         expect(event.reference_id).toBe(this.referenceId);
@@ -254,70 +234,6 @@ export class ExceptionlessE2EJourney {
     }
 }
 
-function getIdFromUrl(page: Page, pattern: RegExp): string {
-    const match = pattern.exec(new URL(page.url()).pathname);
-    if (!match?.[1]) {
-        throw new Error(`Could not extract id from ${page.url()}`);
-    }
-
-    return match[1];
-}
-
-async function getProjectTokenFromConfigurePage(page: Page): Promise<string> {
-    const text = await page.locator('body').innerText();
-    const match = /Authorization: Bearer ([A-Za-z0-9_-]+)/.exec(text);
-    if (!match?.[1] || match[1] === 'YOUR_API_KEY') {
-        throw new Error('Configure page did not expose a project token.');
-    }
-
-    return match[1];
-}
-
-async function getUserToken(page: Page): Promise<string> {
-    await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('satellizer_token')), { timeout: 30_000 }).toBeTruthy();
-    const token = await page.evaluate(() => window.localStorage.getItem('satellizer_token'));
-    if (!token) {
-        throw new Error('Signup did not persist an access token.');
-    }
-
-    return token;
-}
-
 function isE2EScenario(value: E2EScenario | TestInfo): value is E2EScenario {
     return 'projectToken' in value;
-}
-
-async function runCleanupStep(errors: Error[], name: string, action: () => Promise<void>): Promise<void> {
-    try {
-        await action();
-    } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        errors.push(new Error(`${name}: ${message}`));
-    }
-}
-
-async function selectProjectType(page: Page, optionName: string): Promise<void> {
-    await page.getByRole('button', { name: /Please select a project type|Command Line:/ }).click();
-    const option = page.getByRole('option', { name: optionName });
-
-    try {
-        await option.click({ timeout: 5_000 });
-    } catch {
-        await page.keyboard.press('Enter');
-    }
-}
-
-function throwIfCleanupFailed(errors: Error[]): void {
-    if (errors.length === 0) {
-        return;
-    }
-
-    throw new Error(`E2E cleanup failed:\n${errors.map((error) => `- ${error.message}`).join('\n')}`);
-}
-
-async function waitForEmailValidation(page: Page): Promise<void> {
-    await page
-        .getByLabel('Validating email')
-        .waitFor({ state: 'detached', timeout: 10_000 })
-        .catch(() => undefined);
 }

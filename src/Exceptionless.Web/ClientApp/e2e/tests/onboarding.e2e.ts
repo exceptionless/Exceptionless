@@ -1,7 +1,7 @@
 import { test } from '../fixtures/e2e-test';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
 
-test('new user can sign up and configure a first project', async ({ e2eApi, page }, testInfo) => {
+test('new user can sign up and configure a first project @signup', async ({ e2eApi, page }, testInfo) => {
     const journey = new ExceptionlessE2EJourney(page, e2eApi, testInfo);
 
     try {

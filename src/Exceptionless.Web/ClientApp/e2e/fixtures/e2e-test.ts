@@ -1,5 +1,6 @@
 import { test as base, expect, type TestInfo } from '@playwright/test';
 
+import { runCleanupStep, throwIfCleanupFailed } from '../support/cleanup';
 import { E2EApiClient } from './api-client';
 import { getE2EEnvironment } from './environment';
 
@@ -45,7 +46,7 @@ export const test = base.extend<E2EFixtures>({
         let createdUser = false;
 
         try {
-            if (e2eApi.environment.email && e2eApi.environment.password) {
+            if (!e2eApi.environment.isProduction && e2eApi.environment.email && e2eApi.environment.password) {
                 userToken = await e2eApi.login();
             } else {
                 userToken = await e2eApi.signup(userName, email, PASSWORD);
@@ -116,21 +117,4 @@ export function createRunName(runId: string, testInfo: TestInfo): string {
         .replace(/[^a-zA-Z0-9_-]/g, '-')
         .replace(/-+/g, '-')
         .slice(0, 96);
-}
-
-async function runCleanupStep(errors: Error[], name: string, action: () => Promise<void>): Promise<void> {
-    try {
-        await action();
-    } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        errors.push(new Error(`${name}: ${message}`));
-    }
-}
-
-function throwIfCleanupFailed(errors: Error[]): void {
-    if (errors.length === 0) {
-        return;
-    }
-
-    throw new Error(`E2E cleanup failed:\n${errors.map((error) => `- ${error.message}`).join('\n')}`);
 }
