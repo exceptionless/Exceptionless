@@ -149,10 +149,10 @@ export class ExceptionlessE2EJourney {
         await expect(this.page.getByRole('row').filter({ hasText: 'Process Name' }).filter({ hasText: 'e2e-tests' })).toBeVisible();
 
         await this.page.getByRole('tab', { name: 'Extended Data' }).click();
-        await expect(this.page.getByText('e2e_reference')).toBeVisible();
-        await expect(this.page.getByText(this.referenceId).first()).toBeVisible();
-        await expect(this.page.getByText('run_id')).toBeVisible();
-        await expect(this.page.getByText(this.e2eApi.environment.runId).first()).toBeVisible();
+        await expect(this.page.getByText('e2e_reference').filter({ visible: true }).first()).toBeVisible();
+        await expect(this.page.getByText(this.referenceId).filter({ visible: true }).first()).toBeVisible();
+        await expect(this.page.getByText('run_id').filter({ visible: true }).first()).toBeVisible();
+        await expect(this.page.getByText(this.e2eApi.environment.runId).filter({ visible: true }).first()).toBeVisible();
     }
 
     async expectEventInPrimaryViews(): Promise<void> {
