@@ -37,7 +37,7 @@ test('events saved view can be saved, loaded, and deleted', async ({ e2eApi, e2e
         await openViewMenu(page);
         await page.getByRole('menuitem', { name: `Delete "${viewName}"` }).click();
 
-        const dialog = page.getByRole('dialog', { name: 'Delete Saved View' });
+        const dialog = page.getByRole('alertdialog', { name: 'Delete Saved View' });
         await expect(dialog).toBeVisible();
         await dialog.getByRole('button', { name: 'Delete' }).click();
         await expect(dialog).toBeHidden({ timeout: 30_000 });
