@@ -21,7 +21,7 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
 
         const dialog = page.getByRole('dialog', { name: 'Save View' });
         await expect(dialog).toBeVisible();
-        await dialog.getByLabel('Name').fill(viewName);
+        await dialog.getByLabel('Name', { exact: true }).fill(viewName);
         await expect(dialog.getByLabel('URL name')).toHaveValue(viewSlug);
         await dialog.getByRole('button', { name: 'Save' }).click();
 
@@ -36,7 +36,7 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
 
         const dialog = page.getByRole('dialog', { name: 'Rename View' });
         await expect(dialog).toBeVisible();
-        await dialog.getByLabel('Name').fill(renamedViewName);
+        await dialog.getByLabel('Name', { exact: true }).fill(renamedViewName);
         await dialog.getByLabel('URL name').fill(viewSlug);
         await dialog.getByRole('button', { name: 'Rename' }).click();
 
