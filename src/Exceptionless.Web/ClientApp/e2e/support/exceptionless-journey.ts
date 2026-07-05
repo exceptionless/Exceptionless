@@ -135,8 +135,9 @@ export class ExceptionlessE2EJourney {
         await expect(this.page.getByRole('row').filter({ hasText: 'Error Type' }).filter({ hasText: 'PlaywrightOnboardingException' }).first()).toBeVisible();
 
         await this.page.getByRole('tab', { name: 'Exception' }).click();
+        const exceptionPanel = this.page.getByLabel('Exception', { exact: true });
         await expect(this.page.getByRole('row').filter({ hasText: 'Message' }).filter({ hasText: this.message })).toBeVisible();
-        await expect(this.page.getByText('exceptionless-journey.ts:42:13')).toBeVisible();
+        await expect(exceptionPanel.getByText('exceptionless-journey.ts:42:13')).toBeVisible();
 
         await this.page.getByRole('tab', { name: 'Request' }).click();
         await expect(this.page.getByRole('row').filter({ hasText: 'HTTP Method' }).filter({ hasText: 'GET' })).toBeVisible();
