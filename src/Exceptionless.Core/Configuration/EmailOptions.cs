@@ -14,6 +14,8 @@ public class EmailOptions
     /// </summary>
     public string? TestEmailAddress { get; internal set; }
 
+    public string? ContactEmailAddress { get; internal set; }
+
     /// <summary>
     /// Email addresses that match this comma-delimited list of domains and email addresses will be allowed to be sent out in QA mode
     /// </summary>
@@ -39,6 +41,7 @@ public class EmailOptions
         options.EnableDailySummary = config.GetValue(nameof(options.EnableDailySummary), appOptions.AppMode == AppMode.Production);
         options.AllowedOutboundAddresses = config.GetValueList(nameof(options.AllowedOutboundAddresses)).Select(v => v.ToLowerInvariant()).ToList();
         options.TestEmailAddress = config.GetValue(nameof(options.TestEmailAddress), appOptions.AppMode == AppMode.Development ? "admin@exceptionless.test" : null);
+        options.ContactEmailAddress = config.GetValue<string>(nameof(options.ContactEmailAddress));
 
         string? emailConnectionString = config.GetConnectionString("Email");
         if (!String.IsNullOrEmpty(emailConnectionString))

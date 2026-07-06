@@ -29,6 +29,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Net.Http.Headers;
+using ModelContextProtocol.AspNetCore;
 using OpenTelemetry;
 using Scalar.AspNetCore;
 using Serilog;
@@ -45,14 +46,17 @@ public partial class Program
         {
             Console.Title = "Exceptionless Web";
 
-            var builder = WebApplication.CreateBuilder(args);
             string? environment = Environment.GetEnvironmentVariable("EX_AppMode");
             if (String.IsNullOrWhiteSpace(environment))
-                environment = builder.Environment.EnvironmentName;
+                environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
             if (String.IsNullOrWhiteSpace(environment))
                 environment = Environments.Production;
 
-            builder.Host.UseEnvironment(environment);
+            var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+            {
+                Args = args,
+                EnvironmentName = environment
+            });
             builder.Configuration.Sources.Clear();
             builder.Configuration
                 .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
@@ -199,6 +203,7 @@ public partial class Program
                     .MapStatus(ResultStatus.Unavailable, ApiResultMapper.MapUnavailable));
             Bootstrapper.RegisterServices(builder.Services, options, Log.Logger.ToLoggerFactory());
             builder.Services.AddScoped<McpContextService>();
+            builder.Services.AddSingleton<ISessionMigrationHandler, McpSessionMigrationHandler>();
             builder.Services.AddMcpServer()
                 .WithHttpTransport(o => o.Stateless = false)
                 .WithTools<ExceptionlessMcpTools>();

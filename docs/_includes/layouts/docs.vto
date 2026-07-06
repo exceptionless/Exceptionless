@@ -1,0 +1,42 @@
+---
+layout: layouts/base.vto
+extraStyles:
+  - /assets/css/prism.css
+---
+<div class="page-header margin-top">
+  <h1 id="documentation">Documentation</h1>
+</div>
+
+<div id="wrap" class="container" role="document">
+  <div id="responsive-menu"><button class="btn btn-primary" onclick="handleMenu()">Table of Contents</button></div>
+  <div id="content" class="row-fluid">
+    <div class="toc well span3 visible-toc">
+      <div class="input-append">
+        <input class="span9" id="search-input" type="text" placeholder="Search docs...">
+        <button class="btn" type="button" onclick="handleSearch()">Go!</button>
+      </div>
+      {{ docsNavHtml(search, url) }}
+    </div>
+    <div class="well span9 docs">
+      {{ content }}
+    </div>
+  </div>
+</div>
+
+<script>
+  function handleMenu() {
+    var toc = document.querySelector(".toc");
+    if (!toc) return;
+    toc.classList.toggle("visible-toc");
+    toc.classList.toggle("hidden-toc");
+  }
+
+  function handleSearch() {
+    var input = document.getElementById("search-input");
+    var filter = input ? input.value.toLowerCase() : "";
+    document.querySelectorAll(".toc-list li").forEach(function (item) {
+      var text = item.textContent.toLowerCase();
+      item.style.display = !filter || text.indexOf(filter) >= 0 ? "" : "none";
+    });
+  }
+</script>

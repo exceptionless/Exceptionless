@@ -16,7 +16,10 @@ export const JSON_PATCH_CONTENT_TYPE = 'application/json-patch+json';
 
 /** RequestOptions preset with the correct JSON Patch content type header. */
 export const jsonPatchRequestOptions: RequestOptions = {
-    headers: { 'Content-Type': JSON_PATCH_CONTENT_TYPE }
+    headers: {
+        Accept: 'application/json, application/problem+json',
+        'Content-Type': JSON_PATCH_CONTENT_TYPE
+    }
 };
 
 /**

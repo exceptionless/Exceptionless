@@ -1,0 +1,206 @@
+---
+title: Home
+layout: layouts/base.vto
+description: Real-time exception reporting for ASP.NET, Web API, WebForms, WPF, Console, and MVC applications. Includes event organization, notifications, and more.
+extraStyles:
+  - /assets/cyclone-slider-pro/templates/standard/style.css
+---
+<div id="sliderRow">
+    <div class="cycloneslider cycloneslider-template-standard cycloneslider-width-responsive" id="cycloneslider-20-1" style="max-width: 100%;">
+        <div class="cycloneslider-slides">
+            <div class="cycloneslider-slide cycloneslider-slide-custom is-active">
+                <div class="span6">
+                    <div class="thumb thumb-left"><img src="/assets/img/dashboard-2-1024x594.png" alt="Exceptionless Dashboard" width="1024" height="594" sizes="(max-width: 767px) 92vw, 50vw" transform-images="avif webp png 512 768 1024" fetchpriority="high" decoding="async"></div>
+                </div>
+                <div class="span6"><h2>Don't let your users walk away in frustration</h2>
+                    <p>Discover errors in your app you never knew were happening and use detailed error reports to
+                        squash them with ease. Make your app Exceptionless!</p><a
+                            href="https://be.exceptionless.io/signup?domain=exceptionless.com&amp;type=organic"
+                            class="btn btn-large btn-primary">Sign up for FREE!</a></div>
+                <div style="clear:both;"></div>
+            </div>
+            <div class="cycloneslider-slide cycloneslider-slide-custom">
+                <div class="span6"><h2>Exceptionless makes error reporting a breeze</h2>
+                    <p>Simply install the client and begin collecting unhandled exceptions right away. Use our fluent
+                        API to send additional details about critical errors and be notified immediately.</p><a
+                            href="tour/" class="btn btn-large btn-primary">Take the Tour</a></div>
+                <div class="span6">
+                    <div class="thumb thumb-right"><img src="/assets/img/toexceptionless.png" alt="Exceptionless submission code sample" width="560" height="280" sizes="(max-width: 767px) 92vw, 50vw" transform-images="avif webp png 280 560" loading="lazy" decoding="async"></div>
+                </div>
+                <div style="clear:both;"></div>
+            </div>
+            <div class="cycloneslider-slide cycloneslider-slide-custom">
+                <div class="span6">
+                    <div class="thumb thumb-left"><img src="/assets/img/logs-2.jpg" alt="Exceptionless logs tracking" width="705" height="319" sizes="(max-width: 767px) 92vw, 50vw" transform-images="avif webp jpg 352 705" loading="lazy" decoding="async"></div>
+                </div>
+                <div class="span6"><h2>Report Logs, Feature Usages, and more!</h2>
+                    <p>You can send any type of event to your Exceptionless dashboard. Create tags for organization, and
+                        you've got a robust event logging system!</p><a href="https://be.exceptionless.io/signup?domain=exceptionless.com&amp;type=organic" class="btn btn-large btn-primary">Sign up for
+                        FREE!</a></div>
+                <div style="clear:both;"></div>
+            </div>
+            <div class="cycloneslider-slide cycloneslider-slide-custom">
+                <div class="span6"><h2>Fork Us! Exceptionless is Open Source</h2>
+                    <p>Join the community and help us make the software world a better place. Collaborate, give
+                        feedback, report bugs, and host Exceptionless yourself - for free.</p><a
+                            href="https://github.com/exceptionless/Exceptionless" target="_blank"
+                            class="btn btn-large btn-primary">Fork Us on GitHub!</a></div>
+                <div class="span6">
+                    <div class="thumb thumb-right"><img src="/assets/img/slider-github.jpg" alt="Exceptionless on GitHub" width="715" height="357" sizes="(max-width: 767px) 92vw, 50vw" transform-images="avif webp jpg 358 715" loading="lazy" decoding="async"></div>
+                </div>
+                <div style="clear:both;"></div>
+            </div>
+        </div>
+        <a href="#" class="cycloneslider-prev" aria-label="Previous slide"> <span aria-hidden="true"></span> </a> <a href="#" class="cycloneslider-next" aria-label="Next slide"> <span aria-hidden="true"></span>
+    </a></div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var slider = document.getElementById("cycloneslider-20-1");
+        if (!slider) {
+            return;
+        }
+
+        var slides = Array.prototype.slice.call(slider.querySelectorAll(".cycloneslider-slide"));
+        var previous = slider.querySelector(".cycloneslider-prev");
+        var next = slider.querySelector(".cycloneslider-next");
+        var index = 0;
+        var timer = null;
+
+        slides.forEach(function (slide, slideIndex) {
+            slide.setAttribute("aria-hidden", slideIndex === index ? "false" : "true");
+        });
+
+        function showSlide(nextIndex) {
+            if (!slides.length) {
+                return;
+            }
+
+            slides[index].classList.remove("is-active");
+            slides[index].setAttribute("aria-hidden", "true");
+            index = (nextIndex + slides.length) % slides.length;
+            slides[index].classList.add("is-active");
+            slides[index].setAttribute("aria-hidden", "false");
+        }
+
+        function start() {
+            stop();
+            timer = window.setInterval(function () {
+                showSlide(index + 1);
+            }, 10000);
+        }
+
+        function stop() {
+            if (timer) {
+                window.clearInterval(timer);
+                timer = null;
+            }
+        }
+
+        if (previous) {
+            previous.addEventListener("click", function (event) {
+                event.preventDefault();
+                showSlide(index - 1);
+                start();
+            });
+        }
+
+        if (next) {
+            next.addEventListener("click", function (event) {
+                event.preventDefault();
+                showSlide(index + 1);
+                start();
+            });
+        }
+
+        slider.addEventListener("mouseenter", stop);
+        slider.addEventListener("mouseleave", start);
+        start();
+    });
+</script>
+
+<div id="wrap" class="container margin-top" role="document">
+    <div id="content" class="row-fluid">
+        <div id="main" class="span12" role="main">
+
+            <div class="span6"><img class="aligncenter size-full" src="/assets/img/codesmith-client-logo-bar-left.png" alt="Exceptionless Customers &amp; Users" width="588" height="150" srcset="/assets/img/codesmith-client-logo-bar-left.png 588w, /assets/img/codesmith-client-logo-bar-left-300x77.png 300w" sizes="(max-width: 588px) 100vw, 588px"></div>
+            <div class="span6"><img class="aligncenter size-full" src="/assets/img/codesmith-client-logo-bar-right.png" alt="Exceptionless Users &amp; Customers" width="582" height="150" srcset="/assets/img/codesmith-client-logo-bar-right.png 582w, /assets/img/codesmith-client-logo-bar-right-300x77.png 300w" sizes="(max-width: 582px) 100vw, 582px"></div>
+            <h1 style="margin-bottom: 15px;">What Is Exceptionless?</h1>
+            <div style="font-size: 14px;">
+                <p><strong>The definition of the word exceptionless is: <em class="text-accent">to be without exception</em></strong>. Our product provides real-time error, feature, and log reporting for your ASP.NET, Web API, WebForms, WPF, Console, and MVC apps. It organizes the gathered information into simple actionable data that will help your app become exceptionless. Best of all, it’s <a title="Exceptionless on GitHub" href="https://github.com/exceptionless/Exceptionless" target="_blank">open source</a>!</p>
+                <ul class="icons clearfix" style="margin-top: 20px;">
+                    <li>
+                        <div class="icon-bullhorn icon-large"></div>
+                        <div class="feature">Error <strong>notifications</strong>, including critical and regressions</div>
+                    </li>
+                    <li>
+                        <div class="icon-signal icon-large"></div>
+                        <div class="feature">Easily see <strong>top errors</strong> and prioritize them</div>
+                    </li>
+                    <li>
+                        <div class="icon-link icon-large"></div>
+                        <div class="feature">Intelligent <strong>grouping</strong> of exceptions, logs, and features</div>
+                    </li>
+                    <li>
+                        <div class="icon-dashboard icon-large"></div>
+                        <div class="feature"><strong>Dashboard</strong> with event stats and trends</div>
+                    </li>
+                    <li>
+                        <div class="icon-eye-open icon-large"></div>
+                        <div class="feature"><strong>Detailed</strong> error reports, including stacktrace</div>
+                    </li>
+                    <li>
+                        <div class="icon-paper-clip icon-large"></div>
+                        <div class="feature">Add any <strong>custom objects</strong> to your events</div>
+                    </li>
+                    <li>
+                        <div class="icon-group icon-large"></div>
+                        <div class="feature"><strong>Unlimited users</strong> per organization</div>
+                    </li>
+                    <li>
+                        <div class="icon-ok icon-large"></div>
+                        <div class="feature">Mark exceptions as <strong>fixed</strong>, monitor for regressions</div>
+                    </li>
+                    <li>
+                        <div class="icon-bolt icon-large"></div>
+                        <div class="feature"><strong>Real-time</strong> view of events as they happen</div>
+                    </li>
+                    <li>
+                        <div class="icon-warning-sign icon-large"></div>
+                        <div class="feature">Ability to mark events as being <strong>critical</strong></div>
+                    </li>
+                    <li>
+                        <div class="icon-plane icon-large"></div>
+                        <div class="feature"><strong>Supports offline</strong> and occasionally connected scenarios</div>
+                    </li>
+                    <li>
+                        <div class=" icon-cloud-download icon-large"></div>
+                        <div class="feature"><strong>Easy setup</strong> in less than 5 minutes</div>
+                    </li>
+                </ul>
+            </div>
+            <h2 style="margin-top: 20px;">How Does It Work?</h2>
+            <div class="howDoesWork">
+                <div class="howDoesWorkSection">
+                    <h3>1. <a title="Create a free Exceptionless account" href="https://be.exceptionless.io/signup?domain=exceptionless.com&amp;type=organic">Create a free account</a></h3>
+                    <p>Signup in seconds – No credit card required</p>
+                </div>
+                <div class="howDoesWorkArrow">›</div>
+                <div class="howDoesWorkSection">
+                    <h3>2. Install the client</h3>
+                    <p>Install the Exceptionless client from NuGet</p>
+                </div>
+                <div class="howDoesWorkArrow">›</div>
+                <div class="howDoesWorkSection">
+                    <h3>3. See your exceptions</h3>
+                    <p>Done – Start tracking &amp; fixing those exceptions!</p>
+                </div>
+                <div style="clear: both;"></div>
+            </div>
+            <div class="signup center"><a class="btn btn-large btn-primary" href="https://be.exceptionless.io/signup?domain=exceptionless.com&amp;type=organic">Sign Up For <strong>FREE</strong> Now!</a></div>
+
+        </div>
+
+    </div><!-- /#content -->
+</div><!-- /#wrap -->

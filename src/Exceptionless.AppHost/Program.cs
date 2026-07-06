@@ -6,7 +6,9 @@ string? scope = WorktreeScope.Resolve();
 bool isScoped = !String.IsNullOrWhiteSpace(scope);
 var worktreePorts = isScoped ? WorktreeScope.AssignFreePorts() : null;
 var builder = DistributedApplication.CreateBuilder(args);
-bool servicesOnly = args.Any(arg => StringComparer.OrdinalIgnoreCase.Equals(arg, "--services-only") || StringComparer.OrdinalIgnoreCase.Equals(arg, "services-only"));
+bool servicesOnly = HasArgument("--services-only");
+bool ciE2E = HasArgument("--ci-e2e");
+bool includeDevTools = !ciE2E;
 int oldAppHttpPort = worktreePorts?.OldAppHttp ?? 7120;
 int oldAppPort = worktreePorts?.OldAppHttps ?? 7121;
 int oldAppLiveReloadPort = worktreePorts?.OldAppLiveReload ?? 35729;
@@ -61,7 +63,7 @@ elastic = ownedElastic
     .WithLifetime(ContainerLifetime.Persistent)
     .WithContainerName("Exceptionless-Elasticsearch");
 
-if (!servicesOnly)
+if (!servicesOnly && includeDevTools)
 {
     elastic = elastic.WithKibana(b => b
         .WithLifetime(ContainerLifetime.Persistent)
@@ -75,7 +77,7 @@ cache = ownedCache
     .WithLifetime(ContainerLifetime.Persistent)
     .WithContainerName("Exceptionless-Redis");
 
-if (!servicesOnly)
+if (!servicesOnly && includeDevTools)
 {
     cache = cache.WithRedisInsight(b => b
         .WithLifetime(ContainerLifetime.Persistent)
@@ -207,3 +209,5 @@ if (!servicesOnly)
 }
 
 await builder.Build().RunAsync();
+
+bool HasArgument(string name) => args.Any(arg => StringComparer.OrdinalIgnoreCase.Equals(arg, name) || StringComparer.OrdinalIgnoreCase.Equals(arg, name.TrimStart('-')));

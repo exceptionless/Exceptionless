@@ -25,10 +25,17 @@ public class Program
             var jobOptions = new JobRunnerOptions(args);
 
             Console.Title = $"Exceptionless {jobOptions.JobName} Job";
-            string environment = Environment.GetEnvironmentVariable("EX_AppMode") ?? "Production";
+            string? environment = Environment.GetEnvironmentVariable("EX_AppMode");
+            if (String.IsNullOrWhiteSpace(environment))
+                environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            if (String.IsNullOrWhiteSpace(environment))
+                environment = Environments.Production;
 
-            var builder = WebApplication.CreateBuilder(args);
-            builder.Host.UseEnvironment(environment);
+            var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+            {
+                Args = args,
+                EnvironmentName = environment
+            });
             builder.Configuration.Sources.Clear();
             builder.Configuration
                 .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
