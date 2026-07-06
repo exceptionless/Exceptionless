@@ -22,9 +22,16 @@ namespace Exceptionless.Core.Jobs;
 public class CleanupDataJob : JobWithLockBase, IHealthCheck
 {
     private static readonly TimeSpan OAuthTokenCleanupSafetyWindow = TimeSpan.FromDays(1);
+    private static readonly TimeSpan SyntheticOrganizationCleanupSafetyWindow = TimeSpan.FromDays(1);
+    private static readonly TimeSpan SyntheticUserCleanupSafetyWindow = TimeSpan.FromDays(1);
+    private const string SyntheticOrganizationNamePrefix = "E2E Playwright Org";
+    private const string SyntheticUserEmailPrefix = "playwright-";
+    private const string SyntheticUserEmailSuffix = "@exceptionless.test";
+    private const string SyntheticUserFullNamePrefix = "Playwright User";
 
     private readonly IOrganizationRepository _organizationRepository;
     private readonly OrganizationService _organizationService;
+    private readonly IUserRepository _userRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly IStackRepository _stackRepository;
     private readonly IEventRepository _eventRepository;
@@ -42,6 +49,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
     public CleanupDataJob(
         IOrganizationRepository organizationRepository,
         OrganizationService organizationService,
+        IUserRepository userRepository,
         IProjectRepository projectRepository,
         IStackRepository stackRepository,
         IEventRepository eventRepository,
@@ -61,6 +69,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
     {
         _organizationRepository = organizationRepository;
         _organizationService = organizationService;
+        _userRepository = userRepository;
         _projectRepository = projectRepository;
         _stackRepository = stackRepository;
         _eventRepository = eventRepository;
@@ -86,6 +95,8 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
 
         await MarkTokensSuspended(context);
         await CleanupOAuthTokensAsync(context);
+        await CleanupSyntheticOrganizationsAsync(context);
+        await CleanupSyntheticUsersAsync(context);
         await CleanupSoftDeletedOrganizationsAsync(context);
         await CleanupSoftDeletedProjectsAsync(context);
         await CleanupSoftDeletedStacksAsync(context);
@@ -118,6 +129,69 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         var utcCutoff = _timeProvider.GetUtcNow().UtcDateTime.Subtract(OAuthTokenCleanupSafetyWindow);
         long removed = await _oauthTokenRepository.RemoveExpiredDisabledAsync(utcCutoff, context.CancellationToken);
         _logger.LogInformation("Removed {OAuthTokenCount} expired disabled OAuth token(s)", removed);
+    }
+
+    private async Task CleanupSyntheticOrganizationsAsync(JobContext context)
+    {
+        var utcCutoff = _timeProvider.GetUtcNow().UtcDateTime.Subtract(SyntheticOrganizationCleanupSafetyWindow);
+        var organizationResults = await _organizationRepository.FindAsync(q => q
+            .FilterExpression($"name:\"{SyntheticOrganizationNamePrefix}\"")
+            .DateRange(null, utcCutoff, (Organization organization) => organization.CreatedUtc)
+            .SortAscending(organization => organization.Id), o => o.SearchAfterPaging().PageLimit(5));
+
+        _logger.LogInformation("Found {SyntheticOrganizationCount} synthetic E2E organization(s) older than {SyntheticOrganizationCutoff}", organizationResults.Total, utcCutoff);
+
+        while (organizationResults.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
+        {
+            foreach (var organization in organizationResults.Documents.Where(IsSyntheticOrganization))
+            {
+                using var _ = _logger.BeginScope(new ExceptionlessState().Organization(organization.Id));
+                try
+                {
+                    await RemoveOrganizationAsync(organization, context);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error removing synthetic E2E organization {OrganizationId}: {Message}", organization.Id, ex.Message);
+                }
+
+                // Sleep so we are not hammering the backend.
+                await Task.Delay(TimeSpan.FromSeconds(2.5), _timeProvider);
+            }
+
+            if (context.CancellationToken.IsCancellationRequested || !await organizationResults.NextPageAsync())
+                break;
+        }
+    }
+
+    private async Task CleanupSyntheticUsersAsync(JobContext context)
+    {
+        var utcCutoff = _timeProvider.GetUtcNow().UtcDateTime.Subtract(SyntheticUserCleanupSafetyWindow);
+        var userResults = await _userRepository.FindAsync(q => q
+            .FilterExpression($"email_address:{SyntheticUserEmailPrefix}*")
+            .DateRange(null, utcCutoff, (User user) => user.CreatedUtc)
+            .SortAscending(user => user.Id), o => o.SearchAfterPaging().PageLimit(25));
+
+        _logger.LogInformation("Found {SyntheticUserCount} synthetic E2E user(s) older than {SyntheticUserCutoff}", userResults.Total, utcCutoff);
+
+        while (userResults.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
+        {
+            foreach (var user in userResults.Documents.Where(IsStandaloneSyntheticUser))
+            {
+                using var _ = _logger.BeginScope(new ExceptionlessState().Identity(user.EmailAddress));
+                try
+                {
+                    await RemoveSyntheticUserAsync(user);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error removing synthetic E2E user {UserId}: {Message}", user.Id, ex.Message);
+                }
+            }
+
+            if (context.CancellationToken.IsCancellationRequested || !await userResults.NextPageAsync())
+                break;
+        }
     }
 
     private async Task CleanupSoftDeletedOrganizationsAsync(JobContext context)
@@ -202,6 +276,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         _logger.RemoveOrganizationStart(organization.Name, organization.Id);
         await _organizationService.RemoveTokensAsync(organization);
         await _organizationService.RemoveWebHooksAsync(organization);
+        await _organizationService.RemoveSavedViewsAsync(organization);
         await _organizationService.CancelSubscriptionsAsync(organization);
         await _organizationService.RemoveUsersAsync(organization, null);
 
@@ -219,6 +294,23 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
 
         await _organizationRepository.RemoveAsync(organization);
         _logger.RemoveOrganizationComplete(organization.Name, organization.Id, removedProjects, removedStacks, removedEvents);
+    }
+
+    private static bool IsSyntheticOrganization(Organization organization)
+        => organization.Name.StartsWith(SyntheticOrganizationNamePrefix, StringComparison.Ordinal);
+
+    private static bool IsStandaloneSyntheticUser(User user)
+        => user.OrganizationIds.Count == 0
+            && user.EmailAddress.StartsWith(SyntheticUserEmailPrefix, StringComparison.OrdinalIgnoreCase)
+            && user.EmailAddress.EndsWith(SyntheticUserEmailSuffix, StringComparison.OrdinalIgnoreCase)
+            && user.FullName.StartsWith(SyntheticUserFullNamePrefix, StringComparison.Ordinal);
+
+    private async Task RemoveSyntheticUserAsync(User user)
+    {
+        long removed = await _tokenRepository.RemoveAllByUserIdAsync(user.Id);
+        removed += await _oauthTokenRepository.RemoveAllByUserIdAsync(user.Id);
+        await _userRepository.RemoveAsync(user);
+        _logger.LogInformation("Removed synthetic E2E user {UserId} and {SyntheticUserTokenCount} token(s)", user.Id, removed);
     }
 
     private Task RemoveOrganizationFilesAsync(Organization organization, JobContext context)

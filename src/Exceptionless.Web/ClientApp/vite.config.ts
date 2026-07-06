@@ -1,3 +1,5 @@
+import type { Plugin } from 'vite';
+
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { svelteTesting } from '@testing-library/svelte/vite';
@@ -18,6 +20,35 @@ if (codespaceName && codespaceDomain) {
     allowedHosts.push(`${codespaceName}-${port}.${codespaceDomain}`);
 }
 
+function svelteKitRuntimeDefines(): Plugin {
+    let replacements = new Map<string, string>();
+
+    return {
+        apply: 'serve',
+        configResolved(config) {
+            replacements = new Map(
+                Object.entries(config.define ?? {})
+                    .filter(([key]) => key.startsWith('__SVELTEKIT_'))
+                    .map(([key, value]) => [key, String(value)])
+            );
+        },
+        enforce: 'pre',
+        name: 'exceptionless-sveltekit-runtime-defines',
+        transform(code, id) {
+            if (!id.includes('/node_modules/@sveltejs/kit/src/runtime/') && !id.includes('\\node_modules\\@sveltejs\\kit\\src\\runtime\\')) {
+                return;
+            }
+
+            let transformed = code;
+            for (const [key, value] of replacements) {
+                transformed = transformed.replaceAll(key, value);
+            }
+
+            return transformed === code ? undefined : { code: transformed, map: null };
+        }
+    };
+}
+
 export default defineConfig({
     build: {
         sourcemap: true,
@@ -25,7 +56,7 @@ export default defineConfig({
     },
     clearScreen: false,
     logLevel: 'info',
-    plugins: [tailwindcss(), sveltekit()],
+    plugins: [tailwindcss(), sveltekit(), svelteKitRuntimeDefines()],
     server: {
         allowedHosts,
         hmr,
