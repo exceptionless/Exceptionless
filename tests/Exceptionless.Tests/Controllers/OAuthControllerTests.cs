@@ -36,6 +36,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     private const string RestApiResource = "http://localhost:7110/api/v2";
     private const string PkceVerifier = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~";
     private const string WrongPkceVerifier = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
+    private static readonly string DefaultDeviceAuthorizationScope = $"{AuthorizationRoles.McpRead} {AuthorizationRoles.ProjectsRead} {AuthorizationRoles.StacksRead} {AuthorizationRoles.EventsRead} {AuthorizationRoles.OfflineAccess}";
 
     private readonly IOAuthApplicationRepository _oauthApplicationRepository;
     private readonly IOAuthTokenRepository _oauthTokenRepository;
@@ -719,6 +720,39 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task DeviceAuthorizationAsync_WithoutScope_UsesClientDefaultScopes()
+    {
+        using var client = CreateHttpClient();
+
+        var authorizationResponse = await client.PostAsync("oauth/device_authorization", CreateDeviceAuthorizationContent(scope: null), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, authorizationResponse.StatusCode);
+        var authorization = await DeserializeResponseAsync<OAuthDeviceAuthorizationResponse>(authorizationResponse);
+        Assert.NotNull(authorization);
+
+        using var consentRequest = new HttpRequestMessage(HttpMethod.Post, "oauth/device/consent")
+        {
+            Content = JsonContent.Create(new OAuthDeviceConsentForm
+            {
+                UserCode = authorization.UserCode
+            })
+        };
+        consentRequest.Headers.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes($"{SampleDataService.TEST_USER_EMAIL}:{SampleDataService.TEST_USER_PASSWORD}")));
+
+        var consentResponse = await client.SendAsync(consentRequest, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, consentResponse.StatusCode);
+        var consent = await DeserializeResponseAsync<OAuthDeviceConsentResponse>(consentResponse);
+        Assert.NotNull(consent);
+        Assert.Contains(AuthorizationRoles.McpRead, consent.Scopes);
+        Assert.Contains(AuthorizationRoles.ProjectsRead, consent.Scopes);
+        Assert.Contains(AuthorizationRoles.StacksRead, consent.Scopes);
+        Assert.Contains(AuthorizationRoles.EventsRead, consent.Scopes);
+        Assert.Contains(AuthorizationRoles.OfflineAccess, consent.Scopes);
+        Assert.DoesNotContain(AuthorizationRoles.StacksWrite, consent.Scopes);
+    }
+
+    [Fact]
     public async Task DeviceAuthorizationAsync_UnknownClient_ReturnsBadRequest()
     {
         using var client = CreateHttpClient();
@@ -835,6 +869,20 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         var error = await secondResponse.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
         Assert.NotNull(error);
         Assert.Equal("expired_token", error.Error);
+    }
+
+    [Fact]
+    public async Task TokenAsync_ApprovedDeviceCodeConcurrently_ReturnsSingleToken()
+    {
+        var authorization = await StartDeviceAuthorizationAsync();
+        await ApproveDeviceAuthorizationAsync(authorization.UserCode, scope: $"{AuthorizationRoles.McpRead} {AuthorizationRoles.OfflineAccess}");
+        using var client = CreateHttpClient();
+
+        var responses = await Task.WhenAll(Enumerable.Range(0, 8).Select(_ =>
+            client.PostAsync("oauth/token", CreateDeviceTokenContent(authorization.DeviceCode), TestContext.Current.CancellationToken)));
+
+        Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.OK));
+        Assert.All(responses.Where(response => response.StatusCode != HttpStatusCode.OK), response => Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode));
     }
 
     [Fact]
@@ -1443,7 +1491,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     private async Task<OAuthDeviceAuthorizationResponse> StartDeviceAuthorizationAsync(string clientId = DeviceClientId, string? resource = Resource, string? scope = null)
     {
         using var client = CreateHttpClient();
-        var response = await client.PostAsync("oauth/device_authorization", CreateDeviceAuthorizationContent(clientId, resource, scope), TestContext.Current.CancellationToken);
+        var response = await client.PostAsync("oauth/device_authorization", CreateDeviceAuthorizationContent(clientId, resource, scope ?? DefaultDeviceAuthorizationScope), TestContext.Current.CancellationToken);
         response.EnsureSuccessStatusCode();
         var authorization = await DeserializeResponseAsync<OAuthDeviceAuthorizationResponse>(response);
         Assert.NotNull(authorization);
@@ -1576,12 +1624,16 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
 
     private static FormUrlEncodedContent CreateDeviceAuthorizationContent(string clientId = DeviceClientId, string? resource = Resource, string? scope = null)
     {
-        return new FormUrlEncodedContent(new Dictionary<string, string?>
+        var form = new Dictionary<string, string?>
         {
             ["client_id"] = clientId,
-            ["resource"] = resource,
-            ["scope"] = scope ?? $"{AuthorizationRoles.McpRead} {AuthorizationRoles.ProjectsRead} {AuthorizationRoles.StacksRead} {AuthorizationRoles.EventsRead} {AuthorizationRoles.OfflineAccess}"
-        });
+            ["resource"] = resource
+        };
+
+        if (scope is not null)
+            form["scope"] = scope;
+
+        return new FormUrlEncodedContent(form);
     }
 
     private static FormUrlEncodedContent CreateDeviceTokenContent(string deviceCode, string clientId = DeviceClientId)

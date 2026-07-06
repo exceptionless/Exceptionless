@@ -72,6 +72,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
     private const string AuthorizationCodeCachePrefix = "oauth:code:";
     private const string DeviceCodeCachePrefix = "oauth:device:";
     private const string DeviceUserCodeCachePrefix = "oauth:user-code:";
+    private const string DeviceCodeLockPrefix = "oauth:device-lock:";
     private const string RefreshTokenLockPrefix = "oauth:refresh:";
     private const string AccessTokenClientValidityCachePrefix = "oauth:client-valid:";
     private const int OAuthGrantFamilyPageLimit = 1000;
@@ -356,6 +357,15 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             : DefaultScopes.Where(s => !String.Equals(s, AuthorizationRoles.OfflineAccess, StringComparison.Ordinal)).ToArray();
     }
 
+    private IReadOnlyCollection<string> GetDefaultScopes(OAuthClientOptions client, OAuthResourceDefinition resourceDefinition)
+    {
+        var allowedScopes = GetAllowedScopes(client);
+        return GetDefaultScopes(client.GrantTypes)
+            .Where(s => allowedScopes.Contains(s, StringComparer.Ordinal))
+            .Where(s => resourceDefinition.Scopes.Contains(s, StringComparer.Ordinal))
+            .ToArray();
+    }
+
     public static IReadOnlyCollection<string> NormalizeGrantTypes(IReadOnlyCollection<string>? grantTypes)
     {
         if (grantTypes is null || grantTypes.Count == 0)
@@ -447,11 +457,16 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!IsExpectedResource(request.Resource, expectedResource))
             return OAuthDeviceAuthorizationIssueResult.Invalid("invalid_target", "The requested resource is not supported.");
 
-        var validation = ValidateRequestedScopes(client, request.Scope, resourceDefinition);
+        string? requestedScope = String.IsNullOrWhiteSpace(request.Scope)
+            ? String.Join(' ', GetDefaultScopes(client, resourceDefinition))
+            : request.Scope;
+
+        var validation = ValidateRequestedScopes(client, requestedScope, resourceDefinition);
         if (!validation.IsValid)
             return OAuthDeviceAuthorizationIssueResult.Invalid(validation.Error!, validation.ErrorDescription!);
 
         string deviceCode = CreateOAuthToken();
+        string deviceCodeHash = CreateTokenHash(deviceCode);
         string userCode = await CreateUniqueDeviceUserCodeAsync();
         var utcNow = timeProvider.GetUtcNow().UtcDateTime;
         var authorization = new OAuthDeviceAuthorization
@@ -467,7 +482,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             ExpiresUtc = utcNow.Add(options.DeviceCodeLifetime)
         };
 
-        await SetDeviceAuthorizationAsync(deviceCode, authorization);
+        await SetDeviceAuthorizationAsync(deviceCodeHash, authorization);
         return OAuthDeviceAuthorizationIssueResult.Success(new OAuthDeviceAuthorizationResponse
         {
             DeviceCode = deviceCode,
@@ -535,7 +550,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         authorization.Scopes = scopeValidation.Scopes;
         authorization.OrganizationIds = request.OrganizationIds.ToArray();
         authorization.UpdatedUtc = timeProvider.GetUtcNow().UtcDateTime;
-        await SetDeviceAuthorizationAsync(lookup.DeviceCode!, authorization);
+        await SetDeviceAuthorizationAsync(lookup.DeviceCodeHash!, authorization);
         return OAuthDeviceAuthorizationResult.Success();
     }
 
@@ -551,7 +566,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
         authorization.Status = OAuthDeviceAuthorizationStatus.Denied;
         authorization.UpdatedUtc = timeProvider.GetUtcNow().UtcDateTime;
-        await SetDeviceAuthorizationAsync(lookup.DeviceCode!, authorization);
+        await SetDeviceAuthorizationAsync(lookup.DeviceCodeHash!, authorization);
         return OAuthDeviceAuthorizationResult.Success();
     }
 
@@ -622,7 +637,12 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!client.GrantTypes.Contains(OAuthGrantTypes.DeviceCode, StringComparer.Ordinal))
             return OAuthTokenIssueResult.Invalid("unauthorized_client", "The client is not allowed to use the device_code grant type.");
 
-        var lookup = await GetDeviceAuthorizationByDeviceCodeAsync(request.DeviceCode);
+        string deviceCodeHash = CreateTokenHash(request.DeviceCode);
+        await using var deviceCodeLock = await lockProvider.TryAcquireAsync(GetDeviceCodeLockKey(deviceCodeHash), TimeSpan.FromSeconds(30), CancellationToken.None);
+        if (deviceCodeLock is null)
+            return OAuthTokenIssueResult.Invalid("authorization_pending", "Device authorization is being processed.");
+
+        var lookup = await GetDeviceAuthorizationByDeviceCodeHashAsync(deviceCodeHash);
         if (!lookup.IsSuccess)
             return OAuthTokenIssueResult.Invalid(lookup.Error!, lookup.ErrorDescription!);
 
@@ -632,7 +652,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
         if (authorization.Status == OAuthDeviceAuthorizationStatus.Denied)
         {
-            await RemoveDeviceAuthorizationAsync(lookup.DeviceCode!, authorization);
+            await RemoveDeviceAuthorizationAsync(lookup.DeviceCodeHash!, authorization);
             return OAuthTokenIssueResult.Invalid("access_denied", "The device authorization request was denied.");
         }
 
@@ -640,11 +660,11 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         {
             if (String.IsNullOrWhiteSpace(authorization.UserId) || authorization.OrganizationIds.Count == 0)
             {
-                await RemoveDeviceAuthorizationAsync(lookup.DeviceCode!, authorization);
+                await RemoveDeviceAuthorizationAsync(lookup.DeviceCodeHash!, authorization);
                 return OAuthTokenIssueResult.Invalid("invalid_grant", "Device authorization is invalid.");
             }
 
-            await RemoveDeviceAuthorizationAsync(lookup.DeviceCode!, authorization);
+            await RemoveDeviceAuthorizationAsync(lookup.DeviceCodeHash!, authorization);
             return OAuthTokenIssueResult.Success(await CreateTokenAsync(authorization.UserId, authorization.ClientId, authorization.Resource, authorization.Scopes, authorization.OrganizationIds));
         }
 
@@ -653,13 +673,13 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         {
             authorization.LastPolledUtc = utcNow;
             authorization.UpdatedUtc = utcNow;
-            await SetDeviceAuthorizationAsync(lookup.DeviceCode!, authorization);
+            await SetDeviceAuthorizationAsync(lookup.DeviceCodeHash!, authorization);
             return OAuthTokenIssueResult.Invalid("slow_down", "Poll interval exceeded.");
         }
 
         authorization.LastPolledUtc = utcNow;
         authorization.UpdatedUtc = utcNow;
-        await SetDeviceAuthorizationAsync(lookup.DeviceCode!, authorization);
+        await SetDeviceAuthorizationAsync(lookup.DeviceCodeHash!, authorization);
         return OAuthTokenIssueResult.Invalid("authorization_pending", "Device authorization is pending.");
     }
 
@@ -837,22 +857,22 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         };
     }
 
-    private async Task SetDeviceAuthorizationAsync(string deviceCode, OAuthDeviceAuthorization authorization)
+    private async Task SetDeviceAuthorizationAsync(string deviceCodeHash, OAuthDeviceAuthorization authorization)
     {
         var lifetime = authorization.ExpiresUtc - timeProvider.GetUtcNow().UtcDateTime;
         if (lifetime <= TimeSpan.Zero)
         {
-            await RemoveDeviceAuthorizationAsync(deviceCode, authorization);
+            await RemoveDeviceAuthorizationAsync(deviceCodeHash, authorization);
             return;
         }
 
-        await cacheClient.SetAsync(GetDeviceCodeCacheKey(deviceCode), authorization, lifetime);
-        await cacheClient.SetAsync(GetDeviceUserCodeCacheKey(authorization.UserCodeNormalized), deviceCode, lifetime);
+        await cacheClient.SetAsync(GetDeviceCodeCacheKey(deviceCodeHash), authorization, lifetime);
+        await cacheClient.SetAsync(GetDeviceUserCodeCacheKey(authorization.UserCodeNormalized), deviceCodeHash, lifetime);
     }
 
-    private async Task RemoveDeviceAuthorizationAsync(string deviceCode, OAuthDeviceAuthorization authorization)
+    private async Task RemoveDeviceAuthorizationAsync(string deviceCodeHash, OAuthDeviceAuthorization authorization)
     {
-        await cacheClient.RemoveAsync(GetDeviceCodeCacheKey(deviceCode));
+        await cacheClient.RemoveAsync(GetDeviceCodeCacheKey(deviceCodeHash));
         await cacheClient.RemoveAsync(GetDeviceUserCodeCacheKey(authorization.UserCodeNormalized));
     }
 
@@ -867,28 +887,27 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!deviceCodeResult.HasValue)
             return OAuthDeviceAuthorizationLookupResult.Invalid("expired_token", "Device authorization is invalid or expired.");
 
-        var lookup = await GetDeviceAuthorizationByDeviceCodeAsync(deviceCodeResult.Value);
+        var lookup = await GetDeviceAuthorizationByDeviceCodeHashAsync(deviceCodeResult.Value);
         if (!lookup.IsSuccess)
             await cacheClient.RemoveAsync(userCodeCacheKey);
 
         return lookup;
     }
 
-    private async Task<OAuthDeviceAuthorizationLookupResult> GetDeviceAuthorizationByDeviceCodeAsync(string deviceCode)
+    private async Task<OAuthDeviceAuthorizationLookupResult> GetDeviceAuthorizationByDeviceCodeHashAsync(string deviceCodeHash)
     {
-        deviceCode = deviceCode.Trim();
-        var authorizationResult = await cacheClient.GetAsync<OAuthDeviceAuthorization>(GetDeviceCodeCacheKey(deviceCode));
+        var authorizationResult = await cacheClient.GetAsync<OAuthDeviceAuthorization>(GetDeviceCodeCacheKey(deviceCodeHash));
         if (!authorizationResult.HasValue)
             return OAuthDeviceAuthorizationLookupResult.Invalid("expired_token", "Device authorization is invalid or expired.");
 
         var authorization = authorizationResult.Value;
         if (authorization.ExpiresUtc <= timeProvider.GetUtcNow().UtcDateTime)
         {
-            await RemoveDeviceAuthorizationAsync(deviceCode, authorization);
+            await RemoveDeviceAuthorizationAsync(deviceCodeHash, authorization);
             return OAuthDeviceAuthorizationLookupResult.Invalid("expired_token", "Device authorization is invalid or expired.");
         }
 
-        return OAuthDeviceAuthorizationLookupResult.Success(deviceCode, authorization);
+        return OAuthDeviceAuthorizationLookupResult.Success(deviceCodeHash, authorization);
     }
 
     private async Task<string> CreateUniqueDeviceUserCodeAsync()
@@ -1099,8 +1118,9 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
     }
 
     private static string GetAuthorizationCodeCacheKey(string code) => AuthorizationCodeCachePrefix + code;
-    private static string GetDeviceCodeCacheKey(string deviceCode) => DeviceCodeCachePrefix + CreateTokenHash(deviceCode);
-    private static string GetDeviceUserCodeCacheKey(string userCode) => DeviceUserCodeCachePrefix + userCode;
+    private static string GetDeviceCodeCacheKey(string deviceCodeHash) => DeviceCodeCachePrefix + deviceCodeHash;
+    private static string GetDeviceUserCodeCacheKey(string userCode) => DeviceUserCodeCachePrefix + CreateTokenHash(userCode);
+    private static string GetDeviceCodeLockKey(string deviceCodeHash) => DeviceCodeLockPrefix + deviceCodeHash;
     private static string GetRefreshTokenLockKey(string refreshToken) => RefreshTokenLockPrefix + CreateTokenHash(refreshToken);
     private static string GetAccessTokenClientValidityCacheKey(string clientId) => AccessTokenClientValidityCachePrefix + Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(clientId))).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 }
@@ -1270,9 +1290,9 @@ public enum OAuthDeviceAuthorizationStatus
 
 public sealed record OAuthResourceDefinition(string Path, IReadOnlyCollection<string> Scopes, IReadOnlyCollection<string> RequiredScopes);
 
-internal sealed record OAuthDeviceAuthorizationLookupResult(bool IsSuccess, string? DeviceCode, OAuthDeviceAuthorization? Authorization, string? Error, string? ErrorDescription)
+internal sealed record OAuthDeviceAuthorizationLookupResult(bool IsSuccess, string? DeviceCodeHash, OAuthDeviceAuthorization? Authorization, string? Error, string? ErrorDescription)
 {
-    public static OAuthDeviceAuthorizationLookupResult Success(string deviceCode, OAuthDeviceAuthorization authorization) => new(true, deviceCode, authorization, null, null);
+    public static OAuthDeviceAuthorizationLookupResult Success(string deviceCodeHash, OAuthDeviceAuthorization authorization) => new(true, deviceCodeHash, authorization, null, null);
     public static OAuthDeviceAuthorizationLookupResult Invalid(string error, string description) => new(false, null, null, error, description);
 }
 
