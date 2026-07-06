@@ -33,7 +33,7 @@ jobs:
     steps:
       - name: Resolve preview pull request
         id: pr
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             if (context.eventName === "repository_dispatch") {
@@ -89,7 +89,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           ref: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_sha) || github.event.pull_request.head.sha || github.sha }}
@@ -135,7 +135,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_sha) || github.event.pull_request.head.sha || github.sha }}
 
@@ -144,7 +144,7 @@ jobs:
         with:
           dotnet-version: 10.0.301
 
-      - uses: actions/cache@v5
+      - uses: actions/cache@v6
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
@@ -187,7 +187,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_sha) || github.event.pull_request.head.sha || github.sha }}
 
@@ -197,7 +197,7 @@ jobs:
           node-version: 24
 
       - name: Cache node_modules
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         id: cache-node-modules
         with:
           path: src/Exceptionless.Web/ClientApp/node_modules
@@ -222,6 +222,153 @@ jobs:
       - name: Run Integration Tests
         run: echo "npm run test:integration"
 
+  test-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.*
+          dotnet-quality: ga
+
+      - name: Install Aspire CLI
+        run: |
+          export PATH="$HOME/.dotnet/tools:$PATH"
+          if dotnet tool list --global | grep -Eiq '^aspire\.cli[[:space:]]'; then
+            dotnet tool update --global Aspire.Cli --version 13.3.4
+          else
+            dotnet tool install --global Aspire.Cli --version 13.3.4
+          fi
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+          aspire --version
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - uses: actions/cache@v5
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Nuget Restore
+        run: dotnet restore ./Exceptionless.slnx
+
+      - name: Build
+        run: dotnet build ./Exceptionless.slnx --no-restore --configuration Release
+
+      - name: Install Client Npm Packages
+        working-directory: src/Exceptionless.Web/ClientApp
+        run: npm ci
+
+      - name: Install Legacy Client Npm Packages
+        working-directory: src/Exceptionless.Web/ClientApp.angular
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        working-directory: src/Exceptionless.Web/ClientApp
+        run: npx playwright install chromium --with-deps
+
+      - name: Start AppHost
+        run: |
+          aspire run --non-interactive --nologo -- --ci-e2e > aspire-run.log 2>&1 &
+          echo "$!" > aspire-run.pid
+          sleep 5
+          if ! kill -0 "$(cat aspire-run.pid)" 2>/dev/null; then
+            cat aspire-run.log
+            exit 1
+          fi
+
+      - name: Wait for Aspire Resources
+        run: |
+          for attempt in {1..60}; do
+            if curl -fksS https://web-ex.dev.localhost:7131/api/v2/about > /dev/null &&
+              curl -fksS https://web-ex.dev.localhost:7131/next/login > /dev/null; then
+              break
+            fi
+
+            if ! kill -0 "$(cat aspire-run.pid)" 2>/dev/null; then
+              cat aspire-run.log
+              exit 1
+            fi
+
+            if [ "$attempt" -eq 60 ]; then
+              cat aspire-run.log
+              exit 1
+            fi
+
+            sleep 5
+          done
+
+      - name: Verify E2E Endpoints
+        run: |
+          curl -fksS https://web-ex.dev.localhost:7131/api/v2/about > /dev/null
+          curl -fksS https://web-ex.dev.localhost:7131/next/login > /dev/null
+
+      - name: Run Playwright E2E Tests
+        working-directory: src/Exceptionless.Web/ClientApp
+        env:
+          E2E_URL: https://web-ex.dev.localhost:7131
+          E2E_RUN_ID: ci-${{ github.run_id }}-${{ github.run_attempt }}
+        run: npm run test:e2e:ci
+
+      - name: Stop AppHost
+        if: ${{ always() }}
+        run: |
+          aspire stop --all --non-interactive || true
+          if [ -f aspire-run.pid ]; then
+            kill "$(cat aspire-run.pid)" 2>/dev/null || true
+          fi
+
+      - name: Collect Aspire Logs
+        if: ${{ !cancelled() }}
+        run: |
+          mkdir -p aspire-logs
+          if [ -f aspire-run.log ]; then
+            cp aspire-run.log aspire-logs/
+          fi
+          if [ -f aspire-run.pid ]; then
+            cp aspire-run.pid aspire-logs/
+          fi
+          if [ -d "$HOME/.aspire/cli/logs" ]; then
+            cp -r "$HOME/.aspire/cli/logs/." aspire-logs/
+          fi
+          if [ -d "$HOME/.aspire/logs" ]; then
+            cp -r "$HOME/.aspire/logs/." aspire-logs/
+          fi
+
+      - name: Upload Playwright Report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-report
+          path: src/Exceptionless.Web/ClientApp/playwright-report/
+          retention-days: 14
+
+      - name: Upload Playwright Test Results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-test-results
+          path: src/Exceptionless.Web/ClientApp/test-results/
+          retention-days: 14
+
+      - name: Upload Aspire Logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: aspire-logs
+          path: aspire-logs/
+          retention-days: 14
+
   docker-build:
     runs-on: ubuntu-latest
     needs: [version]
@@ -233,7 +380,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_sha) || github.event.pull_request.head.sha || github.sha }}
 
@@ -290,7 +437,7 @@ jobs:
   docker-publish:
     if: ${{ needs.version.outputs.should_publish == 'true' }}
     runs-on: ubuntu-latest
-    needs: [version, docker-build, test-api, test-client]
+    needs: [version, docker-build, test-api, test-client, test-e2e]
     timeout-minutes: 30
     env:
       VERSION: ${{ needs.version.outputs.version }}
@@ -382,7 +529,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_sha) || github.event.pull_request.head.sha || github.sha }}
 
@@ -463,6 +610,16 @@ jobs:
           else
             echo "- **Deployment**: Skipped" >> $GITHUB_STEP_SUMMARY
           fi
+
+  deploy-website:
+    name: Deploy website
+    if: ${{ needs.version.outputs.is_prod_deploy == 'true' }}
+    needs: [version, deploy]
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/website.yml
 
   preview-comment-result:
     needs: [preview-context, version, test-api, test-client, docker-build, docker-publish, deploy]
