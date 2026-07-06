@@ -337,7 +337,9 @@
                                 <p class="text-destructive">Unable to load account details.</p>
                             {:else}
                                 <p class="truncate font-medium" title={accountDisplayName}>{accountDisplayName}</p>
-                                <p class="truncate font-mono text-xs text-muted-foreground" title={meQuery.data?.email_address}>{meQuery.data?.email_address}</p>
+                                <p class="truncate font-mono text-xs text-muted-foreground" title={meQuery.data?.email_address}>
+                                    {meQuery.data?.email_address}
+                                </p>
                             {/if}
                         </div>
                         <div class="space-y-2">
@@ -433,11 +435,7 @@
                     <Button
                         type="button"
                         onclick={() => void approveAuthorization()}
-                        disabled={isApproving ||
-                            isDenying ||
-                            organizationsQuery.isLoading ||
-                            organizationsQuery.isError ||
-                            !canApprove}
+                        disabled={isApproving || isDenying || organizationsQuery.isLoading || organizationsQuery.isError || !canApprove}
                     >
                         {#if isApproving}
                             <Spinner />

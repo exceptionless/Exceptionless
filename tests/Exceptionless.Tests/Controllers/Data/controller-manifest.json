@@ -1161,6 +1161,81 @@
   },
   {
     "Controller": "OAuthController",
+    "Action": "DeviceAsync",
+    "HttpMethod": "GET",
+    "Route": "/api/v2/oauth/device",
+    "Authorization": [
+      "AllowAnonymous"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OAuthController",
+    "Action": "CompleteDeviceAuthorizationAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/oauth/device/authorize",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OAuthController",
+    "Action": "GetDeviceConsentAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/oauth/device/consent",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OAuthController",
+    "Action": "DenyDeviceAuthorizationAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/oauth/device/deny",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OAuthController",
+    "Action": "DeviceAuthorizationAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/oauth/device_authorization",
+    "Authorization": [
+      "AllowAnonymous"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OAuthController",
     "Action": "RegisterAsync",
     "HttpMethod": "POST",
     "Route": "/api/v2/oauth/register",

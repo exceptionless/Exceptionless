@@ -43,7 +43,11 @@
 
     const supportedGrantTypes = [
         { description: 'Uses a browser redirect and PKCE challenge.', label: 'Authorization Code', value: 'authorization_code' },
-        { description: 'Uses a user code for SSH, terminal, and headless clients.', label: 'Device Code', value: 'urn:ietf:params:oauth:grant-type:device_code' },
+        {
+            description: 'Uses a user code for SSH, terminal, and headless clients.',
+            label: 'Device Code',
+            value: 'urn:ietf:params:oauth:grant-type:device_code'
+        },
         { description: 'Allows refresh token rotation when offline access is approved.', label: 'Refresh Token', value: 'refresh_token' }
     ] as const;
 
