@@ -24,6 +24,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 using Microsoft.Net.Http.Headers;
+using ModelContextProtocol.AspNetCore;
 using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Events;
@@ -134,6 +135,7 @@ public class Startup
         var appOptions = AppOptions.ReadFromConfiguration(Configuration);
         Bootstrapper.RegisterServices(services, appOptions, Log.Logger.ToLoggerFactory());
         services.AddScoped<McpContextService>();
+        services.AddSingleton<ISessionMigrationHandler, McpSessionMigrationHandler>();
         services.AddMcpServer()
             .WithHttpTransport(o => o.Stateless = false)
             .WithTools<ExceptionlessMcpTools>();
