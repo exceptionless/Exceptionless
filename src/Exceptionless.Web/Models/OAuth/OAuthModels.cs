@@ -88,6 +88,9 @@ public sealed record OAuthAuthorizationServerMetadata
     [JsonPropertyName("token_endpoint")]
     public required string TokenEndpoint { get; init; }
 
+    [JsonPropertyName("device_authorization_endpoint")]
+    public required string DeviceAuthorizationEndpoint { get; init; }
+
     [JsonPropertyName("registration_endpoint")]
     public required string RegistrationEndpoint { get; init; }
 
@@ -154,8 +157,62 @@ public sealed record OAuthTokenForm
     [FromForm(Name = "refresh_token")]
     public string? RefreshToken { get; init; }
 
+    [FromForm(Name = "device_code")]
+    public string? DeviceCode { get; init; }
+
     [FromForm(Name = "resource")]
     public string? Resource { get; init; }
+}
+
+public sealed record OAuthDeviceAuthorizationForm
+{
+    [FromForm(Name = "client_id")]
+    public string? ClientId { get; init; }
+
+    [FromForm(Name = "scope")]
+    public string? Scope { get; init; }
+
+    [FromForm(Name = "resource")]
+    public string? Resource { get; init; }
+}
+
+public sealed record OAuthDeviceConsentForm
+{
+    [JsonPropertyName("user_code")]
+    public string? UserCode { get; init; }
+}
+
+public sealed record OAuthDeviceAuthorizeForm
+{
+    [JsonPropertyName("user_code")]
+    public string? UserCode { get; init; }
+
+    [JsonPropertyName("scope")]
+    public string? Scope { get; init; }
+
+    [JsonPropertyName("organization_ids")]
+    public string[]? OrganizationIds { get; init; }
+}
+
+public sealed record OAuthDeviceConsentResponse
+{
+    [JsonPropertyName("client_id")]
+    public required string ClientId { get; init; }
+
+    [JsonPropertyName("client_name")]
+    public required string ClientName { get; init; }
+
+    [JsonPropertyName("user_code")]
+    public required string UserCode { get; init; }
+
+    [JsonPropertyName("resource")]
+    public required string Resource { get; init; }
+
+    [JsonPropertyName("scopes")]
+    public required IReadOnlyCollection<string> Scopes { get; init; }
+
+    [JsonPropertyName("required_scopes")]
+    public required IReadOnlyCollection<string> RequiredScopes { get; init; }
 }
 
 public sealed record OAuthRevokeForm

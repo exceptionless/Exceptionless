@@ -97,6 +97,7 @@ export type OAuthApplication = {
     client_id: string;
     created_by_user_id: string;
     created_utc: string;
+    grant_types: string[];
     id: string;
     is_disabled: boolean;
     name: string;
@@ -109,6 +110,7 @@ export type OAuthApplication = {
 
 export type OAuthApplicationRequest = {
     client_id: string;
+    grant_types: string[];
     is_disabled: boolean;
     name: string;
     notes?: null | string;

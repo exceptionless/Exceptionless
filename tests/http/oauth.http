@@ -41,6 +41,29 @@ Content-Type: application/json
   "scope": "mcp:read projects:read stacks:read events:read offline_access",
   "token_endpoint_auth_method": "none"
 }
+
+### Dynamic Device Client Registration
+# @name registerDeviceOAuthClient
+POST {{apiUrl}}/oauth/register
+Content-Type: application/json
+
+{
+  "client_name": "Codex SSH Dev",
+  "grant_types": [
+    "urn:ietf:params:oauth:grant-type:device_code",
+    "refresh_token"
+  ],
+  "scope": "mcp:read projects:read stacks:read events:read offline_access",
+  "token_endpoint_auth_method": "none"
+}
+
+### Start Device Authorization
+# @name startDeviceAuthorization
+POST {{apiUrl}}/oauth/device_authorization
+Content-Type: application/x-www-form-urlencoded
+
+client_id={{registerDeviceOAuthClient.response.body.$.client_id}}&scope=mcp:read%20projects:read%20stacks:read%20events:read%20offline_access&resource={{resource}}
+
 ### Login
 # @name login
 POST {{apiUrl}}/auth/login
@@ -50,6 +73,34 @@ Content-Type: application/json
   "email": "{{email}}",
   "password": "{{password}}"
 }
+
+### Preview Device Consent
+POST {{apiUrl}}/oauth/device/consent
+Authorization: Bearer {{login.response.body.token}}
+Content-Type: application/json
+
+{
+  "user_code": "{{startDeviceAuthorization.response.body.$.user_code}}"
+}
+
+### Approve Device Authorization
+POST {{apiUrl}}/oauth/device/authorize
+Authorization: Bearer {{login.response.body.token}}
+Content-Type: application/json
+
+{
+  "user_code": "{{startDeviceAuthorization.response.body.$.user_code}}",
+  "scope": "mcp:read projects:read stacks:read events:read offline_access",
+  "organization_ids": [
+    "{{organizationId}}"
+  ]
+}
+
+### Device Token Poll
+POST {{apiUrl}}/oauth/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=urn:ietf:params:oauth:grant-type:device_code&client_id={{registerDeviceOAuthClient.response.body.$.client_id}}&device_code={{startDeviceAuthorization.response.body.$.device_code}}
 
 ### Optional: Create OAuth Application
 # Clients that support Client ID Metadata Documents can use an HTTPS metadata-document URL

@@ -12,13 +12,15 @@ public record NewOAuthApplication
     [MaxLength(200)]
     public required string Name { get; init; }
 
-    [Required]
-    [Length(1, 20)]
-    public required string[] RedirectUris { get; init; }
+    [Length(0, 20)]
+    public string[]? RedirectUris { get; init; }
 
     [Required]
     [Length(1, 20)]
     public required string[] Scopes { get; init; }
+
+    [Length(1, 3)]
+    public string[]? GrantTypes { get; init; }
 
     [MaxLength(1000)]
     public string? Notes { get; init; }

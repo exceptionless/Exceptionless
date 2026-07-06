@@ -25,9 +25,10 @@ public sealed class OAuthController(OAuthService oauthService, AppOptions appOpt
             Issuer = origin,
             AuthorizationEndpoint = $"{origin}/{API_PREFIX}/oauth/authorize",
             TokenEndpoint = $"{origin}/{API_PREFIX}/oauth/token",
+            DeviceAuthorizationEndpoint = $"{origin}/{API_PREFIX}/oauth/device_authorization",
             RegistrationEndpoint = $"{origin}/{API_PREFIX}/oauth/register",
             RevocationEndpoint = $"{origin}/{API_PREFIX}/oauth/revoke",
-            GrantTypesSupported = [OAuthGrantTypes.AuthorizationCode, OAuthGrantTypes.RefreshToken],
+            GrantTypesSupported = [OAuthGrantTypes.AuthorizationCode, OAuthGrantTypes.DeviceCode, OAuthGrantTypes.RefreshToken],
             ResponseTypesSupported = ["code"],
             CodeChallengeMethodsSupported = [OAuthService.CodeChallengeMethod],
             TokenEndpointAuthMethodsSupported = ["none"],
@@ -125,6 +126,92 @@ public sealed class OAuthController(OAuthService oauthService, AppOptions appOpt
         return StatusCode(StatusCodes.Status201Created, result.Response);
     }
 
+    [HttpPost(API_PREFIX + "/oauth/device_authorization")]
+    [AllowAnonymous]
+    public async Task<ActionResult<OAuthDeviceAuthorizationResponse>> DeviceAuthorizationAsync([FromForm] OAuthDeviceAuthorizationForm form)
+    {
+        if (await IsDeviceAuthorizationRateLimitedAsync())
+            return StatusCode(StatusCodes.Status429TooManyRequests, new OAuthErrorResponse
+            {
+                Error = "temporarily_unavailable",
+                ErrorDescription = "Too many device authorization attempts."
+            });
+
+        if (!OAuthService.TryGetProtectedResource(form.Resource, GetOrigin(), out var resourceDefinition))
+            return OAuthError("invalid_target", "The requested resource is not supported.");
+
+        var request = new OAuthDeviceAuthorizationRequest
+        {
+            ClientId = form.ClientId ?? String.Empty,
+            Scope = form.Scope,
+            Resource = form.Resource
+        };
+
+        var result = await oauthService.CreateDeviceAuthorizationAsync(request, GetResource(resourceDefinition), resourceDefinition, GetDeviceVerificationUri());
+        if (!result.IsSuccess)
+            return OAuthError(result.Error, result.ErrorDescription);
+
+        return Ok(result.Response);
+    }
+
+    [HttpGet(API_PREFIX + "/oauth/device")]
+    [AllowAnonymous]
+    public IActionResult DeviceAsync([FromQuery(Name = "user_code")] string? userCode)
+    {
+        return RedirectToDeviceBridge(userCode);
+    }
+
+    [HttpPost(API_PREFIX + "/oauth/device/consent")]
+    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    public async Task<ActionResult<OAuthDeviceConsentResponse>> GetDeviceConsentAsync([FromBody] OAuthDeviceConsentForm form)
+    {
+        var result = await oauthService.GetDeviceConsentAsync(form.UserCode);
+        if (!result.IsSuccess)
+            return OAuthError(result.Error, result.ErrorDescription);
+
+        return Ok(new OAuthDeviceConsentResponse
+        {
+            ClientId = result.Client!.ClientId,
+            ClientName = result.Client.Name,
+            UserCode = result.Authorization!.UserCode,
+            Resource = result.Authorization.Resource,
+            Scopes = result.Authorization.Scopes,
+            RequiredScopes = result.ResourceDefinition!.RequiredScopes
+        });
+    }
+
+    [HttpPost(API_PREFIX + "/oauth/device/authorize")]
+    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    public async Task<IActionResult> CompleteDeviceAuthorizationAsync([FromBody] OAuthDeviceAuthorizeForm form)
+    {
+        var organizationValidation = ValidateRequestedOrganizations(form.OrganizationIds ?? []);
+        if (!organizationValidation.IsValid)
+            return OAuthError("invalid_request", organizationValidation.ErrorDescription);
+
+        var result = await oauthService.ApproveDeviceAuthorizationAsync(new OAuthDeviceApprovalRequest
+        {
+            UserCode = form.UserCode ?? String.Empty,
+            Scope = form.Scope ?? String.Empty,
+            OrganizationIds = organizationValidation.OrganizationIds
+        }, CurrentUser.Id);
+
+        if (!result.IsSuccess)
+            return OAuthError(result.Error, result.ErrorDescription);
+
+        return Ok();
+    }
+
+    [HttpPost(API_PREFIX + "/oauth/device/deny")]
+    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    public async Task<IActionResult> DenyDeviceAuthorizationAsync([FromBody] OAuthDeviceConsentForm form)
+    {
+        var result = await oauthService.DenyDeviceAuthorizationAsync(form.UserCode);
+        if (!result.IsSuccess)
+            return OAuthError(result.Error, result.ErrorDescription);
+
+        return Ok();
+    }
+
     [HttpPost(API_PREFIX + "/oauth/token")]
     [AllowAnonymous]
     public async Task<ActionResult<OAuthTokenResponse>> TokenAsync([FromForm] OAuthTokenForm form)
@@ -137,12 +224,16 @@ public sealed class OAuthController(OAuthService oauthService, AppOptions appOpt
             ClientId = form.ClientId,
             CodeVerifier = form.CodeVerifier,
             RefreshToken = form.RefreshToken,
+            DeviceCode = form.DeviceCode,
             Resource = form.Resource
         };
 
-        OAuthTokenIssueResult result = String.Equals(form.GrantType, OAuthGrantTypes.RefreshToken, StringComparison.Ordinal)
-            ? await oauthService.RefreshAsync(request)
-            : await oauthService.ExchangeAuthorizationCodeAsync(request);
+        OAuthTokenIssueResult result = form.GrantType switch
+        {
+            OAuthGrantTypes.RefreshToken => await oauthService.RefreshAsync(request),
+            OAuthGrantTypes.DeviceCode => await oauthService.ExchangeDeviceCodeAsync(request),
+            _ => await oauthService.ExchangeAuthorizationCodeAsync(request)
+        };
 
         if (!result.IsSuccess)
             return OAuthError(result.Error, result.ErrorDescription);
@@ -165,6 +256,13 @@ public sealed class OAuthController(OAuthService oauthService, AppOptions appOpt
         return attempts > appOptions.OAuthServerOptions.DynamicClientRegistrationIpLimit;
     }
 
+    private async Task<bool> IsDeviceAuthorizationRateLimitedAsync()
+    {
+        string cacheKey = $"ip:{Request.GetClientIpAddress()}:oauth-device:attempts";
+        long attempts = await cacheClient.IncrementAsync(cacheKey, 1, _timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromHours(1)));
+        return attempts > appOptions.OAuthServerOptions.DeviceAuthorizationIpLimit;
+    }
+
     private string GetOrigin()
     {
         return new Uri(appOptions.BaseURL).GetLeftPart(UriPartial.Authority);
@@ -173,6 +271,11 @@ public sealed class OAuthController(OAuthService oauthService, AppOptions appOpt
     private string GetResource(OAuthResourceDefinition resourceDefinition)
     {
         return OAuthService.CreateResourceUri(GetOrigin(), resourceDefinition);
+    }
+
+    private string GetDeviceVerificationUri()
+    {
+        return $"{GetOrigin()}/{API_PREFIX}/oauth/device";
     }
 
     private ObjectResult OAuthError(string? error, string? description)
@@ -241,6 +344,12 @@ public sealed class OAuthController(OAuthService oauthService, AppOptions appOpt
     private RedirectResult RedirectToAuthorizeBridge()
     {
         return Redirect("/next/oauth/authorize" + Request.QueryString);
+    }
+
+    private RedirectResult RedirectToDeviceBridge(string? userCode)
+    {
+        string query = String.IsNullOrWhiteSpace(userCode) ? String.Empty : $"?user_code={Uri.EscapeDataString(userCode)}";
+        return Redirect("/next/oauth/device" + query);
     }
 }
 

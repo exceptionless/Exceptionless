@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Exceptionless.Core.Attributes;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Services;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models;
@@ -21,12 +22,16 @@ public class OAuthApplication : IIdentity, IHaveDates, IValidatableObject
     public string Name { get; set; } = null!;
 
     [Required]
-    [Length(1, 20)]
+    [Length(0, 20)]
     public string[] RedirectUris { get; set; } = [];
 
     [Required]
     [Length(1, 20)]
     public string[] Scopes { get; set; } = [];
+
+    [Required]
+    [Length(1, 3)]
+    public string[] GrantTypes { get; set; } = [OAuthGrantTypes.AuthorizationCode, OAuthGrantTypes.RefreshToken];
 
     [MaxLength(1000)]
     public string? Notes { get; set; }
@@ -44,6 +49,29 @@ public class OAuthApplication : IIdentity, IHaveDates, IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
+        foreach (string _ in GrantTypes.Where(String.IsNullOrWhiteSpace))
+            yield return new ValidationResult("Grant type cannot be empty.", [nameof(GrantTypes)]);
+
+        foreach (string grantType in GrantTypes.Where(g => !String.IsNullOrWhiteSpace(g)))
+        {
+            if (!OAuthGrantTypes.SupportedGrantTypes.Contains(grantType, StringComparer.Ordinal))
+                yield return new ValidationResult($"'{grantType}' is not a supported OAuth grant type.", [nameof(GrantTypes)]);
+        }
+
+        bool supportsAuthorizationCode = GrantTypes.Contains(OAuthGrantTypes.AuthorizationCode, StringComparer.Ordinal);
+        bool supportsDeviceCode = GrantTypes.Contains(OAuthGrantTypes.DeviceCode, StringComparer.Ordinal);
+        if (!supportsAuthorizationCode && !supportsDeviceCode)
+            yield return new ValidationResult("OAuth applications must support authorization_code or device_code.", [nameof(GrantTypes)]);
+
+        if (GrantTypes.Contains(OAuthGrantTypes.RefreshToken, StringComparer.Ordinal) && !supportsAuthorizationCode && !supportsDeviceCode)
+            yield return new ValidationResult("The refresh_token grant type requires authorization_code or device_code.", [nameof(GrantTypes)]);
+
+        if (Scopes.Contains(AuthorizationRoles.OfflineAccess, StringComparer.Ordinal) && !GrantTypes.Contains(OAuthGrantTypes.RefreshToken, StringComparer.Ordinal))
+            yield return new ValidationResult("The offline_access scope requires the refresh_token grant type.", [nameof(Scopes)]);
+
+        if (supportsAuthorizationCode && RedirectUris.Length == 0)
+            yield return new ValidationResult("Redirect URIs are required for authorization_code clients.", [nameof(RedirectUris)]);
+
         foreach (string _ in RedirectUris.Where(String.IsNullOrWhiteSpace))
             yield return new ValidationResult("Redirect URI cannot be empty.", [nameof(RedirectUris)]);
 
