@@ -17,6 +17,7 @@
     import { getProjectDefaultTokenQuery, patchToken } from '$features/tokens/api.svelte';
     import EnableTokenDialog from '$features/tokens/components/dialogs/enable-token-dialog.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
+    import ArrowLeft from '@lucide/svelte/icons/arrow-left';
     import Events from '@lucide/svelte/icons/calendar-days';
     import Database from '@lucide/svelte/icons/database';
     import NotificationSettings from '@lucide/svelte/icons/mail';
@@ -348,6 +349,21 @@ public partial class App : Application {
 
 <div class="space-y-6">
     <Muted>The Exceptionless client can be integrated into your project in just a few easy steps</Muted>
+    <section class="border-border bg-muted/30 rounded-lg border p-4">
+        <P class="mb-2 font-medium">Quick values for your client setup</P>
+        <div class="space-y-2">
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="text-muted-foreground w-28 shrink-0">Server URL</span>
+                <code class="bg-background max-w-full shrink overflow-x-auto rounded px-2 py-1 text-xs">{serverUrl}</code>
+                <CopyToClipboardButton value={serverUrl} size="icon" />
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="text-muted-foreground w-28 shrink-0">API key</span>
+                <code class="bg-background max-w-full shrink overflow-x-auto rounded px-2 py-1 text-xs">{apiKey}</code>
+                <CopyToClipboardButton value={apiKey} size="icon" />
+            </div>
+        </div>
+    </section>
 
     {#if isTokenDisabled}
         <Notification variant="destructive">
@@ -725,6 +741,9 @@ public partial class App : Application {
     {/if}
 
     <div class="border-border flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end">
+        <Button variant="secondary" href={resolve('/(app)/project/[projectId]/manage', { projectId })}>
+            <ArrowLeft class="mr-2 size-4" aria-hidden="true" /> Back to Project Settings
+        </Button>
         <Button variant="secondary" href={`${resolve('/(app)/account/notifications')}?project=${projectId}`}>
             <NotificationSettings class="mr-2 size-4" aria-hidden="true" /> Notifications
         </Button>

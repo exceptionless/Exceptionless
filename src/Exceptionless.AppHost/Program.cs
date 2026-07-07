@@ -5,7 +5,13 @@ using Microsoft.Extensions.Hosting;
 string? scope = WorktreeScope.Resolve();
 bool isScoped = !String.IsNullOrWhiteSpace(scope);
 var worktreePorts = isScoped ? WorktreeScope.AssignFreePorts() : null;
-var builder = DistributedApplication.CreateBuilder(args);
+var builderOptions = new DistributedApplicationOptions
+{
+    TrustDeveloperCertificate = !HasArgument("--skip-trust-developer-certificate"),
+    AllowUnsecuredTransport = HasArgument("--allow-unsecured-transport"),
+    DisableDashboard = HasArgument("--disable-dashboard")
+};
+var builder = DistributedApplication.CreateBuilder(builderOptions);
 bool servicesOnly = HasArgument("--services-only");
 bool ciE2E = HasArgument("--ci-e2e");
 bool includeDevTools = !ciE2E;

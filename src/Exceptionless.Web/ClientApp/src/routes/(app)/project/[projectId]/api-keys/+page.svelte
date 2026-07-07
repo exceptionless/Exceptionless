@@ -2,6 +2,7 @@
     import type { NewToken, ViewToken } from '$features/tokens/models';
 
     import { page } from '$app/state';
+    import { resolve } from '$app/paths';
     import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
     import { Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
@@ -11,6 +12,7 @@
     import { getTableOptions } from '$features/tokens/components/table/options.svelte';
     import TokensDataTable from '$features/tokens/components/table/tokens-data-table.svelte';
     import Plus from '@lucide/svelte/icons/plus';
+    import Send from '@lucide/svelte/icons/send';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
     import { toast } from 'svelte-sonner';
@@ -85,6 +87,10 @@
         {#snippet toolbarChildren()}
             <div class="flex-1"></div>
             <DataTableViewOptions size="icon-lg" {table} />
+            <Button size="icon-lg" href={resolve('/(app)/project/[projectId]/configure', { projectId })} title="Client Setup">
+                <Send class="size-4" aria-hidden="true" />
+                <span class="sr-only">Client Setup</span>
+            </Button>
             <Button size="icon-lg" onclick={addApiKey} title="Add API Key">
                 <Plus class="size-4" aria-hidden="true" />
                 <span class="sr-only">Add API Key</span>
