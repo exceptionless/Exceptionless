@@ -1,7 +1,7 @@
 const root = new URL("../_site/", import.meta.url)
-const port = getPort(Deno.args)
+const port = getPort(Deno.args, Deno.env.get("PORT"))
 
-Deno.serve({ hostname: "localhost", port }, async (request) => {
+Deno.serve({ hostname: "127.0.0.1", port }, async (request) => {
   const requestUrl = new URL(request.url)
   const fileUrl = resolveFileUrl(requestUrl.pathname)
 
@@ -29,19 +29,25 @@ Deno.serve({ hostname: "localhost", port }, async (request) => {
   }
 })
 
-function getPort(args: string[]): number {
+function getPort(args: string[], environmentPort?: string): number {
   const portIndex = args.indexOf("--port")
   if (portIndex >= 0) {
-    const value = args[portIndex + 1]
-    if (value) {
-      const parsed = Number(value)
-      if (Number.isInteger(parsed) && parsed > 0 && parsed <= 65535) {
-        return parsed
-      }
+    const port = parsePort(args[portIndex + 1])
+    if (port) {
+      return port
     }
   }
 
-  return 3000
+  return parsePort(environmentPort) ?? 3000
+}
+
+function parsePort(value?: string): number | undefined {
+  if (!value) {
+    return undefined
+  }
+
+  const parsed = Number(value)
+  return Number.isInteger(parsed) && parsed > 0 && parsed <= 65535 ? parsed : undefined
 }
 
 function resolveFileUrl(pathname: string): URL {

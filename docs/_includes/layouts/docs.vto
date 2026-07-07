@@ -2,19 +2,21 @@
 layout: layouts/base.vto
 extraStyles:
   - /assets/css/prism.css
+extraModuleScripts:
+  - /assets/js/docs-layout.js
 ---
-<div class="page-header margin-top">
+<div class="page-header margin-top" data-pagefind-ignore="all">
   <h1 id="documentation">Documentation</h1>
 </div>
 
 <div id="wrap" class="container" role="document">
-  <div id="responsive-menu"><button class="btn btn-primary" onclick="handleMenu()">Table of Contents</button></div>
+  <div id="responsive-menu"><button class="btn btn-primary" type="button" data-docs-toc-toggle>Table of Contents</button></div>
   <div id="content" class="row-fluid">
     <div class="toc well span3 visible-toc">
-      <div class="input-append">
-        <input class="span9" id="search-input" type="text" placeholder="Search docs...">
-        <button class="btn" type="button" onclick="handleSearch()">Go!</button>
-      </div>
+      <form class="input-append docs-search-form" action="/search/" method="get">
+        <input class="span9" id="search-input" name="q" type="search" placeholder="Search docs..." autocomplete="off">
+        <button class="btn" type="submit">Go!</button>
+      </form>
       {{ docsNavHtml(search, url) }}
     </div>
     <div class="well span9 docs">
@@ -22,21 +24,3 @@ extraStyles:
     </div>
   </div>
 </div>
-
-<script>
-  function handleMenu() {
-    var toc = document.querySelector(".toc");
-    if (!toc) return;
-    toc.classList.toggle("visible-toc");
-    toc.classList.toggle("hidden-toc");
-  }
-
-  function handleSearch() {
-    var input = document.getElementById("search-input");
-    var filter = input ? input.value.toLowerCase() : "";
-    document.querySelectorAll(".toc-list li").forEach(function (item) {
-      var text = item.textContent.toLowerCase();
-      item.style.display = !filter || text.indexOf(filter) >= 0 ? "" : "none";
-    });
-  }
-</script>

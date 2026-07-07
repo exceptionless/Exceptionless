@@ -458,7 +458,7 @@ function renderRedirectPage(target: string): string {
   <link rel="canonical" href="${siteUrl}${target}">
   <title>Redirecting - Exceptionless</title>
 </head>
-<body>
+<body data-pagefind-ignore="all">
   <p><a href="${target}">Redirecting</a></p>
 </body>
 </html>

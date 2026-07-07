@@ -25,6 +25,11 @@ if ! command -v npm >/dev/null 2>&1; then
   exit 1
 fi
 
+if ! command -v deno >/dev/null 2>&1; then
+  echo "deno is not installed or not on PATH. The Lume docs site requires Deno." >&2
+  exit 1
+fi
+
 echo "dotnet:"
 dotnet --version
 
@@ -33,6 +38,9 @@ node --version
 
 echo "npm:"
 npm --version
+
+echo "deno:"
+deno --version
 
 echo "Restoring .NET workloads..."
 dotnet workload restore
@@ -46,7 +54,7 @@ npm ci --prefix src/Exceptionless.Web/ClientApp --prefer-offline --no-audit
 echo "Installing legacy Angular frontend dependencies..."
 npm ci --prefix src/Exceptionless.Web/ClientApp.angular --prefer-offline --no-audit
 
-echo "Setup complete. Use the Run Aspire action to start the app."
+echo "Setup complete. Use the Run Aspire action to start the app, or Run Lume Docs to test the static site."
 '''
 
 [cleanup]
@@ -62,6 +70,8 @@ echo "Removing repo-local temp/test output only..."
 rm -rf .cache/tmp
 rm -rf .aspire
 rm -rf TestResults
+rm -rf docs/_site
+rm -rf docs/_cache
 
 find . -type d \( -name TestResults -o -name .vite -o -name .svelte-kit \) -exec rm -rf {} +
 
@@ -86,6 +96,20 @@ if command -v aspire >/dev/null 2>&1; then
 else
   dotnet run --project src/Exceptionless.AppHost/Exceptionless.AppHost.csproj
 fi
+'''
+
+[[actions]]
+name = "Run Lume Docs"
+icon = "run"
+command = '''
+set -e
+
+cd "${CODEX_WORKTREE_PATH:?CODEX_WORKTREE_PATH is required}/docs"
+
+export PORT="${PORT:-7141}"
+
+echo "Starting Lume docs at http://127.0.0.1:$PORT/"
+deno task serve -- --port "$PORT"
 '''
 
 [[actions]]

@@ -74,7 +74,9 @@
   </div>
 </header>
 
-    {{ content }}
+    <main id="page-content" data-pagefind-body>
+      {{ content }}
+    </main>
 
     <div id="footer-wrapper">
   <footer id="content-info" class="container" role="contentinfo">
@@ -132,18 +134,15 @@
     <p class="copyright">&copy; {{ copyrightYear }} Exceptionless</p>
   </div>
 </div>
+    <script type="module" src="/assets/js/site.js"></script>
+    {{ if exceptionlessClientScriptSrc }}
+    <script type="module" src="{{ exceptionlessClientScriptSrc }}"></script>
+    {{ /if }}
     {{ for script of extraScripts || [] }}
     <script defer src="{{ script }}"></script>
     {{ /for }}
-    <script>
-      document.querySelectorAll("[data-toggle='collapse'][data-target]").forEach(function (toggle) {
-        toggle.addEventListener("click", function (event) {
-          event.preventDefault();
-          document.querySelectorAll(toggle.getAttribute("data-target")).forEach(function (target) {
-            target.classList.toggle("in");
-          });
-        });
-      });
-    </script>
+    {{ for script of extraModuleScripts || [] }}
+    <script type="module" src="{{ script }}"></script>
+    {{ /for }}
   </body>
 </html>

@@ -14,6 +14,7 @@ int oldAppPort = worktreePorts?.OldAppHttps ?? 7121;
 int oldAppLiveReloadPort = worktreePorts?.OldAppLiveReload ?? 35729;
 string oldAppAspNetCoreUrls = String.Concat("http://localhost:", oldAppHttpPort);
 int appPort = worktreePorts?.AppHttps ?? 7131;
+int docsPort = worktreePorts?.DocsHttp ?? 7141;
 const int DefaultApiHttpsPort = 7111;
 string exceptionlessServerUrl = worktreePorts?.ApiHttpsUrl ?? $"https://api-ex.dev.localhost:{DefaultApiHttpsPort}";
 const string SharedEmailConnectionString = "smtp://localhost:1025";
@@ -206,6 +207,23 @@ if (!servicesOnly)
             .WithEnvironment("OLDAPP_HTTP", worktreePorts.OldAppHttpsUrl)
             .WithEnvironment("OLDAPP_HTTPS", worktreePorts.OldAppHttpsUrl);
     }
+
+    builder.AddJavaScriptApp("Docs", "../../docs", "serve")
+        .WithBrowserLogs()
+        .RemoveJavaScriptDebuggingAnnotation()
+        .WithEnvironment("PORT", docsPort.ToString())
+        .WithHttpEndpoint(port: docsPort, targetPort: docsPort, name: "http", env: "PORT", isProxied: false)
+        .WithEndpoint("http", e =>
+        {
+            e.TargetHost = "localhost";
+            e.UriScheme = "http";
+        })
+        .WithUrlForEndpoint("http", u =>
+        {
+            u.DisplayText = "Open Docs";
+            u.DisplayOrder = 100;
+        })
+        .WithParentRelationship(api);
 #pragma warning restore ASPIREBROWSERLOGS001
 }
 

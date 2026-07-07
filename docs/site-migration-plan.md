@@ -85,18 +85,22 @@ Run commands from `docs/`.
 {
   "tasks": {
     "lume": "deno run -P=lume lume/cli.ts",
-    "build": "deno task lume && deno task postbuild",
-    "serve": "deno task build && deno run --allow-read=_site --allow-net=localhost,127.0.0.1 scripts/serve.ts",
+    "build": "deno task lume && deno task postbuild && deno task bundle:client && deno task pagefind",
+    "bundle:client": "deno bundle --platform=browser --minify --config=deno.json scripts/browser/exceptionless-client.ts -o _site/assets/js/exceptionless-client.js",
+    "pagefind": "npx -y pagefind@1.5.2 --site _site",
+    "serve": "deno task build && deno run --allow-read=_site --allow-net=localhost,127.0.0.1 --allow-env=PORT scripts/serve.ts",
     "postbuild": "deno run --allow-read --allow-write scripts/postbuild.ts",
-    "check": "deno check _config.ts scripts/site-collections.ts scripts/postbuild.ts scripts/serve.ts scripts/verify-links.ts",
-    "verify": "deno task build && deno run --allow-read scripts/verify-links.ts"
+    "check": "deno check _config.ts scripts/browser/exceptionless-client.ts scripts/site-collections.ts scripts/postbuild.ts scripts/serve.ts scripts/verify-links.ts scripts/find-unused.ts",
+    "verify": "deno task build && deno run --allow-read scripts/verify-links.ts",
+    "unused": "deno task build && deno run --allow-read scripts/find-unused.ts"
   }
 }
 ```
 
 `serve` intentionally builds first and then serves `_site`, so local QA uses the same postbuild output that would be
-deployed. Do not use a long-running serve command for normal static checks; use `deno task build`, `deno task check`,
-and `deno task verify` first.
+deployed. It accepts `--port` and the `PORT` environment variable for Codex/Aspire integration. Do not use a
+long-running serve command for normal static checks; use `deno task build`, `deno task check`, and `deno task verify`
+first.
 
 ## Lume Configuration
 
@@ -228,6 +232,52 @@ because each composition is used once. Shared site chrome stays in `layouts/base
 Create a reusable component only when it is genuinely reused by multiple pages or removes meaningful duplication. Do not
 create a fragment just to move a single route's HTML elsewhere.
 
+## Site Search
+
+`/search/` is backed by Pagefind. The normal docs build renders the Lume site, runs `postbuild.ts`, and then generates
+the Pagefind index into `_site/pagefind/`.
+
+Commands:
+
+- `deno task build` builds the site and generates the Pagefind index.
+- `deno task bundle:client` bundles the static-site Exceptionless browser bootstrap from the Deno npm dependency.
+- `deno task pagefind` regenerates only the Pagefind index from the current `_site` output.
+- The Codex environment exposes a `Run Lume Docs` action on port 7141.
+- The Aspire AppHost exposes a `Docs` resource at `http://localhost:7141` unless a scoped worktree assigns an ephemeral
+  free port.
+
+Search implementation notes:
+
+- The shared base layout marks real page content with `data-pagefind-body` so headers, navigation, and footer content do
+  not dominate the index.
+- Generated redirect alias pages use `data-pagefind-ignore="all"` and should not appear as search results.
+- The docs layout's generic `Documentation` page heading is ignored so results use the actual content page title.
+- `public/assets/js/search.js` uses Pagefind's browser search API directly for query-string support, debounced input,
+  result excerpts, sub-results, clear, and load-more behavior.
+- The docs sidebar search form navigates to `/search/?q=...`; it is not a table-of-contents-only filter.
+- The docs site uses the migrated Bootstrap-era theme CSS, not Tailwind. Keep search-specific CSS limited to result
+  presentation that the legacy theme does not already provide.
+
+## Static Site Error Reporting
+
+The migrated static site can load a small Exceptionless browser-client bootstrap at `/assets/js/exceptionless-client.js`.
+`deno task build` bundles this file from `scripts/browser/exceptionless-client.ts` and the Deno npm dependency
+`@exceptionless/browser@3.2.1`; it does not import the browser client from a runtime CDN. The layout emits this script
+only when configured with a public browser API key at build time.
+
+Build-time configuration:
+
+- `EXCEPTIONLESS_SITE_API_KEY` or `PUBLIC_EXCEPTIONLESS_API_KEY`
+- `EXCEPTIONLESS_SITE_SERVER_URL` or `PUBLIC_EXCEPTIONLESS_SERVER_URL`
+- `EXCEPTIONLESS_SITE_ENVIRONMENT` or `EX_AppMode`
+- `EXCEPTIONLESS_SITE_VERSION`, `PUBLIC_APP_VERSION`, or `GITHUB_SHA`
+
+Google Tag Manager is part of the public site layout and loads by default. Local Codex and Aspire docs runs do not force
+any Exceptionless configuration; the browser client script is not emitted unless an API key is supplied.
+
+Do not commit production keys. The Svelte app has its own `@exceptionless/browser` startup path in
+`src/Exceptionless.Web/ClientApp/src/hooks.client.ts`.
+
 ## Build Pipeline
 
 `deno task build` does this automatically:
@@ -243,6 +293,7 @@ create a fragment just to move a single route's HTML elsewhere.
 9. `postbuild.ts` generates `sitemap.xml` from rendered routes.
 10. `postbuild.ts` generates docs-only `llms.txt` and `llms-full.txt`.
 11. `postbuild.ts` generates redirect aliases for legacy links.
+12. Pagefind indexes `_site` into `_site/pagefind/`.
 
 ## Verification Gates
 
@@ -284,11 +335,25 @@ Implementation notes from the verification pass:
 
 - Markdown headings receive deterministic legacy-style IDs during Lume Markdown rendering so existing same-page anchors continue to work.
 - `docs/docs/demo-formatting.md` is `url: false` and is intentionally not published.
-- `/search/` exists as a migrated route so sitemap parity remains exact.
+- `/search/` uses Pagefind for local static search while keeping sitemap parity exact.
 - `postbuild.ts` contains the small migration normalizers required for parity: migrated image-reference rewrites, duplicate news H1 removal, standalone YouTube URL embed rendering, Prism `<pre>` class normalization, news index/RSS/sitemap/LLMS generation, internal non-doc link stripping for `llms-full.txt`, and redirect alias generation.
 - The legacy Fancybox stylesheet references `/assets/images/fancybox.png` and `/assets/images/fancybox-x.png`; both are committed static assets.
 - Fancybox uses the original 1.3.4 plugin plus a tiny jQuery 1.9 browser-compat shim because the WordPress-patched Easy FancyBox script requires `DOMPurify`.
 - A mobile footer override removes the legacy 20px horizontal overflow caused by the old negative-margin footer rule.
+
+## Verified Search Upgrade - 2026-07-06
+
+- `deno task check` passed.
+- `deno task build` passed and Pagefind indexed 230 real pages while ignoring 37 redirect alias pages.
+- `deno task verify` passed with no broken local links, anchors, or assets.
+- Local Chrome dogfood at `http://127.0.0.1:7141/search/?q=javascript` returned 114 Pagefind results with
+  `JavaScript Example` first, loaded the local Pagefind script and worker, had no inline scripts, loaded Google Tag
+  Manager from the base layout, did not emit the Exceptionless client script without an API key, and had no console
+  errors, page errors, or failed local resources.
+- Interactive local Chrome dogfood updated the URL to `/search/?q=multiple+queries`, returned 17 results with
+  `Filtering & Searching` first, and cleared back to the empty state.
+- Mobile Chrome dogfood at a 390px viewport returned the same `/search/?q=javascript` results with no horizontal overflow.
+
 ## Core Principle
 
 The maintained source should be Markdown, metadata, shared Vento layouts, route-level Vento pages where needed, and

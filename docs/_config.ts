@@ -63,8 +63,57 @@ site.hooks.markdownIt((markdownIt: any) => {
 site.data("docsNavHtml", docsNavHtml)
 site.data("siteDataJson", siteDataJson)
 site.data("copyrightYear", new Date().getFullYear())
+site.data("exceptionlessClientScriptSrc", exceptionlessClientScriptSrc())
 
 export default site
+
+function exceptionlessClientScriptSrc(): string {
+  const apiKey = firstNonEmpty(
+    Deno.env.get("EXCEPTIONLESS_SITE_API_KEY"),
+    Deno.env.get("PUBLIC_EXCEPTIONLESS_API_KEY"),
+  )
+  if (!apiKey) {
+    return ""
+  }
+
+  const params = new URLSearchParams({ apiKey })
+  const serverUrl = firstNonEmpty(
+    Deno.env.get("EXCEPTIONLESS_SITE_SERVER_URL"),
+    Deno.env.get("PUBLIC_EXCEPTIONLESS_SERVER_URL"),
+  )
+
+  if (serverUrl) {
+    params.set("serverUrl", serverUrl)
+  }
+
+  const environment = firstNonEmpty(
+    Deno.env.get("EXCEPTIONLESS_SITE_ENVIRONMENT"),
+    Deno.env.get("EX_AppMode"),
+  )
+  if (isNonProduction(environment)) {
+    params.set("environment", environment)
+  }
+
+  const version = firstNonEmpty(
+    Deno.env.get("EXCEPTIONLESS_SITE_VERSION"),
+    Deno.env.get("PUBLIC_APP_VERSION"),
+    Deno.env.get("GITHUB_SHA"),
+  )
+  if (version) {
+    params.set("version", version)
+  }
+
+  return `/assets/js/exceptionless-client.js?${params}`
+}
+
+function isNonProduction(environment: string): boolean {
+  const normalizedEnvironment = environment.trim().toLowerCase()
+  return normalizedEnvironment !== "" && normalizedEnvironment !== "production" && normalizedEnvironment !== "prod"
+}
+
+function firstNonEmpty(...values: Array<string | undefined>): string {
+  return values.find((value) => value && value.trim())?.trim() ?? ""
+}
 
 function uniqueHeadingSlug(value: string, env: Record<string, unknown>): string {
   const counts = getHeadingSlugCounts(env)
