@@ -19,7 +19,8 @@ jobs:
     repository: exceptionless/job
     pullPolicy: IfNotPresent
 
-config: {}
+config:
+  PUBLIC_EXCEPTIONLESS_CLIENT_SETUP_SHOW_SERVER_URL: "true"
 #  key: value
 
 ingress:

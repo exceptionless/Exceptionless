@@ -2,7 +2,6 @@ import { resolve } from '$app/paths';
 import { page } from '$app/state';
 import Usage from '@lucide/svelte/icons/bar-chart';
 import ClientConfig from '@lucide/svelte/icons/braces';
-import CloudDownload from '@lucide/svelte/icons/cloud-download';
 import ApiKey from '@lucide/svelte/icons/key';
 import Stacks from '@lucide/svelte/icons/layers';
 import Integration from '@lucide/svelte/icons/plug-2';
@@ -21,18 +20,6 @@ export function routes(): NavigationItem[] {
             href: resolve('/(app)/project/[projectId]/manage', { projectId: page.params.projectId }),
             icon: Settings,
             title: 'General'
-        },
-        {
-            group: 'Project Settings',
-            href: resolve('/(app)/project/[projectId]/configure', { projectId: page.params.projectId }),
-            icon: CloudDownload,
-            title: 'Client Setup'
-        },
-        {
-            group: 'Project Settings',
-            href: resolve('/(app)/project/[projectId]/usage', { projectId: page.params.projectId }),
-            icon: Usage,
-            title: 'Usage'
         },
         {
             group: 'Project Settings',
@@ -63,6 +50,12 @@ export function routes(): NavigationItem[] {
             href: resolve('/(app)/project/[projectId]/stacks', { projectId: page.params.projectId }),
             icon: Stacks,
             title: 'Stack Management'
+        },
+        {
+            group: 'Project Settings',
+            href: resolve('/(app)/project/[projectId]/usage', { projectId: page.params.projectId }),
+            icon: Usage,
+            title: 'Usage'
         }
     ];
 }

@@ -54,11 +54,11 @@
         <DropdownMenu.Item onclick={() => goto(resolve('/(app)/project/[projectId]/manage', { projectId: project.id }))}>
             <Edit />
             Edit
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={() => goto(resolve('/(app)/project/[projectId]/configure', { projectId: project.id }))}>
-            <Configure />
-            Download & Configure Client
-        </DropdownMenu.Item>
+		</DropdownMenu.Item>
+		<DropdownMenu.Item onclick={() => goto(resolve('/(app)/project/[projectId]/configure', { projectId: project.id }))}>
+			<Configure />
+			Client Setup
+		</DropdownMenu.Item>
         <DropdownMenu.Item onclick={() => (showRemoveProjectDialog = true)} disabled={removeProject.isPending}>
             <X />
             Delete

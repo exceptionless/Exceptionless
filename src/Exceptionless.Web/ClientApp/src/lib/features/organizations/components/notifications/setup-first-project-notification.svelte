@@ -10,9 +10,9 @@
 
 <Notification variant="information" {...restProps}>
     <NotificationTitle>Setup your first project</NotificationTitle>
-    <NotificationDescription>
-        Please
-        <A href={resolve('/(app)/project/add')}>add a new project</A>
-        and start becoming exceptionless in less than 60 seconds!
-    </NotificationDescription>
+	<NotificationDescription>
+		Please
+		<A href={resolve('/(app)/project/add')}>add a new project</A>
+		and start becoming Exceptionless in less than 60 seconds!
+	</NotificationDescription>
 </Notification>

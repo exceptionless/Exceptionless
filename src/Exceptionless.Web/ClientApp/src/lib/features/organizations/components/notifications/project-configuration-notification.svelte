@@ -24,20 +24,8 @@
 </script>
 
 <Notification variant="information" {...restProps}>
-    <NotificationTitle>We haven't received any data!</NotificationTitle>
-    <NotificationDescription>
-        Please <A href={configureHref}>configure your clients</A> for
-        {#if projects.length === 1}
-            the
-        {/if}
-        {#each projects as project, index (project.id)}
-            {#if index > 0},
-            {/if}{project.name}
-        {/each}
-        {#if projects.length === 1}
-            project
-        {:else}
-            projects
-        {/if} and start becoming exceptionless!
-    </NotificationDescription>
+	<NotificationTitle>We haven't received any events yet!</NotificationTitle>
+	<NotificationDescription>
+		Open <A href={configureHref}>Client setup</A> for this project and start becoming Exceptionless!
+	</NotificationDescription>
 </Notification>
