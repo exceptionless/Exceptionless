@@ -19,8 +19,7 @@ jobs:
     repository: exceptionless/job
     pullPolicy: IfNotPresent
 
-config:
-  EX_ClientSetupShowServerUrl: "true"
+config: {}
 #  key: value
 
 ingress:
