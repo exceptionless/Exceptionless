@@ -31,6 +31,7 @@ config:
   EX_ClientSetupShowServerUrl: "false"
   EX_EnableSnapshotJobs: "true"
   EX_SmtpFrom: "Exceptionless <noreply@exceptionless.io>"
+  EX_ContactEmailAddress: "support@exceptionless.com"
   EX_TestEmailAddress: "test@exceptionless.io"
   EX_EnableArchive: "false"
   EX_Serilog__MinimumLevel__Default: "Warning"
