@@ -1,6 +1,7 @@
 #!/bin/bash
 
 ApiUrl="${EX_ApiUrl:-}"
+ClientSetupShowServerUrl="${EX_ClientSetupShowServerUrl:-true}"
 EnableAccountCreation="${EX_EnableAccountCreation:-true}"
 
 OAuth="${EX_ConnectionStrings__OAuth:-}"
@@ -37,7 +38,7 @@ config="
     PUBLIC_ENABLE_ACCOUNT_CREATION: '$EnableAccountCreation',
     PUBLIC_SYSTEM_NOTIFICATION_MESSAGE: '$EX_NotificationMessage',
     PUBLIC_EXCEPTIONLESS_API_KEY: '$EX_ExceptionlessApiKey',
-    PUBLIC_EXCEPTIONLESS_CLIENT_SETUP_SHOW_SERVER_URL: '${PUBLIC_EXCEPTIONLESS_CLIENT_SETUP_SHOW_SERVER_URL:-true}',
+    PUBLIC_EXCEPTIONLESS_CLIENT_SETUP_SHOW_SERVER_URL: '$ClientSetupShowServerUrl',
     PUBLIC_EXCEPTIONLESS_SERVER_URL: '$EX_ExceptionlessServerUrl',
     PUBLIC_STRIPE_PUBLISHABLE_KEY: '$EX_StripePublishableApiKey',
     PUBLIC_FACEBOOK_APPID: '$FacebookAppId',

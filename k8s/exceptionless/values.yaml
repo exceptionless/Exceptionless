@@ -20,7 +20,7 @@ jobs:
     pullPolicy: IfNotPresent
 
 config:
-  PUBLIC_EXCEPTIONLESS_CLIENT_SETUP_SHOW_SERVER_URL: "true"
+  EX_ClientSetupShowServerUrl: "true"
 #  key: value
 
 ingress:

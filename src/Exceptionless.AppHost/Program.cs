@@ -15,6 +15,7 @@ int oldAppLiveReloadPort = worktreePorts?.OldAppLiveReload ?? 35729;
 string oldAppAspNetCoreUrls = String.Concat("http://localhost:", oldAppHttpPort);
 int appPort = worktreePorts?.AppHttps ?? 7131;
 const int DefaultApiHttpsPort = 7111;
+const string ClientSetupShowServerUrl = "true";
 string exceptionlessServerUrl = worktreePorts?.ApiHttpsUrl ?? $"https://api-ex.dev.localhost:{DefaultApiHttpsPort}";
 const string SharedEmailConnectionString = "smtp://localhost:1025";
 
@@ -182,7 +183,8 @@ if (!servicesOnly)
         .WithReference(api)
         .WithReference(oldApp)
         .RemoveJavaScriptDebuggingAnnotation()
-        .WithEnvironment("PUBLIC_EXCEPTIONLESS_CLIENT_SETUP_SHOW_SERVER_URL", "true")
+        .WithEnvironment("EX_ClientSetupShowServerUrl", ClientSetupShowServerUrl)
+        .WithEnvironment("PUBLIC_EXCEPTIONLESS_CLIENT_SETUP_SHOW_SERVER_URL", ClientSetupShowServerUrl)
         .WithEnvironment("PUBLIC_EXCEPTIONLESS_SERVER_URL", exceptionlessServerUrl)
         .WithEnvironment("PORT", appPort.ToString())
         .WithEndpoint("http", e =>
