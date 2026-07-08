@@ -24,8 +24,8 @@
 </script>
 
 <Notification variant="information" {...restProps}>
-	<NotificationTitle>We haven't received any events yet!</NotificationTitle>
-	<NotificationDescription>
-		Open <A href={configureHref}>Client setup</A> for this project and start becoming Exceptionless!
-	</NotificationDescription>
+    <NotificationTitle>We haven't received any events yet!</NotificationTitle>
+    <NotificationDescription>
+        Open <A href={configureHref}>Client setup</A> for this project and start becoming Exceptionless!
+    </NotificationDescription>
 </Notification>

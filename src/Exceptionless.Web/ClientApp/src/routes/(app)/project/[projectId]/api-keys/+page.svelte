@@ -1,20 +1,20 @@
 <script lang="ts">
     import type { NewToken, ViewToken } from '$features/tokens/models';
 
-	import { page } from '$app/state';
-	import { resolve } from '$app/paths';
-	import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
-	import { A, Muted } from '$comp/typography';
-	import { Button } from '$comp/ui/button';
-	import { organization } from '$features/organizations/context.svelte';
-	import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
-	import { type GetProjectTokensParams, getProjectTokensQuery, postProjectToken } from '$features/tokens/api.svelte';
-	import { getTableOptions } from '$features/tokens/components/table/options.svelte';
-	import TokensDataTable from '$features/tokens/components/table/tokens-data-table.svelte';
-	import Plus from '@lucide/svelte/icons/plus';
-	import { createTable } from '@tanstack/svelte-table';
-	import { queryParamsState } from 'kit-query-params';
-	import { toast } from 'svelte-sonner';
+    import { resolve } from '$app/paths';
+    import { page } from '$app/state';
+    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
+    import { A, Muted } from '$comp/typography';
+    import { Button } from '$comp/ui/button';
+    import { organization } from '$features/organizations/context.svelte';
+    import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
+    import { type GetProjectTokensParams, getProjectTokensQuery, postProjectToken } from '$features/tokens/api.svelte';
+    import { getTableOptions } from '$features/tokens/components/table/options.svelte';
+    import TokensDataTable from '$features/tokens/components/table/tokens-data-table.svelte';
+    import Plus from '@lucide/svelte/icons/plus';
+    import { createTable } from '@tanstack/svelte-table';
+    import { queryParamsState } from 'kit-query-params';
+    import { toast } from 'svelte-sonner';
 
     const projectId = $derived(page.params.projectId || '');
 
@@ -80,22 +80,22 @@
 </script>
 
 <div class="space-y-6">
-	<div class="space-y-1">
-		<Muted>Create and manage API keys for applications and services sending events to Exceptionless.</Muted>
-		<Muted>
-			To install an SDK and start sending events, open
-			<A href={resolve('/(app)/project/[projectId]/configure', { projectId })}>Client setup</A>.
-		</Muted>
-	</div>
+    <div class="space-y-1">
+        <Muted>Create and manage API keys for applications and services sending events to Exceptionless.</Muted>
+        <Muted>
+            To install an SDK and start sending events, open
+            <A href={resolve('/(app)/project/[projectId]/configure', { projectId })}>Client setup</A>.
+        </Muted>
+    </div>
 
-	<TokensDataTable bind:limit={tokensQueryParameters.limit!} isLoading={tokensQuery.isLoading} {table}>
-		{#snippet toolbarChildren()}
-			<div class="flex-1"></div>
-			<DataTableViewOptions size="icon-lg" {table} />
-			<Button size="icon-lg" onclick={addApiKey} title="Add API Key">
-				<Plus class="size-4" aria-hidden="true" />
-				<span class="sr-only">Add API Key</span>
-			</Button>
+    <TokensDataTable bind:limit={tokensQueryParameters.limit!} isLoading={tokensQuery.isLoading} {table}>
+        {#snippet toolbarChildren()}
+            <div class="flex-1"></div>
+            <DataTableViewOptions size="icon-lg" {table} />
+            <Button size="icon-lg" onclick={addApiKey} title="Add API Key">
+                <Plus class="size-4" aria-hidden="true" />
+                <span class="sr-only">Add API Key</span>
+            </Button>
         {/snippet}
     </TokensDataTable>
 </div>
