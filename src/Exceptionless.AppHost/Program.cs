@@ -7,6 +7,7 @@ bool isScoped = !String.IsNullOrWhiteSpace(scope);
 var worktreePorts = isScoped ? WorktreeScope.AssignFreePorts() : null;
 var builderOptions = new DistributedApplicationOptions
 {
+    Args = args,
     TrustDeveloperCertificate = !HasArgument("--skip-trust-developer-certificate"),
     AllowUnsecuredTransport = HasArgument("--allow-unsecured-transport"),
     DisableDashboard = HasArgument("--disable-dashboard")

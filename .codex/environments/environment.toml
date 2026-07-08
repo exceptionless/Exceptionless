@@ -87,9 +87,9 @@ export HOME="${ASPIRE_HOME}"
 export DOTNET_CLI_HOME="${ASPIRE_HOME}/.dotnet"
 
 if command -v aspire >/dev/null 2>&1; then
-  aspire run --nologo --non-interactive -- --allow-unsecured-transport --skip-trust-developer-certificate
+  aspire run --nologo --non-interactive -- --allow-unsecured-transport --skip-trust-developer-certificate "$@"
 else
-  dotnet run --project src/Exceptionless.AppHost/Exceptionless.AppHost.csproj
+  dotnet run --project src/Exceptionless.AppHost/Exceptionless.AppHost.csproj -- "$@"
 fi
 '''
 
