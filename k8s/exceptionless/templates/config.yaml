@@ -9,7 +9,6 @@ data:
     {{- end }}
     EX_BaseUrl: https://{{.Values.app.defaultDomain}}
     EX_ExceptionlessServerUrl: https://{{.Values.api.defaultDomain}}
-    PUBLIC_EXCEPTIONLESS_SERVER_URL: https://{{.Values.api.defaultDomain}}
     EX_DisabledPlugins: GeoPlugin,LocationPlugin
     EX_EnableSsl: "true"
     EX_Html5Mode: "true"

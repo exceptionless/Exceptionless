@@ -94,12 +94,8 @@
 	}
 
 	const projectTypes: ProjectType[] = [
-		...(shouldShowServerUrl
-			? [
-					{ id: 'bash', label: 'Bash Shell', platform: 'Command Line' },
-					{ id: 'powershell', label: 'PowerShell', platform: 'Command Line' }
-				]
-			: []),
+		{ id: 'bash', label: 'Bash Shell', platform: 'Command Line' },
+		{ id: 'powershell', label: 'PowerShell', platform: 'Command Line' },
 
 		{ id: 'dotnet-console', label: 'Console and Service applications', package: 'Exceptionless', platform: '.NET' },
         { id: 'dotnet-aspnetcore', label: 'ASP.NET Core', package: 'Exceptionless.AspNetCore', platform: '.NET' },
@@ -195,7 +191,11 @@ app.UseExceptionless();`,
     --header "Authorization: Bearer ${apiKey}" \\
     --header "Content-Type: application/json" \\
     --data-binary '[{"type":"log","message":"Hello World!"}]'`
-			: '',
+			: `curl "/api/v2/events" \\
+    --request POST \\
+    --header "Authorization: Bearer ${apiKey}" \\
+    --header "Content-Type: application/json" \\
+    --data-binary '[{"type":"log","message":"Hello World!"}]'`,
 
         browserJs: `import { Exceptionless } from "@exceptionless/browser";
 
@@ -233,7 +233,17 @@ $header = @{
 }
 
 Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -Headers $header`
-			: '',
+			: `$body = @{
+ "type"="log"
+ "message"="Hello World!"
+} | ConvertTo-Json
+
+$header = @{
+ "Authorization"="Bearer ${apiKey}"
+ "Content-Type"="application/json"
+}
+
+Invoke-RestMethod -Uri "/api/v2/events" -Method "Post" -Body $body -Headers $header`,
 
         reactNativeExpoPlugin: `{
   "expo": {

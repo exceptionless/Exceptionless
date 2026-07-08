@@ -14,7 +14,8 @@ int oldAppPort = worktreePorts?.OldAppHttps ?? 7121;
 int oldAppLiveReloadPort = worktreePorts?.OldAppLiveReload ?? 35729;
 string oldAppAspNetCoreUrls = String.Concat("http://localhost:", oldAppHttpPort);
 int appPort = worktreePorts?.AppHttps ?? 7131;
-string publicExceptionlessServerUrl = worktreePorts?.ApiHttpsUrl ?? "https://api-ex.dev.localhost:7111";
+const int DefaultApiHttpsPort = 7111;
+string exceptionlessServerUrl = worktreePorts?.ApiHttpsUrl ?? $"https://api-ex.dev.localhost:{DefaultApiHttpsPort}";
 const string SharedEmailConnectionString = "smtp://localhost:1025";
 
 var elastic = builder.AddElasticsearch("Elasticsearch", port: 9200)
@@ -181,8 +182,9 @@ if (!servicesOnly)
         .WithReference(api)
         .WithReference(oldApp)
         .RemoveJavaScriptDebuggingAnnotation()
+        .WithEnvironment("EX_ExceptionlessServerUrl", exceptionlessServerUrl)
         .WithEnvironment("PUBLIC_EXCEPTIONLESS_CLIENT_SETUP_SHOW_SERVER_URL", "true")
-        .WithEnvironment("PUBLIC_EXCEPTIONLESS_SERVER_URL", publicExceptionlessServerUrl)
+        .WithEnvironment("PUBLIC_EXCEPTIONLESS_SERVER_URL", exceptionlessServerUrl)
         .WithEnvironment("PORT", appPort.ToString())
         .WithEndpoint("http", e =>
         {
