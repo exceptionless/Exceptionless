@@ -6,19 +6,18 @@
     import { A, CodeBlock, Muted, P } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Select from '$comp/ui/select';
-    import { Spinner } from '$comp/ui/spinner';
     import { env } from '$env/dynamic/public';
     import { ProjectFilter } from '$features/events/components/filters';
     import { getIntercom } from '$features/intercom';
     import { openSupportChat } from '$features/intercom/chat';
     import { organization } from '$features/organizations/context.svelte';
     import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
-    import { generateSampleData } from '$features/projects/api.svelte';
     import { getProjectDefaultTokenQuery, patchToken } from '$features/tokens/api.svelte';
     import EnableTokenDialog from '$features/tokens/components/dialogs/enable-token-dialog.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
+    import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+    import Bot from '@lucide/svelte/icons/bot';
     import Events from '@lucide/svelte/icons/calendar-days';
-    import Database from '@lucide/svelte/icons/database';
     import NotificationSettings from '@lucide/svelte/icons/mail';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener } from 'runed';
@@ -40,7 +39,10 @@
     });
 
     const apiKey = $derived(defaultTokenQuery.data?.id || 'YOUR_API_KEY');
-    const serverUrl = env.PUBLIC_API_URL || window.location.origin;
+    const serverUrl = (env.PUBLIC_EXCEPTIONLESS_SERVER_URL || '').trim();
+    const showServerUrl = env.PUBLIC_EXCEPTIONLESS_CLIENT_SETUP_SHOW_SERVER_URL !== 'false';
+    const shouldShowServerUrl = showServerUrl && serverUrl.length > 0;
+    const eventSubmissionUrl = serverUrl.length > 0 ? `${serverUrl}/api/v2/events` : 'YOUR_EXCEPTIONLESS_SERVER_URL/api/v2/events';
     const isTokenDisabled = $derived(defaultTokenQuery.data?.is_disabled ?? false);
     const isTokenSuspended = $derived(defaultTokenQuery.data?.is_suspended ?? false);
 
@@ -55,14 +57,6 @@
         }
     });
 
-    const generateSampleDataMutation = generateSampleData({
-        route: {
-            get id() {
-                return projectId;
-            }
-        }
-    });
-
     async function enableToken() {
         toast.dismiss(toastId);
 
@@ -71,18 +65,6 @@
             toastId = toast.success(`Successfully enabled API key`);
         } catch (error) {
             toastId = toast.error('Failed to enable API key. Please try again.');
-            throw error;
-        }
-    }
-
-    async function generateProjectSampleData() {
-        toast.dismiss(toastId);
-
-        try {
-            await generateSampleDataMutation.mutateAsync();
-            toastId = toast.success('Sample data generation has been queued. Events will appear shortly.');
-        } catch (error) {
-            toastId = toast.error('Failed to generate sample data. Please try again.');
             throw error;
         }
     }
@@ -185,7 +167,18 @@
     });
 
     const codeSamples = $derived({
-        aspNetCore: `using Exceptionless;
+        aspNetCore: shouldShowServerUrl
+            ? `using Exceptionless;
+
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddExceptionless(c => {
+  c.ApiKey = "${apiKey}";
+  c.ServerUrl = "${serverUrl}";
+});
+
+var app = builder.Build();
+app.UseExceptionless();`
+            : `using Exceptionless;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddExceptionless("${apiKey}");
@@ -193,7 +186,7 @@ builder.Services.AddExceptionless("${apiKey}");
 var app = builder.Build();
 app.UseExceptionless();`,
 
-        bashShell: `curl "${serverUrl}/api/v2/events" \\
+        bashShell: `curl "${eventSubmissionUrl}" \\
     --request POST \\
     --header "Authorization: Bearer ${apiKey}" \\
     --header "Content-Type: application/json" \\
@@ -202,19 +195,27 @@ app.UseExceptionless();`,
         browserJs: `import { Exceptionless } from "@exceptionless/browser";
 
 await Exceptionless.startup(c => {
-  c.apiKey = "${apiKey}";
+  c.apiKey = "${apiKey}";${shouldShowServerUrl ? `\n  c.serverUrl = "${serverUrl}";` : ''}
 });`,
 
-        exceptionless: `using Exceptionless;
+        exceptionless: shouldShowServerUrl
+            ? `using Exceptionless;
+
+ExceptionlessClient.Default.Configuration.ApiKey = "${apiKey}";
+ExceptionlessClient.Default.Configuration.ServerUrl = "${serverUrl}";
+ExceptionlessClient.Default.Startup();`
+            : `using Exceptionless;
 
 ExceptionlessClient.Default.Startup("${apiKey}");`,
 
-        legacyAppConfigSectionXml: `<exceptionless apiKey="${apiKey}" />`,
+        legacyAppConfigSectionXml: shouldShowServerUrl
+            ? `<exceptionless apiKey="${apiKey}" serverUrl="${serverUrl}" />`
+            : `<exceptionless apiKey="${apiKey}" />`,
 
         nodeJs: `import { Exceptionless } from "@exceptionless/node";
 
 await Exceptionless.startup(c => {
-  c.apiKey = "${apiKey}";
+  c.apiKey = "${apiKey}";${shouldShowServerUrl ? `\n  c.serverUrl = "${serverUrl}";` : ''}
 });`,
 
         powerShell: `$body = @{
@@ -227,7 +228,7 @@ $header = @{
  "Content-Type"="application/json"
 }
 
-Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -Headers $header`,
+Invoke-RestMethod -Uri "${eventSubmissionUrl}" -Method "Post" -Body $body -Headers $header`,
 
         reactNativeExpoPlugin: `{
   "expo": {
@@ -238,7 +239,7 @@ Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -
         reactNativeJs: `import { Exceptionless } from "@exceptionless/react-native";
 
 await Exceptionless.startup(c => {
-  c.apiKey = "${apiKey}";
+  c.apiKey = "${apiKey}";${shouldShowServerUrl ? `\n  c.serverUrl = "${serverUrl}";` : ''}
 });`,
 
         webApi: `public static void Register(HttpConfiguration config) {
@@ -246,7 +247,7 @@ await Exceptionless.startup(c => {
 }`,
 
         webApiInAspNet: `protected void Application_Start() {
-  ExceptionlessClient.Default.Configuration.ApiKey = "${apiKey}";
+  ExceptionlessClient.Default.Configuration.ApiKey = "${apiKey}";${shouldShowServerUrl ? `\n  ExceptionlessClient.Default.Configuration.ServerUrl = "${serverUrl}";` : ''}
   ExceptionlessClient.Default.Startup();
 }`,
         webApiRegister: `using Exceptionless;
@@ -264,7 +265,9 @@ public class Startup {
 }`,
 
         webApiRegisterAspNet: `Exceptionless.ExceptionlessClient.Default.RegisterWebApi(GlobalConfiguration.Configuration)`,
-        windowsAttributeConfiguration: `[assembly: Exceptionless.Configuration.Exceptionless("${apiKey}")]`,
+        windowsAttributeConfiguration: shouldShowServerUrl
+            ? `[assembly: Exceptionless.Configuration.Exceptionless("${apiKey}", ServerUrl = "${serverUrl}")]`
+            : `[assembly: Exceptionless.Configuration.Exceptionless("${apiKey}")]`,
         windowsRegister: `using Exceptionless;
 
 internal static class Program {
@@ -347,7 +350,7 @@ public partial class App : Application {
 </script>
 
 <div class="space-y-6">
-    <Muted>The Exceptionless client can be integrated into your project in just a few easy steps</Muted>
+    <Muted>Choose your project type and follow the steps below to connect your application to Exceptionless.</Muted>
 
     {#if isTokenDisabled}
         <Notification variant="destructive">
@@ -382,7 +385,7 @@ public partial class App : Application {
 
     <ol class="my-6 ml-6 list-decimal [&>li]:mt-2">
         <li>
-            <P>Select your project type.</P>
+            <P>Choose your project type.</P>
             <Select.Root
                 type="single"
                 bind:value={queryParams.type as string | undefined}
@@ -725,18 +728,17 @@ public partial class App : Application {
     {/if}
 
     <div class="border-border flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end">
+        <Button variant="secondary" href={resolve('/(app)/project/[projectId]/manage', { projectId })}>
+            <ArrowLeft class="mr-2 size-4" aria-hidden="true" /> Back to Project Settings
+        </Button>
         <Button variant="secondary" href={`${resolve('/(app)/account/notifications')}?project=${projectId}`}>
             <NotificationSettings class="mr-2 size-4" aria-hidden="true" /> Notifications
         </Button>
-        <Button variant="success" onclick={generateProjectSampleData} disabled={generateSampleDataMutation.isPending}>
-            {#if generateSampleDataMutation.isPending}
-                <Spinner /> Generating...
-            {:else}
-                <Database class="mr-2 size-4" aria-hidden="true" /> Generate Sample Data
-            {/if}
-        </Button>
         <Button variant="secondary" onclick={goToProjectEvents}>
             <Events class="mr-2 size-4" aria-hidden="true" /> View Events
+        </Button>
+        <Button variant="success" href={resolve('/(app)/account/ai-tools')}>
+            <Bot class="mr-2 size-4" aria-hidden="true" /> Set Up AI Tools
         </Button>
     </div>
 
