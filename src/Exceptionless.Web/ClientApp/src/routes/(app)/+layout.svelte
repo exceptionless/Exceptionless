@@ -525,9 +525,7 @@
         {/snippet}
     </IntercomShell>
 
-    {#if upgradeRequiredDialog.open}
-        <UpgradeRequiredDialog />
-    {/if}
+    <UpgradeRequiredDialog />
 {/if}
 
 <Telemetry userId={isAuthenticated ? meQuery.data?.email_address : undefined} userName={isAuthenticated ? meQuery.data?.full_name : undefined} />
