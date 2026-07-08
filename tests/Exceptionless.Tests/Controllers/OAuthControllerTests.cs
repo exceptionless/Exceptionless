@@ -1246,9 +1246,45 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
         Assert.NotNull(spentToken);
         Assert.NotNull(refreshedStoredToken);
         Assert.True(spentToken.IsDisabled);
-        Assert.True(refreshedStoredToken.IsDisabled);
-        Assert.Null(spentToken.RefreshTokenHash);
-        Assert.Null(refreshedStoredToken.RefreshTokenHash);
+        Assert.False(refreshedStoredToken.IsDisabled);
+        Assert.Equal(OAuthService.CreateTokenHash(token.RefreshToken), spentToken.RefreshTokenHash);
+        Assert.Equal(OAuthService.CreateTokenHash(refreshedToken.RefreshToken), refreshedStoredToken.RefreshTokenHash);
+    }
+
+    [Fact]
+    public async Task TokenAsync_SpentRefreshTokenReplayAfterGracePeriod_RevokesGrantFamily()
+    {
+        var token = await IssueTokenAsync();
+        Assert.NotNull(token.RefreshToken);
+        using var client = CreateHttpClient();
+
+        var refreshResponse = await client.PostAsync("oauth/token", CreateRefreshTokenContent(token.RefreshToken), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, refreshResponse.StatusCode);
+        var refreshedToken = await DeserializeResponseAsync<OAuthTokenResponse>(refreshResponse);
+        Assert.NotNull(refreshedToken);
+
+        try
+        {
+            TimeProvider.Advance(TimeSpan.FromMinutes(3));
+
+            var replayResponse = await client.PostAsync("oauth/token", CreateRefreshTokenContent(token.RefreshToken), TestContext.Current.CancellationToken);
+
+            Assert.Equal(HttpStatusCode.BadRequest, replayResponse.StatusCode);
+
+            var spentToken = await GetStoredOAuthTokenAsync(token.AccessToken);
+            var refreshedStoredToken = await GetStoredOAuthTokenAsync(refreshedToken.AccessToken);
+            Assert.NotNull(spentToken);
+            Assert.NotNull(refreshedStoredToken);
+            Assert.True(spentToken.IsDisabled);
+            Assert.True(refreshedStoredToken.IsDisabled);
+            Assert.Null(spentToken.RefreshTokenHash);
+            Assert.Null(refreshedStoredToken.RefreshTokenHash);
+        }
+        finally
+        {
+            TimeProvider.Restore();
+        }
     }
 
     [Fact]
@@ -1416,6 +1452,13 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
 
         Assert.Contains(responses, r => r.StatusCode == HttpStatusCode.OK);
         Assert.Contains(responses, r => r.StatusCode == HttpStatusCode.BadRequest);
+        var refreshedToken = await DeserializeResponseAsync<OAuthTokenResponse>(Assert.Single(responses, r => r.StatusCode == HttpStatusCode.OK));
+        Assert.NotNull(refreshedToken);
+
+        var refreshedStoredToken = await GetStoredOAuthTokenAsync(refreshedToken.AccessToken);
+        Assert.NotNull(refreshedStoredToken);
+        Assert.False(refreshedStoredToken.IsDisabled);
+        Assert.NotNull(refreshedStoredToken.RefreshTokenHash);
     }
 
     [Fact]
