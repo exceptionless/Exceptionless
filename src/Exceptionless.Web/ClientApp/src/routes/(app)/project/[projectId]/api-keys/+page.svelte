@@ -11,8 +11,8 @@
     import { type GetProjectTokensParams, getProjectTokensQuery, postProjectToken } from '$features/tokens/api.svelte';
     import { getTableOptions } from '$features/tokens/components/table/options.svelte';
     import TokensDataTable from '$features/tokens/components/table/tokens-data-table.svelte';
+    import CloudDownload from '@lucide/svelte/icons/cloud-download';
     import Plus from '@lucide/svelte/icons/plus';
-    import Send from '@lucide/svelte/icons/send';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
     import { toast } from 'svelte-sonner';
@@ -88,7 +88,7 @@
             <div class="flex-1"></div>
             <DataTableViewOptions size="icon-lg" {table} />
             <Button size="icon-lg" href={resolve('/(app)/project/[projectId]/configure', { projectId })} title="Client Setup">
-                <Send class="size-4" aria-hidden="true" />
+                <CloudDownload class="size-4" aria-hidden="true" />
                 <span class="sr-only">Client Setup</span>
             </Button>
             <Button size="icon-lg" onclick={addApiKey} title="Add API Key">

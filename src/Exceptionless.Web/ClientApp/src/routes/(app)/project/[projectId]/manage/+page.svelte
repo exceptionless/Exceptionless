@@ -19,10 +19,10 @@
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
     import Bot from '@lucide/svelte/icons/bot';
+    import CloudDownload from '@lucide/svelte/icons/cloud-download';
     import Database from '@lucide/svelte/icons/database';
     import Stacks from '@lucide/svelte/icons/layers';
     import NotificationSettings from '@lucide/svelte/icons/mail';
-    import Send from '@lucide/svelte/icons/send';
     import X from '@lucide/svelte/icons/x';
     import { createForm } from '@tanstack/svelte-form';
     import { toast } from 'svelte-sonner';
@@ -174,7 +174,7 @@
                 <Stacks class="mr-2 size-4" /> Go To Stacks
             </Button>
             <Button variant="secondary" href={resolve('/(app)/project/[projectId]/configure', { projectId })}>
-                <Send class="mr-2 size-4" /> Send Events
+                <CloudDownload class="mr-2 size-4" /> Client Setup
             </Button>
             <Button variant="secondary" href={`${resolve('/(app)/account/notifications')}?project=${projectId}`}>
                 <NotificationSettings class="mr-2 size-4" /> Notifications

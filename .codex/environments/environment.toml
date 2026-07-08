@@ -61,7 +61,6 @@ echo "Removing repo-local temp/test output only..."
 
 rm -rf .cache/tmp
 rm -rf .aspire
-rm -rf .aspire-home
 rm -rf TestResults
 
 find . -type d \( -name TestResults -o -name .vite -o -name .svelte-kit \) -exec rm -rf {} +
@@ -81,15 +80,11 @@ cd "${CODEX_WORKTREE_PATH:?CODEX_WORKTREE_PATH is required}"
 export AppMode=Development
 export DOTNET_ENVIRONMENT=Development
 export ASPNETCORE_ENVIRONMENT=Development
-export ASPIRE_HOME="${CODEX_WORKTREE_PATH}/.aspire-home"
-mkdir -p "${ASPIRE_HOME}"
-export HOME="${ASPIRE_HOME}"
-export DOTNET_CLI_HOME="${ASPIRE_HOME}/.dotnet"
 
 if command -v aspire >/dev/null 2>&1; then
-  aspire run --nologo --non-interactive -- --allow-unsecured-transport --skip-trust-developer-certificate "$@"
+  aspire run --nologo --non-interactive
 else
-  dotnet run --project src/Exceptionless.AppHost/Exceptionless.AppHost.csproj -- "$@"
+  dotnet run --project src/Exceptionless.AppHost/Exceptionless.AppHost.csproj
 fi
 '''
 
