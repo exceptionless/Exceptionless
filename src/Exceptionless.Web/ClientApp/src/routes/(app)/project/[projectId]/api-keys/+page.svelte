@@ -83,8 +83,8 @@
 	<div class="space-y-1">
 		<Muted>Create and manage API keys for authenticating clients that send events to Exceptionless.</Muted>
 		<Muted>
-			Need the server URL, install commands, or SDK snippets?
-			<A href={resolve('/(app)/project/[projectId]/configure', { projectId })}>Configure Client</A>.
+			For SDK install and setup instructions,
+			<A href={resolve('/(app)/project/[projectId]/configure', { projectId })}>set up a client</A>.
 		</Muted>
 	</div>
 
