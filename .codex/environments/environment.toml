@@ -82,7 +82,7 @@ export DOTNET_ENVIRONMENT=Development
 export ASPNETCORE_ENVIRONMENT=Development
 
 if command -v aspire >/dev/null 2>&1; then
-  aspire run
+  aspire run --nologo --non-interactive
 else
   dotnet run --project src/Exceptionless.AppHost/Exceptionless.AppHost.csproj
 fi

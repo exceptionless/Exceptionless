@@ -28,6 +28,7 @@ jobs:
     maxReplicaCount: 5
 
 config:
+  EX_ClientSetupShowServerUrl: "false"
   EX_EnableSnapshotJobs: "true"
   EX_SmtpFrom: "Exceptionless <noreply@exceptionless.io>"
   EX_ContactEmailAddress: "support@exceptionless.com"
