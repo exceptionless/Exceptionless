@@ -38,7 +38,7 @@
         "@eslint/compat": "^2.1.0",
         "@eslint/js": "^10.0.1",
         "@iconify-json/lucide": "^1.2.114",
-        "@playwright/test": "^1.61.0",
+        "@playwright/test": "^1.61.1",
         "@storybook/addon-a11y": "^10.4.6",
         "@storybook/addon-docs": "^10.4.6",
         "@storybook/addon-svelte-csf": "^5.1.2",
