@@ -6,12 +6,6 @@ on:
     secrets:
       EXCEPTIONLESS_SITE_API_KEY:
         required: false
-      PUBLIC_EXCEPTIONLESS_API_KEY:
-        required: false
-      EXCEPTIONLESS_SITE_SERVER_URL:
-        required: false
-      PUBLIC_EXCEPTIONLESS_SERVER_URL:
-        required: false
   push:
     tags: ["v*"]
   pull_request:
@@ -32,9 +26,7 @@ jobs:
         working-directory: docs
     env:
       EXCEPTIONLESS_SITE_API_KEY: ${{ secrets.EXCEPTIONLESS_SITE_API_KEY }}
-      PUBLIC_EXCEPTIONLESS_API_KEY: ${{ secrets.PUBLIC_EXCEPTIONLESS_API_KEY }}
-      EXCEPTIONLESS_SITE_SERVER_URL: ${{ secrets.EXCEPTIONLESS_SITE_SERVER_URL || vars.EXCEPTIONLESS_SITE_SERVER_URL }}
-      PUBLIC_EXCEPTIONLESS_SERVER_URL: ${{ secrets.PUBLIC_EXCEPTIONLESS_SERVER_URL || vars.PUBLIC_EXCEPTIONLESS_SERVER_URL }}
+      EXCEPTIONLESS_SITE_SERVER_URL: ${{ vars.EXCEPTIONLESS_SITE_SERVER_URL }}
       EXCEPTIONLESS_SITE_ENVIRONMENT: ${{ vars.EXCEPTIONLESS_SITE_ENVIRONMENT }}
       EXCEPTIONLESS_SITE_VERSION: ${{ github.sha }}
 

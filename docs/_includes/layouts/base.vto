@@ -169,10 +169,10 @@
     <p class="copyright">&copy; {{ copyrightYear }} Exceptionless</p>
   </div>
 </div>
-    <script type="module" src="/assets/js/site.js"></script>
     {{ if exceptionlessClientScriptSrc }}
     <script type="module" src="{{ exceptionlessClientScriptSrc }}"></script>
     {{ /if }}
+    <script type="module" src="/assets/js/site.js"></script>
     {{ for script of extraScripts || [] }}
     <script defer src="{{ script }}"></script>
     {{ /for }}

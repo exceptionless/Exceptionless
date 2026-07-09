@@ -266,10 +266,10 @@ only when configured with a public browser API key at build time.
 
 Build-time configuration:
 
-- `EXCEPTIONLESS_SITE_API_KEY` or `PUBLIC_EXCEPTIONLESS_API_KEY`
-- `EXCEPTIONLESS_SITE_SERVER_URL` or `PUBLIC_EXCEPTIONLESS_SERVER_URL`
-- `EXCEPTIONLESS_SITE_ENVIRONMENT` or `EX_AppMode`
-- `EXCEPTIONLESS_SITE_VERSION`, `PUBLIC_APP_VERSION`, or `GITHUB_SHA`
+- `EXCEPTIONLESS_SITE_API_KEY`
+- `EXCEPTIONLESS_SITE_SERVER_URL`
+- `EXCEPTIONLESS_SITE_ENVIRONMENT`
+- `EXCEPTIONLESS_SITE_VERSION`
 
 Google Tag Manager is part of the public site layout and loads by default. Local Codex and Aspire docs runs do not force
 any Exceptionless configuration; the browser client script is not emitted unless an API key is supplied.

@@ -68,37 +68,24 @@ site.data("exceptionlessClientScriptSrc", exceptionlessClientScriptSrc())
 export default site
 
 function exceptionlessClientScriptSrc(): string {
-  const apiKey = firstNonEmpty(
-    Deno.env.get("EXCEPTIONLESS_SITE_API_KEY"),
-    Deno.env.get("PUBLIC_EXCEPTIONLESS_API_KEY"),
-  )
+  const apiKey = (Deno.env.get("EXCEPTIONLESS_SITE_API_KEY") ?? "").trim()
   if (!apiKey) {
     return ""
   }
 
   const params = new URLSearchParams({ apiKey })
-  const serverUrl = firstNonEmpty(
-    Deno.env.get("EXCEPTIONLESS_SITE_SERVER_URL"),
-    Deno.env.get("PUBLIC_EXCEPTIONLESS_SERVER_URL"),
-  )
+  const serverUrl = (Deno.env.get("EXCEPTIONLESS_SITE_SERVER_URL") ?? "").trim()
 
   if (serverUrl) {
     params.set("serverUrl", serverUrl)
   }
 
-  const environment = firstNonEmpty(
-    Deno.env.get("EXCEPTIONLESS_SITE_ENVIRONMENT"),
-    Deno.env.get("EX_AppMode"),
-  )
+  const environment = (Deno.env.get("EXCEPTIONLESS_SITE_ENVIRONMENT") ?? "").trim()
   if (isNonProduction(environment)) {
     params.set("environment", environment)
   }
 
-  const version = firstNonEmpty(
-    Deno.env.get("EXCEPTIONLESS_SITE_VERSION"),
-    Deno.env.get("PUBLIC_APP_VERSION"),
-    Deno.env.get("GITHUB_SHA"),
-  )
+  const version = (Deno.env.get("EXCEPTIONLESS_SITE_VERSION") ?? "").trim()
   if (version) {
     params.set("version", version)
   }
@@ -109,10 +96,6 @@ function exceptionlessClientScriptSrc(): string {
 function isNonProduction(environment: string): boolean {
   const normalizedEnvironment = environment.trim().toLowerCase()
   return normalizedEnvironment !== "" && normalizedEnvironment !== "production" && normalizedEnvironment !== "prod"
-}
-
-function firstNonEmpty(...values: Array<string | undefined>): string {
-  return values.find((value) => value && value.trim())?.trim() ?? ""
 }
 
 function uniqueHeadingSlug(value: string, env: Record<string, unknown>): string {
