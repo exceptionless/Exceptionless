@@ -15,6 +15,13 @@ type RedirectAlias = {
   to: string
 }
 
+type SearchIndexEntry = {
+  title: string
+  url: string
+  description: string
+  text: string
+}
+
 const siteUrl = "https://exceptionless.com"
 const newsPostsPerPage = 10
 const generated = JSON.parse(await Deno.readTextFile("_site/site-data.json")) as GeneratedData
@@ -26,6 +33,7 @@ await rewriteHtmlReferences("_site")
 await rewriteNewsIndex(generated.newsPosts)
 
 const routes = await collectHtmlRoutes("_site")
+await writeSearchIndex("_site", routes)
 const aliases = await collectRedirectAliases("_site", generated.newsPosts)
 await createRedirectAliasPages(aliases)
 
@@ -145,11 +153,14 @@ function removeDuplicatePostHeading(html: string): string {
 function normalizeHtmlText(html: string): string {
   return html
     .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     .replace(/&quot;/g, '"')
     .replace(/&#39;|&apos;/g, "'")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
+    .replace(/&#(\d+);/g, (_match, value: string) => String.fromCodePoint(Number(value)))
+    .replace(/&#x([0-9a-f]+);/gi, (_match, value: string) => String.fromCodePoint(parseInt(value, 16)))
     .replace(/\s+/g, " ")
     .trim()
 }
@@ -300,6 +311,109 @@ async function collectHtmlRoutes(root: string): Promise<string[]> {
   }
 
   return [...new Set(routes)].sort()
+}
+
+async function writeSearchIndex(root: string, routes: string[]): Promise<void> {
+  const entries: SearchIndexEntry[] = []
+
+  for (const route of routes) {
+    if (!shouldIndexRoute(route)) {
+      continue
+    }
+
+    const htmlPath = htmlPathForRoute(root, route)
+    let html: string
+    try {
+      html = await Deno.readTextFile(htmlPath)
+    } catch {
+      continue
+    }
+
+    const cleanedHtml = stripSearchIgnoredContent(stripHtmlComments(html))
+    const mainHtml = extractMainHtml(cleanedHtml) || cleanedHtml
+    const text = htmlToText(mainHtml).slice(0, 12000)
+    if (!text) {
+      continue
+    }
+
+    entries.push({
+      title: pageTitle(cleanedHtml) || titleFromRoute(route),
+      url: route,
+      description: metaDescription(cleanedHtml),
+      text,
+    })
+  }
+
+  await Deno.writeTextFile(`${root}/search-index.json`, JSON.stringify({ entries }, null, 2))
+}
+
+function shouldIndexRoute(route: string): boolean {
+  return route !== "/404.html" &&
+    route !== "/search/" &&
+    route !== "/news/" &&
+    !route.startsWith("/news/page/") &&
+    !route.startsWith("/category/")
+}
+
+function htmlPathForRoute(root: string, route: string): string {
+  if (route === "/404.html") {
+    return `${root}/404.html`
+  }
+
+  const relative = route.replace(/^\/+/, "")
+  if (!relative) {
+    return `${root}/index.html`
+  }
+
+  return route.endsWith("/") ? `${root}/${relative}index.html` : `${root}/${relative}`
+}
+
+function stripSearchIgnoredContent(html: string): string {
+  let previous = ""
+  let current = html
+  while (current !== previous) {
+    previous = current
+    current = current.replace(/<([a-z][\w:-]*)(?=[^>]*\bdata-search-ignore\b)[^>]*>[\s\S]*?<\/\1>/gi, "")
+  }
+
+  return current.replace(/<[^>]*\bdata-search-ignore\b[^>]*>/gi, "")
+}
+
+function extractMainHtml(html: string): string {
+  return html.match(/<main\b[^>]*id=["']page-content["'][^>]*>([\s\S]*?)<\/main>/i)?.[1] ?? ""
+}
+
+function pageTitle(html: string): string {
+  const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? ""
+  return htmlToText(title).replace(/\s+-\s+Exceptionless$/, "").trim()
+}
+
+function metaDescription(html: string): string {
+  return htmlToText(
+    html.match(/<meta\s+name=["']description["'][^>]*content=["']([^"']*)["'][^>]*>/i)?.[1] ??
+      html.match(/<meta\s+content=["']([^"']*)["'][^>]*name=["']description["'][^>]*>/i)?.[1] ??
+      "",
+  )
+}
+
+function titleFromRoute(route: string): string {
+  const segment = route.replace(/\/$/, "").split("/").filter(Boolean).at(-1) || "Exceptionless"
+  return segment
+    .split("-")
+    .map((part) => part ? part[0].toUpperCase() + part.slice(1) : part)
+    .join(" ")
+}
+
+function htmlToText(html: string): string {
+  return normalizeHtmlText(
+    html
+      .replace(/<script\b[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style\b[\s\S]*?<\/style>/gi, " ")
+      .replace(
+        /<\/?(?:article|aside|blockquote|br|dd|div|dl|dt|figcaption|figure|footer|h[1-6]|header|li|main|nav|ol|p|pre|section|table|td|th|tr|ul)\b[^>]*>/gi,
+        " ",
+      ),
+  )
 }
 
 async function collectRedirectAliases(root: string, posts: ContentPage[]): Promise<RedirectAlias[]> {
@@ -458,7 +572,7 @@ function renderRedirectPage(target: string): string {
   <link rel="canonical" href="${siteUrl}${target}">
   <title>Redirecting - Exceptionless</title>
 </head>
-<body data-pagefind-ignore="all">
+<body>
   <p><a href="${target}">Redirecting</a></p>
 </body>
 </html>

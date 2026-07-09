@@ -66,7 +66,7 @@ docs/
     index.vto               # news index route
   public/                   # static assets copied to output
   scripts/
-    site-collections.ts     # normalizes Lume search page data into docs/news collections
+    site-collections.ts     # normalizes Lume page data into docs/news collections
     postbuild.ts            # copies assets, rewrites refs, writes feeds/sitemap/LLMS
     serve.ts                # serves final _site output with clean URLs
     verify-links.ts         # verifies generated local links, anchors, CSS URLs, srcset, and assets
@@ -85,9 +85,8 @@ Run commands from `docs/`.
 {
   "tasks": {
     "lume": "deno run -P=lume lume/cli.ts",
-    "build": "deno task lume && deno task postbuild && deno task bundle:client && deno task pagefind",
+    "build": "deno task lume && deno task postbuild && deno task bundle:client",
     "bundle:client": "deno bundle --platform=browser --minify --config=deno.json scripts/browser/exceptionless-client.ts -o _site/assets/js/exceptionless-client.js",
-    "pagefind": "npx -y pagefind@1.5.2 --site _site",
     "serve": "deno task build && deno run --allow-read=_site --allow-net=localhost,127.0.0.1 --allow-env=PORT scripts/serve.ts",
     "postbuild": "deno run --allow-read --allow-write scripts/postbuild.ts",
     "check": "deno check _config.ts scripts/browser/exceptionless-client.ts scripts/site-collections.ts scripts/postbuild.ts scripts/serve.ts scripts/verify-links.ts scripts/find-unused.ts",
@@ -234,29 +233,29 @@ create a fragment just to move a single route's HTML elsewhere.
 
 ## Site Search
 
-`/search/` is backed by Pagefind. The normal docs build renders the Lume site, runs `postbuild.ts`, and then generates
-the Pagefind index into `_site/pagefind/`.
+Search is backed by a generated `/search-index.json` file and a base-layout modal. There is no dedicated search page.
+The normal docs build renders the Lume site, then `postbuild.ts` indexes final rendered HTML before redirect alias pages
+are generated.
 
 Commands:
 
-- `deno task build` builds the site and generates the Pagefind index.
+- `deno task build` builds the site and generates `/search-index.json`.
 - `deno task bundle:client` bundles the static-site Exceptionless browser bootstrap from the Deno npm dependency.
-- `deno task pagefind` regenerates only the Pagefind index from the current `_site` output.
 - The Codex environment exposes a `Run Lume Docs` action on port 7141.
 - The Aspire AppHost exposes a `Docs` resource at `http://localhost:7141` unless a scoped worktree assigns an ephemeral
   free port.
 
 Search implementation notes:
 
-- The shared base layout marks real page content with `data-pagefind-body` so headers, navigation, and footer content do
-  not dominate the index.
-- Generated redirect alias pages use `data-pagefind-ignore="all"` and should not appear as search results.
-- The docs layout's generic `Documentation` page heading is ignored so results use the actual content page title.
-- `public/assets/js/search.js` uses Pagefind's browser search API directly for query-string support, debounced input,
-  result excerpts, sub-results, clear, and load-more behavior.
-- The docs sidebar search form navigates to `/search/?q=...`; it is not a table-of-contents-only filter.
-- The docs site uses the migrated Bootstrap-era theme CSS, not Tailwind. Keep search-specific CSS limited to result
-  presentation that the legacy theme does not already provide.
+- `postbuild.ts` indexes rendered HTML routes and skips `/404.html`, `/news/`, paged news indexes, category pages, and
+  the removed `/search/` route.
+- The docs layout's generic `Documentation` page heading, responsive table-of-contents control, and sidebar navigation
+  use `data-search-ignore` so results use the actual content page title and article text.
+- `public/assets/js/site.js` lazy-loads `/search-index.json`, opens the search modal from the header, keyboard shortcut,
+  or docs sidebar form, and supports debounced input, excerpts, highlight marks, clear, and keyboard selection.
+- The docs sidebar search form opens the modal with the entered query. It does not navigate to `/search/?q=...`.
+- The docs site uses the migrated Bootstrap-era theme CSS, not Tailwind. Keep search-specific CSS limited to modal and
+  result presentation that the legacy theme does not already provide.
 
 ## Static Site Error Reporting
 
@@ -292,8 +291,8 @@ Do not commit production keys. The Svelte app has its own `@exceptionless/browse
 8. `postbuild.ts` generates `feed.xml` from news Markdown.
 9. `postbuild.ts` generates `sitemap.xml` from rendered routes.
 10. `postbuild.ts` generates docs-only `llms.txt` and `llms-full.txt`.
-11. `postbuild.ts` generates redirect aliases for legacy links.
-12. Pagefind indexes `_site` into `_site/pagefind/`.
+11. `postbuild.ts` writes `/search-index.json` from rendered HTML routes.
+12. `postbuild.ts` generates redirect aliases for legacy links.
 
 ## Verification Gates
 
@@ -335,24 +334,20 @@ Implementation notes from the verification pass:
 
 - Markdown headings receive deterministic legacy-style IDs during Lume Markdown rendering so existing same-page anchors continue to work.
 - `docs/docs/demo-formatting.md` is `url: false` and is intentionally not published.
-- `/search/` uses Pagefind for local static search while keeping sitemap parity exact.
+- Site search uses `/search-index.json` and the base-layout modal instead of publishing a placeholder `/search/` page.
 - `postbuild.ts` contains the small migration normalizers required for parity: migrated image-reference rewrites, duplicate news H1 removal, standalone YouTube URL embed rendering, Prism `<pre>` class normalization, news index/RSS/sitemap/LLMS generation, internal non-doc link stripping for `llms-full.txt`, and redirect alias generation.
 - The legacy Fancybox stylesheet references `/assets/images/fancybox.png` and `/assets/images/fancybox-x.png`; both are committed static assets.
 - Fancybox uses the original 1.3.4 plugin plus a tiny jQuery 1.9 browser-compat shim because the WordPress-patched Easy FancyBox script requires `DOMPurify`.
 - A mobile footer override removes the legacy 20px horizontal overflow caused by the old negative-margin footer rule.
 
-## Verified Search Upgrade - 2026-07-06
+## Verified Search Upgrade - 2026-07-08
 
-- `deno task check` passed.
-- `deno task build` passed and Pagefind indexed 230 real pages while ignoring 37 redirect alias pages.
-- `deno task verify` passed with no broken local links, anchors, or assets.
-- Local Chrome dogfood at `http://127.0.0.1:7141/search/?q=javascript` returned 114 Pagefind results with
-  `JavaScript Example` first, loaded the local Pagefind script and worker, had no inline scripts, loaded Google Tag
-  Manager from the base layout, did not emit the Exceptionless client script without an API key, and had no console
-  errors, page errors, or failed local resources.
-- Interactive local Chrome dogfood updated the URL to `/search/?q=multiple+queries`, returned 17 results with
-  `Filtering & Searching` first, and cleared back to the empty state.
-- Mobile Chrome dogfood at a 390px viewport returned the same `/search/?q=javascript` results with no horizontal overflow.
+- Search is generated by `postbuild.ts` as `/search-index.json`; no Pagefind task, package, worker, or `/search/` page
+  is required.
+- The header search button, Ctrl/Command+K, `/`, and the docs sidebar search form all open the same modal.
+- The modal lazy-loads the JSON index, returns ranked results with excerpts and highlights, supports clear, Enter,
+  Escape, and Up/Down keyboard behavior, and leaves the current page URL unchanged.
+- The index skips redirect aliases and repeated docs navigation chrome.
 
 ## Core Principle
 

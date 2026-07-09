@@ -63,6 +63,15 @@
           <li class="menu-pricing"><a href="/pricing/">Pricing</a></li>
           <li class="menu-news"><a href="/news/">News</a></li>
           <li class="menu-help"><a href="/docs/">Docs</a></li>
+          <li class="menu-search">
+            <a
+              href="#site-search-modal"
+              data-site-search-open
+              aria-label="Search Exceptionless"
+              aria-keyshortcuts="Meta+K Control+K /"
+              title="Search Exceptionless (Command+K, Ctrl+K, or /)"
+            >Search</a>
+          </li>
           <li class="menu-log-in"><a href="{{ site.appUrl }}">Log In</a></li>
           <li class="menu-sign-up"><a href="{{ site.signupUrl }}">Sign Up</a></li>
         </ul>
@@ -74,9 +83,35 @@
   </div>
 </header>
 
-    <main id="page-content" data-pagefind-body>
+    <main id="page-content">
       {{ content }}
     </main>
+
+    <div id="site-search-modal" class="site-search-modal" role="dialog" aria-modal="true" aria-labelledby="site-search-title" hidden data-search-ignore>
+      <div class="modal-backdrop in" data-site-search-close></div>
+      <div class="modal site-search-dialog" role="document">
+        <div class="modal-header">
+          <button class="close" type="button" data-site-search-close aria-label="Close search">&times;</button>
+          <h3 id="site-search-title">Search Exceptionless</h3>
+        </div>
+        <div class="modal-body site-search-body">
+          <form id="site-search-form" class="site-search-form" role="search">
+          <div class="site-search-input-row">
+            <i class="icon-search" aria-hidden="true"></i>
+            <input id="site-search-input" type="search" placeholder="Search docs, clients, self-hosting..." autocomplete="off" spellcheck="false" aria-labelledby="site-search-title">
+            <button id="site-search-clear" class="site-search-clear" type="button" aria-label="Clear search" hidden>&times;</button>
+          </div>
+          </form>
+          <p id="site-search-status" class="site-search-status" role="status" aria-live="polite">Start typing to search.</p>
+          <ol id="site-search-results" class="site-search-results"></ol>
+        </div>
+        <div class="modal-footer site-search-footer" aria-hidden="true">
+          <span>Up/Down to move</span>
+          <span>Enter to open</span>
+          <span>Esc to close</span>
+        </div>
+      </div>
+    </div>
 
     <div id="footer-wrapper">
   <footer id="content-info" class="container" role="contentinfo">

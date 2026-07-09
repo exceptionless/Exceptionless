@@ -2,19 +2,17 @@
 layout: layouts/base.vto
 extraStyles:
   - /assets/css/prism.css
-extraModuleScripts:
-  - /assets/js/docs-layout.js
 ---
-<div class="page-header margin-top" data-pagefind-ignore="all">
+<div class="page-header margin-top" data-search-ignore>
   <h1 id="documentation">Documentation</h1>
 </div>
 
 <div id="wrap" class="container" role="document">
-  <div id="responsive-menu"><button class="btn btn-primary" type="button" data-docs-toc-toggle>Table of Contents</button></div>
+  <div id="responsive-menu" data-search-ignore><button class="btn btn-primary" type="button" data-docs-toc-toggle>Table of Contents</button></div>
   <div id="content" class="row-fluid">
-    <div class="toc well span3 visible-toc">
-      <form class="input-append docs-search-form" action="/search/" method="get">
-        <input class="span9" id="search-input" name="q" type="search" placeholder="Search docs..." autocomplete="off">
+    <div class="toc well span3 visible-toc" data-search-ignore>
+      <form class="input-append" data-site-search-form role="search">
+        <input class="span9" name="q" type="search" placeholder="Search docs..." autocomplete="off" data-site-search-query>
         <button class="btn" type="submit">Go!</button>
       </form>
       {{ docsNavHtml(search, url) }}

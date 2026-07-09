@@ -11,6 +11,7 @@ Deno.serve({ hostname: "127.0.0.1", port }, async (request) => {
       "application/octet-stream"
     return new Response(file.readable, {
       headers: {
+        "cache-control": "no-store",
         "content-type": contentType,
       },
     })
@@ -20,6 +21,7 @@ Deno.serve({ hostname: "127.0.0.1", port }, async (request) => {
       return new Response(await Deno.readTextFile(notFound), {
         status: 404,
         headers: {
+          "cache-control": "no-store",
           "content-type": "text/html; charset=utf-8",
         },
       })

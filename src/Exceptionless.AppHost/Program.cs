@@ -208,22 +208,23 @@ if (!servicesOnly)
             .WithEnvironment("OLDAPP_HTTPS", worktreePorts.OldAppHttpsUrl);
     }
 
-    builder.AddJavaScriptApp("Docs", "../../docs", "serve")
-        .WithBrowserLogs()
-        .RemoveJavaScriptDebuggingAnnotation()
-        .WithEnvironment("PORT", docsPort.ToString())
-        .WithHttpEndpoint(port: docsPort, targetPort: docsPort, name: "http", env: "PORT", isProxied: false)
-        .WithEndpoint("http", e =>
-        {
-            e.TargetHost = "localhost";
-            e.UriScheme = "http";
-        })
-        .WithUrlForEndpoint("http", u =>
-        {
-            u.DisplayText = "Open Docs";
-            u.DisplayOrder = 100;
-        })
-        .WithParentRelationship(api);
+    if (includeDevTools)
+    {
+        builder.AddDenoTask("Docs", "../../docs", "serve")
+            .WithBrowserLogs()
+            .WithHttpEndpoint(port: docsPort, targetPort: docsPort, name: "http", env: "PORT", isProxied: false)
+            .WithEndpoint("http", e =>
+            {
+                e.TargetHost = "localhost";
+                e.UriScheme = "http";
+            })
+            .WithUrlForEndpoint("http", u =>
+            {
+                u.DisplayText = "Open Docs";
+                u.DisplayOrder = 100;
+            })
+            .WithParentRelationship(api);
+    }
 #pragma warning restore ASPIREBROWSERLOGS001
 }
 
