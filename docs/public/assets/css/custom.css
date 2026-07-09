@@ -81,7 +81,7 @@ body, input, button, select, textarea, .search-query {font-family: Open Sans;}
 }
 
 .toc-list a:only-child {
-    color: #78B001 !important;
+    color: #777 !important;
     font-weight: 400;
     border-bottom: none;
 }
