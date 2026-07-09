@@ -2,7 +2,7 @@
 
 ## Overview
 
-Defines validation behavior for the Minimal API endpoint layer, covering automatic DataAnnotation validation, MiniValidation for complex cases, and Delta<T> patch validation.
+Defines validation behavior for the Minimal API endpoint layer, covering required request fields, automatic DataAnnotation validation, MiniValidation for complex cases, and patch validation.
 
 ## Requirements
 
@@ -15,7 +15,7 @@ Defines validation behavior for the Minimal API endpoint layer, covering automat
 ### MiniValidation for Complex Cases
 
 - **ADDED**: The system SHALL use MiniValidation for validation that cannot be expressed with DataAnnotations (cross-field, conditional).
-- **ADDED**: The system SHALL use MiniValidation to validate the merged entity after applying Delta<T> patches.
+- **ADDED**: The system SHALL use MiniValidation to validate the merged entity after applying patch operations.
 - **ADDED**: MiniValidation failures SHALL produce HTTP 422 with ProblemDetails body.
 
 ### Validation Error Shape
@@ -23,17 +23,18 @@ Defines validation behavior for the Minimal API endpoint layer, covering automat
 - **MODIFIED**: Validation error responses SHALL use `lower_underscore` keys in the errors map (e.g., `organization_id`, not `OrganizationId`).
 - **MODIFIED**: Validation error responses SHALL be ProblemDetails with `type`, `title`, `status`, `instance`, and `errors` fields.
 - **MODIFIED**: The `errors` map SHALL be a dictionary of field name → array of error messages.
+- **MODIFIED**: Endpoints that previously returned HTTP 400 for missing implicitly required request fields SHALL preserve that status and validation error shape.
 
-### Delta<T> Patch Validation
+### Patch Validation
 
-- **MODIFIED**: The system SHALL preserve Delta<T> partial update semantics.
+- **MODIFIED**: The system SHALL preserve partial update semantics.
 - **MODIFIED**: When a PATCH request is received, only fields present in the request body SHALL be applied to the entity.
-- **MODIFIED**: After applying the delta, the merged entity SHALL be validated using MiniValidation.
-- **MODIFIED**: The system SHALL NOT introduce JSON Patch as an alternative patching mechanism.
+- **MODIFIED**: After applying the patch, the merged entity SHALL be validated using MiniValidation.
+- **MODIFIED**: The system SHALL advertise RFC 6902 JSON Patch while continuing to accept legacy `application/json` partial object bodies.
 
 ## Scenarios
 
-### Scenario: Automatic validation rejects invalid DTO
+### Scenario: Required-field validation rejects incomplete DTO
 
 ```
 Given a POST /api/v2/tokens endpoint expecting a body with [Required] Name field
@@ -43,17 +44,26 @@ And the body is ProblemDetails with errors map containing "name" key
 And the error message indicates the field is required
 ```
 
+### Scenario: Legacy implicit required-field response is preserved
+
+```
+Given POST /api/v2/webhooks previously returned HTTP 400 for missing non-nullable request fields
+When a request omits organization_id, project_id, or event_types
+Then the response is HTTP 400
+And the body preserves the ProblemDetails errors map for the missing fields
+```
+
 ### Scenario: MiniValidation validates merged patch
 
 ```
-Given a PATCH /api/v2/projects/{id} endpoint with Delta<Project>
+Given a PATCH /api/v2/projects/{id} endpoint
 When a request patches the Name field to an empty string
 Then the system applies the delta to the existing project
 And validates the merged project with MiniValidation
 And returns HTTP 422 because Name is required
 ```
 
-### Scenario: Delta<T> preserves unmodified fields
+### Scenario: Patch preserves unmodified fields
 
 ```
 Given a project with Name="MyProject" and DeleteBotDataEnabled=true

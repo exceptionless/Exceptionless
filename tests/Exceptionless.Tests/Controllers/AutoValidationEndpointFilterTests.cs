@@ -12,7 +12,7 @@ namespace Exceptionless.Tests.Controllers;
 public sealed class AutoValidationEndpointFilterTests
 {
     [Fact]
-    public async Task InvokeAsync_InvalidModel_ReturnsValidationProblem()
+    public async Task InvokeAsync_MissingRequiredProperty_ReturnsUnprocessableEntityValidationProblem()
     {
         var filter = new AutoValidationEndpointFilter();
         var httpContext = new DefaultHttpContext();
@@ -33,6 +33,30 @@ public sealed class AutoValidationEndpointFilterTests
         Assert.Equal(StatusCodes.Status422UnprocessableEntity, statusCodeResult.StatusCode);
         Assert.True(problemDetails.Errors.TryGetValue("display_name", out var displayNameErrors));
         Assert.Contains(displayNameErrors, error => error == "The DisplayName field is required.");
+    }
+
+    [Fact]
+    public async Task InvokeAsync_InvalidSemanticValue_ReturnsUnprocessableEntityValidationProblem()
+    {
+        var filter = new AutoValidationEndpointFilter();
+        var httpContext = new DefaultHttpContext();
+        var context = new TestEndpointFilterInvocationContext(httpContext, [new RequestWithSemanticValidation { DisplayName = "x" }]);
+        var nextCalled = false;
+
+        var result = await filter.InvokeAsync(context, _ =>
+        {
+            nextCalled = true;
+            return ValueTask.FromResult<object?>("next");
+        });
+
+        Assert.False(nextCalled);
+        var statusCodeResult = Assert.IsAssignableFrom<IStatusCodeHttpResult>(result);
+        var valueResult = Assert.IsAssignableFrom<IValueHttpResult>(result);
+        var problemDetails = Assert.IsType<HttpValidationProblemDetails>(valueResult.Value);
+
+        Assert.Equal(StatusCodes.Status422UnprocessableEntity, statusCodeResult.StatusCode);
+        Assert.True(problemDetails.Errors.TryGetValue("display_name", out var displayNameErrors));
+        Assert.Contains(displayNameErrors, error => error.Contains("minimum length of 3", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -128,6 +152,12 @@ public sealed class AutoValidationEndpointFilterTests
     private sealed class RequestWithValidationMetadata
     {
         [Required]
+        public string? DisplayName { get; set; }
+    }
+
+    private sealed class RequestWithSemanticValidation
+    {
+        [StringLength(10, MinimumLength = 3)]
         public string? DisplayName { get; set; }
     }
 

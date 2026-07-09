@@ -62,7 +62,7 @@ dotnet test --filter "FullyQualifiedName~MediatorRegistrationTests"
 **Work**:
 - Configure `AddProblemDetails()` with instance, reference-id, lower_underscore error keys.
 - Add `Middleware/ValidationMiddleware.cs` (endpoint filter for automatic DTO validation).
-- Verify MiniValidation helper works with Delta<T>.
+- Verify patch validation works for RFC 6902 documents and legacy partial object bodies.
 - Add tests for validation error response shape.
 
 **Verification**:
@@ -335,6 +335,7 @@ dotnet test --filter "FullyQualifiedName~OpenApiSnapshotTests"
 - Update OpenAPI snapshot (should match pre-migration baseline modulo non-breaking metadata).
 - Verify middleware pipeline order matches pre-migration.
 - Verify `tests/http/*.http` files work against new endpoints.
+- Verify PATCH endpoints accept both RFC 6902 and legacy partial object request bodies without changing partial-update semantics.
 - Run full test suite.
 - Manual smoke test of login, event submission, and dashboard at http://localhost:7110.
 

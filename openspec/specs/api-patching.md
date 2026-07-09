@@ -1,30 +1,31 @@
-# Spec: API Patching (Delta<T>)
+# Spec: API Patching
 
 ## Overview
 
-Defines patching behavior preservation during the Minimal API migration. Delta<T> remains the sole patching mechanism.
+Defines the canonical RFC 6902 patch contract and backwards-compatible partial-object behavior used by Minimal API update endpoints.
 
 ## Requirements
 
-### Delta<T> Preservation
+### JSON Patch Contract
 
-- **MODIFIED**: The system SHALL preserve `Delta<T>` as the patch mechanism for all PATCH endpoints.
-- **MODIFIED**: The system SHALL apply only fields present in the request body to the target entity.
-- **MODIFIED**: The system SHALL NOT modify fields absent from the request body.
-- **MODIFIED**: The system SHALL validate the merged entity (after delta application) using MiniValidation.
-- **MODIFIED**: The system SHALL return HTTP 422 if the merged entity fails validation.
+- **MODIFIED**: The system SHALL accept RFC 6902 JSON Patch documents on migrated PATCH endpoints.
+- **MODIFIED**: OpenAPI SHALL advertise `application/json-patch+json` with a typed patch-document schema.
+- **MODIFIED**: First-party clients SHALL send RFC 6902 patch documents with the `application/json-patch+json` content type.
+- **MODIFIED**: The system SHALL reject malformed, unsupported, or immutable-path operations before modifying the stored entity.
 
-### JSON Patch Exclusion
+### Legacy Partial Object Compatibility
 
-- **MODIFIED**: The system SHALL NOT introduce JSON Patch (RFC 6902) in this migration.
-- **MODIFIED**: The system SHALL NOT accept `application/json-patch+json` content type on any endpoint.
-- **MODIFIED**: PATCH endpoints SHALL continue to accept `application/json` with partial field sets.
+- **MODIFIED**: PATCH endpoints SHALL continue to accept `application/json` partial field sets used by existing clients.
+- **MODIFIED**: The endpoint boundary SHALL convert each supplied legacy property to an equivalent JSON Patch replace operation.
+- **MODIFIED**: Legacy partial bodies and RFC 6902 documents SHALL produce the same update semantics and validation results.
 
 ### Partial Update Semantics
 
-- **MODIFIED**: When a field is present in the patch body with a value, that value SHALL replace the existing value.
-- **MODIFIED**: When a field is present in the patch body with null, that field SHALL be set to null (if nullable).
-- **MODIFIED**: When a field is absent from the patch body, the existing value SHALL be preserved unchanged.
+- **MODIFIED**: When a field is targeted by a replace operation or present in a legacy body with a value, that value SHALL replace the existing value.
+- **MODIFIED**: When a field is targeted by a replace operation or present in a legacy body with null, that field SHALL be set to null if nullable.
+- **MODIFIED**: Fields not targeted by the patch SHALL remain unchanged.
+- **MODIFIED**: Validation SHALL run against a copied merged model before changes are assigned to the stored entity.
+- **MODIFIED**: The system SHALL return HTTP 422 when operation or merged-model validation fails.
 
 ## Scenarios
 
@@ -32,7 +33,7 @@ Defines patching behavior preservation during the Minimal API migration. Delta<T
 
 ```
 Given a project entity with Name="Original", DeleteBotDataEnabled=true, CustomContent="hello"
-When a PATCH /api/v2/projects/{id} request sends {"name": "Updated"}
+When a PATCH /api/v2/projects/{id} request replaces /name with "Updated"
 Then the project Name becomes "Updated"
 And DeleteBotDataEnabled remains true
 And CustomContent remains "hello"
@@ -42,34 +43,35 @@ And CustomContent remains "hello"
 
 ```
 Given a project entity with Description="Some description"
-When a PATCH request sends {"description": null}
+When a PATCH request replaces /description with null
 Then the project Description becomes null
 ```
 
-### Scenario: Delta validation rejects invalid merge
+### Scenario: Patch validation rejects invalid merge
 
 ```
 Given a project entity with Name="Valid"
-When a PATCH request sends {"name": ""}
-Then the delta is applied (Name becomes "")
-And MiniValidation rejects the merged entity (Name is required)
+When a PATCH request replaces /name with ""
+Then the operation is applied to a copy of the update model
+And validation rejects the merged model because Name is required
 And the response is HTTP 422 with ProblemDetails
 And the original entity is NOT modified in storage
 ```
 
-### Scenario: JSON Patch not accepted
+### Scenario: JSON Patch is accepted
 
 ```
 Given any PATCH endpoint
 When a request is sent with Content-Type: application/json-patch+json
-Then the response is HTTP 415 Unsupported Media Type
+Then the patch document is parsed and validated
+And valid operations are applied with the endpoint's normal success response
 ```
 
-### Scenario: Delta<T> binding in Minimal API
+### Scenario: Legacy partial object compatibility
 
 ```
 Given a PATCH endpoint registered in Minimal API
-When the endpoint receives a JSON body with partial fields
-Then Delta<T> correctly identifies which fields are present
+When the endpoint receives an `application/json` object with partial fields
+Then each supplied property is converted to an equivalent replace operation
 And only those fields are applied to the entity
 ```

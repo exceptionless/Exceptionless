@@ -26,8 +26,8 @@
 |-------|-------|
 | Likelihood | Medium |
 | Impact | Medium |
-| Description | Minimal API automatic validation does not trigger for a DTO, or MiniValidation is missed for a Delta<T> patch, allowing invalid data. |
-| Mitigation | Validation tests verify error shapes. Each endpoint migration task includes validation verification. MiniValidation helper is centralized and reusable. |
+| Description | Minimal API automatic validation does not trigger for a DTO, or a JSON Patch/legacy partial body bypasses operation or merged-model validation. |
+| Mitigation | Validation tests verify error shapes, patch operations, legacy-body conversion, and merged-model validation before persistence. |
 | Detection | Validation tests fail. Manual review during PR. |
 
 ## Risk 4: OpenAPI Drift

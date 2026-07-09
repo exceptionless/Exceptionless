@@ -137,7 +137,7 @@ The endpoint lambda is responsible for mapping handler results to HTTP semantics
 
 ### Automatic Validation (DataAnnotation)
 
-ASP.NET Core Minimal API validates `[AsParameters]` and `[FromBody]` DTOs automatically when `AddEndpointsApiExplorer()` and validation filters are configured. This covers simple required/range/string-length constraints.
+The endpoint validation filter validates request DTOs with DataAnnotation metadata and returns 422 for automatic semantic validation failures. Endpoints preserve any legacy 400 response contract for missing implicitly required request fields at the endpoint boundary.
 
 ### MiniValidation (Complex Cases)
 
@@ -150,15 +150,16 @@ if (!isValid)
 ```
 
 Used for:
-- Delta<T> patch validation (validate merged model after applying delta).
+- JSON Patch validation (validate operations and the merged model after applying the patch to a copy).
 - Complex cross-field rules.
 - Conditional validation based on AppOptions/feature flags.
 
-### Delta<T> Preservation
+### Patch Compatibility
 
-- `Delta<T>` remains the patch mechanism.
-- No JSON Patch introduced.
-- After applying delta to the entity, MiniValidation validates the merged result.
+- RFC 6902 JSON Patch is the canonical format advertised by OpenAPI and used by first-party clients.
+- Legacy `application/json` partial object bodies are converted to equivalent replace operations at the endpoint boundary.
+- Partial update semantics are preserved: only specified fields are modified and explicit null values clear nullable fields.
+- Operation and model validation run before the stored entity is modified.
 
 ## ProblemDetails Centralization
 
@@ -167,7 +168,7 @@ Configure `AddProblemDetails()` with a customizer that ensures:
 - `instance` field set to request path.
 - `extensions["reference-id"]` set to trace ID.
 - `errors` map uses `lower_underscore` keys.
-- Validation errors produce 422 with errors map.
+- Legacy missing required-field responses remain 400 with an errors map; automatic semantic validation errors produce 422 with an errors map.
 - Not-found produces 404.
 - Auth failures produce 401/403.
 

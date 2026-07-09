@@ -27,15 +27,17 @@
 
 - **SHALL** preserve ProblemDetails shape: `instance` field, `reference-id` extension, `errors` map.
 - **SHALL** preserve `lower_underscore` error keys in validation error responses.
-- **SHALL** produce 422 for validation failures with errors map.
+- **SHALL** preserve legacy 400 responses for missing implicitly required request fields and produce 422 for automatic semantic validation failures, both with an errors map.
 - **SHALL** produce 401 for unauthenticated requests.
 - **SHALL** produce 403 for unauthorized requests.
 - **SHALL** produce 404 for not-found resources.
 
 ## Patching
 
-- **SHALL** preserve `Delta<T>` patch behavior (partial update semantics, unchanged fields not modified).
-- **SHALL NOT** introduce JSON Patch in this change.
+- **SHALL** use RFC 6902 JSON Patch for PATCH requests advertised by OpenAPI and sent by first-party clients.
+- **SHALL** continue accepting legacy `application/json` partial object bodies for backwards compatibility.
+- **SHALL** preserve partial update semantics: unchanged fields are not modified and explicit null values clear nullable fields.
+- **SHALL** validate patch operations and the merged update model before modifying stored entities.
 
 ## Event Ingestion
 

@@ -59,6 +59,10 @@ public static class WebHookEndpoints
 
         group.MapPost("webhooks", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, IServiceProvider serviceProvider, [FromBody] NewWebHook webHook) =>
         {
+            var requiredFieldValidation = ValidateRequiredFields(webHook);
+            if (requiredFieldValidation is not null)
+                return requiredFieldValidation;
+
             var validation = await ApiValidation.ValidateAsync(webHook, serviceProvider);
             if (validation is not null)
                 return validation;
@@ -144,5 +148,25 @@ public static class WebHookEndpoints
         .ExcludeFromDescription();
 
         return endpoints;
+    }
+
+    private static Microsoft.AspNetCore.Http.IResult? ValidateRequiredFields(NewWebHook webHook)
+    {
+        var errors = new Dictionary<string, string[]>();
+
+        AddRequiredErrorIfNull(errors, nameof(webHook.OrganizationId), webHook.OrganizationId);
+        AddRequiredErrorIfNull(errors, nameof(webHook.ProjectId), webHook.ProjectId);
+        AddRequiredErrorIfNull(errors, nameof(webHook.Url), webHook.Url);
+        AddRequiredErrorIfNull(errors, nameof(webHook.EventTypes), webHook.EventTypes);
+
+        return errors.Count == 0
+            ? null
+            : global::Microsoft.AspNetCore.Http.Results.ValidationProblem(errors, statusCode: StatusCodes.Status400BadRequest);
+    }
+
+    private static void AddRequiredErrorIfNull(Dictionary<string, string[]> errors, string propertyName, object? value)
+    {
+        if (value is null)
+            errors[propertyName.ToLowerUnderscoredWords()] = [$"The {propertyName} field is required."];
     }
 }

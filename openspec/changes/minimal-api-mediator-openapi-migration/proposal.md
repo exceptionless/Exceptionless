@@ -12,7 +12,7 @@ This change affects:
 - **SDK/client compatibility** — Route paths, response shapes, status codes, headers, and auth must remain identical.
 - **Middleware ordering** — ThrottlingMiddleware, OverageMiddleware, and endpoint filters must maintain current behavior.
 - **OpenAPI contract** — New generation mechanism replaces the existing Swagger setup.
-- **Cross-cutting concerns** — Validation, ProblemDetails, pagination, and Delta<T> patching all interact with the new endpoint model.
+- **Cross-cutting concerns** — Validation, ProblemDetails, pagination, RFC 6902 JSON Patch, and legacy partial-body compatibility all interact with the new endpoint model.
 
 The scope is large (14 controllers), the compatibility surface is wide, and regression risk without explicit acceptance criteria is high.
 
