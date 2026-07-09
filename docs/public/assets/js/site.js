@@ -51,6 +51,7 @@ function initializeSiteSearch(modal) {
   let lastActiveElement = null
   let searchIndexPromise = null
   let visibleResults = []
+  let visibleResultsQuery = ""
 
   document.querySelectorAll("[data-site-search-open]").forEach((trigger) => {
     trigger.addEventListener("click", (event) => {
@@ -90,6 +91,11 @@ function initializeSiteSearch(modal) {
       return
     }
 
+    if (event.key === "Tab") {
+      trapFocus(event)
+      return
+    }
+
     if (event.key === "ArrowDown") {
       event.preventDefault()
       setActiveResult(Math.min(activeIndex + 1, visibleResults.length - 1))
@@ -110,6 +116,18 @@ function initializeSiteSearch(modal) {
 
   form.addEventListener("submit", (event) => {
     event.preventDefault()
+    const currentQuery = input.value.trim()
+    if (!currentQuery) {
+      clearResults()
+      return
+    }
+
+    if (visibleResultsQuery !== currentQuery) {
+      window.clearTimeout(debounceTimer)
+      void performSearch(currentQuery)
+      return
+    }
+
     const activeResult = visibleResults[activeIndex]
     if (activeResult) {
       window.location.href = activeResult.url
@@ -118,6 +136,13 @@ function initializeSiteSearch(modal) {
 
   input.addEventListener("input", () => {
     window.clearTimeout(debounceTimer)
+    const query = input.value.trim()
+    if (!query) {
+      clearResults()
+      return
+    }
+
+    resetResults(`Searching for "${query}"...`, false)
     debounceTimer = window.setTimeout(() => performSearch(input.value), 120)
   })
 
@@ -142,8 +167,10 @@ function initializeSiteSearch(modal) {
     modal.hidden = false
     document.body.classList.add("site-search-open")
 
-    if (query) {
+    const trimmedQuery = query.trim()
+    if (trimmedQuery) {
       input.value = query
+      resetResults(`Searching for "${trimmedQuery}"...`, false)
       void performSearch(query)
     } else if (!input.value.trim()) {
       clearResults()
@@ -191,6 +218,7 @@ function initializeSiteSearch(modal) {
 
       console.error(error)
       visibleResults = []
+      visibleResultsQuery = ""
       resultsList.replaceChildren()
       setStatus("Search is unavailable. Please try again.")
       return
@@ -214,6 +242,7 @@ function initializeSiteSearch(modal) {
   }
 
   function renderResults(query, totalCount) {
+    visibleResultsQuery = query.trim()
     resultsList.replaceChildren(...visibleResults.map((result, index) => renderResult(result, index, query)))
     setActiveResult(visibleResults.length ? 0 : -1)
 
@@ -266,16 +295,57 @@ function initializeSiteSearch(modal) {
   }
 
   function clearResults() {
+    resetResults("Start typing to search.", true)
+  }
+
+  function resetResults(message, hideClearButton) {
     activeSearchId++
     visibleResults = []
+    visibleResultsQuery = ""
     activeIndex = -1
-    clearButton.hidden = true
+    clearButton.hidden = hideClearButton
     resultsList.replaceChildren()
-    setStatus("Start typing to search.")
+    setStatus(message)
   }
 
   function setStatus(message) {
     status.textContent = message
+  }
+
+  function trapFocus(event) {
+    const focusable = focusableSearchElements()
+    if (!focusable.length) {
+      event.preventDefault()
+      input.focus()
+      return
+    }
+
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    const activeElement = document.activeElement
+
+    if (event.shiftKey) {
+      if (activeElement === first || !modal.contains(activeElement)) {
+        event.preventDefault()
+        last.focus()
+      }
+      return
+    }
+
+    if (activeElement === last) {
+      event.preventDefault()
+      first.focus()
+    }
+  }
+
+  function focusableSearchElements() {
+    return [...modal.querySelectorAll("a[href], button, input, select, textarea, [tabindex]:not([tabindex='-1'])")]
+      .filter((element) => {
+        return element instanceof HTMLElement &&
+          !element.hasAttribute("disabled") &&
+          !element.hasAttribute("hidden") &&
+          (element.offsetParent !== null || element === document.activeElement)
+      })
   }
 }
 

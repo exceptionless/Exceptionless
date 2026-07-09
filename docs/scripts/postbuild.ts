@@ -22,8 +22,14 @@ type SearchIndexEntry = {
   text: string
 }
 
+type SiteData = {
+  description?: string
+}
+
 const siteUrl = "https://exceptionless.com"
 const newsPostsPerPage = 10
+const siteData = JSON.parse(await Deno.readTextFile("_data/site.json")) as SiteData
+const fallbackDescription = normalizeHtmlText(siteData.description ?? "")
 const generated = JSON.parse(await Deno.readTextFile("_site/site-data.json")) as GeneratedData
 
 await copyDir("public", "_site")
@@ -331,7 +337,7 @@ async function writeSearchIndex(root: string, routes: string[]): Promise<void> {
 
     const cleanedHtml = stripSearchIgnoredContent(stripHtmlComments(html))
     const mainHtml = extractMainHtml(cleanedHtml) || cleanedHtml
-    const text = htmlToText(mainHtml).slice(0, 12000)
+    const text = htmlToText(mainHtml)
     if (!text) {
       continue
     }
@@ -339,7 +345,7 @@ async function writeSearchIndex(root: string, routes: string[]): Promise<void> {
     entries.push({
       title: pageTitle(cleanedHtml) || titleFromRoute(route),
       url: route,
-      description: metaDescription(cleanedHtml),
+      description: pageDescription(cleanedHtml),
       text,
     })
   }
@@ -394,6 +400,11 @@ function metaDescription(html: string): string {
       html.match(/<meta\s+content=["']([^"']*)["'][^>]*name=["']description["'][^>]*>/i)?.[1] ??
       "",
   )
+}
+
+function pageDescription(html: string): string {
+  const description = metaDescription(html)
+  return description && description !== fallbackDescription ? description : ""
 }
 
 function titleFromRoute(route: string): string {

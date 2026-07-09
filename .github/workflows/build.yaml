@@ -620,6 +620,7 @@ jobs:
       pages: write
       id-token: write
     uses: ./.github/workflows/website.yml
+    secrets: inherit
 
   preview-comment-result:
     needs: [preview-context, version, test-api, test-client, docker-build, docker-publish, deploy]
