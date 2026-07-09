@@ -262,26 +262,8 @@ body, input, button, select, textarea, .search-query {
     font-family: "Open Sans", Arial, sans-serif;
 }
 
-#wrap h1,
-#wrap h2,
-#wrap h3,
-.home h1,
-.home h2,
-.home h3,
-.docs h1,
-.docs h2,
-.docs h3 {
-    color: #4f7600 !important;
-}
-
 .page-header h1 {
     color: #9c9c9c !important;
-}
-
-#wrap .docs a:not(.btn),
-.entry-content a,
-.page #content p a {
-    color: #4f7600 !important;
 }
 
 #wrap .howDoesWork a,
@@ -548,7 +530,7 @@ body.site-search-open {
 
 .site-search-result-title {
     display: block;
-    color: #4f7600 !important;
+    color: #578f01 !important;
     font-size: 18px;
     font-weight: 700;
     line-height: 1.3;
