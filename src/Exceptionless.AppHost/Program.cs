@@ -208,7 +208,7 @@ if (!servicesOnly)
             .WithEnvironment("OLDAPP_HTTPS", worktreePorts.OldAppHttpsUrl);
     }
 
-    if (includeDevTools && HasExecutableOnPath("deno"))
+    if (includeDevTools)
     {
         builder.AddDenoTask("Docs", "../../docs", "serve")
             .WithBrowserLogs()
@@ -225,45 +225,9 @@ if (!servicesOnly)
             })
             .WithParentRelationship(api);
     }
-    else if (includeDevTools)
-    {
-        Console.WriteLine("Skipping Docs resource because Deno is not available on PATH.");
-    }
 #pragma warning restore ASPIREBROWSERLOGS001
 }
 
 await builder.Build().RunAsync();
 
 bool HasArgument(string name) => args.Any(arg => StringComparer.OrdinalIgnoreCase.Equals(arg, name) || StringComparer.OrdinalIgnoreCase.Equals(arg, name.TrimStart('-')));
-
-bool HasExecutableOnPath(string executableName)
-{
-    string? path = Environment.GetEnvironmentVariable("PATH");
-    if (String.IsNullOrWhiteSpace(path))
-    {
-        return false;
-    }
-
-    string[] extensions = [""];
-    if (OperatingSystem.IsWindows())
-    {
-        string? pathExtensions = Environment.GetEnvironmentVariable("PATHEXT");
-        extensions = String.IsNullOrWhiteSpace(pathExtensions)
-            ? [".exe", ".cmd", ".bat"]
-            : pathExtensions.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-    }
-
-    foreach (string pathEntry in path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-    {
-        foreach (string extension in extensions)
-        {
-            string candidate = Path.Combine(pathEntry, executableName + extension);
-            if (File.Exists(candidate))
-            {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
