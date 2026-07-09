@@ -81,7 +81,7 @@ body, input, button, select, textarea, .search-query {font-family: Open Sans;}
 }
 
 .toc-list a:only-child {
-    color:#777 !important;
+    color: #78B001 !important;
     font-weight: 400;
     border-bottom: none;
 }
@@ -270,8 +270,7 @@ body, input, button, select, textarea, .search-query {
 .home h3,
 .docs h1,
 .docs h2,
-.docs h3,
-.toc-list a {
+.docs h3 {
     color: #4f7600 !important;
 }
 
@@ -279,11 +278,8 @@ body, input, button, select, textarea, .search-query {
     color: #9c9c9c !important;
 }
 
-#wrap a:not(.btn),
-.docs a,
+#wrap .docs a:not(.btn),
 .entry-content a,
-.well a,
-.row a:not(.btn),
 .page #content p a {
     color: #4f7600 !important;
 }
@@ -303,7 +299,6 @@ body, input, button, select, textarea, .search-query {
     color: #ebebeb !important;
 }
 
-.toc-list a:only-child,
 .cycloneslider-slide p {
     color: #555 !important;
 }
