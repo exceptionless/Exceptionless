@@ -5,6 +5,7 @@
         .module("exceptionless.project")
         .factory("projectService", function ($auth, $cacheFactory, $rootScope, Restangular) {
             var _cache = $cacheFactory("http:project");
+            var _updatableProperties = ["name", "delete_bot_data_enabled", "promoted_tabs"];
             $rootScope.$on("cache:clear", _cache.removeAll);
             $rootScope.$on("cache:clear-project", _cache.removeAll);
             $rootScope.$on("auth:logout", _cache.removeAll);
@@ -121,15 +122,22 @@
             }
 
             function update(id, project) {
-                return Restangular.one("projects", id).customPATCH(toJsonPatch(project), "", {}, { "Content-Type": "application/json-patch+json" });
+                return Restangular.one("projects", id).customPATCH(
+                    toJsonPatch(project, _updatableProperties),
+                    "",
+                    {},
+                    { "Content-Type": "application/json-patch+json" }
+                );
             }
 
-            function toJsonPatch(obj) {
-                return Object.keys(obj).filter(function(key) {
-                    return obj[key] !== undefined;
-                }).map(function(key) {
-                    return { op: "replace", path: "/" + key, value: obj[key] };
-                });
+            function toJsonPatch(obj, properties) {
+                return properties
+                    .filter(function (key) {
+                        return obj[key] !== undefined;
+                    })
+                    .map(function (key) {
+                        return { op: "replace", path: "/" + key, value: obj[key] };
+                    });
             }
 
             function setConfig(id, key, value) {

@@ -191,6 +191,22 @@ public sealed class JsonPatchValidationTests
     }
 
     [Fact]
+    public void FromJsonBody_WithUnknownViewProperties_IgnoresUnknownProperties()
+    {
+        var json = JsonSerializer.Deserialize<JsonElement>("""{"name":"test","created_utc":"2026-07-09T00:00:00Z","organization_id":"537650f3b77efe23a47914f3"}""");
+        var patch = JsonPatchValidation.FromJsonBody<TestDto>(json, _options);
+
+        Assert.NotNull(patch);
+        var operation = Assert.Single(patch!.Operations);
+        Assert.Equal("/name", operation.path);
+
+        var target = new TestDto { Name = "original" };
+        var result = JsonPatchValidation.ApplyPatch(patch, target);
+        Assert.True(result.IsSuccess);
+        Assert.Equal("test", target.Name);
+    }
+
+    [Fact]
     public void FromPartialObject_NonObject_ReturnsNull()
     {
         var json = JsonSerializer.Deserialize<JsonElement>("""[]""");

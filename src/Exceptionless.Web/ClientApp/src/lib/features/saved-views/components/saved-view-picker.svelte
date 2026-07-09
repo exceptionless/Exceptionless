@@ -208,6 +208,7 @@
 
         try {
             const result = await updateMutation.mutateAsync({ name, slug });
+            onLoadView(result);
             toast.success(`View renamed to "${result.name}".`);
         } catch (error) {
             await tick();

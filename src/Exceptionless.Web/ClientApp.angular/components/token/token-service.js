@@ -2,6 +2,8 @@
     "use strict";
 
     angular.module("exceptionless.token", ["restangular"]).factory("tokenService", function (Restangular) {
+        var _updatableProperties = ["is_disabled", "notes"];
+
         function create(options) {
             var token = {
                 organization_id: options.organization_id,
@@ -37,15 +39,22 @@
         }
 
         function update(id, token) {
-            return Restangular.one("tokens", id).customPATCH(toJsonPatch(token), "", {}, { "Content-Type": "application/json-patch+json" });
+            return Restangular.one("tokens", id).customPATCH(
+                toJsonPatch(token, _updatableProperties),
+                "",
+                {},
+                { "Content-Type": "application/json-patch+json" }
+            );
         }
 
-        function toJsonPatch(obj) {
-            return Object.keys(obj).filter(function(key) {
-                return obj[key] !== undefined;
-            }).map(function(key) {
-                return { op: "replace", path: "/" + key, value: obj[key] };
-            });
+        function toJsonPatch(obj, properties) {
+            return properties
+                .filter(function (key) {
+                    return obj[key] !== undefined;
+                })
+                .map(function (key) {
+                    return { op: "replace", path: "/" + key, value: obj[key] };
+                });
         }
 
         var service = {

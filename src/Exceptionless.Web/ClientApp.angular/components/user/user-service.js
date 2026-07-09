@@ -5,6 +5,7 @@
         .module("exceptionless.user", ["restangular"])
         .factory("userService", function ($cacheFactory, $rootScope, Restangular) {
             var _cache = $cacheFactory("http:user");
+            var _updatableProperties = ["full_name", "email_notifications_enabled"];
             $rootScope.$on("cache:clear", _cache.removeAll);
             $rootScope.$on("cache:clear-user", _cache.removeAll);
             $rootScope.$on("auth:logout", _cache.removeAll);
@@ -56,16 +57,23 @@
                 return Restangular.one("users", id).one("resend-verification-email").get();
             }
 
-            function update(id, project) {
-                return Restangular.one("users", id).customPATCH(toJsonPatch(project), "", {}, { "Content-Type": "application/json-patch+json" });
+            function update(id, user) {
+                return Restangular.one("users", id).customPATCH(
+                    toJsonPatch(user, _updatableProperties),
+                    "",
+                    {},
+                    { "Content-Type": "application/json-patch+json" }
+                );
             }
 
-            function toJsonPatch(obj) {
-                return Object.keys(obj).filter(function(key) {
-                    return obj[key] !== undefined;
-                }).map(function(key) {
-                    return { op: "replace", path: "/" + key, value: obj[key] };
-                });
+            function toJsonPatch(obj, properties) {
+                return properties
+                    .filter(function (key) {
+                        return obj[key] !== undefined;
+                    })
+                    .map(function (key) {
+                        return { op: "replace", path: "/" + key, value: obj[key] };
+                    });
             }
 
             function updateEmailAddress(id, email) {
