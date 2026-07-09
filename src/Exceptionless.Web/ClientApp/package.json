@@ -80,7 +80,7 @@
         "@exceptionless/browser": "^3.2.1",
         "@exceptionless/fetchclient": "^0.44.0",
         "@internationalized/date": "^3.12.2",
-        "@lucide/svelte": "^1.21.0",
+        "@lucide/svelte": "^1.23.0",
         "@stripe/stripe-js": "^9.8.0",
         "@tanstack/svelte-form": "^1.33.0",
         "@tanstack/svelte-query": "^6.1.34",
