@@ -30,6 +30,13 @@ describe('addNonceToScripts', () => {
             `<script nonce="${nonce}"></script><SCRIPT nonce="${nonce}" type="module"></SCRIPT><script nonce="${nonce}" defer></script>`
         );
     });
+
+    it('preserves script-like text inside inline scripts', () => {
+        const nonce = createNonce();
+        const html = '<script>const marker = "<script>";</script>';
+
+        expect(addNonceToScripts(html, nonce)).toBe(`<script nonce="${nonce}">const marker = "<script>";</script>`);
+    });
 });
 
 describe('createContentSecurityPolicy', () => {
@@ -118,6 +125,18 @@ describe('secureHtmlResponse', () => {
         expect(response).toBe(originalResponse);
         expect(response.headers.has('content-security-policy')).toBe(false);
         expect(response.headers.has('cache-control')).toBe(false);
+    });
+
+    it.each([204, 205, 304])('leaves bodyless HTML responses untouched for status %i', async (status) => {
+        const originalResponse = new Response(null, {
+            headers: { 'content-type': 'text/html; charset=utf-8' },
+            status
+        });
+
+        const response = await secureHtmlResponse(originalResponse, { allowDevelopmentConnections: true });
+
+        expect(response).toBe(originalResponse);
+        expect(response.headers.has('content-security-policy')).toBe(false);
     });
 });
 
