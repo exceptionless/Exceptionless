@@ -12,7 +12,17 @@
         "moment": "readonly",
         "require": "readonly"
     },
-    "overrides": [],
+    "overrides": [
+        {
+            "env": {
+                "node": true
+            },
+            "files": ["grunt/**/*.test.js"],
+            "parserOptions": {
+                "ecmaVersion": 2021
+            }
+        }
+    ],
     "parserOptions": {
         "ecmaVersion": 2015
     },
