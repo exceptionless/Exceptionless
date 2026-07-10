@@ -204,17 +204,12 @@
             return;
         }
 
-        isRenameDialogOpen = false;
-
         try {
             const result = await updateMutation.mutateAsync({ name, slug });
-            onLoadView(result);
+            isRenameDialogOpen = false;
             toast.success(`View renamed to "${result.name}".`);
         } catch (error) {
-            await tick();
-            isRenameDialogOpen = true;
             toast.error(getErrorMessage(error, 'Failed to rename view. Please try again.'));
-            throw error;
         }
     }
 

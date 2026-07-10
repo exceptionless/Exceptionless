@@ -5,7 +5,6 @@
         .module("exceptionless.organization", ["restangular"])
         .factory("organizationService", function ($cacheFactory, $rootScope, objectIDService, Restangular) {
             var _cache = $cacheFactory("http:organization");
-            var _updatableProperties = ["name"];
             $rootScope.$on("cache:clear", _cache.removeAll);
             $rootScope.$on("cache:clear-organization", _cache.removeAll);
             $rootScope.$on("auth:logout", _cache.removeAll);
@@ -135,22 +134,7 @@
             }
 
             function update(id, organization) {
-                return Restangular.one("organizations", id).customPATCH(
-                    toJsonPatch(organization, _updatableProperties),
-                    "",
-                    {},
-                    { "Content-Type": "application/json-patch+json" }
-                );
-            }
-
-            function toJsonPatch(obj, properties) {
-                return properties
-                    .filter(function (key) {
-                        return obj[key] !== undefined;
-                    })
-                    .map(function (key) {
-                        return { op: "replace", path: "/" + key, value: obj[key] };
-                    });
+                return Restangular.one("organizations", id).patch(organization);
             }
 
             var service = {

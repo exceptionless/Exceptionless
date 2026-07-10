@@ -3,28 +3,26 @@ import type { WebSocketMessageValue } from '$features/websockets/models';
 
 import { accessToken } from '$features/auth/index.svelte';
 import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
-import { ChangeType } from '$features/websockets/models';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
-export const WEBHOOK_REFRESH_DELAY_MS = 1500;
-
 export async function invalidateWebhookQueries(queryClient: QueryClient, message: WebSocketMessageValue<'WebhookChanged'>) {
-    const { change_type, id, project_id } = message;
-
-    if (change_type === ChangeType.Removed && id) {
-        removeWebhooksFromCaches(queryClient, [id]);
-        scheduleWebhookInvalidation(queryClient, id, project_id);
-        return;
+    const { id, organization_id, project_id } = message;
+    if (id) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
     }
 
-    // Added/Saved events can arrive before Elasticsearch exposes the change to list queries.
-    if (change_type === ChangeType.Added || change_type === ChangeType.Saved) {
-        scheduleWebhookInvalidation(queryClient, id, project_id);
-        return;
+    //     if (organization_id) {
+    //         await queryClient.invalidateQueries({ queryKey: queryKeys.organization(organization_id) });
+    //     }
+
+    if (project_id) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.project(project_id) });
     }
 
-    await invalidateWebhookCache(queryClient, id, project_id);
+    if (!id && !organization_id && !project_id) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.type });
+    }
 }
 
 // TODO: Do we need to scope these all by organization?
@@ -70,14 +68,10 @@ export function deleteWebhook(request: DeleteWebhookRequest) {
         },
         mutationKey: queryKeys.deleteWebhook(request.route.ids),
         onError: () => {
-            void queryClient.invalidateQueries({ queryKey: queryKeys.type });
-        },
-        onMutate: () => {
-            removeWebhooksFromCaches(queryClient, request.route.ids);
+            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         },
         onSuccess: () => {
-            removeWebhooksFromCaches(queryClient, request.route.ids);
-            scheduleWebhookInvalidation(queryClient);
+            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         }
     }));
 }
@@ -121,59 +115,8 @@ export function postWebhook() {
         },
         mutationKey: queryKeys.postWebhook(),
         onSuccess: (webhook: Webhook) => {
-            syncWebhookCaches(queryClient, webhook);
-            scheduleWebhookInvalidation(queryClient, webhook.id, webhook.project_id);
+            queryClient.invalidateQueries({ queryKey: queryKeys.type });
+            queryClient.setQueryData(queryKeys.id(webhook.id), webhook);
         }
     }));
-}
-
-export function removeWebhooksFromCaches(queryClient: QueryClient, ids: string[] | undefined) {
-    if (!ids?.length) {
-        return;
-    }
-
-    queryClient.setQueriesData<FetchClientResponse<Webhook[]> | undefined>({ queryKey: queryKeys.type }, (response) => {
-        if (!Array.isArray(response?.data)) {
-            return response;
-        }
-
-        return { ...response, data: response.data.filter((webhook) => !ids.includes(webhook.id)) };
-    });
-
-    ids.forEach((id) => queryClient.removeQueries({ queryKey: queryKeys.id(id) }));
-}
-
-export function syncWebhookCaches(queryClient: QueryClient, webhook: Webhook) {
-    queryClient.setQueryData(queryKeys.id(webhook.id), webhook);
-    queryClient.setQueriesData<FetchClientResponse<Webhook[]> | undefined>({ queryKey: queryKeys.project(webhook.project_id) }, (response) => {
-        if (!Array.isArray(response?.data)) {
-            return response;
-        }
-
-        const exists = response.data.some((existingWebhook) => existingWebhook.id === webhook.id);
-        return {
-            ...response,
-            data: exists ? response.data.map((existingWebhook) => (existingWebhook.id === webhook.id ? webhook : existingWebhook)) : [...response.data, webhook]
-        };
-    });
-}
-
-async function invalidateWebhookCache(queryClient: QueryClient, id?: string, projectId?: string) {
-    if (id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
-    }
-
-    if (projectId) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.project(projectId) });
-    }
-
-    if (!id && !projectId) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.type });
-    }
-}
-
-function scheduleWebhookInvalidation(queryClient: QueryClient, id?: string, projectId?: string) {
-    setTimeout(() => {
-        void invalidateWebhookCache(queryClient, id, projectId);
-    }, WEBHOOK_REFRESH_DELAY_MS);
 }

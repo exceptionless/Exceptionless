@@ -3,7 +3,6 @@ import type { StringValueFromBody, WorkInProgressResult } from '$features/shared
 import type { WebSocketMessageValue } from '$features/websockets/models';
 
 import { accessToken } from '$features/auth/index.svelte';
-import { jsonPatchRequestOptions, toJsonPatch } from '$features/shared/api/json-patch';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
@@ -570,11 +569,7 @@ export function updateProject(request: UpdateProjectRequest) {
         enabled: () => !!accessToken.current && !!request.route.id,
         mutationFn: async (data: UpdateProject) => {
             const client = useFetchClient();
-            const response = await client.patchJSON<ViewProject>(
-                `projects/${request.route.id}`,
-                toJsonPatch(data as unknown as Record<string, unknown>),
-                jsonPatchRequestOptions
-            );
+            const response = await client.patchJSON<ViewProject>(`projects/${request.route.id}`, data);
             return response.data!;
         },
         onError: () => {

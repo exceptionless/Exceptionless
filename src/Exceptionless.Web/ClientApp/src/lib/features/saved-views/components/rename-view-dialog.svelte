@@ -109,7 +109,6 @@
         }
 
         await onRename(trimmedName, normalizedSlug);
-        open = false;
     }
 </script>
 
