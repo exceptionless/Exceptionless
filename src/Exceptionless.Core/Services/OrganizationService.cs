@@ -15,6 +15,7 @@ public class OrganizationService : IStartupAction
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly IRateNotificationRuleRepository _rateNotificationRuleRepository;
+    private readonly RateNotificationRuleCache _rateNotificationRuleCache;
     private readonly ISavedViewRepository _savedViewRepository;
     private readonly ITokenRepository _tokenRepository;
     private readonly IUserRepository _userRepository;
@@ -23,11 +24,12 @@ public class OrganizationService : IStartupAction
     private readonly UsageService _usageService;
     private readonly ILogger _logger;
 
-    public OrganizationService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IRateNotificationRuleRepository rateNotificationRuleRepository, ISavedViewRepository savedViewRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, IStripeBillingClient stripeBillingClient, UsageService usageService, ILoggerFactory loggerFactory)
+    public OrganizationService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IRateNotificationRuleRepository rateNotificationRuleRepository, RateNotificationRuleCache rateNotificationRuleCache, ISavedViewRepository savedViewRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, IStripeBillingClient stripeBillingClient, UsageService usageService, ILoggerFactory loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
         _rateNotificationRuleRepository = rateNotificationRuleRepository;
+        _rateNotificationRuleCache = rateNotificationRuleCache;
         _savedViewRepository = savedViewRepository;
         _tokenRepository = tokenRepository;
         _userRepository = userRepository;
@@ -195,22 +197,46 @@ public class OrganizationService : IStartupAction
         return _savedViewRepository.RemovePrivateByUserIdAsync(organizationId, userId);
     }
 
-    public Task<long> RemoveRateNotificationRulesAsync(string organizationId)
+    public async Task<long> RemoveRateNotificationRulesAsync(string organizationId)
     {
         _logger.LogDebug("Removing rate notification rules for organization {OrganizationId}", organizationId);
-        return _rateNotificationRuleRepository.RemoveAllByOrganizationIdAsync(organizationId);
+        var projectResults = await _projectRepository.GetByOrganizationIdAsync(organizationId, o => o.SearchAfterPaging().PageLimit(BATCH_SIZE));
+        var projectIds = new HashSet<string>(StringComparer.Ordinal);
+        while (projectResults.Documents.Count > 0)
+        {
+            projectIds.UnionWith(projectResults.Documents.Select(project => project.Id));
+            if (!await projectResults.NextPageAsync())
+                break;
+        }
+
+        long removed = await _rateNotificationRuleRepository.RemoveAllByOrganizationIdAsync(organizationId);
+        await Task.WhenAll(projectIds.Select(_rateNotificationRuleCache.InvalidateAsync));
+        return removed;
     }
 
-    public Task<long> RemoveProjectRateNotificationRulesAsync(string organizationId, string projectId)
+    public async Task<long> RemoveProjectRateNotificationRulesAsync(string organizationId, string projectId)
     {
         _logger.LogDebug("Removing rate notification rules for project {ProjectId} in organization {OrganizationId}", projectId, organizationId);
-        return _rateNotificationRuleRepository.RemoveAllByProjectIdAsync(organizationId, projectId);
+        long removed = await _rateNotificationRuleRepository.RemoveAllByProjectIdAsync(organizationId, projectId);
+        await _rateNotificationRuleCache.InvalidateAsync(projectId);
+        return removed;
     }
 
-    public Task<long> RemoveUserRateNotificationRulesAsync(string organizationId, string userId)
+    public async Task<long> RemoveUserRateNotificationRulesAsync(string organizationId, string userId)
     {
         _logger.LogDebug("Removing rate notification rules for user {UserId} in organization {OrganizationId}", userId, organizationId);
-        return _rateNotificationRuleRepository.RemoveAllByOrganizationIdAndUserIdAsync(organizationId, userId);
+        var ruleResults = await _rateNotificationRuleRepository.GetByOrganizationIdAndUserIdAsync(organizationId, userId, o => o.SearchAfterPaging().PageLimit(BATCH_SIZE));
+        var projectIds = new HashSet<string>(StringComparer.Ordinal);
+        while (ruleResults.Documents.Count > 0)
+        {
+            projectIds.UnionWith(ruleResults.Documents.Select(rule => rule.ProjectId));
+            if (!await ruleResults.NextPageAsync())
+                break;
+        }
+
+        long removed = await _rateNotificationRuleRepository.RemoveAllByOrganizationIdAndUserIdAsync(organizationId, userId);
+        await Task.WhenAll(projectIds.Select(_rateNotificationRuleCache.InvalidateAsync));
+        return removed;
     }
 
     public async Task SoftDeleteOrganizationAsync(Organization organization, string currentUserId)

@@ -183,6 +183,90 @@ public sealed class RateNotificationRuleControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostAsync_EmptyName_Returns422()
+    {
+        var user = await GetTestOrganizationUserAsync();
+
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath(RuleUrl(user.Id, SampleDataService.TEST_PROJECT_ID))
+            .Content(new NewRateNotificationRule
+            {
+                Name = String.Empty,
+                Signal = RateNotificationSignal.Errors,
+                Subject = RateNotificationSubject.Project,
+                Threshold = 10,
+                Window = TimeSpan.FromMinutes(5),
+                Cooldown = TimeSpan.FromMinutes(30)
+            })
+            .StatusCodeShouldBeUnprocessableEntity());
+    }
+
+    [Fact]
+    public async Task PostAsync_WhitespaceName_Returns422()
+    {
+        var user = await GetTestOrganizationUserAsync();
+
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath(RuleUrl(user.Id, SampleDataService.TEST_PROJECT_ID))
+            .Content(new NewRateNotificationRule
+            {
+                Name = "   ",
+                Signal = RateNotificationSignal.Errors,
+                Subject = RateNotificationSubject.Project,
+                Threshold = 10,
+                Window = TimeSpan.FromMinutes(5),
+                Cooldown = TimeSpan.FromMinutes(30)
+            })
+            .StatusCodeShouldBeUnprocessableEntity());
+    }
+
+    [Fact]
+    public async Task PostAsync_UnsupportedSignal_Returns422()
+    {
+        var user = await GetTestOrganizationUserAsync();
+
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath(RuleUrl(user.Id, SampleDataService.TEST_PROJECT_ID))
+            .Content(new NewRateNotificationRule
+            {
+                Name = "Invalid signal",
+                Signal = (RateNotificationSignal)999,
+                Subject = RateNotificationSubject.Project,
+                Threshold = 10,
+                Window = TimeSpan.FromMinutes(5),
+                Cooldown = TimeSpan.FromMinutes(30)
+            })
+            .StatusCodeShouldBeUnprocessableEntity());
+    }
+
+    [Fact]
+    public async Task PostAsync_ZeroThreshold_Returns422()
+    {
+        var user = await GetTestOrganizationUserAsync();
+
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath(RuleUrl(user.Id, SampleDataService.TEST_PROJECT_ID))
+            .Content(new NewRateNotificationRule
+            {
+                Name = "Invalid threshold",
+                Signal = RateNotificationSignal.Errors,
+                Subject = RateNotificationSubject.Project,
+                Threshold = 0,
+                Window = TimeSpan.FromMinutes(5),
+                Cooldown = TimeSpan.FromMinutes(30)
+            })
+            .StatusCodeShouldBeUnprocessableEntity());
+    }
+
+    [Fact]
     public async Task PostAsync_CooldownLessThanWindow_Returns422()
     {
         var user = await GetTestOrganizationUserAsync();
@@ -231,6 +315,30 @@ public sealed class RateNotificationRuleControllerTests : IntegrationTestsBase
             .Content(newRule)
             .StatusCodeShouldBeUnprocessableEntity()
         );
+    }
+
+    [Fact]
+    public async Task PostAsync_StackFromAnotherProject_Returns422()
+    {
+        var user = await GetTestOrganizationUserAsync();
+        var (stacks, _) = await CreateDataAsync(builder => builder.Event().FreeProject());
+        var stack = Assert.Single(stacks);
+
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath(RuleUrl(user.Id, SampleDataService.TEST_PROJECT_ID))
+            .Content(new NewRateNotificationRule
+            {
+                Name = "Wrong project stack",
+                Signal = RateNotificationSignal.Errors,
+                Subject = RateNotificationSubject.Stack,
+                StackId = stack.Id,
+                Threshold = 10,
+                Window = TimeSpan.FromMinutes(5),
+                Cooldown = TimeSpan.FromMinutes(30)
+            })
+            .StatusCodeShouldBeUnprocessableEntity());
     }
 
     [Fact]

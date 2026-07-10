@@ -32,8 +32,15 @@ public class RateNotificationRuleCache
         if (cached.HasValue && cached.Value is not null)
             return cached.Value;
 
-        var results = await _repository.GetEnabledByProjectIdAsync(projectId, o => o.PageLimit(1000));
-        var rules = results.Documents.ToList();
+        var results = await _repository.GetEnabledByProjectIdAsync(projectId, o => o.SearchAfterPaging().PageLimit(1000));
+        var rules = new List<RateNotificationRule>();
+        while (results.Documents.Count > 0)
+        {
+            ct.ThrowIfCancellationRequested();
+            rules.AddRange(results.Documents);
+            if (!await results.NextPageAsync())
+                break;
+        }
 
         await _cache.SetAsync(cacheKey, rules, CacheTtl);
         return rules;

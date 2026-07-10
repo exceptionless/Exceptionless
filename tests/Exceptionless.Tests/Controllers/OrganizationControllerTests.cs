@@ -4,6 +4,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
@@ -22,6 +23,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
 {
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
+    private readonly IRateNotificationRuleRepository _rateNotificationRuleRepository;
     private readonly IUserRepository _userRepository;
     private readonly BillingManager _billingManager;
     private readonly BillingPlans _plans;
@@ -31,6 +33,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     {
         _organizationRepository = GetService<IOrganizationRepository>();
         _projectRepository = GetService<IProjectRepository>();
+        _rateNotificationRuleRepository = GetService<IRateNotificationRuleRepository>();
         _userRepository = GetService<IUserRepository>();
         _billingManager = GetService<BillingManager>();
         _plans = GetService<BillingPlans>();
@@ -912,6 +915,15 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
         Assert.NotNull(project);
         Assert.True(project.NotificationSettings.ContainsKey(organizationAdminUser.Id));
+        var rule = await _rateNotificationRuleRepository.AddAsync(new RateNotificationRule
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            ProjectId = project.Id,
+            UserId = organizationAdminUser.Id,
+            Name = "Membership cleanup test"
+        }, o => o.ImmediateConsistency());
+        var ruleCache = GetService<RateNotificationRuleCache>();
+        Assert.Contains(await ruleCache.GetEnabledRulesAsync(project.Id, TestCancellationToken), cachedRule => cachedRule.Id == rule.Id);
 
         // Act
         await SendRequestAsync(r => r
@@ -931,6 +943,8 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         organizationAdminUser = await _userRepository.GetByIdAsync(organizationAdminUser.Id);
         Assert.NotNull(organizationAdminUser);
         Assert.DoesNotContain(SampleDataService.TEST_ORG_ID, organizationAdminUser.OrganizationIds);
+        Assert.Null(await _rateNotificationRuleRepository.GetByIdAsync(rule.Id, o => o.IncludeSoftDeletes()));
+        Assert.Empty(await ruleCache.GetEnabledRulesAsync(project.Id, TestCancellationToken));
     }
 
     [Fact]

@@ -49,8 +49,7 @@ public class RateNotificationRuleController : ExceptionlessApiController
         IStackRepository stackRepository,
         RateNotificationRuleCache ruleCache,
         ILockProvider lockProvider,
-        TimeProvider timeProvider,
-        ILoggerFactory loggerFactory) : base(timeProvider)
+        TimeProvider timeProvider) : base(timeProvider)
     {
         _ruleRepository = ruleRepository;
         _projectRepository = projectRepository;
@@ -100,6 +99,12 @@ public class RateNotificationRuleController : ExceptionlessApiController
         if (project is null)
             return NotFound();
 
+        if (String.IsNullOrWhiteSpace(model.Name))
+            return ValidationProblem(detail: "Name cannot be empty.");
+
+        if (!Enum.IsDefined(model.Signal) || !Enum.IsDefined(model.Subject))
+            return ValidationProblem(detail: "Signal and Subject must be supported values.");
+
         // Validate window
         if (!ValidWindows.Contains(model.Window))
             return ValidationProblem(detail: $"Window must be one of: {String.Join(", ", ValidWindows.Select(w => w.ToString()))}");
@@ -115,7 +120,9 @@ public class RateNotificationRuleController : ExceptionlessApiController
                 return ValidationProblem(detail: "StackId is required when Subject is Stack.");
 
             var stack = await _stackRepository.GetByIdAsync(model.StackId, o => o.Cache());
-            if (stack is null || !String.Equals(stack.ProjectId, projectId, StringComparison.Ordinal))
+            if (stack is null ||
+                !String.Equals(stack.ProjectId, projectId, StringComparison.Ordinal) ||
+                !String.Equals(stack.OrganizationId, project.OrganizationId, StringComparison.Ordinal))
                 return ValidationProblem(detail: "The specified StackId does not belong to this project.");
         }
         else if (!String.IsNullOrEmpty(model.StackId))
@@ -200,6 +207,15 @@ public class RateNotificationRuleController : ExceptionlessApiController
         if (rule is null)
             return NotFound();
 
+        if (model.Name is not null && String.IsNullOrWhiteSpace(model.Name))
+            return ValidationProblem(detail: "Name cannot be empty.");
+
+        if ((model.Signal.HasValue && !Enum.IsDefined(model.Signal.Value)) ||
+            (model.Subject.HasValue && !Enum.IsDefined(model.Subject.Value)))
+        {
+            return ValidationProblem(detail: "Signal and Subject must be supported values.");
+        }
+
         // Apply updates
         if (model.Name is not null)
             rule.Name = model.Name;
@@ -223,7 +239,9 @@ public class RateNotificationRuleController : ExceptionlessApiController
                 return ValidationProblem(detail: "StackId is required when Subject is Stack.");
 
             var stack = await _stackRepository.GetByIdAsync(newStackId, o => o.Cache());
-            if (stack is null || !String.Equals(stack.ProjectId, projectId, StringComparison.Ordinal))
+            if (stack is null ||
+                !String.Equals(stack.ProjectId, projectId, StringComparison.Ordinal) ||
+                !String.Equals(stack.OrganizationId, project.OrganizationId, StringComparison.Ordinal))
                 return ValidationProblem(detail: "The specified StackId does not belong to this project.");
 
             rule.StackId = newStackId;

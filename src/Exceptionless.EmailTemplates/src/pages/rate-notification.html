@@ -1,0 +1,37 @@
+<container>
+  <spacer size="5"></spacer>
+  <row>
+    <columns small="12">
+      <p class="lead">
+        Your rate notification rule <strong>“\{{RuleName}}”</strong> has fired for the <strong>\{{ProjectName}}</strong> project.
+      </p>
+
+      <callout class="fieldset radius">
+        <p><strong>Events Observed</strong><br>\{{ObservedCount}} events (threshold: \{{Threshold}}) in the last \{{Window}}</p>
+        <hr>
+        <p><strong>Signal</strong><br>\{{Signal}}</p>
+        <hr>
+        <p>
+          <strong>Scope</strong><br>
+          \{{Subject_Type}}\{{#if HasStack}} &mdash; <a href="\{{BaseUrl}}/stack/\{{StackId}}">\{{StackTitle}}</a>\{{/if}}
+        </p>
+        <hr>
+        <p class="no-margin"><strong>Window</strong><br>\{{WindowStartUtc}} &ndash; \{{WindowEndUtc}}</p>
+      </callout>
+
+      <center>
+        \{{#if HasStack}}
+        <button class="button radius" href="\{{BaseUrl}}/stack/\{{StackId}}">
+          View Stack
+        </button>
+        \{{else}}
+        <button class="button radius" href="\{{BaseUrl}}/project/\{{ProjectId}}/dashboard">
+          View Project Dashboard
+        </button>
+        \{{/if}}
+      </center>
+
+      <p class="text-muted">This notification will not be sent again for another \{{Cooldown}} (cooldown period).</p>
+    </columns>
+  </row>
+</container>

@@ -99,16 +99,25 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
 
     private async Task EvaluateProjectAsync(string projectId, IEnumerable<string> counterKeys, DateTime evaluationEndUtc, CancellationToken ct)
     {
-        var allProjectRules = await _ruleRepository.GetEnabledByProjectIdAsync(projectId, o => o.PageLimit(1000));
-        if (allProjectRules.Documents.Count == 0)
+        var ruleResults = await _ruleRepository.GetEnabledByProjectIdAsync(projectId, o => o.SearchAfterPaging().PageLimit(1000));
+        var allProjectRules = new List<RateNotificationRule>();
+        while (ruleResults.Documents.Count > 0)
+        {
+            ct.ThrowIfCancellationRequested();
+            allProjectRules.AddRange(ruleResults.Documents);
+            if (!await ruleResults.NextPageAsync())
+                break;
+        }
+
+        if (allProjectRules.Count == 0)
             return;
 
-        string organizationId = allProjectRules.Documents.First().OrganizationId;
+        string organizationId = allProjectRules[0].OrganizationId;
         var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
         if (organization is null || !organization.HasRateNotifications())
             return;
 
-        var rulesByCounterKey = allProjectRules.Documents
+        var rulesByCounterKey = allProjectRules
             .GroupBy(UpdateRateCountersAction.BuildCounterKey, StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.Ordinal);
 

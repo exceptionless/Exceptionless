@@ -2,36 +2,36 @@
 
 ## Backend - Models and Repositories
 
-- [ ] **Add RateNotificationRule model and enums**
+- [x] **Add RateNotificationRule model and enums**
   - Create `RateNotificationRule` model with all fields (Id, OrganizationId, ProjectId, UserId, Version, Name, IsEnabled, Signal, Subject, StackId, Threshold, Window, Cooldown, SnoozedUntilUtc, CreatedUtc, UpdatedUtc, IsDeleted)
   - Create `RateNotificationSignal` enum (AllEvents, Errors, CriticalErrors, NewErrors, Regressions)
   - Create `RateNotificationSubject` enum (Project, Stack)
 
-- [ ] **Add IRateNotificationRuleRepository and implementation**
+- [x] **Add IRateNotificationRuleRepository and implementation**
   - Create interface extending `IRepositoryOwnedByOrganizationAndProject<RateNotificationRule>`
   - Add methods: `GetByProjectIdAndUserIdAsync`, `GetEnabledByProjectIdAsync`, `CountByProjectIdAndUserIdAsync`
   - Create Elasticsearch-backed implementation following existing repository patterns
 
-- [ ] **Register repository in DI**
+- [x] **Register repository in DI**
   - Register `IRateNotificationRuleRepository` / `RateNotificationRuleRepository` in `Bootstrapper.cs`
 
 ## Backend - Countering and Evaluation
 
-- [ ] **Add RateNotificationRuleIndex service**
+- [x] **Add RateNotificationRuleCache service**
   - Load enabled rules for a project from repository
-  - Cache compiled counter definitions with short TTL
+  - Cache enabled project rules with a short TTL
   - Invalidate on rule create/update/delete/snooze/unsnooze
   - Cache key: `rate:v1:rules:project:{projectId}`
 
-- [ ] **Add RateCounterService**
+- [x] **Add RateCounterService**
   - Implement 1-minute UTC bucket counters via `ICacheClient`
   - Methods: increment counter, sum buckets for window, check/set cooldown
   - Counter key format: `rate:v1:count:{epochMinute}:{counterKey}`
   - Active bucket tracking: `rate:v1:active:{epochMinute}`
   - Cooldown key format: `rate:v1:cooldown:{ruleId}:{subjectKey}`
-  - TTLs: counter/active = 3h, cooldown = cooldown + 10m
+  - TTLs: counter/active = 3h, cooldown = configured cooldown
 
-- [ ] **Add UpdateRateCountersAction (event pipeline)**
+- [x] **Add UpdateRateCountersAction (event pipeline)**
   - Priority after stack assignment (e.g., 75)
   - Exit fast if organization lacks premium features
   - Load rule index for project; exit fast if no enabled rules
@@ -41,7 +41,7 @@
   - Increment matching counters; add to active bucket set
   - Never query Elasticsearch per event; never send notifications directly
 
-- [ ] **Add RateNotificationEvaluatorJob**
+- [x] **Add RateNotificationEvaluatorJob**
   - Periodic job (60s interval) with distributed lock
   - Skip organizations without premium features
   - Inspect recently active counters
@@ -52,71 +52,71 @@
   - Set cooldown key on successful enqueue
   - Structured logging for fired/skipped reasons
 
-- [ ] **Add RateNotification queue model**
+- [x] **Add RateNotification queue model**
   - Fields: RuleId, RuleVersion, OrganizationId, ProjectId, UserId, SubjectKey, StackId, WindowStartUtc, WindowEndUtc, ObservedCount, Threshold
 
-- [ ] **Register counter/evaluator services in DI**
-  - Register `RateNotificationRuleIndex`, `RateCounterService`, `RateNotificationEvaluatorJob`
+- [x] **Register counter/evaluator services in DI**
+  - Register `RateNotificationRuleCache`, `RateCounterService`, `RateNotificationEvaluatorJob`
   - Register `IQueue<RateNotification>` in Core and Insulation bootstrappers
 
 ## Backend - Delivery
 
-- [ ] **Add RateNotificationsJob (delivery)**
+- [x] **Add RateNotificationsJob (delivery)**
   - Load rule, project, user
   - Load stack for stack-scoped rules
   - Validate: rule exists, enabled, version compatible, user in org, email verified, notifications enabled, project/org exists
   - Send email via `IMailer.SendRateNotificationAsync`
   - Skip with structured logs on validation failure
 
-- [ ] **Add IMailer.SendRateNotificationAsync**
+- [x] **Add IMailer.SendRateNotificationAsync**
   - Add method to `IMailer` interface and `Mailer` implementation
   - Email includes: rule name, project name, observed count, threshold, window, subject type, stack title (when applicable), link, cooldown explanation
   - Subject format: `[ProjectName] Error rate exceeded`
   - No "everything is fine" messaging
 
-- [ ] **Update Insulation queue registration**
+- [x] **Update Insulation queue registration**
   - Register `IQueue<RateNotification>` for Redis/Azure/SQS providers in `Exceptionless.Insulation/Bootstrapper.cs`
 
 ## Backend - API
 
-- [ ] **Add RateNotificationRuleController**
+- [x] **Add RateNotificationRuleController**
   - Routes: GET list, POST create, GET by id, PUT update, DELETE, POST snooze, POST unsnooze
   - Authorization: current user manages own rules; global admin manages any user's rules; user must access project org
   - Validation: threshold > 0, supported windows, cooldown ≥ window, subject/stack consistency, max 20 rules per user per project, name non-empty and ≤ 100 chars
   - Preserve persisted rules across plan downgrade, but do not allow the runtime or Svelte UI to treat non-premium orgs as active rate-notification senders
 
-- [ ] **Add request/response DTOs**
+- [x] **Add request/response DTOs**
   - Create/update request models with validation attributes
   - Snooze request model (duration or until timestamp)
 
-- [ ] **Update tests/http files**
+- [x] **Update tests/http files**
   - Add HTTP sample requests for all rate notification endpoints
 
 ## Frontend
 
-- [ ] **Add rate-notifications feature module**
+- [x] **Add rate-notifications feature module**
   - Create `src/Exceptionless.Web/ClientApp/src/lib/features/rate-notifications/`
   - Models/types matching API DTOs
   - TanStack Query API wrappers (list, create, update, delete, snooze, unsnooze)
 
-- [ ] **Add rate notification rule list component**
+- [x] **Add rate notification rule list component**
   - List rules for current user/project
   - Show enable/disable toggle, snooze status
   - Show premium-gated disabled state / upgrade messaging when org lacks premium features
   - Delete confirmation
 
-- [ ] **Add rate notification rule form component**
+- [x] **Add rate notification rule form component**
   - Fields: Name, Signal, Subject, Stack selector, Threshold, Window, Cooldown, Enabled
   - Validation matching backend constraints
   - Noise warning copy: "This rule may be noisy. Use a cooldown to avoid repeated emails."
 
-- [ ] **Integrate into project settings**
-  - Add rate notifications section/tab in project notification settings
-  - Route and navigation entry
+- [x] **Integrate into account notification settings**
+  - Add a project-scoped rate notifications section to account notification settings
+  - Reuse the existing account notifications route and project selector
 
 ## Tests
 
-- [ ] **Add unit tests**
+- [x] **Add unit tests**
   - Rule validation (threshold, window, cooldown, subject/stack, name)
   - Counter key builder
   - Counter increments and bucket summing
@@ -128,7 +128,7 @@
   - Fresh-baseline behavior after snooze/unsnooze
   - Evaluator threshold crossing
 
-- [ ] **Add integration tests**
+- [x] **Add integration tests**
   - User CRUD own rules (list, create, get, update, delete)
   - User cannot manage another user's rules
   - Global admin can manage another user's rules
@@ -148,16 +148,16 @@
   - Delivery loads stack context for stack-scoped emails
   - Membership/project/org cleanup removes orphaned rules
 
-- [ ] **Add lifecycle cleanup**
+- [x] **Add lifecycle cleanup**
   - Remove/invalidate rules when user membership changes
   - Remove/invalidate rules when project or organization is deleted
 
 ## Validation
 
-- [ ] **Run OpenSpec validation**
+- [x] **Run OpenSpec validation**
   - `openspec validate add-personal-rate-notifications --strict`
 
-- [ ] **Run relevant builds and tests**
+- [x] **Run relevant builds and tests**
   - `dotnet build`
   - `dotnet test`
   - Frontend build and lint

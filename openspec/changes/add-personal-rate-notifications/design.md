@@ -171,7 +171,7 @@ project:{projectId}:stack:{stackId}:signal:AllEvents
 
 - Counter bucket TTL: 3 hours
 - Active bucket TTL: 3 hours
-- Cooldown TTL: cooldown duration + 10 minutes
+- Cooldown TTL: configured cooldown duration
 
 ### Signal matching
 

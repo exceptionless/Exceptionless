@@ -16,7 +16,7 @@ public class RateNotificationEvaluatorJobTests : IntegrationTestsBase
     private readonly RateNotificationEvaluatorJob _job;
     private readonly RateCounterService _counterService;
     private readonly IRateNotificationRuleRepository _ruleRepository;
-    private readonly IOrganizationRepository _orgRepository;
+    private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly IQueue<RateNotification> _notificationQueue;
 
@@ -25,7 +25,7 @@ public class RateNotificationEvaluatorJobTests : IntegrationTestsBase
         _job = GetService<RateNotificationEvaluatorJob>();
         _counterService = GetService<RateCounterService>();
         _ruleRepository = GetService<IRateNotificationRuleRepository>();
-        _orgRepository = GetService<IOrganizationRepository>();
+        _organizationRepository = GetService<IOrganizationRepository>();
         _projectRepository = GetService<IProjectRepository>();
         _notificationQueue = GetService<IQueue<RateNotification>>();
     }
@@ -36,10 +36,10 @@ public class RateNotificationEvaluatorJobTests : IntegrationTestsBase
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
 
-        var organization = await _orgRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.NotNull(organization);
         organization.Features.Add(OrganizationExtensions.RateNotificationsFeature);
-        await _orgRepository.SaveAsync(organization, o => o.ImmediateConsistency());
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
     }
 
     private RateNotificationRule BuildRule(string? projectId = null, RateNotificationSignal signal = RateNotificationSignal.Errors, int threshold = 10, string? window = null, string? cooldown = null)
@@ -113,6 +113,30 @@ public class RateNotificationEvaluatorJobTests : IntegrationTestsBase
         await _job.RunAsync(ct);
 
         // Assert — no new notification
+        long queueAfter = (await _notificationQueue.GetQueueStatsAsync()).Enqueued;
+        Assert.Equal(queueBefore, queueAfter);
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenRateNotificationsFeatureDisabled_DoesNotEnqueue()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var now = new DateTime(2024, 6, 1, 12, 0, 0, DateTimeKind.Utc);
+        TimeProvider.SetUtcNow(now.AddMinutes(-2));
+
+        var rule = await _ruleRepository.AddAsync(BuildRule(threshold: 1), o => o.ImmediateConsistency());
+        await _counterService.IncrementAsync(BuildCounterKey(rule), ct);
+
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        organization.Features.Remove(OrganizationExtensions.RateNotificationsFeature);
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
+
+        TimeProvider.Advance(TimeSpan.FromMinutes(2));
+        long queueBefore = (await _notificationQueue.GetQueueStatsAsync()).Enqueued;
+
+        await _job.RunAsync(ct);
+
         long queueAfter = (await _notificationQueue.GetQueueStatsAsync()).Enqueued;
         Assert.Equal(queueBefore, queueAfter);
     }

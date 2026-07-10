@@ -4,6 +4,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
@@ -22,6 +23,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
     private readonly IEventRepository _eventRepository;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
+    private readonly IRateNotificationRuleRepository _rateNotificationRuleRepository;
     private readonly IStackRepository _stackRepository;
 
     public ProjectControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
@@ -29,6 +31,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         _eventRepository = GetService<IEventRepository>();
         _organizationRepository = GetService<IOrganizationRepository>();
         _projectRepository = GetService<IProjectRepository>();
+        _rateNotificationRuleRepository = GetService<IRateNotificationRuleRepository>();
         _stackRepository = GetService<IStackRepository>();
     }
 
@@ -108,6 +111,15 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeCreated()
         );
         Assert.NotNull(project);
+        var rule = await _rateNotificationRuleRepository.AddAsync(new RateNotificationRule
+        {
+            OrganizationId = project.OrganizationId,
+            ProjectId = project.Id,
+            UserId = TestConstants.UserId,
+            Name = "Project cleanup test"
+        }, o => o.ImmediateConsistency());
+        var ruleCache = GetService<RateNotificationRuleCache>();
+        Assert.Contains(await ruleCache.GetEnabledRulesAsync(project.Id, TestCancellationToken), cachedRule => cachedRule.Id == rule.Id);
 
         // Act
         var workItems = await SendRequestAsAsync<WorkInProgressResult>(r => r
@@ -126,6 +138,8 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         // Assert
         var deleted = await _projectRepository.GetByIdAsync(project.Id);
         Assert.Null(deleted);
+        Assert.Null(await _rateNotificationRuleRepository.GetByIdAsync(rule.Id, o => o.IncludeSoftDeletes()));
+        Assert.Empty(await ruleCache.GetEnabledRulesAsync(project.Id, TestCancellationToken));
     }
 
     [Fact]

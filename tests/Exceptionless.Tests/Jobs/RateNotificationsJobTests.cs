@@ -6,6 +6,7 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Mail;
+using Exceptionless.Tests.Utility;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Xunit;
@@ -20,6 +21,7 @@ public class RateNotificationsJobTests : IntegrationTestsBase
     private readonly IProjectRepository _projectRepository;
     private readonly IQueue<RateNotification> _queue;
     private readonly IRateNotificationRuleRepository _ruleRepository;
+    private readonly IStackRepository _stackRepository;
     private readonly IUserRepository _userRepository;
 
     public RateNotificationsJobTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
@@ -30,6 +32,7 @@ public class RateNotificationsJobTests : IntegrationTestsBase
         _projectRepository = GetService<IProjectRepository>();
         _queue = GetService<IQueue<RateNotification>>();
         _ruleRepository = GetService<IRateNotificationRuleRepository>();
+        _stackRepository = GetService<IStackRepository>();
         _userRepository = GetService<IUserRepository>();
     }
 
@@ -87,6 +90,86 @@ public class RateNotificationsJobTests : IntegrationTestsBase
         // Assert
         Assert.True(result.IsSuccess);
         Assert.Empty(_mailer.RateNotifications);
+    }
+
+    [Fact]
+    public async Task RunAsync_DisabledRule_SkipsNotification()
+    {
+        // Arrange
+        var (rule, notification) = await CreateRuleAndNotificationAsync();
+        rule.IsEnabled = false;
+        await _ruleRepository.SaveAsync(rule, o => o.ImmediateConsistency());
+        await _queue.EnqueueAsync(notification);
+
+        // Act
+        var result = await _job.RunAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Empty(_mailer.RateNotifications);
+    }
+
+    [Fact]
+    public async Task RunAsync_UnverifiedEmail_SkipsNotification()
+    {
+        // Arrange
+        var (_, notification) = await CreateRuleAndNotificationAsync();
+        var user = await _userRepository.GetByIdAsync(notification.UserId);
+        Assert.NotNull(user);
+        user.IsEmailAddressVerified = false;
+        user.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
+        await _queue.EnqueueAsync(notification);
+
+        // Act
+        var result = await _job.RunAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Empty(_mailer.RateNotifications);
+    }
+
+    [Fact]
+    public async Task RunAsync_UserRemovedFromOrganization_SkipsNotification()
+    {
+        // Arrange
+        var (_, notification) = await CreateRuleAndNotificationAsync();
+        var user = await _userRepository.GetByIdAsync(notification.UserId);
+        Assert.NotNull(user);
+        user.OrganizationIds.Remove(notification.OrganizationId);
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
+        await _queue.EnqueueAsync(notification);
+
+        // Act
+        var result = await _job.RunAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Empty(_mailer.RateNotifications);
+    }
+
+    [Fact]
+    public async Task RunAsync_StackRule_LoadsStackContext()
+    {
+        // Arrange
+        var (rule, notification) = await CreateRuleAndNotificationAsync();
+        var stack = GetService<StackData>().GenerateStack(generateId: true, organizationId: rule.OrganizationId, projectId: rule.ProjectId);
+        await _stackRepository.AddAsync(stack, o => o.ImmediateConsistency());
+
+        rule.Subject = RateNotificationSubject.Stack;
+        rule.StackId = stack.Id;
+        await _ruleRepository.SaveAsync(rule, o => o.ImmediateConsistency());
+        notification.StackId = stack.Id;
+        notification.SubjectKey = $"stack:{stack.Id}";
+        await _queue.EnqueueAsync(notification);
+
+        // Act
+        var result = await _job.RunAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        var call = Assert.Single(_mailer.RateNotifications);
+        Assert.Equal(stack.Id, call.StackId);
     }
 
     [Fact]
