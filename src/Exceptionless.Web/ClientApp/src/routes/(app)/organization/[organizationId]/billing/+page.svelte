@@ -135,6 +135,14 @@
         }
     });
 
+    $effect(() => {
+        if (organizationQuery.isSuccess && initializedOrganizationId !== organizationId) {
+            debouncedFormSubmit.cancel();
+            form.reset(getOrganizationBillingInformation(organizationQuery.data));
+            initializedOrganizationId = organizationId;
+        }
+    });
+
     onDestroy(() => debouncedFormSubmit.cancel());
 
     function handleChangePlan() {
