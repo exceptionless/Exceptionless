@@ -2,7 +2,6 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Text.Json.Serialization;
 using Foundatio.Mediator;
 using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 using Microsoft.AspNetCore.JsonPatch.SystemTextJson.Operations;
@@ -157,27 +156,12 @@ public static class JsonPatchValidation
     /// Converts a partial JSON object (e.g., from legacy v1 clients) into a typed JsonPatchDocument
     /// with "replace" operations for each property in the object.
     /// </summary>
-    public static JsonPatchDocument<T>? FromPartialObject<T>(JsonElement body, JsonSerializerOptions options, bool ignoreUnknownProperties = false) where T : class
+    public static JsonPatchDocument<T>? FromPartialObject<T>(JsonElement body, JsonSerializerOptions options) where T : class
     {
         if (body.ValueKind != JsonValueKind.Object)
             return null;
 
-        HashSet<string>? knownPropertyNames = null;
-        if (ignoreUnknownProperties)
-        {
-            knownPropertyNames = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .SelectMany(property =>
-                {
-                    string jsonName = property.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name
-                        ?? options.PropertyNamingPolicy?.ConvertName(property.Name)
-                        ?? property.Name;
-                    return new[] { property.Name, jsonName };
-                })
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        }
-
         var ops = new JsonArray(body.EnumerateObject()
-            .Where(prop => knownPropertyNames is null || knownPropertyNames.Contains(prop.Name))
             .Select(prop => new JsonObject
             {
                 ["op"] = "replace",
@@ -197,8 +181,6 @@ public static class JsonPatchValidation
         if (body.ValueKind is JsonValueKind.Array)
             return body.Deserialize<JsonPatchDocument<T>>(options);
 
-        // Delta<T> ignored unknown fields in v2 partial objects. Preserve that behavior
-        // for cached first-party clients that submit full view models.
-        return FromPartialObject<T>(body, options, ignoreUnknownProperties: true);
+        return FromPartialObject<T>(body, options);
     }
 }

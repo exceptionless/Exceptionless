@@ -6,6 +6,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
+using RequestExtensions = Exceptionless.Tests.Extensions.RequestExtensions;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
@@ -14,7 +15,6 @@ using Foundatio.Jobs;
 using Foundatio.Repositories;
 using Foundatio.Serializer;
 using Xunit;
-using RequestExtensions = Exceptionless.Tests.Extensions.RequestExtensions;
 
 namespace Exceptionless.Tests.Controllers;
 
@@ -848,46 +848,6 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.True(root.TryGetProperty("delete_bot_data_enabled", out var deleteBotDataEnabled), "Expected lower_case_underscore response property 'delete_bot_data_enabled'.");
         Assert.True(deleteBotDataEnabled.GetBoolean());
         Assert.False(root.TryGetProperty("DeleteBotDataEnabled", out _), "Response must not drift back to PascalCase 'DeleteBotDataEnabled'.");
-    }
-
-    [Fact]
-    public async Task PatchAsync_WithLegacyFullViewModel_IgnoresReadOnlyProperties()
-    {
-        // Arrange
-        var project = await SendRequestAsAsync<ViewProject>(r => r
-            .AsTestOrganizationUser()
-            .Post()
-            .AppendPath("projects")
-            .Content(new NewProject
-            {
-                OrganizationId = SampleDataService.TEST_ORG_ID,
-                Name = "Legacy Full View Project",
-                DeleteBotDataEnabled = true
-            })
-            .StatusCodeShouldBeCreated()
-        );
-        Assert.NotNull(project);
-        project.Name = "Legacy Full View Updated";
-
-        // Act
-        var updatedProject = await SendRequestAsAsync<ViewProject>(r => r
-            .AsTestOrganizationUser()
-            .Patch()
-            .AppendPaths("projects", project.Id)
-            .Content(project)
-            .StatusCodeShouldBeOk()
-        );
-
-        // Assert
-        Assert.NotNull(updatedProject);
-        Assert.Equal("Legacy Full View Updated", updatedProject.Name);
-        Assert.True(updatedProject.DeleteBotDataEnabled);
-        Assert.Equal(project.OrganizationId, updatedProject.OrganizationId);
-
-        var persisted = await _projectRepository.GetByIdAsync(project.Id);
-        Assert.NotNull(persisted);
-        Assert.Equal("Legacy Full View Updated", persisted.Name);
-        Assert.True(persisted.DeleteBotDataEnabled);
     }
 
     [Fact]
