@@ -39,12 +39,11 @@ public sealed class ValidationSnapshotTests : IntegrationTestsBase
     [Fact]
     public async Task PatchAsync_EmptyBody_ReturnsProblemDetailsWithCamelCaseProperties()
     {
-        // Act — send empty body with correct content type to trigger binding failure
+        // Act
         var response = await SendRequestAsync(r => r
             .Patch()
             .AsTestOrganizationUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
-            .Content("", JsonPatchHelper.ContentType)
             .StatusCodeShouldBeBadRequest()
         );
 

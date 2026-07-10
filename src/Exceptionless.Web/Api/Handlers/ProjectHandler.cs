@@ -23,7 +23,6 @@ using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Serializer;
-using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
@@ -127,32 +126,14 @@ public class ProjectHandler(
         if (original is null)
             return Result.NotFound("Project not found.");
 
-        if (message.PatchDocument.IsEmpty())
+        if (!message.Changes.GetChangedPropertyNames().Any())
             return await MapToViewAsync(original);
 
-        var validationResult = JsonPatchValidation.ValidateOperations(message.PatchDocument, "/organization_id");
-        if (!validationResult.IsSuccess)
-            return Result<ViewProject>.FromResult(validationResult);
-
-        var dto = new UpdateProject {
-            Name = original.Name,
-            DeleteBotDataEnabled = original.DeleteBotDataEnabled,
-            PromotedTabs = original.PromotedTabs?.ToList()
-        };
-
-        var patchResult = JsonPatchValidation.ApplyPatch(message.PatchDocument, dto);
-        if (!patchResult.IsSuccess)
-            return Result<ViewProject>.FromResult(patchResult);
-
-        var error = await CanUpdateAsync(original, dto, message.PatchDocument, message.Context);
+        var error = await CanUpdateAsync(original, message.Changes, message.Context);
         if (error is not null)
             return error;
 
-        original.Name = dto.Name;
-        original.DeleteBotDataEnabled = dto.DeleteBotDataEnabled;
-        if (message.PatchDocument.AffectsProperty(p => p.PromotedTabs))
-            original.PromotedTabs = NormalizePromotedTabs(dto.PromotedTabs);
-
+        message.Changes.Patch(original);
         await repository.SaveAsync(original, o => o.Cache());
         return await MapToViewAsync(original);
     }
@@ -578,15 +559,16 @@ public class ProjectHandler(
         return repository.AddAsync(value, o => o.Cache());
     }
 
-    private async Task<Result<ViewProject>?> CanUpdateAsync(Project original, UpdateProject dto, JsonPatchDocument<UpdateProject> patch, HttpContext httpContext)
+    private async Task<Result<ViewProject>?> CanUpdateAsync(Project original, Delta<UpdateProject> changes, HttpContext httpContext)
     {
-        if (patch.AffectsProperty(p => p.Name) && !await IsProjectNameAvailableInternalAsync(original.OrganizationId, dto.Name, httpContext))
+        var changed = changes.GetEntity();
+        if (changes.ContainsChangedProperty(p => p.Name) && !await IsProjectNameAvailableInternalAsync(original.OrganizationId, changed.Name, httpContext))
             return Result.BadRequest("A project with this name already exists.");
 
         if (!httpContext.Request.CanAccessOrganization(original.OrganizationId))
             return Result.BadRequest("Invalid organization id specified.");
 
-        if (patch.AffectsPath("/organization_id"))
+        if (changes.GetChangedPropertyNames().Contains(nameof(Project.OrganizationId)))
             return Result.BadRequest("OrganizationId cannot be modified.");
 
         return null;

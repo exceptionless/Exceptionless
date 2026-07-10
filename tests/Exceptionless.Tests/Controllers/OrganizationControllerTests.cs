@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -1714,7 +1713,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         return SendRequestAsync(r => r
             .Patch()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
-            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("name", "Unauthorized Update"))), "application/json-patch+json")
+            .Content(new NewOrganization { Name = "Unauthorized Update" })
             .StatusCodeShouldBeUnauthorized()
         );
     }
@@ -1732,7 +1731,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .Patch()
             .AsTestOrganizationUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
-            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("name", ""))), "application/json-patch+json")
+            .Content(new NewOrganization { Name = "" })
             .StatusCodeShouldBeBadRequest()
         );
 
@@ -1750,7 +1749,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .Patch()
             .AsTestOrganizationUser()
             .AppendPaths("organizations", "000000000000000000000000")
-            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("name", "Nope"))), "application/json-patch+json")
+            .Content(new NewOrganization { Name = "Nope" })
             .StatusCodeShouldBeNotFound()
         );
     }
@@ -1767,7 +1766,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .Patch()
             .AsTestOrganizationUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
-            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("name", "Updated Acme"))), "application/json-patch+json")
+            .Content(new NewOrganization { Name = "Updated Acme" })
             .StatusCodeShouldBeOk()
         );
 
@@ -1794,7 +1793,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .Patch()
             .AsTestOrganizationUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
-            .Content("[]", "application/json-patch+json")
+            .Content("{}", "application/json")
             .StatusCodeShouldBeOk()
         );
 

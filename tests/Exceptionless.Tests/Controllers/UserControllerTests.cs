@@ -7,7 +7,6 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
-using RequestExtensions = Exceptionless.Tests.Extensions.RequestExtensions;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Models.OAuth;
@@ -626,7 +625,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
             .Patch()
             .AppendPaths("users", currentUser.Id)
-            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("full_name", "Hacker"))), "application/json-patch+json")
+            .Content(new { FullName = "Hacker" })
             .StatusCodeShouldBeUnauthorized()
         );
 
@@ -652,7 +651,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("users", currentUser.Id)
-            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("full_name", "Updated Name"))), "application/json-patch+json")
+            .Content(new { FullName = "Updated Name" })
             .StatusCodeShouldBeOk()
         );
 
@@ -677,7 +676,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("users", currentUser.Id)
-            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("email_notifications_enabled", false))), "application/json-patch+json")
+            .Content(new { EmailNotificationsEnabled = false })
             .StatusCodeShouldBeOk()
         );
 
@@ -693,7 +692,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
             .Patch()
             .AsGlobalAdminUser()
             .AppendPaths("users", "000000000000000000000000")
-            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("full_name", "Nobody"))), "application/json-patch+json")
+            .Content(new { FullName = "Nobody" })
             .StatusCodeShouldBeNotFound()
         );
     }
@@ -714,7 +713,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
             .Put()
             .AsGlobalAdminUser()
             .AppendPaths("users", currentUser.Id)
-            .Content(JsonSerializer.Serialize(RequestExtensions.JsonPatch(("full_name", "Put Updated Name"))), JsonPatchHelper.ContentType)
+            .Content(new { FullName = "Put Updated Name" })
             .StatusCodeShouldBeOk()
         );
 

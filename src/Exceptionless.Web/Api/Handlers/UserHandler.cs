@@ -13,10 +13,10 @@ using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Models.OAuth;
+using Exceptionless.Web.Utility;
 using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Mediator;
-using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
 
 namespace Exceptionless.Web.Api.Handlers;
@@ -157,29 +157,14 @@ public class UserHandler(
         if (original is null)
             return Result.NotFound("User not found.");
 
-        if (message.PatchDocument.IsEmpty())
+        if (!message.Changes.GetChangedPropertyNames().Any())
             return Result<object>.Success(MapToView(original));
 
-        var validationResult = JsonPatchValidation.ValidateOperations(message.PatchDocument, "/organization_id");
-        if (!validationResult.IsSuccess)
-            return Result<object>.FromResult(validationResult);
-
-        var dto = new UpdateUser {
-            FullName = original.FullName,
-            EmailNotificationsEnabled = original.EmailNotificationsEnabled
-        };
-
-        var patchResult = JsonPatchValidation.ApplyPatch(message.PatchDocument, dto);
-        if (!patchResult.IsSuccess)
-            return Result<object>.FromResult(patchResult);
-
-        var permission = CanUpdate(original, dto, message.PatchDocument);
+        var permission = CanUpdate(original, message.Changes);
         if (permission is not null)
             return permission;
 
-        original.FullName = dto.FullName;
-        original.EmailNotificationsEnabled = dto.EmailNotificationsEnabled;
-
+        message.Changes.Patch(original);
         await repository.SaveAsync(original, o => o.Cache());
         return Result<object>.Success(MapToView(original));
     }
@@ -451,14 +436,14 @@ public class UserHandler(
         return viewModel;
     }
 
-    private Result<object>? CanUpdate(User original, UpdateUser dto, JsonPatchDocument<UpdateUser> patch)
+    private Result<object>? CanUpdate(User original, Delta<UpdateUser> changes)
     {
         // Users don't have a single OrganizationId - only check if not global admin and not self
         if (!HttpContext.Request.CanAccessOrganization(original.OrganizationIds.FirstOrDefault() ?? "")
             && !HttpContext.Request.IsGlobalAdmin() && original.Id != GetCurrentUserId())
             return Result<object>.FromResult(Result.Invalid(ValidationError.Create("organization_id", "Invalid organization id specified.")));
 
-        if (patch.AffectsPath("/organization_id"))
+        if (changes.GetChangedPropertyNames().Contains("OrganizationId"))
             return Result<object>.FromResult(Result.Invalid(ValidationError.Create("organization_id", "OrganizationId cannot be modified.")));
 
         return null;

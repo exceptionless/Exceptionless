@@ -20,7 +20,7 @@ using Foundatio.Caching;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
+using Exceptionless.Web.Utility;
 using Stripe;
 using Foundatio.Mediator;
 using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
@@ -127,27 +127,14 @@ public class OrganizationHandler(
         if (original is null)
             return Result.NotFound("Organization not found.");
 
-        if (message.PatchDocument.IsEmpty())
+        if (!message.Changes.GetChangedPropertyNames().Any())
             return await MapToViewAsync(original);
 
-        var validationResult = JsonPatchValidation.ValidateOperations(message.PatchDocument, "/organization_id");
-        if (!validationResult.IsSuccess)
-            return Result<ViewOrganization>.FromResult(validationResult);
-
-        var dto = new NewOrganization {
-            Name = original.Name
-        };
-
-        var patchResult = JsonPatchValidation.ApplyPatch(message.PatchDocument, dto);
-        if (!patchResult.IsSuccess)
-            return Result<ViewOrganization>.FromResult(patchResult);
-
-        var error = await CanUpdateAsync(original, dto, message.PatchDocument, message.Context);
+        var error = await CanUpdateAsync(original, message.Changes, message.Context);
         if (error is not null)
             return error;
 
-        original.Name = dto.Name;
-
+        message.Changes.Patch(original);
         await repository.SaveAsync(original, o => o.Cache());
         return await MapToViewAsync(original);
     }
@@ -779,12 +766,13 @@ public class OrganizationHandler(
         return organization;
     }
 
-    private async Task<Result<ViewOrganization>?> CanUpdateAsync(Organization original, NewOrganization dto, JsonPatchDocument<NewOrganization> patch, HttpContext httpContext)
+    private async Task<Result<ViewOrganization>?> CanUpdateAsync(Organization original, Delta<NewOrganization> changes, HttpContext httpContext)
     {
-        if (!await IsOrganizationNameAvailableInternalAsync(dto.Name, httpContext))
+        var changed = changes.GetEntity();
+        if (!await IsOrganizationNameAvailableInternalAsync(changed.Name, httpContext))
             return Result.BadRequest("A organization with this name already exists.");
 
-        if (patch.AffectsPath("/organization_id"))
+        if (changes.GetChangedPropertyNames().Contains("OrganizationId"))
             return Result.BadRequest("OrganizationId cannot be modified.");
 
         return null;

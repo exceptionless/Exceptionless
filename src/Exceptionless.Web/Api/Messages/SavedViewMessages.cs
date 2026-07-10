@@ -1,6 +1,6 @@
 using Exceptionless.Core.Seed;
 using Exceptionless.Web.Models;
-using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
+using Exceptionless.Web.Utility;
 
 namespace Exceptionless.Web.Api.Messages;
 
@@ -14,5 +14,5 @@ public record ExportOrganizationSavedViews(string OrganizationId);
 public record ReplacePredefinedSavedViews(IReadOnlyCollection<PredefinedSavedViewDefinition> Definitions);
 public record PromoteToPredefinedSavedView(string Id);
 public record DeletePredefinedSavedView(string Id);
-public record UpdateSavedViewMessage(string Id, JsonPatchDocument<UpdateSavedView> PatchDocument);
+public record UpdateSavedViewMessage(string Id, Delta<UpdateSavedView> Changes);
 public record DeleteSavedViews(string[] Ids);

@@ -1,7 +1,7 @@
 using Exceptionless.Core.Models;
 using Exceptionless.Web.Models;
+using Exceptionless.Web.Utility;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 
 namespace Exceptionless.Web.Api.Messages;
 
@@ -9,7 +9,7 @@ public record GetProjects(string? Filter, string? Sort, int Page, int Limit, str
 public record GetProjectsByOrganization(string OrganizationId, string? Filter, string? Sort, int Page, int Limit, string? Mode, HttpContext Context);
 public record GetProjectById(string Id, string? Mode, HttpContext Context);
 public record CreateProject(NewProject Project, HttpContext Context);
-public record UpdateProjectMessage(string Id, JsonPatchDocument<UpdateProject> PatchDocument, HttpContext Context);
+public record UpdateProjectMessage(string Id, Delta<UpdateProject> Changes, HttpContext Context);
 public record DeleteProjects(string[] Ids, HttpContext Context);
 public record GetLegacyProjectConfig(int? Version, HttpContext Context);
 public record GetProjectConfig(string? Id, int? Version, HttpContext Context);

@@ -8,7 +8,6 @@ using Exceptionless.Web.Models.OAuth;
 using Exceptionless.Web.Utility;
 using Foundatio.Storage;
 using Foundatio.Mediator;
-using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using UserMessages = Exceptionless.Web.Api.Messages;
@@ -88,8 +87,8 @@ public static class UserEndpoints
             }
         });
 
-        group.MapPatch("users/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, JsonPatchDocument<UpdateUser> patchDocument)
-            => (await mediator.InvokeAsync<Result<object>>(new UserMessages.UpdateUserMessage(id, patchDocument))).ToHttpResult(resultMapper))
+        group.MapPatch("users/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] Delta<UpdateUser> changes)
+            => (await mediator.InvokeAsync<Result<object>>(new UserMessages.UpdateUserMessage(id, changes))).ToHttpResult(resultMapper))
         .Produces<ViewUser>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -105,8 +104,8 @@ public static class UserEndpoints
             }
         });
 
-        group.MapPut("users/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, JsonPatchDocument<UpdateUser> patchDocument)
-            => (await mediator.InvokeAsync<Result<object>>(new UserMessages.UpdateUserMessage(id, patchDocument))).ToHttpResult(resultMapper))
+        group.MapPut("users/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] Delta<UpdateUser> changes)
+            => (await mediator.InvokeAsync<Result<object>>(new UserMessages.UpdateUserMessage(id, changes))).ToHttpResult(resultMapper))
         .Produces<ViewUser>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)

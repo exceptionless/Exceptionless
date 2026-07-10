@@ -139,7 +139,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/JsonElement"
+                "$ref": "#/components/schemas/UpdateEvent"
               }
             }
           },
@@ -1933,9 +1933,9 @@
         "requestBody": {
           "description": "The changes",
           "content": {
-            "application/json-patch\u002Bjson": {
+            "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateTokenJsonPatchDocument"
+                "$ref": "#/components/schemas/UpdateToken"
               }
             }
           },
@@ -1994,9 +1994,9 @@
         "requestBody": {
           "description": "The changes",
           "content": {
-            "application/json-patch\u002Bjson": {
+            "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateTokenJsonPatchDocument"
+                "$ref": "#/components/schemas/UpdateToken"
               }
             }
           },
@@ -2633,9 +2633,9 @@
         "requestBody": {
           "description": "The changes",
           "content": {
-            "application/json-patch\u002Bjson": {
+            "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateSavedViewJsonPatchDocument"
+                "$ref": "#/components/schemas/UpdateSavedView"
               }
             }
           },
@@ -2714,9 +2714,9 @@
         "requestBody": {
           "description": "The changes",
           "content": {
-            "application/json-patch\u002Bjson": {
+            "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateSavedViewJsonPatchDocument"
+                "$ref": "#/components/schemas/UpdateSavedView"
               }
             }
           },
@@ -3242,9 +3242,9 @@
         "requestBody": {
           "description": "The changes",
           "content": {
-            "application/json-patch\u002Bjson": {
+            "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateUserJsonPatchDocument"
+                "$ref": "#/components/schemas/UpdateUser"
               }
             }
           },
@@ -3303,9 +3303,9 @@
         "requestBody": {
           "description": "The changes",
           "content": {
-            "application/json-patch\u002Bjson": {
+            "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateUserJsonPatchDocument"
+                "$ref": "#/components/schemas/UpdateUser"
               }
             }
           },
@@ -4073,9 +4073,9 @@
         "requestBody": {
           "description": "The changes",
           "content": {
-            "application/json-patch\u002Bjson": {
+            "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateProjectJsonPatchDocument"
+                "$ref": "#/components/schemas/UpdateProject"
               }
             }
           },
@@ -4144,9 +4144,9 @@
         "requestBody": {
           "description": "The changes",
           "content": {
-            "application/json-patch\u002Bjson": {
+            "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateProjectJsonPatchDocument"
+                "$ref": "#/components/schemas/UpdateProject"
               }
             }
           },
@@ -5468,9 +5468,9 @@
         "requestBody": {
           "description": "The changes",
           "content": {
-            "application/json-patch\u002Bjson": {
+            "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NewOrganizationJsonPatchDocument"
+                "$ref": "#/components/schemas/NewOrganization"
               }
             }
           },
@@ -5539,9 +5539,9 @@
         "requestBody": {
           "description": "The changes",
           "content": {
-            "application/json-patch\u002Bjson": {
+            "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NewOrganizationJsonPatchDocument"
+                "$ref": "#/components/schemas/NewOrganization"
               }
             }
           },
@@ -10492,37 +10492,6 @@
           }
         }
       },
-      "NewOrganizationJsonPatchDocument": {
-        "type": "array",
-        "items": {
-          "required": [
-            "op",
-            "path"
-          ],
-          "type": "object",
-          "properties": {
-            "op": {
-              "enum": [
-                "replace",
-                "test"
-              ],
-              "type": "string",
-              "description": "The operation to perform (only \u0027replace\u0027 and \u0027test\u0027 are supported)."
-            },
-            "path": {
-              "type": "string",
-              "description": "A JSON Pointer (RFC 6901) to the target property, using snake_case naming (e.g., \u0027/full_name\u0027)."
-            },
-            "value": {
-              "description": "The value to use for the operation."
-            },
-            "from": {
-              "type": "string",
-              "description": "A JSON Pointer to the source property (only used with \u0027move\u0027 and \u0027copy\u0027 operations)."
-            }
-          }
-        }
-      },
       "NewProject": {
         "required": [
           "organization_id",
@@ -11706,127 +11675,129 @@
           }
         }
       },
-      "UpdateProjectJsonPatchDocument": {
-        "type": "array",
-        "items": {
-          "required": [
-            "op",
-            "path"
-          ],
-          "type": "object",
-          "properties": {
-            "op": {
-              "enum": [
-                "replace",
-                "test"
-              ],
-              "type": "string",
-              "description": "The operation to perform (only \u0027replace\u0027 and \u0027test\u0027 are supported)."
-            },
-            "path": {
-              "type": "string",
-              "description": "A JSON Pointer (RFC 6901) to the target property, using snake_case naming (e.g., \u0027/full_name\u0027)."
-            },
-            "value": {
-              "description": "The value to use for the operation."
-            },
-            "from": {
-              "type": "string",
-              "description": "A JSON Pointer to the source property (only used with \u0027move\u0027 and \u0027copy\u0027 operations)."
-            }
+      "UpdateEvent": {
+        "type": "object",
+        "properties": {
+          "email_address": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "email"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
-      "UpdateSavedViewJsonPatchDocument": {
-        "type": "array",
-        "items": {
-          "required": [
-            "op",
-            "path"
-          ],
-          "type": "object",
-          "properties": {
-            "op": {
-              "enum": [
-                "replace",
-                "test"
-              ],
-              "type": "string",
-              "description": "The operation to perform (only \u0027replace\u0027 and \u0027test\u0027 are supported)."
-            },
-            "path": {
-              "type": "string",
-              "description": "A JSON Pointer (RFC 6901) to the target property, using snake_case naming (e.g., \u0027/full_name\u0027)."
-            },
-            "value": {
-              "description": "The value to use for the operation."
-            },
-            "from": {
-              "type": "string",
-              "description": "A JSON Pointer to the source property (only used with \u0027move\u0027 and \u0027copy\u0027 operations)."
-            }
+      "UpdateProject": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "delete_bot_data_enabled": {
+            "type": "boolean"
           }
         }
       },
-      "UpdateTokenJsonPatchDocument": {
-        "type": "array",
-        "items": {
-          "required": [
-            "op",
-            "path"
-          ],
-          "type": "object",
-          "properties": {
-            "op": {
-              "enum": [
-                "replace",
-                "test"
-              ],
-              "type": "string",
-              "description": "The operation to perform (only \u0027replace\u0027 and \u0027test\u0027 are supported)."
-            },
-            "path": {
-              "type": "string",
-              "description": "A JSON Pointer (RFC 6901) to the target property, using snake_case naming (e.g., \u0027/full_name\u0027)."
-            },
-            "value": {
-              "description": "The value to use for the operation."
-            },
-            "from": {
-              "type": "string",
-              "description": "A JSON Pointer to the source property (only used with \u0027move\u0027 and \u0027copy\u0027 operations)."
+      "UpdateSavedView": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "filter": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "time": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sort": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "slug": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "filter_definitions": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "columns": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "boolean"
             }
+          },
+          "column_order": {
+            "maxItems": 50,
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "show_stats": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "show_chart": {
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         }
       },
-      "UpdateUserJsonPatchDocument": {
-        "type": "array",
-        "items": {
-          "required": [
-            "op",
-            "path"
-          ],
-          "type": "object",
-          "properties": {
-            "op": {
-              "enum": [
-                "replace",
-                "test"
-              ],
-              "type": "string",
-              "description": "The operation to perform (only \u0027replace\u0027 and \u0027test\u0027 are supported)."
-            },
-            "path": {
-              "type": "string",
-              "description": "A JSON Pointer (RFC 6901) to the target property, using snake_case naming (e.g., \u0027/full_name\u0027)."
-            },
-            "value": {
-              "description": "The value to use for the operation."
-            },
-            "from": {
-              "type": "string",
-              "description": "A JSON Pointer to the source property (only used with \u0027move\u0027 and \u0027copy\u0027 operations)."
-            }
+      "UpdateToken": {
+        "type": "object",
+        "properties": {
+          "is_disabled": {
+            "type": "boolean"
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "UpdateUser": {
+        "type": "object",
+        "properties": {
+          "full_name": {
+            "type": "string"
+          },
+          "email_notifications_enabled": {
+            "type": "boolean"
           }
         }
       },

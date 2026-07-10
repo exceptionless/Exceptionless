@@ -1,5 +1,5 @@
 using Exceptionless.Web.Models;
-using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
+using Exceptionless.Web.Utility;
 
 namespace Exceptionless.Web.Api.Messages;
 
@@ -8,7 +8,7 @@ public record GetCurrentUserOAuthGrants;
 public record RevokeCurrentUserOAuthGrant(string Id);
 public record GetUserById(string Id);
 public record GetUsersByOrganization(string OrganizationId, int Page, int Limit);
-public record UpdateUserMessage(string Id, JsonPatchDocument<UpdateUser> PatchDocument);
+public record UpdateUserMessage(string Id, Delta<UpdateUser> Changes);
 public record SetUserAvatar(string Id, string FileName);
 public record DeleteUserAvatar(string Id);
 public record DeleteCurrentUser;

@@ -139,6 +139,7 @@ public partial class Program
             builder.Services.ConfigureHttpJsonOptions(o =>
             {
                 o.SerializerOptions.ConfigureExceptionlessApiDefaults();
+                o.SerializerOptions.Converters.Add(new DeltaJsonConverterFactory());
             });
 
             builder.Services.AddProblemDetails(o => o.CustomizeProblemDetails = CustomizeProblemDetails);
@@ -180,7 +181,7 @@ public partial class Program
                 o.AddOperationTransformer<XmlDocumentationOperationTransformer>();
                 o.AddOperationTransformer<EndpointDocumentationOperationTransformer>();
                 o.AddSchemaTransformer<DataAnnotationsSchemaTransformer>();
-                o.AddSchemaTransformer<JsonPatchDocumentSchemaTransformer>();
+                o.AddSchemaTransformer<DeltaSchemaTransformer>();
                 o.AddSchemaTransformer<DictionarySubclassSchemaTransformer>();
                 o.AddSchemaTransformer<NumericTypeSchemaTransformer>();
                 o.AddSchemaTransformer<ReadOnlyPropertySchemaTransformer>();
@@ -457,8 +458,4 @@ public partial class Program
             Log.Error(ex, "Error updating client environment variables");
         }
     }
-}
-
-public partial class Program
-{
 }

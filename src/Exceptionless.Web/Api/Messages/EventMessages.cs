@@ -1,6 +1,6 @@
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Web.Models;
-using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
+using Exceptionless.Web.Utility;
 
 namespace Exceptionless.Web.Api.Messages;
 
@@ -27,7 +27,7 @@ public record GetSessionsByProject(string ProjectId, string? Filter, string? Sor
 
 // User description
 public record SetEventUserDescription(string ReferenceId, UserDescription Description, string? ProjectId, HttpContext Context);
-public record LegacyPatchEvent(string Id, JsonPatchDocument<UpdateEvent> PatchDocument, HttpContext Context);
+public record LegacyPatchEvent(string Id, Delta<UpdateEvent> Changes, HttpContext Context);
 
 // Heartbeat
 public record RecordEventHeartbeat(string? Id, bool Close, HttpContext Context);

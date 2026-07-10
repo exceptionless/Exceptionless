@@ -17,11 +17,12 @@ public static class SchemaReferenceIdHelper
     {
         var type = typeInfo.Type;
 
-        // JsonPatchDocument<T> -> {T}JsonPatchDocument (e.g., JsonPatchDocument<UpdateToken> -> UpdateTokenJsonPatchDocument)
-        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Microsoft.AspNetCore.JsonPatch.SystemTextJson.JsonPatchDocument<>))
+        // Delta<T> -> T (e.g., Delta<UpdateToken> -> UpdateToken)
+        // Delta is used for PATCH operations; the schema name should match the inner type
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Delta<>))
         {
             var innerType = type.GetGenericArguments()[0];
-            return $"{innerType.Name}JsonPatchDocument";
+            return innerType.Name;
         }
 
         // ValueFromBody<T> -> {T}ValueFromBody (e.g., ValueFromBody<string> -> StringValueFromBody)
