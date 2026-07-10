@@ -92,16 +92,10 @@
         updateFilterCache,
         view: VIEW
     });
-    let pageTitle = $state('Event Stream');
-
-    function getPageTitle(): string {
-        return savedViewsState.activeSavedView?.name ?? 'Event Stream';
-    }
+    const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Event Stream');
 
     $effect(() => {
-        const title = getPageTitle();
-        pageTitle = title;
-        document.title = `${title} - Exceptionless`;
+        document.title = `${pageTitle} - Exceptionless`;
     });
 
     watch(

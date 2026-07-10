@@ -3,7 +3,6 @@
     import { P } from '$comp/typography';
     import Muted from '$comp/typography/muted.svelte';
     import * as AlertDialog from '$comp/ui/alert-dialog';
-    import { Button } from '$comp/ui/button';
     import { Checkbox } from '$comp/ui/checkbox';
     import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
@@ -62,7 +61,7 @@
 </script>
 
 <AlertDialog.Root bind:open>
-    <AlertDialog.Content class="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-[425px]">
+    <AlertDialog.Content class="sm:max-w-[425px]">
         <form
             onsubmit={(e) => {
                 e.preventDefault();
@@ -144,13 +143,9 @@
                 </form.Field>
             </P>
 
-            <AlertDialog.Footer class="sticky bottom-0 bg-background pt-4">
-                <AlertDialog.Cancel type="button">Cancel</AlertDialog.Cancel>
-                <form.Subscribe selector={(state) => state.isSubmitting}>
-                    {#snippet children(isSubmitting)}
-                        <Button type="submit" disabled={isSubmitting}>Add Webhook</Button>
-                    {/snippet}
-                </form.Subscribe>
+            <AlertDialog.Footer>
+                <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+                <AlertDialog.Action type="submit">Add Webhook</AlertDialog.Action>
             </AlertDialog.Footer>
         </form>
     </AlertDialog.Content>

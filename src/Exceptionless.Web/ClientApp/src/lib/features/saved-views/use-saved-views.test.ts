@@ -14,7 +14,6 @@ import {
     hasMissingSavedViewSlug,
     hasSavedColumnOrder,
     hasSavedColumnVisibility,
-    resolveActiveSavedView,
     type SavedViewQueryParams,
     setSortQueryParam,
     setTimeQueryParam,
@@ -142,86 +141,6 @@ describe('useSavedViews', () => {
 
             // Assert
             expect(result).toBe(false);
-        });
-
-        it('keeps a renamed view active while navigation still has the previous slug', () => {
-            // Arrange
-            const previousView = buildSavedView({ id: 'view-1', name: 'Previous Name' });
-            const renamedView = buildSavedView({
-                id: 'view-1',
-                name: 'Renamed View',
-                updated_utc: '2026-07-09T23:36:57.095227Z'
-            });
-
-            // Act
-            const result = resolveActiveSavedView({
-                pendingSelection: { previousSlug: previousView.slug, view: renamedView },
-                savedViews: [renamedView],
-                slug: previousView.slug
-            });
-
-            // Assert
-            expect(result).toBe(renamedView);
-        });
-
-        it('keeps a renamed view active when a stale refetch omits its new slug', () => {
-            // Arrange
-            const staleView = buildSavedView({
-                id: 'view-1',
-                name: 'Previous Name',
-                updated_utc: '2026-07-09T23:30:00.000000Z'
-            });
-            const renamedView = buildSavedView({
-                id: 'view-1',
-                name: 'Renamed View',
-                updated_utc: '2026-07-09T23:36:57.095227Z'
-            });
-
-            // Act
-            const result = resolveActiveSavedView({
-                pendingSelection: { previousSlug: staleView.slug, view: renamedView },
-                savedViews: [staleView],
-                slug: renamedView.slug
-            });
-
-            // Assert
-            expect(result).toBe(renamedView);
-        });
-
-        it('uses the refreshed cached view once it catches up with a rename', () => {
-            // Arrange
-            const renamedView = buildSavedView({
-                id: 'view-1',
-                name: 'Renamed View',
-                updated_utc: '2026-07-09T23:36:57.095227Z'
-            });
-            const refreshedView = { ...renamedView };
-
-            // Act
-            const result = resolveActiveSavedView({
-                pendingSelection: { previousSlug: 'previous-name', view: renamedView },
-                savedViews: [refreshedView],
-                slug: renamedView.slug
-            });
-
-            // Assert
-            expect(result).toBe(refreshedView);
-        });
-
-        it('ignores a pending rename after navigating to a different view', () => {
-            // Arrange
-            const renamedView = buildSavedView({ id: 'view-1', name: 'Renamed View' });
-            const otherView = buildSavedView({ id: 'view-2', name: 'Other View' });
-
-            // Act
-            const result = resolveActiveSavedView({
-                pendingSelection: { previousSlug: 'previous-name', view: renamedView },
-                savedViews: [renamedView, otherView],
-                slug: otherView.slug
-            });
-
-            // Assert
-            expect(result).toBe(otherView);
         });
     });
 

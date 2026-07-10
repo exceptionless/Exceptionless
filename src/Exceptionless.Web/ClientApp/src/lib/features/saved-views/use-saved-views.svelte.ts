@@ -54,11 +54,6 @@ export interface UseSavedViewsReturn {
     savedViews: SavedView[];
 }
 
-interface PendingSavedViewSelection {
-    previousSlug?: string;
-    view: SavedView;
-}
-
 export function clearSavedViewQueryParams(queryParams: SavedViewQueryParams): void {
     queryParams.filter = null;
 
@@ -111,35 +106,6 @@ export function hasSavedColumnVisibility(columns: null | Record<string, boolean>
     return columns != null;
 }
 
-export function resolveActiveSavedView(options: {
-    pendingSelection?: PendingSavedViewSelection;
-    savedViewId?: null | string;
-    savedViews: SavedView[] | undefined;
-    slug?: string;
-}): SavedView | undefined {
-    const cachedView = options.slug
-        ? options.savedViews?.find((view) => savedViewResolvedSlug(view) === options.slug)
-        : options.savedViewId
-          ? options.savedViews?.find((view) => view.id === options.savedViewId)
-          : undefined;
-    const pending = options.pendingSelection;
-    if (!pending) {
-        return cachedView;
-    }
-
-    const pendingSlug = savedViewResolvedSlug(pending.view);
-    const pendingIsSelected = options.savedViewId === pending.view.id || options.slug === pendingSlug || options.slug === pending.previousSlug;
-    if (!pendingIsSelected) {
-        return cachedView;
-    }
-
-    if (cachedView?.id === pending.view.id && cachedView.updated_utc >= pending.view.updated_utc) {
-        return cachedView;
-    }
-
-    return pending.view;
-}
-
 export function setSortQueryParam(queryParams: SavedViewQueryParams, value: null | string): void {
     if (supportsSortQueryParam(queryParams)) {
         queryParams.sort = value;
@@ -162,7 +128,6 @@ export function supportsTimeQueryParam(queryParams: SavedViewQueryParams): query
 
 export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsReturn {
     const isEnabled = $derived(!!organization.current);
-    let pendingSelection = $state<PendingSavedViewSelection>();
 
     // Some routes, such as stream, do not declare every saved-view query parameter.
     const supportsSort = supportsSortQueryParam(options.queryParams);
@@ -180,12 +145,20 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     });
 
     const activeSavedView = $derived.by(() => {
-        return resolveActiveSavedView({
-            pendingSelection,
-            savedViewId: options.queryParams.saved,
-            savedViews: savedViewsListQuery.data,
-            slug: options.slug
-        });
+        const views = savedViewsListQuery.data;
+        if (!views) {
+            return undefined;
+        }
+
+        if (options.slug) {
+            return views.find((view) => savedViewResolvedSlug(view) === options.slug);
+        }
+
+        if (options.queryParams.saved) {
+            return views.find((view) => view.id === options.queryParams.saved);
+        }
+
+        return undefined;
     });
 
     function applyColumnState(view: Pick<SavedView, 'column_order' | 'columns'> | undefined): void {
@@ -313,11 +286,6 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     );
 
     function handleLoadView(view: SavedView) {
-        pendingSelection = {
-            previousSlug: options.slug,
-            view
-        };
-
         if (options.baseHref) {
             goto(savedViewHref(view));
             return;
@@ -350,7 +318,6 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     }
 
     function handleClearSavedView() {
-        pendingSelection = undefined;
         clearSavedViewQueryParams(options.queryParams);
         applyColumnState(undefined);
         applyDisplayState(undefined);
@@ -362,12 +329,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
     return {
         get activeSavedView() {
-            return resolveActiveSavedView({
-                pendingSelection,
-                savedViewId: options.queryParams.saved,
-                savedViews: savedViewsListQuery.data,
-                slug: options.slug
-            });
+            return activeSavedView;
         },
         handleClearSavedView,
         handleLoadView,
