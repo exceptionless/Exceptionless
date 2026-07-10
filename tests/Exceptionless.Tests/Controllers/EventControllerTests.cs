@@ -74,6 +74,181 @@ public partial class EventControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetByOrganizationAsync_WithExistingEvents_ReturnsOrganizationEvents()
+    {
+        // Arrange
+        await CreateDataAsync(d => d.Event().TestProject().Message("organization route"));
+        await RefreshDataAsync();
+
+        // Act
+        var events = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "events")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(events);
+        Assert.Contains(events, e => String.Equals(e.Message, "organization route", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task GetByReferenceIdAsync_WithExistingReference_ReturnsMatchingEvents()
+    {
+        // Arrange
+        string referenceId = Guid.NewGuid().ToString("N");
+        await CreateDataAsync(d => d.Event().TestProject().ReferenceId(referenceId).Message("reference route"));
+        await RefreshDataAsync();
+
+        // Act
+        var events = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("events", "by-ref", referenceId)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(events);
+        var ev = Assert.Single(events);
+        Assert.Equal(referenceId, ev.ReferenceId);
+    }
+
+    [Fact]
+    public async Task GetCountByOrganizationAsync_WithExistingEvents_ReturnsOrganizationCount()
+    {
+        // Arrange
+        await CreateDataAsync(d => d.Event().TestProject().Message("organization count route"));
+        await RefreshDataAsync();
+
+        // Act
+        var count = await SendRequestAsAsync<CountResult>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "events", "count")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(count);
+        Assert.True(count.Total > 0);
+    }
+
+    [Fact]
+    public async Task GetSessionByOrganizationAsync_WithSessionEvents_ReturnsOrganizationSessions()
+    {
+        // Arrange
+        string sessionId = Guid.NewGuid().ToString("N");
+        await CreateDataAsync(d => d.Event().TestProject().Type(Event.KnownTypes.Session).SessionId(sessionId));
+        await RefreshDataAsync();
+
+        // Act
+        var events = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "events", "sessions")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(events);
+        Assert.Contains(events, e => String.Equals(e.GetSessionId(), sessionId, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task GetSessionsAsync_WithSessionEvents_ReturnsSessions()
+    {
+        // Arrange
+        string sessionId = Guid.NewGuid().ToString("N");
+        await CreateDataAsync(d => d.Event().TestProject().Type(Event.KnownTypes.Session).SessionId(sessionId));
+        await RefreshDataAsync();
+
+        // Act
+        var events = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("events", "sessions")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(events);
+        Assert.Contains(events, e => String.Equals(e.GetSessionId(), sessionId, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task GetSubmitEventV1Async_WithQueryParameters_EnqueuesEvent()
+    {
+        // Arrange
+        string referenceId = Guid.NewGuid().ToString("N");
+
+        // Act
+        await SendRequestAsync(r => AppendApiV1Path(
+                r.AsTestOrganizationClientUser(),
+                "events",
+                "submit",
+                Event.KnownTypes.Log)
+            .QueryString("message", "legacy get submit route")
+            .QueryString("reference", referenceId)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        var stats = await _eventQueue.GetQueueStatsAsync();
+        Assert.Equal(1, stats.Enqueued);
+    }
+
+    [Fact]
+    public async Task LegacyPostAsync_WithTextPayload_EnqueuesEvent()
+    {
+        // Arrange
+        const string payload = "legacy error route";
+
+        // Act
+        await SendRequestAsync(r => AppendApiV1Path(
+                r.Post().AsTestOrganizationClientUser(),
+                "error")
+            .Content(payload, "text/plain")
+            .StatusCodeShouldBeAccepted()
+        );
+
+        // Assert
+        var stats = await _eventQueue.GetQueueStatsAsync();
+        Assert.Equal(1, stats.Enqueued);
+    }
+
+    [Fact]
+    public async Task PostV1Async_WithTextPayload_EnqueuesEvent()
+    {
+        // Arrange
+        const string payload = "legacy post route";
+
+        // Act
+        await SendRequestAsync(r => AppendApiV1Path(
+                r.Post().AsTestOrganizationClientUser(),
+                "events")
+            .Content(payload, "text/plain")
+            .StatusCodeShouldBeAccepted()
+        );
+
+        // Assert
+        var stats = await _eventQueue.GetQueueStatsAsync();
+        Assert.Equal(1, stats.Enqueued);
+    }
+
+    [Fact]
+    public Task RecordHeartbeatAsync_WithSessionId_ReturnsOk()
+    {
+        // Arrange
+        string sessionId = Guid.NewGuid().ToString("N");
+
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .AsTestOrganizationClientUser()
+            .AppendPaths("events", "session", "heartbeat")
+            .QueryString("id", sessionId)
+            .QueryString("close", "true")
+            .StatusCodeShouldBeOk()
+        );
+    }
+
+    [Fact]
     public async Task PostEvent_WithValidPayload_EnqueuesAndProcessesEventAsync()
     {
         var serializer = GetService<ITextSerializer>();
@@ -2095,11 +2270,10 @@ public partial class EventControllerTests : IntegrationTestsBase
         await RefreshDataAsync();
 
         // Act — v1 clients sent PascalCase "UserEmail" / "UserDescription"
-        await SendRequestAsync(r => r
-            .Patch()
-            .BaseUri(_server.BaseAddress)
-            .AsTestOrganizationClientUser()
-            .AppendPaths("api", "v1", "error", referenceId)
+        await SendRequestAsync(r => AppendApiV1Path(
+                r.Patch().AsTestOrganizationClientUser(),
+                "error",
+                referenceId)
             .Content("""
                 {
                   "UserEmail": "legacy@exceptionless.test",
@@ -2109,7 +2283,8 @@ public partial class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeAccepted()
         );
 
-        await GetService<EventUserDescriptionsJob>().RunAsync(TestCancellationToken);
+        var userDescriptionJob = GetService<EventUserDescriptionsJob>();
+        await userDescriptionJob.RunUntilEmptyAsync(TestCancellationToken);
         await RefreshDataAsync();
 
         // Assert

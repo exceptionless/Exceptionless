@@ -9,6 +9,10 @@ public static class AuthorizationRoles
     public const string GlobalAdminPolicy = nameof(GlobalAdminPolicy);
     public const string GlobalAdmin = "global";
     public const string McpPolicy = nameof(McpPolicy);
+    public const string ProjectsReadPolicy = nameof(ProjectsReadPolicy);
+    public const string StacksReadPolicy = nameof(StacksReadPolicy);
+    public const string StacksWritePolicy = nameof(StacksWritePolicy);
+    public const string EventsReadPolicy = nameof(EventsReadPolicy);
     public const string McpRead = "mcp:read";
     public const string ProjectsRead = "projects:read";
     public const string StacksRead = "stacks:read";

@@ -24,6 +24,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 using Microsoft.Net.Http.Headers;
+using ModelContextProtocol.AspNetCore;
 using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Events;
@@ -88,6 +89,10 @@ public class Startup
             o.AddPolicy(AuthorizationRoles.UserPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.User));
             o.AddPolicy(AuthorizationRoles.GlobalAdminPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.GlobalAdmin));
             o.AddPolicy(AuthorizationRoles.McpPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.McpRead));
+            o.AddPolicy(AuthorizationRoles.ProjectsReadPolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.ProjectsRead)));
+            o.AddPolicy(AuthorizationRoles.StacksReadPolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.StacksRead)));
+            o.AddPolicy(AuthorizationRoles.StacksWritePolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.StacksWrite)));
+            o.AddPolicy(AuthorizationRoles.EventsReadPolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.EventsRead)));
         });
 
         services.AddRouting(r =>
@@ -129,8 +134,10 @@ public class Startup
 
         var appOptions = AppOptions.ReadFromConfiguration(Configuration);
         Bootstrapper.RegisterServices(services, appOptions, Log.Logger.ToLoggerFactory());
+        services.AddScoped<McpContextService>();
+        services.AddSingleton<ISessionMigrationHandler, McpSessionMigrationHandler>();
         services.AddMcpServer()
-            .WithHttpTransport(o => o.Stateless = true)
+            .WithHttpTransport(o => o.Stateless = false)
             .WithTools<ExceptionlessMcpTools>();
 
         services.AddSingleton(s =>
@@ -329,12 +336,6 @@ public class Startup
 
             endpoints.MapControllers();
             endpoints.MapMcp("/mcp").RequireAuthorization(AuthorizationRoles.McpPolicy);
-            endpoints.MapMethods("/mcp", [HttpMethods.Get, HttpMethods.Delete], context =>
-            {
-                context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
-                context.Response.Headers[HeaderNames.Allow] = HttpMethods.Post;
-                return Task.CompletedTask;
-            }).RequireAuthorization(AuthorizationRoles.McpPolicy);
             endpoints.MapFallback("{**slug:nonfile}", CreateRequestDelegate(endpoints, "/index.html"));
         });
     }

@@ -1,6 +1,8 @@
 using Exceptionless.Core;
+using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
@@ -8,6 +10,7 @@ using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Utility;
 using Foundatio.Storage;
 using Xunit;
@@ -26,8 +29,11 @@ public class CleanupDataJobTests : IntegrationTestsBase
     private readonly IStackRepository _stackRepository;
     private readonly EventData _eventData;
     private readonly IEventRepository _eventRepository;
+    private readonly UserData _userData;
+    private readonly IUserRepository _userRepository;
     private readonly TokenData _tokenData;
     private readonly ITokenRepository _tokenRepository;
+    private readonly IOAuthTokenRepository _oauthTokenRepository;
     private readonly BillingManager _billingManager;
     private readonly BillingPlans _plans;
     private readonly IFileStorage _fileStorage;
@@ -44,8 +50,11 @@ public class CleanupDataJobTests : IntegrationTestsBase
         _stackRepository = GetService<IStackRepository>();
         _eventData = GetService<EventData>();
         _eventRepository = GetService<IEventRepository>();
+        _userData = GetService<UserData>();
+        _userRepository = GetService<IUserRepository>();
         _tokenData = GetService<TokenData>();
         _tokenRepository = GetService<ITokenRepository>();
+        _oauthTokenRepository = GetService<IOAuthTokenRepository>();
         _billingManager = GetService<BillingManager>();
         _plans = GetService<BillingPlans>();
         _fileStorage = GetService<IFileStorage>();
@@ -74,6 +83,59 @@ public class CleanupDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task CanCleanupExpiredDisabledOAuthTokens()
+    {
+        var utcNow = DateTime.UtcNow;
+        var cutoff = utcNow.Subtract(TimeSpan.FromDays(1));
+        var expiredSpentToken = CreateOAuthToken(cutoff.SubtractMinutes(1), isDisabled: true, refreshTokenHash: "expired-spent-refresh", refreshExpiresUtc: cutoff.SubtractMinutes(1));
+        var retainedSpentToken = CreateOAuthToken(cutoff.SubtractMinutes(1), isDisabled: true, refreshTokenHash: "retained-spent-refresh", refreshExpiresUtc: cutoff.AddMinutes(1));
+        var activeExpiredToken = CreateOAuthToken(cutoff.SubtractMinutes(1), isDisabled: false, refreshTokenHash: "active-expired-refresh", refreshExpiresUtc: cutoff.SubtractMinutes(1));
+        var expiredClearedRefreshToken = CreateOAuthToken(cutoff.SubtractMinutes(1), isDisabled: true, refreshTokenHash: null, refreshExpiresUtc: null);
+        var retainedClearedRefreshToken = CreateOAuthToken(cutoff.AddMinutes(1), isDisabled: true, refreshTokenHash: null, refreshExpiresUtc: null);
+
+        await _oauthTokenRepository.AddAsync([
+            expiredSpentToken,
+            retainedSpentToken,
+            activeExpiredToken,
+            expiredClearedRefreshToken,
+            retainedClearedRefreshToken
+        ], o => o.ImmediateConsistency());
+
+        await _oauthTokenRepository.PatchAsync(expiredClearedRefreshToken.Id, new PartialPatch(new { updated_utc = cutoff.AddMinutes(-1) }), o => o.ImmediateConsistency());
+        await _oauthTokenRepository.PatchAsync(retainedClearedRefreshToken.Id, new PartialPatch(new { updated_utc = cutoff.AddMinutes(1) }), o => o.ImmediateConsistency());
+
+        await _job.RunAsync(TestCancellationToken);
+
+        Assert.Null(await _oauthTokenRepository.GetByIdAsync(expiredSpentToken.Id, o => o.ImmediateConsistency()));
+        Assert.NotNull(await _oauthTokenRepository.GetByIdAsync(retainedSpentToken.Id, o => o.ImmediateConsistency()));
+        Assert.NotNull(await _oauthTokenRepository.GetByIdAsync(activeExpiredToken.Id, o => o.ImmediateConsistency()));
+        Assert.Null(await _oauthTokenRepository.GetByIdAsync(expiredClearedRefreshToken.Id, o => o.ImmediateConsistency()));
+        Assert.NotNull(await _oauthTokenRepository.GetByIdAsync(retainedClearedRefreshToken.Id, o => o.ImmediateConsistency()));
+
+        OAuthToken CreateOAuthToken(DateTime updatedUtc, bool isDisabled, string? refreshTokenHash, DateTime? refreshExpiresUtc)
+        {
+            return new OAuthToken
+            {
+                Id = ObjectId.GenerateNewId().ToString(),
+                UserId = TestConstants.UserId,
+                ClientId = "cleanup-job-oauth-client",
+                GrantId = StringExtensions.GetNewToken(),
+                Resource = "http://localhost:7110/mcp",
+                AccessTokenHash = OAuthService.CreateTokenHash(StringExtensions.GetRandomString(OAuthService.OAuthTokenLength)),
+                RefreshTokenHash = refreshTokenHash,
+                Scopes = [AuthorizationRoles.McpRead, AuthorizationRoles.OfflineAccess],
+                OrganizationIds = [TestConstants.OrganizationId],
+                ExpiresUtc = utcNow.AddHours(1),
+                RefreshExpiresUtc = refreshExpiresUtc,
+                IsDisabled = isDisabled,
+                CreatedBy = TestConstants.UserId,
+                CreatedUtc = updatedUtc,
+                UpdatedUtc = updatedUtc
+            };
+        }
+    }
+
+    [Fact]
     public async Task CanCleanupSoftDeletedOrganization()
     {
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
@@ -94,6 +156,85 @@ public class CleanupDataJobTests : IntegrationTestsBase
         Assert.Null(await _stackRepository.GetByIdAsync(stack.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await _eventRepository.GetByIdAsync(persistentEvent.Id, o => o.IncludeSoftDeletes()));
         Assert.False(await _fileStorage.ExistsAsync(iconPath));
+    }
+
+    [Fact]
+    public async Task CleanupSyntheticOrganizationsAsync_OldSyntheticOrganization_RemovesOrganizationData()
+    {
+        var utcNow = TimeProvider.GetUtcNow();
+
+        var organization = _organizationData.GenerateOrganization(_billingManager, _plans, generateId: true, name: "E2E Playwright Org cleanup-old");
+        organization.CreatedUtc = utcNow.Subtract(TimeSpan.FromDays(2)).UtcDateTime;
+        await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
+
+        var project = await _projectRepository.AddAsync(_projectData.GenerateProject(generateId: true, organizationId: organization.Id, name: "Playwright Project cleanup-old"), o => o.ImmediateConsistency());
+        var stack = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: organization.Id, projectId: project.Id), o => o.ImmediateConsistency());
+        var persistentEvent = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization.Id, project.Id, stack.Id, occurrenceDate: utcNow), o => o.ImmediateConsistency());
+
+        await _job.RunAsync(TestCancellationToken);
+
+        Assert.Null(await _organizationRepository.GetByIdAsync(organization.Id, o => o.IncludeSoftDeletes()));
+        Assert.Null(await _projectRepository.GetByIdAsync(project.Id, o => o.IncludeSoftDeletes()));
+        Assert.Null(await _stackRepository.GetByIdAsync(stack.Id, o => o.IncludeSoftDeletes()));
+        Assert.Null(await _eventRepository.GetByIdAsync(persistentEvent.Id, o => o.IncludeSoftDeletes()));
+    }
+
+    [Fact]
+    public async Task CleanupSyntheticOrganizationsAsync_FreshSyntheticAndSimilarOrganizations_KeepsOrganizationData()
+    {
+        var utcNow = TimeProvider.GetUtcNow();
+
+        var freshSyntheticOrganization = _organizationData.GenerateOrganization(_billingManager, _plans, generateId: true, name: "E2E Playwright Org cleanup-fresh");
+        freshSyntheticOrganization.CreatedUtc = utcNow.Subtract(TimeSpan.FromHours(2)).UtcDateTime;
+        await _organizationRepository.AddAsync(freshSyntheticOrganization, o => o.ImmediateConsistency());
+
+        var similarOrganization = _organizationData.GenerateOrganization(_billingManager, _plans, generateId: true, name: "Customer E2E Playwright Org cleanup-old");
+        similarOrganization.CreatedUtc = utcNow.Subtract(TimeSpan.FromDays(2)).UtcDateTime;
+        await _organizationRepository.AddAsync(similarOrganization, o => o.ImmediateConsistency());
+
+        await _job.RunAsync(TestCancellationToken);
+
+        Assert.NotNull(await _organizationRepository.GetByIdAsync(freshSyntheticOrganization.Id, o => o.IncludeSoftDeletes()));
+        Assert.NotNull(await _organizationRepository.GetByIdAsync(similarOrganization.Id, o => o.IncludeSoftDeletes()));
+    }
+
+    [Fact]
+    public async Task CleanupSyntheticUsersAsync_OldStandaloneSyntheticUser_RemovesUserAndTokens()
+    {
+        var utcNow = TimeProvider.GetUtcNow();
+        var user = CreateSyntheticUser("playwright-cleanup-old@exceptionless.test", "Playwright User cleanup-old", utcNow.Subtract(TimeSpan.FromDays(2)));
+        await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
+
+        var token = await _tokenRepository.AddAsync(_tokenData.GenerateToken(
+            generateId: true,
+            userId: user.Id,
+            organizationId: TestConstants.OrganizationId,
+            type: TokenType.Authentication), o => o.ImmediateConsistency());
+        var oauthToken = await _oauthTokenRepository.AddAsync(CreateUserOAuthToken(utcNow.UtcDateTime, user.Id), o => o.ImmediateConsistency());
+
+        await _job.RunAsync(TestCancellationToken);
+
+        Assert.Null(await _userRepository.GetByIdAsync(user.Id, o => o.IncludeSoftDeletes()));
+        Assert.Null(await _tokenRepository.GetByIdAsync(token.Id, o => o.IncludeSoftDeletes()));
+        Assert.Null(await _oauthTokenRepository.GetByIdAsync(oauthToken.Id, o => o.IncludeSoftDeletes()));
+    }
+
+    [Fact]
+    public async Task CleanupSyntheticUsersAsync_FreshMemberAndSimilarUsers_KeepsUsers()
+    {
+        var utcNow = TimeProvider.GetUtcNow();
+        var freshSyntheticUser = CreateSyntheticUser("playwright-cleanup-fresh@exceptionless.test", "Playwright User cleanup-fresh", utcNow.Subtract(TimeSpan.FromHours(2)));
+        var memberSyntheticUser = CreateSyntheticUser("playwright-cleanup-member@exceptionless.test", "Playwright User cleanup-member", utcNow.Subtract(TimeSpan.FromDays(2)));
+        memberSyntheticUser.OrganizationIds.Add(TestConstants.OrganizationId);
+        var similarUser = CreateSyntheticUser("playwright-cleanup-similar@example.com", "Playwright User cleanup-similar", utcNow.Subtract(TimeSpan.FromDays(2)));
+
+        await _userRepository.AddAsync([freshSyntheticUser, memberSyntheticUser, similarUser], o => o.ImmediateConsistency());
+
+        await _job.RunAsync(TestCancellationToken);
+
+        Assert.NotNull(await _userRepository.GetByIdAsync(freshSyntheticUser.Id, o => o.IncludeSoftDeletes()));
+        Assert.NotNull(await _userRepository.GetByIdAsync(memberSyntheticUser.Id, o => o.IncludeSoftDeletes()));
+        Assert.NotNull(await _userRepository.GetByIdAsync(similarUser.Id, o => o.IncludeSoftDeletes()));
     }
 
     [Fact]
@@ -724,5 +865,37 @@ public class CleanupDataJobTests : IntegrationTestsBase
         var usageResponse = await _usageService.GetUsageAsync(organization.Id, project.Id);
         Assert.Equal(0, usageResponse.CurrentUsage.Deleted);
         Assert.Equal(0, usageResponse.CurrentHourUsage.Deleted);
+    }
+
+    private User CreateSyntheticUser(string emailAddress, string fullName, DateTimeOffset createdUtc)
+    {
+        var user = _userData.GenerateUser(generateId: true, emailAddress: emailAddress);
+        user.FullName = fullName;
+        user.OrganizationIds.Clear();
+        user.CreatedUtc = createdUtc.UtcDateTime;
+        user.UpdatedUtc = createdUtc.UtcDateTime;
+        user.MarkEmailAddressVerified();
+        return user;
+    }
+
+    private static OAuthToken CreateUserOAuthToken(DateTime utcNow, string userId)
+    {
+        return new OAuthToken
+        {
+            Id = ObjectId.GenerateNewId().ToString(),
+            UserId = userId,
+            ClientId = "cleanup-job-synthetic-user-client",
+            GrantId = StringExtensions.GetNewToken(),
+            Resource = "http://localhost:7110/mcp",
+            AccessTokenHash = OAuthService.CreateTokenHash(StringExtensions.GetRandomString(OAuthService.OAuthTokenLength)),
+            RefreshTokenHash = OAuthService.CreateTokenHash(StringExtensions.GetRandomString(OAuthService.OAuthTokenLength)),
+            Scopes = [AuthorizationRoles.McpRead, AuthorizationRoles.OfflineAccess],
+            OrganizationIds = [TestConstants.OrganizationId],
+            ExpiresUtc = utcNow.AddHours(1),
+            RefreshExpiresUtc = utcNow.AddDays(30),
+            CreatedBy = userId,
+            CreatedUtc = utcNow,
+            UpdatedUtc = utcNow
+        };
     }
 }

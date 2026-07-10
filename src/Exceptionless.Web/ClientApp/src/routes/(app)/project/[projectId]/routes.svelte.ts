@@ -23,12 +23,6 @@ export function routes(): NavigationItem[] {
         },
         {
             group: 'Project Settings',
-            href: resolve('/(app)/project/[projectId]/usage', { projectId: page.params.projectId }),
-            icon: Usage,
-            title: 'Usage'
-        },
-        {
-            group: 'Project Settings',
             href: resolve('/(app)/project/[projectId]/api-keys', { projectId: page.params.projectId }),
             icon: ApiKey,
             title: 'API Keys'
@@ -56,6 +50,12 @@ export function routes(): NavigationItem[] {
             href: resolve('/(app)/project/[projectId]/stacks', { projectId: page.params.projectId }),
             icon: Stacks,
             title: 'Stack Management'
+        },
+        {
+            group: 'Project Settings',
+            href: resolve('/(app)/project/[projectId]/usage', { projectId: page.params.projectId }),
+            icon: Usage,
+            title: 'Usage'
         }
     ];
 }

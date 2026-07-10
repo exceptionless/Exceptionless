@@ -6,12 +6,16 @@ string? scope = WorktreeScope.Resolve();
 bool isScoped = !String.IsNullOrWhiteSpace(scope);
 var worktreePorts = isScoped ? WorktreeScope.AssignFreePorts() : null;
 var builder = DistributedApplication.CreateBuilder(args);
-bool servicesOnly = args.Any(arg => StringComparer.OrdinalIgnoreCase.Equals(arg, "--services-only") || StringComparer.OrdinalIgnoreCase.Equals(arg, "services-only"));
+bool servicesOnly = HasArgument("--services-only");
+bool ciE2E = HasArgument("--ci-e2e");
+bool includeDevTools = !ciE2E;
 int oldAppHttpPort = worktreePorts?.OldAppHttp ?? 7120;
 int oldAppPort = worktreePorts?.OldAppHttps ?? 7121;
 int oldAppLiveReloadPort = worktreePorts?.OldAppLiveReload ?? 35729;
 string oldAppAspNetCoreUrls = String.Concat("http://localhost:", oldAppHttpPort);
 int appPort = worktreePorts?.AppHttps ?? 7131;
+const int DefaultApiHttpsPort = 7111;
+string exceptionlessServerUrl = worktreePorts?.ApiHttpsUrl ?? $"https://api-ex.dev.localhost:{DefaultApiHttpsPort}";
 const string SharedEmailConnectionString = "smtp://localhost:1025";
 
 var elastic = builder.AddElasticsearch("Elasticsearch", port: 9200)
@@ -61,7 +65,7 @@ elastic = ownedElastic
     .WithLifetime(ContainerLifetime.Persistent)
     .WithContainerName("Exceptionless-Elasticsearch");
 
-if (!servicesOnly)
+if (!servicesOnly && includeDevTools)
 {
     elastic = elastic.WithKibana(b => b
         .WithLifetime(ContainerLifetime.Persistent)
@@ -75,7 +79,7 @@ cache = ownedCache
     .WithLifetime(ContainerLifetime.Persistent)
     .WithContainerName("Exceptionless-Redis");
 
-if (!servicesOnly)
+if (!servicesOnly && includeDevTools)
 {
     cache = cache.WithRedisInsight(b => b
         .WithLifetime(ContainerLifetime.Persistent)
@@ -170,14 +174,13 @@ if (!servicesOnly)
         oldApp.WithEnvironment("API_HTTP", worktreePorts.ApiHttpUrl)
             .WithEnvironment("API_HTTPS", worktreePorts.ApiHttpsUrl);
     }
-#pragma warning restore ASPIREBROWSERLOGS001
 
-#pragma warning disable ASPIREBROWSERLOGS001
     var app = builder.AddViteApp("App", "../Exceptionless.Web/ClientApp")
         .WithBrowserLogs()
         .WithReference(api)
         .WithReference(oldApp)
         .RemoveJavaScriptDebuggingAnnotation()
+        .WithEnvironment("PUBLIC_EXCEPTIONLESS_SERVER_URL", exceptionlessServerUrl)
         .WithEnvironment("PORT", appPort.ToString())
         .WithEndpoint("http", e =>
         {
@@ -207,3 +210,5 @@ if (!servicesOnly)
 }
 
 await builder.Build().RunAsync();
+
+bool HasArgument(string name) => args.Any(arg => StringComparer.OrdinalIgnoreCase.Equals(arg, name) || StringComparer.OrdinalIgnoreCase.Equals(arg, name.TrimStart('-')));

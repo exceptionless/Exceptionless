@@ -5,7 +5,7 @@
     import * as Card from '$comp/ui/card';
     import * as Select from '$comp/ui/select';
 
-    type AiToolId = 'claude' | 'codex' | 'opencode';
+    type AiToolId = 'claude' | 'codex' | 'github-copilot' | 'opencode';
 
     type CommandStep = {
         code: string;
@@ -22,24 +22,19 @@
     };
 
     let mcpEndpoint = $state('/mcp');
+    let mcpServerName = $state('exceptionless');
     let selectedToolId = $state<AiToolId>('claude');
 
     $effect(() => {
         if (browser) {
             mcpEndpoint = `${window.location.origin}/mcp`;
+            mcpServerName = getMcpServerName(window.location.hostname);
         }
     });
 
-    const openCodeConfiguration = $derived(`{
-  "$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "exceptionless": {
-      "type": "remote",
-      "url": "${mcpEndpoint}",
-      "oauth": {}
+    function getMcpServerName(hostname: string): string {
+        return hostname.toLowerCase() === 'dev-app.exceptionless.io' ? 'exceptionless-dev' : 'exceptionless';
     }
-  }
-}`);
 
     const aiTools = $derived<AiTool[]>([
         {
@@ -48,13 +43,13 @@
             name: 'Claude Code',
             steps: [
                 {
-                    code: `claude mcp add --transport http exceptionless ${mcpEndpoint}`,
+                    code: `claude mcp add --transport http ${mcpServerName} ${mcpEndpoint}`,
                     description: 'Add the hosted MCP server to Claude Code.',
                     language: 'shellscript',
                     title: 'Add the server'
                 },
                 {
-                    code: 'claude mcp login exceptionless',
+                    code: `claude mcp login ${mcpServerName}`,
                     description: 'Start the OAuth browser flow and approve access.',
                     language: 'shellscript',
                     title: 'Authenticate'
@@ -62,19 +57,32 @@
             ]
         },
         {
-            description: 'Use Codex CLI with the hosted Exceptionless MCP server.',
+            description: 'Use Codex with the hosted Exceptionless MCP server.',
             id: 'codex',
-            name: 'Codex CLI',
+            name: 'Codex',
             steps: [
                 {
-                    code: `codex mcp add exceptionless --url ${mcpEndpoint}`,
-                    description: 'Register the streamable HTTP MCP server with Codex.',
+                    code: `codex mcp add ${mcpServerName} --url ${mcpEndpoint}`,
+                    description: 'Register the streamable HTTP MCP server with Codex and approve access when prompted.',
+                    language: 'shellscript',
+                    title: 'Add and authenticate'
+                }
+            ]
+        },
+        {
+            description: 'Use Copilot with the hosted Exceptionless MCP server.',
+            id: 'github-copilot',
+            name: 'Copilot',
+            steps: [
+                {
+                    code: `copilot mcp add --transport http ${mcpServerName} ${mcpEndpoint}`,
+                    description: 'Register the hosted HTTP MCP server with Copilot.',
                     language: 'shellscript',
                     title: 'Add the server'
                 },
                 {
-                    code: 'codex mcp login exceptionless',
-                    description: 'Start the OAuth browser flow and approve access.',
+                    code: 'copilot -i "List my Exceptionless projects"',
+                    description: 'Start Copilot and approve the OAuth browser flow when prompted.',
                     language: 'shellscript',
                     title: 'Authenticate'
                 }
@@ -86,13 +94,13 @@
             name: 'OpenCode',
             steps: [
                 {
-                    code: openCodeConfiguration,
-                    description: 'Add this server entry to your opencode.json file.',
-                    language: 'json',
-                    title: 'Add the server configuration'
+                    code: `opencode mcp add ${mcpServerName} --url ${mcpEndpoint}`,
+                    description: 'Register the hosted HTTP MCP server with OpenCode.',
+                    language: 'shellscript',
+                    title: 'Add the server'
                 },
                 {
-                    code: 'opencode mcp auth exceptionless',
+                    code: `opencode mcp auth ${mcpServerName}`,
                     description: 'Start the OAuth browser flow and approve access.',
                     language: 'shellscript',
                     title: 'Authenticate'
@@ -105,10 +113,11 @@
 
     const examplePrompts = [
         'What are my top issues this week?',
-        'Show me the top 404s in my project.',
+        'Fix my top error',
+        'Show me the top 404s in my project',
         'What changed after version 1.0.2?',
-        'Find recent errors for this user or order id.',
-        'Mark this stack fixed in version 1.0.2.'
+        'Find recent errors for this user or order id',
+        'Mark this stack fixed in version 1.0.2'
     ];
 </script>
 

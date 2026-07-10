@@ -30,6 +30,9 @@ public sealed record OAuthAuthorizeForm
     [JsonPropertyName("resource")]
     public string? Resource { get; init; }
 
+    [JsonPropertyName("organization_ids")]
+    public string[]? OrganizationIds { get; init; }
+
     public OAuthAuthorizeRequest ToRequest()
     {
         return new OAuthAuthorizeRequest
@@ -41,7 +44,8 @@ public sealed record OAuthAuthorizeForm
             State = State,
             CodeChallenge = CodeChallenge,
             CodeChallengeMethod = CodeChallengeMethod,
-            Resource = Resource
+            Resource = Resource,
+            OrganizationIds = OrganizationIds ?? []
         };
     }
 }
@@ -50,6 +54,27 @@ public sealed record OAuthAuthorizeResponse
 {
     [JsonPropertyName("redirect_uri")]
     public required string RedirectUri { get; init; }
+}
+
+public sealed record OAuthAuthorizeConsentResponse
+{
+    [JsonPropertyName("client_id")]
+    public required string ClientId { get; init; }
+
+    [JsonPropertyName("client_name")]
+    public required string ClientName { get; init; }
+
+    [JsonPropertyName("redirect_uri")]
+    public required string RedirectUri { get; init; }
+
+    [JsonPropertyName("resource")]
+    public required string Resource { get; init; }
+
+    [JsonPropertyName("scopes")]
+    public required IReadOnlyCollection<string> Scopes { get; init; }
+
+    [JsonPropertyName("required_scopes")]
+    public required IReadOnlyCollection<string> RequiredScopes { get; init; }
 }
 
 public sealed record OAuthAuthorizationServerMetadata
@@ -137,6 +162,9 @@ public sealed record OAuthRevokeForm
 {
     [FromForm(Name = "token")]
     public string? Token { get; init; }
+
+    [FromForm(Name = "client_id")]
+    public string? ClientId { get; init; }
 }
 
 public sealed record OAuthErrorResponse

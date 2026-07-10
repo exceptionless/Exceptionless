@@ -39,6 +39,12 @@ export function routes(): NavigationItem[] {
         },
         {
             group: 'My Account',
+            href: resolve('/(app)/account/applications'),
+            icon: ExternalLogin,
+            title: 'Applications'
+        },
+        {
+            group: 'My Account',
             href: resolve('/(app)/account/security'),
             icon: Password,
             title: 'Password'

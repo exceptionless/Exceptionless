@@ -2,12 +2,12 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Exceptionless.Core;
-using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Exceptionless.Web.Extensions;
+using Foundatio.Caching;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
@@ -26,17 +26,23 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
     public const string BearerScheme = "bearer";
     public const string BasicScheme = "basic";
     public const string TokenScheme = "token";
+    private const string OAuthAccessTokenCacheKeyPrefix = "oauth:access:";
+    private const string OAuthAccessTokenCacheMiss = "-";
 
     private readonly ITokenRepository _tokenRepository;
+    private readonly IOAuthTokenRepository _oauthTokenRepository;
+    private readonly ICacheClient _cacheClient;
     private readonly IUserRepository _userRepository;
     private readonly OAuthService _oauthService;
     private readonly TimeProvider _timeProvider;
     private readonly AppOptions _appOptions;
 
-    public ApiKeyAuthenticationHandler(ITokenRepository tokenRepository, IUserRepository userRepository, OAuthService oauthService, AppOptions appOptions, IOptionsMonitor<ApiKeyAuthenticationOptions> options,
+    public ApiKeyAuthenticationHandler(ITokenRepository tokenRepository, IOAuthTokenRepository oauthTokenRepository, ICacheClient cacheClient, IUserRepository userRepository, OAuthService oauthService, AppOptions appOptions, IOptionsMonitor<ApiKeyAuthenticationOptions> options,
         TimeProvider timeProvider, ILoggerFactory logger, UrlEncoder encoder) : base(options, logger, encoder)
     {
         _tokenRepository = tokenRepository;
+        _oauthTokenRepository = oauthTokenRepository;
+        _cacheClient = cacheClient;
         _userRepository = userRepository;
         _oauthService = oauthService;
         _appOptions = appOptions;
@@ -106,14 +112,17 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         if (String.IsNullOrEmpty(token))
             return AuthenticateResult.NoResult();
 
-        Request.HttpContext.Items["ApiKey"] = token;
-        var tokenRecord = await _tokenRepository.GetByIdAsync(token, o => o.Cache());
+        if (isAuthorizationHeaderToken && scheme == BearerScheme && (IsMcpRequest() || OAuthService.IsOAuthTokenFormat(token)))
+            return await AuthenticateOAuthBearerAsync(token);
+
+        var tokenRecord = await GetTokenRecordAsync(token);
         if (tokenRecord is null)
         {
             Logger.LogInformation("Token for {Path} not found", Request.Path);
             return AuthenticateResult.Fail("Token is not valid");
         }
 
+        Request.HttpContext.Items["ApiKey"] = tokenRecord.Id;
         if (tokenRecord.IsDisabled || tokenRecord.IsSuspended)
         {
             if (Request.IsEventPost())
@@ -127,18 +136,6 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         {
             Logger.LogInformation("Token for {Path} expired on {TokenExpiresUtc}", Request.Path, tokenRecord.ExpiresUtc.Value);
             return AuthenticateResult.Fail("Token is not valid");
-        }
-
-        if (tokenRecord.OAuthType == OAuthTokenType.Access)
-        {
-            if (!isAuthorizationHeaderToken || scheme != BearerScheme)
-                return AuthenticateResult.Fail("OAuth tokens must be sent with the Authorization Bearer scheme");
-
-            if (!IsOAuthResourceValid(tokenRecord.OAuthResource))
-                return AuthenticateResult.Fail("Token resource is not valid");
-
-            if (String.IsNullOrEmpty(tokenRecord.OAuthClientId) || await _oauthService.GetClientAsync(tokenRecord.OAuthClientId) is null)
-                return AuthenticateResult.Fail("OAuth client is not valid");
         }
 
         if (!String.IsNullOrEmpty(tokenRecord.UserId))
@@ -160,11 +157,106 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
     {
         await base.HandleChallengeAsync(properties);
 
-        if (Request.Path.StartsWithSegments("/mcp"))
+        if (!TryGetOAuthResourceForRequest(out var resourceDefinition, out _))
+            return;
+
+        Response.Headers.WWWAuthenticate = $"Bearer resource_metadata=\"{GetCanonicalOrigin()}/.well-known/oauth-protected-resource{resourceDefinition.Path}\"";
+    }
+
+    private async Task<AuthenticateResult> AuthenticateOAuthBearerAsync(string token)
+    {
+        if (!OAuthService.IsOAuthTokenFormat(token))
+            return AuthenticateResult.Fail("Token is not valid");
+
+        var tokenRecord = await GetOAuthTokenRecordAsync(token);
+        if (tokenRecord is null)
         {
-            string origin = GetCanonicalOrigin();
-            Response.Headers.WWWAuthenticate = $"Bearer resource_metadata=\"{origin}/.well-known/oauth-protected-resource\"";
+            Logger.LogInformation("OAuth token for {Path} not found", Request.Path);
+            return AuthenticateResult.Fail("Token is not valid");
         }
+
+        Request.HttpContext.Items["ApiKey"] = tokenRecord.Id;
+        if (tokenRecord.IsDisabled || tokenRecord.IsSuspended)
+        {
+            Logger.LogInformation("OAuth token is disabled or account is suspended for {Path}", Request.Path);
+            return AuthenticateResult.Fail("Token is not valid");
+        }
+
+        if (tokenRecord.ExpiresUtc.HasValue && tokenRecord.ExpiresUtc.Value < _timeProvider.GetUtcNow().UtcDateTime)
+        {
+            Logger.LogInformation("OAuth token for {Path} expired on {TokenExpiresUtc}", Request.Path, tokenRecord.ExpiresUtc.Value);
+            return AuthenticateResult.Fail("Token is not valid");
+        }
+
+        if (!IsOAuthResourceValid(tokenRecord.Resource))
+            return AuthenticateResult.Fail("Token resource is not valid");
+
+        if (tokenRecord.OrganizationIds.Count == 0)
+            return AuthenticateResult.Fail("Token organization access is not valid");
+
+        if (!await _oauthService.IsAccessTokenClientValidAsync(tokenRecord.ClientId))
+            return AuthenticateResult.Fail("OAuth client is not valid");
+
+        var user = await _userRepository.GetByIdAsync(tokenRecord.UserId, o => o.Cache());
+        if (user is null)
+        {
+            Logger.LogInformation("Could not find user {UserId} for OAuth token on {Path}", tokenRecord.UserId, Request.Path);
+            return AuthenticateResult.Fail("Token is not valid");
+        }
+
+        if (!user.IsActive)
+        {
+            await DisableOAuthTokenAsync(tokenRecord);
+            return AuthenticateResult.Fail("User is not valid");
+        }
+
+        var activeOAuthOrganizationIds = user.GetActiveOAuthOrganizationIds(tokenRecord);
+        if (activeOAuthOrganizationIds.Count == 0)
+        {
+            await DisableOAuthTokenAsync(tokenRecord);
+            return AuthenticateResult.Fail("Token organization access is not valid");
+        }
+
+        return AuthenticateResult.Success(CreateOAuthUserAuthenticationTicket(user, tokenRecord, activeOAuthOrganizationIds));
+    }
+
+    private Task<Token?> GetTokenRecordAsync(string token)
+    {
+        return _tokenRepository.GetByIdAsync(token, o => o.Cache());
+    }
+
+    private async Task<OAuthToken?> GetOAuthTokenRecordAsync(string token)
+    {
+        string accessTokenHash = OAuthService.CreateTokenHash(token);
+        string cacheKey = GetOAuthAccessTokenCacheKey(accessTokenHash);
+        string? tokenId = await _cacheClient.GetAsync<string?>(cacheKey, null);
+        if (String.Equals(tokenId, OAuthAccessTokenCacheMiss, StringComparison.Ordinal))
+            return null;
+
+        if (!String.IsNullOrEmpty(tokenId))
+        {
+            var cachedToken = await _oauthTokenRepository.GetByIdAsync(tokenId, o => o.Cache());
+            if (cachedToken is not null && String.Equals(cachedToken.AccessTokenHash, accessTokenHash, StringComparison.Ordinal))
+                return cachedToken;
+
+            await _cacheClient.RemoveAsync(cacheKey);
+        }
+
+        var results = await _oauthTokenRepository.GetByAccessTokenHashAsync(accessTokenHash);
+        var tokenRecord = results.Documents.FirstOrDefault();
+        await _cacheClient.SetAsync(cacheKey, tokenRecord?.Id ?? OAuthAccessTokenCacheMiss, TimeSpan.FromMinutes(5));
+
+        return tokenRecord;
+    }
+
+    private static string GetOAuthAccessTokenCacheKey(string accessTokenHash) => OAuthAccessTokenCacheKeyPrefix + accessTokenHash;
+
+    private Task DisableOAuthTokenAsync(OAuthToken token)
+    {
+        token.IsDisabled = true;
+        token.RefreshTokenHash = null;
+        token.UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime;
+        return _oauthTokenRepository.SaveAsync(token, o => o.ImmediateConsistency());
     }
 
     private AuthenticationTicket CreateUserAuthenticationTicket(User user, Token? token = null)
@@ -172,6 +264,14 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         Request.SetUser(user);
 
         var principal = new ClaimsPrincipal(user.ToIdentity(token));
+        return new AuthenticationTicket(principal, CreateAuthenticationProperties(token), Options.AuthenticationScheme);
+    }
+
+    private AuthenticationTicket CreateOAuthUserAuthenticationTicket(User user, OAuthToken token, IReadOnlyCollection<string> organizationIds)
+    {
+        Request.SetUser(user);
+
+        var principal = new ClaimsPrincipal(user.ToIdentity(token, organizationIds));
         return new AuthenticationTicket(principal, CreateAuthenticationProperties(token), Options.AuthenticationScheme);
     }
 
@@ -191,32 +291,49 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         };
     }
 
+    private AuthenticationProperties CreateAuthenticationProperties(OAuthToken token)
+    {
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        return new AuthenticationProperties
+        {
+            ExpiresUtc = token.ExpiresUtc ?? utcNow.AddHours(12),
+            IssuedUtc = token.CreatedUtc
+        };
+    }
+
     private bool IsOAuthResourceValid(string? resource)
     {
-        if (String.IsNullOrWhiteSpace(resource) || !Uri.TryCreate(resource, UriKind.Absolute, out var resourceUri))
+        if (!TryGetOAuthResourceForRequest(out _, out string expectedResource))
             return false;
 
-        if (!String.IsNullOrEmpty(resourceUri.Query) || !String.IsNullOrEmpty(resourceUri.Fragment))
-            return false;
+        return OAuthService.IsExpectedResource(resource, expectedResource);
+    }
 
-        var expectedResourceUri = new Uri($"{GetCanonicalOrigin()}/mcp");
-        int resourcePort = resourceUri.IsDefaultPort ? GetDefaultPort(resourceUri.Scheme) : resourceUri.Port;
-        int expectedResourcePort = expectedResourceUri.IsDefaultPort ? GetDefaultPort(expectedResourceUri.Scheme) : expectedResourceUri.Port;
-        return String.Equals(resourceUri.Scheme, expectedResourceUri.Scheme, StringComparison.OrdinalIgnoreCase)
-            && String.Equals(resourceUri.Host, expectedResourceUri.Host, StringComparison.OrdinalIgnoreCase)
-            && resourcePort == expectedResourcePort
-            && String.Equals(resourceUri.AbsolutePath.TrimEnd('/'), expectedResourceUri.AbsolutePath.TrimEnd('/'), StringComparison.Ordinal)
-            && Request.Path.StartsWithSegments(new PathString(expectedResourceUri.AbsolutePath), StringComparison.OrdinalIgnoreCase);
+    private bool TryGetOAuthResourceForRequest(out OAuthResourceDefinition resourceDefinition, out string expectedResource)
+    {
+        foreach (var candidate in OAuthService.ProtectedResources)
+        {
+            if (!Request.Path.StartsWithSegments(new PathString(candidate.Path), StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            resourceDefinition = candidate;
+            expectedResource = OAuthService.CreateResourceUri(GetCanonicalOrigin(), candidate);
+            return true;
+        }
+
+        resourceDefinition = null!;
+        expectedResource = String.Empty;
+        return false;
+    }
+
+    private bool IsMcpRequest()
+    {
+        return Request.Path.StartsWithSegments(new PathString(OAuthService.McpResource.Path), StringComparison.OrdinalIgnoreCase);
     }
 
     private string GetCanonicalOrigin()
     {
         return new Uri(_appOptions.BaseURL).GetLeftPart(UriPartial.Authority);
-    }
-
-    private static int GetDefaultPort(string scheme)
-    {
-        return String.Equals(scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase) ? 443 : 80;
     }
 }
 

@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core.Models;
+using Exceptionless.Core.Models;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 

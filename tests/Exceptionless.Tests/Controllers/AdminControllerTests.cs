@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -44,6 +45,24 @@ public class AdminControllerTests : IntegrationTestsBase
         await base.ResetDataAsync();
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
+    }
+
+    [Fact]
+    public async Task RequeueAsync_WithoutPath_ReturnsEmptyEnqueuedCount()
+    {
+        // Arrange
+        const int expectedEnqueuedCount = 0;
+
+        // Act
+        var response = await SendRequestAsAsync<RequeueResult>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "requeue")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(response);
+        Assert.Equal(expectedEnqueuedCount, response.Enqueued);
     }
 
     [Fact]
@@ -632,6 +651,72 @@ public class AdminControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GenerateSampleEventsAsync_WithInvalidDaysBack_ReturnsValidationError()
+    {
+        // Arrange
+        const int eventCount = 25;
+        const int daysBack = 0;
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("admin", "generate-sample-events")
+            .QueryString("eventCount", eventCount)
+            .QueryString("daysBack", daysBack)
+            .StatusCodeShouldBeUnprocessableEntity());
+
+        // Assert
+        Assert.NotNull(response);
+        var stats = await _workItemQueue.GetQueueStatsAsync();
+        Assert.Equal(0, stats.Enqueued);
+    }
+
+    [Fact]
+    public async Task GenerateSampleEventsAsync_WithInvalidEventCount_ReturnsValidationError()
+    {
+        // Arrange
+        const int eventCount = 0;
+        const int daysBack = 7;
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("admin", "generate-sample-events")
+            .QueryString("eventCount", eventCount)
+            .QueryString("daysBack", daysBack)
+            .StatusCodeShouldBeUnprocessableEntity());
+
+        // Assert
+        Assert.NotNull(response);
+        var stats = await _workItemQueue.GetQueueStatsAsync();
+        Assert.Equal(0, stats.Enqueued);
+    }
+
+    [Fact]
+    public async Task GenerateSampleEventsAsync_WithValidArguments_QueuesGenerateSampleEventsWorkItem()
+    {
+        // Arrange
+        const int eventCount = 25;
+        const int daysBack = 14;
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("admin", "generate-sample-events")
+            .QueryString("eventCount", eventCount)
+            .QueryString("daysBack", daysBack)
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(response);
+        var stats = await _workItemQueue.GetQueueStatsAsync();
+        Assert.Equal(1, stats.Enqueued);
+    }
+
+    [Fact]
     public async Task GetAssemblies_AsGlobalAdmin_ReturnsAssemblyList()
     {
         // Act
@@ -804,4 +889,6 @@ public class AdminControllerTests : IntegrationTestsBase
             .QueryString("bonusEvents", 1000)
             .StatusCodeShouldBeForbidden());
     }
+
+    private sealed record RequeueResult([property: JsonPropertyName("enqueued")] int Enqueued);
 }

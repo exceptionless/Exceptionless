@@ -38,7 +38,7 @@ echo "Restoring .NET workloads..."
 dotnet workload restore
 
 echo "Restoring Exceptionless.slnx..."
-dotnet restore Exceptionless.slnx -p:WarningsNotAsErrors=NU1903
+dotnet restore Exceptionless.slnx
 
 echo "Installing Svelte frontend dependencies..."
 npm ci --prefix src/Exceptionless.Web/ClientApp --prefer-offline --no-audit
@@ -82,7 +82,7 @@ export DOTNET_ENVIRONMENT=Development
 export ASPNETCORE_ENVIRONMENT=Development
 
 if command -v aspire >/dev/null 2>&1; then
-  aspire run
+  aspire run --nologo --non-interactive
 else
   dotnet run --project src/Exceptionless.AppHost/Exceptionless.AppHost.csproj
 fi

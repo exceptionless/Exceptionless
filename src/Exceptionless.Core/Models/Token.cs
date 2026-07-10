@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using Exceptionless.Core.Attributes;
 using Foundatio.Repositories.Models;
 
@@ -17,7 +17,7 @@ public class Token : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, IVa
     public string OrganizationId { get; set; } = null!;
 
     /// <summary>
-    /// Null for org-scoped or user-scoped tokens.
+    /// Null for organization-scoped or user-scoped tokens.
     /// Cannot be set together with UserId.
     /// </summary>
     [ObjectId]
@@ -36,10 +36,6 @@ public class Token : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, IVa
     public string? DefaultProjectId { get; set; }
     public string? Refresh { get; set; }
     public TokenType Type { get; set; }
-    public OAuthTokenType OAuthType { get; set; }
-    public string? OAuthClientId { get; set; }
-    public string? OAuthResource { get; set; }
-    public DateTime? OAuthRefreshExpiresUtc { get; set; }
     public HashSet<string> Scopes { get; set; } = new();
     public DateTime? ExpiresUtc { get; set; }
     public string? Notes { get; set; }
@@ -89,11 +85,5 @@ public class Token : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, IVa
 public enum TokenType
 {
     Authentication,
-    Access
-}
-
-public enum OAuthTokenType
-{
-    None,
     Access
 }

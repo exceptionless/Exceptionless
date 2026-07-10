@@ -12,6 +12,7 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
+using Exceptionless.Web.Security;
 using Exceptionless.Web.Utility;
 using Foundatio.Jobs;
 using Foundatio.Queues;
@@ -25,7 +26,6 @@ using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 namespace Exceptionless.Web.Controllers;
 
 [Route(API_PREFIX + "/projects")]
-[Authorize(Policy = AuthorizationRoles.ClientPolicy)]
 public class ProjectController : RepositoryApiController<IProjectRepository, Project, ViewProject, NewProject, UpdateProject>
 {
     private readonly IOrganizationRepository _organizationRepository;
@@ -36,6 +36,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     private readonly IQueue<WorkItemData> _workItemQueue;
     private readonly BillingManager _billingManager;
     private readonly SlackService _slackService;
+    private readonly IOAuthProviderClient _oauthProviderClient;
     private readonly ITextSerializer _serializer;
     private readonly AppOptions _options;
     private readonly UsageService _usageService;
@@ -50,6 +51,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         IQueue<WorkItemData> workItemQueue,
         BillingManager billingManager,
         SlackService slackService,
+        IOAuthProviderClient oauthProviderClient,
         SampleDataService sampleDataService,
         ApiMapper mapper,
         IAppQueryValidator validator,
@@ -68,6 +70,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         _workItemQueue = workItemQueue;
         _billingManager = billingManager;
         _slackService = slackService;
+        _oauthProviderClient = oauthProviderClient;
         _serializer = serializer;
         _sampleDataService = sampleDataService;
         _options = options;
@@ -88,7 +91,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <param name="mode">If no mode is set then the lightweight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
     [HttpGet]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.ProjectsReadPolicy)]
     public async Task<ActionResult<IReadOnlyCollection<ViewProject>>> GetAllAsync(string? filter = null, string? sort = null, int page = 1, int limit = 10, string? mode = null)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
@@ -120,7 +123,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// <param name="mode">If no mode is set then the lightweight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
     /// <response code="404">The organization could not be found.</response>
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/projects")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.ProjectsReadPolicy)]
     public async Task<ActionResult<IReadOnlyCollection<ViewProject>>> GetByOrganizationAsync(string organizationId, string? filter = null, string? sort = null, int page = 1, int limit = 10, string? mode = null)
     {
         var organization = await GetOrganizationAsync(organizationId);
@@ -147,7 +150,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// <param name="mode">If no mode is set then the lightweight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
     /// <response code="404">The project could not be found.</response>
     [HttpGet("{id:objectid}", Name = "GetProjectById")]
-    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [Authorize(Policy = AuthorizationRoles.ProjectsReadPolicy)]
     public async Task<ActionResult<ViewProject>> GetAsync(string id, string? mode = null)
     {
         var project = await GetModelAsync(id);
@@ -226,6 +229,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
 
     [Obsolete("Use /api/v2/projects/config instead")]
     [HttpGet("~/api/v1/project/config")]
+    [Authorize(Policy = AuthorizationRoles.ClientPolicy)]
     public Task<ActionResult<ClientConfiguration>> GetV1ConfigAsync(int? v = null)
     {
         return GetConfigAsync(null, v);
@@ -238,6 +242,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// <response code="304">The client configuration version is the current version.</response>
     /// <response code="404">The project could not be found.</response>
     [HttpGet("config")]
+    [Authorize(Policy = AuthorizationRoles.ClientPolicy)]
     public Task<ActionResult<ClientConfiguration>> GetV2ConfigAsync(int? v = null)
     {
         return GetConfigAsync(null, v);
@@ -251,6 +256,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// <response code="304">The client configuration version is the current version.</response>
     /// <response code="404">The project could not be found.</response>
     [HttpGet("{id:objectid}/config")]
+    [Authorize(Policy = AuthorizationRoles.ClientPolicy)]
     public async Task<ActionResult<ClientConfiguration>> GetConfigAsync(string? id = null, int? v = null)
     {
         if (String.IsNullOrEmpty(id))
@@ -677,7 +683,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         SlackToken? token;
         try
         {
-            token = await _slackService.GetAccessTokenAsync(code);
+            token = await _oauthProviderClient.GetSlackAccessTokenAsync(code);
         }
         catch (Exception ex)
         {

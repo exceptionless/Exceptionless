@@ -1,4 +1,6 @@
+using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Services;
 using Foundatio.Serializer;
 using Xunit;
 
