@@ -99,6 +99,12 @@ test("stamps every parser-inserted script after LiveReload injection", async fun
     });
 });
 
+test("preserves script-like text inside inline scripts", function () {
+    var html = '<script>const marker = "<script>";</script>';
+
+    assert.equal(csp.stampScriptNonces(html, "nonce"), '<script nonce="nonce">const marker = "<script>";</script>');
+});
+
 test("serves HTML with a strict script policy and no cache", async function (context) {
     var server = await startServer();
     context.after(function () {

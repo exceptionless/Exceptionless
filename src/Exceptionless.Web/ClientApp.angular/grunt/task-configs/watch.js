@@ -1,15 +1,17 @@
 var devCertificate = require("../dev-certificate");
-var createLiveReloadOptions = require("../live-reload-options");
 
 function createWatchConfig(grunt) {
     var liveReloadPort = Number(process.env.LIVERELOAD_PORT) || 35729;
     var useHttps = String(process.env.USE_HTTPS || "").toLowerCase() === "true";
     var certificate = useHttps ? devCertificate.getDevCertificate() : {};
+    var liveReloadOptions = useHttps
+        ? { cert: certificate.cert, key: certificate.key, port: liveReloadPort }
+        : liveReloadPort;
 
     return {
         main: {
             options: {
-                livereload: createLiveReloadOptions(liveReloadPort, useHttps, certificate),
+                livereload: liveReloadOptions,
                 livereloadOnError: false,
                 spawn: false,
             },

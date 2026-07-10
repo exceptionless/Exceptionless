@@ -8,7 +8,7 @@ var CSP_HEADER = "Content-Security-Policy";
 var HTML_CACHE_CONTROL = "no-store";
 var NONCE_BYTE_LENGTH = 32;
 var SCRIPT_NONCE_PATTERN = /\s+nonce(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?/gi;
-var SCRIPT_TAG_PATTERN = /<script\b((?:"[^"]*"|'[^']*'|[^'">])*)>/gi;
+var SCRIPT_ELEMENT_PATTERN = /(<script\b)((?:"[^"]*"|'[^']*'|[^'">])*)>([\s\S]*?)(<\/script\s*>)/gi;
 
 // Exceptionless uses Intercom's US endpoints. Keep region-specific sources scoped to that workspace.
 var intercomChildSources = [
@@ -147,12 +147,14 @@ function createContentSecurityPolicy(nonce) {
 }
 
 function stampScriptNonces(html, nonce) {
-    return html.replace(SCRIPT_TAG_PATTERN, function (scriptTag, attributes) {
-        var attributesWithoutNonce = attributes.replace(SCRIPT_NONCE_PATTERN, "");
-        var scriptTagName = scriptTag.slice(0, "<script".length);
+    return html.replace(
+        SCRIPT_ELEMENT_PATTERN,
+        function (scriptElement, scriptTagName, attributes, content, closingTag) {
+            var attributesWithoutNonce = attributes.replace(SCRIPT_NONCE_PATTERN, "");
 
-        return scriptTagName + ' nonce="' + nonce + '"' + attributesWithoutNonce + ">";
-    });
+            return scriptTagName + ' nonce="' + nonce + '"' + attributesWithoutNonce + ">" + content + closingTag;
+        }
+    );
 }
 
 function isHtmlRequest(request) {

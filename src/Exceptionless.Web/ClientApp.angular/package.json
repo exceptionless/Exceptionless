@@ -4,8 +4,8 @@
     "scripts": {
         "build": "npx grunt build",
         "serve": "npx grunt serve",
-        "prod-serve": "cross-env API_HTTPS=https://api.exceptionless.io npx grunt serve",
-        "test": "node --test grunt/csp-middleware.test.js grunt/watch-config.test.js",
+        "prod-serve": "cross-env ASPNETCORE_URLS=https://api.exceptionless.io npx grunt serve",
+        "test": "node --test grunt/csp-middleware.test.js grunt/object-dump-directive.test.js",
         "lint": "eslint . --ext .js",
         "lint:fix": "eslint . --ext .js --fix",
         "prettier": "prettier . --write --ignore-unknown",
