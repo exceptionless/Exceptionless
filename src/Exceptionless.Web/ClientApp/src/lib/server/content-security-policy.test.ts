@@ -56,6 +56,13 @@ describe('createContentSecurityPolicy', () => {
         expect(connectDirective).not.toContain('wss:');
 
         expect(getDirective(policy, 'img-src')).not.toContain('http://www.gravatar.com');
+        expect(policy).not.toContain('intercomcdn.eu');
+        expect(policy).not.toContain('.eu.intercom.io');
+        expect(policy).not.toContain('.au.intercom.io');
+        expect(policy).not.toContain('au.intercomcdn.com');
+        expect(policy).not.toContain('static.au.intercomassets.com');
+        expect(policy).not.toContain('intercom-attachments.eu');
+        expect(policy).not.toContain('au.intercom-attachments.com');
 
         expect(getDirective(policy, 'base-uri')).toEqual(["'none'"]);
         expect(getDirective(policy, 'object-src')).toEqual(["'none'"]);

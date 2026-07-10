@@ -142,6 +142,11 @@ test("serves HTML with a strict script policy and no cache", async function (con
     assert.match(connectDirective, /(?:^| )ws:(?: |$)/);
     assert.match(connectDirective, /(?:^| )wss:(?: |$)/);
     assert.doesNotMatch(policy, /(?:^|[ ;])http:/);
+    assert.doesNotMatch(policy, /intercomcdn\.eu|\.eu\.intercom\.io|\.au\.intercom\.io|au\.intercomcdn\.com/);
+    assert.doesNotMatch(
+        policy,
+        /static\.au\.intercomassets\.com|intercom-attachments\.eu|au\.intercom-attachments\.com/
+    );
     assert.equal(getDirective(policy, "base-uri"), "base-uri 'none'");
     assert.equal(getDirective(policy, "object-src"), "object-src 'none'");
     assert.equal(getDirective(policy, "frame-ancestors"), "frame-ancestors 'none'");
