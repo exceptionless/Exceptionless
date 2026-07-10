@@ -13,7 +13,7 @@ The implementation is intentionally small and focused:
 - Asynchronous evaluator job
 - Email delivery
 - Cooldown and snooze to reduce noise
-- Premium-gated runtime behavior that matches existing occurrence notifications
+- Dark-launched runtime behavior requiring premium status plus the `rate-notifications` organization feature
 - Existing notification suppression semantics so muted traffic does not reappear as rate noise
 
 This feature is informed by [issue #177](https://github.com/exceptionless/Exceptionless/issues/177), but intentionally does not implement the full notification wishlist. Issue #177's core goal — notifications should keep users informed without overwhelming them — is addressed through mandatory cooldowns, snooze support, and cache-only hot paths.
@@ -45,6 +45,7 @@ This feature is informed by [issue #177](https://github.com/exceptionless/Except
 - Keep event ingestion cheap.
 - Support horizontal scaling with distributed cache and queues.
 - Preserve current premium-only occurrence-notification behavior.
+- Keep the feature hidden and inert unless an organization has both premium status and the rollout feature.
 - Honor existing notification suppression so ignored, snoozed, discarded, and fixed stacks — and bot traffic already excluded from occurrence emails — do not generate rate alerts.
 - Validate user/project/org state before sending.
 - Support snoozing a noisy rule.
@@ -108,7 +109,7 @@ The first release should prove the cheap counter architecture and noise-control 
 | Existing `EventNotificationsJob` behavior remains unchanged | Rate counters are a new pipeline action; existing notification queueing is unaffected |
 | Existing `DailySummaryJob` behavior remains unchanged | No changes to daily summary logic |
 | Existing Slack/webhook integrations are not changed | New delivery path is email-only; existing `WebHookNotification` queue untouched |
-| Existing premium-only occurrence notification behavior could drift | Countering, evaluation, delivery, and Svelte enablement follow the same premium gating model as existing occurrence notifications |
+| Existing premium-only occurrence notification behavior could drift | Countering, evaluation, delivery, and Svelte enablement require premium status plus the `rate-notifications` rollout feature |
 | Rate counters depend on distributed cache in production | In-memory cache/queues remain development-only; production requires Redis/Azure providers |
 | Muted stacks or bot traffic could reappear as new rate noise | Countering honors `Stack.AllowNotifications`, canceled/discarded contexts, and request-info bot markers before incrementing counters |
 | Snooze could defer a notification instead of suppressing it | Evaluation resumes from a fresh baseline using the snooze boundary so activity gathered during snooze does not fire immediately on resume |
@@ -118,9 +119,8 @@ The first release should prove the cheap counter architecture and noise-control 
 
 ## Rollback Plan
 
-1. Disable the rate notification evaluator job.
-2. Disable the `UpdateRateCountersAction` in the event pipeline.
+1. Remove the `rate-notifications` organization feature to stop countering, evaluation, delivery, and Svelte exposure immediately while preserving rules.
+2. If a code rollback is required, disable the evaluator job and `UpdateRateCountersAction`.
 3. Existing event notifications and daily summaries continue to operate unchanged.
-4. Delete or ignore persisted rate notification rules if needed.
-5. Remove new UI route/feature module.
-6. Remove new queues and cache keys if rolling back fully.
+4. Retain persisted rules unless the feature is permanently removed.
+5. Remove new queues and cache keys only when rolling back the implementation fully.

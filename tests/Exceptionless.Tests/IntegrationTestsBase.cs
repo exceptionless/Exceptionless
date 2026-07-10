@@ -149,6 +149,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
 
     protected virtual async Task ResetDataAsync()
     {
+        await _factory.DataResetLock.WaitAsync(TestContext.Current.CancellationToken);
         var oldLoggingLevel = Log.DefaultLogLevel;
         Log.DefaultLogLevel = LogLevel.Warning;
 
@@ -188,11 +189,13 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
             await GetService<IQueue<EventUserDescription>>().DeleteQueueAsync();
             await GetService<IQueue<EventNotification>>().DeleteQueueAsync();
             await GetService<IQueue<WebHookNotification>>().DeleteQueueAsync();
+            await GetService<IQueue<RateNotification>>().DeleteQueueAsync();
             await GetService<IQueue<MailMessage>>().DeleteQueueAsync();
             await GetService<IQueue<WorkItemData>>().DeleteQueueAsync();
         }
         finally
         {
+            _factory.DataResetLock.Release();
             Log.DefaultLogLevel = oldLoggingLevel;
             _logger.LogDebug("Reset data for {AppScope}", _factory.AppScope);
         }

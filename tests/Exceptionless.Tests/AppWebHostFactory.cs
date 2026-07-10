@@ -14,8 +14,11 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
 {
     private const string SharedElasticsearchUrl = "http://localhost:9200";
     private static int s_counter = -1;
+    private static readonly string s_processScope = $"testprocess-{Environment.ProcessId}";
     private static readonly Lazy<Task<DistributedApplication>> s_sharedAppHost = new(StartSharedAppHostAsync, LazyThreadSafetyMode.ExecutionAndPublication);
     private static readonly ConcurrentQueue<int> s_pool = new();
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> s_dataResetLocks = new();
+    private static readonly ConcurrentDictionary<string, byte> s_configuredIndexes = new();
     private bool _sliceReleased;
 
     public AppWebHostFactory()
@@ -24,12 +27,23 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
             instanceId = Interlocked.Increment(ref s_counter);
 
         InstanceId = instanceId;
-        AppScope = instanceId == 0 ? "test" : $"test-{instanceId}";
+        AppScope = instanceId == 0 ? s_processScope : $"{s_processScope}-{instanceId}";
     }
 
     public string AppScope { get; }
     public int InstanceId { get; }
-    public bool IndexesHaveBeenConfigured { get; set; }
+    public SemaphoreSlim DataResetLock => s_dataResetLocks.GetOrAdd(AppScope, _ => new SemaphoreSlim(1, 1));
+    public bool IndexesHaveBeenConfigured
+    {
+        get => s_configuredIndexes.ContainsKey(AppScope);
+        set
+        {
+            if (value)
+                s_configuredIndexes.TryAdd(AppScope, 0);
+            else
+                s_configuredIndexes.TryRemove(AppScope, out _);
+        }
+    }
 
     public async ValueTask InitializeAsync()
     {
@@ -94,14 +108,14 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
         return Web.Program.CreateHostBuilder(config, Environments.Development);
     }
 
-    public override ValueTask DisposeAsync()
+    public override async ValueTask DisposeAsync()
     {
+        await base.DisposeAsync();
+
         if (!_sliceReleased)
         {
             s_pool.Enqueue(InstanceId);
             _sliceReleased = true;
         }
-
-        return base.DisposeAsync();
     }
 }

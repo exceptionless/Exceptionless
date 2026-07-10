@@ -38,7 +38,6 @@ public class RateNotificationRuleController : ExceptionlessApiController
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IUserRepository _userRepository;
     private readonly IStackRepository _stackRepository;
-    private readonly RateNotificationRuleCache _ruleCache;
     private readonly ILockProvider _lockProvider;
 
     public RateNotificationRuleController(
@@ -47,7 +46,6 @@ public class RateNotificationRuleController : ExceptionlessApiController
         IOrganizationRepository organizationRepository,
         IUserRepository userRepository,
         IStackRepository stackRepository,
-        RateNotificationRuleCache ruleCache,
         ILockProvider lockProvider,
         TimeProvider timeProvider,
         ILoggerFactory loggerFactory) : base(timeProvider)
@@ -57,7 +55,6 @@ public class RateNotificationRuleController : ExceptionlessApiController
         _organizationRepository = organizationRepository;
         _userRepository = userRepository;
         _stackRepository = stackRepository;
-        _ruleCache = ruleCache;
         _lockProvider = lockProvider;
     }
 
@@ -100,6 +97,15 @@ public class RateNotificationRuleController : ExceptionlessApiController
         if (project is null)
             return NotFound();
 
+        if (String.IsNullOrWhiteSpace(model.Name))
+            return ValidationProblem(detail: "Name is required.");
+
+        if (!Enum.IsDefined(model.Signal))
+            return ValidationProblem(detail: "Signal is invalid.");
+
+        if (!Enum.IsDefined(model.Subject))
+            return ValidationProblem(detail: "Subject is invalid.");
+
         // Validate window
         if (!ValidWindows.Contains(model.Window))
             return ValidationProblem(detail: $"Window must be one of: {String.Join(", ", ValidWindows.Select(w => w.ToString()))}");
@@ -108,6 +114,9 @@ public class RateNotificationRuleController : ExceptionlessApiController
         if (model.Cooldown < model.Window)
             return ValidationProblem(detail: "Cooldown must be greater than or equal to Window.");
 
+        if (model.Cooldown > RateNotificationRule.MaximumCooldown)
+            return ValidationProblem(detail: "Cooldown must not exceed 24 hours.");
+
         // Validate subject / stackId
         if (model.Subject == RateNotificationSubject.Stack)
         {
@@ -115,7 +124,9 @@ public class RateNotificationRuleController : ExceptionlessApiController
                 return ValidationProblem(detail: "StackId is required when Subject is Stack.");
 
             var stack = await _stackRepository.GetByIdAsync(model.StackId, o => o.Cache());
-            if (stack is null || !String.Equals(stack.ProjectId, projectId, StringComparison.Ordinal))
+            if (stack is null ||
+                !String.Equals(stack.ProjectId, projectId, StringComparison.Ordinal) ||
+                !String.Equals(stack.OrganizationId, project.OrganizationId, StringComparison.Ordinal))
                 return ValidationProblem(detail: "The specified StackId does not belong to this project.");
         }
         else if (!String.IsNullOrEmpty(model.StackId))
@@ -143,7 +154,7 @@ public class RateNotificationRuleController : ExceptionlessApiController
             OrganizationId = project.OrganizationId,
             ProjectId = projectId,
             UserId = userId,
-            Name = model.Name,
+            Name = model.Name.Trim(),
             IsEnabled = isEnabled,
             Signal = model.Signal,
             Subject = model.Subject,
@@ -157,7 +168,6 @@ public class RateNotificationRuleController : ExceptionlessApiController
         };
 
         rule = await _ruleRepository.AddAsync(rule, o => o.Cache().ImmediateConsistency());
-        await _ruleCache.InvalidateAsync(projectId);
 
         return Created(new Uri(Url.Link("GetRateNotificationRuleById", new { userId, projectId, ruleId = rule.Id })!, UriKind.RelativeOrAbsolute), MapToView(rule));
     }
@@ -200,9 +210,18 @@ public class RateNotificationRuleController : ExceptionlessApiController
         if (rule is null)
             return NotFound();
 
+        if (model.Name is not null && String.IsNullOrWhiteSpace(model.Name))
+            return ValidationProblem(detail: "Name must not be empty.");
+
+        if (model.Signal.HasValue && !Enum.IsDefined(model.Signal.Value))
+            return ValidationProblem(detail: "Signal is invalid.");
+
+        if (model.Subject.HasValue && !Enum.IsDefined(model.Subject.Value))
+            return ValidationProblem(detail: "Subject is invalid.");
+
         // Apply updates
         if (model.Name is not null)
-            rule.Name = model.Name;
+            rule.Name = model.Name.Trim();
 
         if (model.Signal.HasValue)
             rule.Signal = model.Signal.Value;
@@ -223,7 +242,9 @@ public class RateNotificationRuleController : ExceptionlessApiController
                 return ValidationProblem(detail: "StackId is required when Subject is Stack.");
 
             var stack = await _stackRepository.GetByIdAsync(newStackId, o => o.Cache());
-            if (stack is null || !String.Equals(stack.ProjectId, projectId, StringComparison.Ordinal))
+            if (stack is null ||
+                !String.Equals(stack.ProjectId, projectId, StringComparison.Ordinal) ||
+                !String.Equals(stack.OrganizationId, project.OrganizationId, StringComparison.Ordinal))
                 return ValidationProblem(detail: "The specified StackId does not belong to this project.");
 
             rule.StackId = newStackId;
@@ -246,6 +267,9 @@ public class RateNotificationRuleController : ExceptionlessApiController
         if (rule.Cooldown < rule.Window)
             return ValidationProblem(detail: "Cooldown must be greater than or equal to Window.");
 
+        if (rule.Cooldown > RateNotificationRule.MaximumCooldown)
+            return ValidationProblem(detail: "Cooldown must not exceed 24 hours.");
+
         if (model.IsEnabled.HasValue)
         {
             var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
@@ -255,8 +279,7 @@ public class RateNotificationRuleController : ExceptionlessApiController
         rule.Version++;
         rule.UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime;
 
-        await _ruleRepository.SaveAsync(rule, o => o.Cache());
-        await _ruleCache.InvalidateAsync(projectId);
+        await _ruleRepository.SaveAsync(rule, o => o.Cache().ImmediateConsistency());
 
         return Ok(MapToView(rule));
     }
@@ -276,8 +299,7 @@ public class RateNotificationRuleController : ExceptionlessApiController
         if (rule is null)
             return NotFound();
 
-        await _ruleRepository.RemoveAsync(rule);
-        await _ruleCache.InvalidateAsync(projectId);
+        await _ruleRepository.RemoveAsync(rule, o => o.ImmediateConsistency());
 
         return NoContent();
     }
@@ -315,8 +337,7 @@ public class RateNotificationRuleController : ExceptionlessApiController
 
         rule.Version++;
         rule.UpdatedUtc = now;
-        await _ruleRepository.SaveAsync(rule, o => o.Cache());
-        await _ruleCache.InvalidateAsync(projectId);
+        await _ruleRepository.SaveAsync(rule, o => o.Cache().ImmediateConsistency());
 
         return Ok(MapToView(rule));
     }
@@ -341,8 +362,7 @@ public class RateNotificationRuleController : ExceptionlessApiController
         rule.SnoozedUntilUtc = now;
         rule.Version++;
         rule.UpdatedUtc = now;
-        await _ruleRepository.SaveAsync(rule, o => o.Cache());
-        await _ruleCache.InvalidateAsync(projectId);
+        await _ruleRepository.SaveAsync(rule, o => o.Cache().ImmediateConsistency());
 
         return Ok(MapToView(rule));
     }

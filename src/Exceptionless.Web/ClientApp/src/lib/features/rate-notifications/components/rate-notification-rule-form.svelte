@@ -41,16 +41,9 @@
 
     let { hasPremiumFeatures = false, onCancel, onSaved, projectId, rule, upgrade, userId }: Props = $props();
 
-    const route = {
-        get projectId() {
-            return projectId;
-        },
-        get userId() {
-            return userId;
-        }
-    };
-    const createMutation = postRateNotificationRule({ route });
-    const updateMutation = putRateNotificationRule({ route });
+    const activeRule = $derived(rule?.project_id === projectId ? rule : undefined);
+    const createMutation = postRateNotificationRule();
+    const updateMutation = putRateNotificationRule();
     const stacksQuery = getProjectStacksQuery({
         params: { limit: 100, sort: 'last_occurrence:desc' },
         route: {
@@ -62,12 +55,12 @@
     const selectedStackQuery = getStackQuery({
         route: {
             get id() {
-                return rule?.stack_id ?? undefined;
+                return activeRule?.stack_id ?? undefined;
             }
         }
     });
 
-    const isEditing = $derived(!!rule);
+    const isEditing = $derived(!!activeRule);
     const stacks = $derived.by(() => {
         const projectStacks = stacksQuery.data?.data ?? [];
         const selectedStack = selectedStackQuery.data;
@@ -75,7 +68,7 @@
     });
 
     const form = createForm(() => ({
-        defaultValues: getRateNotificationRuleFormData(rule),
+        defaultValues: getRateNotificationRuleFormData(activeRule),
         validators: {
             onSubmit: RateNotificationRuleSchema,
             onSubmitAsync: async ({ value }) => {
@@ -83,10 +76,17 @@
                     return { form: 'A premium plan is required to enable rate notifications.' };
                 }
 
+                if (!projectId || !userId) {
+                    return { form: 'The selected project or user is unavailable. Please try again.' };
+                }
+
                 try {
                     const request = toRateNotificationRuleRequest(value, hasPremiumFeatures);
-                    const saved = rule ? await updateMutation.mutateAsync({ body: request, ruleId: rule.id }) : await createMutation.mutateAsync(request);
-                    toast.success(rule ? 'Rule updated.' : 'Rule created.');
+                    const route = { projectId, userId };
+                    const saved = activeRule
+                        ? await updateMutation.mutateAsync({ ...route, body: request, ruleId: activeRule.id })
+                        : await createMutation.mutateAsync({ ...route, body: request });
+                    toast.success(activeRule ? 'Rule updated.' : 'Rule created.');
                     onSaved?.(saved);
                     return null;
                 } catch (error: unknown) {
@@ -102,7 +102,7 @@
 
     $effect(() => {
         const selectedProjectId = projectId;
-        const selectedRule = rule;
+        const selectedRule = activeRule;
         untrack(() => {
             void selectedProjectId;
             setFormValues(selectedRule);

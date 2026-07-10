@@ -4,6 +4,22 @@ import { describe, expect, it } from 'vitest';
 import { getRateNotificationRuleFormData, RateNotificationRuleSchema, toRateNotificationRuleRequest } from './schemas';
 
 describe('RateNotificationRuleSchema', () => {
+    it('rejects a whitespace-only name', () => {
+        const result = RateNotificationRuleSchema.safeParse({
+            cooldown: '00:30:00',
+            is_enabled: true,
+            name: '   ',
+            signal: RateNotificationSignal.Errors,
+            stack_id: '',
+            subject: RateNotificationSubject.Project,
+            threshold: 10,
+            window: '00:05:00'
+        });
+
+        expect(result.success).toBe(false);
+        expect(result.error?.issues).toContainEqual(expect.objectContaining({ path: ['name'] }));
+    });
+
     it('requires a stack for stack-scoped rules', () => {
         const result = RateNotificationRuleSchema.safeParse({
             cooldown: '00:30:00',
@@ -34,6 +50,53 @@ describe('RateNotificationRuleSchema', () => {
 
         expect(result.success).toBe(false);
         expect(result.error?.issues).toContainEqual(expect.objectContaining({ path: ['cooldown'] }));
+    });
+
+    it('rejects an unsupported window', () => {
+        const result = RateNotificationRuleSchema.safeParse({
+            cooldown: '00:30:00',
+            is_enabled: true,
+            name: 'Unsupported window',
+            signal: RateNotificationSignal.Errors,
+            stack_id: '',
+            subject: RateNotificationSubject.Project,
+            threshold: 10,
+            window: '00:07:00'
+        });
+
+        expect(result.success).toBe(false);
+        expect(result.error?.issues).toContainEqual(expect.objectContaining({ path: ['window'] }));
+    });
+
+    it('rejects a cooldown longer than 24 hours', () => {
+        const result = RateNotificationRuleSchema.safeParse({
+            cooldown: '1.01:00:00',
+            is_enabled: true,
+            name: 'Excessive cooldown',
+            signal: RateNotificationSignal.Errors,
+            stack_id: '',
+            subject: RateNotificationSubject.Project,
+            threshold: 10,
+            window: '00:30:00'
+        });
+
+        expect(result.success).toBe(false);
+        expect(result.error?.issues).toContainEqual(expect.objectContaining({ path: ['cooldown'] }));
+    });
+
+    it('accepts the .NET one-day TimeSpan wire format', () => {
+        const result = RateNotificationRuleSchema.safeParse({
+            cooldown: '1.00:00:00',
+            is_enabled: true,
+            name: 'Daily cooldown',
+            signal: RateNotificationSignal.Errors,
+            stack_id: '',
+            subject: RateNotificationSubject.Project,
+            threshold: 10,
+            window: '01:00:00'
+        });
+
+        expect(result.success).toBe(true);
     });
 });
 

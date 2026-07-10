@@ -11,13 +11,25 @@ import { createMutation, createQuery, type QueryClient, useQueryClient } from '@
 
 const CONSISTENCY_REFRESH_DELAY_MS = 1500;
 
+interface BodyMutationVariables<TBody> extends MutationRoute {
+    body: TBody;
+}
+
+interface MutationRoute {
+    projectId: string;
+    userId: string;
+}
+
 interface RateNotificationRoute {
     projectId: string | undefined;
     userId: string | undefined;
 }
 
-interface RuleMutationVariables<TBody = undefined> {
+interface RuleBodyMutationVariables<TBody> extends RuleMutationVariables {
     body: TBody;
+}
+
+interface RuleMutationVariables extends MutationRoute {
     ruleId: string;
 }
 
@@ -25,18 +37,17 @@ export const queryKeys = {
     list: (userId: string | undefined, projectId: string | undefined) => ['RateNotificationRule', userId, projectId] as const
 };
 
-export function deleteRateNotificationRule(request: { route: RateNotificationRoute }) {
+export function deleteRateNotificationRule() {
     const queryClient = useQueryClient();
 
-    return createMutation<void, ProblemDetails, string>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.userId && !!request.route.projectId,
-        mutationFn: async (ruleId: string) => {
+    return createMutation<void, ProblemDetails, RuleMutationVariables>(() => ({
+        mutationFn: async (variables) => {
             const client = useFetchClient();
-            await client.delete(ruleRoute(request.route, ruleId), { expectedStatusCodes: [204] });
+            await client.delete(ruleRoute(variables, variables.ruleId), { expectedStatusCodes: [204] });
         },
-        onSuccess: (_, ruleId) => {
-            updateRulesCache(queryClient, request.route, (rules) => rules.filter((rule) => rule.id !== ruleId));
-            scheduleConsistencyRefresh(queryClient, request.route);
+        onSuccess: (_, variables) => {
+            updateRulesCache(queryClient, variables, (rules) => rules.filter((rule) => rule.id !== variables.ruleId));
+            scheduleConsistencyRefresh(queryClient, variables);
         }
     }));
 }
@@ -55,51 +66,48 @@ export function getRateNotificationRulesQuery(request: { params?: { limit?: numb
     }));
 }
 
-export function postRateNotificationRule(request: { route: RateNotificationRoute }) {
+export function postRateNotificationRule() {
     const queryClient = useQueryClient();
 
-    return createMutation<ViewRateNotificationRule, ProblemDetails, NewRateNotificationRule>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.userId && !!request.route.projectId,
-        mutationFn: async (body: NewRateNotificationRule) => {
+    return createMutation<ViewRateNotificationRule, ProblemDetails, BodyMutationVariables<NewRateNotificationRule>>(() => ({
+        mutationFn: async ({ body, ...route }) => {
             const client = useFetchClient();
-            const response = await client.postJSON<ViewRateNotificationRule>(ruleRoute(request.route), body);
+            const response = await client.postJSON<ViewRateNotificationRule>(ruleRoute(route), body);
             return response.data!;
         },
-        onSuccess: (rule) => {
-            updateRulesCache(queryClient, request.route, (rules) => upsertRule(rules, rule));
-            scheduleConsistencyRefresh(queryClient, request.route);
+        onSuccess: (rule, variables) => {
+            updateRulesCache(queryClient, variables, (rules) => upsertRule(rules, rule));
+            scheduleConsistencyRefresh(queryClient, variables);
         }
     }));
 }
 
-export function postSnoozeRateNotificationRule(request: { route: RateNotificationRoute }) {
+export function postSnoozeRateNotificationRule() {
     const queryClient = useQueryClient();
 
-    return createMutation<ViewRateNotificationRule, ProblemDetails, RuleMutationVariables<SnoozeRateNotificationRuleRequest>>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.userId && !!request.route.projectId,
-        mutationFn: async ({ body, ruleId }) => {
+    return createMutation<ViewRateNotificationRule, ProblemDetails, RuleBodyMutationVariables<SnoozeRateNotificationRuleRequest>>(() => ({
+        mutationFn: async ({ body, ruleId, ...route }) => {
             const client = useFetchClient();
-            const response = await client.postJSON<ViewRateNotificationRule>(`${ruleRoute(request.route, ruleId)}/snooze`, body, {
+            const response = await client.postJSON<ViewRateNotificationRule>(`${ruleRoute(route, ruleId)}/snooze`, body, {
                 expectedStatusCodes: [200]
             });
             return response.data!;
         },
-        onSuccess: (rule) => {
-            updateRulesCache(queryClient, request.route, (rules) => upsertRule(rules, rule));
-            scheduleConsistencyRefresh(queryClient, request.route);
+        onSuccess: (rule, variables) => {
+            updateRulesCache(queryClient, variables, (rules) => upsertRule(rules, rule));
+            scheduleConsistencyRefresh(queryClient, variables);
         }
     }));
 }
 
-export function postUnsnoozeRateNotificationRule(request: { route: RateNotificationRoute }) {
+export function postUnsnoozeRateNotificationRule() {
     const queryClient = useQueryClient();
 
-    return createMutation<ViewRateNotificationRule, ProblemDetails, string>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.userId && !!request.route.projectId,
-        mutationFn: async (ruleId: string) => {
+    return createMutation<ViewRateNotificationRule, ProblemDetails, RuleMutationVariables>(() => ({
+        mutationFn: async (variables) => {
             const client = useFetchClient();
             const response = await client.postJSON<ViewRateNotificationRule>(
-                `${ruleRoute(request.route, ruleId)}/unsnooze`,
+                `${ruleRoute(variables, variables.ruleId)}/unsnooze`,
                 {},
                 {
                     expectedStatusCodes: [200]
@@ -107,26 +115,25 @@ export function postUnsnoozeRateNotificationRule(request: { route: RateNotificat
             );
             return response.data!;
         },
-        onSuccess: (rule) => {
-            updateRulesCache(queryClient, request.route, (rules) => upsertRule(rules, rule));
-            scheduleConsistencyRefresh(queryClient, request.route);
+        onSuccess: (rule, variables) => {
+            updateRulesCache(queryClient, variables, (rules) => upsertRule(rules, rule));
+            scheduleConsistencyRefresh(queryClient, variables);
         }
     }));
 }
 
-export function putRateNotificationRule(request: { route: RateNotificationRoute }) {
+export function putRateNotificationRule() {
     const queryClient = useQueryClient();
 
-    return createMutation<ViewRateNotificationRule, ProblemDetails, RuleMutationVariables<UpdateRateNotificationRule>>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.userId && !!request.route.projectId,
-        mutationFn: async ({ body, ruleId }) => {
+    return createMutation<ViewRateNotificationRule, ProblemDetails, RuleBodyMutationVariables<UpdateRateNotificationRule>>(() => ({
+        mutationFn: async ({ body, ruleId, ...route }) => {
             const client = useFetchClient();
-            const response = await client.putJSON<ViewRateNotificationRule>(ruleRoute(request.route, ruleId), body);
+            const response = await client.putJSON<ViewRateNotificationRule>(ruleRoute(route, ruleId), body);
             return response.data!;
         },
-        onSuccess: (rule) => {
-            updateRulesCache(queryClient, request.route, (rules) => upsertRule(rules, rule));
-            scheduleConsistencyRefresh(queryClient, request.route);
+        onSuccess: (rule, variables) => {
+            updateRulesCache(queryClient, variables, (rules) => upsertRule(rules, rule));
+            scheduleConsistencyRefresh(queryClient, variables);
         }
     }));
 }

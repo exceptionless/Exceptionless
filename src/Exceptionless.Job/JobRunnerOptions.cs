@@ -53,6 +53,14 @@ public class JobRunnerOptions
         if (MailMessage && args.Length != 0)
             JobName = nameof(MailMessage);
 
+        RateNotificationEvaluator = args.Length == 0 || args.Contains(nameof(RateNotificationEvaluator), StringComparer.OrdinalIgnoreCase);
+        if (RateNotificationEvaluator && args.Length != 0)
+            JobName = nameof(RateNotificationEvaluator);
+
+        RateNotifications = args.Length == 0 || args.Contains(nameof(RateNotifications), StringComparer.OrdinalIgnoreCase);
+        if (RateNotifications && args.Length != 0)
+            JobName = nameof(RateNotifications);
+
         MaintainIndexes = args.Length == 0 || args.Contains(nameof(MaintainIndexes), StringComparer.OrdinalIgnoreCase);
         if (MaintainIndexes && args.Length != 0)
             JobName = nameof(MaintainIndexes);
@@ -91,6 +99,8 @@ public class JobRunnerOptions
     public bool EventUsage { get; }
     public bool EventUserDescriptions { get; }
     public bool MailMessage { get; }
+    public bool RateNotificationEvaluator { get; }
+    public bool RateNotifications { get; }
     public bool MaintainIndexes { get; }
     public bool Migration { get; }
     public bool StackStatus { get; }

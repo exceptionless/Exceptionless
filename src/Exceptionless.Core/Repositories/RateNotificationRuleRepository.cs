@@ -31,7 +31,19 @@ public sealed class RateNotificationRuleRepository : RepositoryOwnedByOrganizati
         return FindAsync(q => q
             .Project(projectId)
             .FieldEquals(r => r.IsEnabled, true)
-            .FieldEquals(r => r.IsDeleted, false), options);
+            .FieldEquals(r => r.IsDeleted, false)
+            .SortAscending(r => r.Id), options);
+    }
+
+    public Task<FindResults<RateNotificationRule>> GetByOrganizationIdAndUserIdAsync(string organizationId, string userId, CommandOptionsDescriptor<RateNotificationRule>? options = null)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(organizationId);
+        ArgumentException.ThrowIfNullOrEmpty(userId);
+
+        return FindAsync(q => q
+            .Organization(organizationId)
+            .FieldEquals(r => r.UserId, userId)
+            .SortAscending(r => r.Id), options);
     }
 
     public async Task<long> CountByProjectIdAndUserIdAsync(string projectId, string userId)
@@ -44,6 +56,19 @@ public sealed class RateNotificationRuleRepository : RepositoryOwnedByOrganizati
             .FieldEquals(r => r.UserId, userId));
     }
 
+    public override Task<long> RemoveAllByOrganizationIdAsync(string organizationId)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(organizationId);
+        return RemoveAllAsync(q => q.Organization(organizationId), o => o.ImmediateConsistency());
+    }
+
+    public override Task<long> RemoveAllByProjectIdAsync(string organizationId, string projectId)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(organizationId);
+        ArgumentException.ThrowIfNullOrEmpty(projectId);
+        return RemoveAllAsync(q => q.Organization(organizationId).Project(projectId), o => o.ImmediateConsistency());
+    }
+
     public Task<long> RemoveAllByOrganizationIdAndUserIdAsync(string organizationId, string userId)
     {
         ArgumentException.ThrowIfNullOrEmpty(organizationId);
@@ -51,6 +76,6 @@ public sealed class RateNotificationRuleRepository : RepositoryOwnedByOrganizati
 
         return RemoveAllAsync(q => q
             .Organization(organizationId)
-            .FieldEquals(r => r.UserId, userId));
+            .FieldEquals(r => r.UserId, userId), o => o.ImmediateConsistency());
     }
 }

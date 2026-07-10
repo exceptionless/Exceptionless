@@ -8,6 +8,7 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Mail;
 using Foundatio.Queues;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Utility;
 using Xunit;
 
 namespace Exceptionless.Tests.Jobs;
@@ -106,11 +107,192 @@ public class RateNotificationsJobTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task RunAsync_MalformedRuleId_SkipsNotificationWithoutRepositoryFailure()
+    {
+        // Arrange
+        var (_, notification) = await CreateRuleAndNotificationAsync();
+        notification.RuleId = "invalid";
+        await _queue.EnqueueAsync(notification);
+
+        // Act
+        var result = await _job.RunAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Empty(_mailer.RateNotifications);
+    }
+
+    [Fact]
     public async Task RunAsync_SubjectKeyDoesNotMatchRule_SkipsNotification()
     {
         // Arrange
         var (_, notification) = await CreateRuleAndNotificationAsync();
         notification.SubjectKey = $"project:{SampleDataService.FREE_PROJECT_ID}";
+        await _queue.EnqueueAsync(notification);
+
+        // Act
+        var result = await _job.RunAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Empty(_mailer.RateNotifications);
+    }
+
+    [Fact]
+    public async Task RunAsync_DisabledRule_SkipsNotification()
+    {
+        // Arrange
+        var (rule, notification) = await CreateRuleAndNotificationAsync();
+        rule.IsEnabled = false;
+        await _ruleRepository.SaveAsync(rule, o => o.ImmediateConsistency());
+        await _queue.EnqueueAsync(notification);
+
+        // Act
+        var result = await _job.RunAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Empty(_mailer.RateNotifications);
+    }
+
+    [Fact]
+    public async Task RunAsync_UnverifiedUser_SkipsNotification()
+    {
+        // Arrange
+        var (_, notification) = await CreateRuleAndNotificationAsync();
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        user.IsEmailAddressVerified = false;
+        user.VerifyEmailAddressToken = "verify-token";
+        user.VerifyEmailAddressTokenExpiration = TimeProvider.GetUtcNow().UtcDateTime.AddDays(1);
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
+        await _queue.EnqueueAsync(notification);
+
+        // Act
+        var result = await _job.RunAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Empty(_mailer.RateNotifications);
+    }
+
+    [Fact]
+    public async Task RunAsync_EmailNotificationsDisabled_SkipsNotification()
+    {
+        // Arrange
+        var (_, notification) = await CreateRuleAndNotificationAsync();
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        user.EmailNotificationsEnabled = false;
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
+        await _queue.EnqueueAsync(notification);
+
+        // Act
+        var result = await _job.RunAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Empty(_mailer.RateNotifications);
+    }
+
+    [Fact]
+    public async Task RunAsync_UserOutsideOrganization_SkipsNotification()
+    {
+        // Arrange
+        var (_, notification) = await CreateRuleAndNotificationAsync();
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        user.OrganizationIds.Remove(SampleDataService.TEST_ORG_ID);
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
+        await _queue.EnqueueAsync(notification);
+
+        // Act
+        var result = await _job.RunAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Empty(_mailer.RateNotifications);
+    }
+
+    [Fact]
+    public async Task RunAsync_StackRule_LoadsStackContext()
+    {
+        // Arrange
+        var (stacks, _) = await CreateDataAsync(builder => builder.Event().TestProject().Type(Event.KnownTypes.Error));
+        var stack = Assert.Single(stacks);
+        var (rule, notification) = await CreateRuleAndNotificationAsync();
+        rule.Subject = RateNotificationSubject.Stack;
+        rule.StackId = stack.Id;
+        await _ruleRepository.SaveAsync(rule, o => o.ImmediateConsistency());
+        notification.StackId = stack.Id;
+        notification.SubjectKey = $"stack:{stack.Id}";
+        await _queue.EnqueueAsync(notification);
+
+        // Act
+        var result = await _job.RunAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        var call = Assert.Single(_mailer.RateNotifications);
+        Assert.Equal(stack.Id, call.StackId);
+    }
+
+    [Fact]
+    public async Task RunAsync_ObservedCountBelowThreshold_SkipsTamperedNotification()
+    {
+        // Arrange
+        var (_, notification) = await CreateRuleAndNotificationAsync();
+        notification.ObservedCount = notification.Threshold - 1;
+        await _queue.EnqueueAsync(notification);
+
+        // Act
+        var result = await _job.RunAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Empty(_mailer.RateNotifications);
+    }
+
+    [Fact]
+    public async Task RunAsync_InvalidPersistedSubject_SkipsNotification()
+    {
+        // Arrange
+        var (rule, notification) = await CreateRuleAndNotificationAsync();
+        rule.StackId = ObjectId.GenerateNewId().ToString();
+        await _ruleRepository.SaveAsync(rule, o => o.ImmediateConsistency());
+        notification.StackId = rule.StackId;
+        await _queue.EnqueueAsync(notification);
+
+        // Act
+        var result = await _job.RunAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Empty(_mailer.RateNotifications);
+    }
+
+    [Fact]
+    public async Task RunAsync_StaleRuleVersion_SkipsNotification()
+    {
+        // Arrange
+        var (_, notification) = await CreateRuleAndNotificationAsync();
+        notification.RuleVersion++;
+        await _queue.EnqueueAsync(notification);
+
+        // Act
+        var result = await _job.RunAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Empty(_mailer.RateNotifications);
+    }
+
+    [Fact]
+    public async Task RunAsync_DeletedRule_SkipsNotification()
+    {
+        // Arrange
+        var (rule, notification) = await CreateRuleAndNotificationAsync();
+        await _ruleRepository.RemoveAsync(rule, o => o.ImmediateConsistency());
         await _queue.EnqueueAsync(notification);
 
         // Act

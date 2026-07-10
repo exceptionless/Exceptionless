@@ -22,6 +22,7 @@
             delete_bot_data_enabled: false,
             event_count: 150,
             has_premium_features: false,
+            has_rate_notifications: false,
             has_slack_integration: false,
             id: '1',
             is_configured: false,

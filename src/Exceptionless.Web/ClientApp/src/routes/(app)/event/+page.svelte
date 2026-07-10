@@ -645,6 +645,7 @@
     const client = useFetchClient();
     const clientStatus = useFetchClientStatus(client);
     let clientResponse = $state<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>>();
+    let loadRequestId = 0;
 
     const table = createTable(
         getSharedTableOptions<EventSummaryModel<SummaryTemplateKeys>>({
@@ -689,6 +690,7 @@
     }
 
     async function loadData() {
+        const requestId = ++loadRequestId;
         if (!organization.current || isSavedViewRoutePending) {
             return;
         }
@@ -698,7 +700,12 @@
             include: !eventsQueryParameters.after && !eventsQueryParameters.before ? 'total' : undefined
         };
         delete params.page;
-        clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, { params });
+        const response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, { params });
+        if (requestId !== loadRequestId) {
+            return;
+        }
+
+        clientResponse = response;
 
         if (clientResponse.problem) {
             showBillingDialogOnUpgradeProblem(clientResponse.problem, organization.current, () => loadData());

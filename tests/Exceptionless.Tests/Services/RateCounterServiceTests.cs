@@ -145,6 +145,28 @@ public class RateCounterServiceTests
     }
 
     [Fact]
+    public async Task IncrementAsync_MultipleCounterKeys_IncrementsEachAndTracksOneDistinctActiveEntry()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var (service, timeProvider, _) = Create();
+        var now = new DateTime(2024, 1, 15, 10, 0, 0, DateTimeKind.Utc);
+        timeProvider.SetUtcNow(now);
+        string stackCounterKey = "project:P1:stack:S1:signal:Errors";
+
+        // Act
+        await service.IncrementAsync([CounterKey, stackCounterKey, CounterKey], ct);
+
+        // Assert
+        Assert.Equal(1, await service.SumBucketsAsync(CounterKey, now.AddMinutes(-1), now.AddMinutes(1), ct));
+        Assert.Equal(1, await service.SumBucketsAsync(stackCounterKey, now.AddMinutes(-1), now.AddMinutes(1), ct));
+        var activeKeys = await service.GetActiveCounterKeysAsync(now, ct);
+        Assert.Equal(2, activeKeys.Count);
+        Assert.Contains(CounterKey, activeKeys);
+        Assert.Contains(stackCounterKey, activeKeys);
+    }
+
+    [Fact]
     public async Task SumBucketsAsync_AcrossMultipleMinutes_SumsAllBuckets()
     {
         var ct = TestContext.Current.CancellationToken;

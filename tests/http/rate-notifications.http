@@ -44,7 +44,7 @@ Content-Type: application/json
 
 {
     "name": "Project errors",
-    "signal": "Error",
+    "signal": "Errors",
     "subject": "Project",
     "threshold": 10,
     "window": "00:05:00",

@@ -25,16 +25,28 @@ public class RateCounterService
     }
 
     /// <summary>Increments the 1-minute bucket counter for the given counter key at the current UTC minute.</summary>
-    public async Task IncrementAsync(string counterKey, CancellationToken ct = default)
+    public Task IncrementAsync(string counterKey, CancellationToken ct = default)
+        => IncrementAsync([counterKey], ct);
+
+    /// <summary>Increments all matching counters and records their active keys with one list operation.</summary>
+    public async Task IncrementAsync(IReadOnlyCollection<string> counterKeys, CancellationToken ct = default)
     {
+        if (counterKeys.Count == 0)
+            return;
+
+        ct.ThrowIfCancellationRequested();
         var now = _timeProvider.GetUtcNow().UtcDateTime;
         long epochMinute = GetEpochMinute(now);
+        var distinctCounterKeys = counterKeys.Distinct(StringComparer.Ordinal).ToList();
 
-        string countKey = GetCountKey(epochMinute, counterKey);
-        await _cache.IncrementAsync(countKey, 1, BucketTtl);
+        var increments = distinctCounterKeys.Select(async counterKey =>
+        {
+            await _cache.IncrementAsync(GetCountKey(epochMinute, counterKey), 1, BucketTtl);
+        });
 
         string activeKey = GetActiveKey(epochMinute);
-        await _cache.ListAddAsync(activeKey, counterKey, BucketTtl);
+        Task updateActiveKeys = _cache.ListAddAsync(activeKey, distinctCounterKeys, BucketTtl);
+        await Task.WhenAll(increments.Append(updateActiveKeys));
     }
 
     /// <summary>Sums all 1-minute bucket counts for the given counter key in the range [fromUtc, toUtc).</summary>

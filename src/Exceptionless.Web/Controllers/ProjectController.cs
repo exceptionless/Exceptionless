@@ -33,7 +33,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     private readonly IStackRepository _stackRepository;
     private readonly IEventRepository _eventRepository;
     private readonly ITokenRepository _tokenRepository;
-    private readonly IRateNotificationRuleRepository _rateNotificationRuleRepository;
+    private readonly OrganizationService _organizationService;
     private readonly IQueue<WorkItemData> _workItemQueue;
     private readonly BillingManager _billingManager;
     private readonly SlackService _slackService;
@@ -49,7 +49,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         IStackRepository stackRepository,
         IEventRepository eventRepository,
         ITokenRepository tokenRepository,
-        IRateNotificationRuleRepository rateNotificationRuleRepository,
+        OrganizationService organizationService,
         IQueue<WorkItemData> workItemQueue,
         BillingManager billingManager,
         SlackService slackService,
@@ -69,7 +69,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         _stackRepository = stackRepository;
         _eventRepository = eventRepository;
         _tokenRepository = tokenRepository;
-        _rateNotificationRuleRepository = rateNotificationRuleRepository;
+        _organizationService = organizationService;
         _workItemQueue = workItemQueue;
         _billingManager = billingManager;
         _slackService = slackService;
@@ -225,7 +225,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
             _logger.UserDeletingProject(user.Id, project.Name);
 
             await _tokenRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id);
-            await _rateNotificationRuleRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id);
+            await _organizationService.RemoveProjectRateNotificationRulesAsync(project.OrganizationId, project.Id);
         }
 
         return await base.DeleteModelsAsync(projects);
@@ -760,6 +760,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
 
             viewProject.OrganizationName = organization.Name;
             viewProject.HasPremiumFeatures = organization.HasPremiumFeatures;
+            viewProject.HasRateNotifications = organization.HasRateNotifications();
 
             var realTimeUsage = await _usageService.GetUsageAsync(organization.Id, viewProject.Id);
             viewProject.EnsureUsage(organization.GetMaxEventsPerMonthWithBonus(_timeProvider), _timeProvider);

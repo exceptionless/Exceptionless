@@ -118,6 +118,30 @@ public class RateNotificationEvaluatorJobTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task RunAsync_NonPremiumOrganization_DoesNotEnqueue()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var now = new DateTime(2024, 6, 1, 12, 0, 0, DateTimeKind.Utc);
+        TimeProvider.SetUtcNow(now.AddMinutes(-2));
+        var rule = await _ruleRepository.AddAsync(BuildRule(threshold: 1), o => o.ImmediateConsistency());
+        await _counterService.IncrementAsync(BuildCounterKey(rule), ct);
+        var organization = await _orgRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        organization.HasPremiumFeatures = false;
+        await _orgRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
+        TimeProvider.Advance(TimeSpan.FromMinutes(2));
+        long queueBefore = (await _notificationQueue.GetQueueStatsAsync()).Enqueued;
+
+        // Act
+        await _job.RunAsync(ct);
+
+        // Assert
+        long queueAfter = (await _notificationQueue.GetQueueStatsAsync()).Enqueued;
+        Assert.Equal(queueBefore, queueAfter);
+    }
+
+    [Fact]
     public async Task RunAsync_WhenEventsAreInCurrentMinute_DoesNotEvaluatePartialBucket()
     {
         // Arrange
@@ -134,6 +158,23 @@ public class RateNotificationEvaluatorJobTests : IntegrationTestsBase
         // Assert
         long queueAfter = (await _notificationQueue.GetQueueStatsAsync()).Enqueued;
         Assert.Equal(queueBefore, queueAfter);
+    }
+
+    [Fact]
+    public async Task RunAsync_AfterSuccessfulRecovery_AdvancesCheckpointToLastCompleteMinute()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var now = new DateTime(2024, 6, 1, 12, 0, 30, DateTimeKind.Utc);
+        TimeProvider.SetUtcNow(now);
+        await _counterService.SetLastEvaluatedMinuteAsync(now.AddMinutes(-4), ct);
+
+        // Act
+        var result = await _job.RunAsync(ct);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(new DateTime(2024, 6, 1, 11, 59, 0, DateTimeKind.Utc), await _counterService.GetLastEvaluatedMinuteAsync(ct));
     }
 
     [Fact]
@@ -243,5 +284,36 @@ public class RateNotificationEvaluatorJobTests : IntegrationTestsBase
         // Rule B should have fired (1 notification), Rule A should NOT have fired
         // So exactly 1 notification should be enqueued.
         Assert.Equal(1, newNotifications);
+    }
+
+    [Fact]
+    public async Task RunAsync_MatchingRuleOnSecondPage_EnqueuesNotification()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var now = new DateTime(2024, 6, 1, 12, 0, 0, DateTimeKind.Utc);
+        TimeProvider.SetUtcNow(now.AddMinutes(-2));
+
+        var rules = Enumerable.Range(0, 501).Select(index =>
+        {
+            var rule = BuildRule(
+                signal: index == 500 ? RateNotificationSignal.Errors : RateNotificationSignal.AllEvents,
+                threshold: index == 500 ? 1 : Int32.MaxValue);
+            rule.Id = index.ToString("x24");
+            rule.Name = $"Paged rule {index}";
+            return rule;
+        }).ToList();
+        await _ruleRepository.AddAsync(rules, o => o.ImmediateConsistency());
+
+        await _counterService.IncrementAsync($"project:{SampleDataService.TEST_PROJECT_ID}:signal:{RateNotificationSignal.Errors}", ct);
+        TimeProvider.Advance(TimeSpan.FromMinutes(2));
+        long queueBefore = (await _notificationQueue.GetQueueStatsAsync()).Enqueued;
+
+        // Act
+        await _job.RunAsync(ct);
+
+        // Assert
+        long queueAfter = (await _notificationQueue.GetQueueStatsAsync()).Enqueued;
+        Assert.Equal(1, queueAfter - queueBefore);
     }
 }

@@ -11354,6 +11354,7 @@
           "stack_count",
           "event_count",
           "has_premium_features",
+          "has_rate_notifications",
           "has_slack_integration",
           "usage_hours",
           "usage"
@@ -11413,6 +11414,9 @@
             "format": "int64"
           },
           "has_premium_features": {
+            "type": "boolean"
+          },
+          "has_rate_notifications": {
             "type": "boolean"
           },
           "has_slack_integration": {

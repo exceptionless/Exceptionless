@@ -85,6 +85,12 @@ Given cooldown < window
 When user creates rule
 Then response is 400 with validation error.
 
+#### Scenario: Cooldown longer than 24 hours is rejected
+
+Given cooldown > 24 hours
+When user creates or updates a rule
+Then response is 400 with validation error.
+
 #### Scenario: Project subject with stack_id is rejected
 
 Given subject = Project and stack_id is set
@@ -135,9 +141,9 @@ Given no enabled rate notification rules for project
 When event is processed
 Then no rate counter is incremented.
 
-### Requirement: Rate notifications honor premium feature gating
+### Requirement: Rate notifications honor premium and rollout gating
 
-Rate notifications MUST follow the existing premium-only occurrence-notification model and MUST NOT become a free notification channel.
+Rate notifications MUST require premium status plus the `rate-notifications` organization feature and MUST NOT become a free or accidentally exposed notification channel.
 
 #### Scenario: Non-premium organizations do not activate rate notifications
 
@@ -146,6 +152,15 @@ When matching events are processed or the evaluator runs
 Then no rate counters are incremented
 And no rate notification work item is enqueued
 And no rate notification email is sent.
+
+#### Scenario: Flag-disabled organizations do not activate rate notifications
+
+Given project organization does not have the `rate-notifications` feature
+When matching events are processed, the evaluator runs, or queued delivery is attempted
+Then no rate counters are incremented
+And no rate notification work item is enqueued
+And no rate notification email is sent
+And existing rules remain persisted.
 
 ### Requirement: Event pipeline increments only required counters
 
@@ -348,11 +363,11 @@ The Svelte UI MUST provide a full CRUD interface for rate notification rules wit
 Given user opens project notification settings
 Then they can list, create, edit, delete, enable/disable, snooze, and unsnooze rate rules.
 
-#### Scenario: Non-premium organizations show rate notifications as unavailable
+#### Scenario: Organizations without the combined capability do not see rate notifications
 
-Given the organization does not have premium features
+Given the organization lacks premium status or the `rate-notifications` feature
 When the user opens project notification settings
-Then the UI shows the feature as unavailable
+Then the rate notification feature is not rendered
 And the user cannot create or enable active rate notification rules.
 
 ### Requirement: UI avoids advanced/deferred features
@@ -407,4 +422,11 @@ And cached rule indexes are invalidated.
 Given a project is deleted
 When cleanup runs
 Then rate notification rules for that project are removed or invalidated
+And cached rule indexes are invalidated.
+
+#### Scenario: Organization deletion cleans up organization rules
+
+Given an organization is deleted
+When cleanup runs
+Then rate notification rules for that organization are removed or invalidated
 And cached rule indexes are invalidated.

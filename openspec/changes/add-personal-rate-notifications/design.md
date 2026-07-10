@@ -35,6 +35,7 @@ public class RateNotificationRule : IOwnedByOrganizationAndProjectWithIdentity
     public TimeSpan Window { get; set; }
     public TimeSpan Cooldown { get; set; }
     public DateTime? SnoozedUntilUtc { get; set; }
+    public DateTime? LastFiredUtc { get; set; }
     public DateTime CreatedUtc { get; set; }
     public DateTime UpdatedUtc { get; set; }
     public bool IsDeleted { get; set; }
@@ -75,8 +76,10 @@ public enum RateNotificationSubject
 public interface IRateNotificationRuleRepository : IRepositoryOwnedByOrganizationAndProject<RateNotificationRule>
 {
     Task<FindResults<RateNotificationRule>> GetByProjectIdAndUserIdAsync(string projectId, string userId, CommandOptionsDescriptor<RateNotificationRule>? options = null);
+    Task<FindResults<RateNotificationRule>> GetByOrganizationIdAndUserIdAsync(string organizationId, string userId, CommandOptionsDescriptor<RateNotificationRule>? options = null);
     Task<FindResults<RateNotificationRule>> GetEnabledByProjectIdAsync(string projectId, CommandOptionsDescriptor<RateNotificationRule>? options = null);
     Task<long> CountByProjectIdAndUserIdAsync(string projectId, string userId);
+    Task<long> RemoveAllByOrganizationIdAndUserIdAsync(string organizationId, string userId);
 }
 ```
 
@@ -105,16 +108,18 @@ Elasticsearch-backed repository following existing patterns (e.g., `StackReposit
 - User must have access to the project's organization.
 - External recipients are not supported in v1.
 
-### Premium gating
+### Dark-launch gating
 
-- Rate notifications follow the current occurrence-notification premium model.
-- Rules may remain persisted across plan downgrade, but countering, evaluation, delivery, and Svelte create/enable controls MUST treat the feature as unavailable until premium is restored.
+- Rate notifications require both the current occurrence-notification premium entitlement and the `rate-notifications` organization feature.
+- `ViewProject.has_rate_notifications` exposes the combined capability without requiring the Svelte page to fetch organization flags separately.
+- Rules remain persisted when either gate is removed, but countering, evaluation, delivery, and the Svelte feature MUST remain inactive until both gates are restored.
 
 ### Validation
 
 - `threshold > 0`
 - `window` must be one of: 1m, 5m, 10m, 15m, 30m, 1h
 - `cooldown` must be at least the window duration
+- `cooldown` must not exceed 24 hours
 - Recommended default cooldown: 30m
 - Project subject must not specify `stack_id`
 - Stack subject must specify `stack_id`
@@ -124,18 +129,19 @@ Elasticsearch-backed repository following existing patterns (e.g., `StackReposit
 
 ## Rule Index
 
-### RateNotificationRuleIndex service
+### RateNotificationRuleCache service
 
 Purpose:
 
 - Load enabled rules for a project.
 - Cache compiled counter definitions briefly.
 - Ensure event pipeline can cheaply determine which counters to increment.
-- Invalidate project rule index on create/update/delete/snooze/unsnooze.
+- Load every enabled rule with search-after pagination, then compile rules into unique project/stack counters grouped by signal.
+- Invalidate the project plan through hybrid-cache invalidation on rule-management changes and lifecycle cleanup; the evaluator's `LastFiredUtc` bookkeeping suppresses repository notifications so deliveries do not churn the hot-path plan.
 
 **Important:** The event pipeline must not increment every possible counter. It must increment only counters required by enabled rules for that project.
 
-Cache key: `rate:v1:rules:project:{projectId}`
+Cache key: `rate:v2:counter-plan:project:{projectId}`
 
 ## Counter Architecture
 
@@ -149,7 +155,7 @@ Uses 1-minute UTC buckets.
 rate:v1:count:{epochMinute}:{counterKey}
 rate:v1:active:{epochMinute}
 rate:v1:cooldown:{ruleId}:{subjectKey}
-rate:v1:rules:project:{projectId}
+rate:v2:counter-plan:project:{projectId}
 ```
 
 ### Counter key examples
@@ -171,7 +177,7 @@ project:{projectId}:stack:{stackId}:signal:AllEvents
 
 - Counter bucket TTL: 3 hours
 - Active bucket TTL: 3 hours
-- Cooldown TTL: cooldown duration + 10 minutes
+- Cooldown TTL: configured cooldown duration
 
 ### Signal matching
 
@@ -188,15 +194,14 @@ project:{projectId}:stack:{stackId}:signal:AllEvents
 ### UpdateRateCountersAction
 
 - Runs after stack assignment (priority > 70, e.g., 75)
-- Exits fast when the organization does not have premium features
-- Loads `RateNotificationRuleIndex` for project
+- Exits fast when the organization does not have premium features or the rollout flag
+- Loads the cached compiled counter plan for the project
 - Exits fast if no enabled rules
 - Skips events on stacks where `!ctx.Stack.AllowNotifications`
 - Skips canceled/discarded events that would not produce occurrence notifications
 - Skips requests already marked as bots by request-info enrichment
 - Matches event against compiled counter definitions
-- Increments matching counters via `RateCounterService`
-- Adds counter key to active bucket list/set
+- Performs one increment per unique matching counter and one batched active-key update per event
 - Never sends notifications directly
 - Never queries Elasticsearch per event
 
@@ -206,8 +211,11 @@ project:{projectId}:stack:{stackId}:signal:AllEvents
 
 - Runs periodically (recommended: every 60 seconds)
 - Acquires distributed lock so only one evaluator runs per cluster
+- Renews the distributed lock during recovery scans, pagination, and large rule evaluations
 - Inspects recently active counters from active bucket sets
-- Skips organizations without premium features
+- Skips organizations without premium features or the rollout flag
+- Loads all enabled project rules with search-after pagination
+- Ignores malformed persisted rule definitions instead of failing the evaluator checkpoint
 - Sums buckets for each rule's configured window
 - Uses `max(windowStartUtc, rule.SnoozedUntilUtc)` as the lower bound when a snooze boundary falls inside the evaluation window so a rule resumes from a fresh baseline
 - Skips disabled rules
@@ -258,7 +266,9 @@ public class RateNotification
 - Validates:
   - Rule still exists
   - Rule is enabled
-  - Rule version matches or is compatible
+  - Rule version matches exactly
+  - Persisted subject/signal state is valid
+  - Queued ownership, subject, threshold, count, and window state matches the current rule
   - User belongs to organization
   - User email is verified
   - User email notifications are enabled
@@ -320,7 +330,7 @@ UI supports:
 - Delete rule
 - Enable/disable rule
 - Snooze/unsnooze rule
-- Disabled/upgrade state when the organization lacks premium features
+- Entire feature hidden unless `ViewProject.has_rate_notifications` exposes the combined premium-plus-rollout capability
 
 ### Form fields
 
@@ -353,13 +363,13 @@ Display when creating/editing: "This rule may be noisy. Use a cooldown to avoid 
 
 ### Metrics
 
-- `rate_notification.rules.loaded`
-- `rate_notification.counters.incremented`
-- `rate_notification.evaluator.runs`
-- `rate_notification.evaluator.rules_evaluated`
-- `rate_notification.evaluator.notifications_enqueued`
-- `rate_notification.delivery.sent`
-- `rate_notification.delivery.skipped`
+- `ex.rate_notifications.counter_keys.incremented`
+- `ex.rate_notifications.active_counter_keys`
+- `ex.rate_notifications.active_projects`
+- `ex.rate_notifications.evaluation_time`
+- `ex.rate_notifications.enqueued`
+- `ex.rate_notifications.sent`
+- `ex.rate_notifications.skipped`
 
 ### Structured log fields
 
@@ -373,7 +383,7 @@ Display when creating/editing: "This rule may be noisy. Use a cooldown to avoid 
 ## Bootstrap / DI
 
 - Register `IRateNotificationRuleRepository` / `RateNotificationRuleRepository`
-- Register `RateNotificationRuleIndex`
+- Register the persistent `RateNotificationRuleIndex` and compiled `RateNotificationRuleCache`
 - Register `RateCounterService`
 - Register `RateNotificationEvaluatorJob`
 - Register `IQueue<RateNotification>` notification queue

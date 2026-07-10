@@ -1,23 +1,39 @@
 import type { NewRateNotificationRule, ViewRateNotificationRule } from '$generated/api';
 
+import { WINDOW_OPTIONS } from '$features/rate-notifications/types';
 import { RateNotificationSignal, RateNotificationSubject } from '$generated/api';
 import { NewRateNotificationRuleSchema } from '$generated/schemas';
 import { type infer as Infer, string } from 'zod';
 
+const MAXIMUM_COOLDOWN_SECONDS = 24 * 60 * 60;
+const SUPPORTED_WINDOWS = new Set<string>(WINDOW_OPTIONS.map((option) => option.value));
+
 function durationSeconds(value: string): number {
-    const [hours = '0', minutes = '0', seconds = '0'] = value.split(':');
-    return Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds);
+    const daySeparator = value.indexOf('.');
+    const days = daySeparator >= 0 ? Number(value.slice(0, daySeparator)) : 0;
+    const time = daySeparator >= 0 ? value.slice(daySeparator + 1) : value;
+    const [hours = '0', minutes = '0', seconds = '0'] = time.split(':');
+    return days * 86400 + Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds);
 }
 
 export const RateNotificationRuleSchema = NewRateNotificationRuleSchema.extend({
+    name: string().trim().min(1, 'Enter a name.').max(100),
     stack_id: string().optional()
 }).superRefine((value, context) => {
     if (value.subject === RateNotificationSubject.Stack && !value.stack_id) {
         context.addIssue({ code: 'custom', message: 'Select a stack.', path: ['stack_id'] });
     }
 
+    if (!SUPPORTED_WINDOWS.has(value.window)) {
+        context.addIssue({ code: 'custom', message: 'Select a supported window.', path: ['window'] });
+    }
+
     if (durationSeconds(value.cooldown) < durationSeconds(value.window)) {
         context.addIssue({ code: 'custom', message: 'Cooldown must be at least as long as the window.', path: ['cooldown'] });
+    }
+
+    if (durationSeconds(value.cooldown) > MAXIMUM_COOLDOWN_SECONDS) {
+        context.addIssue({ code: 'custom', message: 'Cooldown must not exceed 24 hours.', path: ['cooldown'] });
     }
 });
 

@@ -323,7 +323,7 @@ public class Mailer : IMailer
         string windowDescription = FormatWindow(rule.Window);
 
         var data = new Dictionary<string, object?> {
-            { "Subject", $"Error rate exceeded: {rule.Name}" },
+            { "Subject", "Error rate exceeded" },
             { "BaseUrl", _appOptions.BaseURL },
             { "ProjectName", project.Name },
             { "ProjectId", project.Id },
@@ -344,7 +344,7 @@ public class Mailer : IMailer
         return QueueMessageAsync(new MailMessage
         {
             To = user.EmailAddress,
-            Subject = $"[{project.Name}] Error rate exceeded: {rule.Name}",
+            Subject = $"[{project.Name}] Error rate exceeded",
             Body = RenderTemplate(template, data)
         }, template);
     }

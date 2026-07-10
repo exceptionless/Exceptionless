@@ -755,6 +755,7 @@ export interface ViewProject {
   /** @format int64 */
   event_count: number;
   has_premium_features: boolean;
+  has_rate_notifications: boolean;
   has_slack_integration: boolean;
   usage_hours: UsageHourInfo[];
   usage: UsageInfo[];

@@ -3,10 +3,12 @@ using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Utility;
 using Foundatio.Resilience;
 using Microsoft.Extensions.Logging;
 
@@ -46,6 +48,21 @@ public class RateNotificationsJob : QueueJobBase<RateNotification>
     {
         var wi = context.QueueEntry.Value;
 
+        if (String.IsNullOrEmpty(wi.RuleId) ||
+            String.IsNullOrEmpty(wi.OrganizationId) ||
+            String.IsNullOrEmpty(wi.ProjectId) ||
+            String.IsNullOrEmpty(wi.UserId) ||
+            String.IsNullOrEmpty(wi.SubjectKey) ||
+            !ObjectId.IsValid(wi.RuleId) ||
+            !ObjectId.IsValid(wi.OrganizationId) ||
+            !ObjectId.IsValid(wi.ProjectId) ||
+            !ObjectId.IsValid(wi.UserId) ||
+            (!String.IsNullOrEmpty(wi.StackId) && !ObjectId.IsValid(wi.StackId)))
+        {
+            _logger.LogWarning("Rate notification payload is missing required identifiers; skipping");
+            return Skip("Rate notification payload is missing required identifiers; skipping.");
+        }
+
         // Load rule
         var rule = await _ruleRepository.GetByIdAsync(wi.RuleId);
         if (rule is null)
@@ -53,6 +70,12 @@ public class RateNotificationsJob : QueueJobBase<RateNotification>
 
         if (!rule.IsEnabled)
             return Skip($"Rule {wi.RuleId} is disabled; skipping.");
+
+        if (!RateNotificationCounterPlan.IsValidRuntimeDefinition(rule, rule.ProjectId))
+        {
+            _logger.LogWarning("Rate notification rule {RuleId} has an invalid definition; skipping", wi.RuleId);
+            return Skip($"Rate notification rule {wi.RuleId} has an invalid definition; skipping.");
+        }
 
         string expectedSubjectKey = rule.Subject == RateNotificationSubject.Stack
             ? $"stack:{rule.StackId}"
@@ -62,7 +85,10 @@ public class RateNotificationsJob : QueueJobBase<RateNotification>
             !String.Equals(rule.UserId, wi.UserId, StringComparison.Ordinal) ||
             !String.Equals(rule.StackId, wi.StackId, StringComparison.Ordinal) ||
             !String.Equals(expectedSubjectKey, wi.SubjectKey, StringComparison.Ordinal) ||
-            wi.Threshold != rule.Threshold || wi.ObservedCount < 0 || wi.WindowStartUtc >= wi.WindowEndUtc)
+            wi.Threshold != rule.Threshold ||
+            wi.ObservedCount < rule.Threshold ||
+            wi.WindowStartUtc >= wi.WindowEndUtc ||
+            wi.WindowEndUtc - wi.WindowStartUtc > rule.Window)
         {
             _logger.LogWarning("Rate notification payload does not match rule {RuleId}; skipping", wi.RuleId);
             return Skip($"Rate notification payload does not match rule {wi.RuleId}; skipping.");

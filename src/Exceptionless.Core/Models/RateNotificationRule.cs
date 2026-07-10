@@ -6,6 +6,9 @@ namespace Exceptionless.Core.Models;
 
 public class RateNotificationRule : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates
 {
+    public static TimeSpan MaximumWindow { get; } = TimeSpan.FromHours(1);
+    public static TimeSpan MaximumCooldown { get; } = TimeSpan.FromDays(1);
+
     [ObjectId]
     public string Id { get; set; } = null!;
 
@@ -29,8 +32,10 @@ public class RateNotificationRule : IOwnedByOrganizationAndProjectWithIdentity, 
 
     public bool IsEnabled { get; set; } = true;
 
+    [EnumDataType(typeof(RateNotificationSignal))]
     public RateNotificationSignal Signal { get; set; }
 
+    [EnumDataType(typeof(RateNotificationSubject))]
     public RateNotificationSubject Subject { get; set; }
 
     [ObjectId]

@@ -1,3 +1,4 @@
+using System.Net;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -208,6 +209,66 @@ public sealed class RateNotificationRuleControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostAsync_CooldownExceedsMaximum_Returns422()
+    {
+        // Arrange
+        var user = await GetTestOrganizationUserAsync();
+
+        // Act / Assert
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath(RuleUrl(user.Id, SampleDataService.TEST_PROJECT_ID))
+            .Content(new NewRateNotificationRule
+            {
+                Name = "Excessive cooldown",
+                Signal = RateNotificationSignal.Errors,
+                Subject = RateNotificationSubject.Project,
+                Threshold = 5,
+                Window = TimeSpan.FromMinutes(5),
+                Cooldown = TimeSpan.FromHours(25)
+            })
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+    }
+
+    [Fact]
+    public async Task PostAsync_UndefinedSignal_Returns422()
+    {
+        var user = await GetTestOrganizationUserAsync();
+
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath(RuleUrl(user.Id, SampleDataService.TEST_PROJECT_ID))
+            .Content(new
+            {
+                name = "Undefined signal",
+                signal = 999,
+                subject = RateNotificationSubject.Project,
+                threshold = 10,
+                window = TimeSpan.FromMinutes(5),
+                cooldown = TimeSpan.FromMinutes(30),
+                is_enabled = true
+            })
+            .StatusCodeShouldBeUnprocessableEntity());
+    }
+
+    [Fact]
+    public async Task PutAsync_EmptyName_Returns422()
+    {
+        var user = await GetTestOrganizationUserAsync();
+        var rule = await CreateProjectRuleAsync(user.Id, "Valid name");
+
+        await SendRequestAsync(r => r
+            .Put()
+            .AsTestOrganizationUser()
+            .AppendPath(RuleUrl(user.Id, SampleDataService.TEST_PROJECT_ID, rule.Id))
+            .Content(new UpdateRateNotificationRule { Name = "   " })
+            .StatusCodeShouldBeUnprocessableEntity());
+    }
+
+    [Fact]
     public async Task PostAsync_StackSubjectWithoutStackId_Returns422()
     {
         var user = await GetTestOrganizationUserAsync();
@@ -231,6 +292,57 @@ public sealed class RateNotificationRuleControllerTests : IntegrationTestsBase
             .Content(newRule)
             .StatusCodeShouldBeUnprocessableEntity()
         );
+    }
+
+    [Fact]
+    public async Task PostAsync_UndefinedSubject_Returns422()
+    {
+        // Arrange
+        var user = await GetTestOrganizationUserAsync();
+
+        // Act / Assert
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath(RuleUrl(user.Id, SampleDataService.TEST_PROJECT_ID))
+            .Content(new NewRateNotificationRule
+            {
+                Name = "Invalid subject",
+                Signal = RateNotificationSignal.Errors,
+                Subject = (RateNotificationSubject)Int32.MaxValue,
+                Threshold = 5,
+                Window = TimeSpan.FromMinutes(5),
+                Cooldown = TimeSpan.FromMinutes(30)
+            })
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+    }
+
+    [Fact]
+    public async Task PostAsync_StackFromAnotherProject_Returns422()
+    {
+        var user = await GetTestOrganizationUserAsync();
+        var (stacks, _) = await CreateDataAsync(b => b.Event()
+            .Organization(SampleDataService.TEST_ORG_ID)
+            .Project(SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID)
+            .Type(Event.KnownTypes.Error));
+        var stack = Assert.Single(stacks);
+
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath(RuleUrl(user.Id, SampleDataService.TEST_PROJECT_ID))
+            .Content(new NewRateNotificationRule
+            {
+                Name = "Foreign stack",
+                Signal = RateNotificationSignal.Errors,
+                Subject = RateNotificationSubject.Stack,
+                StackId = stack.Id,
+                Threshold = 10,
+                Window = TimeSpan.FromMinutes(5),
+                Cooldown = TimeSpan.FromMinutes(30)
+            })
+            .StatusCodeShouldBeUnprocessableEntity());
     }
 
     [Fact]
@@ -395,8 +507,8 @@ public sealed class RateNotificationRuleControllerTests : IntegrationTestsBase
     {
         var user = await GetTestOrganizationUserAsync();
 
-        // Create 20 rules (the maximum)
-        for (int i = 0; i < 20; i++)
+        // Create 19 rules, then race the final two requests against the limit.
+        for (int i = 0; i < 19; i++)
         {
             await SendRequestAsync(r => r
                 .Post()
@@ -415,22 +527,25 @@ public sealed class RateNotificationRuleControllerTests : IntegrationTestsBase
             );
         }
 
-        // 21st rule should fail
-        await SendRequestAsync(r => r
+        Task<HttpResponseMessage> CreateFinalRuleAsync(string name) => SendRequestAsync(r => r
             .Post()
             .AsTestOrganizationUser()
             .AppendPath(RuleUrl(user.Id, SampleDataService.TEST_PROJECT_ID))
             .Content(new NewRateNotificationRule
             {
-                Name = "Rule 21",
+                Name = name,
                 Signal = RateNotificationSignal.Errors,
                 Subject = RateNotificationSubject.Project,
                 Threshold = 5,
                 Window = TimeSpan.FromMinutes(5),
                 Cooldown = TimeSpan.FromMinutes(30)
-            })
-            .StatusCodeShouldBeUnprocessableEntity()
-        );
+            }));
+
+        var responses = await Task.WhenAll(CreateFinalRuleAsync("Rule 20"), CreateFinalRuleAsync("Rule 21"));
+
+        Assert.Contains(responses, response => response.StatusCode == HttpStatusCode.Created);
+        Assert.Contains(responses, response => response.StatusCode == HttpStatusCode.UnprocessableEntity);
+        Assert.Equal(20, await _ruleRepository.CountByProjectIdAndUserIdAsync(SampleDataService.TEST_PROJECT_ID, user.Id));
     }
 
     [Fact]

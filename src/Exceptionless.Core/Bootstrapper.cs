@@ -211,6 +211,7 @@ public class Bootstrapper
         services.AddSingleton<UsageService>();
         services.AddSingleton<RateCounterService>();
         services.AddSingleton<RateNotificationRuleCache>();
+        services.AddStartupAction<RateNotificationRuleCache>();
         services.AddSingleton<SlackService>();
         services.AddSingleton<StackService>();
 

@@ -846,6 +846,7 @@ export const ViewProjectSchema = object({
   stack_count: int(),
   event_count: int(),
   has_premium_features: boolean(),
+  has_rate_notifications: boolean(),
   has_slack_integration: boolean(),
   usage_hours: array(lazy(() => UsageHourInfoSchema)),
   usage: array(lazy(() => UsageInfoSchema)),

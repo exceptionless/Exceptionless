@@ -96,21 +96,28 @@ describe('rate notification API', () => {
             threshold: 10,
             window: '00:05:00'
         };
-        const createMutation = postRateNotificationRule({ route }) as unknown as Mutation<typeof body>;
-        const deleteMutation = deleteRateNotificationRule({ route }) as unknown as Mutation<string>;
-        const snoozeMutation = postSnoozeRateNotificationRule({ route }) as unknown as Mutation<{
+        const createMutation = postRateNotificationRule() as unknown as Mutation<{ body: typeof body; projectId: string; userId: string }>;
+        const deleteMutation = deleteRateNotificationRule() as unknown as Mutation<{ projectId: string; ruleId: string; userId: string }>;
+        const snoozeMutation = postSnoozeRateNotificationRule() as unknown as Mutation<{
             body: { duration_seconds: number };
+            projectId: string;
             ruleId: string;
+            userId: string;
         }>;
-        const unsnoozeMutation = postUnsnoozeRateNotificationRule({ route }) as unknown as Mutation<string>;
-        const updateMutation = putRateNotificationRule({ route }) as unknown as Mutation<{ body: { is_enabled: boolean }; ruleId: string }>;
+        const unsnoozeMutation = postUnsnoozeRateNotificationRule() as unknown as Mutation<{ projectId: string; ruleId: string; userId: string }>;
+        const updateMutation = putRateNotificationRule() as unknown as Mutation<{
+            body: { is_enabled: boolean };
+            projectId: string;
+            ruleId: string;
+            userId: string;
+        }>;
 
         // Act
-        await createMutation.mutationFn(body);
-        await updateMutation.mutationFn({ body: { is_enabled: false }, ruleId: 'update-rule' });
-        await snoozeMutation.mutationFn({ body: { duration_seconds: 3600 }, ruleId: 'snooze-rule' });
-        await unsnoozeMutation.mutationFn('unsnooze-rule');
-        await deleteMutation.mutationFn('delete-rule');
+        await createMutation.mutationFn({ ...route, body });
+        await updateMutation.mutationFn({ ...route, body: { is_enabled: false }, ruleId: 'update-rule' });
+        await snoozeMutation.mutationFn({ ...route, body: { duration_seconds: 3600 }, ruleId: 'snooze-rule' });
+        await unsnoozeMutation.mutationFn({ ...route, ruleId: 'unsnooze-rule' });
+        await deleteMutation.mutationFn({ ...route, ruleId: 'delete-rule' });
 
         // Assert
         expect(mocks.client.postJSON).toHaveBeenCalledWith('users/user-id/projects/project-id/rate-notifications', body);
@@ -136,8 +143,8 @@ describe('rate notification API', () => {
         // Arrange
         vi.useFakeTimers();
         const route = { projectId: 'project-id', userId: 'user-id' };
-        const mutation = postSnoozeRateNotificationRule({ route }) as unknown as Mutation<
-            { body: { duration_seconds: number }; ruleId: string },
+        const mutation = postSnoozeRateNotificationRule() as unknown as Mutation<
+            { body: { duration_seconds: number }; projectId: string; ruleId: string; userId: string },
             ViewRateNotificationRule
         >;
         const rule: ViewRateNotificationRule = {
@@ -159,7 +166,7 @@ describe('rate notification API', () => {
         };
 
         // Act
-        mutation.onSuccess(rule, { body: { duration_seconds: 3600 }, ruleId: rule.id });
+        mutation.onSuccess(rule, { ...route, body: { duration_seconds: 3600 }, ruleId: rule.id });
 
         // Assert
         expect(mocks.setQueriesData).toHaveBeenCalledOnce();

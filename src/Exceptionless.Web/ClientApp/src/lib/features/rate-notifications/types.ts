@@ -32,5 +32,5 @@ export const COOLDOWN_OPTIONS = [
     { label: '2 hours', value: '02:00:00' },
     { label: '4 hours', value: '04:00:00' },
     { label: '8 hours', value: '08:00:00' },
-    { label: '24 hours', value: '24:00:00' }
+    { label: '24 hours', value: '1.00:00:00' }
 ] as const;

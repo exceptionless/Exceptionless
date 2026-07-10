@@ -10,6 +10,7 @@ using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Queues;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Utility;
 using Foundatio.Resilience;
 using Microsoft.Extensions.Logging;
 
@@ -21,6 +22,7 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
     private readonly RateCounterService _counterService;
     private readonly IRateNotificationRuleRepository _ruleRepository;
     private readonly IOrganizationRepository _organizationRepository;
+    private readonly IProjectRepository _projectRepository;
     private readonly IQueue<RateNotification> _notificationQueue;
     private readonly ILockProvider _lockProvider;
 
@@ -31,6 +33,7 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
         RateCounterService counterService,
         IRateNotificationRuleRepository ruleRepository,
         IOrganizationRepository organizationRepository,
+        IProjectRepository projectRepository,
         IQueue<RateNotification> notificationQueue,
         ILockProvider lockProvider,
         TimeProvider timeProvider,
@@ -40,6 +43,7 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
         _counterService = counterService;
         _ruleRepository = ruleRepository;
         _organizationRepository = organizationRepository;
+        _projectRepository = projectRepository;
         _notificationQueue = notificationQueue;
         _lockProvider = lockProvider;
     }
@@ -68,11 +72,15 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
 
         // Collect all unique counter keys across all minutes in the scan window
         var allCounterKeys = new HashSet<string>();
+        int scannedMinutes = 0;
         for (var minute = fromMinute; minute <= toMinute; minute = minute.AddMinutes(1))
         {
             var keys = await _counterService.GetActiveCounterKeysAsync(minute, context.CancellationToken);
             foreach (var key in keys)
                 allCounterKeys.Add(key);
+
+            if (++scannedMinutes % 30 == 0)
+                await context.RenewLockAsync();
         }
 
         var counterKeysByProject = allCounterKeys
@@ -89,7 +97,8 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
             if (context.CancellationToken.IsCancellationRequested)
                 return JobResult.Cancelled;
 
-            await EvaluateProjectAsync(projectCounterKeys.Key, projectCounterKeys, currentMinute, context.CancellationToken);
+            await context.RenewLockAsync();
+            await EvaluateProjectAsync(projectCounterKeys.Key, projectCounterKeys, currentMinute, context);
         }
 
         await _counterService.SetLastEvaluatedMinuteAsync(toMinute, context.CancellationToken);
@@ -97,21 +106,33 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
         return JobResult.Success;
     }
 
-    private async Task EvaluateProjectAsync(string projectId, IEnumerable<string> counterKeys, DateTime evaluationEndUtc, CancellationToken ct)
+    private async Task EvaluateProjectAsync(string projectId, IEnumerable<string> counterKeys, DateTime evaluationEndUtc, JobContext context)
     {
-        var allProjectRules = await _ruleRepository.GetEnabledByProjectIdAsync(projectId, o => o.PageLimit(1000));
-        if (allProjectRules.Documents.Count == 0)
+        var ct = context.CancellationToken;
+        var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache());
+        if (project is null)
             return;
 
-        string organizationId = allProjectRules.Documents.First().OrganizationId;
-        var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
+        var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
         if (organization is null || !organization.HasRateNotifications())
             return;
 
-        var rulesByCounterKey = allProjectRules.Documents
-            .GroupBy(UpdateRateCountersAction.BuildCounterKey, StringComparer.Ordinal)
+        var allProjectRules = await GetAllEnabledRulesAsync(projectId, context);
+        var validProjectRules = allProjectRules
+            .Where(rule => String.Equals(rule.OrganizationId, project.OrganizationId, StringComparison.Ordinal) &&
+                RateNotificationCounterPlan.IsValidRuntimeDefinition(rule, projectId))
+            .ToList();
+        if (validProjectRules.Count != allProjectRules.Count)
+            _logger.LogWarning("Skipping {InvalidRuleCount} invalid rate notification rules for project {ProjectId}", allProjectRules.Count - validProjectRules.Count, projectId);
+
+        if (validProjectRules.Count == 0)
+            return;
+
+        var rulesByCounterKey = validProjectRules
+            .GroupBy(RateNotificationCounterPlan.BuildCounterKey, StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.Ordinal);
 
+        int evaluatedRules = 0;
         foreach (string counterKey in counterKeys)
         {
             if (!rulesByCounterKey.TryGetValue(counterKey, out var matchingRules))
@@ -123,8 +144,25 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
                     return;
 
                 await EvaluateRuleAsync(rule, counterKey, evaluationEndUtc, ct);
+                if (++evaluatedRules % 100 == 0)
+                    await context.RenewLockAsync();
             }
         }
+    }
+
+    private async Task<List<RateNotificationRule>> GetAllEnabledRulesAsync(string projectId, JobContext context)
+    {
+        var ct = context.CancellationToken;
+        var rules = new List<RateNotificationRule>();
+        var results = await _ruleRepository.GetEnabledByProjectIdAsync(projectId, o => o.SearchAfterPaging().PageLimit(500));
+        do
+        {
+            ct.ThrowIfCancellationRequested();
+            rules.AddRange(results.Documents);
+            await context.RenewLockAsync();
+        } while (await results.NextPageAsync());
+
+        return rules;
     }
 
     private async Task EvaluateRuleAsync(RateNotificationRule rule, string counterKey, DateTime evaluationEndUtc, CancellationToken ct)
@@ -193,7 +231,7 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
 
         // Update LastFiredUtc
         rule.LastFiredUtc = evaluationEndUtc;
-        await _ruleRepository.SaveAsync(rule);
+        await _ruleRepository.SaveAsync(rule, o => o.Notifications(false));
 
         _logger.LogInformation("Rate notification fired: rule={RuleId} project={ProjectId} observed={Observed} threshold={Threshold}",
             rule.Id, rule.ProjectId, observedCount, rule.Threshold);
@@ -203,7 +241,7 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
     private static string? ParseProjectIdFromCounterKey(string counterKey)
     {
         const string prefix = "project:";
-        if (!counterKey.StartsWith(prefix))
+        if (!counterKey.StartsWith(prefix, StringComparison.Ordinal))
             return null;
 
         int start = prefix.Length;
@@ -211,7 +249,8 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
         if (end < 0)
             return null;
 
-        return counterKey[start..end];
+        string projectId = counterKey[start..end];
+        return ObjectId.IsValid(projectId) ? projectId : null;
     }
 
     private static string BuildSubjectKey(RateNotificationRule rule)

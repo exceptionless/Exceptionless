@@ -9,7 +9,6 @@
     import { Skeleton } from '$comp/ui/skeleton';
     import { Switch } from '$comp/ui/switch';
     import { showUpgradeDialog } from '$features/billing/upgrade-required.svelte';
-    import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import { getProjectsQuery, getProjectUserNotificationSettings, postProjectUserNotificationSettings } from '$features/projects/api.svelte';
     import UserNotificationSettingsForm from '$features/projects/components/user-notification-settings-form.svelte';
     import RateNotificationRuleForm from '$features/rate-notifications/components/rate-notification-rule-form.svelte';
@@ -58,14 +57,7 @@
     });
 
     const selectedProject = $derived(allProjects.find((p) => p.id === queryParams.project) ?? allProjects[0]);
-    const selectedOrganizationQuery = getOrganizationQuery({
-        route: {
-            get id() {
-                return selectedProject?.organization_id;
-            }
-        }
-    });
-    const rateNotificationsEnabled = $derived(selectedOrganizationQuery.data?.features.includes('rate-notifications') ?? false);
+    const rateNotificationsEnabled = $derived(selectedProject?.has_rate_notifications ?? false);
     const selectedProjectNotificationSettings = getProjectUserNotificationSettings({
         route: {
             get id() {
@@ -161,6 +153,12 @@
         rateRuleDialogOpen = false;
         editingRateRule = undefined;
     }
+
+    $effect(() => {
+        if (rateRuleDialogOpen && editingRateRule && editingRateRule.project_id !== selectedProject?.id) {
+            closeRateRuleDialog();
+        }
+    });
 </script>
 
 <div class="space-y-6">

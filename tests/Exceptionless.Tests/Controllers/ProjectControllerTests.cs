@@ -22,14 +22,18 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
     private readonly IEventRepository _eventRepository;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
+    private readonly IRateNotificationRuleRepository _rateNotificationRuleRepository;
     private readonly IStackRepository _stackRepository;
+    private readonly IUserRepository _userRepository;
 
     public ProjectControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _eventRepository = GetService<IEventRepository>();
         _organizationRepository = GetService<IOrganizationRepository>();
         _projectRepository = GetService<IProjectRepository>();
+        _rateNotificationRuleRepository = GetService<IRateNotificationRuleRepository>();
         _stackRepository = GetService<IStackRepository>();
+        _userRepository = GetService<IUserRepository>();
     }
 
     protected override async Task ResetDataAsync()
@@ -108,6 +112,25 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeCreated()
         );
         Assert.NotNull(project);
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        var now = TimeProvider.GetUtcNow().UtcDateTime;
+        var rule = await _rateNotificationRuleRepository.AddAsync(new RateNotificationRule
+        {
+            OrganizationId = project.OrganizationId,
+            ProjectId = project.Id,
+            UserId = user.Id,
+            Name = "Delete with project",
+            IsEnabled = true,
+            Signal = RateNotificationSignal.Errors,
+            Subject = RateNotificationSubject.Project,
+            Threshold = 10,
+            Window = TimeSpan.FromMinutes(5),
+            Cooldown = TimeSpan.FromMinutes(30),
+            Version = 1,
+            CreatedUtc = now,
+            UpdatedUtc = now
+        }, o => o.ImmediateConsistency());
 
         // Act
         var workItems = await SendRequestAsAsync<WorkInProgressResult>(r => r
@@ -126,6 +149,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         // Assert
         var deleted = await _projectRepository.GetByIdAsync(project.Id);
         Assert.Null(deleted);
+        Assert.Null(await _rateNotificationRuleRepository.GetByIdAsync(rule.Id));
     }
 
     [Fact]
@@ -285,6 +309,27 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.NotNull(viewProject);
         Assert.Equal(SampleDataService.TEST_PROJECT_ID, viewProject.Id);
         Assert.False(viewProject.HasSlackIntegration);
+        Assert.False(viewProject.HasRateNotifications);
+    }
+
+    [Fact]
+    public async Task GetAsync_RateNotificationsEnabled_ExposesProjectCapability()
+    {
+        // Arrange
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        organization.Features.Add(OrganizationExtensions.RateNotificationsFeature);
+        await _organizationRepository.SaveAsync(organization, o => o.Cache());
+
+        // Act
+        var viewProject = await SendRequestAsAsync<ViewProject>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID)
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(viewProject);
+        Assert.True(viewProject.HasRateNotifications);
     }
 
     [Fact]

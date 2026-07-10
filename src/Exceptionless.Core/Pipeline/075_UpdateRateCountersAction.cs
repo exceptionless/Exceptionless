@@ -27,30 +27,33 @@ public class UpdateRateCountersAction : EventPipelineActionBase
 
     public override async Task ProcessAsync(EventContext ctx)
     {
-        // Premium gate — rate notifications require premium features
-        if (!ctx.Organization.HasRateNotifications())
+        if (!ShouldIncrement(ctx))
             return;
 
-        // Stack must allow notifications
-        if (ctx.Stack is null || !ctx.Stack.AllowNotifications)
+        // Load the compiled counter plan for this project. Cache misses perform the only rule scan.
+        var counterPlan = await _ruleCache.GetCounterPlanAsync(ctx.Event.ProjectId);
+        if (!counterPlan.HasCounters)
             return;
 
-        // Load enabled rules for this project
-        var rules = await _ruleCache.GetEnabledRulesAsync(ctx.Event.ProjectId);
-        if (rules.Count == 0)
-            return;
-
-        // RequestInfoPlugin already performs the user-agent work earlier in the pipeline.
-        if (ctx.Event.Data?.GetValueOrDefault(Event.KnownDataKeys.RequestInfo) is RequestInfo request &&
-            request.Data?.GetValueOrDefault(RequestInfo.KnownDataKeys.IsBot) is true)
-            return;
-
-        var counterKeys = GetCounterKeys(ctx.Event, ctx.IsNew, ctx.IsRegression, rules);
+        var counterKeys = GetCounterKeys(ctx.Event, ctx.IsNew, ctx.IsRegression, counterPlan);
         AppDiagnostics.RateCounterKeysIncremented.Add(counterKeys.Count);
-        await Task.WhenAll(counterKeys.Select(key => _counterService.IncrementAsync(key)));
+        await _counterService.IncrementAsync(counterKeys);
     }
 
-    internal static IReadOnlyCollection<string> GetCounterKeys(PersistentEvent ev, bool isNew, bool isRegression, IEnumerable<RateNotificationRule> rules)
+    internal static bool ShouldIncrement(EventContext ctx)
+    {
+        if (ctx.IsCancelled || ctx.IsDiscarded || !ctx.Organization.HasRateNotifications())
+            return false;
+
+        if (ctx.Stack is null || !ctx.Stack.AllowNotifications)
+            return false;
+
+        // RequestInfoPlugin already performs the user-agent work earlier in the pipeline.
+        return ctx.Event.Data?.GetValueOrDefault(Event.KnownDataKeys.RequestInfo) is not RequestInfo request ||
+            request.Data?.GetValueOrDefault(RequestInfo.KnownDataKeys.IsBot) is not true;
+    }
+
+    internal static IReadOnlyCollection<string> GetCounterKeys(PersistentEvent ev, bool isNew, bool isRegression, RateNotificationCounterPlan counterPlan)
     {
         bool isError = ev.IsError();
         bool isCritical = ev.IsCritical();
@@ -70,22 +73,6 @@ public class UpdateRateCountersAction : EventPipelineActionBase
         if (isRegression)
             matchedSignals.Add(RateNotificationSignal.Regressions);
 
-        return rules
-            .Where(r => matchedSignals.Contains(r.Signal))
-            .Where(r => r.Subject == RateNotificationSubject.Project ||
-                !String.IsNullOrEmpty(r.StackId) && String.Equals(ev.StackId, r.StackId, StringComparison.Ordinal))
-            .Select(BuildCounterKey)
-            .Distinct(StringComparer.Ordinal)
-            .ToList();
-    }
-
-    internal static string BuildCounterKey(RateNotificationRule rule)
-    {
-        return rule.Subject switch
-        {
-            RateNotificationSubject.Project => $"project:{rule.ProjectId}:signal:{rule.Signal}",
-            RateNotificationSubject.Stack => $"project:{rule.ProjectId}:stack:{rule.StackId}:signal:{rule.Signal}",
-            _ => $"project:{rule.ProjectId}:signal:{rule.Signal}"
-        };
+        return counterPlan.GetCounterKeys(ev.StackId, matchedSignals);
     }
 }
