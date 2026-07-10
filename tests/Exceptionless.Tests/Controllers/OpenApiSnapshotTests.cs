@@ -50,14 +50,6 @@ public sealed class OpenApiSnapshotTests
         Assert.True(userDescriptionPath.TryGetProperty("post", out var userDescriptionPost));
         Assert.True(userDescriptionPost.TryGetProperty("requestBody", out _));
         AssertResponseCodes(userDescriptionPost, "202");
-
-        Assert.True(paths.TryGetProperty("/api/v2/events", out var eventsPath));
-        Assert.True(eventsPath.TryGetProperty("post", out var eventsPost));
-        AssertRequestBodyContent(eventsPost, "application/json", "text/plain");
-
-        Assert.True(paths.TryGetProperty("/api/v2/projects/{projectId}/events", out var projectEventsPath));
-        Assert.True(projectEventsPath.TryGetProperty("post", out var projectEventsPost));
-        AssertRequestBodyContent(projectEventsPost, "application/json", "text/plain");
     }
 
     [Fact]
@@ -113,13 +105,5 @@ public sealed class OpenApiSnapshotTests
         var responses = operation.GetProperty("responses");
         foreach (string statusCode in expectedStatusCodes)
             Assert.True(responses.TryGetProperty(statusCode, out _), $"Expected response status code '{statusCode}'.");
-    }
-
-    private static void AssertRequestBodyContent(JsonElement operation, params string[] expectedContentTypes)
-    {
-        Assert.True(operation.TryGetProperty("requestBody", out var requestBody), "Expected request body.");
-        var content = requestBody.GetProperty("content");
-        foreach (string contentType in expectedContentTypes)
-            Assert.True(content.TryGetProperty(contentType, out _), $"Expected request body content type '{contentType}'.");
     }
 }

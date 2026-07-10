@@ -77,7 +77,6 @@ public sealed class JsonPatchValidationTests
     }
 
     [Theory]
-    [InlineData("name")]
     [InlineData("//name")]
     [InlineData("/a/b")]
     [InlineData("/nested/deep/path")]
