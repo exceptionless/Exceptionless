@@ -3,7 +3,6 @@ using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Services;
 
@@ -14,16 +13,14 @@ namespace Exceptionless.Core.Services;
 public class RateNotificationRuleCache
 {
     private readonly IRateNotificationRuleRepository _repository;
-    private readonly ICacheClient _cache;
-    private readonly ILogger<RateNotificationRuleCache> _logger;
+    private readonly IHybridCacheClient _cache;
 
     private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(5);
 
-    public RateNotificationRuleCache(IRateNotificationRuleRepository repository, ICacheClient cache, ILoggerFactory loggerFactory)
+    public RateNotificationRuleCache(IRateNotificationRuleRepository repository, IHybridCacheClient cache)
     {
         _repository = repository;
         _cache = cache;
-        _logger = loggerFactory.CreateLogger<RateNotificationRuleCache>();
     }
 
     /// <summary>Returns all enabled, non-deleted rules for the given project (cached).</summary>

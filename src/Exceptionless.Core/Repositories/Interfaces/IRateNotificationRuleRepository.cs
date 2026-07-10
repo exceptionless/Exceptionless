@@ -9,5 +9,5 @@ public interface IRateNotificationRuleRepository : IRepositoryOwnedByOrganizatio
     Task<FindResults<RateNotificationRule>> GetByProjectIdAndUserIdAsync(string projectId, string userId, CommandOptionsDescriptor<RateNotificationRule>? options = null);
     Task<FindResults<RateNotificationRule>> GetEnabledByProjectIdAsync(string projectId, CommandOptionsDescriptor<RateNotificationRule>? options = null);
     Task<long> CountByProjectIdAndUserIdAsync(string projectId, string userId);
-    Task<long> RemoveByProjectIdAndUserIdAsync(string projectId, string userId);
+    Task<long> RemoveAllByOrganizationIdAndUserIdAsync(string organizationId, string userId);
 }

@@ -111,6 +111,7 @@ public class Bootstrapper
         services.AddSingleton(s => CreateQueue<RateNotification>(s));
 
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IQueueBehavior<WorkItemData>, WorkItemDuplicateDetectionQueueBehavior>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IQueueBehavior<RateNotification>, RateNotificationDuplicateDetectionQueueBehavior>());
 
         services.AddSingleton<IConnectionMapping, ConnectionMapping>();
         services.AddSingleton<MessageService>();
@@ -124,6 +125,18 @@ public class Bootstrapper
         }));
         services.AddSingleton<IMessagePublisher>(s => s.GetRequiredService<IMessageBus>());
         services.AddSingleton<IMessageSubscriber>(s => s.GetRequiredService<IMessageBus>());
+        services.AddSingleton<IHybridCacheClient>(s => new HybridCacheClient(
+            s.GetRequiredService<ICacheClient>(),
+            s.GetRequiredService<IMessageBus>(),
+            new InMemoryCacheClientOptions
+            {
+                CloneValues = true,
+                Serializer = s.GetRequiredService<ISerializer>(),
+                TimeProvider = s.GetRequiredService<TimeProvider>(),
+                ResiliencePolicyProvider = s.GetRequiredService<IResiliencePolicyProvider>(),
+                LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+            },
+            s.GetRequiredService<ILoggerFactory>()));
 
         services.AddSingleton<IFileStorage>(s => new InMemoryFileStorage(new InMemoryFileStorageOptions
         {
@@ -327,4 +340,7 @@ public class Bootstrapper
 
     private sealed class WorkItemDuplicateDetectionQueueBehavior(ICacheClient cacheClient, ILoggerFactory loggerFactory)
         : DuplicateDetectionQueueBehavior<WorkItemData>(cacheClient, loggerFactory, TimeSpan.FromHours(24));
+
+    private sealed class RateNotificationDuplicateDetectionQueueBehavior(ICacheClient cacheClient, ILoggerFactory loggerFactory)
+        : DuplicateDetectionQueueBehavior<RateNotification>(cacheClient, loggerFactory, TimeSpan.FromHours(3));
 }

@@ -3196,6 +3196,118 @@
     "ExcludeFromDescription": false
   },
   {
+    "Controller": "RateNotificationRuleController",
+    "Action": "GetAsync",
+    "HttpMethod": "GET",
+    "Route": "/api/v2/users/{userId:objectid}/projects/{projectId:objectid}/rate-notifications",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "RateNotificationRuleController",
+    "Action": "PostAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/users/{userId:objectid}/projects/{projectId:objectid}/rate-notifications",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [
+      "application/json"
+    ],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "RateNotificationRuleController",
+    "Action": "DeleteAsync",
+    "HttpMethod": "DELETE",
+    "Route": "/api/v2/users/{userId:objectid}/projects/{projectId:objectid}/rate-notifications/{ruleId:objectid}",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "RateNotificationRuleController",
+    "Action": "GetByIdAsync",
+    "HttpMethod": "GET",
+    "Route": "/api/v2/users/{userId:objectid}/projects/{projectId:objectid}/rate-notifications/{ruleId:objectid}",
+    "Name": "GetRateNotificationRuleById",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "RateNotificationRuleController",
+    "Action": "PutAsync",
+    "HttpMethod": "PUT",
+    "Route": "/api/v2/users/{userId:objectid}/projects/{projectId:objectid}/rate-notifications/{ruleId:objectid}",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [
+      "application/json"
+    ],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "RateNotificationRuleController",
+    "Action": "SnoozeAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/users/{userId:objectid}/projects/{projectId:objectid}/rate-notifications/{ruleId:objectid}/snooze",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [
+      "application/json"
+    ],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "RateNotificationRuleController",
+    "Action": "UnsnoozeAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/users/{userId:objectid}/projects/{projectId:objectid}/rate-notifications/{ruleId:objectid}/unsnooze",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
     "Controller": "WebHookController",
     "Action": "PostAsync",
     "HttpMethod": "POST",

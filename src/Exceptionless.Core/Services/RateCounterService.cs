@@ -1,5 +1,4 @@
 using Foundatio.Caching;
-using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Services;
 
@@ -8,21 +7,21 @@ namespace Exceptionless.Core.Services;
 /// Keys:
 ///   rate:v1:count:{epochMinute}:{counterKey}  — TTL 3h
 ///   rate:v1:active:{epochMinute}              — TTL 3h (list of counter keys)
-///   rate:v1:cooldown:{ruleId}:{subjectKey}    — TTL = cooldown + 10min
+///   rate:v1:cooldown:{ruleId}:{subjectKey}    — TTL = configured cooldown
+///   rate:v1:evaluator:last-minute             — last completed evaluation minute
 /// </summary>
 public class RateCounterService
 {
     private readonly ICacheClient _cache;
     private readonly TimeProvider _timeProvider;
-    private readonly ILogger<RateCounterService> _logger;
 
     private static readonly TimeSpan BucketTtl = TimeSpan.FromHours(3);
+    private const string LastEvaluatedMinuteKey = "rate:v1:evaluator:last-minute";
 
-    public RateCounterService(ICacheClient cache, TimeProvider timeProvider, ILoggerFactory loggerFactory)
+    public RateCounterService(ICacheClient cache, TimeProvider timeProvider)
     {
         _cache = cache;
         _timeProvider = timeProvider;
-        _logger = loggerFactory.CreateLogger<RateCounterService>();
     }
 
     /// <summary>Increments the 1-minute bucket counter for the given counter key at the current UTC minute.</summary>
@@ -38,22 +37,22 @@ public class RateCounterService
         await _cache.ListAddAsync(activeKey, counterKey, BucketTtl);
     }
 
-    /// <summary>Sums all 1-minute bucket counts for the given counter key in the range [fromUtc, toUtc].</summary>
+    /// <summary>Sums all 1-minute bucket counts for the given counter key in the range [fromUtc, toUtc).</summary>
     public async Task<long> SumBucketsAsync(string counterKey, DateTime fromUtc, DateTime toUtc, CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
+
         long fromMinute = GetEpochMinute(fromUtc);
         long toMinute = GetEpochMinute(toUtc);
+        if (fromMinute >= toMinute)
+            return 0;
 
-        long total = 0;
-        for (long minute = fromMinute; minute <= toMinute; minute++)
-        {
-            string key = GetCountKey(minute, counterKey);
-            var value = await _cache.GetAsync<long>(key);
-            if (value.HasValue)
-                total += value.Value;
-        }
+        var keys = Enumerable.Range(0, checked((int)(toMinute - fromMinute)))
+            .Select(offset => GetCountKey(fromMinute + offset, counterKey))
+            .ToList();
+        var values = await _cache.GetAllAsync<long>(keys);
 
-        return total;
+        return values.Values.Where(value => value.HasValue).Sum(value => value.Value);
     }
 
     /// <summary>Returns all counter keys that were active during the given minute.</summary>
@@ -76,12 +75,30 @@ public class RateCounterService
         return _cache.ExistsAsync(key);
     }
 
-    /// <summary>Sets a cooldown for the given rule/subject combination.</summary>
-    public Task SetCooldownAsync(string ruleId, string subjectKey, TimeSpan duration, CancellationToken ct = default)
+    /// <summary>Atomically claims the cooldown for a rule/subject combination.</summary>
+    public Task<bool> TrySetCooldownAsync(string ruleId, string subjectKey, TimeSpan duration, CancellationToken ct = default)
     {
-        string key = GetCooldownKey(ruleId, subjectKey);
-        // TTL = duration + 10 minutes buffer
-        return _cache.SetAsync(key, true, duration.Add(TimeSpan.FromMinutes(10)));
+        ct.ThrowIfCancellationRequested();
+        return _cache.AddAsync(GetCooldownKey(ruleId, subjectKey), true, duration);
+    }
+
+    public Task RemoveCooldownAsync(string ruleId, string subjectKey, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        return _cache.RemoveAsync(GetCooldownKey(ruleId, subjectKey));
+    }
+
+    public async Task<DateTime?> GetLastEvaluatedMinuteAsync(CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        var value = await _cache.GetAsync<long>(LastEvaluatedMinuteKey);
+        return value.HasValue ? DateTime.UnixEpoch.AddMinutes(value.Value) : null;
+    }
+
+    public Task SetLastEvaluatedMinuteAsync(DateTime minute, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        return _cache.SetAsync(LastEvaluatedMinuteKey, GetEpochMinute(minute), BucketTtl);
     }
 
     // ---- Key helpers ----

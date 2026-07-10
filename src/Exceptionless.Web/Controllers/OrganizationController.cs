@@ -797,6 +797,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
             await _organizationService.CleanupProjectNotificationSettingsAsync(organization, [user.Id]);
             await _organizationService.RemoveUserSavedViewsAsync(organization.Id, user.Id);
+            await _organizationService.RemoveUserRateNotificationRulesAsync(organization.Id, user.Id);
 
             user.OrganizationIds.Remove(organization.Id);
             await _userRepository.SaveAsync(user, o => o.Cache());

@@ -3,7 +3,6 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Nest;
 
 namespace Exceptionless.Core.Repositories;
 
@@ -22,7 +21,7 @@ public sealed class RateNotificationRuleRepository : RepositoryOwnedByOrganizati
         return FindAsync(q => q
             .Project(projectId)
             .FieldEquals(r => r.UserId, userId)
-            .SortAscending(r => r.Name.Suffix("keyword")), options);
+            .SortAscending(r => r.Name), options);
     }
 
     public Task<FindResults<RateNotificationRule>> GetEnabledByProjectIdAsync(string projectId, CommandOptionsDescriptor<RateNotificationRule>? options = null)
@@ -45,19 +44,13 @@ public sealed class RateNotificationRuleRepository : RepositoryOwnedByOrganizati
             .FieldEquals(r => r.UserId, userId));
     }
 
-    public async Task<long> RemoveByProjectIdAndUserIdAsync(string projectId, string userId)
+    public Task<long> RemoveAllByOrganizationIdAndUserIdAsync(string organizationId, string userId)
     {
-        ArgumentException.ThrowIfNullOrEmpty(projectId);
+        ArgumentException.ThrowIfNullOrEmpty(organizationId);
         ArgumentException.ThrowIfNullOrEmpty(userId);
 
-        var results = await FindAsync(q => q
-            .Project(projectId)
-            .FieldEquals(r => r.UserId, userId), o => o.PageLimit(1000));
-
-        if (results.Total is 0)
-            return 0;
-
-        await RemoveAsync(results.Documents);
-        return results.Total;
+        return RemoveAllAsync(q => q
+            .Organization(organizationId)
+            .FieldEquals(r => r.UserId, userId));
     }
 }

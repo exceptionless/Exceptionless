@@ -1,8 +1,10 @@
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
+using Foundatio.Repositories;
 using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
@@ -10,11 +12,13 @@ namespace Exceptionless.Tests.Controllers;
 public sealed class RateNotificationRuleControllerTests : IntegrationTestsBase
 {
     private readonly IRateNotificationRuleRepository _ruleRepository;
+    private readonly IOrganizationRepository _organizationRepository;
     private readonly IUserRepository _userRepository;
 
     public RateNotificationRuleControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _ruleRepository = GetService<IRateNotificationRuleRepository>();
+        _organizationRepository = GetService<IOrganizationRepository>();
         _userRepository = GetService<IUserRepository>();
     }
 
@@ -23,6 +27,11 @@ public sealed class RateNotificationRuleControllerTests : IntegrationTestsBase
         await base.ResetDataAsync();
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
+
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        organization.Features.Add(OrganizationExtensions.RateNotificationsFeature);
+        await _organizationRepository.SaveAsync(organization);
     }
 
     // ---- Helper: get current user via /me endpoint ----
@@ -54,6 +63,27 @@ public sealed class RateNotificationRuleControllerTests : IntegrationTestsBase
     private string RuleUrl(string userId, string projectId, string ruleId) =>
         $"users/{userId}/projects/{projectId}/rate-notifications/{ruleId}";
 
+    private async Task<ViewRateNotificationRule> CreateProjectRuleAsync(string userId, string name)
+    {
+        var rule = await SendRequestAsAsync<ViewRateNotificationRule>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath(RuleUrl(userId, SampleDataService.TEST_PROJECT_ID))
+            .Content(new NewRateNotificationRule
+            {
+                Name = name,
+                Signal = RateNotificationSignal.Errors,
+                Subject = RateNotificationSubject.Project,
+                Threshold = 5,
+                Window = TimeSpan.FromMinutes(5),
+                Cooldown = TimeSpan.FromMinutes(30)
+            })
+            .StatusCodeShouldBeCreated());
+
+        Assert.NotNull(rule);
+        return rule;
+    }
+
     // ---- CRUD tests ----
 
     [Fact]
@@ -73,7 +103,7 @@ public sealed class RateNotificationRuleControllerTests : IntegrationTestsBase
     [Fact]
     public async Task GetAsync_AsDifferentUser_ReturnsNotFound()
     {
-        // Using org user ID to try to access another user's rules
+        // Using organization user ID to try to access another user's rules
         var adminUser = await GetGlobalAdminUserAsync();
 
         await SendRequestAsync(r => r
@@ -89,7 +119,7 @@ public sealed class RateNotificationRuleControllerTests : IntegrationTestsBase
         var orgUser = await GetTestOrganizationUserAsync();
 
         var results = await SendRequestAsAsync<IReadOnlyCollection<ViewRateNotificationRule>>(r => r
-            .AsGlobalAdminUser()               // admin accessing org user's rules
+            .AsGlobalAdminUser()               // admin accessing organization user's rules
             .AppendPath(RuleUrl(orgUser.Id, SampleDataService.TEST_PROJECT_ID))
             .StatusCodeShouldBeOk()
         );
@@ -401,5 +431,132 @@ public sealed class RateNotificationRuleControllerTests : IntegrationTestsBase
             })
             .StatusCodeShouldBeUnprocessableEntity()
         );
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_UserRemovedFromOrganization_ReturnsNotFound()
+    {
+        // Arrange
+        var user = await GetTestOrganizationUserAsync();
+        var rule = await CreateProjectRuleAsync(user.Id, "Removed user");
+        var storedUser = await _userRepository.GetByIdAsync(user.Id);
+        Assert.NotNull(storedUser);
+        storedUser.OrganizationIds.Remove(SampleDataService.TEST_ORG_ID);
+        await _userRepository.SaveAsync(storedUser, o => o.Cache());
+
+        // Act / Assert
+        await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPath(RuleUrl(user.Id, SampleDataService.TEST_PROJECT_ID, rule.Id))
+            .StatusCodeShouldBeNotFound());
+    }
+
+    [Fact]
+    public async Task PostAsync_FeatureDisabled_CreatesDisabledRule()
+    {
+        // Arrange
+        var user = await GetTestOrganizationUserAsync();
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        organization.Features.Remove(OrganizationExtensions.RateNotificationsFeature);
+        await _organizationRepository.SaveAsync(organization, o => o.Cache());
+
+        // Act
+        var rule = await SendRequestAsAsync<ViewRateNotificationRule>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath(RuleUrl(user.Id, SampleDataService.TEST_PROJECT_ID))
+            .Content(new NewRateNotificationRule
+            {
+                Name = "Feature disabled",
+                Signal = RateNotificationSignal.Errors,
+                Subject = RateNotificationSubject.Project,
+                Threshold = 5,
+                Window = TimeSpan.FromMinutes(5),
+                Cooldown = TimeSpan.FromMinutes(30),
+                IsEnabled = true
+            })
+            .StatusCodeShouldBeCreated());
+
+        // Assert
+        Assert.NotNull(rule);
+        Assert.False(rule.IsEnabled);
+    }
+
+    [Fact]
+    public async Task PutAsync_ExistingStackRuleWithoutStackId_PreservesStack()
+    {
+        // Arrange
+        var user = await GetTestOrganizationUserAsync();
+        var (stacks, _) = await CreateDataAsync(b => b.Event().TestProject().Type(Event.KnownTypes.Error));
+        var stack = Assert.Single(stacks);
+        var created = await SendRequestAsAsync<ViewRateNotificationRule>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath(RuleUrl(user.Id, SampleDataService.TEST_PROJECT_ID))
+            .Content(new NewRateNotificationRule
+            {
+                Name = "Stack rule",
+                Signal = RateNotificationSignal.Errors,
+                Subject = RateNotificationSubject.Stack,
+                StackId = stack.Id,
+                Threshold = 5,
+                Window = TimeSpan.FromMinutes(5),
+                Cooldown = TimeSpan.FromMinutes(30)
+            })
+            .StatusCodeShouldBeCreated());
+        Assert.NotNull(created);
+
+        // Act
+        var updated = await SendRequestAsAsync<ViewRateNotificationRule>(r => r
+            .Put()
+            .AsTestOrganizationUser()
+            .AppendPath(RuleUrl(user.Id, SampleDataService.TEST_PROJECT_ID, created.Id))
+            .Content(new UpdateRateNotificationRule { IsEnabled = false })
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(updated);
+        Assert.Equal(stack.Id, updated.StackId);
+        Assert.False(updated.IsEnabled);
+    }
+
+    [Fact]
+    public async Task SnoozeAsync_BothExpirationValues_Returns422()
+    {
+        // Arrange
+        var user = await GetTestOrganizationUserAsync();
+        var rule = await CreateProjectRuleAsync(user.Id, "Invalid snooze");
+
+        // Act / Assert
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath($"{RuleUrl(user.Id, SampleDataService.TEST_PROJECT_ID, rule.Id)}/snooze")
+            .Content(new SnoozeRateNotificationRuleRequest
+            {
+                DurationSeconds = 60,
+                UntilUtc = TimeProvider.GetUtcNow().UtcDateTime.AddMinutes(1)
+            })
+            .StatusCodeShouldBeUnprocessableEntity());
+    }
+
+    [Fact]
+    public async Task SnoozeAsync_PastExpiration_Returns422()
+    {
+        // Arrange
+        var user = await GetTestOrganizationUserAsync();
+        var rule = await CreateProjectRuleAsync(user.Id, "Past snooze");
+
+        // Act / Assert
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath($"{RuleUrl(user.Id, SampleDataService.TEST_PROJECT_ID, rule.Id)}/snooze")
+            .Content(new SnoozeRateNotificationRuleRequest
+            {
+                UntilUtc = TimeProvider.GetUtcNow().UtcDateTime.AddMinutes(-1)
+            })
+            .StatusCodeShouldBeUnprocessableEntity());
     }
 }

@@ -1,10 +1,10 @@
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Microsoft.Extensions.Logging;
-using System.Text.Json;
 
 namespace Exceptionless.Core.Pipeline;
 
@@ -13,28 +13,22 @@ public class UpdateRateCountersAction : EventPipelineActionBase
 {
     private readonly RateNotificationRuleCache _ruleCache;
     private readonly RateCounterService _counterService;
-    private readonly UserAgentParser _parser;
-    private readonly JsonSerializerOptions _jsonOptions;
 
     public UpdateRateCountersAction(
         RateNotificationRuleCache ruleCache,
         RateCounterService counterService,
-        UserAgentParser parser,
-        JsonSerializerOptions jsonOptions,
         AppOptions options,
         ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _ruleCache = ruleCache;
         _counterService = counterService;
-        _parser = parser;
-        _jsonOptions = jsonOptions;
         ContinueOnError = true;
     }
 
     public override async Task ProcessAsync(EventContext ctx)
     {
         // Premium gate — rate notifications require premium features
-        if (!ctx.Organization.HasPremiumFeatures)
+        if (!ctx.Organization.HasRateNotifications())
             return;
 
         // Stack must allow notifications
@@ -46,26 +40,22 @@ public class UpdateRateCountersAction : EventPipelineActionBase
         if (rules.Count == 0)
             return;
 
-        // Bot check — same pattern as EventNotificationsJob
-        var request = ctx.Event.GetRequestInfo(_jsonOptions);
-        if (!String.IsNullOrEmpty(request?.UserAgent))
-        {
-            var botPatterns = ctx.Project.Configuration.Settings
-                .GetStringCollection(SettingsDictionary.KnownKeys.UserAgentBotPatterns).ToList();
-            var info = await _parser.ParseAsync(request.UserAgent);
-            if (info is not null && info.Device.IsSpider || request.UserAgent.AnyWildcardMatches(botPatterns))
-            {
-                _logger.LogTrace("Skipping rate counter update for bot user agent: {UserAgent}", request.UserAgent);
-                return;
-            }
-        }
+        // RequestInfoPlugin already performs the user-agent work earlier in the pipeline.
+        if (ctx.Event.Data?.GetValueOrDefault(Event.KnownDataKeys.RequestInfo) is RequestInfo request &&
+            request.Data?.GetValueOrDefault(RequestInfo.KnownDataKeys.IsBot) is true)
+            return;
 
-        // Build the set of signals matched by this event
-        bool isError = ctx.Event.IsError();
-        bool isCritical = ctx.Event.IsCritical();
+        var counterKeys = GetCounterKeys(ctx.Event, ctx.IsNew, ctx.IsRegression, rules);
+        AppDiagnostics.RateCounterKeysIncremented.Add(counterKeys.Count);
+        await Task.WhenAll(counterKeys.Select(key => _counterService.IncrementAsync(key)));
+    }
+
+    internal static IReadOnlyCollection<string> GetCounterKeys(PersistentEvent ev, bool isNew, bool isRegression, IEnumerable<RateNotificationRule> rules)
+    {
+        bool isError = ev.IsError();
+        bool isCritical = ev.IsCritical();
         var matchedSignals = new HashSet<RateNotificationSignal>();
 
-        // AllEvents always matches
         matchedSignals.Add(RateNotificationSignal.AllEvents);
 
         if (isError)
@@ -74,23 +64,19 @@ public class UpdateRateCountersAction : EventPipelineActionBase
         if (isError && isCritical)
             matchedSignals.Add(RateNotificationSignal.CriticalErrors);
 
-        if (ctx.IsNew && isError)
+        if (isNew && isError)
             matchedSignals.Add(RateNotificationSignal.NewErrors);
 
-        if (ctx.IsRegression)
+        if (isRegression)
             matchedSignals.Add(RateNotificationSignal.Regressions);
 
-        // Increment counters for each matching rule
-        foreach (var rule in rules.Where(r => matchedSignals.Contains(r.Signal)))
-        {
-            // For Stack subject, only match if this event belongs to the rule's stack
-            if (rule.Subject == RateNotificationSubject.Stack &&
-                (String.IsNullOrEmpty(rule.StackId) || !String.Equals(ctx.Event.StackId, rule.StackId, StringComparison.Ordinal)))
-                continue;
-
-            string counterKey = BuildCounterKey(rule);
-            await _counterService.IncrementAsync(counterKey);
-        }
+        return rules
+            .Where(r => matchedSignals.Contains(r.Signal))
+            .Where(r => r.Subject == RateNotificationSubject.Project ||
+                !String.IsNullOrEmpty(r.StackId) && String.Equals(ev.StackId, r.StackId, StringComparison.Ordinal))
+            .Select(BuildCounterKey)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
     }
 
     internal static string BuildCounterKey(RateNotificationRule rule)

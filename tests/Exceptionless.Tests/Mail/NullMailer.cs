@@ -5,6 +5,8 @@ namespace Exceptionless.Tests.Mail;
 
 public class NullMailer : IMailer
 {
+    public List<RateNotificationCall> RateNotifications { get; } = [];
+
     public Task<bool> SendContactRequestAsync(string name, string emailAddress, string? company, string? subject, string message, string? clientIpAddress, string? userAgent, string? referrer)
     {
         return Task.FromResult(true);
@@ -52,6 +54,9 @@ public class NullMailer : IMailer
 
     public Task SendRateNotificationAsync(User user, Project project, RateNotificationRule rule, long observedCount, DateTime windowStart, DateTime windowEnd, Stack? stack = null)
     {
+        RateNotifications.Add(new RateNotificationCall(user.Id, project.Id, rule.Id, observedCount, windowStart, windowEnd, stack?.Id));
         return Task.CompletedTask;
     }
 }
+
+public record RateNotificationCall(string UserId, string ProjectId, string RuleId, long ObservedCount, DateTime WindowStart, DateTime WindowEnd, string? StackId);

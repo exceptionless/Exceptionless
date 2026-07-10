@@ -125,6 +125,14 @@ public static class AppDiagnostics
 
     internal static readonly Counter<int> SavedViewsSize = Meter.CreateCounter<int>("ex.savedviews.size", description: "Size of user saved views");
     internal static readonly Counter<int> SavedViewsViewTypeSize = Meter.CreateCounter<int>("ex.savedviews.viewtype.size", description: "Size of user saved views by view type");
+
+    internal static readonly Counter<int> RateCounterKeysIncremented = Meter.CreateCounter<int>("ex.rate_notifications.counter_keys.incremented", description: "Distinct rate notification counter keys incremented");
+    internal static readonly Histogram<int> RateNotificationActiveCounterKeys = Meter.CreateHistogram<int>("ex.rate_notifications.active_counter_keys", description: "Active rate notification counter keys per evaluation");
+    internal static readonly Histogram<int> RateNotificationActiveProjects = Meter.CreateHistogram<int>("ex.rate_notifications.active_projects", description: "Active rate notification projects per evaluation");
+    internal static readonly Histogram<double> RateNotificationEvaluationTime = Meter.CreateHistogram<double>("ex.rate_notifications.evaluation_time", description: "Time to evaluate rate notification rules", unit: "ms");
+    internal static readonly Counter<int> RateNotificationsEnqueued = Meter.CreateCounter<int>("ex.rate_notifications.enqueued", description: "Rate notifications enqueued");
+    internal static readonly Counter<int> RateNotificationsSent = Meter.CreateCounter<int>("ex.rate_notifications.sent", description: "Rate notifications sent");
+    internal static readonly Counter<int> RateNotificationsSkipped = Meter.CreateCounter<int>("ex.rate_notifications.skipped", description: "Rate notifications skipped during delivery");
 }
 
 public static class MetricsClientExtensions

@@ -1,3 +1,4 @@
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
@@ -34,6 +35,11 @@ public class RateNotificationEvaluatorJobTests : IntegrationTestsBase
         await base.ResetDataAsync();
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
+
+        var organization = await _orgRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        organization.Features.Add(OrganizationExtensions.RateNotificationsFeature);
+        await _orgRepository.SaveAsync(organization, o => o.ImmediateConsistency());
     }
 
     private RateNotificationRule BuildRule(string? projectId = null, RateNotificationSignal signal = RateNotificationSignal.Errors, int threshold = 10, string? window = null, string? cooldown = null)
@@ -112,6 +118,25 @@ public class RateNotificationEvaluatorJobTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task RunAsync_WhenEventsAreInCurrentMinute_DoesNotEvaluatePartialBucket()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var now = new DateTime(2024, 6, 1, 12, 0, 30, DateTimeKind.Utc);
+        TimeProvider.SetUtcNow(now);
+        var rule = await _ruleRepository.AddAsync(BuildRule(threshold: 1), o => o.ImmediateConsistency());
+        await _counterService.IncrementAsync(BuildCounterKey(rule), ct);
+        long queueBefore = (await _notificationQueue.GetQueueStatsAsync()).Enqueued;
+
+        // Act
+        await _job.RunAsync(ct);
+
+        // Assert
+        long queueAfter = (await _notificationQueue.GetQueueStatsAsync()).Enqueued;
+        Assert.Equal(queueBefore, queueAfter);
+    }
+
+    [Fact]
     public async Task RunAsync_WhenOnCooldown_DoesNotEnqueueAgain()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -130,7 +155,7 @@ public class RateNotificationEvaluatorJobTests : IntegrationTestsBase
         TimeProvider.Advance(TimeSpan.FromMinutes(2));
 
         // Put rule on cooldown (at "now")
-        await _counterService.SetCooldownAsync(rule.Id, subjectKey, TimeSpan.FromHours(1), ct);
+        Assert.True(await _counterService.TrySetCooldownAsync(rule.Id, subjectKey, TimeSpan.FromHours(1), ct));
 
         long queueBefore = (await _notificationQueue.GetQueueStatsAsync()).Enqueued;
 

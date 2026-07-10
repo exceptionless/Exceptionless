@@ -1,8 +1,11 @@
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Utility;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Queues;
@@ -48,12 +51,15 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
 
     protected override async Task<JobResult> RunInternalAsync(JobContext context)
     {
+        using var evaluationTimer = AppDiagnostics.RateNotificationEvaluationTime.StartTimer();
         var now = _timeProvider.GetUtcNow().UtcDateTime;
-        var scanFrom = now.Subtract(ScanWindow);
-
-        // Round scanFrom down to minute boundary; stop 1 minute before now (current bucket may be incomplete)
-        var fromMinute = new DateTime(scanFrom.Year, scanFrom.Month, scanFrom.Day, scanFrom.Hour, scanFrom.Minute, 0, DateTimeKind.Utc);
-        var toMinute = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, DateTimeKind.Utc).AddMinutes(-1);
+        var currentMinute = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, DateTimeKind.Utc);
+        var toMinute = currentMinute.AddMinutes(-1);
+        var lastEvaluatedMinute = await _counterService.GetLastEvaluatedMinuteAsync(context.CancellationToken);
+        var earliestRecoveryMinute = toMinute.Subtract(ScanWindow).AddMinutes(1);
+        var fromMinute = lastEvaluatedMinute.HasValue
+            ? new[] { lastEvaluatedMinute.Value.AddMinutes(1), earliestRecoveryMinute }.Max()
+            : earliestRecoveryMinute;
 
         if (fromMinute > toMinute)
             return JobResult.Success;
@@ -69,86 +75,81 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
                 allCounterKeys.Add(key);
         }
 
-        if (allCounterKeys.Count == 0)
-        {
-            _logger.LogDebug("No active counter keys found in scan window");
-            return JobResult.Success;
-        }
+        var counterKeysByProject = allCounterKeys
+            .Select(counterKey => (CounterKey: counterKey, ProjectId: ParseProjectIdFromCounterKey(counterKey)))
+            .Where(entry => entry.ProjectId is not null)
+            .GroupBy(entry => entry.ProjectId!, entry => entry.CounterKey)
+            .ToList();
 
-        // For each unique counter key, evaluate all matching rules
-        foreach (string counterKey in allCounterKeys)
+        AppDiagnostics.RateNotificationActiveCounterKeys.Record(allCounterKeys.Count);
+        AppDiagnostics.RateNotificationActiveProjects.Record(counterKeysByProject.Count);
+
+        foreach (var projectCounterKeys in counterKeysByProject)
         {
             if (context.CancellationToken.IsCancellationRequested)
                 return JobResult.Cancelled;
 
-            await EvaluateCounterKeyAsync(counterKey, now, context.CancellationToken);
+            await EvaluateProjectAsync(projectCounterKeys.Key, projectCounterKeys, currentMinute, context.CancellationToken);
         }
 
+        await _counterService.SetLastEvaluatedMinuteAsync(toMinute, context.CancellationToken);
         _logger.LogInformation("Finished evaluating rate notification rules");
         return JobResult.Success;
     }
 
-    private async Task EvaluateCounterKeyAsync(string counterKey, DateTime now, CancellationToken ct)
+    private async Task EvaluateProjectAsync(string projectId, IEnumerable<string> counterKeys, DateTime evaluationEndUtc, CancellationToken ct)
     {
-        // Parse projectId from counter key to load rules
-        string? projectId = ParseProjectIdFromCounterKey(counterKey);
-        if (projectId is null)
-        {
-            _logger.LogWarning("Unable to parse projectId from counter key: {CounterKey}", counterKey);
-            return;
-        }
-
-        // Load enabled rules for project matching this counter key
         var allProjectRules = await _ruleRepository.GetEnabledByProjectIdAsync(projectId, o => o.PageLimit(1000));
-
-        // Filter rules matching this counter key
-        var matchingRules = allProjectRules.Documents
-            .Where(r => CounterKeyMatchesRule(counterKey, r))
-            .ToList();
-
-        if (matchingRules.Count == 0)
+        if (allProjectRules.Documents.Count == 0)
             return;
 
-        // Load org once per project for premium check
-        string? organizationId = matchingRules.First().OrganizationId;
-        var org = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
-        if (org is null)
+        string organizationId = allProjectRules.Documents.First().OrganizationId;
+        var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
+        if (organization is null || !organization.HasRateNotifications())
             return;
 
-        if (!org.HasPremiumFeatures)
-            return;
+        var rulesByCounterKey = allProjectRules.Documents
+            .GroupBy(UpdateRateCountersAction.BuildCounterKey, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.Ordinal);
 
-        foreach (var rule in matchingRules)
+        foreach (string counterKey in counterKeys)
         {
-            if (ct.IsCancellationRequested)
-                return;
+            if (!rulesByCounterKey.TryGetValue(counterKey, out var matchingRules))
+                continue;
 
-            await EvaluateRuleAsync(rule, counterKey, now, ct);
+            foreach (var rule in matchingRules)
+            {
+                if (ct.IsCancellationRequested)
+                    return;
+
+                await EvaluateRuleAsync(rule, counterKey, evaluationEndUtc, ct);
+            }
         }
     }
 
-    private async Task EvaluateRuleAsync(RateNotificationRule rule, string counterKey, DateTime now, CancellationToken ct)
+    private async Task EvaluateRuleAsync(RateNotificationRule rule, string counterKey, DateTime evaluationEndUtc, CancellationToken ct)
     {
         if (!rule.IsEnabled)
             return;
 
         // Skip if actively snoozed
-        if (rule.SnoozedUntilUtc.HasValue && rule.SnoozedUntilUtc.Value > now)
+        if (rule.SnoozedUntilUtc.HasValue && rule.SnoozedUntilUtc.Value > evaluationEndUtc)
         {
             _logger.LogDebug("Skipping snoozed rule {RuleId} snoozed until {SnoozedUntil}", rule.Id, rule.SnoozedUntilUtc);
             return;
         }
 
-        var windowStartUtc = now.Subtract(rule.Window);
+        var windowStartUtc = evaluationEndUtc.Subtract(rule.Window);
 
         // SNOOZE BACK-ALERT FIX:
         // If the rule was recently un-snoozed (SnoozedUntilUtc is set and in the past), use that as the
         // effective window start to ignore traffic that occurred during the snooze period.
-        var effectiveWindowStartUtc = rule.SnoozedUntilUtc.HasValue && rule.SnoozedUntilUtc.Value > windowStartUtc
-            ? rule.SnoozedUntilUtc.Value
+        var snoozeBoundaryUtc = rule.SnoozedUntilUtc?.Ceiling(TimeSpan.FromMinutes(1));
+        var effectiveWindowStartUtc = snoozeBoundaryUtc.HasValue && snoozeBoundaryUtc.Value > windowStartUtc
+            ? snoozeBoundaryUtc.Value
             : windowStartUtc;
 
-        var observedCount = await _counterService.SumBucketsAsync(counterKey, effectiveWindowStartUtc, now, ct);
+        var observedCount = await _counterService.SumBucketsAsync(counterKey, effectiveWindowStartUtc, evaluationEndUtc, ct);
 
         if (observedCount < rule.Threshold)
         {
@@ -159,34 +160,39 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
         // Build subject key (for cooldown scoping)
         string subjectKey = BuildSubjectKey(rule);
 
-        // Check cooldown
-        if (await _counterService.IsOnCooldownAsync(rule.Id, subjectKey, ct))
+        // Atomically claim the cooldown before enqueueing so overlapping evaluators cannot duplicate alerts.
+        if (!await _counterService.TrySetCooldownAsync(rule.Id, subjectKey, rule.Cooldown, ct))
         {
             _logger.LogDebug("Rule {RuleId} is on cooldown for subject {SubjectKey}", rule.Id, subjectKey);
             return;
         }
 
-        // Enqueue notification
-        await _notificationQueue.EnqueueAsync(new RateNotification
+        try
         {
-            RuleId = rule.Id,
-            RuleVersion = rule.Version,
-            OrganizationId = rule.OrganizationId,
-            ProjectId = rule.ProjectId,
-            UserId = rule.UserId,
-            SubjectKey = subjectKey,
-            StackId = rule.StackId,
-            WindowStartUtc = effectiveWindowStartUtc,
-            WindowEndUtc = now,
-            ObservedCount = observedCount,
-            Threshold = rule.Threshold
-        });
-
-        // Set cooldown
-        await _counterService.SetCooldownAsync(rule.Id, subjectKey, rule.Cooldown, ct);
+            await _notificationQueue.EnqueueAsync(new RateNotification
+            {
+                RuleId = rule.Id,
+                RuleVersion = rule.Version,
+                OrganizationId = rule.OrganizationId,
+                ProjectId = rule.ProjectId,
+                UserId = rule.UserId,
+                SubjectKey = subjectKey,
+                StackId = rule.StackId,
+                WindowStartUtc = effectiveWindowStartUtc,
+                WindowEndUtc = evaluationEndUtc,
+                ObservedCount = observedCount,
+                Threshold = rule.Threshold
+            });
+            AppDiagnostics.RateNotificationsEnqueued.Add(1);
+        }
+        catch
+        {
+            await _counterService.RemoveCooldownAsync(rule.Id, subjectKey, ct);
+            throw;
+        }
 
         // Update LastFiredUtc
-        rule.LastFiredUtc = now;
+        rule.LastFiredUtc = evaluationEndUtc;
         await _ruleRepository.SaveAsync(rule);
 
         _logger.LogInformation("Rate notification fired: rule={RuleId} project={ProjectId} observed={Observed} threshold={Threshold}",
@@ -206,13 +212,6 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
             return null;
 
         return counterKey[start..end];
-    }
-
-    /// <summary>Returns true if the counter key was generated by the given rule.</summary>
-    private static bool CounterKeyMatchesRule(string counterKey, RateNotificationRule rule)
-    {
-        string expected = UpdateRateCountersAction.BuildCounterKey(rule);
-        return String.Equals(counterKey, expected, StringComparison.Ordinal);
     }
 
     private static string BuildSubjectKey(RateNotificationRule rule)

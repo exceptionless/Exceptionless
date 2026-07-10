@@ -1,4 +1,5 @@
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
@@ -6,9 +7,10 @@ using Exceptionless.Core.Services;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
+using Foundatio.Lock;
+using Foundatio.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Foundatio.Repositories;
 
 namespace Exceptionless.App.Controllers.API;
 
@@ -34,23 +36,29 @@ public class RateNotificationRuleController : ExceptionlessApiController
     private readonly IRateNotificationRuleRepository _ruleRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly IOrganizationRepository _organizationRepository;
+    private readonly IUserRepository _userRepository;
     private readonly IStackRepository _stackRepository;
     private readonly RateNotificationRuleCache _ruleCache;
+    private readonly ILockProvider _lockProvider;
 
     public RateNotificationRuleController(
         IRateNotificationRuleRepository ruleRepository,
         IProjectRepository projectRepository,
         IOrganizationRepository organizationRepository,
+        IUserRepository userRepository,
         IStackRepository stackRepository,
         RateNotificationRuleCache ruleCache,
+        ILockProvider lockProvider,
         TimeProvider timeProvider,
         ILoggerFactory loggerFactory) : base(timeProvider)
     {
         _ruleRepository = ruleRepository;
         _projectRepository = projectRepository;
         _organizationRepository = organizationRepository;
+        _userRepository = userRepository;
         _stackRepository = stackRepository;
         _ruleCache = ruleCache;
+        _lockProvider = lockProvider;
     }
 
     /// <summary>Get all rate notification rules for a user/project.</summary>
@@ -64,7 +72,7 @@ public class RateNotificationRuleController : ExceptionlessApiController
         if (!CanManage(userId))
             return NotFound();
 
-        var project = await GetProjectAndCheckAccessAsync(projectId);
+        var project = await GetProjectAndCheckAccessAsync(projectId, userId);
         if (project is null)
             return NotFound();
 
@@ -88,7 +96,7 @@ public class RateNotificationRuleController : ExceptionlessApiController
         if (!CanManage(userId))
             return NotFound();
 
-        var project = await GetProjectAndCheckAccessAsync(projectId);
+        var project = await GetProjectAndCheckAccessAsync(projectId, userId);
         if (project is null)
             return NotFound();
 
@@ -115,16 +123,19 @@ public class RateNotificationRuleController : ExceptionlessApiController
             return ValidationProblem(detail: "StackId must be empty when Subject is Project.");
         }
 
-        // Enforce max rules limit
+        var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
+        bool isEnabled = model.IsEnabled && organization?.HasRateNotifications() == true;
+
+        await using var createLock = await _lockProvider.TryAcquireAsync(
+            $"rate-notification:create:{projectId}:{userId}",
+            TimeSpan.FromSeconds(15),
+            TimeSpan.FromSeconds(5));
+        if (createLock is null)
+            return Conflict(new ProblemDetails { Detail = "Another rate notification rule is being created. Please retry." });
+
         long count = await _ruleRepository.CountByProjectIdAndUserIdAsync(projectId, userId);
         if (count >= MaxRulesPerUserPerProject)
             return ValidationProblem(detail: $"Maximum of {MaxRulesPerUserPerProject} rate notification rules per user per project.");
-
-        // Premium gate — non-premium users can create rules but they start disabled
-        var org = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
-        bool isEnabled = model.IsEnabled;
-        if (!org?.HasPremiumFeatures ?? false)
-            isEnabled = false;
 
         var now = _timeProvider.GetUtcNow().UtcDateTime;
         var rule = new RateNotificationRule
@@ -158,7 +169,11 @@ public class RateNotificationRuleController : ExceptionlessApiController
         if (!CanManage(userId))
             return NotFound();
 
-        var rule = await GetRuleAndCheckAccessAsync(ruleId, userId, projectId);
+        var project = await GetProjectAndCheckAccessAsync(projectId, userId);
+        if (project is null)
+            return NotFound();
+
+        var rule = await GetRuleAndCheckAccessAsync(ruleId, userId, project);
         if (rule is null)
             return NotFound();
 
@@ -177,11 +192,11 @@ public class RateNotificationRuleController : ExceptionlessApiController
         if (!CanManage(userId))
             return NotFound();
 
-        var project = await GetProjectAndCheckAccessAsync(projectId);
+        var project = await GetProjectAndCheckAccessAsync(projectId, userId);
         if (project is null)
             return NotFound();
 
-        var rule = await GetRuleAndCheckAccessAsync(ruleId, userId, projectId);
+        var rule = await GetRuleAndCheckAccessAsync(ruleId, userId, project);
         if (rule is null)
             return NotFound();
 
@@ -199,7 +214,7 @@ public class RateNotificationRuleController : ExceptionlessApiController
             rule.Threshold = model.Threshold.Value;
 
         // StackId update
-        var newStackId = model.StackId;
+        var newStackId = model.StackId ?? (rule.Subject == RateNotificationSubject.Stack ? rule.StackId : null);
         var newSubject = rule.Subject;
 
         if (newSubject == RateNotificationSubject.Stack)
@@ -233,8 +248,8 @@ public class RateNotificationRuleController : ExceptionlessApiController
 
         if (model.IsEnabled.HasValue)
         {
-            var org = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
-            rule.IsEnabled = model.IsEnabled.Value && (org?.HasPremiumFeatures ?? false);
+            var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
+            rule.IsEnabled = model.IsEnabled.Value && organization?.HasRateNotifications() == true;
         }
 
         rule.Version++;
@@ -253,7 +268,11 @@ public class RateNotificationRuleController : ExceptionlessApiController
         if (!CanManage(userId))
             return NotFound();
 
-        var rule = await GetRuleAndCheckAccessAsync(ruleId, userId, projectId);
+        var project = await GetProjectAndCheckAccessAsync(projectId, userId);
+        if (project is null)
+            return NotFound();
+
+        var rule = await GetRuleAndCheckAccessAsync(ruleId, userId, project);
         if (rule is null)
             return NotFound();
 
@@ -275,24 +294,24 @@ public class RateNotificationRuleController : ExceptionlessApiController
         if (!CanManage(userId))
             return NotFound();
 
-        var rule = await GetRuleAndCheckAccessAsync(ruleId, userId, projectId);
+        var project = await GetProjectAndCheckAccessAsync(projectId, userId);
+        if (project is null)
+            return NotFound();
+
+        var rule = await GetRuleAndCheckAccessAsync(ruleId, userId, project);
         if (rule is null)
             return NotFound();
 
         var now = _timeProvider.GetUtcNow().UtcDateTime;
 
-        if (request.UntilUtc.HasValue)
-        {
-            rule.SnoozedUntilUtc = request.UntilUtc.Value;
-        }
-        else if (request.DurationSeconds.HasValue)
-        {
-            rule.SnoozedUntilUtc = now.AddSeconds(request.DurationSeconds.Value);
-        }
-        else
-        {
+        if (request.UntilUtc.HasValue == request.DurationSeconds.HasValue)
             return ValidationProblem(detail: "Either DurationSeconds or UntilUtc must be provided.");
-        }
+
+        var snoozedUntilUtc = request.UntilUtc ?? now.AddSeconds(request.DurationSeconds!.Value);
+        if (snoozedUntilUtc <= now)
+            return ValidationProblem(detail: "Snooze expiration must be in the future.");
+
+        rule.SnoozedUntilUtc = snoozedUntilUtc;
 
         rule.Version++;
         rule.UpdatedUtc = now;
@@ -309,14 +328,19 @@ public class RateNotificationRuleController : ExceptionlessApiController
         if (!CanManage(userId))
             return NotFound();
 
-        var rule = await GetRuleAndCheckAccessAsync(ruleId, userId, projectId);
+        var project = await GetProjectAndCheckAccessAsync(projectId, userId);
+        if (project is null)
+            return NotFound();
+
+        var rule = await GetRuleAndCheckAccessAsync(ruleId, userId, project);
         if (rule is null)
             return NotFound();
 
         // Set to now (NOT null) so the evaluator uses now as the effective window start — no back-alert
-        rule.SnoozedUntilUtc = _timeProvider.GetUtcNow().UtcDateTime;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
+        rule.SnoozedUntilUtc = now;
         rule.Version++;
-        rule.UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime;
+        rule.UpdatedUtc = now;
         await _ruleRepository.SaveAsync(rule, o => o.Cache());
         await _ruleCache.InvalidateAsync(projectId);
 
@@ -331,15 +355,23 @@ public class RateNotificationRuleController : ExceptionlessApiController
         return String.Equals(CurrentUser.Id, userId, StringComparison.Ordinal) || Request.IsGlobalAdmin();
     }
 
-    private async Task<Project?> GetProjectAndCheckAccessAsync(string projectId)
+    private async Task<Project?> GetProjectAndCheckAccessAsync(string projectId, string userId)
     {
+        if (!CanManage(userId))
+            return null;
+
         var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache());
         if (project is null || !CanAccessOrganization(project.OrganizationId))
             return null;
+
+        var user = await _userRepository.GetByIdAsync(userId, o => o.Cache());
+        if (user is null || !user.OrganizationIds.Contains(project.OrganizationId))
+            return null;
+
         return project;
     }
 
-    private async Task<RateNotificationRule?> GetRuleAndCheckAccessAsync(string ruleId, string userId, string projectId)
+    private async Task<RateNotificationRule?> GetRuleAndCheckAccessAsync(string ruleId, string userId, Project project)
     {
         var rule = await _ruleRepository.GetByIdAsync(ruleId);
         if (rule is null)
@@ -349,11 +381,10 @@ public class RateNotificationRuleController : ExceptionlessApiController
         if (!String.Equals(rule.UserId, userId, StringComparison.Ordinal))
             return null;
 
-        if (!String.Equals(rule.ProjectId, projectId, StringComparison.Ordinal))
+        if (!String.Equals(rule.ProjectId, project.Id, StringComparison.Ordinal))
             return null;
 
-        // Current user must be able to manage this rule
-        if (!CanManage(userId))
+        if (!String.Equals(rule.OrganizationId, project.OrganizationId, StringComparison.Ordinal))
             return null;
 
         return rule;

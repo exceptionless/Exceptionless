@@ -1,7 +1,6 @@
 using Exceptionless.Core.Services;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
-using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace Exceptionless.Tests.Services;
@@ -21,9 +20,9 @@ public class RateCounterServiceTests
         var timeProvider = new ProxyTimeProvider();
         var cache = new InMemoryCacheClient(new InMemoryCacheClientOptions
         {
-            LoggerFactory = NullLoggerFactory.Instance
+            TimeProvider = timeProvider
         });
-        var service = new RateCounterService(cache, timeProvider, NullLoggerFactory.Instance);
+        var service = new RateCounterService(cache, timeProvider);
         return (service, timeProvider, cache);
     }
 
@@ -126,7 +125,7 @@ public class RateCounterServiceTests
 
         await service.IncrementAsync(CounterKey, ct);
 
-        long count = await service.SumBucketsAsync(CounterKey, now.AddMinutes(-1), now, ct);
+        long count = await service.SumBucketsAsync(CounterKey, now.AddMinutes(-1), now.AddMinutes(1), ct);
         Assert.Equal(1, count);
     }
 
@@ -141,7 +140,7 @@ public class RateCounterServiceTests
         for (int i = 0; i < 7; i++)
             await service.IncrementAsync(CounterKey, ct);
 
-        long count = await service.SumBucketsAsync(CounterKey, now.AddMinutes(-1), now, ct);
+        long count = await service.SumBucketsAsync(CounterKey, now.AddMinutes(-1), now.AddMinutes(1), ct);
         Assert.Equal(7, count);
     }
 
@@ -167,8 +166,27 @@ public class RateCounterServiceTests
         for (int i = 0; i < 2; i++)
             await service.IncrementAsync(CounterKey, ct);
 
-        long count = await service.SumBucketsAsync(CounterKey, now.AddMinutes(-5), now, ct);
+        long count = await service.SumBucketsAsync(CounterKey, now.AddMinutes(-5), now.AddMinutes(1), ct);
         Assert.Equal(10, count);
+    }
+
+    [Fact]
+    public async Task SumBucketsAsync_EndMinuteHasEvents_ExcludesEndMinute()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var (service, timeProvider, _) = Create();
+        var end = new DateTime(2024, 1, 15, 10, 5, 0, DateTimeKind.Utc);
+        timeProvider.SetUtcNow(end.AddMinutes(-1));
+        await service.IncrementAsync(CounterKey, ct);
+        timeProvider.SetUtcNow(end);
+        await service.IncrementAsync(CounterKey, ct);
+
+        // Act
+        long count = await service.SumBucketsAsync(CounterKey, end.AddMinutes(-5), end, ct);
+
+        // Assert
+        Assert.Equal(1, count);
     }
 
     [Fact]
@@ -247,28 +265,61 @@ public class RateCounterServiceTests
     }
 
     [Fact]
-    public async Task IsOnCooldownAsync_AfterSetCooldown_ReturnsTrue()
+    public async Task IsOnCooldownAsync_AfterClaimingCooldown_ReturnsTrue()
     {
         var ct = TestContext.Current.CancellationToken;
         var (service, _, _) = Create();
-        await service.SetCooldownAsync(RuleId, SubjectKey, TimeSpan.FromHours(1), ct);
+        Assert.True(await service.TrySetCooldownAsync(RuleId, SubjectKey, TimeSpan.FromHours(1), ct));
         bool onCooldown = await service.IsOnCooldownAsync(RuleId, SubjectKey, ct);
         Assert.True(onCooldown);
     }
 
     [Fact]
-    public async Task SetCooldownAsync_DifferentRules_IndependentCooldowns()
+    public async Task TrySetCooldownAsync_DifferentRules_IndependentCooldowns()
     {
         var ct = TestContext.Current.CancellationToken;
         var (service, _, _) = Create();
         const string ruleId2 = "rule-002";
 
-        await service.SetCooldownAsync(RuleId, SubjectKey, TimeSpan.FromHours(1), ct);
+        Assert.True(await service.TrySetCooldownAsync(RuleId, SubjectKey, TimeSpan.FromHours(1), ct));
 
         bool rule1OnCooldown = await service.IsOnCooldownAsync(RuleId, SubjectKey, ct);
         bool rule2OnCooldown = await service.IsOnCooldownAsync(ruleId2, SubjectKey, ct);
 
         Assert.True(rule1OnCooldown);
         Assert.False(rule2OnCooldown);
+    }
+
+    [Fact]
+    public async Task TrySetCooldownAsync_ConfiguredDuration_ExpiresWithoutBuffer()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var (service, timeProvider, _) = Create();
+        var duration = TimeSpan.FromMinutes(5);
+        Assert.True(await service.TrySetCooldownAsync(RuleId, SubjectKey, duration, ct));
+
+        // Act
+        timeProvider.Advance(duration);
+        bool onCooldown = await service.IsOnCooldownAsync(RuleId, SubjectKey, ct);
+
+        // Assert
+        Assert.False(onCooldown);
+    }
+
+    [Fact]
+    public async Task TrySetCooldownAsync_WhenAlreadyClaimed_ReturnsFalse()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var (service, _, _) = Create();
+
+        // Act
+        bool first = await service.TrySetCooldownAsync(RuleId, SubjectKey, TimeSpan.FromMinutes(5), ct);
+        bool second = await service.TrySetCooldownAsync(RuleId, SubjectKey, TimeSpan.FromMinutes(5), ct);
+
+        // Assert
+        Assert.True(first);
+        Assert.False(second);
     }
 }

@@ -4,8 +4,8 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Exceptionless.Tests.Utility;
-using Foundatio.Repositories.Models;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Utility;
 using Xunit;
 
