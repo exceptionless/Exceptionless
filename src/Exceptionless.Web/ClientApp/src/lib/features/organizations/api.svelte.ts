@@ -656,20 +656,7 @@ export function uploadOrganizationIcon(request: OrganizationIconRequest) {
 }
 
 function updateOrganizationCache(queryClient: QueryClient, id: string | undefined, organization: ViewOrganization) {
-    queryClient.setQueryData(queryKeys.id(id, 'stats'), organization);
-    queryClient.setQueryData(queryKeys.id(id, undefined), organization);
-    queryClient.setQueriesData<FetchClientResponse<ViewOrganization[]> | undefined>({ queryKey: queryKeys.type }, (response) => {
-        if (!Array.isArray(response?.data) || !response.data.some((existingOrganization) => existingOrganization.id === organization.id)) {
-            return response;
-        }
-
-        return {
-            ...response,
-            data: response.data.map((existingOrganization) => {
-                return existingOrganization.id === organization.id ? organization : existingOrganization;
-            })
-        };
-    });
+    updateOrganizationQueryData(queryClient, id, () => organization);
 }
 
 function updateOrganizationQueryData(queryClient: QueryClient, id: string | undefined, updater: (organization: ViewOrganization) => ViewOrganization) {

@@ -14,6 +14,11 @@ export interface OrganizationBillingInformation {
     vatNumber: string;
 }
 
+export interface OrganizationBillingInformationChange {
+    key: (typeof organizationBillingInformationDataKeys)[keyof typeof organizationBillingInformationDataKeys];
+    value: null | string;
+}
+
 export function getOrganizationBillingInformation(organization?: null | Pick<ViewOrganization, 'data'>): OrganizationBillingInformation {
     const data = organization?.data;
 
@@ -23,6 +28,18 @@ export function getOrganizationBillingInformation(organization?: null | Pick<Vie
         vatId: getOrganizationBillingInformationValue(data?.[organizationBillingInformationDataKeys.vatId]),
         vatNumber: getOrganizationBillingInformationValue(data?.[organizationBillingInformationDataKeys.vatNumber])
     };
+}
+
+export function getOrganizationBillingInformationChanges(
+    current: OrganizationBillingInformation,
+    next: OrganizationBillingInformation
+): OrganizationBillingInformationChange[] {
+    return (Object.keys(organizationBillingInformationDataKeys) as (keyof OrganizationBillingInformation)[]).flatMap((field) => {
+        const currentValue = normalizeOrganizationBillingInformationValue(current[field]);
+        const nextValue = normalizeOrganizationBillingInformationValue(next[field]);
+
+        return currentValue === nextValue ? [] : [{ key: organizationBillingInformationDataKeys[field], value: nextValue }];
+    });
 }
 
 export function normalizeOrganizationBillingInformationValue(value: string): null | string {

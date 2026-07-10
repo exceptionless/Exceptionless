@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { getOrganizationBillingInformation, normalizeOrganizationBillingInformationValue, organizationBillingInformationDataKeys } from './billing-information';
+import {
+    getOrganizationBillingInformation,
+    getOrganizationBillingInformationChanges,
+    normalizeOrganizationBillingInformationValue,
+    organizationBillingInformationDataKeys
+} from './billing-information';
 
 describe('getOrganizationBillingInformation', () => {
     it('returns billing information from known organization data keys', () => {
@@ -63,5 +68,28 @@ describe('normalizeOrganizationBillingInformationValue', () => {
         // Assert
         expect(normalizedValue).toBe('DE123456789');
         expect(normalizedBlankValue).toBeNull();
+    });
+});
+
+describe('getOrganizationBillingInformationChanges', () => {
+    it('returns only normalized values that changed', () => {
+        const current = {
+            address: '123 Main Street',
+            name: 'Acme, Inc.',
+            vatId: 'DE123456789',
+            vatNumber: ''
+        };
+
+        const changes = getOrganizationBillingInformationChanges(current, {
+            ...current,
+            name: '  Acme, Inc.  ',
+            vatId: '  ',
+            vatNumber: '  123456789  '
+        });
+
+        expect(changes).toEqual([
+            { key: organizationBillingInformationDataKeys.vatId, value: null },
+            { key: organizationBillingInformationDataKeys.vatNumber, value: '123456789' }
+        ]);
     });
 });
