@@ -178,3 +178,41 @@ Then Exceptionless must not send duplicate throttling emails for every post.
 Given a user belongs to the organization and does not have a verified email or has notifications disabled
 When a project throttling notification is sent
 Then that user must not receive the email.
+
+### Requirement: Budget alert crossings MUST be current and atomically deduplicated
+
+Budget alert publication MUST compare bucket-inclusive previous/current accepted totals and atomically claim each organization-threshold-period key.
+
+#### Scenario: Concurrent crossing
+
+Given concurrent accepted batches cross the same configured threshold
+When each publisher attempts AddAsync for the dedupe key
+Then only the successful claimant may publish the alert.
+
+#### Scenario: Alerts enabled above threshold
+
+Given accepted usage already exceeds a threshold while alerts are disabled
+When an authorized user enables that threshold
+Then it must be evaluated once immediately after settings are saved.
+
+#### Scenario: Invalid disabled threshold
+
+Given budget alert settings exist but are disabled
+When a threshold is outside 1 through 99
+Then validation must reject the settings.
+
+### Requirement: Delayed usage notifications MUST suppress stale mail
+
+Notification handlers MUST re-check current persisted settings, plan, bucket-inclusive usage, and throttle state before sending.
+
+#### Scenario: Budget alert becomes stale
+
+Given a budget alert work item is queued
+When the threshold is removed, alerts are disabled, usage is below the current threshold count, or the plan becomes unlimited before handling
+Then the handler must not send the email.
+
+#### Scenario: Smart throttle becomes stale
+
+Given a smart-throttle work item is queued
+When the operational kill switch is disabled or the project's current throttle state expires before handling
+Then the handler must not send the email.

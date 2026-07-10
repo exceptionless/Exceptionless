@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -10,19 +11,21 @@ using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Services;
 
-public class UsageService
+public partial class UsageService
 {
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly ICacheClient _cache;
     private readonly IMessagePublisher _messagePublisher;
     private readonly NotificationService _notificationService;
+    private readonly AppOptions _appOptions;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
     private readonly TimeSpan _bucketSize = TimeSpan.FromMinutes(5);
 
     public UsageService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ICacheClient cache, IMessagePublisher messagePublisher,
         NotificationService notificationService,
+        AppOptions appOptions,
         TimeProvider timeProvider,
         ILoggerFactory loggerFactory)
     {
@@ -31,6 +34,7 @@ public class UsageService
         _cache = cache;
         _messagePublisher = messagePublisher;
         _notificationService = notificationService;
+        _appOptions = appOptions;
         _timeProvider = timeProvider;
         _logger = loggerFactory.CreateLogger<UsageService>();
     }
@@ -422,223 +426,62 @@ public class UsageService
         return Math.Max(eventsLeftInBucket, 0);
     }
 
-    public async Task IncrementTotalAsync(string organizationId, string projectId, int eventCount = 1)
+    public Task IncrementTotalAsync(string organizationId, string projectId, int eventCount = 1)
+    {
+        return IncrementTotalAsync(null, organizationId, projectId, eventCount);
+    }
+
+    public Task IncrementTotalAsync(Organization organization, string projectId, int eventCount = 1)
+    {
+        ArgumentNullException.ThrowIfNull(organization);
+        return IncrementTotalAsync(organization, organization.Id, projectId, eventCount);
+    }
+
+    private async Task IncrementTotalAsync(Organization? organization, string organizationId, string projectId, int eventCount)
     {
         if (eventCount <= 0)
             return;
 
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
-
         long bucketTotal = await _cache.IncrementAsync(GetBucketTotalCacheKey(utcNow, organizationId), eventCount, TimeSpan.FromHours(8));
-        await _cache.IncrementAsync(GetBucketTotalCacheKey(utcNow, organizationId, projectId), eventCount, TimeSpan.FromHours(8));
 
-        await _cache.ListAddAsync(GetOrganizationSetKey(utcNow), organizationId, TimeSpan.FromHours(8));
-        await _cache.ListAddAsync(GetProjectSetKey(utcNow), projectId, TimeSpan.FromHours(8));
+        await Task.WhenAll(
+            _cache.IncrementAsync(GetBucketTotalCacheKey(utcNow, organizationId, projectId), eventCount, TimeSpan.FromHours(8)),
+            _cache.ListAddAsync(GetOrganizationSetKey(utcNow), organizationId, TimeSpan.FromHours(8)),
+            _cache.ListAddAsync(GetProjectSetKey(utcNow), projectId, TimeSpan.FromHours(8))
+        );
 
-        int maxEventsPerMonth = await GetMaxEventsPerMonthAsync(organizationId);
+        int maxEventsPerMonth = organization?.GetMaxEventsPerMonthWithBonus(_timeProvider) ?? await GetMaxEventsPerMonthAsync(organizationId);
         int bucketLimit = GetBucketEventLimit(maxEventsPerMonth);
 
-        var currentTotalCache = await _cache.GetAsync<int>(GetTotalCacheKey(utcNow, organizationId));
-        if (currentTotalCache.HasValue)
+        if (maxEventsPerMonth > 0)
         {
-            long monthTotal = currentTotalCache.Value + bucketTotal;
-            if (monthTotal >= maxEventsPerMonth && monthTotal - maxEventsPerMonth < eventCount)
+            organization ??= await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
+            int persistedTotal = organization?.GetCurrentUsage(_timeProvider).Total ?? 0;
+            var totals = await _cache.GetAllAsync<int>([
+                GetTotalCacheKey(utcNow, organizationId),
+                GetBucketTotalCacheKey(utcNow.Subtract(_bucketSize), organizationId)
+            ]);
+
+            int baseTotal = GetCachedValue(totals, GetTotalCacheKey(utcNow, organizationId), persistedTotal);
+            int previousBucketTotal = GetCachedValue(totals, GetBucketTotalCacheKey(utcNow.Subtract(_bucketSize), organizationId));
+            int currentTotal = checked(baseTotal + previousBucketTotal + (int)bucketTotal);
+            int previousTotal = Math.Max(0, currentTotal - eventCount);
+
+            if (previousTotal < maxEventsPerMonth && currentTotal >= maxEventsPerMonth)
                 await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId });
 
-            // Check budget alert thresholds — non-fatal: alert failures must not break event ingestion
-            if (maxEventsPerMonth > 0)
-            {
-                try
-                {
-                    await CheckBudgetAlertThresholdsAsync(organizationId, (int)monthTotal, maxEventsPerMonth);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to check budget alert thresholds for organization {OrganizationId}", organizationId);
-                }
-            }
+            if (organization is not null)
+                await PublishCrossedBudgetAlertsAsync(organization, previousTotal, currentTotal, maxEventsPerMonth);
         }
 
-        if (bucketTotal >= bucketLimit && bucketTotal - bucketLimit < eventCount)
+        if (bucketLimit >= 0 && bucketTotal >= bucketLimit && bucketTotal - bucketLimit < eventCount)
         {
-            // org will be throttled during the current bucket of time
             await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId, IsHourly = true });
-            await _cache.SetAsync(GetThrottledKey(utcNow, organizationId), true, TimeSpan.FromMinutes(5));
+            await _cache.SetAsync(GetThrottledKey(utcNow, organizationId), true, _bucketSize);
         }
     }
 
-    /// <summary>
-    /// Gets the event ingest allowance for a project, taking into account both organization limits
-    /// and project-specific ingest limits. Returns how many events can be processed and the sample rate.
-    /// </summary>
-    public async Task<EventIngestAllowance> GetEventIngestAllowanceAsync(string organizationId, string projectId)
-    {
-        int orgEventsLeft = await GetEventsLeftAsync(organizationId);
-        if (orgEventsLeft < 1)
-            return new EventIngestAllowance { EventsLeft = 0, SampleRate = 0, IsOverOrgLimit = true };
-
-        var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache());
-        if (project?.IngestLimit is null)
-            return new EventIngestAllowance { EventsLeft = orgEventsLeft, SampleRate = 1.0 };
-
-        int effectiveLimit = await GetEffectiveProjectLimitAsync(project, organizationId);
-        if (effectiveLimit < 0)
-            return new EventIngestAllowance { EventsLeft = orgEventsLeft, SampleRate = 1.0 };
-
-        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
-        int projectTotal = await GetProjectMonthTotalAsync(utcNow, organizationId, projectId);
-
-        if (projectTotal >= effectiveLimit)
-            return new EventIngestAllowance { EventsLeft = 0, SampleRate = 0, IsOverProjectLimit = true, EffectiveProjectLimit = effectiveLimit };
-
-        int projectEventsLeft = effectiveLimit - projectTotal;
-        int eventsLeft = Math.Min(orgEventsLeft, projectEventsLeft);
-
-        return new EventIngestAllowance { EventsLeft = eventsLeft, SampleRate = 1.0, EffectiveProjectLimit = effectiveLimit };
-    }
-
-    /// <summary>
-    /// Calculates the smart throttle sample rate for a project within the organization.
-    /// Returns 1.0 if no throttling is needed, or a value between 0 and 1 representing
-    /// the probability of accepting an event from this project.
-    /// </summary>
-    public async Task<SmartThrottleResult> GetSmartThrottleRateAsync(string organizationId, string projectId)
-    {
-        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
-
-        int maxEventsPerMonth = await GetMaxEventsPerMonthAsync(organizationId);
-        if (maxEventsPerMonth <= 0)
-            return SmartThrottleResult.NoThrottle;
-
-        // Calculate fair share: what percentage of events has this project been using?
-        int orgTotal = await GetOrganizationMonthTotalAsync(utcNow, organizationId);
-        int projectTotal = await GetProjectMonthTotalAsync(utcNow, organizationId, projectId);
-
-        if (orgTotal <= 0 || projectTotal <= 0)
-            return SmartThrottleResult.NoThrottle;
-
-        // Only throttle when we're approaching the limit (>80%)
-        double usageRatio = (double)orgTotal / maxEventsPerMonth;
-        if (usageRatio < 0.8)
-            return SmartThrottleResult.NoThrottle;
-
-        // Get total project count for org to determine fair share
-        var projectCount = await GetOrganizationProjectCountAsync(organizationId);
-        if (projectCount <= 1)
-            return SmartThrottleResult.NoThrottle;
-
-        double fairShare = (double)maxEventsPerMonth / projectCount;
-        double projectShare = (double)projectTotal / orgTotal;
-
-        // If this project is consuming more than 2x its fair share, apply throttling
-        double fairShareRatio = projectTotal / fairShare;
-        if (fairShareRatio <= 2.0)
-            return SmartThrottleResult.NoThrottle;
-
-        // Scale sample rate: heavier consumers get more aggressive throttling
-        // At 2x fair share: rate = 0.5, at 4x: rate = 0.25, etc.
-        double sampleRate = Math.Max(0.1, 1.0 / fairShareRatio);
-
-        return new SmartThrottleResult
-        {
-            SampleRate = sampleRate,
-            IsThrottled = true,
-            ProjectShare = projectShare,
-            FairShareRatio = fairShareRatio
-        };
-    }
-
-    private async Task CheckBudgetAlertThresholdsAsync(string organizationId, int currentTotal, int maxEventsPerMonth)
-    {
-        var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
-        if (organization?.BudgetAlertSettings is not { Enabled: true })
-            return;
-
-        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
-        double usagePercent = (double)currentTotal / maxEventsPerMonth * 100;
-
-        foreach (int threshold in organization.BudgetAlertSettings.Thresholds)
-        {
-            if (usagePercent < threshold)
-                break;
-
-            int thresholdEventCount = (int)Math.Ceiling((double)threshold / 100 * maxEventsPerMonth);
-
-            string alertSentKey = GetBudgetAlertSentKey(utcNow, organizationId, threshold);
-            // Atomically mark as sent for this billing period — only the first writer (increment == 1) sends the alert.
-            long alertCount = await _cache.IncrementAsync(alertSentKey, 1, TimeSpan.FromDays(32));
-            if (alertCount != 1)
-                continue;
-
-            await _messagePublisher.PublishAsync(new OrganizationBudgetAlert
-            {
-                OrganizationId = organizationId,
-                Threshold = threshold,
-                ThresholdEventCount = thresholdEventCount,
-                CurrentEventCount = currentTotal,
-                EventLimit = maxEventsPerMonth
-            });
-        }
-    }
-
-    private async Task<int> GetEffectiveProjectLimitAsync(Project project, string organizationId)
-    {
-        if (project.IngestLimit is null)
-            return -1;
-
-        return project.IngestLimit.Type switch
-        {
-            ProjectIngestLimitType.Fixed => project.IngestLimit.FixedLimit ?? -1,
-            ProjectIngestLimitType.PercentOfOrganizationLimit => await CalculatePercentageLimitAsync(project.IngestLimit.PercentOfOrganizationLimit, organizationId),
-            _ => -1
-        };
-    }
-
-    private async Task<int> CalculatePercentageLimitAsync(decimal? percent, string organizationId)
-    {
-        if (percent is null or <= 0)
-            return -1;
-
-        int maxEventsPerMonth = await GetMaxEventsPerMonthAsync(organizationId);
-        if (maxEventsPerMonth < 0)
-            return -1;
-
-        return (int)Math.Ceiling(maxEventsPerMonth * (double)percent.Value / 100);
-    }
-
-    private async Task<int> GetProjectMonthTotalAsync(DateTime utcNow, string organizationId, string projectId)
-    {
-        var currentTotalCache = await _cache.GetAsync<int>(GetTotalCacheKey(utcNow, organizationId, projectId));
-        if (currentTotalCache.HasValue)
-            return currentTotalCache.Value;
-
-        var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache());
-        return project?.GetCurrentUsage(_timeProvider).Total ?? 0;
-    }
-
-    private async Task<int> GetOrganizationMonthTotalAsync(DateTime utcNow, string organizationId)
-    {
-        var currentTotalCache = await _cache.GetAsync<int>(GetTotalCacheKey(utcNow, organizationId));
-        if (currentTotalCache.HasValue)
-            return currentTotalCache.Value;
-
-        var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
-        return organization?.GetCurrentUsage(_timeProvider).Total ?? 0;
-    }
-
-    private async Task<int> GetOrganizationProjectCountAsync(string organizationId)
-    {
-        var cacheKey = $"usage:project-count:{organizationId}";
-        var cached = await _cache.GetAsync<int>(cacheKey);
-        if (cached.HasValue)
-            return cached.Value;
-
-        var countResult = await _projectRepository.GetCountByOrganizationIdAsync(organizationId);
-        long count = countResult.Total;
-        int projectCount = (int)Math.Max(1, count);
-        await _cache.SetAsync(cacheKey, projectCount, TimeSpan.FromHours(1));
-        return projectCount;
-    }
 
     public async Task IncrementBlockedAsync(string organizationId, string? projectId, int eventCount = 1)
     {
@@ -673,42 +516,6 @@ public class UsageService
         await _cache.ListAddAsync(GetProjectSetKey(utcNow), projectId, TimeSpan.FromHours(8));
 
         AppDiagnostics.EventsDiscarded.Add(eventCount);
-    }
-
-    /// <summary>
-    /// Records smart throttle discard and publishes a deduped notification (once per billing period per project).
-    /// </summary>
-    public async Task RecordSmartThrottleAsync(string organizationId, string projectId, int discardedCount, SmartThrottleResult throttleResult)
-    {
-        await IncrementDiscardedAsync(organizationId, projectId, discardedCount);
-
-        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
-        string notifyKey = $"usage:smart-throttle-notified:{utcNow:yyyy-MM}:{organizationId}:{projectId}";
-        if (await _cache.GetAsync<bool>(notifyKey) is { HasValue: true, Value: true })
-            return;
-
-        await _cache.SetAsync(notifyKey, true, TimeSpan.FromDays(32));
-
-        int projectTotal = await GetProjectMonthTotalAsync(utcNow, organizationId, projectId);
-        int maxEventsPerMonth = await GetMaxEventsPerMonthAsync(organizationId);
-        int projectCount = await GetOrganizationProjectCountAsync(organizationId);
-        int fairShareLimit = maxEventsPerMonth > 0 ? (int)(maxEventsPerMonth / Math.Max(1, projectCount)) : 0;
-
-        try
-        {
-            await _messagePublisher.PublishAsync(new ProjectSmartThrottleApplied
-            {
-                OrganizationId = organizationId,
-                ProjectId = projectId,
-                SampleRate = throttleResult.SampleRate,
-                CurrentEventCount = projectTotal,
-                EventLimit = fairShareLimit
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to publish smart throttle notification for project {ProjectId}", projectId);
-        }
     }
 
     public async Task IncrementTooBigAsync(string organizationId, string? projectId)
@@ -848,25 +655,43 @@ public class UsageService
         return $"usage:budget-alert:{monthBucket}:{organizationId}:{threshold}";
     }
 
+    private string GetProjectSmartThrottleKey(DateTime utcTime, string organizationId, string projectId)
+    {
+        int bucket = GetCurrentBucket(utcTime);
+        return $"usage:{bucket}:{organizationId}:{projectId}:smart-throttle";
+    }
+
+    private string GetSmartThrottleNotificationKey(DateTime utcTime, string organizationId, string projectId)
+    {
+        int monthBucket = GetTotalBucket(utcTime);
+        return $"usage:smart-throttle-notified:{monthBucket}:{organizationId}:{projectId}";
+    }
+
     private int GetCurrentBucket(DateTime utcTime) => utcTime.Floor(_bucketSize).ToEpoch();
     private int GetTotalBucket(DateTime utcTime) => utcTime.StartOfMonth().ToEpoch();
 }
 
 public class EventIngestAllowance
 {
+    public static readonly EventIngestAllowance Unlimited = new() { EventsLeft = Int32.MaxValue };
+
     public int EventsLeft { get; init; }
-    public double SampleRate { get; init; } = 1.0;
     public bool IsOverOrgLimit { get; init; }
     public bool IsOverProjectLimit { get; init; }
     public int EffectiveProjectLimit { get; init; } = -1;
+    public SmartThrottleResult SmartThrottle { get; init; } = SmartThrottleResult.NoThrottle;
+    public double SampleRate => SmartThrottle.SampleRate;
 }
 
 public class SmartThrottleResult
 {
+    public const double DefaultSampleRate = 0.05;
     public static readonly SmartThrottleResult NoThrottle = new() { SampleRate = 1.0 };
 
     public double SampleRate { get; init; } = 1.0;
     public bool IsThrottled { get; init; }
     public double ProjectShare { get; init; }
     public double FairShareRatio { get; init; }
+    public int CurrentProjectUsage { get; init; }
+    public int FairShareLimit { get; init; }
 }

@@ -3,6 +3,7 @@ using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
@@ -48,12 +49,14 @@ public class OrganizationBudgetAlertWorkItemHandler : WorkItemHandlerBase
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IUserRepository _userRepository;
     private readonly IMailer _mailer;
+    private readonly UsageService _usageService;
 
-    public OrganizationBudgetAlertWorkItemHandler(IOrganizationRepository organizationRepository, IUserRepository userRepository, IMailer mailer, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public OrganizationBudgetAlertWorkItemHandler(IOrganizationRepository organizationRepository, IUserRepository userRepository, IMailer mailer, UsageService usageService, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _userRepository = userRepository;
         _mailer = mailer;
+        _usageService = usageService;
     }
 
     public override async Task HandleItemAsync(WorkItemContext context)
@@ -69,9 +72,24 @@ public class OrganizationBudgetAlertWorkItemHandler : WorkItemHandlerBase
         }
 
         // Re-check that budget alerts are still enabled and the threshold is still configured
-        if (organization.BudgetAlertSettings is not { Enabled: true } || !organization.BudgetAlertSettings.Thresholds.Contains(wi.Threshold))
+        if (organization.BudgetAlertSettings is not { Enabled: true, Thresholds: not null } || !organization.BudgetAlertSettings.Thresholds.Contains(wi.Threshold))
         {
             Log.LogInformation("Budget alerts disabled or threshold {Threshold}% removed for organization: {OrganizationId}, skipping", wi.Threshold, wi.OrganizationId);
+            return;
+        }
+
+        int eventLimit = await _usageService.GetMaxEventsPerMonthAsync(organization.Id);
+        if (eventLimit <= 0)
+        {
+            Log.LogInformation("Organization {OrganizationId} no longer has a finite event allowance, skipping budget alert", wi.OrganizationId);
+            return;
+        }
+
+        int thresholdEventCount = (int)Math.Ceiling(eventLimit * wi.Threshold / 100d);
+        int currentEventCount = (await _usageService.GetUsageAsync(organization.Id)).CurrentUsage.Total;
+        if (currentEventCount < thresholdEventCount)
+        {
+            Log.LogInformation("Organization {OrganizationId} usage is now below budget threshold {Threshold}%, skipping", wi.OrganizationId, wi.Threshold);
             return;
         }
 
@@ -91,7 +109,7 @@ public class OrganizationBudgetAlertWorkItemHandler : WorkItemHandlerBase
             }
 
             Log.LogTrace("Sending budget alert email to {EmailAddress}...", user.EmailAddress);
-            await _mailer.SendOrganizationBudgetAlertAsync(user, organization, wi.Threshold, wi.ThresholdEventCount, wi.CurrentEventCount, wi.EventLimit);
+            await _mailer.SendOrganizationBudgetAlertAsync(user, organization, wi.Threshold, thresholdEventCount, currentEventCount, eventLimit);
         }
 
         Log.LogTrace("Done sending budget alert emails");

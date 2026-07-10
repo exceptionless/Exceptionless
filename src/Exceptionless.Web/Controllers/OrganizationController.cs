@@ -1022,7 +1022,47 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         if (changes.ContainsChangedProperty(p => p.Name) && !await IsOrganizationNameAvailableInternalAsync(changed.Name, original.Id))
             return PermissionResult.DenyWithMessage("A organization with this name already exists.");
 
+        if (changes.ContainsChangedProperty(p => p.BudgetAlertSettings!) &&
+            changed.BudgetAlertSettings is { Enabled: true } &&
+            original.GetMaxEventsPerMonthWithBonus(_timeProvider) < 0)
+            return PermissionResult.DenyWithMessage("Budget alerts cannot be enabled for an organization with an unlimited event allowance.");
+
         return await base.CanUpdateAsync(original, changes);
+    }
+
+    protected override async Task<Organization> UpdateModelAsync(Organization original, Delta<UpdateOrganization> changes)
+    {
+        var changed = changes.GetEntity();
+        bool budgetSettingsChanged = changes.ContainsChangedProperty(p => p.BudgetAlertSettings!);
+        bool wereAlertsEnabled = original.BudgetAlertSettings is { Enabled: true };
+        var previousThresholds = original.BudgetAlertSettings?.Thresholds?.ToHashSet() ?? [];
+
+        changes.Patch(original);
+        if (budgetSettingsChanged)
+            original.BudgetAlertSettings = changed.BudgetAlertSettings;
+
+        var saved = await _repository.SaveAsync(original, o => o.Cache());
+
+        if (budgetSettingsChanged && saved.BudgetAlertSettings is { Enabled: true, Thresholds: not null })
+        {
+            int[] thresholdsToEvaluate = wereAlertsEnabled
+                ? saved.BudgetAlertSettings.Thresholds.Except(previousThresholds).ToArray()
+                : saved.BudgetAlertSettings.Thresholds.ToArray();
+
+            if (thresholdsToEvaluate.Length > 0)
+            {
+                try
+                {
+                    await _usageService.EvaluateBudgetAlertsAfterSettingsChangeAsync(saved, thresholdsToEvaluate);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to evaluate newly enabled budget alerts for organization {OrganizationId}", saved.Id);
+                }
+            }
+        }
+
+        return saved;
     }
 
     protected override async Task<PermissionResult> CanDeleteAsync(Organization value)

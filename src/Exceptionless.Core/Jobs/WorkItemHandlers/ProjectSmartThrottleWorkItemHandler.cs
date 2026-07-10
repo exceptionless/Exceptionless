@@ -3,6 +3,7 @@ using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
@@ -49,13 +50,15 @@ public class ProjectSmartThrottleWorkItemHandler : WorkItemHandlerBase
     private readonly IProjectRepository _projectRepository;
     private readonly IUserRepository _userRepository;
     private readonly IMailer _mailer;
+    private readonly UsageService _usageService;
 
-    public ProjectSmartThrottleWorkItemHandler(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository, IMailer mailer, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public ProjectSmartThrottleWorkItemHandler(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository, IMailer mailer, UsageService usageService, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
         _userRepository = userRepository;
         _mailer = mailer;
+        _usageService = usageService;
     }
 
     public override async Task HandleItemAsync(WorkItemContext context)
@@ -77,6 +80,24 @@ public class ProjectSmartThrottleWorkItemHandler : WorkItemHandlerBase
             return;
         }
 
+        if (!String.Equals(project.OrganizationId, organization.Id, StringComparison.Ordinal) ||
+            !await _usageService.IsProjectSmartThrottledAsync(organization.Id, project.Id))
+        {
+            Log.LogInformation("Project {ProjectId} is no longer smart throttled, skipping notification", wi.ProjectId);
+            return;
+        }
+
+        int organizationLimit = await _usageService.GetMaxEventsPerMonthAsync(organization.Id);
+        if (organizationLimit <= 0)
+        {
+            Log.LogInformation("Organization {OrganizationId} no longer has a finite event allowance, skipping smart throttle notification", wi.OrganizationId);
+            return;
+        }
+
+        int projectCount = (int)Math.Max(1, (await _projectRepository.GetCountByOrganizationIdAsync(organization.Id)).Total);
+        int fairShareLimit = organizationLimit / projectCount;
+        int currentProjectUsage = (await _usageService.GetUsageAsync(organization.Id, project.Id)).CurrentUsage.Total;
+
         var results = await _userRepository.GetByOrganizationIdAsync(organization.Id);
         foreach (var user in results.Documents)
         {
@@ -93,7 +114,7 @@ public class ProjectSmartThrottleWorkItemHandler : WorkItemHandlerBase
             }
 
             Log.LogTrace("Sending smart throttle email to {EmailAddress}...", user.EmailAddress);
-            await _mailer.SendProjectThrottledNoticeAsync(user, organization, project, wi.SampleRate, wi.CurrentEventCount, wi.EventLimit);
+            await _mailer.SendProjectThrottledNoticeAsync(user, organization, project, wi.SampleRate, currentProjectUsage, fairShareLimit);
         }
 
         Log.LogTrace("Done sending smart throttle emails");

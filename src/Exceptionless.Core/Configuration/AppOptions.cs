@@ -43,6 +43,11 @@ public class AppOptions
 
     public bool EventSubmissionDisabled { get; internal set; }
 
+    /// <summary>
+    /// Operational kill switch for automatic project-level sampling. Explicit project limits are unaffected.
+    /// </summary>
+    public bool EnableSmartProjectThrottling { get; internal set; }
+
     internal List<string> DisabledPipelineActions { get; set; } = null!;
     internal List<string> DisabledPlugins { get; set; } = null!;
 
@@ -99,6 +104,7 @@ public class AppOptions
         options.EnableArchive = config.GetValue(nameof(options.EnableArchive), false);
         options.EnableSampleData = config.GetValue(nameof(options.EnableSampleData), options.AppMode == AppMode.Development);
         options.EventSubmissionDisabled = config.GetValue(nameof(options.EventSubmissionDisabled), false);
+        options.EnableSmartProjectThrottling = config.GetValue(nameof(options.EnableSmartProjectThrottling), true);
         options.DisabledPipelineActions = config.GetValueList(nameof(options.DisabledPipelineActions));
         options.DisabledPlugins = config.GetValueList(nameof(options.DisabledPlugins));
         options.MaximumEventPostSize = config.GetValue(nameof(options.MaximumEventPostSize), 200000).NormalizeValue();

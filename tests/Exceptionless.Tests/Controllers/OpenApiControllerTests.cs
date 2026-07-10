@@ -95,6 +95,16 @@ public class OpenApiControllerTests : IntegrationTestsBase
         Assert.Equal("access_token", token.GetProperty("name").GetString());
     }
 
+    [Fact]
+    public async Task GetOpenApiJson_DeltaNullableComplexProperties_UseReferencedSchemas()
+    {
+        using var document = await GetOpenApiDocumentAsync();
+        var schemas = document.RootElement.GetProperty("components").GetProperty("schemas");
+
+        AssertNullableReference(schemas, "UpdateOrganization", "budget_alert_settings", "OrganizationBudgetAlertSettings");
+        AssertNullableReference(schemas, "UpdateProject", "ingest_limit", "ProjectIngestLimit");
+    }
+
     private static string NormalizeOpenApiJson(string json)
     {
         return json
@@ -120,5 +130,21 @@ public class OpenApiControllerTests : IntegrationTestsBase
         var responses = operation.GetProperty("responses");
         foreach (string statusCode in expectedStatusCodes)
             Assert.True(responses.TryGetProperty(statusCode, out _), $"Expected response status code '{statusCode}'.");
+    }
+
+    private static void AssertNullableReference(JsonElement schemas, string schemaName, string propertyName, string referenceName)
+    {
+        Assert.True(schemas.TryGetProperty(referenceName, out _), $"Expected referenced schema '{referenceName}'.");
+
+        var propertySchema = schemas
+            .GetProperty(schemaName)
+            .GetProperty("properties")
+            .GetProperty(propertyName);
+        var alternatives = propertySchema.GetProperty("oneOf").EnumerateArray().ToArray();
+
+        Assert.Contains(alternatives, alternative => alternative.TryGetProperty("type", out var type) && type.GetString() == "null");
+        Assert.Contains(alternatives, alternative =>
+            alternative.TryGetProperty("$ref", out var reference) &&
+            reference.GetString() == $"#/components/schemas/{referenceName}");
     }
 }

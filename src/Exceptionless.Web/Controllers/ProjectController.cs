@@ -738,7 +738,13 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
 
         // TODO: We can optimize this by normalizing the project model to include the organization name.
         var viewProjects = models.OfType<ViewProject>().ToList();
-        var organizations = await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), o => o.Cache());
+        var organizationsTask = _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), o => o.Cache());
+        var throttleStatesTask = _usageService.GetProjectSmartThrottleStatesAsync(
+            viewProjects.Select(project => (project.OrganizationId, project.Id)).ToArray());
+        await Task.WhenAll(organizationsTask, throttleStatesTask);
+
+        var organizations = await organizationsTask;
+        var throttleStates = await throttleStatesTask;
         foreach (var viewProject in viewProjects)
         {
             if (!viewProject.IsConfigured.HasValue)
@@ -776,16 +782,17 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
             currentHourUsage.TooBig = realTimeUsage.CurrentHourUsage.TooBig;
             currentHourUsage.Deleted = realTimeUsage.CurrentHourUsage.Deleted;
 
-            // Populate computed budget/throttle properties
             if (viewProject.IngestLimit is not null)
             {
-                var allowance = await _usageService.GetEventIngestAllowanceAsync(organization.Id, viewProject.Id);
-                viewProject.EffectiveIngestLimit = allowance.EffectiveProjectLimit > 0 ? allowance.EffectiveProjectLimit : null;
+                int effectiveLimit = _usageService.GetEffectiveProjectLimit(viewProject.IngestLimit, organization);
+                viewProject.EffectiveIngestLimit = effectiveLimit > 0 ? effectiveLimit : null;
             }
 
-            var throttleResult = await _usageService.GetSmartThrottleRateAsync(organization.Id, viewProject.Id);
-            viewProject.IsSmartThrottled = throttleResult.IsThrottled;
-            viewProject.SmartThrottleSampleRate = throttleResult.IsThrottled ? throttleResult.SampleRate : null;
+            if (throttleStates.TryGetValue(viewProject.Id, out var throttleState))
+            {
+                viewProject.IsSmartThrottled = true;
+                viewProject.SmartThrottleSampleRate = throttleState.SampleRate;
+            }
         }
     }
 
@@ -821,15 +828,35 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (changes.ContainsChangedProperty(p => p.Name) && !await IsProjectNameAvailableInternalAsync(original.OrganizationId, changed.Name))
             return PermissionResult.DenyWithMessage("A project with this name already exists.");
 
+        if (changes.ContainsChangedProperty(p => p.IngestLimit!) && changed.IngestLimit?.Type is ProjectIngestLimitType.PercentOfOrganizationLimit)
+        {
+            var organization = await _organizationRepository.GetByIdAsync(original.OrganizationId, o => o.Cache());
+            if (organization?.GetMaxEventsPerMonthWithBonus(_timeProvider) < 0)
+                return PermissionResult.DenyWithMessage("A percentage project ingest limit cannot be used with an unlimited organization allowance.");
+        }
+
         return await base.CanUpdateAsync(original, changes);
     }
 
     protected override Task<Project> UpdateModelAsync(Project original, Delta<UpdateProject> changes)
     {
+        var changed = changes.GetEntity();
+        bool ingestLimitChanged = changes.ContainsChangedProperty(p => p.IngestLimit!);
+
         changes.Patch(original);
+        if (ingestLimitChanged)
+            original.IngestLimit = changed.IngestLimit;
 
         if (changes.ContainsChangedProperty(p => p.PromotedTabs!))
             original.PromotedTabs = NormalizePromotedTabs(original.PromotedTabs);
+
+        if (ingestLimitChanged && original.IngestLimit is not null)
+        {
+            if (original.IngestLimit.Type is ProjectIngestLimitType.Fixed)
+                original.IngestLimit.PercentOfOrganizationLimit = null;
+            else if (original.IngestLimit.Type is ProjectIngestLimitType.PercentOfOrganizationLimit)
+                original.IngestLimit.FixedLimit = null;
+        }
 
         return _repository.SaveAsync(original, o => o.Cache());
     }

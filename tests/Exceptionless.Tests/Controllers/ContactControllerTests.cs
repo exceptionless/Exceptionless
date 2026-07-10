@@ -143,6 +143,16 @@ public sealed class ContactControllerTests : IntegrationTestsBase
             return Task.CompletedTask;
         }
 
+        public Task SendOrganizationBudgetAlertAsync(User user, Organization organization, int threshold, int thresholdEventCount, int currentEventCount, int eventLimit)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task SendProjectThrottledNoticeAsync(User user, Organization organization, Project project, double sampleRate, int currentEventCount, int eventLimit)
+        {
+            return Task.CompletedTask;
+        }
+
         public Task SendOrganizationPaymentFailedAsync(User owner, Organization organization)
         {
             return Task.CompletedTask;

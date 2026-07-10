@@ -162,61 +162,46 @@ public class EventPostsJob : QueueJobBase<EventPost>
             return JobResult.Success;
         }
 
-        // Don't process all the events if it will put the account over its limits.
-        int eventsToProcess = await _usageService.GetEventsLeftAsync(organization.Id);
-        if (eventsToProcess < 1)
+        int submittedEventCount = events.Count;
+        bool isSingleEvent = submittedEventCount == 1;
+        var ingestAllowance = await _usageService.GetEventIngestAllowanceAsync(organization, project);
+        var candidates = events
+            .Select((persistentEvent, index) => new EventCandidate(persistentEvent, index, GetStableEventHash(entry.Id, persistentEvent, index)))
+            .ToList();
+
+        int smartThrottleBlocked = 0;
+        if (ingestAllowance.SmartThrottle.IsThrottled)
+        {
+            int sampleThreshold = (int)(ingestAllowance.SmartThrottle.SampleRate * 10_000);
+            candidates = candidates.Where(candidate => IsHashSelected(candidate.Hash, sampleThreshold)).ToList();
+            smartThrottleBlocked = submittedEventCount - candidates.Count;
+            _usageService.RecordSmartThrottle(smartThrottleBlocked);
+        }
+
+        if (candidates.Count > ingestAllowance.EventsLeft)
+        {
+            candidates = candidates
+                .OrderBy(candidate => candidate.Hash)
+                .Take(ingestAllowance.EventsLeft)
+                .ToList();
+        }
+
+        events = candidates
+            .OrderBy(candidate => candidate.Index)
+            .Select(candidate => candidate.Event)
+            .ToList();
+
+        int blockedEventCount = submittedEventCount - events.Count;
+        if (blockedEventCount > 0)
+            await _usageService.IncrementBlockedAsync(organization.Id, project.Id, blockedEventCount);
+
+        if (events.Count == 0)
         {
             if (!isInternalProject)
-                _logger.LogDebug("Unable to process EventPost {FilePath}: Over plan limits", payloadPath);
-
-            await _usageService.IncrementBlockedAsync(organization.Id, project.Id, events.Count);
+                _logger.LogDebug("Unable to process EventPost {FilePath}: accepted 0/{SubmittedEventCount} events after usage budget evaluation", payloadPath, submittedEventCount);
 
             await CompleteEntryAsync(entry, ep, _timeProvider.GetUtcNow().UtcDateTime);
             return JobResult.Success;
-        }
-
-        // Check project-specific ingest limits
-        var ingestAllowance = await _usageService.GetEventIngestAllowanceAsync(organization.Id, project.Id);
-        if (ingestAllowance.EventsLeft < 1)
-        {
-            if (!isInternalProject)
-                _logger.LogDebug("Unable to process EventPost {FilePath}: Over project ingest limit", payloadPath);
-
-            await _usageService.IncrementBlockedAsync(organization.Id, project.Id, events.Count);
-            await CompleteEntryAsync(entry, ep, _timeProvider.GetUtcNow().UtcDateTime);
-            return JobResult.Success;
-        }
-
-        // Apply smart throttling: sample events from projects consuming disproportionate resources
-        var throttleResult = await _usageService.GetSmartThrottleRateAsync(organization.Id, project.Id);
-        if (throttleResult.IsThrottled)
-        {
-            int sampled = (int)Math.Max(1, Math.Ceiling(events.Count * throttleResult.SampleRate));
-            if (sampled < events.Count)
-            {
-                int discarded = events.Count - sampled;
-                // Use deterministic sampling to keep a representative sample
-                events = events.Take(sampled).ToList();
-                await _usageService.RecordSmartThrottleAsync(organization.Id, project.Id, discarded, throttleResult);
-
-                if (!isInternalProject)
-                    _logger.LogInformation("Smart throttling applied to EventPost {FilePath}: Accepted {Sampled}/{Total} events (rate={SampleRate:F2})", payloadPath, sampled, sampled + discarded, throttleResult.SampleRate);
-            }
-        }
-
-        // Use the more restrictive of org and project limits
-        eventsToProcess = Math.Min(eventsToProcess, ingestAllowance.EventsLeft);
-
-        // Keep track of the original event payload size, we can save some processing for retries in the case it was a massive batch.
-        bool isSingleEvent = events.Count == 1;
-
-        // Discard any events over the plan limit.
-        if (eventsToProcess < events.Count)
-        {
-            int discarded = events.Count - eventsToProcess;
-            events = events.Take(eventsToProcess).ToList();
-
-            await _usageService.IncrementBlockedAsync(organization.Id, project.Id, discarded);
         }
 
         int errorCount = 0;
@@ -232,7 +217,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
 
             // increment the plan usage counters (note: OverageHandler already incremented usage by 1)
             int processedEvents = contexts.Count(c => c.IsProcessed);
-            await _usageService.IncrementTotalAsync(organization.Id, project.Id, processedEvents);
+            await _usageService.IncrementTotalAsync(organization, project.Id, processedEvents);
 
             int discardedEvents = contexts.Count(c => c.IsDiscarded);
             await _usageService.IncrementDiscardedAsync(organization.Id, project.Id, discardedEvents);
@@ -281,6 +266,34 @@ public class EventPostsJob : QueueJobBase<EventPost>
 
         return JobResult.Success;
     }
+
+    private static ulong GetStableEventHash(string queueEntryId, PersistentEvent persistentEvent, int index)
+    {
+        string value = $"{queueEntryId}:{index}:{persistentEvent.ReferenceId}";
+        const ulong offsetBasis = 14695981039346656037;
+        const ulong prime = 1099511628211;
+        ulong hash = offsetBasis;
+        foreach (char character in value)
+        {
+            hash ^= character;
+            hash *= prime;
+        }
+
+        return hash;
+    }
+
+    internal static bool IsSelectedForSmartThrottle(string queueEntryId, PersistentEvent persistentEvent, int index, double sampleRate = SmartThrottleResult.DefaultSampleRate)
+    {
+        int sampleThreshold = (int)(sampleRate * 10_000);
+        return IsHashSelected(GetStableEventHash(queueEntryId, persistentEvent, index), sampleThreshold);
+    }
+
+    private static bool IsHashSelected(ulong hash, int sampleThreshold)
+    {
+        return hash % 10_000 < (ulong)sampleThreshold;
+    }
+
+    private sealed record EventCandidate(PersistentEvent Event, int Index, ulong Hash);
 
     private List<PersistentEvent>? ParseEventPost(EventPostInfo ep, DateTime createdUtc, byte[] uncompressedData, string queueEntryId, bool isInternalProject)
     {

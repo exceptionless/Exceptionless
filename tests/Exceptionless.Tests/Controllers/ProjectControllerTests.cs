@@ -1375,6 +1375,11 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
     [Fact]
     public async Task PatchAsync_WithPercentageIngestLimit_SavesCorrectly()
     {
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        organization.MaxEventsPerMonth = 1000;
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
+
         var updated = await SendRequestAsAsync<ViewProject>(r => r
             .Patch()
             .AsTestOrganizationUser()
@@ -1436,5 +1441,54 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.Equal(original.Name, updated.Name);
         Assert.NotNull(updated.IngestLimit);
         Assert.Equal(200, updated.IngestLimit.FixedLimit);
+    }
+
+    [Theory]
+    [InlineData("{\"ingest_limit\":{\"type\":0,\"fixed_limit\":0}}")]
+    [InlineData("{\"ingest_limit\":{\"type\":1,\"percent_of_organization_limit\":0}}")]
+    [InlineData("{\"ingest_limit\":{\"type\":1,\"percent_of_organization_limit\":100.1}}")]
+    public async Task PatchAsync_InvalidIngestLimit_ReturnsValidationError(string content)
+    {
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        organization.MaxEventsPerMonth = 1000;
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
+
+        await SendRequestAsync(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID)
+            .Content(content, "application/json")
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+    }
+
+    [Fact]
+    public Task PatchAsync_FractionalFixedIngestLimit_ReturnsBadRequest()
+    {
+        return SendRequestAsync(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID)
+            .Content("""{"ingest_limit":{"type":0,"fixed_limit":1.5}}""", "application/json")
+            .StatusCodeShouldBeBadRequest()
+        );
+    }
+
+    [Fact]
+    public async Task PatchAsync_PercentageIngestLimitForUnlimitedOrganization_ReturnsValidationError()
+    {
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        organization.MaxEventsPerMonth = -1;
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
+
+        await SendRequestAsync(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID)
+            .Content("""{"ingest_limit":{"type":1,"percent_of_organization_limit":50}}""", "application/json")
+            .StatusCodeShouldBeBadRequest()
+        );
     }
 }

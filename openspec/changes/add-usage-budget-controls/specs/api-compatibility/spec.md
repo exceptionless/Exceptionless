@@ -147,3 +147,20 @@ Then effective_ingest_limit must contain the currently effective cap.
 Given a project is currently under smart throttling
 When the project is returned from the API
 Then the response should indicate smart throttling state where feasible.
+
+### Requirement: Nullable complex PATCH contracts MUST be generated canonically
+
+Organization and project settings MUST be clearable with JSON null, and their OpenAPI contracts MUST reference the canonical complex component schemas.
+
+#### Scenario: Clear organization budget settings
+
+Given an authorized user can update an organization
+When the user patches budget_alert_settings with null
+Then the settings must be cleared.
+
+#### Scenario: Delta OpenAPI schema
+
+Given a nullable complex property belongs to a Delta PATCH model
+When OpenAPI is generated
+Then the property must be represented as null or a component schema reference
+And generated clients must come from that document rather than manual snapshot edits.

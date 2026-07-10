@@ -327,3 +327,38 @@ Then the job should process an allowed sample and record blocked usage for non-s
 Given a project-level condition would require preserving only 1 to 5 percent of events
 When the request is still in middleware before parsing
 Then middleware must not be the only enforcement layer.
+
+### Requirement: Smart throttling MUST use stable five-percent sampling
+
+Automatic project throttling MUST select events with a stable five-percent hash sample across the complete parsed post.
+
+#### Scenario: Single-event post is genuinely sampled
+
+Given a project is smart-throttled and the organization has remaining allowance
+When repeated single-event posts with stable distinct identities are processed
+Then approximately five percent must be accepted over time
+And no per-post minimum may force every single event through.
+
+#### Scenario: Nonaccepted events are counted once
+
+Given organization allowance, explicit project budget, and smart sampling are evaluated for one parsed post
+When the final accepted set is selected
+Then every event outside that set must increment blocked usage exactly once
+And those events must not also increment discarded usage.
+
+### Requirement: Smart throttling MUST be cheap and operationally disableable
+
+Automatic project throttling MUST use bucket-inclusive totals, five-minute remaining windows, the existing ten-times burst tolerance, and current noisy-project fair share.
+
+#### Scenario: Normal unlimited traffic avoids extra work
+
+Given an organization has unlimited allowance and the project has no explicit cap
+When ingestion evaluates the already-loaded organization and project
+Then it must not reload either model or query the organization project count.
+
+#### Scenario: Kill switch is disabled
+
+Given EnableSmartProjectThrottling is false
+When a noisy project submits events
+Then automatic sampling must be bypassed
+And explicit project and organization limits must remain enforced.

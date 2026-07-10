@@ -274,7 +274,8 @@ public class EventPostJobTests : IntegrationTestsBase
     {
         var project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
         Assert.NotNull(project);
-        project.IngestLimit = new ProjectIngestLimit { Type = ProjectIngestLimitType.Fixed, FixedLimit = 0 };
+        project.IngestLimit = new ProjectIngestLimit { Type = ProjectIngestLimitType.Fixed, FixedLimit = 1 };
+        project.GetCurrentUsage(TimeProvider).Total = 1;
         await _projectRepository.SaveAsync(project, o => o.ImmediateConsistency().Cache());
 
         Assert.NotNull(await EnqueueEventPostAsync(GenerateEvent()));
@@ -291,40 +292,49 @@ public class EventPostJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task CanRunJob_WhenSmartThrottleApplied_DiscardsEvents()
+    public async Task CanRunJob_WhenSmartThrottleApplied_BlocksEventsOnce()
     {
-        // Add a second project so smart throttle's projectCount > 1 condition is met
-        var secondProject = _projectData.GenerateProject(generateId: true, organizationId: TestConstants.OrganizationId);
-        await _projectRepository.AddAsync(secondProject, o => o.ImmediateConsistency().Cache());
-
         var organization = await _organizationRepository.GetByIdAsync(TestConstants.OrganizationId);
         Assert.NotNull(organization);
-        // Set a finite plan limit so smart throttle can activate (UnlimitedPlan has -1 which bypasses throttle)
-        organization.MaxEventsPerMonth = 750;
-        // usageRatio = 650/750 = 0.867 > 0.8 — triggers smart throttle evaluation
-        organization.GetCurrentUsage(TimeProvider).Total = 650;
+        organization.MaxEventsPerMonth = 1_000_000;
         await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
 
         var project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
         Assert.NotNull(project);
-        // fairShare = 750/2 = 375; fairShareRatio = 800/375 = 2.13 > 2.0 — throttle applies
-        project.GetCurrentUsage(TimeProvider).Total = 800;
-        await _projectRepository.SaveAsync(project, o => o.ImmediateConsistency().Cache());
+        await _projectRepository.AddAsync(_projectData.GenerateProject(generateId: true, organizationId: organization.Id), o => o.ImmediateConsistency().Cache());
+        await _projectRepository.AddAsync(_projectData.GenerateProject(generateId: true, organizationId: organization.Id), o => o.ImmediateConsistency().Cache());
+        var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
+        var endOfMonth = new DateTime(utcNow.Year, utcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(1);
+        double windowsLeft = Math.Max(1, Math.Ceiling((endOfMonth - utcNow).TotalMinutes / 5));
+        int currentWindowSpike = (int)Math.Floor(organization.MaxEventsPerMonth / windowsLeft * 10 * 0.9);
+        await _usageService.IncrementTotalAsync(organization, project.Id, currentWindowSpike);
 
-        // Verify smart throttle conditions are met before running the job
         var throttleResult = await _usageService.GetSmartThrottleRateAsync(TestConstants.OrganizationId, TestConstants.ProjectId);
-        Assert.True(throttleResult.IsThrottled, $"Smart throttle should be active (fairShareRatio={throttleResult.FairShareRatio:F2}, sampleRate={throttleResult.SampleRate:F2})");
+        Assert.True(throttleResult.IsThrottled);
+        Assert.Equal(0.05, throttleResult.SampleRate);
 
-        var events = Enumerable.Range(0, 5).Select(_ => GenerateEvent()).ToList();
+        var events = Enumerable.Range(0, 100).Select(index => GenerateEvent(source: $"source-{index}")).ToList();
         Assert.NotNull(await EnqueueEventPostAsync(events));
 
         var result = await _job.RunAsync(TestCancellationToken);
         Assert.True(result.IsSuccess);
 
         var usage = await _usageService.GetUsageAsync(TestConstants.OrganizationId, TestConstants.ProjectId);
-        Assert.True(usage.CurrentUsage.Discarded > 0, $"Expected discarded events, but got: total={usage.CurrentUsage.Total}, blocked={usage.CurrentUsage.Blocked}, discarded={usage.CurrentUsage.Discarded}");
+        Assert.True(usage.CurrentUsage.Blocked > 0);
+        Assert.Equal(0, usage.CurrentUsage.Discarded);
 
         await RefreshDataAsync();
-        Assert.True(await _eventRepository.CountAsync() < 5);
+        Assert.InRange(await _eventRepository.CountAsync(), 1, 20);
+    }
+
+    [Fact]
+    public void SmartThrottleSelection_SingleEventPosts_UsesStableFivePercentSample()
+    {
+        var persistentEvent = GenerateEvent();
+
+        int accepted = Enumerable.Range(0, 1_000)
+            .Count(index => EventPostsJob.IsSelectedForSmartThrottle($"post-{index}", persistentEvent, 0));
+
+        Assert.InRange(accepted, 30, 70);
     }
 }

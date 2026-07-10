@@ -96,6 +96,7 @@ public static class AppDiagnostics
     internal static readonly Counter<int> EventsProcessErrors = Meter.CreateCounter<int>("ex.events.processing.errors", description: "Errors processing events");
     internal static readonly Counter<int> EventsDiscarded = Meter.CreateCounter<int>("ex.events.discarded", description: "Events that were discarded");
     internal static readonly Counter<int> EventsBlocked = Meter.CreateCounter<int>("ex.events.blocked", description: "Events that were blocked");
+    internal static readonly Counter<int> EventsSmartThrottled = Meter.CreateCounter<int>("ex.events.smart_throttled", description: "Events blocked by automatic project throttling");
     internal static readonly Counter<int> EventsProcessCancelled = Meter.CreateCounter<int>("ex.events.processing.cancelled", description: "Events that started processing and were cancelled");
     internal static readonly Counter<int> EventsDeleted = Meter.CreateCounter<int>("ex.events.deleted", description: "Events that were deleted");
     internal static readonly Counter<int> EventsRetryCount = Meter.CreateCounter<int>("ex.events.retry.count", description: "Events where processing was retried");

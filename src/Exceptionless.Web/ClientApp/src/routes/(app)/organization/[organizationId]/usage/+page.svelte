@@ -10,6 +10,7 @@
     import { env } from '$env/dynamic/public';
     import { ChangePlanDialog } from '$features/billing';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
+    import OrganizationBudgetAlertCard from '$features/organizations/components/organization-budget-alert-card.svelte';
     import { getNextBillingDateUtc, getRemainingEventLimit } from '$features/organizations/utils';
     import { formatDateLabel, formatLongDate } from '$shared/dates';
     import { scaleUtc } from 'd3-scale';
@@ -138,6 +139,10 @@
         </div>
     {/if}
 </div>
+
+{#if organizationQuery.data}
+    <OrganizationBudgetAlertCard organization={organizationQuery.data} />
+{/if}
 
 {#if changePlanDialogOpen && organizationQuery.data}
     <ChangePlanDialog organization={organizationQuery.data} onclose={() => (changePlanDialogOpen = false)} />

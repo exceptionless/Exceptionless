@@ -113,9 +113,9 @@ maxThroughput(window) = eventsLeftInMonth / windowsLeftInMonth * burstMultiplier
 Where:
 
 * `eventsLeftInMonth` is the organization's current effective monthly allowance minus accepted usage.
-* `windowsLeftInMonth` is the number of smart-throttling windows remaining in the period.
-* `burstMultiplier` preserves existing burst tolerance behavior. A default value such as 10 is acceptable if it matches existing Exceptionless throttle behavior.
-* The evaluation window should align with existing usage bucket behavior where possible.
+* `windowsLeftInMonth` is the number of five-minute usage buckets remaining in the period.
+* `burstMultiplier` is 10 to preserve existing Exceptionless burst tolerance.
+* Accepted totals include the current and previous unsaved buckets.
 
 This is intentionally different from a static `monthlyPlanLimit / timeInMonth` calculation. Customers should not be throttled harshly late in the month when they still have substantial allowance remaining.
 
@@ -136,16 +136,16 @@ When a project is smart-throttled and the organization still has remaining month
 Recommended v1 behavior:
 
 ```text
-sampleRate = 1% to 5%
+sampleRate = 5%
 ```
 
-Implementation may use a fixed default such as 1% or 5% for v1, as long as behavior is deterministic/testable and does not expose many configuration options.
+V1 uses stable hash selection across the whole post. Sampling is a long-run probability, so a single-event post is genuinely accepted about 5% of the time rather than being forced through.
 
 Sampling goals:
 
 * Preserve visibility into whether the problem is still occurring.
 * Preserve visibility into whether a deployed fix reduced occurrences.
-* Avoid accepting 0 events from a throttled project while the organization still has monthly allowance.
+* Preserve a representative long-run sample without a per-post minimum that biases single-event traffic.
 * Avoid allowing a noisy project to consume the entire organization allowance.
 
 ### Event processing location
@@ -176,7 +176,7 @@ The system may store project throttling state in cache to avoid recalculating ex
 Suggested key shape:
 
 ```text
-usage-smart-throttle:{yyyyMM}:{organizationId}:{projectId}
+usage:{fiveMinuteBucket}:{organizationId}:{projectId}:smart-throttle
 ```
 
 Suggested value:
@@ -184,7 +184,7 @@ Suggested value:
 ```json
 {
   "is_throttled": true,
-  "sample_rate": 0.01,
+  "sample_rate": 0.05,
   "effective_until_utc": "..."
 }
 ```
@@ -192,6 +192,8 @@ Suggested value:
 TTL: short window, aligned with usage bucket/window duration.
 
 If cached throttle state expires, the system can re-evaluate based on current usage counters.
+
+`EnableSmartProjectThrottling` defaults to enabled and acts only as an operational kill switch for automatic smart throttling. Project-list status enrichment bulk-reads these short-lived keys once.
 
 ### Smart throttling notification
 
@@ -202,7 +204,9 @@ Notification behavior:
 * Send at most once per project per throttling period or cooldown window.
 * Reuse the existing organization notification eligibility rules.
 * Do not send repeated emails for every event post while the project remains throttled.
-* Include project name, organization name, current accepted usage, current limit context, and a link to project usage.
+* Include project name, organization name, current project accepted usage, current fair-share limit, and a link to project usage.
+* Re-check current plan, usage, kill-switch, and throttle state in the delayed handler before sending.
+* Emit the dedicated throttled-event metric for sampled-out events and structured logs only when state transitions to active.
 
 Suggested message/work item:
 
@@ -369,6 +373,8 @@ Add to `ViewOrganization`:
 public OrganizationBudgetAlertSettings? BudgetAlertSettings { get; set; }
 ```
 
+Both `budget_alert_settings: null` and `ingest_limit: null` clear their settings. The canonical Delta OpenAPI transformer must generate the referenced complex component schemas and represent these PATCH properties as `oneOf: [null, $ref]`; snapshots and generated clients are regenerated from that output.
+
 Serialized JSON uses the existing snake_case policy.
 
 ### Threshold calculation
@@ -407,6 +413,8 @@ Observable behavior must be:
 * Alert does not fire before threshold.
 * Alert does not fire repeatedly after threshold.
 * Multiple crossed thresholds can fire if a large batch jumps over more than one threshold.
+* Crossing compares bucket-inclusive previous and current accepted totals.
+* Enabling alerts after usage already exceeds a threshold evaluates the newly active thresholds once immediately after save.
 
 ### Deduplication
 
@@ -420,7 +428,7 @@ usage-budget-alert:{yyyyMM}:{organizationId}:{threshold}
 
 TTL: until end of current monthly usage period + safety buffer.
 
-The cache key should be set before or atomically with enqueueing the work item to reduce duplicate sends under concurrency.
+The cache key is claimed atomically with `AddAsync` before publishing to prevent duplicate sends under concurrency.
 
 ### Message and work item
 
@@ -703,14 +711,13 @@ Suggested method:
 
 ```csharp
 public Task<EventIngestAllowanceResult> GetEventIngestAllowanceAsync(
-    string organizationId,
-    string projectId,
-    int submittedEventCount);
+    Organization organization,
+    Project project);
 ```
 
 Behavior:
 
-* Compute organization events left using existing organization usage logic.
+* Compute organization and project totals from one bulk read of persisted-total/current-bucket/previous-bucket cache keys.
 * If organization events left is <= 0, allow 0 events.
 * Compute explicit project budget events left if configured.
 * Compute smart throttling state/sample allowance if project is noisy.
@@ -720,16 +727,15 @@ Behavior:
 
 ### Refactor current events-left logic
 
-The current organization-only method should be refactored into a shared helper:
+The event job's project-aware path uses the organization and project it already loaded. It must not issue repository rereads in normal traffic. Existing middleware may retain the organization-id-only helper for its coarse gate.
 
 ```csharp
-private async Task<int> GetEventsLeftAsync(
-    string organizationId,
-    string? projectId,
-    int maxEventsPerMonth)
+public Task<EventIngestAllowanceResult> GetEventIngestAllowanceAsync(
+    Organization organization,
+    Project project)
 ```
 
-Use existing total and bucket cache keys with optional project id.
+Use existing total and bucket cache keys with optional project id. Query the repository's canonically invalidated organization project-count cache only when spike and remaining-allowance checks require fair-share evaluation.
 
 ### OverageMiddleware behavior
 

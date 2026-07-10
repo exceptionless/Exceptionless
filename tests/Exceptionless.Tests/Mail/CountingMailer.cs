@@ -10,6 +10,8 @@ public class CountingMailer : IMailer
     public int OrganizationNoticeCount => _organizationNoticeCount;
 
     public List<OrganizationNoticeCall> OrganizationNoticeCalls { get; } = [];
+    public List<OrganizationBudgetAlertCall> OrganizationBudgetAlertCalls { get; } = [];
+    public List<ProjectThrottleCall> ProjectThrottleCalls { get; } = [];
 
     /// <summary>
     /// When true, <see cref="SendOrganizationNoticeAsync"/> throws instead of recording a call.
@@ -57,11 +59,19 @@ public class CountingMailer : IMailer
 
     public Task SendOrganizationBudgetAlertAsync(User user, Organization organization, int threshold, int thresholdEventCount, int currentEventCount, int eventLimit)
     {
+        lock (OrganizationBudgetAlertCalls)
+        {
+            OrganizationBudgetAlertCalls.Add(new OrganizationBudgetAlertCall(user.Id, organization.Id, threshold, thresholdEventCount, currentEventCount, eventLimit));
+        }
         return Task.CompletedTask;
     }
 
     public Task SendProjectThrottledNoticeAsync(User user, Organization organization, Project project, double sampleRate, int currentEventCount, int eventLimit)
     {
+        lock (ProjectThrottleCalls)
+        {
+            ProjectThrottleCalls.Add(new ProjectThrottleCall(user.Id, organization.Id, project.Id, sampleRate, currentEventCount, eventLimit));
+        }
         return Task.CompletedTask;
     }
 
@@ -87,8 +97,18 @@ public class CountingMailer : IMailer
         {
             OrganizationNoticeCalls.Clear();
         }
+        lock (OrganizationBudgetAlertCalls)
+        {
+            OrganizationBudgetAlertCalls.Clear();
+        }
+        lock (ProjectThrottleCalls)
+        {
+            ProjectThrottleCalls.Clear();
+        }
         ShouldThrow = false;
     }
 }
 
 public record OrganizationNoticeCall(string UserId, string OrganizationId, bool IsOverMonthlyLimit, bool IsOverHourlyLimit);
+public record OrganizationBudgetAlertCall(string UserId, string OrganizationId, int Threshold, int ThresholdEventCount, int CurrentEventCount, int EventLimit);
+public record ProjectThrottleCall(string UserId, string OrganizationId, string ProjectId, double SampleRate, int CurrentEventCount, int EventLimit);

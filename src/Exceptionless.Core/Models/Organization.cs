@@ -274,15 +274,15 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
             }
         }
 
-        if (BudgetAlertSettings is { Enabled: true })
+        if (BudgetAlertSettings is not null)
         {
-            if (BudgetAlertSettings.Thresholds.Count == 0)
+            if (BudgetAlertSettings.Enabled && BudgetAlertSettings.Thresholds is not { Count: > 0 })
             {
                 yield return new ValidationResult("At least one threshold is required when budget alerts are enabled.",
                     [nameof(BudgetAlertSettings)]);
             }
 
-            if (BudgetAlertSettings.Thresholds.Any(t => t <= 0 || t >= 100))
+            if (BudgetAlertSettings.Thresholds?.Any(t => t <= 0 || t >= 100) is true)
                 yield return new ValidationResult("Budget alert thresholds must be between 1 and 99.",
                     [nameof(BudgetAlertSettings)]);
         }
@@ -297,5 +297,3 @@ public enum BillingStatus
     Canceled = 3,
     Unpaid = 4
 }
-
-

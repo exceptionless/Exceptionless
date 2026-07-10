@@ -273,14 +273,6 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
             if (!_propertyCache[targetType].TryGetValue(sourceProperty.Name, out var targetAccessor))
                 continue;
 
-            if (value is null)
-            {
-                // Propagate explicit null for nullable target properties (e.g. PATCH {"field": null} to clear a value)
-                if (IsNullable(targetAccessor.MemberType))
-                    targetAccessor.SetValue(target, null);
-                continue;
-            }
-
             if (!targetAccessor.MemberType.IsInstanceOfType(value))
                 continue;
 
