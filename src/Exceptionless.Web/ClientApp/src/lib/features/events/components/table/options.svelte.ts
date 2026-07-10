@@ -13,6 +13,7 @@ import LogLevel from '../log-level.svelte';
 import Summary from '../summary/summary.svelte';
 import EventTagsSummaryCell from './event-tags-summary-cell.svelte';
 import EventsUserIdentitySummaryCell from './events-user-identity-summary-cell.svelte';
+import StackSortHeader from './stack-sort-header.svelte';
 import StackStatusCell from './stack-status-cell.svelte';
 import StackUsersSummaryCell from './stack-users-summary-cell.svelte';
 
@@ -33,9 +34,11 @@ export const defaultStackColumnVisibility: ColumnVisibilityState = {
     tags: false
 };
 
+export type StackSortMode = Extract<GetEventsMode, 'stack_frequent' | 'stack_new' | 'stack_recent'>;
+
 export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(
     mode: GetEventsMode = 'summary',
-    options?: { onTagClick?: (tag: string) => Promise<void> | void; showType?: boolean }
+    options?: { onStackSort?: (mode: StackSortMode) => void; onTagClick?: (tag: string) => Promise<void> | void; showType?: boolean }
 ): ColumnDef<StockFeatures, TSummaryModel, unknown>[] {
     const showType = options?.showType ?? true;
     const columns: ColumnDef<StockFeatures, TSummaryModel, unknown>[] = [
@@ -305,7 +308,13 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                     renderComponent(NumberFormatter, {
                         value: prop.getValue<number>()
                     }),
-                header: 'Events',
+                enableSorting: false,
+                header: () =>
+                    renderComponent(StackSortHeader, {
+                        active: mode === 'stack_frequent',
+                        label: 'Events',
+                        onclick: () => options?.onStackSort?.('stack_frequent')
+                    }),
                 id: 'events',
                 maxSize: 320,
                 meta: {
@@ -320,7 +329,13 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                     renderComponent(TimeAgo, {
                         value: prop.getValue<string>()
                     }),
-                header: 'First',
+                enableSorting: false,
+                header: () =>
+                    renderComponent(StackSortHeader, {
+                        active: mode === 'stack_new',
+                        label: 'First',
+                        onclick: () => options?.onStackSort?.('stack_new')
+                    }),
                 id: 'first',
                 maxSize: 480,
                 meta: {
@@ -335,7 +350,13 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                     renderComponent(TimeAgo, {
                         value: prop.getValue<string>()
                     }),
-                header: 'Last',
+                enableSorting: false,
+                header: () =>
+                    renderComponent(StackSortHeader, {
+                        active: mode === 'stack_recent',
+                        label: 'Last',
+                        onclick: () => options?.onStackSort?.('stack_recent')
+                    }),
                 id: 'last',
                 maxSize: 480,
                 meta: {
