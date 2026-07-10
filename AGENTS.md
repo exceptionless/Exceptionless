@@ -68,7 +68,6 @@ tests/                         # C# tests and HTTP samples
 - **API contracts:** When an endpoint's route, response, or authorization changes, update `tests/http/*.http` and `tests/Exceptionless.Tests/Controllers/Data/openapi.json`, then run the focused controller tests and `OpenApiControllerTests`.
 - **Abbreviations:** Never abbreviate `Organization` as `org` in code (variable names, parameters, method names, or comments). Always spell out `organization`.
 - **Fix what you cause or block:** Fix regressions caused by the change and failures that block its verification. Report unrelated pre-existing issues with evidence; do not expand scope without approval.
-- OpenSpec usage: Do not require OpenSpec for typo fixes, formatting, docs-only edits, obvious small bug fixes, mechanical cleanup, or narrow test cleanup. For risky or ambiguous behavior changes, use the `openspec` subagent before implementation and validate with `openspec validate <change-id> --strict --no-interactive`.
 
 ## Persisted Data Synchronization
 
