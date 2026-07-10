@@ -23,7 +23,6 @@ using Foundatio.Repositories.Models;
 using Exceptionless.Web.Utility;
 using Stripe;
 using Foundatio.Mediator;
-using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 using Invoice = Exceptionless.Web.Models.Invoice;
 using InvoiceLineItem = Exceptionless.Web.Models.InvoiceLineItem;
@@ -47,6 +46,7 @@ public class OrganizationHandler(
     AppOptions options,
     TimeProvider timeProvider,
     IHttpContextAccessor httpContextAccessor,
+    LinkGenerator linkGenerator,
     ILoggerFactory loggerFactory)
 {
     private readonly ILogger _logger = loggerFactory.CreateLogger<OrganizationHandler>();
@@ -118,7 +118,9 @@ public class OrganizationHandler(
         model = await AddModelAsync(model, message.Context);
         var viewModel = mapper.MapToViewOrganization(model);
         await AfterResultMapAsync([viewModel]);
-        return Result<ViewOrganization>.Created(viewModel, $"/api/v2/organizations/{model.Id}");
+        string location = linkGenerator.GetUriByName(message.Context, "GetOrganizationById", new { id = model.Id })
+            ?? throw new InvalidOperationException("Unable to generate organization location.");
+        return Result<ViewOrganization>.Created(viewModel, location);
     }
 
     public async Task<Result<ViewOrganization>> Handle(UpdateOrganizationMessage message)
@@ -217,6 +219,10 @@ public class OrganizationHandler(
         catch (StripeException ex)
         {
             _logger.LogCritical(ex, "Error getting invoice ({InvoiceId}): {Message}", invoiceId, ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogCritical(ex, "Unexpected error getting invoice ({InvoiceId}): {Message}", invoiceId, ex.Message);
         }
 
         if (String.IsNullOrEmpty(stripeInvoice?.CustomerId))
@@ -528,6 +534,11 @@ public class OrganizationHandler(
         {
             _logger.LogCritical(ex, "Error occurred update billing plan: {Message}", ex.Message);
             return ChangePlanResult.FailWithMessage("An error occurred while changing plans. Please try again or contact support.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogCritical(ex, "An unexpected error occurred while trying to update your billing plan: {Message}", ex.Message);
+            return ChangePlanResult.FailWithMessage("An error occurred while changing plans. Please try again.");
         }
 
         return new ChangePlanResult { Success = true };

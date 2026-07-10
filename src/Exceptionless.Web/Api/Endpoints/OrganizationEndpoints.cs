@@ -73,7 +73,7 @@ public static class OrganizationEndpoints
         {
             return (await mediator.InvokeAsync<Result<ViewOrganization>>(new OrganizationMessages.CreateOrganization(organization, httpContext))).ToHttpResult(resultMapper);
         })
-        .Accepts<NewOrganization>("application/json")
+        .Accepts<NewOrganization>("application/json", "application/*+json")
         .Produces<ViewOrganization>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status409Conflict)
@@ -95,13 +95,14 @@ public static class OrganizationEndpoints
 
             return (await mediator.InvokeAsync<Result<ViewOrganization>>(new OrganizationMessages.UpdateOrganizationMessage(id, changes, httpContext))).ToHttpResult(resultMapper);
         })
-        .Accepts<Delta<NewOrganization>>(false, "application/json")
+        .Accepts<Delta<NewOrganization>>("application/json", "application/*+json")
         .Produces<ViewOrganization>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Update")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyRequired = true,
             RequestBodyDescription = "The changes",
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the organization.",
@@ -119,13 +120,14 @@ public static class OrganizationEndpoints
 
             return (await mediator.InvokeAsync<Result<ViewOrganization>>(new OrganizationMessages.UpdateOrganizationMessage(id, changes, httpContext))).ToHttpResult(resultMapper);
         })
-        .Accepts<Delta<NewOrganization>>(false, "application/json")
+        .Accepts<Delta<NewOrganization>>("application/json", "application/*+json")
         .Produces<ViewOrganization>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Update")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyRequired = true,
             RequestBodyDescription = "The changes",
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the organization.",
@@ -260,7 +262,7 @@ public static class OrganizationEndpoints
             [FromQuery] string? last4 = null,
             [FromQuery] string? couponId = null)
             => (await mediator.InvokeAsync<Result<ChangePlanResult>>(new OrganizationMessages.ChangeOrganizationPlan(id, model, planId, stripeToken, last4, couponId, httpContext))).ToHttpResult(resultMapper))
-        .Accepts<ChangePlanRequest>("application/json")
+        .Accepts<ChangePlanRequest>(true, "application/json", "application/*+json", "application/octet-stream", "text/json", "text/plain")
         .Produces<ChangePlanResult>()
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
@@ -330,7 +332,7 @@ public static class OrganizationEndpoints
 
         group.MapPost("organizations/{id:objectid}/data/{key:minlength(1)}", async (string id, string key, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] ValueFromBody<string> value)
             => (await mediator.InvokeAsync<Result>(new OrganizationMessages.SetOrganizationData(id, key, value, httpContext))).ToHttpResult(resultMapper))
-        .Accepts<ValueFromBody<string>>("application/json")
+        .Accepts<ValueFromBody<string>>("application/json", "application/*+json")
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)

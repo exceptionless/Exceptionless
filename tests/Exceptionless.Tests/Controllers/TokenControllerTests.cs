@@ -65,6 +65,33 @@ public sealed class TokenControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostAsync_NewToken_ReturnsAbsoluteLocation()
+    {
+        // Arrange
+        var token = new NewToken
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            ProjectId = SampleDataService.TEST_PROJECT_ID,
+            Scopes = [AuthorizationRoles.Client]
+        };
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("tokens")
+            .Content(token)
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert
+        Assert.NotNull(response.Headers.Location);
+        Assert.True(response.Headers.Location.IsAbsoluteUri);
+        Assert.Equal("localhost", response.Headers.Location.Host);
+        Assert.StartsWith("/api/v2/tokens/", response.Headers.Location.AbsolutePath);
+    }
+
+    [Fact]
     public async Task GetAsync_ExistingToken_MapsToViewToken()
     {
         // Arrange
@@ -317,6 +344,32 @@ public sealed class TokenControllerTests : IntegrationTestsBase
         Assert.NotNull(problemDetails);
         Assert.Single(problemDetails.Errors);
         Assert.Contains(problemDetails.Errors, error => String.Equals(error.Key, "scopes"));
+    }
+
+    [Fact]
+    public async Task PostByOrganizationAsync_EmptyBody_CreatesOrganizationScopedToken()
+    {
+        // Arrange - the request intentionally has no body.
+
+        // Act
+        var viewToken = await SendRequestAsAsync<ViewToken>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "tokens")
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert
+        Assert.NotNull(viewToken);
+        Assert.NotNull(viewToken.Id);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, viewToken.OrganizationId);
+        Assert.Null(viewToken.ProjectId);
+        Assert.Contains(AuthorizationRoles.Client, viewToken.Scopes);
+
+        var token = await _tokenRepository.GetByIdAsync(viewToken.Id);
+        Assert.NotNull(token);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, token.OrganizationId);
+        Assert.Null(token.ProjectId);
     }
 
     [Fact]

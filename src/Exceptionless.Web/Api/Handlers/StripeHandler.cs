@@ -32,7 +32,7 @@ public class StripeHandler(
             {
                 stripeEvent = EventUtility.ConstructEvent(message.Json, message.Signature ?? String.Empty, stripeOptions.StripeWebHookSigningSecret, throwOnApiVersionMismatch: false);
             }
-            catch (Exception ex) when (ex is StripeException or System.Text.Json.JsonException or ArgumentException)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Unable to parse incoming event with {Signature}: {Message}", message.Signature, ex.Message);
                 return Result.BadRequest("Unable to parse incoming event.");

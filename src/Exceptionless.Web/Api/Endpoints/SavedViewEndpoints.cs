@@ -77,6 +77,7 @@ public static class SavedViewEndpoints
         {
             return (await mediator.InvokeAsync<Result<ViewSavedView>>(new SavedViewMessages.CreateSavedView(organizationId, savedView))).ToHttpResult(resultMapper);
         })
+        .Accepts<NewSavedView>("application/json", "application/*+json")
         .Produces<ViewSavedView>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status409Conflict)
@@ -138,6 +139,7 @@ public static class SavedViewEndpoints
 
         group.MapPut("saved-views/predefined", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] IReadOnlyCollection<PredefinedSavedViewDefinition> definitions)
             => (await mediator.InvokeAsync<Result<IReadOnlyCollection<PredefinedSavedViewDefinition>>>(new SavedViewMessages.ReplacePredefinedSavedViews(definitions))).ToHttpResult(resultMapper))
+        .Accepts<IReadOnlyCollection<PredefinedSavedViewDefinition>>("application/json", "application/*+json", "application/octet-stream", "text/json", "text/plain")
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
         .Produces<IReadOnlyCollection<PredefinedSavedViewDefinition>>()
         .WithSummary("Replace all predefined saved views with the provided definitions")
@@ -183,7 +185,7 @@ public static class SavedViewEndpoints
 
         group.MapPatch("saved-views/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] Delta<UpdateSavedView>? changes)
             => changes is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<ViewSavedView>>(new SavedViewMessages.UpdateSavedViewMessage(id, changes))).ToHttpResult(resultMapper))
-        .Accepts<Delta<UpdateSavedView>>(false, "application/json")
+        .Accepts<Delta<UpdateSavedView>>(false, "application/json", "application/*+json")
         .Produces<ViewSavedView>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -192,6 +194,7 @@ public static class SavedViewEndpoints
         .WithSummary("Update")
         .WithMetadata(new EndpointDocumentation {
             RequestBodyDescription = "The changes",
+            RequestBodyRequired = true,
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the saved view.",
             },
@@ -203,7 +206,7 @@ public static class SavedViewEndpoints
 
         group.MapPut("saved-views/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] Delta<UpdateSavedView>? changes)
             => changes is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<ViewSavedView>>(new SavedViewMessages.UpdateSavedViewMessage(id, changes))).ToHttpResult(resultMapper))
-        .Accepts<Delta<UpdateSavedView>>(false, "application/json")
+        .Accepts<Delta<UpdateSavedView>>(false, "application/json", "application/*+json")
         .Produces<ViewSavedView>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -212,6 +215,7 @@ public static class SavedViewEndpoints
         .WithSummary("Update")
         .WithMetadata(new EndpointDocumentation {
             RequestBodyDescription = "The changes",
+            RequestBodyRequired = true,
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the saved view.",
             },

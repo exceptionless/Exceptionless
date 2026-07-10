@@ -10,7 +10,7 @@ public record GetEventCountByOrganization(string OrganizationId, string? Filter,
 public record GetEventCountByProject(string ProjectId, string? Filter, string? Aggregations, string? Time, string? Offset, string? Mode, HttpContext Context);
 
 // Get events
-public record GetEventById(string Id, string? Time, string? Offset, HttpContext Context);
+public record GetEventById(string Id, string? ExpectedStackId, string? Time, string? Offset, HttpContext Context);
 public record GetAllEvents(string? Filter, string? Sort, string? Time, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, string? Include, HttpContext Context);
 public record GetEventsByOrganization(string OrganizationId, string? Filter, string? Sort, string? Time, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, string? Include, HttpContext Context);
 public record GetEventsByProject(string ProjectId, string? Filter, string? Sort, string? Time, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, string? Include, HttpContext Context);

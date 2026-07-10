@@ -27,7 +27,7 @@ public static class WebHookEndpoints
         group.MapGet("projects/{projectId:objectid}/webhooks", async (string projectId, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, int page = 1, int limit = 10)
             => (await mediator.InvokeAsync<Result<PagedResult<WebHook>>>(new WebHookMessages.GetWebHooksByProject(projectId, page, limit))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
-        .Produces(StatusCodes.Status200OK)
+        .Produces<IReadOnlyCollection<WebHook>>()
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Get by project")
         .WithMetadata(new EndpointDocumentation {
@@ -65,6 +65,7 @@ public static class WebHookEndpoints
 
             return (await mediator.InvokeAsync<Result<WebHook>>(new WebHookMessages.CreateWebHook(webHook))).ToHttpResult(resultMapper);
         })
+        .Accepts<NewWebHook>("application/json", "application/*+json")
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces<WebHook>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status400BadRequest)

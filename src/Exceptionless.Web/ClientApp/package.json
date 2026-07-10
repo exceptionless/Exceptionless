@@ -30,8 +30,7 @@
         "build-storybook": "storybook build",
         "update": "ncu -i",
         "update:shadcn": "npx shadcn-svelte@latest update",
-        "update:skills": "npx skills update",
-        "openspec:validate": "cd ../../.. && npx -y @fission-ai/openspec@1.4.1 validate --strict --no-interactive"
+        "update:skills": "npx skills update"
     },
     "devDependencies": {
         "@chromatic-com/storybook": "^5.2.1",

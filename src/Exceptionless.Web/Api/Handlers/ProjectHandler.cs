@@ -23,7 +23,6 @@ using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Serializer;
-using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Web.Api.Handlers;
@@ -44,6 +43,7 @@ public class ProjectHandler(
     AppOptions options,
     UsageService usageService,
     TimeProvider timeProvider,
+    LinkGenerator linkGenerator,
     ILoggerFactory loggerFactory)
 {
     private readonly ILogger _logger = loggerFactory.CreateLogger<ProjectHandler>();
@@ -117,7 +117,9 @@ public class ProjectHandler(
         model = await AddModelAsync(model, message.Context);
         var viewModel = mapper.MapToViewProject(model);
         await AfterResultMapAsync([viewModel]);
-        return Result<ViewProject>.Created(viewModel, $"/api/v2/projects/{model.Id}");
+        string location = linkGenerator.GetUriByName(message.Context, "GetProjectById", new { id = model.Id })
+            ?? throw new InvalidOperationException("Unable to generate project location.");
+        return Result<ViewProject>.Created(viewModel, location);
     }
 
     public async Task<Result<ViewProject>> Handle(UpdateProjectMessage message)
@@ -361,11 +363,8 @@ public class ProjectHandler(
         if (project is null)
             return Result.NotFound("Project not found.");
 
-        if (project.PromotedTabs is not null)
-        {
-            project.PromotedTabs.Remove(message.Name.Trim());
+        if (project.PromotedTabs is not null && project.PromotedTabs.Remove(message.Name.Trim()))
             await repository.SaveAsync(project, o => o.Cache());
-        }
 
         return Result.Success();
     }
@@ -554,6 +553,7 @@ public class ProjectHandler(
 
     private Task<Project> AddModelAsync(Project value, HttpContext httpContext)
     {
+        value.PromotedTabs = NormalizePromotedTabs(value.PromotedTabs);
         value.IsConfigured = false;
         value.NextSummaryEndOfDayTicks = timeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1).AddHours(1).Ticks;
         value.AddDefaultNotificationSettings(GetCurrentUserId(httpContext));

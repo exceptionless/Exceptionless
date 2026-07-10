@@ -394,6 +394,25 @@ public class StackControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetAll_WithPremiumFilter_ExcludesFreeOrganizationStacks()
+    {
+        // Arrange
+        var (stacks, _) = await CreateDataAsync(d => d.Event().FreeProject());
+        var stack = Assert.Single(stacks);
+
+        // Act
+        var result = await SendRequestAsAsync<IReadOnlyCollection<Stack>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("stacks")
+            .QueryString("filter", $"id:{stack.Id}")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Empty(result);
+    }
+
+    [Fact]
     public async Task GetAsync_ExistingStack_ReturnsStack()
     {
         // Arrange

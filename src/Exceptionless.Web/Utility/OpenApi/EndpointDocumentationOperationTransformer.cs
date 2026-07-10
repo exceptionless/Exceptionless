@@ -23,6 +23,7 @@ public sealed record AdditionalParameterDefinition(
 public sealed record EndpointDocumentation
 {
     public string? RequestBodyDescription { get; init; }
+    public bool RequestBodyRequired { get; init; }
     public Dictionary<string, string> ParameterDescriptions { get; init; } = new();
     public Dictionary<string, string> ResponseDescriptions { get; init; } = new();
     public List<AdditionalParameterDefinition> AdditionalParameters { get; init; } = new();
@@ -132,6 +133,28 @@ public class EndpointDocumentationOperationTransformer : IOpenApiOperationTransf
             operation.RequestBody.Description = documentation.RequestBodyDescription;
         }
 
+        if (documentation.RequestBodyRequired && operation.RequestBody is OpenApiRequestBody requestBody)
+        {
+            requestBody.Required = true;
+            if (requestBody.Content is not null)
+            {
+                foreach (var mediaType in requestBody.Content.Values)
+                    mediaType.Schema = RemoveNullAlternative(mediaType.Schema);
+            }
+        }
+
         return Task.CompletedTask;
+    }
+
+    private static IOpenApiSchema? RemoveNullAlternative(IOpenApiSchema? schema)
+    {
+        if (schema is not OpenApiSchema { OneOf.Count: > 0 } composite)
+            return schema;
+
+        var nonNullAlternatives = composite.OneOf
+            .Where(alternative => alternative is not OpenApiSchema { Type: JsonSchemaType.Null })
+            .ToArray();
+
+        return nonNullAlternatives.Length == 1 ? nonNullAlternatives[0] : schema;
     }
 }

@@ -82,7 +82,7 @@ public static class ProjectEndpoints
             return (await mediator.InvokeAsync<Result<ViewProject>>(new ProjectMessages.CreateProject(project, httpContext))).ToHttpResult(resultMapper);
         })
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
-        .Accepts<NewProject>("application/json")
+        .Accepts<NewProject>("application/json", "application/*+json")
         .Produces<ViewProject>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status409Conflict)
@@ -100,13 +100,14 @@ public static class ProjectEndpoints
         group.MapPatch("projects/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] Delta<UpdateProject>? changes)
             => changes is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<ViewProject>>(new ProjectMessages.UpdateProjectMessage(id, changes, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
-        .Accepts<Delta<UpdateProject>>(false, "application/json")
+        .Accepts<Delta<UpdateProject>>("application/json", "application/*+json")
         .Produces<ViewProject>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Update")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyRequired = true,
             RequestBodyDescription = "The changes",
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the project.",
@@ -120,13 +121,14 @@ public static class ProjectEndpoints
         group.MapPut("projects/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] Delta<UpdateProject>? changes)
             => changes is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<ViewProject>>(new ProjectMessages.UpdateProjectMessage(id, changes, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
-        .Accepts<Delta<UpdateProject>>(false, "application/json")
+        .Accepts<Delta<UpdateProject>>("application/json", "application/*+json")
         .Produces<ViewProject>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Update")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyRequired = true,
             RequestBodyDescription = "The changes",
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the project.",
@@ -203,7 +205,7 @@ public static class ProjectEndpoints
         group.MapPost("projects/{id:objectid}/config", async (string id, string key, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] ValueFromBody<string> value)
             => (await mediator.InvokeAsync<Result>(new ProjectMessages.SetProjectConfig(id, key, value, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
-        .Accepts<ValueFromBody<string>>("application/json")
+        .Accepts<ValueFromBody<string>>("application/json", "application/*+json")
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -320,7 +322,7 @@ public static class ProjectEndpoints
             [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] NotificationSettings? settings = null)
             => (await mediator.InvokeAsync<Result>(new ProjectMessages.SetProjectUserNotificationSettings(id, userId, settings, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
-        .Accepts<NotificationSettings>("application/json")
+        .Accepts<NotificationSettings>(true, "application/json", "application/*+json")
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Set user notification settings")
@@ -339,7 +341,7 @@ public static class ProjectEndpoints
             [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] NotificationSettings? settings = null)
             => (await mediator.InvokeAsync<Result>(new ProjectMessages.SetProjectUserNotificationSettings(id, userId, settings, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
-        .Accepts<NotificationSettings>("application/json")
+        .Accepts<NotificationSettings>(true, "application/json", "application/*+json")
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Set user notification settings")
@@ -358,7 +360,7 @@ public static class ProjectEndpoints
             [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] NotificationSettings? settings = null)
             => (await mediator.InvokeAsync<Result>(new ProjectMessages.SetProjectIntegrationNotificationSettings(id, integration, settings, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
-        .Accepts<NotificationSettings>("application/json")
+        .Accepts<NotificationSettings>(true, "application/json", "application/*+json")
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status426UpgradeRequired)
@@ -379,7 +381,7 @@ public static class ProjectEndpoints
             [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] NotificationSettings? settings = null)
             => (await mediator.InvokeAsync<Result>(new ProjectMessages.SetProjectIntegrationNotificationSettings(id, integration, settings, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
-        .Accepts<NotificationSettings>("application/json")
+        .Accepts<NotificationSettings>(true, "application/json", "application/*+json")
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status426UpgradeRequired)
@@ -502,7 +504,7 @@ public static class ProjectEndpoints
         group.MapPost("projects/{id:objectid}/data", async (string id, string key, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] ValueFromBody<string> value)
             => (await mediator.InvokeAsync<Result>(new ProjectMessages.SetProjectData(id, key, value, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
-        .Accepts<ValueFromBody<string>>("application/json")
+        .Accepts<ValueFromBody<string>>("application/json", "application/*+json")
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)

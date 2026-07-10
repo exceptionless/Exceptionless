@@ -12,7 +12,6 @@ using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Mediator;
 using Foundatio.Repositories;
-using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
 
 namespace Exceptionless.Web.Api.Handlers;
 
@@ -22,6 +21,7 @@ public class TokenHandler(
     ApiMapper mapper,
     IAppQueryValidator validator,
     TimeProvider timeProvider,
+    LinkGenerator linkGenerator,
     IHttpContextAccessor httpContextAccessor)
 {
     private readonly IAppQueryValidator _validator = validator;
@@ -201,16 +201,15 @@ public class TokenHandler(
         var model = await AddModelAsync(mapped);
         var viewModel = mapper.MapToViewToken(model);
         AfterResultMap([viewModel]);
-        return Result<ViewToken>.Created(viewModel, $"/api/v2/tokens/{model.Id}");
+        string location = linkGenerator.GetUriByName(HttpContext, "GetTokenById", new { id = model.Id })
+            ?? throw new InvalidOperationException("Unable to generate token location.");
+        return Result<ViewToken>.Created(viewModel, location);
     }
 
     private async Task<Result<ViewToken>?> CanAddAsync(Token value)
     {
         if (String.IsNullOrEmpty(value.OrganizationId))
             return Result.Forbidden("Organization is required.");
-
-        if (String.IsNullOrEmpty(value.ProjectId))
-            return Result.Invalid(ValidationError.Create("project_id", "The project_id field is required."));
 
         bool hasUserRole = HttpContext.User.IsInRole(AuthorizationRoles.User);
         bool hasGlobalAdminRole = HttpContext.User.IsInRole(AuthorizationRoles.GlobalAdmin);

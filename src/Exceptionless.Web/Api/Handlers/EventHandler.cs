@@ -31,7 +31,6 @@ using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
 using Microsoft.Net.Http.Headers;
-using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
 
 namespace Exceptionless.Web.Api.Handlers;
 
@@ -46,10 +45,11 @@ public class EventHandler(
     FormattingPluginManager formattingPluginManager,
     ICacheClient cacheClient,
     ITextSerializer serializer,
-    IAppQueryValidator validator,
+    PersistentEventQueryValidator validator,
     AppOptions appOptions,
     UsageService usageService,
     TimeProvider timeProvider,
+    LinkGenerator linkGenerator,
     ILoggerFactory loggerFactory)
 {
     private static readonly HashSet<string> _ignoredKeys = new(StringComparer.OrdinalIgnoreCase) { "access_token", "api_key", "apikey" };
@@ -122,9 +122,8 @@ public class EventHandler(
         if (model is null)
             return Result.NotFound("Event not found.");
 
-        string? expectedStackId = httpContext.Request.Query["expected_stack_id"].FirstOrDefault();
-        if (!String.IsNullOrEmpty(expectedStackId) && !String.Equals(model.StackId, expectedStackId, StringComparison.Ordinal))
-            return Result.BadRequest($"The event \"{model.Id}\" belongs to stack \"{model.StackId}\", not stack \"{expectedStackId}\". Open the event from its current stack.");
+        if (!String.IsNullOrEmpty(message.ExpectedStackId) && !String.Equals(model.StackId, message.ExpectedStackId, StringComparison.Ordinal))
+            return Result.BadRequest($"The event \"{model.Id}\" belongs to stack \"{model.StackId}\", not stack \"{message.ExpectedStackId}\". Open the event from its current stack.");
 
         var organization = await GetOrganizationAsync(model.OrganizationId, httpContext);
         if (organization is null)
@@ -138,16 +137,24 @@ public class EventHandler(
         var result = await eventRepository.GetPreviousAndNextEventIdsAsync(model, sf, ti.Range.UtcStart, ti.Range.UtcEnd);
 
         var links = new List<string>();
-        if (!String.IsNullOrEmpty(result.Previous))
-            links.Add($"</api/v2/events/{result.Previous}>; rel=\"previous\"");
-        if (!String.IsNullOrEmpty(result.Next))
-            links.Add($"</api/v2/events/{result.Next}>; rel=\"next\"");
-        links.Add($"</api/v2/stacks/{model.StackId}>; rel=\"parent\"");
+        AddLink("GetPersistentEventById", result.Previous, "previous");
+        AddLink("GetPersistentEventById", result.Next, "next");
+        AddLink("GetStackById", model.StackId, "parent");
 
         if (links.Count > 0)
             httpContext.Response.Headers[HeaderNames.Link] = links.ToArray();
 
         return model;
+
+        void AddLink(string endpointName, string? id, string relationship)
+        {
+            if (String.IsNullOrEmpty(id))
+                return;
+
+            string? uri = linkGenerator.GetUriByName(httpContext, endpointName, new { id });
+            if (!String.IsNullOrEmpty(uri))
+                links.Add($"<{uri}>; rel=\"{relationship}\"");
+        }
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetAllEvents message)
@@ -769,6 +776,7 @@ public class EventHandler(
                             TemplateKey = summaryData.TemplateKey,
                             Date = e.Date,
                             Type = e.Type,
+                            Version = e.GetVersion(),
                             Data = summaryData.Data
                         };
                     }).ToList();

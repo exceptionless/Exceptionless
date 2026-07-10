@@ -47,7 +47,9 @@ public partial class Program
         {
             Console.Title = "Exceptionless Web";
 
-            string environment = Environment.GetEnvironmentVariable("EX_AppMode") ?? Environments.Production;
+            string? environment = Environment.GetEnvironmentVariable("EX_AppMode");
+            if (String.IsNullOrWhiteSpace(environment))
+                environment = Environments.Production;
 
             var builder = WebApplication.CreateBuilder(new WebApplicationOptions
             {

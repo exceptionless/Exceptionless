@@ -67,6 +67,62 @@ public sealed class AutoValidationEndpointFilterTests
     }
 
     [Fact]
+    public async Task InvokeAsync_NestedInvalidModel_ReturnsUnprocessableEntityValidationProblem()
+    {
+        // Arrange
+        var filter = new AutoValidationEndpointFilter();
+        var httpContext = new DefaultHttpContext();
+        var context = new TestEndpointFilterInvocationContext(httpContext, [new RequestWithNestedValidationMetadata()]);
+        var nextCalled = false;
+
+        // Act
+        var result = await filter.InvokeAsync(context, _ =>
+        {
+            nextCalled = true;
+            return ValueTask.FromResult<object?>("next");
+        });
+
+        // Assert
+        Assert.False(nextCalled);
+        var statusCodeResult = Assert.IsAssignableFrom<IStatusCodeHttpResult>(result);
+        var valueResult = Assert.IsAssignableFrom<IValueHttpResult>(result);
+        var problemDetails = Assert.IsType<HttpValidationProblemDetails>(valueResult.Value);
+
+        Assert.Equal(StatusCodes.Status422UnprocessableEntity, statusCodeResult.StatusCode);
+        Assert.True(problemDetails.Errors.TryGetValue("child._display_name", out var displayNameErrors));
+        Assert.Contains(displayNameErrors, error => error == "The DisplayName field is required.");
+    }
+
+    [Fact]
+    public async Task InvokeAsync_NormalizedDuplicateKeys_ReturnsCombinedValidationProblem()
+    {
+        // Arrange
+        var filter = new AutoValidationEndpointFilter();
+        var httpContext = new DefaultHttpContext();
+        var context = new TestEndpointFilterInvocationContext(httpContext, [new RequestWithDuplicateValidationKeys()]);
+        var nextCalled = false;
+
+        // Act
+        var result = await filter.InvokeAsync(context, _ =>
+        {
+            nextCalled = true;
+            return ValueTask.FromResult<object?>("next");
+        });
+
+        // Assert
+        Assert.False(nextCalled);
+        var statusCodeResult = Assert.IsAssignableFrom<IStatusCodeHttpResult>(result);
+        var valueResult = Assert.IsAssignableFrom<IValueHttpResult>(result);
+        var problemDetails = Assert.IsType<HttpValidationProblemDetails>(valueResult.Value);
+
+        Assert.Equal(StatusCodes.Status422UnprocessableEntity, statusCodeResult.StatusCode);
+        var displayNameErrors = Assert.Single(problemDetails.Errors, error => error.Key == "display_name").Value;
+        Assert.Equal(2, displayNameErrors.Length);
+        Assert.Contains("The DisplayName field is required.", displayNameErrors);
+        Assert.Contains("Display name failed semantic validation.", displayNameErrors);
+    }
+
+    [Fact]
     public async Task InvokeAsync_ServiceArgumentWithoutValidationMetadata_CallsNext()
     {
         // Arrange
@@ -228,6 +284,22 @@ public sealed class AutoValidationEndpointFilterTests
     {
         [StringLength(10, MinimumLength = 3)]
         public string? DisplayName { get; set; }
+    }
+
+    private sealed class RequestWithDuplicateValidationKeys : IValidatableObject
+    {
+        [Required]
+        public string? DisplayName { get; set; }
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            yield return new ValidationResult("Display name failed semantic validation.", ["display_name"]);
+        }
+    }
+
+    private sealed class RequestWithNestedValidationMetadata
+    {
+        public RequestWithValidationMetadata Child { get; } = new();
     }
 
     [TypeValidation]

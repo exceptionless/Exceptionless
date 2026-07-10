@@ -1020,6 +1020,60 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostAsync_NewProject_ReturnsAbsoluteLocation()
+    {
+        // Arrange
+        var project = new NewProject
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            Name = "Absolute Location Project",
+            DeleteBotDataEnabled = false
+        };
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPath("projects")
+            .Content(project)
+            .StatusCodeShouldBeCreated());
+
+        // Assert
+        Assert.NotNull(response.Headers.Location);
+        Assert.True(response.Headers.Location.IsAbsoluteUri);
+        Assert.Equal("localhost", response.Headers.Location.Host);
+    }
+
+    [Fact]
+    public async Task PostAsync_WithPromotedTabs_NormalizesTabs()
+    {
+        // Arrange
+        var project = new NewProject
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            Name = "Normalized Tabs Project",
+            DeleteBotDataEnabled = false,
+            PromotedTabs = ["gamma", "alpha", "gamma", "  beta  ", ""]
+        };
+
+        // Act
+        var createdProject = await SendRequestAsAsync<ViewProject>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPath("projects")
+            .Content(project)
+            .StatusCodeShouldBeCreated());
+
+        // Assert
+        Assert.NotNull(createdProject);
+        Assert.Equal(["gamma", "alpha", "beta"], createdProject.PromotedTabs);
+
+        var persistedProject = await _projectRepository.GetByIdAsync(createdProject.Id);
+        Assert.NotNull(persistedProject);
+        Assert.Equal(["gamma", "alpha", "beta"], persistedProject.PromotedTabs);
+    }
+
+    [Fact]
     public async Task PromoteTabAsync_WithValidName_AddsPromotedTab()
     {
         // Arrange

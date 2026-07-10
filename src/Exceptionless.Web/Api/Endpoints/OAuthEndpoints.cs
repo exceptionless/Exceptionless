@@ -15,16 +15,19 @@ public static class OAuthEndpoints
         endpoints.MapGet(".well-known/oauth-authorization-server", async (IMediator mediator)
             => await mediator.InvokeAsync<HttpIResult>(new GetAuthorizationServerMetadata()))
             .AllowAnonymous()
+            .WithTags("OAuth")
             .Produces<OAuthAuthorizationServerMetadata>();
 
         endpoints.MapGet(".well-known/oauth-protected-resource/mcp", async (IMediator mediator)
             => await mediator.InvokeAsync<HttpIResult>(new GetMcpProtectedResourceMetadata()))
             .AllowAnonymous()
+            .WithTags("OAuth")
             .Produces<OAuthProtectedResourceMetadata>();
 
         endpoints.MapGet(".well-known/oauth-protected-resource/api/v2", async (IMediator mediator)
             => await mediator.InvokeAsync<HttpIResult>(new GetRestApiProtectedResourceMetadata()))
             .AllowAnonymous()
+            .WithTags("OAuth")
             .Produces<OAuthProtectedResourceMetadata>();
 
         var group = endpoints.MapGroup("api/v2/oauth")
@@ -47,21 +50,21 @@ public static class OAuthEndpoints
         group.MapPost("authorize", async (IMediator mediator, [FromBody] OAuthAuthorizeForm form)
             => await mediator.InvokeAsync<HttpIResult>(new CompleteOAuthAuthorization(form)))
             .RequireAuthorization(AuthorizationRoles.UserPolicy)
-            .Accepts<OAuthAuthorizeForm>("application/json", "application/*+json")
+            .Accepts<OAuthAuthorizeForm>("application/json", "application/*+json", "application/octet-stream", "text/json", "text/plain")
             .Produces<OAuthAuthorizeResponse>()
             .Produces<OAuthErrorResponse>(StatusCodes.Status400BadRequest);
 
         group.MapPost("authorize/consent", async (IMediator mediator, [FromBody] OAuthAuthorizeForm form)
             => await mediator.InvokeAsync<HttpIResult>(new GetOAuthAuthorizeConsent(form)))
             .RequireAuthorization(AuthorizationRoles.UserPolicy)
-            .Accepts<OAuthAuthorizeForm>("application/json", "application/*+json")
+            .Accepts<OAuthAuthorizeForm>("application/json", "application/*+json", "application/octet-stream", "text/json", "text/plain")
             .Produces<OAuthAuthorizeConsentResponse>()
             .Produces<OAuthErrorResponse>(StatusCodes.Status400BadRequest);
 
         group.MapPost("register", async (IMediator mediator, [FromBody] OAuthClientRegistrationRequest request)
             => await mediator.InvokeAsync<HttpIResult>(new RegisterOAuthClient(request)))
             .AllowAnonymous()
-            .Accepts<OAuthClientRegistrationRequest>("application/json", "application/*+json")
+            .Accepts<OAuthClientRegistrationRequest>("application/json", "application/*+json", "application/octet-stream", "text/json", "text/plain")
             .Produces<OAuthClientRegistrationResponse>(StatusCodes.Status201Created)
             .Produces<OAuthErrorResponse>(StatusCodes.Status400BadRequest)
             .Produces<OAuthErrorResponse>(StatusCodes.Status429TooManyRequests);

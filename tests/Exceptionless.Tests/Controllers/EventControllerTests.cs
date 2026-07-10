@@ -112,6 +112,25 @@ public partial class EventControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetAll_WithPremiumFilter_ExcludesFreeOrganizationEvents()
+    {
+        // Arrange
+        var (_, events) = await CreateDataAsync(d => d.Event().FreeProject());
+        var persistentEvent = Assert.Single(events);
+
+        // Act
+        var result = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("filter", $"id:{persistentEvent.Id}")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Empty(result);
+    }
+
+    [Fact]
     public async Task GetByOrganizationAsync_SuspendedOrganization_ReturnsUpgradeRequired()
     {
         // Arrange
@@ -192,6 +211,20 @@ public partial class EventControllerTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(count);
         Assert.True(count.Total > 0);
+    }
+
+    [Fact]
+    public Task GetCount_WithDisallowedAggregation_ReturnsBadRequest()
+    {
+        // Arrange
+        const string aggregation = "terms:message";
+
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("events", "count")
+            .QueryString("aggregations", aggregation)
+            .StatusCodeShouldBeBadRequest());
     }
 
     [Fact]
@@ -903,6 +936,26 @@ public partial class EventControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetEvent_WithExistingEvent_ReturnsAbsoluteParentLink()
+    {
+        // Arrange
+        var (_, events) = await CreateDataAsync(d => d.Event().TestProject());
+        var persistentEvent = Assert.Single(events);
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("events", persistentEvent.Id)
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        var links = ParseLinkHeaderValue(response.Headers.GetValues(HeaderNames.Link).ToArray());
+        string parentLink = Assert.Contains("parent", links);
+        Assert.True(new Uri(parentLink).IsAbsoluteUri);
+        Assert.Equal("localhost", new Uri(parentLink).Host);
+    }
+
+    [Fact]
     public async Task GetEvent_WithMismatchedExpectedStack_ReturnsBadRequest()
     {
         var (stacks, events) = await CreateDataAsync(d =>
@@ -1079,6 +1132,27 @@ public partial class EventControllerTests : IntegrationTestsBase
         Assert.NotEmpty(results);
         Assert.All(results, summary => Assert.NotEqual(default, summary.Date));
         Assert.Contains(results, summary => !String.IsNullOrEmpty(summary.Type));
+    }
+
+    [Fact]
+    public async Task GetEvents_SummaryMode_IncludesVersion()
+    {
+        // Arrange
+        var (_, events) = await CreateDataAsync(d => d.Event().TestProject().Version("3.2.1-beta1"));
+        var persistentEvent = Assert.Single(events);
+
+        // Act
+        var results = await SendRequestAsAsync<List<EventSummaryModel>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("filter", $"id:{persistentEvent.Id}")
+            .QueryString("mode", "summary")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(results);
+        var summary = Assert.Single(results);
+        Assert.Equal("3.2.1-beta1", summary.Version);
     }
 
     [Fact]

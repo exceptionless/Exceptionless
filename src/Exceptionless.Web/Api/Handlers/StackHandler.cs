@@ -26,7 +26,6 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
 using McSherry.SemanticVersioning;
-using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
 
 namespace Exceptionless.Web.Api.Handlers;
 
@@ -41,7 +40,7 @@ public class StackHandler(
     ICacheClient cacheClient,
     FormattingPluginManager formattingPluginManager,
     SemanticVersionParser semanticVersionParser,
-    IAppQueryValidator validator,
+    StackQueryValidator validator,
     AppOptions options,
     TimeProvider timeProvider,
     ILoggerFactory loggerFactory)

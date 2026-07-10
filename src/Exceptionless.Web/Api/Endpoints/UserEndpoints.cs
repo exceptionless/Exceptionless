@@ -90,13 +90,14 @@ public static class UserEndpoints
 
         group.MapPatch("users/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] Delta<UpdateUser>? changes)
             => changes is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<object>>(new UserMessages.UpdateUserMessage(id, changes))).ToHttpResult(resultMapper))
-        .Accepts<Delta<UpdateUser>>(false, "application/json")
+        .Accepts<Delta<UpdateUser>>(false, "application/json", "application/*+json")
         .Produces<ViewUser>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Update")
         .WithMetadata(new EndpointDocumentation {
             RequestBodyDescription = "The changes",
+            RequestBodyRequired = true,
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the user.",
             },
@@ -108,13 +109,14 @@ public static class UserEndpoints
 
         group.MapPut("users/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] Delta<UpdateUser>? changes)
             => changes is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<object>>(new UserMessages.UpdateUserMessage(id, changes))).ToHttpResult(resultMapper))
-        .Accepts<Delta<UpdateUser>>(false, "application/json")
+        .Accepts<Delta<UpdateUser>>(false, "application/json", "application/*+json")
         .Produces<ViewUser>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Update")
         .WithMetadata(new EndpointDocumentation {
             RequestBodyDescription = "The changes",
+            RequestBodyRequired = true,
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the user.",
             },

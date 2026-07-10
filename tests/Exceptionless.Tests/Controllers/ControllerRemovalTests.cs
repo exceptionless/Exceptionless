@@ -1,19 +1,12 @@
-using System.Reflection;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using Exceptionless.Web;
-using Foundatio.Xunit;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Routing;
 using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
 
-public sealed class ControllerManifestTests(ITestOutputHelper output) : TestWithLoggingBase(output)
+public sealed class ControllerRemovalTests
 {
     [Fact]
-    public void MapControllers_AfterMinimalApiMigration_ContainsNoMvcControllers()
+    public void ControllerTypes_AfterMinimalApiMigration_IsEmpty()
     {
         // Arrange
         var webAssembly = typeof(Exceptionless.Web.Program).Assembly;

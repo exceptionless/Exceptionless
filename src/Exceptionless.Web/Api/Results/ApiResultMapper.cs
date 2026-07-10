@@ -1,5 +1,4 @@
-using System.Collections.Concurrent;
-using System.Reflection;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Web.Controllers;
 using Foundatio.Mediator;
 using Microsoft.AspNetCore.Http;
@@ -15,7 +14,6 @@ namespace Exceptionless.Web.Api.Results;
 /// </summary>
 public sealed class ApiResultMapper : IMediatorResultMapper<IResult>
 {
-    private static readonly ConcurrentDictionary<Type, PropertyInfo?> s_valuePropertyCache = new();
     private readonly MediatorResultMapperOptions<IResult>? _options;
 
     public ApiResultMapper(MediatorResultMapperOptions<IResult>? options = null)
@@ -89,10 +87,13 @@ public sealed class ApiResultMapper : IMediatorResultMapper<IResult>
 
     public static IResult MapValidation(Foundatio.Mediator.IResult result)
     {
+        string title = String.IsNullOrWhiteSpace(result.Message)
+            ? "One or more validation errors occurred."
+            : result.Message;
         var errors = result.ValidationErrors?.ToList();
         if (errors is null || errors.Count == 0)
             return HttpResults.Problem(
-                detail: result.Message, statusCode: StatusCodes.Status422UnprocessableEntity, title: "Validation failed");
+                statusCode: StatusCodes.Status422UnprocessableEntity, title: title);
 
         var planLimitError = errors.FirstOrDefault(error => String.Equals(error.Identifier, "plan_limit", StringComparison.OrdinalIgnoreCase));
         if (planLimitError is not null)
@@ -110,21 +111,19 @@ public sealed class ApiResultMapper : IMediatorResultMapper<IResult>
         if (requestEntityTooLargeError is not null)
             return HttpResults.Problem(statusCode: StatusCodes.Status413RequestEntityTooLarge, title: requestEntityTooLargeError.ErrorMessage);
 
-        var errorDict = new Dictionary<string, string[]>();
-        foreach (var error in errors)
-        {
-            var key = error.Identifier ?? "";
-            errorDict[key] = errorDict.TryGetValue(key, out var existing)
-                ? [.. existing, error.ErrorMessage]
-                : [error.ErrorMessage];
-        }
+        var errorDict = errors
+            .GroupBy(error => (error.Identifier ?? String.Empty).ToLowerUnderscoredWords(), StringComparer.Ordinal)
+            .ToDictionary(
+                group => group.Key,
+                group => group.Select(error => error.ErrorMessage).Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
+                StringComparer.Ordinal);
 
-        return HttpResults.ValidationProblem(errorDict, title: result.Message ?? "Validation failed", statusCode: StatusCodes.Status422UnprocessableEntity);
+        return HttpResults.ValidationProblem(errorDict, title: title, statusCode: StatusCodes.Status422UnprocessableEntity);
     }
 
     private static IResult MapSuccess(Foundatio.Mediator.IResult result)
     {
-        var value = GetValue(result);
+        var value = result.GetValue();
         if (value is null)
             return HttpResults.Ok();
 
@@ -135,38 +134,29 @@ public sealed class ApiResultMapper : IMediatorResultMapper<IResult>
         if (value is NotModifiedResponse)
             return HttpResults.StatusCode(StatusCodes.Status304NotModified);
 
-        if (value is ModelActionResults { Failure.Count: > 0 } modelAction)
-            return HttpResults.Json(modelAction, statusCode: StatusCodes.Status400BadRequest);
+        if (value is ModelActionResults modelAction)
+        {
+            if (modelAction.Failure.Count > 0)
+                return HttpResults.Json(modelAction, statusCode: StatusCodes.Status400BadRequest);
+
+            return HttpResults.Json(new WorkInProgressResult(modelAction.Workers), statusCode: StatusCodes.Status202Accepted);
+        }
 
         if (value is WorkInProgressResult)
             return HttpResults.Json(value, statusCode: StatusCodes.Status202Accepted);
-
-        if (value is WorkInProgressResponse wip)
-            return HttpResults.Json(new { workers = wip.Workers }, statusCode: StatusCodes.Status202Accepted);
 
         return HttpResults.Ok(value);
     }
 
     private static IResult MapCreated(Foundatio.Mediator.IResult result)
     {
-        var value = GetValue(result);
+        var value = result.GetValue();
         var location = result.Location;
         return HttpResults.Created(location, value);
     }
 
     private static IResult MapAccepted(Foundatio.Mediator.IResult result)
     {
-        var value = GetValue(result);
-        if (value is WorkInProgressResponse wip)
-            return HttpResults.Json(new { workers = wip.Workers }, statusCode: StatusCodes.Status202Accepted);
-
         return HttpResults.StatusCode(StatusCodes.Status202Accepted);
-    }
-
-    private static object? GetValue(Foundatio.Mediator.IResult result)
-    {
-        var type = result.GetType();
-        var valueProp = s_valuePropertyCache.GetOrAdd(type, t => t.GetProperty("ValueOrDefault"));
-        return valueProp?.GetValue(result);
     }
 }

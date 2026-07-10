@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
@@ -65,5 +66,23 @@ public class StripeControllerTests : IntegrationTestsBase
             .Content(content)
             .StatusCodeShouldBeBadRequest()
         );
+    }
+
+    [Fact]
+    public async Task PostAsync_WithNonJsonContentType_ReturnsUnsupportedMediaType()
+    {
+        // Arrange
+        using var content = new StringContent("not json", Encoding.UTF8, "text/plain");
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .Post()
+            .AppendPath("stripe")
+            .Content(content)
+            .ExpectedStatus(HttpStatusCode.UnsupportedMediaType)
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.UnsupportedMediaType, response.StatusCode);
     }
 }

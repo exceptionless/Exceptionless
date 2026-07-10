@@ -17,7 +17,6 @@ using Exceptionless.Web.Utility;
 using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Mediator;
-using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
 
 namespace Exceptionless.Web.Api.Handlers;
 
@@ -45,7 +44,10 @@ public class UserHandler(
         if (currentUser is null)
             return Result.NotFound("User not found.");
 
-        return new ViewCurrentUser(currentUser, intercomOptions);
+        return new ViewCurrentUser(currentUser, intercomOptions)
+        {
+            AvatarUrl = GetUserAvatarUrl(currentUser.Id, currentUser.AvatarFileName)
+        };
     }
 
     public async Task<Result<IReadOnlyCollection<ViewOAuthGrant>>> Handle(GetCurrentUserOAuthGrants message)

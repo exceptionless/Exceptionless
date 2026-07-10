@@ -12,7 +12,6 @@ using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Mediator;
 using Foundatio.Repositories;
-using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
 
 namespace Exceptionless.Web.Api.Handlers;
 
@@ -21,6 +20,7 @@ public class WebHookHandler(
     IProjectRepository projectRepository,
     BillingManager billingManager,
     ApiMapper mapper,
+    LinkGenerator linkGenerator,
     IHttpContextAccessor httpContextAccessor,
     ILoggerFactory loggerFactory)
 {
@@ -159,7 +159,9 @@ public class WebHookHandler(
             mapped.Version = WebHook.KnownVersions.Version2;
 
         var model = await repository.AddAsync(mapped, o => o.Cache());
-        return Result<Exceptionless.Core.Models.WebHook>.Created(model, $"/api/v2/webhooks/{model.Id}");
+        string location = linkGenerator.GetUriByName(HttpContext, "GetWebHookById", new { id = model.Id })
+            ?? throw new InvalidOperationException("Unable to generate web hook location.");
+        return Result<Exceptionless.Core.Models.WebHook>.Created(model, location);
     }
 
     private async Task<Result<Exceptionless.Core.Models.WebHook>?> CanAddAsync(Exceptionless.Core.Models.WebHook value)

@@ -1,5 +1,3 @@
-using Foundatio.Repositories.Models;
-
 namespace Exceptionless.Web.Api.Messages;
 
 public record GetAdminSettings;

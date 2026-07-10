@@ -26,7 +26,7 @@ public static class TokenEndpoints
 
         group.MapGet("organizations/{organizationId:objectid}/tokens", async (string organizationId, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, int page = 1, int limit = 10)
             => (await mediator.InvokeAsync<Result<PagedResult<ViewToken>>>(new TokenMessages.GetTokensByOrganization(organizationId, page, limit))).ToHttpResult(resultMapper))
-        .Produces(StatusCodes.Status200OK)
+        .Produces<IReadOnlyCollection<ViewToken>>()
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Get by organization")
         .WithMetadata(new EndpointDocumentation {
@@ -42,7 +42,7 @@ public static class TokenEndpoints
 
         group.MapGet("projects/{projectId:objectid}/tokens", async (string projectId, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, int page = 1, int limit = 10)
             => (await mediator.InvokeAsync<Result<PagedResult<ViewToken>>>(new TokenMessages.GetTokensByProject(projectId, page, limit))).ToHttpResult(resultMapper))
-        .Produces(StatusCodes.Status200OK)
+        .Produces<IReadOnlyCollection<ViewToken>>()
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Get by project")
         .WithMetadata(new EndpointDocumentation {
@@ -94,6 +94,7 @@ public static class TokenEndpoints
 
             return (await mediator.InvokeAsync<Result<ViewToken>>(new TokenMessages.CreateToken(token))).ToHttpResult(resultMapper);
         })
+        .Accepts<NewToken>("application/json", "application/*+json")
         .Produces<ViewToken>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status409Conflict)
@@ -113,6 +114,7 @@ public static class TokenEndpoints
         {
             return (await mediator.InvokeAsync<Result<ViewToken>>(new TokenMessages.CreateTokenByProject(projectId, token))).ToHttpResult(resultMapper);
         })
+        .Accepts<NewToken>(true, "application/json", "application/*+json")
         .Produces<ViewToken>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -137,6 +139,7 @@ public static class TokenEndpoints
         {
             return (await mediator.InvokeAsync<Result<ViewToken>>(new TokenMessages.CreateTokenByOrganization(organizationId, token))).ToHttpResult(resultMapper);
         })
+        .Accepts<NewToken>(true, "application/json", "application/*+json")
         .Produces<ViewToken>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -157,13 +160,14 @@ public static class TokenEndpoints
 
         group.MapPatch("tokens/{id:tokens}", async (string id, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] Delta<UpdateToken>? changes)
             => changes is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<ViewToken>>(new TokenMessages.UpdateTokenMessage(id, changes))).ToHttpResult(resultMapper))
-        .Accepts<Delta<UpdateToken>>(false, "application/json")
+        .Accepts<Delta<UpdateToken>>(false, "application/json", "application/*+json")
         .Produces<ViewToken>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Update")
         .WithMetadata(new EndpointDocumentation {
             RequestBodyDescription = "The changes",
+            RequestBodyRequired = true,
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the token.",
             },
@@ -175,13 +179,14 @@ public static class TokenEndpoints
 
         group.MapPut("tokens/{id:tokens}", async (string id, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] Delta<UpdateToken>? changes)
             => changes is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<ViewToken>>(new TokenMessages.UpdateTokenMessage(id, changes))).ToHttpResult(resultMapper))
-        .Accepts<Delta<UpdateToken>>(false, "application/json")
+        .Accepts<Delta<UpdateToken>>(false, "application/json", "application/*+json")
         .Produces<ViewToken>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Update")
         .WithMetadata(new EndpointDocumentation {
             RequestBodyDescription = "The changes",
+            RequestBodyRequired = true,
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the token.",
             },

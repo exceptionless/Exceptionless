@@ -410,6 +410,27 @@ public sealed class UserControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetCurrentUserAsync_WithAvatar_ReturnsRoutableAvatarUrl()
+    {
+        // Arrange
+        var currentUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(currentUser);
+        currentUser.AvatarFileName = "avatar.png";
+        await _userRepository.SaveAsync(currentUser, o => o.ImmediateConsistency().Cache());
+
+        // Act
+        var user = await SendRequestAsAsync<ViewUser>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(user);
+        Assert.Equal($"/api/v2/users/{currentUser.Id}/avatar/avatar.png", user.AvatarUrl);
+    }
+
+    [Fact]
     public async Task GetOAuthGrantsAsync_WithActiveOAuthTokens_ReturnsGroupedApplications()
     {
         // Arrange

@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.ComponentModel.DataAnnotations;
-using System.Reflection;
 using Exceptionless.Core.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using MiniValidation;
@@ -20,6 +19,7 @@ public class AutoValidationEndpointFilter : IEndpointFilter
         var isService = context.HttpContext.RequestServices as IServiceProviderIsService;
         var validatableArguments = context.Arguments
             .Where(arg => arg is not null && isService?.IsService(arg.GetType()) != true && ShouldValidate(arg.GetType()));
+        var validationErrors = new List<KeyValuePair<string, string>>();
 
         foreach (var argument in validatableArguments)
         {
@@ -28,14 +28,23 @@ public class AutoValidationEndpointFilter : IEndpointFilter
                 context.HttpContext.RequestServices,
                 recurse: true);
 
-            if (!isValid)
-            {
-                var normalizedErrors = errors.ToDictionary(
-                    e => e.Key.ToLowerUnderscoredWords(),
-                    e => e.Value);
+            if (isValid)
+                continue;
 
-                return Microsoft.AspNetCore.Http.Results.ValidationProblem(normalizedErrors, statusCode: StatusCodes.Status422UnprocessableEntity);
-            }
+            validationErrors.AddRange(errors.SelectMany(error =>
+                error.Value.Select(message => new KeyValuePair<string, string>(error.Key.ToLowerUnderscoredWords(), message))));
+        }
+
+        if (validationErrors.Count > 0)
+        {
+            var normalizedErrors = validationErrors
+                .GroupBy(error => error.Key, StringComparer.Ordinal)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.Select(error => error.Value).Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
+                    StringComparer.Ordinal);
+
+            return Microsoft.AspNetCore.Http.Results.ValidationProblem(normalizedErrors, statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
         return await next(context);
@@ -50,17 +59,6 @@ public class AutoValidationEndpointFilter : IEndpointFilter
             && !t.IsAbstract
             && t.Namespace?.StartsWith("Microsoft.") != true
             && t.Namespace?.StartsWith("System.") != true
-            && HasValidationMetadata(t));
-
-    private static bool HasValidationMetadata(Type type)
-    {
-        if (typeof(IValidatableObject).IsAssignableFrom(type))
-            return true;
-
-        if (type.GetCustomAttributes<ValidationAttribute>(inherit: true).Any())
-            return true;
-
-        return type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
-            .Any(property => property.GetCustomAttributes<ValidationAttribute>(inherit: true).Any());
-    }
+            && (MiniValidator.RequiresValidation(t, recurse: true)
+                || t.GetCustomAttributes(typeof(ValidationAttribute), inherit: true).Length > 0));
 }

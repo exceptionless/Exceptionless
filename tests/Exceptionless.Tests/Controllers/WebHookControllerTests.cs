@@ -94,6 +94,34 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostAsync_NewWebHook_ReturnsAbsoluteLocation()
+    {
+        // Arrange
+        var webHook = new NewWebHook
+        {
+            EventTypes = [WebHook.KnownEventTypes.NewError],
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            ProjectId = SampleDataService.TEST_PROJECT_ID,
+            Url = "https://example.com/location-webhook"
+        };
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath("webhooks")
+            .Content(webHook)
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert
+        Assert.NotNull(response.Headers.Location);
+        Assert.True(response.Headers.Location.IsAbsoluteUri);
+        Assert.Equal("localhost", response.Headers.Location.Host);
+        Assert.StartsWith("/api/v2/webhooks/", response.Headers.Location.AbsolutePath);
+    }
+
+    [Fact]
     public async Task PostAsync_NewWebHookWithVersion_MapsVersionCorrectly()
     {
         // Arrange - Test that Version is mapped correctly

@@ -16,7 +16,6 @@ using Exceptionless.Web.Utility;
 using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Mediator;
-using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Web.Api.Handlers;
@@ -26,6 +25,7 @@ public partial class SavedViewHandler(
     IOrganizationRepository organizationRepository,
     ILockProvider lockProvider,
     ApiMapper mapper,
+    LinkGenerator linkGenerator,
     IHttpContextAccessor httpContextAccessor)
 {
     private const int MaxViewsPerOrganization = 100;
@@ -261,7 +261,9 @@ public partial class SavedViewHandler(
 
         var model = await repository.AddAsync(mapped, o => o.Cache());
         var viewModel = MapToViewModel(model);
-        return Result<ViewSavedView>.Created(viewModel, $"/api/v2/saved-views/{model.Id}");
+        string location = linkGenerator.GetUriByName(HttpContext, "GetSavedViewById", new { id = model.Id })
+            ?? throw new InvalidOperationException("Unable to generate saved view location.");
+        return Result<ViewSavedView>.Created(viewModel, location);
     }
 
     private async Task<Result<ViewSavedView>?> CanAddAsync(SavedView value)

@@ -3,7 +3,9 @@
     "method": "GET",
     "route": "/.well-known/oauth-authorization-server",
     "displayName": "HTTP: GET .well-known/oauth-authorization-server",
-    "tags": [],
+    "tags": [
+      "OAuth"
+    ],
     "allowAnonymous": true,
     "authorizationPolicies": [],
     "authorizationRoles": [],
@@ -13,7 +15,9 @@
     "method": "GET",
     "route": "/.well-known/oauth-protected-resource/api/v2",
     "displayName": "HTTP: GET .well-known/oauth-protected-resource/api/v2",
-    "tags": [],
+    "tags": [
+      "OAuth"
+    ],
     "allowAnonymous": true,
     "authorizationPolicies": [],
     "authorizationRoles": [],
@@ -23,7 +27,9 @@
     "method": "GET",
     "route": "/.well-known/oauth-protected-resource/mcp",
     "displayName": "HTTP: GET .well-known/oauth-protected-resource/mcp",
-    "tags": [],
+    "tags": [
+      "OAuth"
+    ],
     "allowAnonymous": true,
     "authorizationPolicies": [],
     "authorizationRoles": [],

@@ -65,7 +65,7 @@
     "/.well-known/oauth-authorization-server": {
       "get": {
         "tags": [
-          "Exceptionless.Tests"
+          "OAuth"
         ],
         "responses": {
           "200": {
@@ -84,7 +84,7 @@
     "/.well-known/oauth-protected-resource/mcp": {
       "get": {
         "tags": [
-          "Exceptionless.Tests"
+          "OAuth"
         ],
         "responses": {
           "200": {
@@ -103,7 +103,7 @@
     "/.well-known/oauth-protected-resource/api/v2": {
       "get": {
         "tags": [
-          "Exceptionless.Tests"
+          "OAuth"
         ],
         "responses": {
           "200": {
@@ -139,17 +139,16 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UpdateEvent"
-                  }
-                ]
+                "$ref": "#/components/schemas/UpdateEvent"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEvent"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -821,6 +820,21 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK"
@@ -866,9 +880,27 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "202": {
             "description": "Accepted"
+          },
+          "413": {
+            "description": "Payload Too Large"
           },
           "400": {
             "description": "No project id specified and no default project was found.",
@@ -917,9 +949,27 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "202": {
             "description": "Accepted"
+          },
+          "413": {
+            "description": "Payload Too Large"
           },
           "400": {
             "description": "No project id specified and no default project was found.",
@@ -1609,7 +1659,17 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ViewToken"
+                  }
+                }
+              }
+            }
           },
           "404": {
             "description": "The organization could not be found.",
@@ -1645,6 +1705,18 @@
           "description": "The token.",
           "content": {
             "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/NewToken"
+                  }
+                ]
+              }
+            },
+            "application/*\u002Bjson": {
               "schema": {
                 "oneOf": [
                   {
@@ -1742,7 +1814,17 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ViewToken"
+                  }
+                }
+              }
+            }
           },
           "404": {
             "description": "The project could not be found.",
@@ -1778,6 +1860,18 @@
           "description": "The token.",
           "content": {
             "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/NewToken"
+                  }
+                ]
+              }
+            },
+            "application/*\u002Bjson": {
               "schema": {
                 "oneOf": [
                   {
@@ -1941,17 +2035,16 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UpdateToken"
-                  }
-                ]
+                "$ref": "#/components/schemas/UpdateToken"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateToken"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -2008,17 +2101,16 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UpdateToken"
-                  }
-                ]
+                "$ref": "#/components/schemas/UpdateToken"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateToken"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -2065,6 +2157,11 @@
           "description": "The token.",
           "content": {
             "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewToken"
+              }
+            },
+            "application/*\u002Bjson": {
               "schema": {
                 "$ref": "#/components/schemas/NewToken"
               }
@@ -2208,7 +2305,17 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WebHook"
+                  }
+                }
+              }
+            }
           },
           "404": {
             "description": "The project could not be found.",
@@ -2276,6 +2383,11 @@
           "description": "The web hook.",
           "content": {
             "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewWebHook"
+              }
+            },
+            "application/*\u002Bjson": {
               "schema": {
                 "$ref": "#/components/schemas/NewWebHook"
               }
@@ -2467,6 +2579,11 @@
               "schema": {
                 "$ref": "#/components/schemas/NewSavedView"
               }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/NewSavedView"
+              }
             }
           },
           "required": true
@@ -2653,17 +2770,16 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UpdateSavedView"
-                  }
-                ]
+                "$ref": "#/components/schemas/UpdateSavedView"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSavedView"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -2740,17 +2856,16 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UpdateSavedView"
-                  }
-                ]
+                "$ref": "#/components/schemas/UpdateSavedView"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSavedView"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -2882,6 +2997,38 @@
           "description": "The full set of predefined saved view definitions.",
           "content": {
             "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PredefinedSavedViewDefinition"
+                }
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PredefinedSavedViewDefinition"
+                }
+              }
+            },
+            "application/octet-stream": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PredefinedSavedViewDefinition"
+                }
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PredefinedSavedViewDefinition"
+                }
+              }
+            },
+            "text/plain": {
               "schema": {
                 "type": "array",
                 "items": {
@@ -3274,17 +3421,16 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UpdateUser"
-                  }
-                ]
+                "$ref": "#/components/schemas/UpdateUser"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUser"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -3341,17 +3487,16 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UpdateUser"
-                  }
-                ]
+                "$ref": "#/components/schemas/UpdateUser"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUser"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -3908,6 +4053,11 @@
               "schema": {
                 "$ref": "#/components/schemas/NewProject"
               }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/NewProject"
+              }
             }
           },
           "required": true
@@ -4117,17 +4267,16 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UpdateProject"
-                  }
-                ]
+                "$ref": "#/components/schemas/UpdateProject"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProject"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -4194,17 +4343,16 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UpdateProject"
-                  }
-                ]
+                "$ref": "#/components/schemas/UpdateProject"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProject"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -4439,6 +4587,11 @@
           "description": "The configuration value.",
           "content": {
             "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StringValueFromBody"
+              }
+            },
+            "application/*\u002Bjson": {
               "schema": {
                 "$ref": "#/components/schemas/StringValueFromBody"
               }
@@ -4741,6 +4894,18 @@
                   }
                 ]
               }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/NotificationSettings"
+                  }
+                ]
+              }
             }
           }
         },
@@ -4791,6 +4956,18 @@
           "description": "The notification settings.",
           "content": {
             "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/NotificationSettings"
+                  }
+                ]
+              }
+            },
+            "application/*\u002Bjson": {
               "schema": {
                 "oneOf": [
                   {
@@ -4906,6 +5083,18 @@
                   }
                 ]
               }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/NotificationSettings"
+                  }
+                ]
+              }
             }
           }
         },
@@ -4966,6 +5155,18 @@
           "description": "The notification settings.",
           "content": {
             "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/NotificationSettings"
+                  }
+                ]
+              }
+            },
+            "application/*\u002Bjson": {
               "schema": {
                 "oneOf": [
                   {
@@ -5269,6 +5470,11 @@
               "schema": {
                 "$ref": "#/components/schemas/StringValueFromBody"
               }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/StringValueFromBody"
+              }
             }
           },
           "required": true
@@ -5404,6 +5610,11 @@
               "schema": {
                 "$ref": "#/components/schemas/NewOrganization"
               }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/NewOrganization"
+              }
             }
           },
           "required": true
@@ -5524,17 +5735,16 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/NewOrganization"
-                  }
-                ]
+                "$ref": "#/components/schemas/NewOrganization"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/NewOrganization"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -5601,17 +5811,16 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/NewOrganization"
-                  }
-                ]
+                "$ref": "#/components/schemas/NewOrganization"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/NewOrganization"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -6095,6 +6304,54 @@
                   }
                 ]
               }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChangePlanRequest"
+                  }
+                ]
+              }
+            },
+            "application/octet-stream": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChangePlanRequest"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChangePlanRequest"
+                  }
+                ]
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChangePlanRequest"
+                  }
+                ]
+              }
             }
           }
         },
@@ -6279,6 +6536,11 @@
           "description": "Any string value.",
           "content": {
             "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StringValueFromBody"
+              }
+            },
+            "application/*\u002Bjson": {
               "schema": {
                 "$ref": "#/components/schemas/StringValueFromBody"
               }
@@ -6550,6 +6812,11 @@
               "schema": {
                 "$ref": "#/components/schemas/StringValueFromBody"
               }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/StringValueFromBody"
+              }
             }
           },
           "required": true
@@ -6603,6 +6870,11 @@
           "description": "The reference link.",
           "content": {
             "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StringValueFromBody"
+              }
+            },
+            "application/*\u002Bjson": {
               "schema": {
                 "$ref": "#/components/schemas/StringValueFromBody"
               }
@@ -6929,7 +7201,17 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Stack"
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid filter.",
@@ -7024,7 +7306,17 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Stack"
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid filter.",
@@ -7139,7 +7431,17 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Stack"
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid filter.",
@@ -7258,6 +7560,21 @@
               "schema": {
                 "$ref": "#/components/schemas/OAuthAuthorizeForm"
               }
+            },
+            "application/octet-stream": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthAuthorizeForm"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthAuthorizeForm"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthAuthorizeForm"
+              }
             }
           },
           "required": true
@@ -7302,6 +7619,21 @@
               "schema": {
                 "$ref": "#/components/schemas/OAuthAuthorizeForm"
               }
+            },
+            "application/octet-stream": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthAuthorizeForm"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthAuthorizeForm"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthAuthorizeForm"
+              }
             }
           },
           "required": true
@@ -7343,6 +7675,21 @@
               }
             },
             "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthClientRegistrationRequest"
+              }
+            },
+            "application/octet-stream": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthClientRegistrationRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthClientRegistrationRequest"
+              }
+            },
+            "text/plain": {
               "schema": {
                 "$ref": "#/components/schemas/OAuthClientRegistrationRequest"
               }
@@ -7700,6 +8047,14 @@
             }
           },
           {
+            "name": "expected_stack_id",
+            "in": "query",
+            "description": "Optional stack identifier that the event must belong to.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "time",
             "in": "query",
             "description": "The time filter that limits the data being returned to a specific date range.",
@@ -7723,6 +8078,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PersistentEvent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The event does not belong to the expected stack.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -7843,7 +8208,17 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PersistentEvent"
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid filter.",
@@ -7883,9 +8258,27 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "202": {
             "description": "Accepted"
+          },
+          "413": {
+            "description": "Payload Too Large"
           },
           "400": {
             "description": "No project id specified and no default project was found.",
@@ -8013,7 +8406,17 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PersistentEvent"
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid filter.",
@@ -8151,7 +8554,17 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PersistentEvent"
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid filter.",
@@ -8211,9 +8624,27 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "202": {
             "description": "Accepted"
+          },
+          "413": {
+            "description": "Payload Too Large"
           },
           "400": {
             "description": "No project id specified and no default project was found.",
@@ -8341,7 +8772,17 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PersistentEvent"
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid filter.",
@@ -8455,7 +8896,17 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PersistentEvent"
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid filter.",
@@ -8569,7 +9020,17 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PersistentEvent"
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid filter.",
@@ -8707,7 +9168,17 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PersistentEvent"
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid filter.",
@@ -8845,7 +9316,17 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PersistentEvent"
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid filter.",
@@ -8973,7 +9454,17 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PersistentEvent"
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid filter.",
@@ -9091,7 +9582,17 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PersistentEvent"
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid filter.",
@@ -9229,7 +9730,17 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PersistentEvent"
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid filter.",
@@ -9297,6 +9808,11 @@
               "schema": {
                 "$ref": "#/components/schemas/UserDescription"
               }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UserDescription"
+              }
             }
           },
           "required": true
@@ -9361,6 +9877,11 @@
           "description": "The user description.",
           "content": {
             "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserDescription"
+              }
+            },
+            "application/*\u002Bjson": {
               "schema": {
                 "$ref": "#/components/schemas/UserDescription"
               }
@@ -12959,7 +13480,7 @@
       "name": "Project"
     },
     {
-      "name": "Exceptionless.Tests"
+      "name": "OAuth"
     },
     {
       "name": "Event"
@@ -12984,9 +13505,6 @@
     },
     {
       "name": "Stack"
-    },
-    {
-      "name": "OAuth"
     }
   ]
 }
