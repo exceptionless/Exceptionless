@@ -252,11 +252,17 @@
         updateFilterCache,
         view: VIEW
     });
-    const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Stacks');
+    let pageTitle = $state('Stacks');
     const isSavedViewRoutePending = $derived(!!page.params.slug && !savedViewsState.activeSavedView);
 
+    function getPageTitle(): string {
+        return savedViewsState.activeSavedView?.name ?? 'Stacks';
+    }
+
     $effect(() => {
-        document.title = `${pageTitle} - Exceptionless`;
+        const title = getPageTitle();
+        pageTitle = title;
+        document.title = `${title} - Exceptionless`;
     });
 
     function throwSavedViewNotFound(): never {

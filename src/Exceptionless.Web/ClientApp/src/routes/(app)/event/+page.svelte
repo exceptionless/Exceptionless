@@ -265,11 +265,17 @@
         updateFilterCache,
         view: VIEW
     });
-    const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Events');
+    let pageTitle = $state('Events');
     const isSavedViewRoutePending = $derived(!!page.params.slug && !savedViewsState.activeSavedView);
 
+    function getPageTitle(): string {
+        return savedViewsState.activeSavedView?.name ?? 'Events';
+    }
+
     $effect(() => {
-        document.title = `${pageTitle} - Exceptionless`;
+        const title = getPageTitle();
+        pageTitle = title;
+        document.title = `${title} - Exceptionless`;
     });
 
     function throwSavedViewNotFound(): never {
