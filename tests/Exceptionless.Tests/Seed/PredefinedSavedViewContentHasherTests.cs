@@ -7,7 +7,7 @@ namespace Exceptionless.Tests.Seed;
 public sealed class PredefinedSavedViewContentHasherTests
 {
     [Fact]
-    public void GetContentHash_ConfigurationDiffersOnlyBySpacesAndDictionaryInsertionOrder_ReturnsSameHash()
+    public void GetContentHash_FilterDefinitionsDifferOnlyByFormattingAndDictionaryInsertionOrder_ReturnsSameHash()
     {
         // Arrange
         var original = new SavedView
@@ -26,7 +26,7 @@ public sealed class PredefinedSavedViewContentHasherTests
         };
         var reformatted = original with
         {
-            Filter = "type:log(status:openORstatus:regressed)",
+            Filter = "type:log (status:open OR status:regressed)",
             FilterDefinitions = """[{"type":"status", "value":"open"}]""",
             Columns = new Dictionary<string, bool>
             {
@@ -41,5 +41,25 @@ public sealed class PredefinedSavedViewContentHasherTests
 
         // Assert
         Assert.Equal(originalHash, reformattedHash);
+    }
+
+    [Fact]
+    public void GetContentHash_StringFieldDiffersOnlyBySpaces_ReturnsDifferentHash()
+    {
+        // Arrange
+        var withSpaces = new SavedView
+        {
+            Name = "Open Issues",
+            Slug = "open-issues",
+            ViewType = "events"
+        };
+        var withoutSpaces = withSpaces with { Name = "OpenIssues" };
+
+        // Act
+        string withSpacesHash = PredefinedSavedViewContentHasher.GetContentHash(withSpaces);
+        string withoutSpacesHash = PredefinedSavedViewContentHasher.GetContentHash(withoutSpaces);
+
+        // Assert
+        Assert.NotEqual(withSpacesHash, withoutSpacesHash);
     }
 }

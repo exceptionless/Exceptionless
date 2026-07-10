@@ -898,6 +898,63 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetByOrganizationAsync_PredefinedDefinitionChanges_UpdatesViewRevertedAfterSkippedSync()
+    {
+        // Arrange
+        var initialViews = await SendRequestAsAsync<List<ViewSavedView>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(initialViews);
+        var logs = initialViews.First(view => IsPredefinedSavedView(view, "events", "Logs"));
+
+        await SendRequestAsync(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("saved-views", logs.Id)
+            .Content(new UpdateSavedView { Filter = "type:error" })
+            .StatusCodeShouldBeOk()
+        );
+
+        var systemLogs = (await GetSystemPredefinedSavedViewsAsync()).First(view => String.Equals(view.PredefinedKey, "events:logs", StringComparison.Ordinal));
+        systemLogs.Filter = "type:log level:warn";
+        systemLogs.PredefinedContentHash = PredefinedSavedViewContentHasher.GetContentHash(systemLogs);
+        await _savedViewRepository.SaveAsync(systemLogs, o => o.ImmediateConsistency());
+        await RefreshDataAsync();
+
+        var customizedViews = await SendRequestAsAsync<List<ViewSavedView>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(customizedViews);
+        Assert.Equal("type:error", customizedViews.First(view => view.Id == logs.Id).Filter);
+
+        await SendRequestAsync(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("saved-views", logs.Id)
+            .Content(new UpdateSavedView { Filter = "type:log (status:open OR status:regressed)" })
+            .StatusCodeShouldBeOk()
+        );
+        await RefreshDataAsync();
+
+        // Act
+        var updatedViews = await SendRequestAsAsync<List<ViewSavedView>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updatedViews);
+        Assert.Equal("type:log level:warn", updatedViews.First(view => view.Id == logs.Id).Filter);
+    }
+
+    [Fact]
     public Task PostPredefinedAsync_CrossOrganization_ReturnsNotFound()
     {
         return SendRequestAsync(r => r

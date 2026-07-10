@@ -565,10 +565,15 @@ public partial class SavedViewController : RepositoryApiController<ISavedViewRep
             }
 
             bool createMissing = forceCreateMissing || !HasCreatedPredefinedSavedViews(organization);
-            savedViews = await UpsertPredefinedSavedViewsForOrganizationAsync(organizationId, definitions, createMissing);
-            organization.Data ??= new DataDictionary();
-            organization.Data[PredefinedSavedViewsContentHashDataKey] = definitionsContentHash;
-            await _organizationRepository.SaveAsync(organization, o => o.Cache().ImmediateConsistency());
+            var upsertResult = await UpsertPredefinedSavedViewsForOrganizationAsync(organizationId, definitions, createMissing);
+            savedViews = upsertResult.SavedViews;
+
+            if (!upsertResult.HasSkippedCustomizations)
+            {
+                organization.Data ??= new DataDictionary();
+                organization.Data[PredefinedSavedViewsContentHashDataKey] = definitionsContentHash;
+                await _organizationRepository.SaveAsync(organization, o => o.Cache().ImmediateConsistency());
+            }
         }, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15));
 
         if (!lockAcquired)
@@ -577,13 +582,14 @@ public partial class SavedViewController : RepositoryApiController<ISavedViewRep
         return savedViews;
     }
 
-    private async Task<List<SavedView>> UpsertPredefinedSavedViewsForOrganizationAsync(
+    private async Task<(List<SavedView> SavedViews, bool HasSkippedCustomizations)> UpsertPredefinedSavedViewsForOrganizationAsync(
         string organizationId,
         IReadOnlyCollection<PredefinedSavedViewDefinition> definitions,
         bool createMissing)
     {
         var savedViewsByView = new Dictionary<string, List<SavedView>>(StringComparer.OrdinalIgnoreCase);
         var upserted = new List<SavedView>();
+        bool hasSkippedCustomizations = false;
 
         foreach (var definition in definitions)
         {
@@ -609,7 +615,11 @@ public partial class SavedViewController : RepositoryApiController<ISavedViewRep
                 continue;
             }
 
-            if (CanApplyPredefinedSavedView(existing) && ApplyPredefinedSavedView(existing, definition, slug))
+            if (!CanApplyPredefinedSavedView(existing))
+            {
+                hasSkippedCustomizations = true;
+            }
+            else if (ApplyPredefinedSavedView(existing, definition, slug))
             {
                 existing.UpdatedByUserId = CurrentUser.Id;
                 await _repository.SaveAsync(existing, o => o.Cache().ImmediateConsistency());
@@ -618,7 +628,7 @@ public partial class SavedViewController : RepositoryApiController<ISavedViewRep
             upserted.Add(existing);
         }
 
-        return upserted;
+        return (upserted, hasSkippedCustomizations);
     }
 
     private async Task<List<SavedView>> GetExistingPredefinedSavedViewsForOrganizationAsync(

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 
@@ -71,7 +72,7 @@ public static class PredefinedSavedViewContentHasher
             filter,
             time,
             sort,
-            filterDefinitions,
+            filterDefinitions = CanonicalizeFilterDefinitions(filterDefinitions),
             Columns = columns?.OrderBy(column => column.Key, StringComparer.Ordinal),
             columnOrder,
             showStats,
@@ -84,6 +85,21 @@ public static class PredefinedSavedViewContentHasher
     private static string SerializeAndHash<T>(T content)
     {
         string json = JsonSerializer.Serialize(content);
-        return json.Replace(" ", String.Empty, StringComparison.Ordinal).ToSHA256();
+        return json.ToSHA256();
+    }
+
+    private static string? CanonicalizeFilterDefinitions(string? filterDefinitions)
+    {
+        if (String.IsNullOrWhiteSpace(filterDefinitions))
+            return filterDefinitions;
+
+        try
+        {
+            return JsonNode.Parse(filterDefinitions)?.ToJsonString() ?? filterDefinitions;
+        }
+        catch (JsonException)
+        {
+            return filterDefinitions;
+        }
     }
 }
