@@ -1,0 +1,125 @@
+import { describe, expect, it } from 'vitest';
+
+import { addNonceToScripts, createContentSecurityPolicy, createNonce, secureHtmlResponse } from './content-security-policy';
+
+describe('createNonce', () => {
+    it('creates unique base64-encoded 32-byte nonces', () => {
+        const nonces = Array.from({ length: 32 }, () => createNonce());
+
+        expect(new Set(nonces)).toHaveLength(nonces.length);
+        for (const nonce of nonces) {
+            expect(nonce).toMatch(/^[A-Za-z\d+/]{43}=$/);
+            expect(Buffer.from(nonce, 'base64')).toHaveLength(32);
+        }
+    });
+});
+
+describe('addNonceToScripts', () => {
+    it('adds the nonce to every script opening tag', () => {
+        const nonce = createNonce();
+        const html = '<script>first()</script><script async src="/second.js"></script>';
+
+        expect(addNonceToScripts(html, nonce)).toBe(`<script nonce="${nonce}">first()</script><script nonce="${nonce}" async src="/second.js"></script>`);
+    });
+
+    it('replaces existing quoted, unquoted, and boolean nonce attributes', () => {
+        const nonce = createNonce();
+        const html = `<script nonce="old"></script><SCRIPT type="module" NONCE='older'></SCRIPT><script nonce defer></script>`;
+
+        expect(addNonceToScripts(html, nonce)).toBe(
+            `<script nonce="${nonce}"></script><SCRIPT nonce="${nonce}" type="module"></SCRIPT><script nonce="${nonce}" defer></script>`
+        );
+    });
+});
+
+describe('createContentSecurityPolicy', () => {
+    it('uses a strict nonce policy with compatibility sources', () => {
+        const nonce = createNonce();
+        const policy = createContentSecurityPolicy(nonce);
+        const scriptDirective = getDirective(policy, 'script-src');
+        const connectDirective = getDirective(policy, 'connect-src');
+
+        expect(scriptDirective).toContain(`'nonce-${nonce}'`);
+        expect(scriptDirective).toContain("'strict-dynamic'");
+        expect(scriptDirective).toContain("'self'");
+        expect(scriptDirective).toContain('https://js.stripe.com');
+        expect(scriptDirective).toContain('https://*.js.stripe.com');
+        expect(scriptDirective).toContain('https://widget.intercom.io');
+        expect(scriptDirective).not.toContain("'unsafe-inline'");
+        expect(scriptDirective).not.toContain("'unsafe-eval'");
+        expect(getDirective(policy, 'script-src-attr')).toEqual(["'none'"]);
+
+        expect(connectDirective).toContain("'self'");
+        expect(connectDirective).toContain('https://api.stripe.com');
+        expect(connectDirective).toContain('wss://*.intercom-messenger.com');
+        expect(connectDirective).not.toContain('ws:');
+        expect(connectDirective).not.toContain('wss:');
+
+        expect(getDirective(policy, 'img-src')).not.toContain('http://www.gravatar.com');
+
+        expect(getDirective(policy, 'base-uri')).toEqual(["'none'"]);
+        expect(getDirective(policy, 'object-src')).toEqual(["'none'"]);
+        expect(getDirective(policy, 'frame-ancestors')).toEqual(["'none'"]);
+    });
+
+    it('allows broad WebSocket schemes only when development connections are requested', () => {
+        const policy = createContentSecurityPolicy(createNonce(), { allowDevelopmentConnections: true });
+        const connectDirective = getDirective(policy, 'connect-src');
+
+        expect(connectDirective).toContain('ws:');
+        expect(connectDirective).toContain('wss:');
+    });
+});
+
+describe('secureHtmlResponse', () => {
+    it('buffers chunked HTML, nonces every script, and prevents nonce/body caching', async () => {
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream<Uint8Array>({
+            start(controller) {
+                controller.enqueue(encoder.encode('<!doctype html><html><body><scr'));
+                controller.enqueue(encoder.encode('ipt type="module">start()</script><script src="/app.js"></script></body></html>'));
+                controller.close();
+            }
+        });
+        const originalResponse = new Response(stream, {
+            headers: {
+                'content-length': '123',
+                'content-type': 'text/html; charset=utf-8',
+                etag: 'stale-after-transformation'
+            }
+        });
+
+        const response = await secureHtmlResponse(originalResponse, { allowDevelopmentConnections: true });
+        const html = await response.text();
+        const nonce = html.match(/<script nonce="([^"]+)"/)?.[1];
+        const scriptNonces = [...html.matchAll(/<script nonce="([^"]+)"/g)].map((match) => match[1]);
+
+        expect(nonce).toBeDefined();
+        expect(scriptNonces).toEqual([nonce, nonce]);
+        expect(response.headers.get('content-security-policy')).toContain(`'nonce-${nonce}'`);
+        expect(response.headers.get('content-security-policy')).toContain('ws:');
+        expect(response.headers.get('cache-control')).toBe('no-store');
+        expect(response.headers.has('content-length')).toBe(false);
+        expect(response.headers.has('etag')).toBe(false);
+    });
+
+    it('leaves non-HTML responses untouched', async () => {
+        const originalResponse = Response.json({ status: 'ok' });
+
+        const response = await secureHtmlResponse(originalResponse, { allowDevelopmentConnections: true });
+
+        expect(response).toBe(originalResponse);
+        expect(response.headers.has('content-security-policy')).toBe(false);
+        expect(response.headers.has('cache-control')).toBe(false);
+    });
+});
+
+function getDirective(policy: string, name: string): string[] {
+    const directive = policy.split('; ').find((value) => value.startsWith(`${name} `));
+
+    if (!directive) {
+        throw new Error(`Missing ${name} directive.`);
+    }
+
+    return directive.slice(name.length + 1).split(' ');
+}
