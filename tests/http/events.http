@@ -71,6 +71,14 @@ Content-Type: application/json
   "reference_id": "{{referenceId}}"
 }
 
+### By ReferenceId
+GET {{apiUrl}}/events/by-ref/{{referenceId}}
+Authorization: Bearer {{token}}
+
+### By ReferenceId And Project
+GET {{apiUrl}}/projects/{{projectId}}/events/by-ref/{{referenceId}}
+Authorization: Bearer {{token}}
+
 ### Post User Description
 POST {{apiUrl}}/events/by-ref/{{referenceId}}/user-description?access_token={{clientToken}}
 Content-Type: application/json
