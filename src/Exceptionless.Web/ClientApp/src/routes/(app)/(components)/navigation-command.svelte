@@ -175,15 +175,15 @@
     }
 
     function getEventHref(result: CommandSearchResult): string {
-        return resolve('/(app)/events/[eventId=objectid]', { eventId: result.id });
+        return resolve('/(app)/event/[eventId=objectid]', { eventId: result.id });
     }
 
     function getStackHref(result: CommandSearchResult): string {
-        return resolve('/(app)/stacks/[stackId=objectid]', { stackId: result.id });
+        return resolve('/(app)/stack/[stackId=objectid]', { stackId: result.id });
     }
 
-    const eventSearchHref = $derived(buildSearchHref(resolve('/(app)/events'), debouncedSearchText));
-    const stackSearchHref = $derived(buildSearchHref(resolve('/(app)/stacks'), debouncedSearchText));
+    const eventSearchHref = $derived(buildSearchHref(resolve('/(app)/event'), debouncedSearchText));
+    const stackSearchHref = $derived(buildSearchHref(resolve('/(app)/stack'), debouncedSearchText));
 
     const commandRoutes = $derived(
         routes.flatMap((route) => {

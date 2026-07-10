@@ -141,7 +141,7 @@ public class OrganizationNotificationWorkItemHandlerTests : TestWithServices
         var workItem = CreateMonthlyNotificationWorkItem(PrimaryOrganizationId);
 
         // Act
-        var uniqueIdentifier = workItem.UniqueIdentifier;
+        string uniqueIdentifier = workItem.UniqueIdentifier;
 
         // Assert
         Assert.Equal(OrganizationNotificationWorkItem.GetNotificationKey(PrimaryOrganizationId, isOverMonthlyLimit: true), uniqueIdentifier);
@@ -154,7 +154,7 @@ public class OrganizationNotificationWorkItemHandlerTests : TestWithServices
         var workItem = CreateHourlyNotificationWorkItem(PrimaryOrganizationId);
 
         // Act
-        var uniqueIdentifier = workItem.UniqueIdentifier;
+        string uniqueIdentifier = workItem.UniqueIdentifier;
 
         // Assert
         Assert.Equal(OrganizationNotificationWorkItem.GetNotificationKey(PrimaryOrganizationId, isOverMonthlyLimit: false), uniqueIdentifier);
@@ -165,8 +165,8 @@ public class OrganizationNotificationWorkItemHandlerTests : TestWithServices
     {
         // Arrange
         // Act
-        var monthlyKey = OrganizationNotificationWorkItem.GetNotificationKey(PrimaryOrganizationId, isOverMonthlyLimit: true);
-        var hourlyKey = OrganizationNotificationWorkItem.GetNotificationKey(PrimaryOrganizationId, isOverMonthlyLimit: false);
+        string monthlyKey = OrganizationNotificationWorkItem.GetNotificationKey(PrimaryOrganizationId, isOverMonthlyLimit: true);
+        string hourlyKey = OrganizationNotificationWorkItem.GetNotificationKey(PrimaryOrganizationId, isOverMonthlyLimit: false);
 
         // Assert
         Assert.Equal($"Organization:{PrimaryOrganizationId}:notification:monthly", monthlyKey);

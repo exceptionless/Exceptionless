@@ -26,5 +26,5 @@
     {#if showType || source.data.Source}
         :&nbsp;
     {/if}
-    <A class="inline" href={resolve('/(app)/events/[eventId=objectid]', { eventId: source.id })}>{source.data.Message}</A>
+    <A class="inline" href={resolve('/(app)/event/[eventId=objectid]', { eventId: source.id })}>{source.data.Message}</A>
 </div>

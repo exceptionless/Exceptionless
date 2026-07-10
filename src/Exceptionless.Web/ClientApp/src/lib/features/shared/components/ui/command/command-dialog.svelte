@@ -34,6 +34,7 @@
 		<Dialog.Title>{title}</Dialog.Title>
 		<Dialog.Description>{description}</Dialog.Description>
 	</Dialog.Header>
+	<!-- CUSTOM: KEEP COMMAND PALETTE OPEN POSITION/OVERLAY STYLE CONSISTENT WITH WIDE SEARCH COMMAND FLOW. -->
 	<Dialog.Content
 		class={cn("top-1.5 translate-y-0 overflow-hidden p-0 shadow-2xl sm:max-w-5xl", className)}
 		overlayClass="bg-black/20 supports-backdrop-filter:backdrop-blur-none"

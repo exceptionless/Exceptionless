@@ -18,6 +18,7 @@
 </script>
 
 <DropdownMenuPortal {...portalProps}>
+	<!-- CUSTOM: USE ANCHOR-BLOCK WIDTH + MAX VIEWPORT GUARD RAILING TO PREVENT MENU CLIPPING ON SMALL PANES. -->
 	<DropdownMenuPrimitive.Content
 		bind:ref
 		data-slot="dropdown-menu-content"

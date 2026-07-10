@@ -5,7 +5,7 @@
 
     import { KeywordFilter } from './models.svelte';
 
-    let { filter, filterChanged, filterRemoved, title = 'Keyword', ...props }: FacetedFilterProps<KeywordFilter> = $props();
+    let { filter, filterChanged, filterRemoved, title = 'Raw Filter', ...props }: FacetedFilterProps<KeywordFilter> = $props();
 
     function toggleHidden() {
         filter.hidden = !filter.hidden;

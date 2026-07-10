@@ -1,9 +1,9 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.EventUpgrader;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Plugins.EventParser;
 
@@ -11,12 +11,12 @@ namespace Exceptionless.Core.Plugins.EventParser;
 public class LegacyErrorParserPlugin : PluginBase, IEventParserPlugin
 {
     private readonly EventUpgraderPluginManager _manager;
-    private readonly JsonSerializerSettings _settings;
+    private readonly JsonSerializerOptions _jsonOptions;
 
-    public LegacyErrorParserPlugin(EventUpgraderPluginManager manager, JsonSerializerSettings settings, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    public LegacyErrorParserPlugin(EventUpgraderPluginManager manager, JsonSerializerOptions jsonOptions, AppOptions appOptions, ILoggerFactory loggerFactory) : base(appOptions, loggerFactory)
     {
         _manager = manager;
-        _settings = settings;
+        _jsonOptions = jsonOptions;
     }
 
     public List<PersistentEvent>? ParseEvents(string input, int apiVersion, string? userAgent)
@@ -29,7 +29,7 @@ public class LegacyErrorParserPlugin : PluginBase, IEventParserPlugin
             var ctx = new EventUpgraderContext(input);
             _manager.Upgrade(ctx);
 
-            return ctx.Documents.FromJson<PersistentEvent>(_settings);
+            return ctx.Documents.ToList<PersistentEvent>(_jsonOptions);
         }
         catch (Exception ex)
         {

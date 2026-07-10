@@ -1,6 +1,10 @@
 import { FetchClient } from '@exceptionless/fetchclient';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('./exceptionless-session', () => ({
+    endSession: vi.fn()
+}));
+
 import { logout } from './api.svelte';
 
 describe('logout', () => {

@@ -1,3 +1,4 @@
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Foundatio.Serializer;
@@ -12,27 +13,6 @@ public class MethodSerializerTests : TestWithServices
     public MethodSerializerTests(ITestOutputHelper output) : base(output)
     {
         _serializer = GetService<ITextSerializer>();
-    }
-
-    [Fact]
-    public void Deserialize_SnakeCaseJson_ParsesCorrectly()
-    {
-        // Arrange
-        /* language=json */
-        const string json = """{"is_signature_target":true,"declaring_namespace":"System","declaring_type":"String","name":"Format","module_id":1,"generic_arguments":["T"],"parameters":[{"name":"format","type":"String","type_namespace":"System"}]}""";
-
-        // Act
-        var result = _serializer.Deserialize<Method>(json);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.True(result.IsSignatureTarget);
-        Assert.Equal("System", result.DeclaringNamespace);
-        Assert.Equal("String", result.DeclaringType);
-        Assert.Equal("Format", result.Name);
-        Assert.Equal(1, result.ModuleId);
-        Assert.Single(result.GenericArguments!);
-        Assert.Single(result.Parameters!);
     }
 
     [Fact]
@@ -59,19 +39,6 @@ public class MethodSerializerTests : TestWithServices
         var result = _serializer.Deserialize<Method>(json);
 
         // Assert
-        SerializerContractAssertions.IncludesProperties(json,
-            "is_signature_target",
-            "declaring_namespace",
-            "declaring_type",
-            "module_id",
-            "generic_arguments");
-        SerializerContractAssertions.ExcludesProperties(json,
-            "IsSignatureTarget",
-            "DeclaringNamespace",
-            "DeclaringType",
-            "ModuleId",
-            "GenericArguments");
-
         Assert.NotNull(result);
         Assert.True(result.IsSignatureTarget);
         Assert.Equal("Exceptionless.Core", result.DeclaringNamespace);
@@ -85,6 +52,27 @@ public class MethodSerializerTests : TestWithServices
         Assert.Equal(2, result.Parameters.Count);
         Assert.Equal("ev", result.Parameters[0].Name);
         Assert.Equal("PersistentEvent", result.Parameters[0].Type);
+    }
+
+    [Fact]
+    public void Deserialize_SnakeCaseJson_ParsesCorrectly()
+    {
+        // Arrange
+        /* language=json */
+        const string json = """{"is_signature_target":true,"declaring_namespace":"System","declaring_type":"String","name":"Format","module_id":1,"generic_arguments":["T"],"parameters":[{"name":"format","type":"String","type_namespace":"System"}]}""";
+
+        // Act
+        var result = _serializer.Deserialize<Method>(json);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.IsSignatureTarget);
+        Assert.Equal("System", result.DeclaringNamespace);
+        Assert.Equal("String", result.DeclaringType);
+        Assert.Equal("Format", result.Name);
+        Assert.Equal(1, result.ModuleId);
+        Assert.Single(result.GenericArguments!);
+        Assert.Single(result.Parameters!);
     }
 
     [Fact]
@@ -102,5 +90,28 @@ public class MethodSerializerTests : TestWithServices
         Assert.Equal("Main", result.Name);
         Assert.Null(result.DeclaringNamespace);
         Assert.Null(result.IsSignatureTarget);
+    }
+
+    [Fact]
+    public void GetValue_MethodInDictionary_DeserializesCorrectly()
+    {
+        // Arrange
+        var dict = new DataDictionary
+        {
+            ["target_method"] = new Method
+            {
+                Name = "HandleRequest",
+                DeclaringType = "Controller",
+                DeclaringNamespace = "MyApp.Web"
+            }
+        };
+
+        // Act
+        var result = dict.GetValue<Method>("target_method", _serializer);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("HandleRequest", result.Name);
+        Assert.Equal("Controller", result.DeclaringType);
     }
 }

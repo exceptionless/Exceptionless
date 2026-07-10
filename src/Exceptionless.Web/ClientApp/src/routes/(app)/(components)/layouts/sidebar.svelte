@@ -87,7 +87,7 @@
             return true;
         }
 
-        if (route.title === 'Organizations') {
+        if (route.title === 'Organizations' || route.title === 'Organization') {
             return organizationSettingsRoutes.some((organizationSettingsRoute) => isPathActive(String(organizationSettingsRoute.href)));
         }
 

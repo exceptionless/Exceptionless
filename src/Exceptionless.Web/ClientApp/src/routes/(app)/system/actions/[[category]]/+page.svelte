@@ -4,17 +4,13 @@
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
-    import { CodeBlock, Muted } from '$comp/typography';
+    import { Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
-    import * as Dialog from '$comp/ui/dialog';
     import { Input } from '$comp/ui/input';
-    import { Spinner } from '$comp/ui/spinner';
-    import { getPredefinedSavedViewsMutation, runMaintenanceJobMutation } from '$features/admin/api.svelte';
+    import { runMaintenanceJobMutation } from '$features/admin/api.svelte';
     import RunMaintenanceJobDialog from '$features/admin/components/dialogs/run-maintenance-job-dialog.svelte';
     import { maintenanceActions } from '$features/admin/models';
     import { ProblemDetails } from '@exceptionless/fetchclient';
-    import FileJson from '@lucide/svelte/icons/file-json';
     import Play from '@lucide/svelte/icons/play';
     import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
     import { toast } from 'svelte-sonner';
@@ -25,15 +21,10 @@
 
     let searchQuery = $state(page.url.searchParams.get('q') ?? '');
     let selectedAction = $state<MaintenanceAction | undefined>();
-    let jsonOutputAction = $state<MaintenanceAction | undefined>();
-    let jsonOutput = $state('');
-    let runningActionName = $state<string>();
     let openDialog = $state(false);
-    let openJsonDialog = $state(false);
     let toastId = $state<number | string>();
 
     const runJob = runMaintenanceJobMutation();
-    const predefinedSavedViews = getPredefinedSavedViewsMutation();
 
     $effect(() => {
         const query = searchQuery.trim();
@@ -74,30 +65,9 @@
 
     const destructiveCount = $derived(filteredActions.filter((a) => a.dangerous).length);
 
-    async function handleRun(action: MaintenanceAction) {
-        if (action.kind === 'predefined-saved-views') {
-            await showPredefinedSavedViews(action);
-            return;
-        }
-
+    function handleRun(action: MaintenanceAction) {
         selectedAction = action;
         openDialog = true;
-    }
-
-    async function showPredefinedSavedViews(action: MaintenanceAction) {
-        toast.dismiss(toastId);
-        runningActionName = action.name;
-
-        try {
-            jsonOutput = await predefinedSavedViews.mutateAsync();
-            jsonOutputAction = action;
-            openJsonDialog = true;
-        } catch (error: unknown) {
-            const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
-            toastId = toast.error(`An error occurred while loading predefined saved views: ${message}`);
-        } finally {
-            runningActionName = undefined;
-        }
     }
 
     async function handleConfirm(params: Parameters<typeof runJob.mutateAsync>[0]) {
@@ -174,25 +144,14 @@
                 </div>
                 <Button
                     class="shrink-0"
-                    disabled={action.kind === 'predefined-saved-views' && predefinedSavedViews.isPending}
                     onclick={() => {
-                        void handleRun(action);
+                        handleRun(action);
                     }}
                     size="sm"
                     variant={action.dangerous ? 'destructive' : 'outline'}
                 >
-                    {#if action.kind === 'predefined-saved-views'}
-                        {#if predefinedSavedViews.isPending && runningActionName === action.name}
-                            <Spinner />
-                            Loading...
-                        {:else}
-                            <FileJson class="size-3.5" aria-hidden="true" />
-                            View
-                        {/if}
-                    {:else}
-                        <Play class="size-3.5" aria-hidden="true" />
-                        Run
-                    {/if}
+                    <Play class="size-3.5" aria-hidden="true" />
+                    Run
                 </Button>
             </div>
         {/each}
@@ -204,29 +163,4 @@
 
 {#if selectedAction && openDialog}
     <RunMaintenanceJobDialog bind:open={openDialog} action={selectedAction} onConfirm={handleConfirm} />
-{/if}
-
-{#if jsonOutputAction && openJsonDialog}
-    <Dialog.Root bind:open={openJsonDialog}>
-        <Dialog.Content class="max-h-[90vh] gap-3 sm:max-w-4xl">
-            <Dialog.Header>
-                <Dialog.Title>{jsonOutputAction.label}</Dialog.Title>
-                <Dialog.Description>Current response from /api/v2/saved-views/predefined.</Dialog.Description>
-            </Dialog.Header>
-            <div class="flex justify-end">
-                <CopyToClipboardButton value={jsonOutput} size="sm" variant="outline">Copy JSON</CopyToClipboardButton>
-            </div>
-            <CodeBlock class="max-h-[60vh] overflow-auto" code={jsonOutput} language="json" />
-            <Dialog.Footer>
-                <Button
-                    variant="outline"
-                    onclick={() => {
-                        openJsonDialog = false;
-                    }}
-                >
-                    Close
-                </Button>
-            </Dialog.Footer>
-        </Dialog.Content>
-    </Dialog.Root>
 {/if}

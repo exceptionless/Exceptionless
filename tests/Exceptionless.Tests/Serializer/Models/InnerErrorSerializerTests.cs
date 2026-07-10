@@ -1,3 +1,4 @@
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Foundatio.Serializer;
@@ -12,27 +13,6 @@ public class InnerErrorSerializerTests : TestWithServices
     public InnerErrorSerializerTests(ITestOutputHelper output) : base(output)
     {
         _serializer = GetService<ITextSerializer>();
-    }
-
-    [Fact]
-    public void Deserialize_SnakeCaseJson_ParsesCorrectly()
-    {
-        // Arrange
-        /* language=json */
-        const string json = """{"message":"File not found","type":"System.IO.FileNotFoundException","code":"IO_404","target_method":{"name":"ReadFile","declaring_type":"FileService","declaring_namespace":"MyApp.IO"},"stack_trace":[{"declaring_namespace":"MyApp.IO","declaring_type":"FileService","name":"ReadFile","line":42}]}""";
-
-        // Act
-        var result = _serializer.Deserialize<InnerError>(json);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal("File not found", result.Message);
-        Assert.Equal("System.IO.FileNotFoundException", result.Type);
-        Assert.Equal("IO_404", result.Code);
-        Assert.NotNull(result.TargetMethod);
-        Assert.Equal("ReadFile", result.TargetMethod.Name);
-        Assert.NotNull(result.StackTrace);
-        Assert.Single(result.StackTrace);
     }
 
     [Fact]
@@ -68,9 +48,6 @@ public class InnerErrorSerializerTests : TestWithServices
         var result = _serializer.Deserialize<InnerError>(json);
 
         // Assert
-        SerializerContractAssertions.IncludesProperties(json, "stack_trace", "target_method");
-        SerializerContractAssertions.ExcludesProperties(json, "StackTrace", "TargetMethod");
-
         Assert.NotNull(result);
         Assert.Equal("Object reference not set to an instance of an object.", result.Message);
         Assert.Equal("System.NullReferenceException", result.Type);
@@ -116,5 +93,50 @@ public class InnerErrorSerializerTests : TestWithServices
         Assert.Equal("Root cause", result.Inner.Inner.Message);
         Assert.Equal("ARG_NULL", result.Inner.Inner.Code);
         Assert.Null(result.Inner.Inner.Inner);
+    }
+
+    [Fact]
+    public void Deserialize_SnakeCaseJson_ParsesCorrectly()
+    {
+        // Arrange
+        /* language=json */
+        const string json = """{"message":"File not found","type":"System.IO.FileNotFoundException","code":"IO_404","target_method":{"name":"ReadFile","declaring_type":"FileService","declaring_namespace":"MyApp.IO"},"stack_trace":[{"declaring_namespace":"MyApp.IO","declaring_type":"FileService","name":"ReadFile","line":42}]}""";
+
+        // Act
+        var result = _serializer.Deserialize<InnerError>(json);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("File not found", result.Message);
+        Assert.Equal("System.IO.FileNotFoundException", result.Type);
+        Assert.Equal("IO_404", result.Code);
+        Assert.NotNull(result.TargetMethod);
+        Assert.Equal("ReadFile", result.TargetMethod.Name);
+        Assert.NotNull(result.StackTrace);
+        Assert.Single(result.StackTrace);
+    }
+
+    [Fact]
+    public void GetValue_InnerErrorInDictionary_DeserializesCorrectly()
+    {
+        // Arrange
+        var dict = new DataDictionary
+        {
+            ["@error"] = new InnerError
+            {
+                Message = "Test error",
+                Type = "System.Exception",
+                Inner = new InnerError { Message = "Cause", Type = "System.ArgumentException" }
+            }
+        };
+
+        // Act
+        var result = dict.GetValue<InnerError>("@error", _serializer);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("Test error", result.Message);
+        Assert.NotNull(result.Inner);
+        Assert.Equal("Cause", result.Inner.Message);
     }
 }

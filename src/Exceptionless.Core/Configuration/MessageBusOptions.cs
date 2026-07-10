@@ -36,7 +36,7 @@ public class MessageBusOptions
         }
         else
         {
-            var redisConnectionString = config.GetConnectionString("Redis");
+            string? redisConnectionString = config.GetConnectionString("Redis");
 
             if (!String.IsNullOrEmpty(redisConnectionString))
             {

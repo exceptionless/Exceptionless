@@ -343,6 +343,96 @@ public sealed class TokenControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostByOrganizationAsync_WithValidToken_CreatesTokenForRouteOrganization()
+    {
+        // Arrange
+        var newToken = new NewToken
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            ProjectId = SampleDataService.TEST_PROJECT_ID,
+            Scopes = [AuthorizationRoles.Client],
+            Notes = "Organization helper token"
+        };
+
+        // Act
+        var viewToken = await SendRequestAsAsync<ViewToken>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "tokens")
+            .Content(newToken)
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert
+        Assert.NotNull(viewToken);
+        Assert.NotNull(viewToken.Id);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, viewToken.OrganizationId);
+        Assert.Equal(SampleDataService.TEST_PROJECT_ID, viewToken.ProjectId);
+        Assert.Equal("Organization helper token", viewToken.Notes);
+        Assert.Contains(AuthorizationRoles.Client, viewToken.Scopes);
+
+        var token = await _tokenRepository.GetByIdAsync(viewToken.Id);
+        Assert.NotNull(token);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, token.OrganizationId);
+        Assert.Equal(SampleDataService.TEST_PROJECT_ID, token.ProjectId);
+    }
+
+    [Fact]
+    public async Task PostByProjectAsync_WithTokenAuth_ReturnsForbidden()
+    {
+        // Arrange
+        const string apiKey = SampleDataService.TEST_API_KEY;
+        var newToken = new NewToken { Scopes = [AuthorizationRoles.Client] };
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .Post()
+            .BearerToken(apiKey)
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "tokens")
+            .Content(newToken)
+            .StatusCodeShouldBeForbidden()
+        );
+
+        // Assert
+        Assert.NotNull(response);
+    }
+
+    [Fact]
+    public async Task PostByProjectAsync_WithValidProject_CreatesProjectScopedToken()
+    {
+        // Arrange
+        var newToken = new NewToken
+        {
+            OrganizationId = SampleDataService.FREE_ORG_ID,
+            ProjectId = SampleDataService.FREE_PROJECT_ID,
+            Scopes = [AuthorizationRoles.Client],
+            Notes = "Project helper token"
+        };
+
+        // Act
+        var viewToken = await SendRequestAsAsync<ViewToken>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "tokens")
+            .Content(newToken)
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert
+        Assert.NotNull(viewToken);
+        Assert.NotNull(viewToken.Id);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, viewToken.OrganizationId);
+        Assert.Equal(SampleDataService.TEST_PROJECT_ID, viewToken.ProjectId);
+        Assert.Equal("Project helper token", viewToken.Notes);
+        Assert.Contains(AuthorizationRoles.Client, viewToken.Scopes);
+
+        var token = await _tokenRepository.GetByIdAsync(viewToken.Id);
+        Assert.NotNull(token);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, token.OrganizationId);
+        Assert.Equal(SampleDataService.TEST_PROJECT_ID, token.ProjectId);
+    }
+
+    [Fact]
     public async Task PostAsync_WithProjectFromUnauthorizedOrganization_ReturnsValidationError()
     {
         // Arrange

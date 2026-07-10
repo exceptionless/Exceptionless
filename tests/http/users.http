@@ -23,6 +23,32 @@ Authorization: Bearer {{token}}
 
 ###
 @userId = {{currentUser.response.body.$.id}}
+@avatarFile = ./avatar.png
+@oauthGrantId = replace-with-oauth-grant-id
+
+### Get OAuth Grants
+GET {{apiUrl}}/users/me/oauth-grants
+Authorization: Bearer {{token}}
+
+### Revoke OAuth Grant
+DELETE {{apiUrl}}/users/me/oauth-grants/{{oauthGrantId}}
+Authorization: Bearer {{token}}
+### Upload Avatar
+# Replace {{avatarFile}} with a local PNG, JPEG, GIF, or WebP image.
+POST {{apiUrl}}/users/{{userId}}/avatar
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=avatar-boundary
+
+--avatar-boundary
+Content-Disposition: form-data; name="file"; filename="avatar.png"
+Content-Type: image/png
+
+< {{avatarFile}}
+--avatar-boundary--
+
+### Remove Avatar
+DELETE {{apiUrl}}/users/{{userId}}/avatar
+Authorization: Bearer {{token}}
 
 ### Delete By User Id
 DELETE {{apiUrl}}/users/{{userId}}

@@ -1,5 +1,19 @@
 <div refresh-on="SystemNotification" refresh-action="svm.processSystemNotification(data)">
-    <div class="alert alert-danger alert-banner m-b-none" ng-if="!!svm.systemNotificationMessage">
+    <div
+        class="alert alert-banner alert-dismissible m-b-none"
+        ng-class="svm.systemNotificationClass"
+        ng-if="!!svm.systemNotificationMessage && svm.systemNotificationKey !== svm.dismissedSystemNotificationKey"
+        role="alert"
+    >
+        <button
+            type="button"
+            class="close"
+            ng-click="svm.dismissSystemNotification()"
+            aria-label="Dismiss alert"
+            title="Dismiss alert"
+        >
+            <span aria-hidden="true">&times;</span>
+        </button>
         <div ng-bind-html="svm.systemNotificationMessage"></div>
     </div>
 </div>

@@ -1,3 +1,5 @@
+import type { Plugin } from 'vite';
+
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { svelteTesting } from '@testing-library/svelte/vite';
@@ -9,30 +11,56 @@ const apiProxy = { changeOrigin: true, target: apiTarget };
 const oldAppTarget = process.env.OLDAPP_HTTPS || process.env.OLDAPP_HTTP;
 const oldAppProxy = { changeOrigin: true, secure: false, target: oldAppTarget };
 
+const port = Number(process.env.PORT) || 7131;
 const codespaceName = process.env.CODESPACE_NAME;
 const codespaceDomain = process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN;
-const hmr = codespaceName && codespaceDomain ? { clientPort: 443, host: `${codespaceName}-7131.${codespaceDomain}`, protocol: 'wss' as const } : undefined;
+const hmr = codespaceName && codespaceDomain ? { clientPort: 443, host: `${codespaceName}-${port}.${codespaceDomain}`, protocol: 'wss' as const } : undefined;
 const allowedHosts = ['web-ex.dev.localhost', 'localhost', '127.0.0.1'];
 if (codespaceName && codespaceDomain) {
-    allowedHosts.push(`${codespaceName}-7131.${codespaceDomain}`);
+    allowedHosts.push(`${codespaceName}-${port}.${codespaceDomain}`);
+}
+
+function svelteKitRuntimeDefines(): Plugin {
+    let replacements = new Map<string, string>();
+
+    return {
+        apply: 'serve',
+        configResolved(config) {
+            replacements = new Map(
+                Object.entries(config.define ?? {})
+                    .filter(([key]) => key.startsWith('__SVELTEKIT_'))
+                    .map(([key, value]) => [key, String(value)])
+            );
+        },
+        enforce: 'pre',
+        name: 'exceptionless-sveltekit-runtime-defines',
+        transform(code, id) {
+            if (!id.includes('/node_modules/@sveltejs/kit/src/runtime/') && !id.includes('\\node_modules\\@sveltejs\\kit\\src\\runtime\\')) {
+                return;
+            }
+
+            let transformed = code;
+            for (const [key, value] of replacements) {
+                transformed = transformed.replaceAll(key, value);
+            }
+
+            return transformed === code ? undefined : { code: transformed, map: null };
+        }
+    };
 }
 
 export default defineConfig({
-    base: '/next/',
     build: {
         sourcemap: true,
         target: 'esnext'
     },
     clearScreen: false,
     logLevel: 'info',
-    optimizeDeps: {
-        entries: ['src/**/*.{svelte,ts,js}']
-    },
-    plugins: [tailwindcss(), sveltekit()],
+    plugins: [tailwindcss(), sveltekit(), svelteKitRuntimeDefines()],
     server: {
         allowedHosts,
         hmr,
-        port: 7131,
+        port,
         proxy: {
             '/api': { ...apiProxy, ws: true },
             '/docs': apiProxy,

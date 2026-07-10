@@ -1,7 +1,7 @@
+using System.Buffers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Exceptionless.Core.Models;
-using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Serialization;
 
@@ -17,7 +17,7 @@ namespace Exceptionless.Core.Serialization;
 /// </para>
 /// <list type="bullet">
 ///   <item><description><c>true</c>/<c>false</c> → <see cref="bool"/></description></item>
-///   <item><description>Numbers → <see cref="long"/> (if fits) or <see cref="double"/></description></item>
+///   <item><description>Numbers → <see cref="int"/> (if fits), <see cref="long"/>, or <see cref="decimal"/>; with <c>preferInt64</c>, always <see cref="long"/> for integers and <see cref="double"/> for floats</description></item>
 ///   <item><description>Strings with ISO 8601 date format → <see cref="DateTimeOffset"/></description></item>
 ///   <item><description>Other strings → <see cref="string"/></description></item>
 ///   <item><description><c>null</c> → <c>null</c></description></item>
@@ -41,8 +41,32 @@ namespace Exceptionless.Core.Serialization;
 /// </code>
 /// </example>
 /// <seealso href="https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/converters-how-to#deserialize-inferred-types-to-object-properties"/>
+/// <remarks>
+/// This converter is app-specific and NOT interchangeable with Foundatio.Repositories'
+/// ObjectToInferredTypesConverter. Key differences: preferInt64 mode for ES compatibility,
+/// aggressive DateTimeOffset detection from strings, int→long→decimal number inference.
+/// </remarks>
 public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
 {
+    private readonly bool _preferInt64;
+
+    /// <summary>
+    /// Initializes a new instance with default settings (integers that fit Int32 are returned as <see cref="int"/>).
+    /// </summary>
+    public ObjectToInferredTypesConverter() : this(preferInt64: false) { }
+
+    /// <summary>
+    /// Initializes a new instance with configurable integer handling.
+    /// </summary>
+    /// <param name="preferInt64">
+    /// When <c>true</c>, all integers are returned as <see cref="long"/> to match JSON.NET behavior.
+    /// Used by the Elasticsearch serializer to maintain compatibility with <c>DataObjectConverter</c>.
+    /// </param>
+    public ObjectToInferredTypesConverter(bool preferInt64)
+    {
+        _preferInt64 = preferInt64;
+    }
+
     /// <inheritdoc />
     public override object? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
@@ -50,7 +74,7 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
         {
             JsonTokenType.True => true,
             JsonTokenType.False => false,
-            JsonTokenType.Number => ReadNumber(ref reader),
+            JsonTokenType.Number => JsonNumberInference.Read(ref reader, _preferInt64),
             JsonTokenType.String => ReadString(ref reader),
             JsonTokenType.Null => null,
             JsonTokenType.StartObject => ReadObject(ref reader, options),
@@ -75,51 +99,37 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
             return;
         }
 
-        // Handle Newtonsoft JToken types (stored in DataDictionary by DataObjectConverter
-        // when reading from Elasticsearch via NEST). Without this, STJ enumerates JToken's
-        // IEnumerable<JToken> interface, producing nested empty arrays instead of proper JSON.
-        if (value is JToken jToken)
-        {
-            using var doc = JsonDocument.Parse(jToken.ToString(Newtonsoft.Json.Formatting.None));
-            doc.RootElement.WriteTo(writer);
-            return;
-        }
-
         // Serialize using the runtime type to get proper converter handling
         JsonSerializer.Serialize(writer, value, value.GetType(), options);
     }
 
     /// <summary>
-    /// Reads a JSON number, preferring <see cref="long"/> for integers and <see cref="double"/> for decimals.
-    /// </summary>
-    private static object ReadNumber(ref Utf8JsonReader reader)
-    {
-        // Try smallest to largest integer types first for optimal boxing
-        if (reader.TryGetInt32(out int i))
-            return i;
-
-        if (reader.TryGetInt64(out long l))
-            return l;
-
-        // Try decimal for precise values (e.g., financial data) before double
-        if (reader.TryGetDecimal(out decimal d))
-            return d;
-
-        // Fall back to double for floating-point
-        return reader.GetDouble();
-    }
-
-    /// <summary>
     /// Reads a JSON string, attempting to parse as <see cref="DateTimeOffset"/> for ISO 8601 dates.
     /// </summary>
+    /// <remarks>
+    /// Only parses strings that contain the ISO 8601 time separator 'T'.
+    /// Date-only strings like "2026-01-15" are preserved as strings to match the legacy
+    /// Newtonsoft behavior (which used DateParseHandling.None for the Data dictionary).
+    /// </remarks>
     private static object? ReadString(ref Utf8JsonReader reader)
     {
-        // Attempt DateTimeOffset parsing for ISO 8601 formatted strings
-        if (reader.TryGetDateTimeOffset(out DateTimeOffset dateTimeOffset))
-            return dateTimeOffset;
+        // Check raw text for a time separator before attempting date parsing.
+        // Date-only strings ("2026-01-15") should stay as strings — they may not represent
+        // dates in user data. Only parse strings that have an explicit time component.
+        ReadOnlySpan<byte> rawValue = reader.HasValueSequence
+            ? reader.ValueSequence.ToArray()
+            : reader.ValueSpan;
 
-        if (reader.TryGetDateTime(out var dt))
-            return dt;
+        bool hasTimeSeparator = rawValue.Contains((byte)'T');
+
+        if (hasTimeSeparator)
+        {
+            if (reader.TryGetDateTimeOffset(out DateTimeOffset dateTimeOffset))
+                return dateTimeOffset;
+
+            if (reader.TryGetDateTime(out var dt))
+                return dt;
+        }
 
         return reader.GetString();
     }
@@ -131,7 +141,7 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
     /// Uses <see cref="StringComparer.OrdinalIgnoreCase"/> for property name matching,
     /// consistent with <see cref="DataDictionary"/> behavior.
     /// </remarks>
-    private static Dictionary<string, object?> ReadObject(ref Utf8JsonReader reader, JsonSerializerOptions options)
+    private Dictionary<string, object?> ReadObject(ref Utf8JsonReader reader, JsonSerializerOptions options)
     {
         var dictionary = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
 
@@ -157,7 +167,7 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
     /// <summary>
     /// Recursively reads a JSON array into a <see cref="List{T}"/> of objects.
     /// </summary>
-    private static List<object?> ReadArray(ref Utf8JsonReader reader, JsonSerializerOptions options)
+    private List<object?> ReadArray(ref Utf8JsonReader reader, JsonSerializerOptions options)
     {
         var list = new List<object?>();
 
@@ -175,13 +185,13 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
     /// <summary>
     /// Reads a single JSON value of any type, dispatching to the appropriate reader method.
     /// </summary>
-    private static object? ReadValue(ref Utf8JsonReader reader, JsonSerializerOptions options)
+    private object? ReadValue(ref Utf8JsonReader reader, JsonSerializerOptions options)
     {
         return reader.TokenType switch
         {
             JsonTokenType.True => true,
             JsonTokenType.False => false,
-            JsonTokenType.Number => ReadNumber(ref reader),
+            JsonTokenType.Number => JsonNumberInference.Read(ref reader, _preferInt64),
             JsonTokenType.String => ReadString(ref reader),
             JsonTokenType.Null => null,
             JsonTokenType.StartObject => ReadObject(ref reader, options),
@@ -189,4 +199,5 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
             _ => JsonDocument.ParseValue(ref reader).RootElement.Clone()
         };
     }
+
 }

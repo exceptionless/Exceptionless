@@ -264,6 +264,21 @@ public abstract class ExceptionlessApiController : Controller
         return new OkWithResourceLinks<TEntity>(content, hasMore, page, total, before, after);
     }
 
+    protected static bool ShouldIncludeTotal(string? include)
+    {
+        return ShouldInclude(include, "total");
+    }
+
+    protected static bool ShouldInclude(string? include, string value)
+    {
+        if (String.IsNullOrWhiteSpace(include))
+            return false;
+
+        return include
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Contains(value, StringComparer.OrdinalIgnoreCase);
+    }
+
     protected string? GetResourceLink(string? url, string type)
     {
         return url is not null ? $"<{url}>; rel=\"{type}\"" : null;
