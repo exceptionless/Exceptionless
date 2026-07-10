@@ -62,8 +62,14 @@ public sealed class WebSocketPushMiddleware
             await OnConnected(context, connectionId).ConfigureAwait(false);
             await ReceiveUntilCloseAsync(socket, context.RequestAborted).ConfigureAwait(false);
         }
-        catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely) { }
-        catch (OperationCanceledException) { }
+        catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
+        {
+            _logger.LogDebug(ex, "WebSocket push closed prematurely for {ConnectionId}", connectionId);
+        }
+        catch (OperationCanceledException ex)
+        {
+            _logger.LogDebug(ex, "WebSocket push canceled for {ConnectionId}", connectionId);
+        }
         finally
         {
             await OnDisconnected(context, connectionId).ConfigureAwait(false);
@@ -71,24 +77,30 @@ public sealed class WebSocketPushMiddleware
         }
     }
 
-    private async Task OnConnected(HttpContext context, string connectionId)
+    internal async Task OnConnected(HttpContext context, string connectionId)
     {
         _logger.LogTrace("WebSocket push connected {ConnectionId}", connectionId);
 
         foreach (string organizationId in context.User.GetOrganizationIds())
+        {
             await _connectionMapping.GroupAddAsync(organizationId, connectionId).ConfigureAwait(false);
+            await _connectionMapping.ConnectionGroupAddAsync(connectionId, organizationId).ConfigureAwait(false);
+        }
 
         string? userId = context.User.GetUserId();
         if (!String.IsNullOrEmpty(userId))
             await _connectionMapping.UserIdAddAsync(userId, connectionId).ConfigureAwait(false);
     }
 
-    private async Task OnDisconnected(HttpContext context, string connectionId)
+    internal async Task OnDisconnected(HttpContext context, string connectionId)
     {
         _logger.LogTrace("WebSocket push disconnected {ConnectionId}", connectionId);
 
         foreach (string organizationId in context.User.GetOrganizationIds())
+        {
             await _connectionMapping.GroupRemoveAsync(organizationId, connectionId).ConfigureAwait(false);
+            await _connectionMapping.ConnectionGroupRemoveAsync(connectionId, organizationId).ConfigureAwait(false);
+        }
 
         string? userId = context.User.GetUserId();
         if (!String.IsNullOrEmpty(userId))

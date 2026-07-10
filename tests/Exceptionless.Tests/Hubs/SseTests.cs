@@ -5,6 +5,7 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Web.Hubs;
 using Foundatio.Repositories.Models;
 using Foundatio.Serializer;
+using System.Security.Claims;
 using Xunit;
 
 namespace Exceptionless.Tests.Hubs;
@@ -123,6 +124,87 @@ public sealed class SseConnectionManagerTests : TestWithServices
         var options = new AppOptions { EnablePush = true };
         return new SseConnectionManager(options, GetService<ITextSerializer>(), Log);
     }
+}
+
+public sealed class PushMiddlewareMappingTests : TestWithServices
+{
+    private readonly IConnectionMapping _connectionMapping;
+
+    public PushMiddlewareMappingTests(ITestOutputHelper output) : base(output)
+    {
+        _connectionMapping = GetService<IConnectionMapping>();
+    }
+
+    [Fact]
+    public async Task OnConnectedAndDisconnected_SseMiddleware_UpdatesReverseConnectionMappings()
+    {
+        // Arrange
+        const string userId = "middleware-user";
+        const string connectionId = "sse-middleware-conn";
+        var context = CreateUserContext(userId, "organization-a", "organization-b");
+        var middleware = new SseMiddleware(_ => Task.CompletedTask, GetService<SseConnectionManager>(), _connectionMapping, Log.CreateLogger<SseMiddleware>());
+
+        // Act
+        await middleware.OnConnected(context, connectionId);
+
+        // Assert
+        Assert.Contains(connectionId, await _connectionMapping.GetGroupConnectionsAsync("organization-a"));
+        Assert.Contains(connectionId, await _connectionMapping.GetGroupConnectionsAsync("organization-b"));
+        Assert.Contains("organization-a", await _connectionMapping.GetConnectionGroupsAsync(connectionId));
+        Assert.Contains("organization-b", await _connectionMapping.GetConnectionGroupsAsync(connectionId));
+        Assert.Contains(connectionId, await _connectionMapping.GetUserIdConnectionsAsync(userId));
+
+        // Act
+        await middleware.OnDisconnected(context, connectionId);
+
+        // Assert
+        Assert.Empty(await _connectionMapping.GetConnectionGroupsAsync(connectionId));
+        Assert.Empty(await _connectionMapping.GetUserIdConnectionsAsync(userId));
+        Assert.Empty(await _connectionMapping.GetGroupConnectionsAsync("organization-a"));
+        Assert.Empty(await _connectionMapping.GetGroupConnectionsAsync("organization-b"));
+    }
+
+    [Fact]
+    public async Task OnConnectedAndDisconnected_WebSocketPushMiddleware_UpdatesReverseConnectionMappings()
+    {
+        // Arrange
+        const string userId = "ws-middleware-user";
+        const string connectionId = "ws-middleware-conn";
+        var context = CreateUserContext(userId, "organization-a", "organization-b");
+        var middleware = new WebSocketPushMiddleware(_ => Task.CompletedTask, GetService<WebSocketConnectionManager>(), _connectionMapping, Log.CreateLogger<WebSocketPushMiddleware>());
+
+        // Act
+        await middleware.OnConnected(context, connectionId);
+
+        // Assert
+        Assert.Contains(connectionId, await _connectionMapping.GetGroupConnectionsAsync("organization-a"));
+        Assert.Contains(connectionId, await _connectionMapping.GetGroupConnectionsAsync("organization-b"));
+        Assert.Contains("organization-a", await _connectionMapping.GetConnectionGroupsAsync(connectionId));
+        Assert.Contains("organization-b", await _connectionMapping.GetConnectionGroupsAsync(connectionId));
+        Assert.Contains(connectionId, await _connectionMapping.GetUserIdConnectionsAsync(userId));
+
+        // Act
+        await middleware.OnDisconnected(context, connectionId);
+
+        // Assert
+        Assert.Empty(await _connectionMapping.GetConnectionGroupsAsync(connectionId));
+        Assert.Empty(await _connectionMapping.GetUserIdConnectionsAsync(userId));
+        Assert.Empty(await _connectionMapping.GetGroupConnectionsAsync("organization-a"));
+        Assert.Empty(await _connectionMapping.GetGroupConnectionsAsync("organization-b"));
+    }
+
+    private static DefaultHttpContext CreateUserContext(string userId, params string[] organizationIds)
+    {
+        var context = new DefaultHttpContext();
+        context.User = new ClaimsPrincipal(new ClaimsIdentity(
+        [
+            new Claim(ClaimTypes.NameIdentifier, userId),
+            new Claim(Exceptionless.Core.Extensions.IdentityUtils.OrganizationIdsClaim, String.Join(",", organizationIds))
+        ], Exceptionless.Core.Extensions.IdentityUtils.UserAuthenticationType));
+
+        return context;
+    }
+
 }
 
 /// <summary>
@@ -328,6 +410,157 @@ public sealed class SseBrokerTests : TestWithServices
             await _connectionManager.RemoveConnectionAsync(otherConn);
         }
     }
+
+    [Fact]
+    public async Task OnUserMembershipChangedAsync_AddedAndRemoved_UpdatesForwardAndReverseMappings()
+    {
+        const string userId = "membership-user";
+        const string organizationId = "membership-org";
+        using var response1 = new FakeHttpResponse();
+        using var response2 = new FakeHttpResponse();
+        using var cts1 = new CancellationTokenSource();
+        using var cts2 = new CancellationTokenSource();
+
+        string connectionId1 = "membership-conn-1";
+        string connectionId2 = "membership-conn-2";
+
+        _connectionManager.AddConnection(connectionId1, response1, cts1.Token);
+        _connectionManager.AddConnection(connectionId2, response2, cts2.Token);
+
+        try
+        {
+            await _connectionMapping.UserIdAddAsync(userId, connectionId1);
+            await _connectionMapping.UserIdAddAsync(userId, connectionId2);
+
+            var addMessage = new UserMembershipChanged {
+                UserId = userId,
+                OrganizationId = organizationId,
+                ChangeType = ChangeType.Added
+            };
+
+            await _broker.OnUserMembershipChangedAsync(addMessage, TestContext.Current.CancellationToken);
+
+            var organizationConnections = await _connectionMapping.GetGroupConnectionsAsync(organizationId);
+            Assert.Contains(connectionId1, organizationConnections);
+            Assert.Contains(connectionId2, organizationConnections);
+            Assert.Contains(organizationId, await _connectionMapping.GetConnectionGroupsAsync(connectionId1));
+            Assert.Contains(organizationId, await _connectionMapping.GetConnectionGroupsAsync(connectionId2));
+
+            var removeMessage = addMessage with { ChangeType = ChangeType.Removed };
+            await _broker.OnUserMembershipChangedAsync(removeMessage, TestContext.Current.CancellationToken);
+
+            Assert.Empty(await _connectionMapping.GetGroupConnectionsAsync(organizationId));
+            Assert.Empty(await _connectionMapping.GetConnectionGroupsAsync(connectionId1));
+            Assert.Empty(await _connectionMapping.GetConnectionGroupsAsync(connectionId2));
+        }
+        finally
+        {
+            await _connectionMapping.UserIdRemoveAsync(userId, connectionId1);
+            await _connectionMapping.UserIdRemoveAsync(userId, connectionId2);
+            await _connectionManager.RemoveConnectionAsync(connectionId1);
+            await _connectionManager.RemoveConnectionAsync(connectionId2);
+        }
+    }
+
+    [Fact]
+    public async Task OnUserMembershipChangedAsync_Removed_SendsRefreshToRemovedUserAndRemainingOrganizationMembers()
+    {
+        const string removedUserId = "removed-user";
+        const string remainingUserId = "remaining-user";
+        const string organizationId = "shared-org";
+        using var removedResponse = new FakeHttpResponse();
+        using var remainingResponse = new FakeHttpResponse();
+        using var removedCts = new CancellationTokenSource();
+        using var remainingCts = new CancellationTokenSource();
+
+        string removedConnectionId = "removed-conn";
+        string remainingConnectionId = "remaining-conn";
+
+        _connectionManager.AddConnection(removedConnectionId, removedResponse, removedCts.Token);
+        _connectionManager.AddConnection(remainingConnectionId, remainingResponse, remainingCts.Token);
+
+        try
+        {
+            await _connectionMapping.UserIdAddAsync(removedUserId, removedConnectionId);
+            await _connectionMapping.UserIdAddAsync(remainingUserId, remainingConnectionId);
+            await _connectionMapping.GroupAddAsync(organizationId, removedConnectionId);
+            await _connectionMapping.GroupAddAsync(organizationId, remainingConnectionId);
+            await _connectionMapping.ConnectionGroupAddAsync(removedConnectionId, organizationId);
+
+            var message = new UserMembershipChanged {
+                UserId = removedUserId,
+                OrganizationId = organizationId,
+                ChangeType = ChangeType.Removed
+            };
+
+            await _broker.OnUserMembershipChangedAsync(message, TestContext.Current.CancellationToken);
+            await Task.Delay(200, TestContext.Current.CancellationToken);
+
+            Assert.Contains(nameof(UserMembershipChanged), removedResponse.WrittenData);
+            Assert.Contains(nameof(UserMembershipChanged), remainingResponse.WrittenData);
+            Assert.DoesNotContain(removedConnectionId, await _connectionMapping.GetGroupConnectionsAsync(organizationId));
+            Assert.Empty(await _connectionMapping.GetConnectionGroupsAsync(removedConnectionId));
+        }
+        finally
+        {
+            await _connectionMapping.UserIdRemoveAsync(removedUserId, removedConnectionId);
+            await _connectionMapping.UserIdRemoveAsync(remainingUserId, remainingConnectionId);
+            await _connectionMapping.GroupRemoveAsync(organizationId, removedConnectionId);
+            await _connectionMapping.GroupRemoveAsync(organizationId, remainingConnectionId);
+            await _connectionMapping.ConnectionGroupRemoveAsync(removedConnectionId, organizationId);
+            await _connectionManager.RemoveConnectionAsync(removedConnectionId);
+            await _connectionManager.RemoveConnectionAsync(remainingConnectionId);
+        }
+    }
+
+    [Fact]
+    public async Task OnEntityChangedAsync_AuthTokenRemoved_ClearsAllTrackedOrganizationMappings()
+    {
+        const string userId = "tracked-user";
+        const string firstOrganizationId = "tracked-org-1";
+        const string secondOrganizationId = "tracked-org-2";
+        using var response = new FakeHttpResponse();
+        using var cts = new CancellationTokenSource();
+
+        string connectionId = "tracked-conn";
+        _connectionManager.AddConnection(connectionId, response, cts.Token);
+
+        try
+        {
+            await _connectionMapping.UserIdAddAsync(userId, connectionId);
+            await _connectionMapping.GroupAddAsync(firstOrganizationId, connectionId);
+            await _connectionMapping.GroupAddAsync(secondOrganizationId, connectionId);
+            await _connectionMapping.ConnectionGroupAddAsync(connectionId, firstOrganizationId);
+            await _connectionMapping.ConnectionGroupAddAsync(connectionId, secondOrganizationId);
+
+            var entityChanged = new EntityChanged
+            {
+                Id = "tracked-token-id",
+                Type = nameof(Token),
+                ChangeType = ChangeType.Removed
+            };
+            entityChanged.Data[ExtendedEntityChanged.KnownKeys.OrganizationId] = firstOrganizationId;
+            entityChanged.Data[ExtendedEntityChanged.KnownKeys.UserId] = userId;
+            entityChanged.Data[ExtendedEntityChanged.KnownKeys.IsAuthenticationToken] = true;
+
+            await _broker.OnEntityChangedAsync(entityChanged, CancellationToken.None);
+
+            Assert.Null(_connectionManager.GetConnectionById(connectionId));
+            Assert.Empty(await _connectionMapping.GetUserIdConnectionsAsync(userId));
+            Assert.Empty(await _connectionMapping.GetConnectionGroupsAsync(connectionId));
+            Assert.Empty(await _connectionMapping.GetGroupConnectionsAsync(firstOrganizationId));
+            Assert.Empty(await _connectionMapping.GetGroupConnectionsAsync(secondOrganizationId));
+        }
+        finally
+        {
+            await _connectionMapping.UserIdRemoveAsync(userId, connectionId);
+            await _connectionMapping.GroupRemoveAsync(firstOrganizationId, connectionId);
+            await _connectionMapping.GroupRemoveAsync(secondOrganizationId, connectionId);
+            await _connectionMapping.ConnectionGroupRemoveAsync(connectionId, firstOrganizationId);
+            await _connectionMapping.ConnectionGroupRemoveAsync(connectionId, secondOrganizationId);
+        }
+    }
+
 }
 
 /// <summary>
@@ -487,7 +720,9 @@ public sealed class SseDeduplicationTests : TestWithServices
         var item = await queue.DequeueAsync(cts.Token);
 
         Assert.Equal(SseConnection.EnqueueResult.Skipped, result);
-        Assert.Equal("critical-1", item!.Value.Data);
-        Assert.False(item.Value.IsKeepAlive);
+        Assert.True(item.HasValue);
+        var dequeued = item.GetValueOrDefault();
+        Assert.Equal("critical-1", dequeued.Data);
+        Assert.False(dequeued.IsKeepAlive);
     }
 }

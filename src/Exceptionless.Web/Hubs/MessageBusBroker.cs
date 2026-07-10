@@ -47,7 +47,7 @@ public sealed class MessageBusBroker : IStartupAction
         _logger.LogDebug("Subscribed to message bus notifications");
     }
 
-    private async Task OnUserMembershipChangedAsync(UserMembershipChanged userMembershipChanged, CancellationToken cancellationToken = default)
+    internal async Task OnUserMembershipChangedAsync(UserMembershipChanged userMembershipChanged, CancellationToken cancellationToken = default)
     {
         if (String.IsNullOrEmpty(userMembershipChanged?.OrganizationId))
         {
@@ -58,12 +58,21 @@ public sealed class MessageBusBroker : IStartupAction
         // manage user organization group membership
         var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(userMembershipChanged.UserId);
         _logger.LogTrace("Attempting to update user {User} active groups for {UserConnectionCount} connections", userMembershipChanged.UserId, userConnectionIds.Count);
+        if (userMembershipChanged.ChangeType is ChangeType.Removed && userConnectionIds.Count > 0)
+            TypedSend(userConnectionIds, userMembershipChanged);
+
         foreach (string connectionId in userConnectionIds)
         {
             if (userMembershipChanged.ChangeType is ChangeType.Added)
+            {
                 await _connectionMapping.GroupAddAsync(userMembershipChanged.OrganizationId, connectionId);
+                await _connectionMapping.ConnectionGroupAddAsync(connectionId, userMembershipChanged.OrganizationId);
+            }
             else if (userMembershipChanged.ChangeType is ChangeType.Removed)
+            {
                 await _connectionMapping.GroupRemoveAsync(userMembershipChanged.OrganizationId, connectionId);
+                await _connectionMapping.ConnectionGroupRemoveAsync(connectionId, userMembershipChanged.OrganizationId);
+            }
         }
 
         await GroupSendAsync(userMembershipChanged.OrganizationId, userMembershipChanged);
@@ -113,11 +122,17 @@ public sealed class MessageBusBroker : IStartupAction
                 if (isAuthToken && entityChanged.ChangeType is ChangeType.Removed)
                 {
                     _logger.LogTrace("Auth token removed for user {UserId}; closing {ConnectionCount} push connection(s)", userId, userConnectionIds.Count);
-                    string? organizationId = entityChanged.OrganizationId;
                     foreach (string connectionId in userConnectionIds)
                     {
-                        if (organizationId is { Length: > 0 })
+                        var organizationIds = await _connectionMapping.GetConnectionGroupsAsync(connectionId);
+                        if (organizationIds.Count is 0 && entityChanged.OrganizationId is { Length: > 0 } fallbackOrganizationId)
+                            organizationIds = [fallbackOrganizationId];
+
+                        foreach (string organizationId in organizationIds)
+                        {
                             await _connectionMapping.GroupRemoveAsync(organizationId, connectionId);
+                            await _connectionMapping.ConnectionGroupRemoveAsync(connectionId, organizationId);
+                        }
 
                         await _connectionMapping.UserIdRemoveAsync(userId, connectionId);
                         await _sseConnectionManager.RemoveConnectionAsync(connectionId);

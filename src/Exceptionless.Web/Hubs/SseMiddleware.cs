@@ -90,25 +90,31 @@ public class SseMiddleware
         }
     }
 
-    private async Task OnConnected(HttpContext context, string connectionId)
+    internal async Task OnConnected(HttpContext context, string connectionId)
     {
         _logger.LogTrace("SSE connected {ConnectionId}", connectionId);
         foreach (string organizationId in context.User.GetOrganizationIds())
+        {
             await _connectionMapping.GroupAddAsync(organizationId, connectionId).ConfigureAwait(false);
+            await _connectionMapping.ConnectionGroupAddAsync(connectionId, organizationId).ConfigureAwait(false);
+        }
 
         string? userId = context.User.GetUserId();
         if (!String.IsNullOrEmpty(userId))
             await _connectionMapping.UserIdAddAsync(userId, connectionId).ConfigureAwait(false);
     }
 
-    private async Task OnDisconnected(HttpContext context, string connectionId)
+    internal async Task OnDisconnected(HttpContext context, string connectionId)
     {
         _logger.LogTrace("SSE disconnected {ConnectionId}", connectionId);
 
         try
         {
             foreach (string organizationId in context.User.GetOrganizationIds())
+            {
                 await _connectionMapping.GroupRemoveAsync(organizationId, connectionId).ConfigureAwait(false);
+                await _connectionMapping.ConnectionGroupRemoveAsync(connectionId, organizationId).ConfigureAwait(false);
+            }
 
             string? userId = context.User.GetUserId();
             if (!String.IsNullOrEmpty(userId))
