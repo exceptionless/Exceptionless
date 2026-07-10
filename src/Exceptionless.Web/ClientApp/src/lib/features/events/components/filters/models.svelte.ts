@@ -381,10 +381,10 @@ export class TagFilter implements IFilter {
         }
 
         if (this.value.length == 1) {
-            return `tag:${this.value[0]}`;
+            return `tag:${quoteIfSpecialCharacters(this.value[0])}`;
         }
 
-        return `(${this.value.map((val) => `tag:${val}`).join(' OR ')})`;
+        return `(${this.value.map((val) => `tag:${quoteIfSpecialCharacters(val)}`).join(' OR ')})`;
     }
 }
 

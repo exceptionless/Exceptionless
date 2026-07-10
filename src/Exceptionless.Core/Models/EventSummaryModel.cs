@@ -3,4 +3,6 @@
 public record EventSummaryModel : SummaryData
 {
     public DateTimeOffset Date { get; set; }
+    public string? Type { get; set; }
+    public string? Version { get; set; }
 }

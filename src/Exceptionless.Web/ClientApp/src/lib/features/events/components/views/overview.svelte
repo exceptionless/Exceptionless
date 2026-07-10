@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { IFilter } from '$comp/faceted-filter';
 
+    import { resolve } from '$app/paths';
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
     import { A, H3 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
@@ -86,7 +87,7 @@
                     <Table.Head class="w-40 font-semibold whitespace-nowrap">Reference</Table.Head>
                     <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.ReferenceTrigger changed={filterChanged} value={event.reference_id} /></Table.Cell>
                 {/if}
-                <Table.Cell>{event.reference_id}</Table.Cell>
+                <Table.Cell><A href={resolve('/(app)/event/by-ref/[referenceId]', { referenceId: event.reference_id })}>{event.reference_id}</A></Table.Cell>
             </Table.Row>
         {/if}
         {#each references as reference (reference.id)}
@@ -98,7 +99,7 @@
                     <Table.Head class="w-40 font-semibold whitespace-nowrap">{reference.name}</Table.Head>
                     <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.ReferenceTrigger changed={filterChanged} value={reference.id} /></Table.Cell>
                 {/if}
-                <Table.Cell>{reference.id}</Table.Cell>
+                <Table.Cell><A href={resolve('/(app)/event/by-ref/[referenceId]', { referenceId: reference.id })}>{reference.id}</A></Table.Cell>
             </Table.Row>
         {/each}
         {#if level}

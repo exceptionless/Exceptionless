@@ -9,7 +9,7 @@
     import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
     import { Spinner } from '$comp/ui/spinner';
-    import { forgotPassword } from '$features/auth/index.svelte';
+    import { forgotPassword } from '$features/auth/api.svelte';
     import { type ForgotPasswordFormData, ForgotPasswordSchema } from '$features/auth/schemas';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { createForm } from '@tanstack/svelte-form';

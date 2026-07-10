@@ -13,8 +13,8 @@ public static class RedisExtensions
             "Clear Cache",
             async _ =>
             {
-                var redisConnectionString = await builder.Resource.GetConnectionStringAsync() ??
-                                            throw new InvalidOperationException("Unable to get the Redis connection string.");
+                string redisConnectionString = await builder.Resource.GetConnectionStringAsync() ??
+                                               throw new InvalidOperationException("Unable to get the Redis connection string.");
 
                 await using var connection = await ConnectionMultiplexer.ConnectAsync(redisConnectionString);
 

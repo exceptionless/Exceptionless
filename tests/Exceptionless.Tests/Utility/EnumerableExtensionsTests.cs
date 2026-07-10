@@ -9,8 +9,8 @@ public class EnumerableExtensionsTests
     public void CollectionEquals_DifferentElements_ReturnsFalse()
     {
         // Arrange
-        var source = new[] { 1, 2, 3 };
-        var other = new[] { 1, 2, 4 };
+        int[] source = new[] { 1, 2, 3 };
+        int[] other = new[] { 1, 2, 4 };
 
         // Act
         bool result = source.CollectionEquals(other);
@@ -23,8 +23,8 @@ public class EnumerableExtensionsTests
     public void CollectionEquals_DifferentOrder_ReturnsFalse()
     {
         // Arrange
-        var source = new[] { 1, 2, 3 };
-        var other = new[] { 3, 2, 1 };
+        int[] source = new[] { 1, 2, 3 };
+        int[] other = new[] { 3, 2, 1 };
 
         // Act
         bool result = source.CollectionEquals(other);
@@ -37,8 +37,8 @@ public class EnumerableExtensionsTests
     public void CollectionEquals_SameElementsSameOrder_ReturnsTrue()
     {
         // Arrange
-        var source = new[] { 1, 2, 3 };
-        var other = new[] { 1, 2, 3 };
+        int[] source = new[] { 1, 2, 3 };
+        int[] other = new[] { 1, 2, 3 };
 
         // Act
         bool result = source.CollectionEquals(other);
@@ -65,8 +65,8 @@ public class EnumerableExtensionsTests
     public void GetCollectionHashCode_SameCollections_ProduceSameHashCode()
     {
         // Arrange
-        var first = new[] { "a", "b", "c" };
-        var second = new[] { "a", "b", "c" };
+        string[] first = new[] { "a", "b", "c" };
+        string[] second = new[] { "a", "b", "c" };
 
         // Act
         int hash1 = first.GetCollectionHashCode();
