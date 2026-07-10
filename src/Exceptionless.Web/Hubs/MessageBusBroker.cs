@@ -245,9 +245,9 @@ public sealed class MessageBusBroker : IStartupAction
         return value.GetType().Name;
     }
 
-    private static bool CanDrop(object value)
+    internal static bool CanDrop(object value)
     {
-        return value is not (PlanOverage or ReleaseNotification or SystemNotification);
+        return value is not (PlanOverage or ReleaseNotification or SystemNotification or UserMembershipChanged);
     }
 }
 

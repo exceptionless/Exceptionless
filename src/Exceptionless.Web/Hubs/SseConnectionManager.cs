@@ -19,9 +19,6 @@ public sealed class SseConnectionManager : IDisposable, IAsyncDisposable
 
     /// <summary>
     /// Maximum number of concurrent connections per user to prevent resource exhaustion.
-    /// This is a soft limit — under concurrent connection bursts, a few extra connections
-    /// may be admitted briefly. This is acceptable because the alternative (distributed
-    /// locking) would add latency to every SSE connect without meaningful security benefit.
     /// </summary>
     public int MaxConnectionsPerUser { get; init; } = 10;
 

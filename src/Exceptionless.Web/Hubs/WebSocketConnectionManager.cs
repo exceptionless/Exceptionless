@@ -72,7 +72,14 @@ public sealed class WebSocketConnectionManager : IDisposable
     public string AddConnection(WebSocket socket)
     {
         string connectionId = Guid.NewGuid().ToString("N");
-        _connections.TryAdd(connectionId, socket);
+        return AddConnection(connectionId, socket);
+    }
+
+    public string AddConnection(string connectionId, WebSocket socket)
+    {
+        if (!_connections.TryAdd(connectionId, socket))
+            throw new InvalidOperationException($"A websocket connection with id '{connectionId}' is already registered.");
+
         AppDiagnostics.PushWebSocketConnectionsOpened.Add(1);
         AppDiagnostics.Gauge("push.connections.websocket.active", _connections.Count);
         return connectionId;

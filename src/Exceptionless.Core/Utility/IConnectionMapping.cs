@@ -155,4 +155,34 @@ public static class ConnectionMappingExtensions
     {
         return map.GetConnectionsAsync(UserIdPrefix + userId);
     }
+
+    public static Task<int> GetUserIdConnectionCountAsync(this IConnectionMapping map, string userId)
+    {
+        return map.GetConnectionCountAsync(UserIdPrefix + userId);
+    }
+
+    /// <summary>
+    /// Reserves a connection slot before accepting a long-lived push connection.
+    /// Adding before counting prevents concurrent requests from bypassing the per-user limit.
+    /// </summary>
+    public static async Task<bool> TryReserveUserConnectionAsync(this IConnectionMapping map, string userId, string connectionId, int maxConnections)
+    {
+        if (maxConnections <= 0)
+            return false;
+
+        await map.UserIdAddAsync(userId, connectionId);
+        try
+        {
+            if (await map.GetUserIdConnectionCountAsync(userId) <= maxConnections)
+                return true;
+        }
+        catch
+        {
+            await map.UserIdRemoveAsync(userId, connectionId);
+            throw;
+        }
+
+        await map.UserIdRemoveAsync(userId, connectionId);
+        return false;
+    }
 }

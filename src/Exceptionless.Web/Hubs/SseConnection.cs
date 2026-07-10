@@ -71,7 +71,7 @@ public sealed class SseConnection : IAsyncDisposable
             return true;
         }
 
-        if (result == EnqueueResult.DroppedQueuedMessage)
+        if (result is EnqueueResult.DroppedQueuedMessage or EnqueueResult.Skipped)
             Interlocked.Increment(ref _droppedMessages);
 
         return true;
@@ -215,6 +215,7 @@ public sealed class SseConnection : IAsyncDisposable
                     return EnqueueResult.Deduped;
 
                 var result = EnqueueResult.Enqueued;
+                bool queueCountIncreased = true;
 
                 // Enforce capacity: drop the oldest droppable message first so direct user
                 // notifications do not get crowded out by stale cache invalidations.
@@ -224,15 +225,20 @@ public sealed class SseConnection : IAsyncDisposable
                         return EnqueueResult.Skipped;
 
                     var queuedToDrop = FindFirstDroppableNode();
+                    if (queuedToDrop is null && evt.CanDrop)
+                        return EnqueueResult.Skipped;
+
                     RemoveNode(queuedToDrop ?? _list.First!);
                     result = EnqueueResult.DroppedQueuedMessage;
+                    queueCountIncreased = false;
                 }
 
                 var node = _list.AddLast(evt);
                 if (evt.DedupeKey is not null)
                     _index[evt.DedupeKey] = node;
 
-                _signal.Release();
+                if (queueCountIncreased)
+                    _signal.Release();
                 return result;
             }
         }

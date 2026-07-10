@@ -267,6 +267,31 @@ public sealed class ConnectionMappingTests(ITestOutputHelper output) : TestWithL
     }
 
     [Fact]
+    public async Task TryReserveUserConnectionAsync_ConcurrentRequests_EnforcesLimit()
+    {
+        // Arrange
+        var mapping = new ConnectionMapping();
+        const string userId = "user1";
+        const int maxConnections = 10;
+        var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        string[] connectionIds = Enumerable.Range(0, 100).Select(index => $"conn{index}").ToArray();
+        var reservationTasks = connectionIds.Select(async connectionId =>
+        {
+            await start.Task.WaitAsync(TestContext.Current.CancellationToken);
+            return await mapping.TryReserveUserConnectionAsync(userId, connectionId, maxConnections);
+        }).ToArray();
+
+        // Act
+        start.SetResult();
+        bool[] reservations = await Task.WhenAll(reservationTasks);
+
+        // Assert
+        int acceptedCount = reservations.Count(accepted => accepted);
+        Assert.InRange(acceptedCount, 1, maxConnections);
+        Assert.Equal(acceptedCount, await mapping.GetUserIdConnectionCountAsync(userId));
+    }
+
+    [Fact]
     public async Task UserIdExtensions_AddAndRemove_WorkCorrectly()
     {
         // Arrange

@@ -46,19 +46,20 @@ public sealed class WebSocketPushMiddleware
             return;
         }
 
-        var existingConnections = await _connectionMapping.GetUserIdConnectionsAsync(userId);
-        if (existingConnections.Count >= _connectionManager.MaxConnectionsPerUser)
+        string connectionId = Guid.NewGuid().ToString("N");
+        if (!await _connectionMapping.TryReserveUserConnectionAsync(userId, connectionId, _connectionManager.MaxConnectionsPerUser))
         {
             _logger.LogWarning("User {UserId} exceeded max websocket push connections ({Max})", userId, _connectionManager.MaxConnectionsPerUser);
             context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
             return;
         }
 
-        using var socket = await context.WebSockets.AcceptWebSocketAsync();
-        string connectionId = _connectionManager.AddConnection(socket);
+        WebSocket? socket = null;
 
         try
         {
+            socket = await context.WebSockets.AcceptWebSocketAsync();
+            _connectionManager.AddConnection(connectionId, socket);
             await OnConnected(context, connectionId).ConfigureAwait(false);
             await ReceiveUntilCloseAsync(socket, context.RequestAborted).ConfigureAwait(false);
         }
@@ -72,8 +73,21 @@ public sealed class WebSocketPushMiddleware
         }
         finally
         {
-            await OnDisconnected(context, connectionId).ConfigureAwait(false);
-            await _connectionManager.RemoveConnectionAsync(connectionId).ConfigureAwait(false);
+            try
+            {
+                await OnDisconnected(context, connectionId).ConfigureAwait(false);
+            }
+            finally
+            {
+                try
+                {
+                    await _connectionManager.RemoveConnectionAsync(connectionId).ConfigureAwait(false);
+                }
+                finally
+                {
+                    socket?.Dispose();
+                }
+            }
         }
     }
 
@@ -96,15 +110,20 @@ public sealed class WebSocketPushMiddleware
     {
         _logger.LogTrace("WebSocket push disconnected {ConnectionId}", connectionId);
 
-        foreach (string organizationId in context.User.GetOrganizationIds())
+        try
         {
-            await _connectionMapping.GroupRemoveAsync(organizationId, connectionId).ConfigureAwait(false);
-            await _connectionMapping.ConnectionGroupRemoveAsync(connectionId, organizationId).ConfigureAwait(false);
+            foreach (string organizationId in context.User.GetOrganizationIds())
+            {
+                await _connectionMapping.GroupRemoveAsync(organizationId, connectionId).ConfigureAwait(false);
+                await _connectionMapping.ConnectionGroupRemoveAsync(connectionId, organizationId).ConfigureAwait(false);
+            }
         }
-
-        string? userId = context.User.GetUserId();
-        if (!String.IsNullOrEmpty(userId))
-            await _connectionMapping.UserIdRemoveAsync(userId, connectionId).ConfigureAwait(false);
+        finally
+        {
+            string? userId = context.User.GetUserId();
+            if (!String.IsNullOrEmpty(userId))
+                await _connectionMapping.UserIdRemoveAsync(userId, connectionId).ConfigureAwait(false);
+        }
     }
 
     private static async Task ReceiveUntilCloseAsync(WebSocket socket, CancellationToken cancellationToken)

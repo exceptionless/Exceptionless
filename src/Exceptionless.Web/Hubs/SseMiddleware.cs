@@ -47,29 +47,27 @@ public class SseMiddleware
             return;
         }
 
-        // Enforce per-user connection limit
-        var existingConnections = await _connectionMapping.GetUserIdConnectionsAsync(userId);
-        if (existingConnections.Count >= _connectionManager.MaxConnectionsPerUser)
+        string connectionId = Guid.NewGuid().ToString("N");
+        if (!await _connectionMapping.TryReserveUserConnectionAsync(userId, connectionId, _connectionManager.MaxConnectionsPerUser))
         {
             _logger.LogWarning("User {UserId} exceeded max SSE connections ({Max})", userId, _connectionManager.MaxConnectionsPerUser);
             context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
             return;
         }
 
-        // Set SSE response headers
-        context.Response.Headers.ContentType = "text/event-stream";
-        context.Response.Headers.CacheControl = "no-cache, no-store";
-        context.Response.Headers["X-Accel-Buffering"] = "no"; // nginx
-
-        // Disable response buffering
-        var bufferingFeature = context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpResponseBodyFeature>();
-        bufferingFeature?.DisableBuffering();
-
-        string connectionId = Guid.NewGuid().ToString("N");
         SseConnection? connection = null;
 
         try
         {
+            // Set SSE response headers
+            context.Response.Headers.ContentType = "text/event-stream";
+            context.Response.Headers.CacheControl = "no-cache, no-store";
+            context.Response.Headers["X-Accel-Buffering"] = "no"; // nginx
+
+            // Disable response buffering
+            var bufferingFeature = context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpResponseBodyFeature>();
+            bufferingFeature?.DisableBuffering();
+
             connection = _connectionManager.AddConnection(connectionId, context.Response, context.RequestAborted);
             await OnConnected(context, connectionId).ConfigureAwait(false);
 
@@ -82,10 +80,14 @@ public class SseMiddleware
         catch (OperationCanceledException) { }
         finally
         {
-            if (connection is not null)
+            try
             {
                 await OnDisconnected(context, connectionId).ConfigureAwait(false);
-                await _connectionManager.RemoveConnectionAsync(connectionId).ConfigureAwait(false);
+            }
+            finally
+            {
+                if (connection is not null)
+                    await _connectionManager.RemoveConnectionAsync(connectionId).ConfigureAwait(false);
             }
         }
     }
@@ -115,10 +117,6 @@ public class SseMiddleware
                 await _connectionMapping.GroupRemoveAsync(organizationId, connectionId).ConfigureAwait(false);
                 await _connectionMapping.ConnectionGroupRemoveAsync(connectionId, organizationId).ConfigureAwait(false);
             }
-
-            string? userId = context.User.GetUserId();
-            if (!String.IsNullOrEmpty(userId))
-                await _connectionMapping.UserIdRemoveAsync(userId, connectionId).ConfigureAwait(false);
         }
         catch (OperationCanceledException ex)
         {
@@ -127,6 +125,12 @@ public class SseMiddleware
         catch (ObjectDisposedException ex)
         {
             _logger.LogDebug(ex, "SSE disconnect raced with disposal for {ConnectionId}", connectionId);
+        }
+        finally
+        {
+            string? userId = context.User.GetUserId();
+            if (!String.IsNullOrEmpty(userId))
+                await _connectionMapping.UserIdRemoveAsync(userId, connectionId).ConfigureAwait(false);
         }
     }
 }

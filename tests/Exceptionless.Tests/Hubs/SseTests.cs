@@ -224,6 +224,24 @@ public sealed class SseBrokerTests : TestWithServices
     }
 
     [Fact]
+    public void CanDrop_UserMembershipChanged_ReturnsFalse()
+    {
+        // Arrange
+        var message = new UserMembershipChanged
+        {
+            UserId = "membership-user",
+            OrganizationId = "membership-organization",
+            ChangeType = ChangeType.Removed
+        };
+
+        // Act
+        bool canDrop = MessageBusBroker.CanDrop(message);
+
+        // Assert
+        Assert.False(canDrop);
+    }
+
+    [Fact]
     public async Task OnEntityChangedAsync_AuthTokenRemoved_ClosesConnectionsAndClearsMapping()
     {
         const string userId = "test-user-id";
@@ -668,26 +686,27 @@ public sealed class SseDeduplicationTests : TestWithServices
     }
 
     [Fact]
-    public async Task Capacity_Exceeded_DropsOldest()
+    public async Task TryEnqueue_CapacityExceeded_DropsOldestWithoutPhantomSignal()
     {
-        // Test the DedupQueue directly to avoid racing with the write loop
-        var queue = new SseConnection.DedupQueue(3);
+        // Arrange
+        using var queue = new SseConnection.DedupQueue(3);
 
-        // Enqueue 5 items with unique keys — first 2 should be dropped
+        // Act
         for (int i = 0; i < 5; i++)
-        {
             queue.TryEnqueue(new SseConnection.SseEvent { Data = $"msg-{i}", DedupeKey = $"key-{i}" });
-        }
 
-        // Dequeue and verify we get the last 3 items (oldest 2 were dropped)
-        using var cts = new CancellationTokenSource();
-        var item1 = await queue.DequeueAsync(cts.Token);
-        var item2 = await queue.DequeueAsync(cts.Token);
-        var item3 = await queue.DequeueAsync(cts.Token);
+        var item1 = await queue.DequeueAsync(TestContext.Current.CancellationToken);
+        var item2 = await queue.DequeueAsync(TestContext.Current.CancellationToken);
+        var item3 = await queue.DequeueAsync(TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal("msg-2", item1!.Value.Data);
         Assert.Equal("msg-3", item2!.Value.Data);
         Assert.Equal("msg-4", item3!.Value.Data);
+
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cts.CancelAfter(TimeSpan.FromMilliseconds(50));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => queue.DequeueAsync(cts.Token));
     }
 
     [Fact]
@@ -706,6 +725,23 @@ public sealed class SseDeduplicationTests : TestWithServices
         Assert.Equal(SseConnection.EnqueueResult.DroppedQueuedMessage, result);
         Assert.Equal("critical-1", item1!.Value.Data);
         Assert.Equal("critical-2", item2!.Value.Data);
+    }
+
+    [Fact]
+    public async Task DroppableMessage_WhenQueueFullOfCriticalMessages_DoesNotEvictCriticalMessage()
+    {
+        // Arrange
+        using var queue = new SseConnection.DedupQueue(1);
+        queue.TryEnqueue(new SseConnection.SseEvent { Data = "critical-1", CanDrop = false });
+
+        // Act
+        var result = queue.TryEnqueue(new SseConnection.SseEvent { Data = "lossy-1", DedupeKey = "lossy-1", CanDrop = true });
+        var item = await queue.DequeueAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(SseConnection.EnqueueResult.Skipped, result);
+        Assert.True(item.HasValue);
+        Assert.Equal("critical-1", item.GetValueOrDefault().Data);
     }
 
     [Fact]
