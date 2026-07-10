@@ -9,9 +9,12 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
+using Exceptionless.Web.Models.OAuth;
 using Exceptionless.Web.Utility;
+using Exceptionless.Web.Utility.OpenApi;
 using Foundatio.Caching;
 using Foundatio.Repositories;
+using Foundatio.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -24,19 +27,25 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
 {
     private readonly IOrganizationRepository _organizationRepository;
     private readonly ITokenRepository _tokenRepository;
+    private readonly IOAuthTokenRepository _oauthTokenRepository;
+    private readonly IOAuthApplicationRepository _oauthApplicationRepository;
     private readonly ICacheClient _cache;
+    private readonly IFileStorage _fileStorage;
     private readonly IMailer _mailer;
     private readonly IntercomOptions _intercomOptions;
 
     public UserController(
-        IUserRepository userRepository,
-        IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer,
+        IUserRepository userRepository, IFileStorage fileStorage,
+        IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, IOAuthTokenRepository oauthTokenRepository, IOAuthApplicationRepository oauthApplicationRepository, ICacheClient cacheClient, IMailer mailer,
         ApiMapper mapper, IAppQueryValidator validator, IntercomOptions intercomOptions,
         TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(userRepository, mapper, validator, timeProvider, loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _tokenRepository = tokenRepository;
+        _oauthTokenRepository = oauthTokenRepository;
+        _oauthApplicationRepository = oauthApplicationRepository;
         _cache = new ScopedCacheClient(cacheClient, "User");
+        _fileStorage = fileStorage;
         _mailer = mailer;
         _intercomOptions = intercomOptions;
     }
@@ -57,7 +66,77 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         if (currentUser is null)
             return NotFound();
 
-        return Ok(new ViewCurrentUser(currentUser, _intercomOptions));
+        return Ok(MapToViewCurrentUser(currentUser));
+    }
+
+    /// <summary>
+    /// Get current user OAuth grants
+    /// </summary>
+    [HttpGet("me/oauth-grants")]
+    public async Task<ActionResult<IReadOnlyCollection<ViewOAuthGrant>>> GetOAuthGrantsAsync()
+    {
+        var tokens = new List<OAuthToken>();
+        var results = await _oauthTokenRepository.GetByUserIdAsync(CurrentUser.Id, o => o.SearchAfterPaging().PageLimit(MAXIMUM_SKIP));
+        do
+        {
+            tokens.AddRange(results.Documents.Where(IsActiveOAuthGrantToken));
+        } while (!HttpContext.RequestAborted.IsCancellationRequested && await results.NextPageAsync());
+
+        if (tokens.Count == 0)
+            return Ok(Array.Empty<ViewOAuthGrant>());
+
+        var applicationsByClientId = new Dictionary<string, OAuthApplication?>(StringComparer.Ordinal);
+        foreach (string clientId in tokens.Select(t => t.ClientId).Distinct(StringComparer.Ordinal))
+            applicationsByClientId[clientId] = await _oauthApplicationRepository.GetByClientIdAsync(clientId);
+
+        var grants = tokens
+            .GroupBy(t => t.ClientId, StringComparer.Ordinal)
+            .Select(group => MapToOAuthGrant(group.ToArray(), applicationsByClientId[group.Key]))
+            .OrderBy(g => g.ApplicationName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(g => g.ClientId, StringComparer.Ordinal)
+            .ToArray();
+
+        return Ok(grants);
+    }
+
+    /// <summary>
+    /// Revoke current user OAuth grant
+    /// </summary>
+    /// <param name="id">The OAuth grant identifier.</param>
+    /// <response code="404">The OAuth grant could not be found.</response>
+    [HttpDelete("me/oauth-grants/{id:minlength(1)}")]
+    public async Task<IActionResult> RevokeOAuthGrantAsync(string id)
+    {
+        OAuthToken? token = null;
+        var grantResults = await _oauthTokenRepository.GetByGrantIdForUpdateAsync(id, o => o.ImmediateConsistency().SearchAfterPaging().PageLimit(MAXIMUM_SKIP));
+        do
+        {
+            token = grantResults.Documents.FirstOrDefault(t =>
+                String.Equals(t.UserId, CurrentUser.Id, StringComparison.Ordinal)
+                && !String.IsNullOrWhiteSpace(t.ClientId));
+            if (token is not null)
+                break;
+        } while (!HttpContext.RequestAborted.IsCancellationRequested && await grantResults.NextPageAsync());
+
+        if (token is null)
+            return NotFound();
+
+        string clientId = token.ClientId;
+
+        var results = await _oauthTokenRepository.GetByUserIdAndClientIdForUpdateAsync(CurrentUser.Id, clientId, o => o.ImmediateConsistency().SearchAfterPaging().PageLimit(MAXIMUM_SKIP));
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        do
+        {
+            foreach (var oauthToken in results.Documents)
+            {
+                oauthToken.IsDisabled = true;
+                oauthToken.RefreshTokenHash = null;
+                oauthToken.UpdatedUtc = utcNow;
+                await _oauthTokenRepository.SaveAsync(oauthToken, o => o.ImmediateConsistency());
+            }
+        } while (!HttpContext.RequestAborted.IsCancellationRequested && await results.NextPageAsync());
+
+        return NoContent();
     }
 
     /// <summary>
@@ -127,6 +206,86 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     public Task<ActionResult<ViewUser>> PatchAsync(string id, Delta<UpdateUser> changes)
     {
         return PatchImplAsync(id, changes);
+    }
+
+    /// <summary>
+    /// Upload avatar
+    /// </summary>
+    /// <param name="id">The identifier of the user.</param>
+    /// <param name="file">The avatar image file.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <response code="404">The user could not be found.</response>
+    /// <response code="422">The image file is invalid.</response>
+    [HttpPost("{id:objectid}/avatar")]
+    [Consumes("multipart/form-data")]
+    [MultipartFileUpload]
+    [RequestSizeLimit(ProfileImageStorage.MaxRequestBodySize)]
+    [RequestFormLimits(MultipartBodyLengthLimit = ProfileImageStorage.MaxRequestBodySize)]
+    public async Task<ActionResult<ViewUser>> UploadAvatarAsync(string id, [FromForm] IFormFile? file, CancellationToken cancellationToken = default)
+    {
+        var user = await GetModelAsync(id, false);
+        if (user is null)
+            return NotFound();
+
+        var image = await ProfileImageStorage.SaveAsync(_fileStorage, file, "users", user.Id, ModelState, cancellationToken);
+        if (image is null)
+            return ValidationProblem(ModelState);
+
+        string? oldAvatarFileName = user.AvatarFileName;
+        user.AvatarFileName = image.FileName;
+        try
+        {
+            await _repository.SaveAsync(user, o => o.Cache());
+        }
+        catch
+        {
+            await ProfileImageStorage.TryDeleteAsync(_fileStorage, image.FileName, "users", user.Id, CancellationToken.None);
+            throw;
+        }
+
+        await ProfileImageStorage.DeleteAsync(_fileStorage, oldAvatarFileName, "users", user.Id, cancellationToken);
+
+        return await OkModelAsync(user);
+    }
+
+    /// <summary>
+    /// Remove avatar
+    /// </summary>
+    /// <param name="id">The identifier of the user.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <response code="404">The user could not be found.</response>
+    [HttpDelete("{id:objectid}/avatar")]
+    public async Task<ActionResult<ViewUser>> DeleteAvatarAsync(string id, CancellationToken cancellationToken = default)
+    {
+        var user = await GetModelAsync(id, false);
+        if (user is null)
+            return NotFound();
+
+        string? oldAvatarFileName = user.AvatarFileName;
+        user.AvatarFileName = null;
+        await _repository.SaveAsync(user, o => o.Cache());
+        await ProfileImageStorage.DeleteAsync(_fileStorage, oldAvatarFileName, "users", user.Id, cancellationToken);
+
+        return await OkModelAsync(user);
+    }
+
+    /// <summary>
+    /// Get avatar
+    /// </summary>
+    /// <param name="id">The identifier of the user.</param>
+    /// <param name="fileName">The avatar file name.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <response code="404">The avatar could not be found.</response>
+    [AllowAnonymous]
+    [HttpGet("{id:objectid}/avatar/{fileName}", Name = "GetUserAvatar")]
+    [ResponseCache(Duration = 31536000, Location = ResponseCacheLocation.Any)]
+    public async Task<IActionResult> GetAvatarAsync(string id, string fileName, CancellationToken cancellationToken = default)
+    {
+        if (!ProfileImageStorage.TryGetContentType(fileName, out string contentType))
+            return NotFound();
+
+        var stream = await ProfileImageStorage.GetFileStreamAsync(_fileStorage, fileName, "users", id, cancellationToken);
+        return stream is null ? NotFound() : File(stream, contentType);
     }
 
     /// <summary>
@@ -345,9 +504,17 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     protected override async Task<ActionResult<ViewUser>> OkModelAsync(User model)
     {
         if (String.Equals(CurrentUser.Id, model.Id))
-            return Ok(new ViewCurrentUser(model, _intercomOptions));
+            return Ok(MapToViewCurrentUser(model));
 
         return await base.OkModelAsync(model);
+    }
+
+    protected override async Task AfterResultMapAsync<TDestination>(ICollection<TDestination> models)
+    {
+        await base.AfterResultMapAsync(models);
+
+        foreach (var user in models.OfType<ViewUser>())
+            user.AvatarUrl = GetUserAvatarUrl(user.Id, user.AvatarUrl);
     }
 
     protected override async Task<User?> GetModelAsync(string id, bool useCache = true)
@@ -382,9 +549,74 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         foreach (var user in values)
         {
             long removed = await _tokenRepository.RemoveAllByUserIdAsync(user.Id);
+            removed += await _oauthTokenRepository.RemoveAllByUserIdAsync(user.Id);
             _logger.RemovedTokens(removed, user.Id);
         }
 
         return await base.DeleteModelsAsync(values);
+    }
+
+    private ViewCurrentUser MapToViewCurrentUser(User user)
+        => new(user, _intercomOptions) { AvatarUrl = GetUserAvatarUrl(user.Id, user.AvatarFileName) };
+
+    private bool IsActiveOAuthGrantToken(OAuthToken token)
+    {
+        if (token.IsDisabled || token.IsSuspended || String.IsNullOrWhiteSpace(token.ClientId))
+            return false;
+
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        bool hasActiveAccessToken = !token.ExpiresUtc.HasValue || token.ExpiresUtc.Value >= utcNow;
+        bool hasActiveRefreshToken = !String.IsNullOrEmpty(token.RefreshTokenHash) && (!token.RefreshExpiresUtc.HasValue || token.RefreshExpiresUtc.Value >= utcNow);
+        return hasActiveAccessToken || hasActiveRefreshToken;
+    }
+
+    private static ViewOAuthGrant MapToOAuthGrant(IReadOnlyCollection<OAuthToken> tokens, OAuthApplication? application)
+    {
+        var latestToken = tokens
+            .OrderByDescending(t => t.UpdatedUtc)
+            .ThenByDescending(t => t.CreatedUtc)
+            .First();
+
+        return new ViewOAuthGrant
+        {
+            Id = latestToken.GrantId,
+            ClientId = latestToken.ClientId,
+            ApplicationName = application?.Name ?? latestToken.ClientId,
+            IsApplicationDisabled = application?.IsDisabled ?? false,
+            Scopes = tokens
+                .SelectMany(t => t.Scopes)
+                .Distinct(StringComparer.Ordinal)
+                .Order(StringComparer.Ordinal)
+                .ToArray(),
+            OrganizationIds = tokens
+                .SelectMany(t => t.OrganizationIds)
+                .Where(id => !String.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.Ordinal)
+                .Order(StringComparer.Ordinal)
+                .ToArray(),
+            Resources = tokens
+                .Where(t => !String.IsNullOrWhiteSpace(t.Resource))
+                .GroupBy(t => t.Resource!, StringComparer.Ordinal)
+                .Select(group => new ViewOAuthGrantResource
+                {
+                    Resource = group.Key,
+                    Scopes = group.SelectMany(t => t.Scopes).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray(),
+                    OrganizationIds = group.SelectMany(t => t.OrganizationIds).Where(id => !String.IsNullOrWhiteSpace(id)).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray()
+                })
+                .OrderBy(r => r.Resource, StringComparer.Ordinal)
+                .ToArray(),
+            CreatedUtc = tokens.Min(t => t.CreatedUtc),
+            UpdatedUtc = tokens.Max(t => t.UpdatedUtc),
+            ExpiresUtc = tokens.Select(t => t.ExpiresUtc).Max(),
+            RefreshExpiresUtc = tokens.Select(t => t.RefreshExpiresUtc).Max()
+        };
+    }
+
+    private string? GetUserAvatarUrl(string id, string? fileName)
+    {
+        if (String.IsNullOrWhiteSpace(fileName))
+            return null;
+
+        return Url.RouteUrl("GetUserAvatar", new { id, fileName }) ?? $"/api/v2/users/{id}/avatar/{fileName}";
     }
 }

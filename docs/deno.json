@@ -1,0 +1,45 @@
+{
+  "tasks": {
+    "lume": "deno run -P=lume lume/cli.ts",
+    "build": "deno task lume && deno task postbuild",
+    "serve": "deno task build && deno run --allow-read=_site --allow-net=localhost,127.0.0.1 scripts/serve.ts",
+    "postbuild": "deno run --allow-read --allow-write scripts/postbuild.ts",
+    "check": "deno check _config.ts scripts/site-collections.ts scripts/postbuild.ts scripts/serve.ts scripts/verify-links.ts scripts/find-unused.ts",
+    "verify": "deno task build && deno run --allow-read scripts/verify-links.ts",
+    "unused": "deno task build && deno run --allow-read scripts/find-unused.ts"
+  },
+  "imports": {
+    "lume/": "https://cdn.jsdelivr.net/gh/lumeland/lume@3.2.6/"
+  },
+  "nodeModulesDir": "auto",
+  "permissions": {
+    "lume": {
+      "read": true,
+      "write": [
+        "_cache",
+        "_site"
+      ],
+      "env": true,
+      "net": [
+        "cdn.jsdelivr.net",
+        "localhost",
+        "127.0.0.1",
+        "0.0.0.0"
+      ],
+      "run": true,
+      "sys": true,
+      "ffi": true,
+      "import": [
+        "cdn.jsdelivr.net",
+        "deno.land",
+        "jsr.io"
+      ]
+    }
+  },
+  "fmt": {
+    "lineWidth": 120,
+    "indentWidth": 2,
+    "semiColons": false,
+    "singleQuote": false
+  }
+}

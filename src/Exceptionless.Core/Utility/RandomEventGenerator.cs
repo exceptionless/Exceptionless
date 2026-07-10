@@ -38,6 +38,11 @@ public class RandomEventGenerator
             };
 
             PopulateEvent(ev, i < errorLogCount ? "Error" : null);
+            if (i % 5 == 0)
+            {
+                ev.ReferenceId = GenerateReferenceId();
+            }
+
             events.Add(ev);
         }
 
@@ -163,6 +168,11 @@ public class RandomEventGenerator
         return String.Equals(level, "Error", StringComparison.OrdinalIgnoreCase)
             ? ErrorLogMessages.Random()
             : LogMessages.Random();
+    }
+
+    private static string GenerateReferenceId()
+    {
+        return Guid.NewGuid().ToString("N").Substring(0, 10);
     }
 
     private List<Error>? _randomErrors;

@@ -4,10 +4,10 @@
 
 - Items always inside their Group component
 - Callouts use Alert
-- Empty states use Empty component
+- Empty states use installed primitives
 - Toast notifications use svelte-sonner
 - Choosing between overlay components
-- Dialog, Sheet, and Drawer always need a Title
+- Dialog and Sheet always need a Title
 - Card structure
 - Button has no isPending or isLoading prop
 - Tabs.Trigger must be inside Tabs.List
@@ -26,7 +26,7 @@ Never render items directly inside the content container.
 
 ```svelte
 <script lang="ts">
-  import * as Select from "$lib/components/ui/select";
+  import * as Select from "$comp/ui/select";
 </script>
 
 <Select.Content>
@@ -39,7 +39,7 @@ Never render items directly inside the content container.
 
 ```svelte
 <script lang="ts">
-  import * as Select from "$lib/components/ui/select";
+  import * as Select from "$comp/ui/select";
 </script>
 
 <Select.Content>
@@ -56,7 +56,6 @@ This applies to all group-based components:
 | ------------------------------------------------------------- | -------------------- |
 | `Select.Item`, `Select.Label`                                 | `Select.Group`       |
 | `DropdownMenu.Item`, `DropdownMenu.Label`, `DropdownMenu.Sub` | `DropdownMenu.Group` |
-| `Menubar.Item`                                                | `Menubar.Group`      |
 | `ContextMenu.Item`                                            | `ContextMenu.Group`  |
 | `Command.Item`                                                | `Command.Group`      |
 
@@ -66,7 +65,7 @@ This applies to all group-based components:
 
 ```svelte
 <script lang="ts">
-  import * as Alert from "$lib/components/ui/alert";
+  import * as Alert from "$comp/ui/alert";
 </script>
 
 <Alert.Root>
@@ -77,28 +76,9 @@ This applies to all group-based components:
 
 ---
 
-## Empty states use Empty component
+## Empty states use installed primitives
 
-```svelte
-<script lang="ts">
-  import * as Empty from "$lib/components/ui/empty";
-  import { Button } from "$lib/components/ui/button";
-  import FolderIcon from "@lucide/svelte/icons/folder";
-</script>
-
-<Empty.Root>
-  <Empty.Header>
-    <Empty.Media variant="icon"><FolderIcon /></Empty.Media>
-    <Empty.Title>No projects yet</Empty.Title>
-    <Empty.Description
-      >Get started by creating a new project.</Empty.Description
-    >
-  </Empty.Header>
-  <Empty.Content>
-    <Button>Create Project</Button>
-  </Empty.Content>
-</Empty.Root>
-```
+Compose empty states from installed components such as `Card`, `Alert`, `Button`, `Badge`, `Skeleton`, and icons. If the registry `Empty` component is the right fit, add it intentionally before importing `$comp/ui/empty`.
 
 ---
 
@@ -129,19 +109,19 @@ Mount the `Toaster` from your UI folder once in the app layout (see [Sonner](htt
 | Focused task that requires input   | `Dialog`      |
 | Destructive action confirmation    | `AlertDialog` |
 | Side panel with details or filters | `Sheet`       |
-| Mobile-first bottom panel          | `Drawer`      |
-| Quick info on hover                | `HoverCard`   |
+| Mobile-first bottom panel          | Add `Drawer` before importing it |
+| Quick info on hover                | Add `HoverCard` before importing it |
 | Small contextual content on click  | `Popover`     |
 
 ---
 
-## Dialog, Sheet, and Drawer always need a Title
+## Dialog and Sheet always need a Title
 
-`Dialog.Title`, `Sheet.Title`, `Drawer.Title` are required for accessibility. Use `class="sr-only"` if visually hidden.
+`Dialog.Title` and `Sheet.Title` are required for accessibility. If you add another titled overlay such as `Drawer`, follow the same rule. Use `class="sr-only"` if visually hidden.
 
 ```svelte
 <script lang="ts">
-  import * as Dialog from "$lib/components/ui/dialog";
+  import * as Dialog from "$comp/ui/dialog";
 </script>
 
 <Dialog.Content>
@@ -161,8 +141,8 @@ Use full composition — don't dump everything into `Card.Content`:
 
 ```svelte
 <script lang="ts">
-  import * as Card from "$lib/components/ui/card";
-  import { Button } from "$lib/components/ui/button";
+  import * as Card from "$comp/ui/card";
+  import { Button } from "$comp/ui/button";
 </script>
 
 <Card.Root>
@@ -185,8 +165,8 @@ Compose with `Spinner` inside `Button` + `disabled`:
 
 ```svelte
 <script lang="ts">
-  import { Button } from "$lib/components/ui/button";
-  import { Spinner } from "$lib/components/ui/spinner";
+  import { Button } from "$comp/ui/button";
+  import { Spinner } from "$comp/ui/spinner";
 </script>
 
 <Button disabled>
@@ -203,7 +183,7 @@ Never render `Tabs.Trigger` directly inside `Tabs.Root` — always wrap in `Tabs
 
 ```svelte
 <script lang="ts">
-  import * as Tabs from "$lib/components/ui/tabs";
+  import * as Tabs from "$comp/ui/tabs";
   let tab = $state("account");
 </script>
 
@@ -224,7 +204,7 @@ Always include `Avatar.Fallback` for when the image fails to load:
 
 ```svelte
 <script lang="ts">
-  import * as Avatar from "$lib/components/ui/avatar";
+  import * as Avatar from "$comp/ui/avatar";
 </script>
 
 <Avatar.Root>
@@ -239,6 +219,6 @@ Always include `Avatar.Fallback` for when the image fails to load:
 
 | Instead of                                     | Use                                                                                         |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `<hr>` or `<div class="border-t">`             | `<Separator />` (`import { Separator } from "$lib/components/ui/separator"`)                |
-| `<div class="animate-pulse">` with styled divs | `<Skeleton class="h-4 w-3/4" />` (`import { Skeleton } from "$lib/components/ui/skeleton"`) |
-| `<span class="rounded-full bg-green-100 ...">` | `<Badge variant="secondary">` (`import { Badge } from "$lib/components/ui/badge"`)          |
+| `<hr>` or `<div class="border-t">`             | `<Separator />` (`import { Separator } from "$comp/ui/separator"`)                |
+| `<div class="animate-pulse">` with styled divs | `<Skeleton class="h-4 w-3/4" />` (`import { Skeleton } from "$comp/ui/skeleton"`) |
+| `<span class="rounded-full bg-green-100 ...">` | `<Badge variant="secondary">` (`import { Badge } from "$comp/ui/badge"`)          |

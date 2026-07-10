@@ -1,0 +1,216 @@
+---
+title: Feature Tour
+layout: layouts/base.vto
+description: Tour Exceptionless error monitoring, logging, notifications, and event management.
+---
+<div class="page-header margin-top">
+  <h1 id="feature-tour">Feature Tour</h1>
+</div>
+
+<div id="wrap" class="container" role="document">
+  <div id="content" class="row-fluid">
+    <div id="main" class="span12" role="main">
+    <div class="row">
+        <div class="span7">
+            <h2>Dashboard</h2>
+            <p>The dashboard provides a beautiful, high level view of your project's exception and event history. You can quickly <strong>view the health</strong> of your application, <strong>measure end user experience</strong> from real users, and <strong>intelligently view the most frequent and most recent errors</strong> for your application.</p>
+            <p>You will be surprised how helpful a graphical representation of your errors are, whether you're working with an ASP.NET, Web API, WebForms, WPF, Console, or MVC application. It is especially nice to visualize progress towards eliminating errors.</p>
+        </div>
+        <div class="span5">
+            <div class="thumb thumb-right"><a class="fancybox image" href="/assets/img/tour/dashboard.png" rel="tour"><img class="thumb aligncenter size-full" src="/assets/img/tour/dashboard.png" alt="Exceptionless Dashboard" width="940" height="545" loading="lazy" decoding="async"></a></div>
+        </div>
+    </div>
+    <hr>
+    <div class="row">
+        <div class="span5">
+            <div class="thumb thumb-left"><a class="fancybox image" href="/assets/img/tour/event-report.jpeg" rel="tour"><img class="thumb aligncenter size-full" src="/assets/img/tour/event-report.jpeg" alt="Exceptionless Event Occurrence" width="940" height="726" loading="lazy" decoding="async"></a></div>
+        </div>
+        <div class="span7">
+            <h2>Detailed Error Reports</h2>
+            <p>Exceptionless error reports contain <strong>intelligently organized information</strong> to help you <strong>quickly track down and fix the error</strong>. We guarantee you won't be stressed out by the usual overwhelming information overload.</p>
+            <p class="lead" style="margin-bottom: 5px;">You never have to ask the same old questions again.</p>
+            <ul>
+                <li>What version are you using?</li>
+                <li>Can you please send me a stack trace?</li>
+                <li>How can I reproduce this issue?</li>
+            </ul>
+            <p>By default, these exception reports include type of error, message, stack trace, occurrence date, request information, and environment information. You can also <strong>easily add your own information to reports</strong> with Custom Objects.</p>
+        </div>
+    </div>
+    <hr>
+    <div class="row">
+        <div class="span7">
+            <h2>Custom Objects</h2>
+            <p>Exceptionless automatically tracks a lot of the contextual information about an error that will <a href="/docs/getting-started/">help you fix the bug fast</a>. But what if you want to <strong>track even more information</strong>, like the order information that the user was in the process of submitting, or any other contextual information useful in figuring out when and where the error happened?</p>
+            <p class="lead" style="margin-bottom: 5px;"><strong>Easily add any custom objects</strong> to your error report and then treat them as <strong>first class citizens</strong> within the error details.</p>
+            <p>You can even <strong>promote your custom objects to top level tabs</strong> and customize how the information is displayed using custom templates.</p>
+        </div>
+        <div class="span5">
+            <div class="thumb thumb-right"><a class="fancybox image" href="/assets/img/tour/custom-objects.jpeg" rel="tour"><img class="thumb aligncenter size-full" src="/assets/img/tour/custom-objects.jpeg" alt="Exceptionless Custom Objects" width="541" height="528" loading="lazy" decoding="async"></a></div>
+        </div>
+    </div>
+    <hr>
+    <div class="row">
+        <div class="span5">
+            <div class="thumb thumb-left"><a class="fancybox image" href="/assets/img/tour/error-grouping.png" rel="tour"><img class="thumb aligncenter size-full" src="/assets/img/tour/error-grouping.png" alt="Exceptionless Error Grouping" width="802" height="617" loading="lazy" decoding="async"></a></div>
+        </div>
+        <div class="span7">
+            <h2>Intelligent Error Grouping</h2>
+            <p>Errors are organized into stacks based on <strong>where the error occurred </strong>in the code and the type of the error. Exceptionless lets you easily see what information it used to create a stack. It also shows you the <strong>full history</strong> of the error and lets you dive into specific error occurrences.</p>
+            <p>Learn why and how we <a title="Intelligent App Error Grouping Helps Organize Your Exceptions" href="/docs/managing-stacks/">group your app errors</a>.</p>
+        </div>
+    </div>
+    <hr>
+    <div class="row">
+        <div class="span7">
+            <h2>Most Frequent Errors</h2>
+            <p>Exceptionless gives you <strong>great insight into your application</strong> by showing your applications most frequent errors. This gives you the ability to <strong>quickly prioritize</strong> which errors you should fix first.</p>
+            <blockquote><p><div class="text-accent"><br>
+                About 20 percent of the bugs cause 80 percent of all errors, and–this is stunning to me–one percent of bugs cause half of all errors.<br>
+            </div></p></blockquote>
+            <p>Exceptionless <strong>shows you what bugs are effecting your user base</strong> and allows you to <strong>take action</strong>!</p>
+        </div>
+        <div class="span5">
+            <div class="thumb thumb-right"><a class="fancybox image" href="/assets/img/tour/most-frequent-errors.png" rel="tour"><img class="thumb aligncenter size-full" src="/assets/img/tour/most-frequent-errors.png" alt="Exceptionless Most Recent Errors" width="839" height="610" loading="lazy" decoding="async"></a></div>
+        </div>
+    </div>
+    <hr>
+    <div class="row">
+        <div class="span5">
+            <div class="thumb thumb-left"><a class="fancybox image" href="/assets/img/tour/notifications.png" rel="tour"><img class="alignnone size-full thumb" src="/assets/img/tour/notifications.png" alt="Email Notifications" width="665" height="433" loading="lazy" decoding="async"></a></div>
+        </div>
+        <div class="span7">
+            <h2>Email Notifications</h2>
+            <p>Exceptionless sends email notifications based on your notification settings. You can choose to receive notifications every time an error happens, only when new errors happen, or never.</p>
+            <p class="lead" style="margin-bottom: 5px;">Get notified about critical issues as they happen.</p>
+            <p>You can also choose to be <strong>notified when errors have been marked as fixed but then regress</strong>.</p>
+            <p>Learn more about our <a title="Receive Error Notifications from Your App via Email" href="/docs/notifications/">Error Reporting Email Notifications</a>.</p>
+        </div>
+    </div>
+    <hr>
+    <div class="row">
+        <div class="span7">
+            <h2>Fluent API</h2>
+            <p>The Exceptionless client includes a <strong>fluent API for sending manual error reports and events with detailed information</strong> attached to them. Easily add custom objects, tags, and other information. You can also mark specific errors as being critical.</p>
+            <p><a title="Exceptionless API Documentation" href="/docs/api/api-getting-started/">API Documentation</a></p>
+        </div>
+        <div class="span5">
+            <div class="thumb thumb-right"><a class="fancybox image" href="/assets/img/toexceptionless1.png" rel="tour"><img class="alignnone size-full wp-image-148 thumb" src="/assets/img/toexceptionless1.png" alt="Fluent API" width="560" height="280" data-id="148" srcset="/assets/img/toexceptionless1.png 560w, /assets/img/toexceptionless1-300x150.png 300w" sizes="(max-width: 560px) 100vw, 560px"></a></div>
+        </div>
+    </div>
+    <hr>
+    <div class="row">
+        <div class="span5">
+            <div class="thumb thumb-left"><a class="fancybox image" href="/assets/img/tour/logs.jpeg" rel="tour"><img class="thumb aligncenter size-full" src="/assets/img/tour/logs.jpeg" alt="Exceptionless Log Events" width="705" height="556" loading="lazy" decoding="async"></a></div>
+        </div>
+        <div class="span7">
+            <h2>Report Log Messages and Feature Usages</h2>
+            <p>Exceptionless is more than just errors. Send events such as log messages and feature usages to your dashboard as well!</p>
+            <p class="lead" style="margin-bottom: 5px;">Never miss important events in your app again.</p>
+        </div>
+    </div>
+    <hr>
+    <div class="signup center"><a class="btn btn-large btn-primary" href="https://be.exceptionless.io/signup?domain=exceptionless.com&amp;type=organic">Sign Up For <strong>FREE</strong> Now!</a></div>
+</div>
+  </div>
+</div>
+
+<dialog class="tour-lightbox" aria-label="Tour screenshot">
+    <div class="tour-lightbox-frame">
+        <button type="button" class="tour-lightbox-close" aria-label="Close image">Close</button>
+        <button type="button" class="tour-lightbox-control tour-lightbox-previous" aria-label="Previous image">Prev</button>
+        <img class="tour-lightbox-image" alt="">
+        <button type="button" class="tour-lightbox-control tour-lightbox-next" aria-label="Next image">Next</button>
+        <p class="tour-lightbox-caption"></p>
+    </div>
+</dialog>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var links = Array.prototype.slice.call(document.querySelectorAll("a.fancybox[href]"));
+        var dialog = document.querySelector(".tour-lightbox");
+        var image = document.querySelector(".tour-lightbox-image");
+        var caption = document.querySelector(".tour-lightbox-caption");
+        var previous = document.querySelector(".tour-lightbox-previous");
+        var next = document.querySelector(".tour-lightbox-next");
+        var close = document.querySelector(".tour-lightbox-close");
+        var index = 0;
+
+        if (!links.length || !dialog || !image) {
+            return;
+        }
+
+        function showImage(nextIndex) {
+            index = (nextIndex + links.length) % links.length;
+
+            var link = links[index];
+            var thumbnail = link.querySelector("img");
+            var label = thumbnail ? thumbnail.alt : "";
+
+            image.src = link.href;
+            image.alt = label;
+            if (caption) {
+                caption.textContent = label;
+            }
+        }
+
+        function openImage(nextIndex) {
+            showImage(nextIndex);
+
+            if (typeof dialog.showModal === "function") {
+                dialog.showModal();
+            } else {
+                dialog.setAttribute("open", "");
+            }
+        }
+
+        function closeImage() {
+            if (typeof dialog.close === "function") {
+                dialog.close();
+            } else {
+                dialog.removeAttribute("open");
+            }
+        }
+
+        links.forEach(function (link, linkIndex) {
+            link.addEventListener("click", function (event) {
+                event.preventDefault();
+                openImage(linkIndex);
+            });
+        });
+
+        if (previous) {
+            previous.addEventListener("click", function () {
+                showImage(index - 1);
+            });
+        }
+
+        if (next) {
+            next.addEventListener("click", function () {
+                showImage(index + 1);
+            });
+        }
+
+        if (close) {
+            close.addEventListener("click", closeImage);
+        }
+
+        dialog.addEventListener("click", function (event) {
+            if (event.target === dialog) {
+                closeImage();
+            }
+        });
+
+        document.addEventListener("keydown", function (event) {
+            if (!dialog.open) {
+                return;
+            }
+
+            if (event.key === "ArrowLeft") {
+                showImage(index - 1);
+            } else if (event.key === "ArrowRight") {
+                showImage(index + 1);
+            }
+        });
+    });
+</script>

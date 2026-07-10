@@ -83,6 +83,7 @@ public class AppOptions
     public SlackOptions SlackOptions { get; internal set; } = null!;
     public StripeOptions StripeOptions { get; internal set; } = null!;
     public AuthOptions AuthOptions { get; internal set; } = null!;
+    public OAuthServerOptions OAuthServerOptions { get; internal set; } = null!;
 
     public static AppOptions ReadFromConfiguration(IConfiguration config)
     {
@@ -136,6 +137,7 @@ public class AppOptions
         options.SlackOptions = SlackOptions.ReadFromConfiguration(config);
         options.StripeOptions = StripeOptions.ReadFromConfiguration(config);
         options.AuthOptions = AuthOptions.ReadFromConfiguration(config);
+        options.OAuthServerOptions = OAuthServerOptions.ReadFromConfiguration(config);
 
         return options;
     }

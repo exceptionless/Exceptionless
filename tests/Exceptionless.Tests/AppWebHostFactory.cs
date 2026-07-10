@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Text.Json;
 using Aspire.Hosting;
-using Aspire.Hosting.ApplicationModel;
+using Aspire.Hosting.Testing;
 using Exceptionless.Insulation.Configuration;
 using Exceptionless.Web;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -13,16 +13,17 @@ namespace Exceptionless.Tests;
 
 public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
 {
+    private const string SharedElasticsearchUrl = "http://localhost:9200";
     private static readonly string[] s_indexPrefixes = ["events", "migrations", "organizations", "projects", "saved-views", "stacks", "tokens", "users", "webhooks"];
     private static readonly string s_runScope = $"test-{Guid.NewGuid().ToString("N")[..8]}";
     private static int s_counter = -1;
+    private static readonly Lazy<Task<DistributedApplication>> s_sharedAppHost = new(StartSharedAppHostAsync, LazyThreadSafetyMode.ExecutionAndPublication);
     private static readonly ConcurrentQueue<int> s_pool = new();
-    private static readonly Lazy<Task<SharedApplicationContext>> s_sharedApplication = new(StartSharedApplicationAsync, LazyThreadSafetyMode.ExecutionAndPublication);
     private bool _sliceReleased;
 
     public AppWebHostFactory()
     {
-        if (!s_pool.TryDequeue(out var instanceId))
+        if (!s_pool.TryDequeue(out int instanceId))
             instanceId = Interlocked.Increment(ref s_counter);
 
         InstanceId = instanceId;
@@ -35,32 +36,21 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        var sharedApplication = await s_sharedApplication.Value;
-        await CleanupElasticsearchSliceAsync(sharedApplication.ElasticsearchUri);
+        _ = await s_sharedAppHost.Value;
+        var elasticsearchUri = new Uri(SharedElasticsearchUrl);
+        await WaitForElasticsearchAsync(elasticsearchUri);
+        await CleanupElasticsearchSliceAsync(elasticsearchUri);
     }
 
-    private static async Task<SharedApplicationContext> StartSharedApplicationAsync()
+    private static async Task<DistributedApplication> StartSharedAppHostAsync()
     {
-        var options = new DistributedApplicationOptions { AssemblyName = typeof(ElasticsearchResource).Assembly.FullName, DisableDashboard = true };
-        var builder = DistributedApplication.CreateBuilder(options);
+        var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Exceptionless_AppHost>(
+            ["services-only", "--Logging:LogLevel:Default=Warning"],
+            CancellationToken.None);
+        var app = await appHost.BuildAsync(CancellationToken.None);
+        await app.StartAsync(CancellationToken.None);
 
-        // don't use random ports for tests
-        builder.Configuration["DcpPublisher:RandomizePorts"] = "false";
-
-        var elasticsearch = builder.AddElasticsearch("Elasticsearch", port: 9200)
-            .WithContainerName("Exceptionless-Elasticsearch-Test")
-            .WithLifetime(ContainerLifetime.Persistent);
-
-        var app = builder.Build();
-
-        await app.StartAsync();
-
-        var connectionString = await elasticsearch.Resource.GetConnectionStringAsync()
-            ?? throw new InvalidOperationException("Could not resolve Elasticsearch connection string.");
-        var elasticsearchUri = new Uri(connectionString);
-        await WaitForElasticsearchAsync(elasticsearchUri);
-
-        return new SharedApplicationContext(app, elasticsearchUri);
+        return app;
     }
 
     private static async Task WaitForElasticsearchAsync(Uri elasticsearchUri)
@@ -86,7 +76,7 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
             await Task.Delay(TimeSpan.FromMilliseconds(250));
         }
 
-        throw new TimeoutException("Timed out waiting for Elasticsearch test container to be ready.");
+        throw new TimeoutException("Timed out waiting for the shared Elasticsearch container to be ready.");
     }
 
     private async Task CleanupElasticsearchSliceAsync(Uri elasticsearchUri)
@@ -135,7 +125,8 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
             .AddYamlFile("appsettings.yml", optional: false, reloadOnChange: false)
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["AppScope"] = AppScope
+                ["AppScope"] = AppScope,
+                ["ConnectionStrings:Elasticsearch"] = SharedElasticsearchUrl
             })
             .Build();
 
@@ -157,8 +148,6 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
             }
         }
     }
-
-    private sealed record SharedApplicationContext(DistributedApplication Application, Uri ElasticsearchUri);
 
     private sealed class CatIndexRecord
     {

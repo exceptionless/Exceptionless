@@ -423,8 +423,22 @@ export function postProject() {
             return response.data!;
         },
         mutationKey: queryKeys.postProject(),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        onSuccess: async (project: ViewProject) => {
+            queryClient.setQueryData(queryKeys.id(project.id), project);
+
+            const organizationProjectsQueryKey = [...queryKeys.organization(project.organization_id), { params: undefined }] as const;
+            queryClient.setQueryData<FetchClientResponse<ViewProject[]> | undefined>(organizationProjectsQueryKey, (response) => {
+                if (!response || response.data?.some((existingProject) => existingProject.id === project.id)) {
+                    return response;
+                }
+
+                return {
+                    ...response,
+                    data: [...(response.data ?? []), project]
+                };
+            });
+
+            await queryClient.invalidateQueries({ queryKey: queryKeys.type });
         }
     }));
 }

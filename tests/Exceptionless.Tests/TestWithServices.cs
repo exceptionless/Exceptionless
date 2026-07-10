@@ -8,6 +8,7 @@ using Exceptionless.Insulation.Configuration;
 using Exceptionless.Tests.Authentication;
 using Exceptionless.Tests.Mail;
 using Exceptionless.Tests.Utility;
+using Exceptionless.Web.Security;
 using Foundatio.Caching;
 using Foundatio.Messaging;
 using Foundatio.Utility;
@@ -51,6 +52,7 @@ public class TestWithServices : TestWithLoggingBase, IDisposable
         services.ReplaceSingleton<TimeProvider>(_ => new ProxyTimeProvider());
         services.AddSingleton<IMailer, NullMailer>();
         services.AddSingleton<IDomainLoginProvider, TestDomainLoginProvider>();
+        services.ReplaceSingleton<IOAuthProviderClient, TestOAuthProviderClient>();
 
         services.AddSingleton<EventData>();
         services.AddTransient<EventDataBuilder>();

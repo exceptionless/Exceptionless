@@ -41,7 +41,7 @@ public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<ICollecti
     {
         var links = Page.HasValue
             ? GetPagedLinks(new Uri(context.HttpContext.Request.GetDisplayUrl()), Page.Value, HasMore)
-            : GetBeforeAndAfterLinks(new Uri(context.HttpContext.Request.GetDisplayUrl()), Before, After);
+            : GetBeforeAndAfterLinks(new Uri(context.HttpContext.Request.GetDisplayUrl()), Before, After, HasMore);
         if (links.Count > 0)
             Headers[HeaderNames.Link] = links.ToArray();
 
@@ -74,7 +74,7 @@ public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<ICollecti
         return links;
     }
 
-    public static List<string> GetBeforeAndAfterLinks(Uri url, string? before, string? after)
+    public static List<string> GetBeforeAndAfterLinks(Uri url, string? before, string? after, bool hasMore)
     {
         var previousParameters = HttpUtility.ParseQueryString(url.Query);
         previousParameters.Remove("before");
@@ -88,7 +88,7 @@ public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<ICollecti
         var links = new List<string>(2);
         if (!String.IsNullOrEmpty(before))
             links.Add($"<{baseUrl}?{previousParameters.ToQueryString()}>; rel=\"previous\"");
-        if (!String.IsNullOrEmpty(after))
+        if (hasMore && !String.IsNullOrEmpty(after))
             links.Add($"<{baseUrl}?{nextParameters.ToQueryString()}>; rel=\"next\"");
 
         return links;

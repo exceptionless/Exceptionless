@@ -1,9 +1,8 @@
 using Exceptionless.Core;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs.WorkItemHandlers;
-using Exceptionless.Core.Queues.Models;
 using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Mapping;
+using Exceptionless.Web.Security;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
@@ -19,6 +18,7 @@ public class Bootstrapper
         services.AddSingleton<MessageBusBroker>();
 
         services.AddSingleton<ApiMapper>();
+        services.AddSingleton<IOAuthProviderClient, OAuthProviderClient>();
 
         Core.Bootstrapper.RegisterServices(services, appOptions);
         Insulation.Bootstrapper.RegisterServices(services, appOptions, appOptions.RunJobsInProcess);

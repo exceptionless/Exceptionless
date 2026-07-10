@@ -7,6 +7,7 @@
     import { Button } from '$comp/ui/button';
     import { Separator } from '$comp/ui/separator';
     import * as Table from '$comp/ui/table';
+    import { unlinkOAuthAccount } from '$features/auth/api.svelte';
     import {
         enableOAuthLogin,
         facebookClientId,
@@ -16,8 +17,7 @@
         googleClientId,
         googleLogin,
         liveLogin,
-        microsoftClientId,
-        unlinkOAuthAccount
+        microsoftClientId
     } from '$features/auth/index.svelte';
     import { getMeQuery } from '$features/users/api.svelte';
     import X from '@lucide/svelte/icons/x';

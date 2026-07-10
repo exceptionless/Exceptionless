@@ -60,7 +60,7 @@
     });
 </script>
 
-<div class="flex flex-col gap-4">
+<div class="mx-auto flex w-[calc(100vw-2rem)] max-w-lg flex-col gap-4">
     <div class="flex flex-col gap-1">
         <H3>Add Project</H3>
         <Muted>Create a project, then configure a client to send your first event.</Muted>

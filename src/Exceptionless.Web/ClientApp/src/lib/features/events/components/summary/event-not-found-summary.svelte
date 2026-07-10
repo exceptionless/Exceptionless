@@ -17,5 +17,5 @@
     {#if showType}
         <strong>404</strong>:&nbsp;
     {/if}
-    <A class="inline" href={resolve('/(app)/events/[eventId=objectid]', { eventId: source.id })}>{source.data.Source}</A>
+    <A class="inline" href={resolve('/(app)/event/[eventId=objectid]', { eventId: source.id })}>{source.data.Source}</A>
 </div>

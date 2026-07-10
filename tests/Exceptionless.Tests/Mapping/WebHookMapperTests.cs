@@ -1,4 +1,3 @@
-using Exceptionless.Core.Models;
 using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Xunit;
