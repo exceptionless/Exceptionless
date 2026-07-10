@@ -7,6 +7,19 @@ export enum StackStatus {
   Discarded = "discarded",
 }
 
+export enum RateNotificationSubject {
+  Project = "Project",
+  Stack = "Stack",
+}
+
+export enum RateNotificationSignal {
+  AllEvents = "AllEvents",
+  Errors = "Errors",
+  CriticalErrors = "CriticalErrors",
+  NewErrors = "NewErrors",
+  Regressions = "Regressions",
+}
+
 export enum BillingStatus {
   Trialing = 0,
   Active = 1,
@@ -131,6 +144,25 @@ export interface NewProject {
   name: string;
   delete_bot_data_enabled: boolean;
   promoted_tabs?: string[] | null;
+}
+
+export interface NewRateNotificationRule {
+  name: string;
+  signal: RateNotificationSignal;
+  subject: RateNotificationSubject;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  stack_id?: null | string;
+  /**
+   * @format int32
+   * @min 1
+   * @max 2147483647
+   */
+  threshold: number;
+  /** @pattern ^-?(\d+\.)?\d{2}:\d{2}:\d{2}(\.\d{1,7})?$ */
+  window: string;
+  /** @pattern ^-?(\d+\.)?\d{2}:\d{2}:\d{2}(\.\d{1,7})?$ */
+  cooldown: string;
+  is_enabled: boolean;
 }
 
 export interface NewSavedView {
@@ -350,6 +382,15 @@ export interface PredefinedSavedViewDefinition {
   showChart?: null | boolean;
 }
 
+export interface ProblemDetails {
+  type?: null | string;
+  title?: null | string;
+  /** @format int32 */
+  status?: null | number;
+  detail?: null | string;
+  instance?: null | string;
+}
+
 export interface ResetPasswordModel {
   password_reset_token: string;
   password: string;
@@ -361,6 +402,21 @@ export interface Signup {
   email: string;
   password: string;
   invite_token?: null | string;
+}
+
+export interface SnoozeRateNotificationRuleRequest {
+  /**
+   * Snooze duration in seconds. Mutually exclusive with UntilUtc.
+   * @format int32
+   * @min 1
+   * @max 2147483647
+   */
+  duration_seconds?: null | number;
+  /**
+   * Snooze until this UTC timestamp. Mutually exclusive with DurationSeconds.
+   * @format date-time
+   */
+  until_utc?: null | string;
 }
 
 export interface Stack {
@@ -463,6 +519,25 @@ export interface UpdateProject {
   name: string;
   delete_bot_data_enabled: boolean;
   promoted_tabs?: string[] | null;
+}
+
+export interface UpdateRateNotificationRule {
+  name?: null | string;
+  signal?: null | RateNotificationSignal;
+  subject?: null | RateNotificationSubject;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  stack_id?: null | string;
+  /**
+   * @format int32
+   * @min 1
+   * @max 2147483647
+   */
+  threshold?: null | number;
+  /** @pattern ^-?(\d+\.)?\d{2}:\d{2}:\d{2}(\.\d{1,7})?$ */
+  window?: null | string;
+  /** @pattern ^-?(\d+\.)?\d{2}:\d{2}:\d{2}(\.\d{1,7})?$ */
+  cooldown?: null | string;
+  is_enabled?: null | boolean;
 }
 
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
@@ -683,6 +758,35 @@ export interface ViewProject {
   has_slack_integration: boolean;
   usage_hours: UsageHourInfo[];
   usage: UsageInfo[];
+}
+
+export interface ViewRateNotificationRule {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  user_id: string;
+  /** @format int32 */
+  version: number;
+  name: string;
+  is_enabled: boolean;
+  signal: RateNotificationSignal;
+  subject: RateNotificationSubject;
+  stack_id?: null | string;
+  /** @format int32 */
+  threshold: number;
+  /** @pattern ^-?(\d+\.)?\d{2}:\d{2}:\d{2}(\.\d{1,7})?$ */
+  window: string;
+  /** @pattern ^-?(\d+\.)?\d{2}:\d{2}:\d{2}(\.\d{1,7})?$ */
+  cooldown: string;
+  /** @format date-time */
+  snoozed_until_utc?: null | string;
+  is_snoozed: boolean;
+  /** @format date-time */
+  last_fired_utc?: null | string;
+  /** @format date-time */
+  created_utc: string;
+  /** @format date-time */
+  updated_utc: string;
 }
 
 export interface ViewSavedView {

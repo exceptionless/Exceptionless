@@ -1,70 +1,65 @@
 <script lang="ts">
     import type { ViewRateNotificationRule } from '$features/rate-notifications/types';
 
-    import { SIGNAL_LABELS } from '$features/rate-notifications/types';
     import ErrorMessage from '$comp/error-message.svelte';
     import { A, Muted } from '$comp/typography';
     import * as Alert from '$comp/ui/alert';
+    import * as AlertDialog from '$comp/ui/alert-dialog';
     import { Badge } from '$comp/ui/badge';
-    import { Button } from '$comp/ui/button';
-    import * as Dialog from '$comp/ui/dialog';
+    import { Button, buttonVariants } from '$comp/ui/button';
+    import { Skeleton } from '$comp/ui/skeleton';
     import { Switch } from '$comp/ui/switch';
+    import {
+        deleteRateNotificationRule,
+        getRateNotificationRulesQuery,
+        postSnoozeRateNotificationRule,
+        postUnsnoozeRateNotificationRule,
+        putRateNotificationRule
+    } from '$features/rate-notifications/api.svelte';
+    import { MAX_RULES_PER_PROJECT, SIGNAL_LABELS, WINDOW_OPTIONS } from '$features/rate-notifications/types';
     import BellOffIcon from '@lucide/svelte/icons/bell-off';
     import InfoIcon from '@lucide/svelte/icons/info';
     import PlusIcon from '@lucide/svelte/icons/plus';
     import Trash2Icon from '@lucide/svelte/icons/trash-2';
     import { toast } from 'svelte-sonner';
 
-    import {
-        deleteRateNotificationRule,
-        getRateNotificationRulesQuery,
-        snoozeRateNotificationRule,
-        unsnoozeRateNotificationRule,
-        updateRateNotificationRule
-    } from '$features/rate-notifications/api.svelte';
-    import { MAX_RULES_PER_PROJECT } from '$features/rate-notifications/types';
-
     interface Props {
         hasPremiumFeatures?: boolean;
+        onCreateClick?: () => void;
+        onEditClick?: (rule: ViewRateNotificationRule) => void;
         projectId: string | undefined;
         upgrade: () => Promise<void> | void;
         userId: string | undefined;
-        onCreateClick?: () => void;
-        onEditClick?: (rule: ViewRateNotificationRule) => void;
     }
 
-    let { hasPremiumFeatures = false, projectId, upgrade, userId, onCreateClick, onEditClick }: Props = $props();
+    let { hasPremiumFeatures = false, onCreateClick, onEditClick, projectId, upgrade, userId }: Props = $props();
 
-    const listQuery = getRateNotificationRulesQuery({ route: { projectId, userId } });
+    const route = {
+        get projectId() {
+            return projectId;
+        },
+        get userId() {
+            return userId;
+        }
+    };
+    const deleteMutation = deleteRateNotificationRule({ route });
+    const listQuery = getRateNotificationRulesQuery({ route });
+    const snoozeMutation = postSnoozeRateNotificationRule({ route });
+    const unsnoozeMutation = postUnsnoozeRateNotificationRule({ route });
+    const updateMutation = putRateNotificationRule({ route });
+
     const rules = $derived(listQuery.data?.data ?? []);
-
-    const updateMutation = updateRateNotificationRule({ route: { projectId, ruleId: undefined, userId } });
-    const deleteMutation = deleteRateNotificationRule({ route: { projectId, ruleId: undefined, userId } });
-    const snoozeMutation = snoozeRateNotificationRule({ route: { projectId, ruleId: undefined, userId } });
-    const unsnoozeMutation = unsnoozeRateNotificationRule({ route: { projectId, ruleId: undefined, userId } });
-
     let confirmDeleteRuleId = $state<string | undefined>();
     let errorMessage = $state<string | undefined>();
 
-    async function toggleEnabled(rule: ViewRateNotificationRule, enabled: boolean) {
-        errorMessage = undefined;
-        try {
-            await updateRateNotificationRule({
-                route: { projectId: rule.project_id, ruleId: rule.id, userId: rule.user_id }
-            }).mutateAsync({ is_enabled: enabled });
-        } catch {
-            errorMessage = 'Failed to update rule. Please try again.';
-            toast.error(errorMessage);
-        }
-    }
-
     async function confirmDelete() {
-        if (!confirmDeleteRuleId) return;
+        if (!confirmDeleteRuleId) {
+            return;
+        }
+
         errorMessage = undefined;
         try {
-            await deleteRateNotificationRule({
-                route: { projectId, ruleId: confirmDeleteRuleId, userId }
-            }).mutateAsync();
+            await deleteMutation.mutateAsync(confirmDeleteRuleId);
             confirmDeleteRuleId = undefined;
         } catch {
             errorMessage = 'Failed to delete rule. Please try again.';
@@ -76,14 +71,10 @@
         errorMessage = undefined;
         try {
             if (rule.is_snoozed) {
-                await unsnoozeRateNotificationRule({
-                    route: { projectId: rule.project_id, ruleId: rule.id, userId: rule.user_id }
-                }).mutateAsync();
+                await unsnoozeMutation.mutateAsync(rule.id);
                 toast.success('Rule resumed.');
             } else {
-                await snoozeRateNotificationRule({
-                    route: { projectId: rule.project_id, ruleId: rule.id, userId: rule.user_id }
-                }).mutateAsync({ duration_seconds: 3600 });
+                await snoozeMutation.mutateAsync({ body: { duration_seconds: 3600 }, ruleId: rule.id });
                 toast.success('Rule snoozed for 1 hour.');
             }
         } catch {
@@ -92,69 +83,62 @@
         }
     }
 
-    function formatWindow(isoWindow: string): string {
-        const parts = isoWindow.split(':');
-        if (parts.length < 3) return isoWindow;
-        const h = parseInt(parts[0] ?? '0', 10);
-        const m = parseInt(parts[1] ?? '0', 10);
-        if (h > 0) return `${h}h`;
-        if (m === 1) return '1 min';
-        return `${m} min`;
+    async function toggleEnabled(rule: ViewRateNotificationRule, enabled: boolean) {
+        errorMessage = undefined;
+        try {
+            await updateMutation.mutateAsync({ body: { is_enabled: enabled }, ruleId: rule.id });
+        } catch {
+            errorMessage = 'Failed to update rule. Please try again.';
+            toast.error(errorMessage);
+        }
+    }
+
+    function windowLabel(value: string): string {
+        return WINDOW_OPTIONS.find((option) => option.value === value)?.label ?? value;
     }
 </script>
 
-<div class="space-y-4">
+<div class="flex flex-col gap-4">
     <ErrorMessage message={errorMessage} />
 
     {#if !hasPremiumFeatures}
         <Alert.Root variant="information">
-            <InfoIcon />
-            <Alert.Title>
-                <A onclick={upgrade}>Upgrade now</A> to enable personal rate notifications!
-            </Alert.Title>
+            <InfoIcon aria-hidden="true" />
+            <Alert.Title><A onclick={upgrade}>Upgrade now</A> to enable personal rate notifications.</Alert.Title>
         </Alert.Root>
     {/if}
 
     {#if listQuery.isLoading}
-        <div class="space-y-2">
-            {#each { length: 2 } as _}
-                <div class="bg-muted h-16 animate-pulse rounded-lg" />
+        <div class="flex flex-col gap-2" aria-label="Loading rate notification rules">
+            {#each [0, 1] as index (index)}
+                <Skeleton class="h-16 rounded-lg" />
             {/each}
         </div>
+    {:else if listQuery.isError}
+        <ErrorMessage message="Failed to load rate notification rules." />
     {:else if rules.length === 0}
-        <div class="rounded-lg border border-dashed p-8 text-center">
-            <BellOffIcon class="text-muted-foreground mx-auto mb-3 h-8 w-8" />
-            <p class="text-muted-foreground text-sm">No rate notification rules yet.</p>
+        <div class="flex flex-col items-center gap-3 rounded-lg border border-dashed p-8 text-center">
+            <BellOffIcon class="text-muted-foreground size-8" aria-hidden="true" />
+            <Muted class="text-sm">No rate notification rules yet.</Muted>
             {#if hasPremiumFeatures}
-                <Button class="mt-3" variant="outline" size="sm" onclick={onCreateClick}>
-                    <PlusIcon class="mr-1 h-4 w-4" />
+                <Button variant="outline" size="sm" onclick={onCreateClick}>
+                    <PlusIcon data-icon="inline-start" aria-hidden="true" />
                     Create your first rule
                 </Button>
             {/if}
         </div>
     {:else}
-        <div class="space-y-2">
+        <div class="flex flex-col gap-2">
             {#each rules as rule (rule.id)}
                 <div class="rounded-lg border p-4">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0 flex-1">
-                            <button
-                                class="text-left text-sm font-medium hover:underline disabled:pointer-events-none"
-                                disabled={!hasPremiumFeatures}
-                                onclick={() => onEditClick?.(rule)}
-                            >
-                                {rule.name}
-                            </button>
+                            <Button variant="link" disabled={!hasPremiumFeatures} onclick={() => onEditClick?.(rule)}>{rule.name}</Button>
                             <div class="mt-1 flex flex-wrap items-center gap-2">
                                 <Badge variant="secondary">{SIGNAL_LABELS[rule.signal]}</Badge>
-                                <Muted class="text-xs">
-                                    ≥{rule.threshold} in {formatWindow(rule.window)}
-                                </Muted>
+                                <Muted class="text-xs">≥{rule.threshold} in {windowLabel(rule.window)}</Muted>
                                 {#if rule.is_snoozed}
-                                    <Badge variant="outline" class="text-yellow-600">
-                                        <BellOffIcon class="mr-1 h-3 w-3" />
-                                        Snoozed
-                                    </Badge>
+                                    <Badge variant="outline"><BellOffIcon aria-hidden="true" />Snoozed</Badge>
                                 {/if}
                                 {#if rule.subject === 'Stack' && rule.stack_id}
                                     <Muted class="text-xs">Stack-scoped</Muted>
@@ -162,28 +146,32 @@
                             </div>
                         </div>
                         <div class="flex shrink-0 items-center gap-2">
-                            <button
-                                class="text-muted-foreground hover:text-foreground"
+                            <Button
+                                variant="ghost"
+                                size="icon"
                                 aria-label={rule.is_snoozed ? 'Resume rule' : 'Snooze rule for 1 hour'}
                                 title={rule.is_snoozed ? 'Resume rule' : 'Snooze for 1 hour'}
+                                disabled={snoozeMutation.isPending || unsnoozeMutation.isPending}
                                 onclick={() => handleSnooze(rule)}
                             >
-                                <BellOffIcon class="h-4 w-4" />
-                            </button>
+                                <BellOffIcon aria-hidden="true" />
+                            </Button>
                             <Switch
                                 id={`rule-enabled-${rule.id}`}
                                 checked={rule.is_enabled}
-                                disabled={!hasPremiumFeatures}
+                                disabled={!hasPremiumFeatures || updateMutation.isPending}
                                 onCheckedChange={(checked) => toggleEnabled(rule, checked)}
                                 aria-label={rule.is_enabled ? 'Disable rule' : 'Enable rule'}
                             />
-                            <button
-                                class="text-muted-foreground hover:text-destructive"
+                            <Button
+                                variant="ghost"
+                                size="icon"
                                 aria-label="Delete rule"
+                                disabled={deleteMutation.isPending}
                                 onclick={() => (confirmDeleteRuleId = rule.id)}
                             >
-                                <Trash2Icon class="h-4 w-4" />
-                            </button>
+                                <Trash2Icon aria-hidden="true" />
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -192,25 +180,22 @@
 
         {#if hasPremiumFeatures && rules.length < MAX_RULES_PER_PROJECT}
             <Button variant="outline" size="sm" onclick={onCreateClick}>
-                <PlusIcon class="mr-1 h-4 w-4" />
+                <PlusIcon data-icon="inline-start" aria-hidden="true" />
                 Add rule
             </Button>
         {/if}
     {/if}
 </div>
 
-<!-- Delete confirmation dialog -->
-<Dialog.Root open={!!confirmDeleteRuleId} onOpenChange={(open) => !open && (confirmDeleteRuleId = undefined)}>
-    <Dialog.Content>
-        <Dialog.Header>
-            <Dialog.Title>Delete rule?</Dialog.Title>
-            <Dialog.Description>
-                This action cannot be undone. The rate notification rule will be permanently deleted.
-            </Dialog.Description>
-        </Dialog.Header>
-        <Dialog.Footer>
-            <Button variant="outline" onclick={() => (confirmDeleteRuleId = undefined)}>Cancel</Button>
-            <Button variant="destructive" onclick={confirmDelete}>Delete</Button>
-        </Dialog.Footer>
-    </Dialog.Content>
-</Dialog.Root>
+<AlertDialog.Root open={!!confirmDeleteRuleId} onOpenChange={(open) => !open && (confirmDeleteRuleId = undefined)}>
+    <AlertDialog.Content>
+        <AlertDialog.Header>
+            <AlertDialog.Title>Delete rule?</AlertDialog.Title>
+            <AlertDialog.Description>This action cannot be undone. The rate notification rule will be permanently deleted.</AlertDialog.Description>
+        </AlertDialog.Header>
+        <AlertDialog.Footer>
+            <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+            <AlertDialog.Action class={buttonVariants({ variant: 'destructive' })} onclick={confirmDelete}>Delete</AlertDialog.Action>
+        </AlertDialog.Footer>
+    </AlertDialog.Content>
+</AlertDialog.Root>

@@ -1,300 +1,344 @@
 <script lang="ts">
-    import type { NewRateNotificationRule, UpdateRateNotificationRule, ViewRateNotificationRule } from '$features/rate-notifications/types';
+    import type { ViewRateNotificationRule } from '$features/rate-notifications/types';
 
+    import ErrorMessage from '$comp/error-message.svelte';
     import { A, Muted } from '$comp/typography';
     import * as Alert from '$comp/ui/alert';
     import { Button } from '$comp/ui/button';
+    import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
-    import { Label } from '$comp/ui/label';
     import * as Select from '$comp/ui/select';
+    import { Spinner } from '$comp/ui/spinner';
     import { Switch } from '$comp/ui/switch';
+    import { postRateNotificationRule, putRateNotificationRule } from '$features/rate-notifications/api.svelte';
+    import { getRateNotificationRuleFormData, RateNotificationRuleSchema, toRateNotificationRuleRequest } from '$features/rate-notifications/schemas';
+    import {
+        COOLDOWN_OPTIONS,
+        RateNotificationSignal,
+        RateNotificationSubject,
+        SIGNAL_LABELS,
+        SUBJECT_LABELS,
+        WINDOW_OPTIONS
+    } from '$features/rate-notifications/types';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
+    import { getProjectStacksQuery, getStackQuery } from '$features/stacks/api.svelte';
+    import { ProblemDetails } from '@exceptionless/fetchclient';
     import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
     import InfoIcon from '@lucide/svelte/icons/info';
+    import { createForm } from '@tanstack/svelte-form';
+    import { untrack } from 'svelte';
     import { toast } from 'svelte-sonner';
-
-    import { createRateNotificationRule, updateRateNotificationRule } from '$features/rate-notifications/api.svelte';
-    import { SIGNAL_LABELS, WINDOW_OPTIONS } from '$features/rate-notifications/types';
-    import type { RateNotificationSignal, RateNotificationSubject } from '$features/rate-notifications/types';
-    // NOTE: mutations must be created at initialization, not inside event handlers (Svelte/TanStack context requirement)
 
     interface Props {
         hasPremiumFeatures?: boolean;
+        onCancel?: () => void;
+        onSaved?: (rule: ViewRateNotificationRule) => void;
         projectId: string | undefined;
         rule?: ViewRateNotificationRule;
         upgrade: () => Promise<void> | void;
         userId: string | undefined;
-        onSaved?: (rule: ViewRateNotificationRule) => void;
-        onCancel?: () => void;
     }
 
-    let { hasPremiumFeatures = false, projectId, rule, upgrade, userId, onSaved, onCancel }: Props = $props();
+    let { hasPremiumFeatures = false, onCancel, onSaved, projectId, rule, upgrade, userId }: Props = $props();
+
+    const route = {
+        get projectId() {
+            return projectId;
+        },
+        get userId() {
+            return userId;
+        }
+    };
+    const createMutation = postRateNotificationRule({ route });
+    const updateMutation = putRateNotificationRule({ route });
+    const stacksQuery = getProjectStacksQuery({
+        params: { limit: 100, sort: 'last_occurrence:desc' },
+        route: {
+            get projectId() {
+                return projectId;
+            }
+        }
+    });
+    const selectedStackQuery = getStackQuery({
+        route: {
+            get id() {
+                return rule?.stack_id ?? undefined;
+            }
+        }
+    });
 
     const isEditing = $derived(!!rule);
-
-    // Form state
-    let name = $state(rule?.name ?? '');
-    let signal = $state<RateNotificationSignal>(rule?.signal ?? 'Errors');
-    let subject = $state<RateNotificationSubject>(rule?.subject ?? 'Project');
-    let stackId = $state(rule?.stack_id ?? '');
-    let threshold = $state(rule?.threshold ?? 10);
-    let window = $state(rule?.window ?? '00:05:00');
-    let cooldown = $state(rule?.cooldown ?? '00:30:00');
-    let isEnabled = $state(rule?.is_enabled ?? true);
-    let saving = $state(false);
-    let formError = $state<string | undefined>();
-
-    // Validation
-    const nameError = $derived(name.trim().length === 0 ? 'Name is required.' : name.length > 100 ? 'Name must be ≤ 100 characters.' : undefined);
-    const thresholdError = $derived(threshold < 1 ? 'Threshold must be at least 1.' : undefined);
-    const stackIdError = $derived(subject === 'Stack' && !stackId.trim() ? 'Stack ID is required when subject is Stack.' : undefined);
-
-    function parseSeconds(iso: string): number {
-        const parts = iso.split(':');
-        const h = parseInt(parts[0] ?? '0', 10);
-        const m = parseInt(parts[1] ?? '0', 10);
-        const s = parseInt(parts[2] ?? '0', 10);
-        return h * 3600 + m * 60 + s;
-    }
-    const cooldownError = $derived(
-        parseSeconds(cooldown) < parseSeconds(window) ? 'Cooldown must be at least as long as the window.' : undefined
-    );
-
-    const hasErrors = $derived(!!(nameError || thresholdError || stackIdError || cooldownError));
-
-    // When subject changes to Project, clear stackId
-    $effect(() => {
-        if (subject === 'Project') {
-            stackId = '';
-        }
+    const stacks = $derived.by(() => {
+        const projectStacks = stacksQuery.data?.data ?? [];
+        const selectedStack = selectedStackQuery.data;
+        return selectedStack && !projectStacks.some((stack) => stack.id === selectedStack.id) ? [selectedStack, ...projectStacks] : projectStacks;
     });
 
-    // If non-premium, force isEnabled to false
-    $effect(() => {
-        if (!hasPremiumFeatures) {
-            isEnabled = false;
-        }
-    });
+    const form = createForm(() => ({
+        defaultValues: getRateNotificationRuleFormData(rule),
+        validators: {
+            onSubmit: RateNotificationRuleSchema,
+            onSubmitAsync: async ({ value }) => {
+                if (!hasPremiumFeatures) {
+                    return { form: 'A premium plan is required to enable rate notifications.' };
+                }
 
-    const createMutation = createRateNotificationRule({
-        route: {
-            get projectId() { return projectId; },
-            get userId() { return userId; }
-        }
-    });
+                try {
+                    const request = toRateNotificationRuleRequest(value, hasPremiumFeatures);
+                    const saved = rule ? await updateMutation.mutateAsync({ body: request, ruleId: rule.id }) : await createMutation.mutateAsync(request);
+                    toast.success(rule ? 'Rule updated.' : 'Rule created.');
+                    onSaved?.(saved);
+                    return null;
+                } catch (error: unknown) {
+                    if (error instanceof ProblemDetails) {
+                        return problemDetailsToFormErrors(error);
+                    }
 
-    const updateMutation = updateRateNotificationRule({
-        route: {
-            get projectId() { return rule?.project_id; },
-            get ruleId() { return rule?.id; },
-            get userId() { return rule?.user_id; }
-        }
-    });
-
-    async function handleSubmit() {
-        if (hasErrors || saving) return;
-
-        saving = true;
-        formError = undefined;
-
-        try {
-            if (isEditing && rule) {
-                const body: UpdateRateNotificationRule = {
-                    cooldown,
-                    is_enabled: hasPremiumFeatures ? isEnabled : false,
-                    name: name.trim(),
-                    signal,
-                    stack_id: subject === 'Stack' ? stackId.trim() || undefined : undefined,
-                    subject,
-                    threshold,
-                    window
-                };
-                const updated = await updateMutation.mutateAsync(body);
-                toast.success('Rule updated.');
-                onSaved?.(updated);
-            } else {
-                const body: NewRateNotificationRule = {
-                    cooldown,
-                    is_enabled: hasPremiumFeatures ? isEnabled : false,
-                    name: name.trim(),
-                    signal,
-                    stack_id: subject === 'Stack' ? stackId.trim() || undefined : undefined,
-                    subject,
-                    threshold,
-                    window
-                };
-                const created = await createMutation.mutateAsync(body);
-                toast.success('Rule created.');
-                onSaved?.(created);
+                    return { form: 'Failed to save rule. Please try again.' };
+                }
             }
-        } catch (err: unknown) {
-            const msg = (err as { detail?: string })?.detail ?? 'Failed to save rule. Please try again.';
-            formError = msg;
-            toast.error(msg);
-        } finally {
-            saving = false;
         }
+    }));
+
+    $effect(() => {
+        const selectedProjectId = projectId;
+        const selectedRule = rule;
+        untrack(() => {
+            void selectedProjectId;
+            setFormValues(selectedRule);
+        });
+    });
+
+    function setFormValues(value: undefined | ViewRateNotificationRule) {
+        const values = getRateNotificationRuleFormData(value);
+        form.reset();
+        form.setFieldValue('cooldown', values.cooldown);
+        form.setFieldValue('is_enabled', hasPremiumFeatures ? values.is_enabled : false);
+        form.setFieldValue('name', values.name);
+        form.setFieldValue('signal', values.signal);
+        form.setFieldValue('stack_id', values.stack_id);
+        form.setFieldValue('subject', values.subject);
+        form.setFieldValue('threshold', values.threshold);
+        form.setFieldValue('window', values.window);
     }
 </script>
 
-<form class="space-y-5" onsubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+<form
+    class="flex flex-col gap-5"
+    onsubmit={(event) => {
+        event.preventDefault();
+        form.handleSubmit();
+    }}
+>
+    <form.Subscribe selector={(state) => state.errors}>
+        {#snippet children(errors)}
+            <ErrorMessage message={getFormErrorMessages(errors)} />
+        {/snippet}
+    </form.Subscribe>
+
     {#if !hasPremiumFeatures}
         <Alert.Root variant="information">
-            <InfoIcon />
-            <Alert.Title>
-                <A onclick={upgrade}>Upgrade now</A> to enable and create rate notification rules.
-            </Alert.Title>
+            <InfoIcon aria-hidden="true" />
+            <Alert.Title><A onclick={upgrade}>Upgrade now</A> to enable and create rate notification rules.</Alert.Title>
         </Alert.Root>
     {/if}
 
     <Alert.Root variant="information">
-        <AlertTriangleIcon />
+        <AlertTriangleIcon aria-hidden="true" />
         <Alert.Title>This rule may be noisy. Use a cooldown to avoid repeated emails.</Alert.Title>
     </Alert.Root>
 
-    <!-- Name -->
-    <div class="space-y-1.5">
-        <Label for="rule-name">Name</Label>
-        <Input
-            id="rule-name"
-            bind:value={name}
-            placeholder="e.g. Production error storm"
-            maxlength={100}
-            disabled={saving}
-            aria-invalid={!!nameError}
-            aria-describedby={nameError ? 'rule-name-error' : undefined}
-        />
-        {#if nameError}
-            <p id="rule-name-error" class="text-destructive text-xs">{nameError}</p>
-        {/if}
-    </div>
+    <Field.FieldGroup>
+        <form.Field name="name">
+            {#snippet children(field)}
+                <Field.Field data-invalid={ariaInvalid(field)}>
+                    <Field.Label for={field.name}>Name</Field.Label>
+                    <Input
+                        id={field.name}
+                        value={field.state.value}
+                        maxlength={100}
+                        placeholder="e.g. Production error storm"
+                        onblur={field.handleBlur}
+                        oninput={(event) => field.handleChange(event.currentTarget.value)}
+                        aria-invalid={ariaInvalid(field)}
+                    />
+                    <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                </Field.Field>
+            {/snippet}
+        </form.Field>
 
-    <!-- Signal -->
-    <div class="space-y-1.5">
-        <Label for="rule-signal">Signal</Label>
-        <Select.Root type="single" bind:value={signal}>
-            <Select.Trigger id="rule-signal" class="w-full" disabled={saving}>
-                {SIGNAL_LABELS[signal]}
-            </Select.Trigger>
-            <Select.Content>
-                {#each Object.entries(SIGNAL_LABELS) as [value, label] (value)}
-                    <Select.Item value={value as RateNotificationSignal}>{label}</Select.Item>
-                {/each}
-            </Select.Content>
-        </Select.Root>
-    </div>
+        <form.Field name="signal">
+            {#snippet children(field)}
+                <Field.Field data-invalid={ariaInvalid(field)}>
+                    <Field.Label for={field.name}>Signal</Field.Label>
+                    <Select.Root
+                        type="single"
+                        value={field.state.value}
+                        onValueChange={(value) => value && field.handleChange(value as RateNotificationSignal)}
+                    >
+                        <Select.Trigger id={field.name} class="w-full">{SIGNAL_LABELS[field.state.value]}</Select.Trigger>
+                        <Select.Content>
+                            <Select.Group>
+                                {#each Object.entries(SIGNAL_LABELS) as [value, label] (value)}
+                                    <Select.Item {value}>{label}</Select.Item>
+                                {/each}
+                            </Select.Group>
+                        </Select.Content>
+                    </Select.Root>
+                    <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                </Field.Field>
+            {/snippet}
+        </form.Field>
 
-    <!-- Subject -->
-    <div class="space-y-1.5">
-        <Label for="rule-subject">Subject</Label>
-        <Select.Root type="single" bind:value={subject}>
-            <Select.Trigger id="rule-subject" class="w-full" disabled={saving}>
-                {subject}
-            </Select.Trigger>
-            <Select.Content>
-                <Select.Item value="Project">Project</Select.Item>
-                <Select.Item value="Stack">Stack</Select.Item>
-            </Select.Content>
-        </Select.Root>
-    </div>
+        <form.Field name="subject">
+            {#snippet children(field)}
+                <Field.Field data-invalid={ariaInvalid(field)}>
+                    <Field.Label for={field.name}>Subject</Field.Label>
+                    <Select.Root
+                        type="single"
+                        value={field.state.value}
+                        onValueChange={(value) => {
+                            if (value) {
+                                field.handleChange(value as RateNotificationSubject);
+                                if (value === RateNotificationSubject.Project) {
+                                    form.setFieldValue('stack_id', '');
+                                }
+                            }
+                        }}
+                    >
+                        <Select.Trigger id={field.name} class="w-full">{SUBJECT_LABELS[field.state.value]}</Select.Trigger>
+                        <Select.Content>
+                            <Select.Group>
+                                {#each Object.entries(SUBJECT_LABELS) as [value, label] (value)}
+                                    <Select.Item {value}>{label}</Select.Item>
+                                {/each}
+                            </Select.Group>
+                        </Select.Content>
+                    </Select.Root>
+                    <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                </Field.Field>
+            {/snippet}
+        </form.Field>
 
-    <!-- Stack ID (shown only when subject = Stack) -->
-    {#if subject === 'Stack'}
-        <div class="space-y-1.5">
-            <Label for="rule-stack-id">Stack ID</Label>
-            <Input
-                id="rule-stack-id"
-                bind:value={stackId}
-                placeholder="Stack ID"
-                disabled={saving}
-                aria-invalid={!!stackIdError}
-                aria-describedby={stackIdError ? 'rule-stack-id-error' : undefined}
-            />
-            {#if stackIdError}
-                <p id="rule-stack-id-error" class="text-destructive text-xs">{stackIdError}</p>
-            {/if}
-        </div>
-    {/if}
+        <form.Subscribe selector={(state) => state.values.subject}>
+            {#snippet children(subject)}
+                {#if subject === RateNotificationSubject.Stack}
+                    <form.Field name="stack_id">
+                        {#snippet children(field)}
+                            <Field.Field data-invalid={ariaInvalid(field)}>
+                                <Field.Label for={field.name}>Stack</Field.Label>
+                                <Select.Root type="single" value={field.state.value} onValueChange={(value) => field.handleChange(value ?? '')}>
+                                    <Select.Trigger id={field.name} class="w-full" disabled={stacksQuery.isLoading}>
+                                        {stacks.find((stack) => stack.id === field.state.value)?.title ??
+                                            (stacksQuery.isLoading ? 'Loading stacks...' : 'Select a stack')}
+                                    </Select.Trigger>
+                                    <Select.Content>
+                                        <Select.Group>
+                                            {#each stacks as stack (stack.id)}
+                                                <Select.Item value={stack.id}>{stack.title}</Select.Item>
+                                            {/each}
+                                        </Select.Group>
+                                    </Select.Content>
+                                </Select.Root>
+                                <Field.Description>Choose from the 100 most recently active stacks in this project.</Field.Description>
+                                <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                            </Field.Field>
+                        {/snippet}
+                    </form.Field>
+                {/if}
+            {/snippet}
+        </form.Subscribe>
 
-    <!-- Threshold -->
-    <div class="space-y-1.5">
-        <Label for="rule-threshold">Threshold (events)</Label>
-        <Input
-            id="rule-threshold"
-            type="number"
-            bind:value={threshold}
-            min={1}
-            step={1}
-            disabled={saving}
-            aria-invalid={!!thresholdError}
-            aria-describedby={thresholdError ? 'rule-threshold-error' : undefined}
-        />
-        {#if thresholdError}
-            <p id="rule-threshold-error" class="text-destructive text-xs">{thresholdError}</p>
-        {/if}
-    </div>
+        <form.Field name="threshold">
+            {#snippet children(field)}
+                <Field.Field data-invalid={ariaInvalid(field)}>
+                    <Field.Label for={field.name}>Threshold (events)</Field.Label>
+                    <Input
+                        id={field.name}
+                        type="number"
+                        value={field.state.value}
+                        min={1}
+                        step={1}
+                        onblur={field.handleBlur}
+                        oninput={(event) => field.handleChange(event.currentTarget.valueAsNumber)}
+                        aria-invalid={ariaInvalid(field)}
+                    />
+                    <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                </Field.Field>
+            {/snippet}
+        </form.Field>
 
-    <!-- Window -->
-    <div class="space-y-1.5">
-        <Label for="rule-window">Window</Label>
-        <Select.Root type="single" bind:value={window}>
-            <Select.Trigger id="rule-window" class="w-full" disabled={saving}>
-                {WINDOW_OPTIONS.find((o) => o.value === window)?.label ?? window}
-            </Select.Trigger>
-            <Select.Content>
-                {#each WINDOW_OPTIONS as option (option.value)}
-                    <Select.Item value={option.value}>{option.label}</Select.Item>
-                {/each}
-            </Select.Content>
-        </Select.Root>
-    </div>
+        <form.Field name="window">
+            {#snippet children(field)}
+                <Field.Field data-invalid={ariaInvalid(field)}>
+                    <Field.Label for={field.name}>Window</Field.Label>
+                    <Select.Root type="single" value={field.state.value} onValueChange={(value) => value && field.handleChange(value)}>
+                        <Select.Trigger id={field.name} class="w-full">
+                            {WINDOW_OPTIONS.find((option) => option.value === field.state.value)?.label}
+                        </Select.Trigger>
+                        <Select.Content>
+                            <Select.Group>
+                                {#each WINDOW_OPTIONS as option (option.value)}
+                                    <Select.Item value={option.value}>{option.label}</Select.Item>
+                                {/each}
+                            </Select.Group>
+                        </Select.Content>
+                    </Select.Root>
+                    <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                </Field.Field>
+            {/snippet}
+        </form.Field>
 
-    <!-- Cooldown -->
-    <div class="space-y-1.5">
-        <Label for="rule-cooldown">Cooldown</Label>
-        <Select.Root type="single" bind:value={cooldown}>
-            <Select.Trigger id="rule-cooldown" class="w-full" disabled={saving}>
-                {WINDOW_OPTIONS.find((o) => o.value === cooldown)?.label ?? cooldown}
-            </Select.Trigger>
-            <Select.Content>
-                {#each WINDOW_OPTIONS as option (option.value)}
-                    <Select.Item value={option.value}>{option.label}</Select.Item>
-                {/each}
-                <!-- Additional cooldown durations beyond standard windows -->
-                <Select.Item value="02:00:00">2 hours</Select.Item>
-                <Select.Item value="04:00:00">4 hours</Select.Item>
-                <Select.Item value="08:00:00">8 hours</Select.Item>
-                <Select.Item value="24:00:00">24 hours</Select.Item>
-            </Select.Content>
-        </Select.Root>
-        {#if cooldownError}
-            <p class="text-destructive text-xs">{cooldownError}</p>
-        {/if}
-        <Muted class="text-xs">Further notifications for this rule are suppressed during the cooldown period.</Muted>
-    </div>
+        <form.Field name="cooldown">
+            {#snippet children(field)}
+                <Field.Field data-invalid={ariaInvalid(field)}>
+                    <Field.Label for={field.name}>Cooldown</Field.Label>
+                    <Select.Root type="single" value={field.state.value} onValueChange={(value) => value && field.handleChange(value)}>
+                        <Select.Trigger id={field.name} class="w-full">
+                            {COOLDOWN_OPTIONS.find((option) => option.value === field.state.value)?.label}
+                        </Select.Trigger>
+                        <Select.Content>
+                            <Select.Group>
+                                {#each COOLDOWN_OPTIONS as option (option.value)}
+                                    <Select.Item value={option.value}>{option.label}</Select.Item>
+                                {/each}
+                            </Select.Group>
+                        </Select.Content>
+                    </Select.Root>
+                    <Field.Description>Further notifications are suppressed during this period.</Field.Description>
+                    <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                </Field.Field>
+            {/snippet}
+        </form.Field>
 
-    <!-- Enabled toggle -->
-    <div class="flex items-center gap-3">
-        <Switch
-            id="rule-enabled"
-            bind:checked={isEnabled}
-            disabled={saving || !hasPremiumFeatures}
-            aria-label="Enable rule"
-        />
-        <Label for="rule-enabled" class="cursor-pointer">
-            {isEnabled ? 'Enabled' : 'Disabled'}
-        </Label>
-    </div>
+        <form.Field name="is_enabled">
+            {#snippet children(field)}
+                <Field.Field orientation="horizontal" data-disabled={!hasPremiumFeatures}>
+                    <div>
+                        <Field.Label for={field.name}>Enabled</Field.Label>
+                        <Muted class="text-xs">Start evaluating this rule immediately.</Muted>
+                    </div>
+                    <Switch id={field.name} checked={field.state.value} disabled={!hasPremiumFeatures} onCheckedChange={(value) => field.handleChange(value)} />
+                </Field.Field>
+            {/snippet}
+        </form.Field>
+    </Field.FieldGroup>
 
-    {#if formError}
-        <p class="text-destructive text-sm">{formError}</p>
-    {/if}
-
-    <div class="flex justify-end gap-2 pt-2">
+    <div class="flex justify-end gap-2">
         {#if onCancel}
-            <Button variant="outline" onclick={onCancel} disabled={saving} type="button">Cancel</Button>
+            <Button variant="outline" onclick={onCancel} type="button">Cancel</Button>
         {/if}
-        <Button type="submit" disabled={hasErrors || saving || !hasPremiumFeatures}>
-            {#if saving}Saving…{:else if isEditing}Save changes{:else}Create rule{/if}
-        </Button>
+        <form.Subscribe selector={(state) => state.isSubmitting}>
+            {#snippet children(isSubmitting)}
+                <Button type="submit" disabled={isSubmitting || !hasPremiumFeatures}>
+                    {#if isSubmitting}
+                        <Spinner data-icon="inline-start" />
+                        Saving...
+                    {:else}
+                        {isEditing ? 'Save changes' : 'Create rule'}
+                    {/if}
+                </Button>
+            {/snippet}
+        </form.Subscribe>
     </div>
 </form>

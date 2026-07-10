@@ -9,6 +9,7 @@
     import { Skeleton } from '$comp/ui/skeleton';
     import { Switch } from '$comp/ui/switch';
     import { showUpgradeDialog } from '$features/billing/upgrade-required.svelte';
+    import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import { getProjectsQuery, getProjectUserNotificationSettings, postProjectUserNotificationSettings } from '$features/projects/api.svelte';
     import UserNotificationSettingsForm from '$features/projects/components/user-notification-settings-form.svelte';
     import RateNotificationRuleForm from '$features/rate-notifications/components/rate-notification-rule-form.svelte';
@@ -26,7 +27,7 @@
 
     // Rate notification dialog state
     let rateRuleDialogOpen = $state(false);
-    let editingRateRule = $state<ViewRateNotificationRule | undefined>(undefined);
+    let editingRateRule = $state<undefined | ViewRateNotificationRule>(undefined);
 
     const meQuery = getMeQuery();
     const queryParams = queryParamsState({
@@ -57,6 +58,14 @@
     });
 
     const selectedProject = $derived(allProjects.find((p) => p.id === queryParams.project) ?? allProjects[0]);
+    const selectedOrganizationQuery = getOrganizationQuery({
+        route: {
+            get id() {
+                return selectedProject?.organization_id;
+            }
+        }
+    });
+    const rateNotificationsEnabled = $derived(selectedOrganizationQuery.data?.features.includes('rate-notifications') ?? false);
     const selectedProjectNotificationSettings = getProjectUserNotificationSettings({
         route: {
             get id() {
@@ -231,40 +240,44 @@
             hasPremiumFeatures={selectedProject.has_premium_features}
         />
 
-        <div class="space-y-2">
-            <H3>Rate Notifications</H3>
-            <Muted>Get notified when event rates for this project exceed your custom thresholds.</Muted>
-        </div>
+        {#if rateNotificationsEnabled}
+            <div class="space-y-2">
+                <H3>Rate Notifications</H3>
+                <Muted>Get notified when event rates for this project exceed your custom thresholds.</Muted>
+            </div>
 
-        <RateNotificationRuleList
-            hasPremiumFeatures={selectedProject.has_premium_features}
-            projectId={selectedProject.id}
-            userId={meQuery.data?.id}
-            upgrade={handleRateRuleUpgrade}
-            onCreateClick={openCreateRateRule}
-            onEditClick={openEditRateRule}
-        />
+            <RateNotificationRuleList
+                hasPremiumFeatures={selectedProject.has_premium_features}
+                projectId={selectedProject.id}
+                userId={meQuery.data?.id}
+                upgrade={handleRateRuleUpgrade}
+                onCreateClick={openCreateRateRule}
+                onEditClick={openEditRateRule}
+            />
+        {/if}
     {/if}
 </div>
 
-<Dialog.Root bind:open={rateRuleDialogOpen} onOpenChange={(open) => !open && closeRateRuleDialog()}>
-    <Dialog.Content class="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-        <Dialog.Header>
-            <Dialog.Title>{editingRateRule ? 'Edit Rate Notification Rule' : 'Create Rate Notification Rule'}</Dialog.Title>
-            <Dialog.Description>
-                {editingRateRule ? 'Update the rule settings below.' : 'Configure when you want to receive an email notification based on event rates.'}
-            </Dialog.Description>
-        </Dialog.Header>
-        {#if selectedProject}
-            <RateNotificationRuleForm
-                hasPremiumFeatures={selectedProject.has_premium_features}
-                projectId={selectedProject.id}
-                rule={editingRateRule}
-                userId={meQuery.data?.id}
-                upgrade={handleRateRuleUpgrade}
-                onSaved={closeRateRuleDialog}
-                onCancel={closeRateRuleDialog}
-            />
-        {/if}
-    </Dialog.Content>
-</Dialog.Root>
+{#if rateNotificationsEnabled}
+    <Dialog.Root bind:open={rateRuleDialogOpen} onOpenChange={(open) => !open && closeRateRuleDialog()}>
+        <Dialog.Content class="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+            <Dialog.Header>
+                <Dialog.Title>{editingRateRule ? 'Edit Rate Notification Rule' : 'Create Rate Notification Rule'}</Dialog.Title>
+                <Dialog.Description>
+                    {editingRateRule ? 'Update the rule settings below.' : 'Configure when you want to receive an email notification based on event rates.'}
+                </Dialog.Description>
+            </Dialog.Header>
+            {#if selectedProject}
+                <RateNotificationRuleForm
+                    hasPremiumFeatures={selectedProject.has_premium_features}
+                    projectId={selectedProject.id}
+                    rule={editingRateRule}
+                    userId={meQuery.data?.id}
+                    upgrade={handleRateRuleUpgrade}
+                    onSaved={closeRateRuleDialog}
+                    onCancel={closeRateRuleDialog}
+                />
+            {/if}
+        </Dialog.Content>
+    </Dialog.Root>
+{/if}
