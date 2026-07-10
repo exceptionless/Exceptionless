@@ -134,6 +134,9 @@ public class ProjectHandler(
             return error;
 
         message.Changes.Patch(original);
+        if (message.Changes.ContainsChangedProperty(p => p.PromotedTabs!))
+            original.PromotedTabs = NormalizePromotedTabs(original.PromotedTabs);
+
         await repository.SaveAsync(original, o => o.Cache());
         return await MapToViewAsync(original);
     }

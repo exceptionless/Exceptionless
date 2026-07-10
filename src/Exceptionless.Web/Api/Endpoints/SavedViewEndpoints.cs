@@ -184,8 +184,9 @@ public static class SavedViewEndpoints
             }
         });
 
-        group.MapPatch("saved-views/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] Delta<UpdateSavedView> changes)
-            => (await mediator.InvokeAsync<Result<ViewSavedView>>(new SavedViewMessages.UpdateSavedViewMessage(id, changes))).ToHttpResult(resultMapper))
+        group.MapPatch("saved-views/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] Delta<UpdateSavedView>? changes)
+            => changes is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<ViewSavedView>>(new SavedViewMessages.UpdateSavedViewMessage(id, changes))).ToHttpResult(resultMapper))
+        .Accepts<Delta<UpdateSavedView>>(false, "application/json")
         .Produces<ViewSavedView>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -203,8 +204,9 @@ public static class SavedViewEndpoints
             }
         });
 
-        group.MapPut("saved-views/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] Delta<UpdateSavedView> changes)
-            => (await mediator.InvokeAsync<Result<ViewSavedView>>(new SavedViewMessages.UpdateSavedViewMessage(id, changes))).ToHttpResult(resultMapper))
+        group.MapPut("saved-views/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] Delta<UpdateSavedView>? changes)
+            => changes is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<ViewSavedView>>(new SavedViewMessages.UpdateSavedViewMessage(id, changes))).ToHttpResult(resultMapper))
+        .Accepts<Delta<UpdateSavedView>>(false, "application/json")
         .Produces<ViewSavedView>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)

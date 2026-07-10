@@ -1,6 +1,7 @@
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Web.Api.Filters;
+using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
@@ -87,8 +88,9 @@ public static class UserEndpoints
             }
         });
 
-        group.MapPatch("users/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] Delta<UpdateUser> changes)
-            => (await mediator.InvokeAsync<Result<object>>(new UserMessages.UpdateUserMessage(id, changes))).ToHttpResult(resultMapper))
+        group.MapPatch("users/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] Delta<UpdateUser>? changes)
+            => changes is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<object>>(new UserMessages.UpdateUserMessage(id, changes))).ToHttpResult(resultMapper))
+        .Accepts<Delta<UpdateUser>>(false, "application/json")
         .Produces<ViewUser>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -104,8 +106,9 @@ public static class UserEndpoints
             }
         });
 
-        group.MapPut("users/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] Delta<UpdateUser> changes)
-            => (await mediator.InvokeAsync<Result<object>>(new UserMessages.UpdateUserMessage(id, changes))).ToHttpResult(resultMapper))
+        group.MapPut("users/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] Delta<UpdateUser>? changes)
+            => changes is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<object>>(new UserMessages.UpdateUserMessage(id, changes))).ToHttpResult(resultMapper))
+        .Accepts<Delta<UpdateUser>>(false, "application/json")
         .Produces<ViewUser>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)

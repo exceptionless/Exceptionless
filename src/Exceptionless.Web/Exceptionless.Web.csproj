@@ -43,7 +43,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="appsettings.yml" CopyToOutputDirectory="Always" />
-    <Content Include="appsettings.*.yml" DependentUpon="appsettings.yml" CopyToOutputDirectory="Always" />
+    <Content Include="appsettings.*.yml" DependentUpon="appsettings.yml"
+      CopyToOutputDirectory="Always" />
   </ItemGroup>
 
   <ItemGroup>
@@ -56,7 +57,8 @@
     <None Include="$(AngularSpaRoot)**" Exclude="$(AngularSpaRoot)node_modules\**;" />
   </ItemGroup>
 
-  <Target Name="PublishRunWebBuild" AfterTargets="ComputeFilesToPublish" Condition="'$(SkipSpaPublish)' != 'true'">
+  <Target Name="PublishRunWebBuild" AfterTargets="ComputeFilesToPublish"
+    Condition="'$(SkipSpaPublish)' != 'true'">
     <!-- As part of publishing, ensure the JS resources are freshly built in production mode -->
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm ci" />
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" />
@@ -65,7 +67,8 @@
     <!-- Include the newly-built files in the publish output -->
     <ItemGroup>
       <DistFiles Include="$(SpaRoot)build\**" />
-      <ResolvedFileToPublish Include="@(DistFiles->'%(FullPath)')" Exclude="@(ResolvedFileToPublish)">
+      <ResolvedFileToPublish Include="@(DistFiles->'%(FullPath)')"
+        Exclude="@(ResolvedFileToPublish)">
         <RelativePath>wwwroot\next\%(RecursiveDir)%(FileName)%(Extension)</RelativePath>
         <CopyToPublishDirectory>Always</CopyToPublishDirectory>
         <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
@@ -73,7 +76,8 @@
     </ItemGroup>
     <ItemGroup>
       <DistFiles Include="$(AngularSpaRoot)dist\**" />
-      <ResolvedFileToPublish Include="@(DistFiles->'%(FullPath)')" Exclude="@(ResolvedFileToPublish)">
+      <ResolvedFileToPublish Include="@(DistFiles->'%(FullPath)')"
+        Exclude="@(ResolvedFileToPublish)">
         <RelativePath>wwwroot\%(RecursiveDir)%(FileName)%(Extension)</RelativePath>
         <CopyToPublishDirectory>Always</CopyToPublishDirectory>
         <ExcludeFromSingleFile>true</ExcludeFromSingleFile>

@@ -8,6 +8,21 @@ public class EfficientPagingTests : TestWithServices
 {
     public EfficientPagingTests(ITestOutputHelper output) : base(output) { }
 
+    [Fact]
+    public void GetBeforeAndAfterLinks_ApiResultsWithoutMoreResults_OmitsNextLink()
+    {
+        // Arrange
+        var url = new Uri("http://localhost?after=1");
+
+        // Act
+        var links = ApiResults.GetBeforeAndAfterLinks(url, "1", "2", false);
+
+        // Assert
+        Assert.Single(links);
+        Assert.Contains(links, l => l.Contains("previous") && l.Contains("before"));
+        Assert.DoesNotContain(links, l => l.Contains("next"));
+    }
+
     [Theory]
     [InlineData("http://localhost", null, null, false, false)]
     [InlineData("http://localhost?after=1", "1", null, true, false)]
@@ -79,18 +94,4 @@ public class EfficientPagingTests : TestWithServices
             Assert.Contains(links, l => l.Contains("next") && l.Contains("page"));
     }
 
-    [Fact]
-    public void ApiResults_GetBeforeAndAfterLinks_WithoutMoreResults_DoesNotIncludeNextLink()
-    {
-        // Arrange
-        var url = new Uri("http://localhost?after=1");
-
-        // Act
-        var links = ApiResults.GetBeforeAndAfterLinks(url, "1", "2", false);
-
-        // Assert
-        Assert.Single(links);
-        Assert.Contains(links, l => l.Contains("previous") && l.Contains("before"));
-        Assert.DoesNotContain(links, l => l.Contains("next"));
-    }
 }

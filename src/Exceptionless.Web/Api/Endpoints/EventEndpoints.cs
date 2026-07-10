@@ -2,6 +2,7 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Web.Api.Filters;
+using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Extensions;
@@ -466,8 +467,9 @@ public static class EventEndpoints
         });
 
         // Legacy patch (v1)
-        endpoints.MapPatch("api/v1/error/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] Delta<UpdateEvent> changes)
-            => (await mediator.InvokeAsync<Result>(new LegacyPatchEvent(id, changes, httpContext))).ToHttpResult(resultMapper))
+        endpoints.MapPatch("api/v1/error/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] Delta<UpdateEvent>? changes)
+            => changes is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result>(new LegacyPatchEvent(id, changes, httpContext))).ToHttpResult(resultMapper))
+        .Accepts<Delta<UpdateEvent>>(false, "application/json")
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .WithTags("Event")

@@ -37,7 +37,6 @@ using Run = Exceptionless.Tests.Utility.Run;
 
 namespace Exceptionless.Tests.Controllers;
 
-[Collection("EventQueue")]
 public partial class EventControllerTests : IntegrationTestsBase
 {
     private readonly JsonSerializerOptions _jsonSerializerOptions;
@@ -73,6 +72,67 @@ public partial class EventControllerTests : IntegrationTestsBase
 
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WithMixedAccess_ReturnsModelActionResults()
+    {
+        // Arrange
+        var (_, events) = await CreateDataAsync(d =>
+        {
+            d.Event().TestProject();
+            d.Event().FreeProject();
+        });
+
+        var testEvent = Assert.Single(events, e => String.Equals(e.OrganizationId, SampleDataService.TEST_ORG_ID, StringComparison.Ordinal));
+        var freeEvent = Assert.Single(events, e => String.Equals(e.OrganizationId, SampleDataService.FREE_ORG_ID, StringComparison.Ordinal));
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .Delete()
+            .AsTestOrganizationUser()
+            .AppendPath($"events/{testEvent.Id},{freeEvent.Id}")
+            .StatusCodeShouldBeBadRequest());
+
+        var result = JsonSerializer.Deserialize<ModelActionResults>(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), _jsonSerializerOptions);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result.Success);
+        Assert.Contains(testEvent.Id, result.Success);
+
+        var failure = Assert.Single(result.Failure);
+        Assert.False(failure.Allowed);
+        Assert.Equal(freeEvent.Id, failure.Id);
+        Assert.Equal(StatusCodes.Status404NotFound, failure.StatusCode);
+
+        await RefreshDataAsync();
+        Assert.Null(await _eventRepository.GetByIdAsync(testEvent.Id));
+        Assert.NotNull(await _eventRepository.GetByIdAsync(freeEvent.Id));
+    }
+
+    [Fact]
+    public async Task GetByOrganizationAsync_SuspendedOrganization_ReturnsUpgradeRequired()
+    {
+        // Arrange
+        var userRepository = GetService<IUserRepository>();
+        var user = await userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+
+        organization.IsSuspended = true;
+        organization.SuspensionCode = SuspensionCode.Billing;
+        organization.SuspensionDate = DateTime.UtcNow;
+        organization.SuspendedByUserId = user.Id;
+        await _organizationRepository.SaveAsync(organization, o => o.Originals().ImmediateConsistency().Cache());
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", organization.Id, "events")
+            .StatusCodeShouldBeUpgradeRequired());
     }
 
     [Fact]
@@ -344,67 +404,6 @@ public partial class EventControllerTests : IntegrationTestsBase
         Assert.Equal(1, stats.Abandoned); // Event doesn't exist
 
         await _eventUserDescriptionQueue.DeleteQueueAsync();
-    }
-
-    [Fact]
-    public async Task DeleteAsync_WithMixedAccess_ReturnsModelActionResults()
-    {
-        // Arrange
-        var (_, events) = await CreateDataAsync(d =>
-        {
-            d.Event().TestProject();
-            d.Event().FreeProject();
-        });
-
-        var testEvent = Assert.Single(events, e => String.Equals(e.OrganizationId, SampleDataService.TEST_ORG_ID, StringComparison.Ordinal));
-        var freeEvent = Assert.Single(events, e => String.Equals(e.OrganizationId, SampleDataService.FREE_ORG_ID, StringComparison.Ordinal));
-
-        // Act
-        var response = await SendRequestAsync(r => r
-            .Delete()
-            .AsTestOrganizationUser()
-            .AppendPath($"events/{testEvent.Id},{freeEvent.Id}")
-            .StatusCodeShouldBeBadRequest());
-
-        var result = JsonSerializer.Deserialize<ModelActionResults>(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), _jsonSerializerOptions);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Single(result.Success);
-        Assert.Contains(testEvent.Id, result.Success);
-
-        var failure = Assert.Single(result.Failure);
-        Assert.False(failure.Allowed);
-        Assert.Equal(freeEvent.Id, failure.Id);
-        Assert.Equal(StatusCodes.Status404NotFound, failure.StatusCode);
-
-        await RefreshDataAsync();
-        Assert.Null(await _eventRepository.GetByIdAsync(testEvent.Id));
-        Assert.NotNull(await _eventRepository.GetByIdAsync(freeEvent.Id));
-    }
-
-    [Fact]
-    public async Task GetByOrganizationAsync_SuspendedOrganization_ReturnsUpgradeRequired()
-    {
-        // Arrange
-        var userRepository = GetService<IUserRepository>();
-        var user = await userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
-        Assert.NotNull(user);
-
-        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
-        Assert.NotNull(organization);
-
-        organization.IsSuspended = true;
-        organization.SuspensionCode = SuspensionCode.Billing;
-        organization.SuspensionDate = DateTime.UtcNow;
-        organization.SuspendedByUserId = user.Id;
-        await _organizationRepository.SaveAsync(organization, o => o.Originals().ImmediateConsistency().Cache());
-
-        // Act & Assert
-        await SendRequestAsync(r => r
-            .AsGlobalAdminUser()
-            .AppendPaths("organizations", organization.Id, "events")
-            .StatusCodeShouldBeUpgradeRequired());
     }
 
     [Fact]

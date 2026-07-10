@@ -18,7 +18,6 @@ using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
 
-[Collection("EventQueue")]
 public class StackControllerTests : IntegrationTestsBase
 {
     private readonly JsonSerializerOptions _jsonSerializerOptions;
@@ -343,31 +342,6 @@ public class StackControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetByOrganizationAsync_SuspendedOrganization_ReturnsUpgradeRequired()
-    {
-        // Arrange
-        var organizationRepository = GetService<IOrganizationRepository>();
-        var userRepository = GetService<IUserRepository>();
-        var user = await userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
-        Assert.NotNull(user);
-
-        var organization = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
-        Assert.NotNull(organization);
-
-        organization.IsSuspended = true;
-        organization.SuspensionCode = SuspensionCode.Billing;
-        organization.SuspensionDate = DateTime.UtcNow;
-        organization.SuspendedByUserId = user.Id;
-        await organizationRepository.SaveAsync(organization, o => o.Originals().ImmediateConsistency().Cache());
-
-        // Act & Assert
-        await SendRequestAsync(r => r
-            .AsGlobalAdminUser()
-            .AppendPaths("organizations", organization.Id, "stacks")
-            .StatusCodeShouldBeUpgradeRequired());
-    }
-
-    [Fact]
     public async Task GetAll_WithDateRangeFilter_ReturnsOnlyMatchingStacks()
     {
         // Arrange
@@ -478,6 +452,31 @@ public class StackControllerTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath("organizations/000000000000000000000000/stacks")
             .StatusCodeShouldBeNotFound());
+    }
+
+    [Fact]
+    public async Task GetByOrganizationAsync_SuspendedOrganization_ReturnsUpgradeRequired()
+    {
+        // Arrange
+        var organizationRepository = GetService<IOrganizationRepository>();
+        var userRepository = GetService<IUserRepository>();
+        var user = await userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+
+        var organization = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+
+        organization.IsSuspended = true;
+        organization.SuspensionCode = SuspensionCode.Billing;
+        organization.SuspensionDate = DateTime.UtcNow;
+        organization.SuspendedByUserId = user.Id;
+        await organizationRepository.SaveAsync(organization, o => o.Originals().ImmediateConsistency().Cache());
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", organization.Id, "stacks")
+            .StatusCodeShouldBeUpgradeRequired());
     }
 
     [Fact]

@@ -5,12 +5,12 @@ using Xunit;
 
 namespace Exceptionless.Tests;
 
-[Collection("EventQueue")]
 public sealed class AppWebHostFactoryTests
 {
     [Fact]
     public async Task ConfigureWebHost_MultipleFactories_IsolatesFileStorageByAppScope()
     {
+        // Arrange
         await using var firstFactory = new AppWebHostFactory();
         await firstFactory.InitializeAsync();
         var firstStorage = firstFactory.Services.GetRequiredService<IFileStorage>();
@@ -23,8 +23,10 @@ public sealed class AppWebHostFactoryTests
         await secondFactory.InitializeAsync();
         var secondStorage = secondFactory.Services.GetRequiredService<IFileStorage>();
 
+        // Act
         await secondStorage.DeleteFilesAsync(await secondStorage.GetFileListAsync(cancellationToken: TestContext.Current.CancellationToken));
 
+        // Assert
         Assert.True(await firstStorage.ExistsAsync(path));
     }
 }

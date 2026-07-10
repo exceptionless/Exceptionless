@@ -172,8 +172,9 @@ public static class TokenEndpoints
             }
         });
 
-        group.MapPatch("tokens/{id:tokens}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] Delta<UpdateToken> changes)
-            => (await mediator.InvokeAsync<Result<ViewToken>>(new TokenMessages.UpdateTokenMessage(id, changes))).ToHttpResult(resultMapper))
+        group.MapPatch("tokens/{id:tokens}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] Delta<UpdateToken>? changes)
+            => changes is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<ViewToken>>(new TokenMessages.UpdateTokenMessage(id, changes))).ToHttpResult(resultMapper))
+        .Accepts<Delta<UpdateToken>>(false, "application/json")
         .Produces<ViewToken>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -189,8 +190,9 @@ public static class TokenEndpoints
             }
         });
 
-        group.MapPut("tokens/{id:tokens}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] Delta<UpdateToken> changes)
-            => (await mediator.InvokeAsync<Result<ViewToken>>(new TokenMessages.UpdateTokenMessage(id, changes))).ToHttpResult(resultMapper))
+        group.MapPut("tokens/{id:tokens}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] Delta<UpdateToken>? changes)
+            => changes is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<ViewToken>>(new TokenMessages.UpdateTokenMessage(id, changes))).ToHttpResult(resultMapper))
+        .Accepts<Delta<UpdateToken>>(false, "application/json")
         .Produces<ViewToken>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)

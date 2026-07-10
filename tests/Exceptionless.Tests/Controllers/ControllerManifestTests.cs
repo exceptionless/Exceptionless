@@ -13,14 +13,18 @@ namespace Exceptionless.Tests.Controllers;
 public sealed class ControllerManifestTests(ITestOutputHelper output) : TestWithLoggingBase(output)
 {
     [Fact]
-    public void NoMvcControllersRemain()
+    public void MapControllers_AfterMinimalApiMigration_ContainsNoMvcControllers()
     {
-        // After the Minimal API migration, no MVC controllers should remain.
-        var controllerTypes = typeof(Exceptionless.Web.Program).Assembly.GetTypes()
+        // Arrange
+        var webAssembly = typeof(Exceptionless.Web.Program).Assembly;
+
+        // Act
+        var controllerTypes = webAssembly.GetTypes()
             .Where(type => !type.IsAbstract)
             .Where(type => typeof(ControllerBase).IsAssignableFrom(type))
             .ToArray();
 
+        // Assert
         Assert.Empty(controllerTypes);
     }
 }

@@ -17,7 +17,6 @@ using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Tests.Jobs;
 
-[Collection("EventQueue")]
 public class EventPostJobTests : IntegrationTestsBase
 {
     private readonly EventPostsJob _job;

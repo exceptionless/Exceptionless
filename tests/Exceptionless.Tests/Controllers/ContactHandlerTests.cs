@@ -19,10 +19,13 @@ public sealed class ContactHandlerTests : TestWithServices
     [Fact]
     public async Task Handle_ContactEmailAddressNotConfigured_ReturnsServiceUnavailable()
     {
+        // Arrange
         var handler = CreateHandler(new EmailOptions(), new RecordingContactMailer());
 
+        // Act
         var result = await handler.Handle(new SubmitContactRequest(CreateRequest(), CreateContext()));
 
+        // Assert
         var statusCodeResult = Assert.IsAssignableFrom<IStatusCodeHttpResult>(result);
         Assert.Equal(StatusCodes.Status503ServiceUnavailable, statusCodeResult.StatusCode);
     }
@@ -30,11 +33,14 @@ public sealed class ContactHandlerTests : TestWithServices
     [Fact]
     public async Task Handle_MailerReturnsFalse_ReturnsServiceUnavailable()
     {
+        // Arrange
         var mailer = new RecordingContactMailer { QueueContactRequests = false };
         var handler = CreateHandler(CreateConfiguredEmailOptions(), mailer);
 
+        // Act
         var result = await handler.Handle(new SubmitContactRequest(CreateRequest(), CreateContext()));
 
+        // Assert
         var statusCodeResult = Assert.IsAssignableFrom<IStatusCodeHttpResult>(result);
         Assert.Equal(StatusCodes.Status503ServiceUnavailable, statusCodeResult.StatusCode);
         Assert.Single(mailer.ContactRequests);

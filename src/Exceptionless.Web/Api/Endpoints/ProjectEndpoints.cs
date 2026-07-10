@@ -100,10 +100,10 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPatch("projects/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] Delta<UpdateProject> changes)
-            => (await mediator.InvokeAsync<Result<ViewProject>>(new ProjectMessages.UpdateProjectMessage(id, changes, httpContext))).ToHttpResult(resultMapper))
+        group.MapPatch("projects/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] Delta<UpdateProject>? changes)
+            => changes is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<ViewProject>>(new ProjectMessages.UpdateProjectMessage(id, changes, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
-        .Accepts<Delta<UpdateProject>>("application/json")
+        .Accepts<Delta<UpdateProject>>(false, "application/json")
         .Produces<ViewProject>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -120,10 +120,10 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPut("projects/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] Delta<UpdateProject> changes)
-            => (await mediator.InvokeAsync<Result<ViewProject>>(new ProjectMessages.UpdateProjectMessage(id, changes, httpContext))).ToHttpResult(resultMapper))
+        group.MapPut("projects/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] Delta<UpdateProject>? changes)
+            => changes is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<ViewProject>>(new ProjectMessages.UpdateProjectMessage(id, changes, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
-        .Accepts<Delta<UpdateProject>>("application/json")
+        .Accepts<Delta<UpdateProject>>(false, "application/json")
         .Produces<ViewProject>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)

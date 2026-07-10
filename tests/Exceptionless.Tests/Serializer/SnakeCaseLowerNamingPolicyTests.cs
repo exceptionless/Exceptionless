@@ -150,7 +150,7 @@ public class SnakeCaseLowerNamingPolicyTests : TestWithLoggingBase
     }
 
     [Fact]
-    public void Delta_Deserialize_SnakeCaseJson_SetsPropertyValues()
+    public void Deserialize_DeltaFromSnakeCaseJson_SetsPropertyValues()
     {
         // Arrange
         /* language=json */
@@ -168,7 +168,7 @@ public class SnakeCaseLowerNamingPolicyTests : TestWithLoggingBase
     }
 
     [Fact]
-    public void Delta_Deserialize_PartialUpdate_OnlyTracksProvidedProperties()
+    public void Deserialize_PartialDeltaUpdate_OnlyTracksProvidedProperties()
     {
         // Arrange
         /* language=json */

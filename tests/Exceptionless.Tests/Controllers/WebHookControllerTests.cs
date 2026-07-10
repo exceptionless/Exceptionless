@@ -27,6 +27,36 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostAsync_CamelCaseBodyMissingSnakeCaseRequiredFields_ReturnsLegacyValidationProblem()
+    {
+        // Arrange
+        string body = JsonSerializer.Serialize(new
+        {
+            organizationId = SampleDataService.TEST_ORG_ID,
+            projectId = SampleDataService.TEST_PROJECT_ID,
+            url = "https://example.com/webhook",
+            eventTypes = new[] { WebHook.KnownEventTypes.NewError }
+        });
+
+        // Act
+        var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath("webhooks")
+            .Content(body, "application/json")
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        // Assert
+        Assert.NotNull(problemDetails);
+        Assert.Equal(StatusCodes.Status400BadRequest, problemDetails.Status);
+        Assert.Equal("One or more validation errors occurred.", problemDetails.Title);
+        Assert.Equal(["The EventTypes field is required."], problemDetails.Errors["event_types"]);
+        Assert.Equal(["The OrganizationId field is required."], problemDetails.Errors["organization_id"]);
+        Assert.Equal(["The ProjectId field is required."], problemDetails.Errors["project_id"]);
+    }
+
+    [Fact]
     public async Task PostAsync_NewWebHook_MapsAllPropertiesToWebHook()
     {
         // Arrange - Test Mapperly: NewWebHook -> WebHook
@@ -128,31 +158,6 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
         Assert.NotNull(problemDetails);
         Assert.Single(problemDetails.Errors);
         Assert.Contains(problemDetails.Errors, error => String.Equals(error.Key, "event_types"));
-    }
-
-    [Fact]
-    public async Task PostAsync_CamelCaseBodyMissingSnakeCaseRequiredFields_ReturnsLegacyValidationProblem()
-    {
-        var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r
-            .Post()
-            .AsTestOrganizationUser()
-            .AppendPath("webhooks")
-            .Content(JsonSerializer.Serialize(new
-            {
-                organizationId = SampleDataService.TEST_ORG_ID,
-                projectId = SampleDataService.TEST_PROJECT_ID,
-                url = "https://example.com/webhook",
-                eventTypes = new[] { WebHook.KnownEventTypes.NewError }
-            }), "application/json")
-            .StatusCodeShouldBeBadRequest()
-        );
-
-        Assert.NotNull(problemDetails);
-        Assert.Equal(StatusCodes.Status400BadRequest, problemDetails.Status);
-        Assert.Equal("One or more validation errors occurred.", problemDetails.Title);
-        Assert.Equal(["The EventTypes field is required."], problemDetails.Errors["event_types"]);
-        Assert.Equal(["The OrganizationId field is required."], problemDetails.Errors["organization_id"]);
-        Assert.Equal(["The ProjectId field is required."], problemDetails.Errors["project_id"]);
     }
 
     [Fact]

@@ -242,10 +242,8 @@
   {
     "method": "GET",
     "route": "/api/v2/admin/assemblies",
-    "displayName": "HTTP: GET /api/v2/admin/assemblies",
-    "tags": [
-      "Admin"
-    ],
+    "displayName": "HTTP: GET api/v2/admin/assemblies",
+    "tags": [],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "GlobalAdminPolicy"
@@ -280,10 +278,8 @@
   {
     "method": "GET",
     "route": "/api/v2/admin/elasticsearch",
-    "displayName": "HTTP: GET /api/v2/admin/elasticsearch",
-    "tags": [
-      "Admin"
-    ],
+    "displayName": "HTTP: GET api/v2/admin/elasticsearch",
+    "tags": [],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "GlobalAdminPolicy"
@@ -294,10 +290,8 @@
   {
     "method": "GET",
     "route": "/api/v2/admin/elasticsearch/snapshots",
-    "displayName": "HTTP: GET /api/v2/admin/elasticsearch/snapshots",
-    "tags": [
-      "Admin"
-    ],
+    "displayName": "HTTP: GET api/v2/admin/elasticsearch/snapshots",
+    "tags": [],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "GlobalAdminPolicy"
@@ -308,10 +302,8 @@
   {
     "method": "POST",
     "route": "/api/v2/admin/generate-sample-events",
-    "displayName": "HTTP: POST /api/v2/admin/generate-sample-events",
-    "tags": [
-      "Admin"
-    ],
+    "displayName": "HTTP: POST api/v2/admin/generate-sample-events",
+    "tags": [],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "GlobalAdminPolicy"
@@ -322,10 +314,8 @@
   {
     "method": "GET",
     "route": "/api/v2/admin/maintenance/{name:minlength(1)}",
-    "displayName": "HTTP: GET /api/v2/admin/maintenance/{name:minlength(1)}",
-    "tags": [
-      "Admin"
-    ],
+    "displayName": "HTTP: GET api/v2/admin/maintenance/{name:minlength(1)}",
+    "tags": [],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "GlobalAdminPolicy"
@@ -336,10 +326,8 @@
   {
     "method": "GET",
     "route": "/api/v2/admin/migrations",
-    "displayName": "HTTP: GET /api/v2/admin/migrations",
-    "tags": [
-      "Admin"
-    ],
+    "displayName": "HTTP: GET api/v2/admin/migrations",
+    "tags": [],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "GlobalAdminPolicy"
@@ -428,10 +416,8 @@
   {
     "method": "GET",
     "route": "/api/v2/admin/requeue",
-    "displayName": "HTTP: GET /api/v2/admin/requeue",
-    "tags": [
-      "Admin"
-    ],
+    "displayName": "HTTP: GET api/v2/admin/requeue",
+    "tags": [],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "GlobalAdminPolicy"
@@ -454,10 +440,8 @@
   {
     "method": "GET",
     "route": "/api/v2/admin/settings",
-    "displayName": "HTTP: GET /api/v2/admin/settings",
-    "tags": [
-      "Admin"
-    ],
+    "displayName": "HTTP: GET api/v2/admin/settings",
+    "tags": [],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "GlobalAdminPolicy"
@@ -468,10 +452,8 @@
   {
     "method": "GET",
     "route": "/api/v2/admin/stats",
-    "displayName": "HTTP: GET /api/v2/admin/stats",
-    "tags": [
-      "Admin"
-    ],
+    "displayName": "HTTP: GET api/v2/admin/stats",
+    "tags": [],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "GlobalAdminPolicy"
@@ -2049,7 +2031,7 @@
   {
     "method": "GET",
     "route": "/api/v2/queue-stats",
-    "displayName": "HTTP: GET /api/v2/queue-stats",
+    "displayName": "HTTP: GET api/v2/queue-stats",
     "tags": [],
     "allowAnonymous": false,
     "authorizationPolicies": [

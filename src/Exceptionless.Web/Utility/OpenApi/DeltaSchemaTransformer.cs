@@ -30,8 +30,8 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
         // Set the type to object
         schema.Type = JsonSchemaType.Object;
 
-        // Clear any auto-generated properties from Delta<T> itself (like UnknownProperties)
-        schema.Properties = new Dictionary<string, IOpenApiSchema>();
+        // Add properties from the inner type
+        schema.Properties ??= new Dictionary<string, IOpenApiSchema>();
 
         foreach (var property in innerType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Where(p => p.CanRead && p.CanWrite))

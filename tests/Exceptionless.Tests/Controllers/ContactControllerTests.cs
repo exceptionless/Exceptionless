@@ -31,30 +31,9 @@ public sealed class ContactControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task PostJsonAsync_WithValidRequest_ReturnsAcceptedAndSendsContactRequest()
-    {
-        using var client = CreateHttpClient();
-
-        var response = await client.PostAsJsonAsync("contact", new ContactRequest
-        {
-            Name = "Test User",
-            EmailAddress = "test-user@example.com",
-            Company = "Test Company",
-            Subject = "Self hosted question",
-            Message = "Can you help us understand self hosted deployment options?"
-        }, JsonOptions, TestContext.Current.CancellationToken);
-
-        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
-        var call = Assert.Single(Mailer.ContactRequests);
-        Assert.Equal("Test User", call.Name);
-        Assert.Equal("test-user@example.com", call.EmailAddress);
-        Assert.Equal("Test Company", call.Company);
-        Assert.Equal("Self hosted question", call.Subject);
-    }
-
-    [Fact]
     public async Task PostFormAsync_WithValidRequest_ReturnsAcceptedAndSendsContactRequest()
     {
+        // Arrange
         using var client = CreateHttpClient();
         using var content = new FormUrlEncodedContent(new Dictionary<string, string>
         {
@@ -65,8 +44,10 @@ public sealed class ContactControllerTests : IntegrationTestsBase
             ["Message"] = "This is a valid form contact request."
         });
 
+        // Act
         var response = await client.PostAsync("contact", content, TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         var call = Assert.Single(Mailer.ContactRequests);
         Assert.Equal("Form User", call.Name);
@@ -76,18 +57,46 @@ public sealed class ContactControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task PostJsonAsync_WithHoneypot_ReturnsAcceptedWithoutSendingContactRequest()
+    public async Task PostJsonAsync_WithValidRequest_ReturnsAcceptedAndSendsContactRequest()
     {
+        // Arrange
         using var client = CreateHttpClient();
 
+        // Act
         var response = await client.PostAsJsonAsync("contact", new ContactRequest
         {
-            Name = "Ignored User",
+            Name = "Ada Lovelace",
+            EmailAddress = "ada@example.com",
+            Company = "Analytical Engines",
+            Subject = "Self hosted question",
+            Message = "Can you help us understand self hosted deployment options?"
+        }, JsonOptions, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        var call = Assert.Single(Mailer.ContactRequests);
+        Assert.Equal("Ada Lovelace", call.Name);
+        Assert.Equal("ada@example.com", call.EmailAddress);
+        Assert.Equal("Analytical Engines", call.Company);
+        Assert.Equal("Self hosted question", call.Subject);
+    }
+
+    [Fact]
+    public async Task PostJsonAsync_WithHoneypot_ReturnsAcceptedWithoutSendingContactRequest()
+    {
+        // Arrange
+        using var client = CreateHttpClient();
+
+        // Act
+        var response = await client.PostAsJsonAsync("contact", new ContactRequest
+        {
+            Name = "Spam Bot",
             EmailAddress = "spam@example.com",
             Message = "This message should be ignored by the honeypot field.",
             Website = "https://spam.example"
         }, JsonOptions, TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         Assert.Empty(Mailer.ContactRequests);
     }
@@ -95,15 +104,18 @@ public sealed class ContactControllerTests : IntegrationTestsBase
     [Fact]
     public async Task PostJsonAsync_WithInvalidEmailAddress_ReturnsUnprocessableEntity()
     {
+        // Arrange
         using var client = CreateHttpClient();
 
+        // Act
         var response = await client.PostAsJsonAsync("contact", new ContactRequest
         {
-            Name = "Invalid User",
+            Name = "Ada Lovelace",
             EmailAddress = "not an email address",
             Message = "This message has enough characters."
         }, JsonOptions, TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
         Assert.Empty(Mailer.ContactRequests);
     }
@@ -111,8 +123,10 @@ public sealed class ContactControllerTests : IntegrationTestsBase
     [Fact]
     public async Task PostJsonAsync_WithTooManyRequests_ReturnsTooManyRequests()
     {
+        // Arrange
         using var client = CreateHttpClient();
 
+        // Act
         for (int i = 0; i < 3; i++)
         {
             var allowedResponse = await client.PostAsJsonAsync("contact", CreateValidRequest(i), JsonOptions, TestContext.Current.CancellationToken);
@@ -121,6 +135,7 @@ public sealed class ContactControllerTests : IntegrationTestsBase
 
         var limitedResponse = await client.PostAsJsonAsync("contact", CreateValidRequest(4), JsonOptions, TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(HttpStatusCode.TooManyRequests, limitedResponse.StatusCode);
         Assert.Equal(3, Mailer.ContactRequests.Count);
     }
@@ -139,12 +154,11 @@ public sealed class ContactControllerTests : IntegrationTestsBase
     private sealed class RecordingContactMailer : IMailer
     {
         public List<ContactRequestCall> ContactRequests { get; } = [];
-        public bool QueueContactRequests { get; set; } = true;
 
         public Task<bool> SendContactRequestAsync(string name, string emailAddress, string? company, string? subject, string message, string? clientIpAddress, string? userAgent, string? referrer)
         {
             ContactRequests.Add(new ContactRequestCall(name, emailAddress, company, subject, message, clientIpAddress, userAgent, referrer));
-            return Task.FromResult(QueueContactRequests);
+            return Task.FromResult(true);
         }
 
         public Task<bool> SendEventNoticeAsync(User user, PersistentEvent ev, Project project, bool isNew, bool isRegression, int totalOccurrences)
@@ -190,7 +204,6 @@ public sealed class ContactControllerTests : IntegrationTestsBase
         public void Reset()
         {
             ContactRequests.Clear();
-            QueueContactRequests = true;
         }
     }
 

@@ -10,6 +10,8 @@ public sealed class OpenApiSnapshotTests
     [Fact]
     public async Task GetOpenApiJson_Default_MatchesSnapshot()
     {
+        // Arrange is handled by MinimalApiTestApp in GetOpenApiJsonAsync.
+
         // Act
         string actualJson = await GetOpenApiJsonAsync();
 
@@ -23,15 +25,20 @@ public sealed class OpenApiSnapshotTests
             return;
         }
 
+        // Assert
         await SnapshotTestHelper.AssertMatchesJsonSnapshotAsync("openapi.json", actualJson, TestContext.Current.CancellationToken);
     }
 
     [Fact]
-    public async Task GetOpenApiJson_ContainsExpectedRoutesOperationsAndResponses()
+    public async Task GetOpenApiJson_Default_ContainsExpectedRoutesOperationsAndResponses()
     {
+        // Arrange
         using var document = await GetOpenApiDocumentAsync();
+
+        // Act
         var paths = document.RootElement.GetProperty("paths");
 
+        // Assert
         Assert.True(paths.TryGetProperty("/api/v2/auth/login", out var loginPath));
         Assert.True(loginPath.TryGetProperty("post", out var loginPost));
         Assert.True(loginPost.TryGetProperty("requestBody", out _));
@@ -53,13 +60,17 @@ public sealed class OpenApiSnapshotTests
     }
 
     [Fact]
-    public async Task GetOpenApiJson_ContainsExpectedSchemasAndSecuritySchemes()
+    public async Task GetOpenApiJson_Default_ContainsExpectedSchemasAndSecuritySchemes()
     {
+        // Arrange
         using var document = await GetOpenApiDocumentAsync();
+
+        // Act
         var components = document.RootElement.GetProperty("components");
         var schemas = components.GetProperty("schemas");
         var securitySchemes = components.GetProperty("securitySchemes");
 
+        // Assert
         Assert.True(schemas.TryGetProperty("Login", out _));
         Assert.True(schemas.TryGetProperty("Signup", out _));
         Assert.True(schemas.TryGetProperty("NewProject", out _));

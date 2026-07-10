@@ -82,7 +82,6 @@ public class RequestBodyContentOperationTransformer : IOpenApiOperationTransform
 
         return Task.CompletedTask;
     }
-
 }
 
 /// <summary>

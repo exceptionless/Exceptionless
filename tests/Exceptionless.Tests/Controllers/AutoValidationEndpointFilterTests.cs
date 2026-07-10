@@ -12,43 +12,22 @@ namespace Exceptionless.Tests.Controllers;
 public sealed class AutoValidationEndpointFilterTests
 {
     [Fact]
-    public async Task InvokeAsync_MissingRequiredProperty_ReturnsUnprocessableEntityValidationProblem()
-    {
-        var filter = new AutoValidationEndpointFilter();
-        var httpContext = new DefaultHttpContext();
-        var context = new TestEndpointFilterInvocationContext(httpContext, [new RequestWithValidationMetadata()]);
-        var nextCalled = false;
-
-        var result = await filter.InvokeAsync(context, _ =>
-        {
-            nextCalled = true;
-            return ValueTask.FromResult<object?>("next");
-        });
-
-        Assert.False(nextCalled);
-        var statusCodeResult = Assert.IsAssignableFrom<IStatusCodeHttpResult>(result);
-        var valueResult = Assert.IsAssignableFrom<IValueHttpResult>(result);
-        var problemDetails = Assert.IsType<HttpValidationProblemDetails>(valueResult.Value);
-
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, statusCodeResult.StatusCode);
-        Assert.True(problemDetails.Errors.TryGetValue("display_name", out var displayNameErrors));
-        Assert.Contains(displayNameErrors, error => error == "The DisplayName field is required.");
-    }
-
-    [Fact]
     public async Task InvokeAsync_InvalidSemanticValue_ReturnsUnprocessableEntityValidationProblem()
     {
+        // Arrange
         var filter = new AutoValidationEndpointFilter();
         var httpContext = new DefaultHttpContext();
         var context = new TestEndpointFilterInvocationContext(httpContext, [new RequestWithSemanticValidation { DisplayName = "x" }]);
         var nextCalled = false;
 
+        // Act
         var result = await filter.InvokeAsync(context, _ =>
         {
             nextCalled = true;
             return ValueTask.FromResult<object?>("next");
         });
 
+        // Assert
         Assert.False(nextCalled);
         var statusCodeResult = Assert.IsAssignableFrom<IStatusCodeHttpResult>(result);
         var valueResult = Assert.IsAssignableFrom<IValueHttpResult>(result);
@@ -60,13 +39,64 @@ public sealed class AutoValidationEndpointFilterTests
     }
 
     [Fact]
+    public async Task InvokeAsync_MissingRequiredProperty_ReturnsUnprocessableEntityValidationProblem()
+    {
+        // Arrange
+        var filter = new AutoValidationEndpointFilter();
+        var httpContext = new DefaultHttpContext();
+        var context = new TestEndpointFilterInvocationContext(httpContext, [new RequestWithValidationMetadata()]);
+        var nextCalled = false;
+
+        // Act
+        var result = await filter.InvokeAsync(context, _ =>
+        {
+            nextCalled = true;
+            return ValueTask.FromResult<object?>("next");
+        });
+
+        // Assert
+        Assert.False(nextCalled);
+        var statusCodeResult = Assert.IsAssignableFrom<IStatusCodeHttpResult>(result);
+        var valueResult = Assert.IsAssignableFrom<IValueHttpResult>(result);
+        var problemDetails = Assert.IsType<HttpValidationProblemDetails>(valueResult.Value);
+
+        Assert.Equal(StatusCodes.Status422UnprocessableEntity, statusCodeResult.StatusCode);
+        Assert.True(problemDetails.Errors.TryGetValue("display_name", out var displayNameErrors));
+        Assert.Contains(displayNameErrors, error => error == "The DisplayName field is required.");
+    }
+
+    [Fact]
+    public async Task InvokeAsync_ServiceArgumentWithoutValidationMetadata_CallsNext()
+    {
+        // Arrange
+        var filter = new AutoValidationEndpointFilter();
+        var context = new TestEndpointFilterInvocationContext(
+            new DefaultHttpContext(),
+            [null, "text", 42, new ServiceWithoutValidationMetadata()]);
+        var nextCalled = false;
+
+        // Act
+        var result = await filter.InvokeAsync(context, _ =>
+        {
+            nextCalled = true;
+            return ValueTask.FromResult<object?>("next");
+        });
+
+        // Assert
+        Assert.True(nextCalled);
+        Assert.Equal("next", result);
+    }
+
+    [Fact]
     public async Task InvokeAsync_ValidModel_CallsNext()
     {
+        // Arrange
         var filter = new AutoValidationEndpointFilter();
         var context = new TestEndpointFilterInvocationContext(new DefaultHttpContext(), [new RequestWithValidationMetadata { DisplayName = "Valid" }]);
         var expectedResult = new object();
         var nextCalled = false;
 
+        // Act
         var result = await filter.InvokeAsync(context, invocationContext =>
         {
             nextCalled = true;
@@ -74,56 +104,48 @@ public sealed class AutoValidationEndpointFilterTests
             return ValueTask.FromResult<object?>(expectedResult);
         });
 
+        // Assert
         Assert.True(nextCalled);
         Assert.Same(expectedResult, result);
     }
 
     [Fact]
-    public async Task InvokeAsync_ServiceArgumentWithoutValidationMetadata_CallsNext()
+    public void ShouldValidate_ModelImplementingValidatableObject_ReturnsTrue()
     {
-        var filter = new AutoValidationEndpointFilter();
-        var context = new TestEndpointFilterInvocationContext(
-            new DefaultHttpContext(),
-            [null, "text", 42, new ServiceWithoutValidationMetadata()]);
-        var nextCalled = false;
+        // Arrange
+        var type = typeof(ValidatableRequest);
 
-        var result = await filter.InvokeAsync(context, _ =>
-        {
-            nextCalled = true;
-            return ValueTask.FromResult<object?>("next");
-        });
+        // Act
+        bool result = ShouldValidate(type);
 
-        Assert.True(nextCalled);
-        Assert.Equal("next", result);
-    }
-
-    [Fact]
-    public void ShouldValidate_ModelWithValidationMetadata_ReturnsTrue()
-    {
-        Assert.True(ShouldValidate(typeof(RequestWithValidationMetadata)));
+        // Assert
+        Assert.True(result);
     }
 
     [Fact]
     public void ShouldValidate_ModelWithTypeValidationMetadata_ReturnsTrue()
     {
-        Assert.True(ShouldValidate(typeof(RequestWithTypeValidationMetadata)));
+        // Arrange
+        var type = typeof(RequestWithTypeValidationMetadata);
+
+        // Act
+        bool result = ShouldValidate(type);
+
+        // Assert
+        Assert.True(result);
     }
 
     [Fact]
-    public void ShouldValidate_ModelImplementingValidatableObject_ReturnsTrue()
+    public void ShouldValidate_ModelWithValidationMetadata_ReturnsTrue()
     {
-        Assert.True(ShouldValidate(typeof(ValidatableRequest)));
-    }
+        // Arrange
+        var type = typeof(RequestWithValidationMetadata);
 
-    [Fact]
-    public void ShouldValidate_TypeWithoutNamespace_ReturnsFalse()
-    {
-        var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("AutoValidationEndpointFilterTestsDynamic"), AssemblyBuilderAccess.Run);
-        var moduleBuilder = assemblyBuilder.DefineDynamicModule("Main");
-        var type = moduleBuilder.DefineType("TypeWithoutNamespace", TypeAttributes.Public | TypeAttributes.Class).CreateType();
+        // Act
+        bool result = ShouldValidate(type);
 
-        Assert.Null(type.Namespace);
-        Assert.False(ShouldValidate(type));
+        // Assert
+        Assert.True(result);
     }
 
     [Theory]
@@ -138,7 +160,29 @@ public sealed class AutoValidationEndpointFilterTests
     [InlineData(typeof(ServiceWithoutValidationMetadata))]
     public void ShouldValidate_ServiceArgumentWithoutValidationMetadata_ReturnsFalse(Type type)
     {
-        Assert.False(ShouldValidate(type));
+        // Arrange is provided by InlineData.
+
+        // Act
+        bool result = ShouldValidate(type);
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void ShouldValidate_TypeWithoutNamespace_ReturnsFalse()
+    {
+        // Arrange
+        var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("AutoValidationEndpointFilterTestsDynamic"), AssemblyBuilderAccess.Run);
+        var moduleBuilder = assemblyBuilder.DefineDynamicModule("Main");
+        var type = moduleBuilder.DefineType("TypeWithoutNamespace", TypeAttributes.Public | TypeAttributes.Class).CreateType();
+
+        // Act
+        bool result = ShouldValidate(type);
+
+        // Assert
+        Assert.Null(type.Namespace);
+        Assert.False(result);
     }
 
     private static bool ShouldValidate(Type type)
