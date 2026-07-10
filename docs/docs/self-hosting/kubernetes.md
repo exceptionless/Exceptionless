@@ -46,6 +46,15 @@ You can append values to any connection string using a `;`. For example, you can
 
 The `provider` value determines what implementations to use for the various abstractions. We've made it easier to reuse a single connection string by automatically looking up a connection string by the provider name and adding any key value pairs to the current connection string (as shown above with redis).
 
+Provider connection strings that use an absolute URI are passed to the provider unchanged. For example, configure RabbitMQ as the message bus with a provider selector and a separate, reusable RabbitMQ connection string:
+
+```yaml
+EX_ConnectionStrings__MessageBus: provider=rabbitmq
+EX_ConnectionStrings__RabbitMQ: amqp://user:password@rabbitmq:5672/%2F
+```
+
+The inline form (`provider=rabbitmq;amqp://...`) remains supported for compatibility, but the separate provider connection string is recommended because it is easier to supply from deployment secrets without additional quoting.
+
 ## General Configuration
 
 1. You'll want to set the `EX_ApiUrl` key to your external url of the api.

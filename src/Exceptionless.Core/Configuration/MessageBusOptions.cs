@@ -1,6 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Foundatio.Utility;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 
 namespace Exceptionless.Core.Configuration;
 
@@ -24,15 +22,10 @@ public class MessageBusOptions
 
         if (cs != null)
         {
-            options.Data = cs.ParseConnectionString();
-            options.Provider = options.Data.GetString(nameof(options.Provider));
-            string? providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? config.GetConnectionString(options.Provider) : null;
-
-            var providerOptions = providerConnectionString.ParseConnectionString(defaultKey: "server");
-            options.Data ??= new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-            options.Data.AddRange(providerOptions);
-
-            options.ConnectionString = options.Data.BuildConnectionString(new HashSet<string> { nameof(options.Provider) });
+            var providerConfiguration = ProviderConfigurationResolver.Resolve(config, "MessageBus", providerConnectionStringDefaultKey: "server");
+            options.Data = providerConfiguration.Data;
+            options.Provider = providerConfiguration.Provider;
+            options.ConnectionString = providerConfiguration.ConnectionString;
         }
         else
         {

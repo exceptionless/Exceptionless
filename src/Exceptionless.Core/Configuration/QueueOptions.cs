@@ -27,8 +27,11 @@ public class QueueOptions
         string? cs = config.GetConnectionString("Queue");
         if (!String.IsNullOrWhiteSpace(cs))
         {
-            options.Data = cs.ParseConnectionString();
-            options.Provider = options.Data.GetString(nameof(options.Provider));
+            var providerConfiguration = ProviderConfigurationResolver.Resolve(config, "Queue");
+            options.Data = providerConfiguration.Data;
+            options.Provider = providerConfiguration.Provider;
+            options.ConnectionString = providerConfiguration.ConnectionString;
+            return options;
         }
         else
         {
@@ -51,11 +54,6 @@ public class QueueOptions
             }
         }
 
-        string? providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? config.GetConnectionString(options.Provider) : null;
-        if (!String.IsNullOrEmpty(providerConnectionString))
-            options.Data.AddRange(providerConnectionString.ParseConnectionString());
-
-        options.ConnectionString = options.Data.BuildConnectionString(new HashSet<string> { nameof(options.Provider) });
         return options;
     }
 }
