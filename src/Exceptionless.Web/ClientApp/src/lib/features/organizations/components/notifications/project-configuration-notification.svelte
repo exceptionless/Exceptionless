@@ -11,20 +11,21 @@
     }
 
     let { projects, ...restProps }: Props = $props();
+
+    const configureHref = $derived.by(() => {
+        const project = projects[0];
+
+        if (projects.length === 1 && project) {
+            return resolve('/(app)/project/[projectId]/configure', { projectId: project.id });
+        }
+
+        return resolve('/(app)/project/list');
+    });
 </script>
 
 <Notification variant="information" {...restProps}>
-    <NotificationTitle>We haven't received any data!</NotificationTitle>
+    <NotificationTitle>We haven't received any events yet!</NotificationTitle>
     <NotificationDescription>
-        Please configure your clients for
-        {#each projects as project, index (project.id)}
-            {#if index > 0},
-            {/if}<A href={resolve('/(app)/project/[projectId]/configure', { projectId: project.id })}>{project.name}</A>
-        {/each}
-        {#if projects.length === 1}
-            project
-        {:else}
-            projects
-        {/if} and start becoming exceptionless in less than 60 seconds!
+        Open <A href={configureHref}>Client setup</A> for this project and start becoming Exceptionless!
     </NotificationDescription>
 </Notification>

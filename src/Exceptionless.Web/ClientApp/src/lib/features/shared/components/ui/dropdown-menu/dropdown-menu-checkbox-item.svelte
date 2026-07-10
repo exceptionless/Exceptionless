@@ -17,6 +17,7 @@
 	} = $props();
 </script>
 
+<!-- CUSTOM: PREVENT WRAP SO CHECKMARK LABELS ALIGN WITH THE MENU GRID AT ALL WIDTHS. -->
 <DropdownMenuPrimitive.CheckboxItem
 	bind:ref
 	bind:checked

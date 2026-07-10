@@ -3,6 +3,7 @@ using Exceptionless.Core;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Insulation.Configuration;
+using Exceptionless.Web.Utility;
 using OpenTelemetry;
 using Serilog;
 using Serilog.Events;
@@ -92,7 +93,7 @@ public class Program
                         c.AddServerHeader = false;
 
                         if (options.MaximumEventPostSize > 0)
-                            c.Limits.MaxRequestBodySize = options.MaximumEventPostSize;
+                            c.Limits.MaxRequestBodySize = options.MaximumEventPostSize + EventPostRequestBodyStream.KestrelBodyLimitSlopBytes;
                     })
                     .UseStartup<Startup>();
             })

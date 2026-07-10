@@ -3,13 +3,11 @@
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import { A, H3 } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import OrganizationAdminActionsDropdownMenu from '$features/organizations/components/organization-admin-actions-dropdown-menu.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { getProjectQuery } from '$features/projects/api.svelte';
     import GlobalUser from '$features/users/components/global-user.svelte';
-    import NotificationSettings from '@lucide/svelte/icons/mail';
     import { toast } from 'svelte-sonner';
 
     import { routes } from './routes.svelte';
@@ -52,10 +50,17 @@
     <div class="flex flex-wrap items-start justify-between gap-4">
         <div class="flex flex-col gap-1">
             <H3 class="flex flex-wrap items-center gap-x-1">
-                {#if projectQuery.isSuccess}
-                    <span>{projectQuery.data.name}</span>
+                {#if isConfigurePage}
+                    <span>Send Events</span>
+                    {#if projectQuery.isSuccess}
+                        <span>to {projectQuery.data.name}</span>
+                    {/if}
+                {:else}
+                    {#if projectQuery.isSuccess}
+                        <span>{projectQuery.data.name}</span>
+                    {/if}
+                    <span class="shrink-0">Settings</span>
                 {/if}
-                <span class="shrink-0">{isConfigurePage ? 'Configure Client' : 'Settings'}</span>
             </H3>
         </div>
         <div class="flex items-center gap-2">
@@ -64,9 +69,6 @@
                     <OrganizationAdminActionsDropdownMenu organization={organizationQuery.data} />
                 </GlobalUser>
             {/if}
-            <Button variant="secondary" size="icon" href={`${resolve('/(app)/account/notifications')}?project=${projectId}`} title="Notification Settings">
-                <NotificationSettings class="size-4" />
-            </Button>
         </div>
     </div>
     <div class="mt-6 space-y-6">

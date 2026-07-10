@@ -25,6 +25,7 @@
 </script>
 
 <DialogPortal {...portalProps}>
+	<!-- CUSTOM: ALLOW COMMAND/DIALOG CALLERS TO PASS CUSTOM OVERLAY CLASSES WITHOUT FORKED COMPONENT LOGIC. -->
 	<Dialog.Overlay class={overlayClass} />
 	<DialogPrimitive.Content
 		bind:ref

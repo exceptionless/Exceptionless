@@ -10,6 +10,7 @@
 	}: WithElementRef<HTMLAttributes<HTMLSpanElement>> = $props();
 </script>
 
+<!-- CUSTOM: REDUCE LETTER SPACING TO MATCH COMPACT MENU KEYBOARD SHORTCUT CHIP STYLE. -->
 <span
 	bind:this={ref}
 	data-slot="dropdown-menu-shortcut"

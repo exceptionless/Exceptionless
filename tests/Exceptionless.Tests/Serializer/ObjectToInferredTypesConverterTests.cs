@@ -1,3 +1,5 @@
+using System.Text.Json;
+using Exceptionless.Core.Serialization;
 using Foundatio.Serializer;
 using Xunit;
 
@@ -29,7 +31,7 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
 
         // Assert
         Assert.NotNull(result);
-        Assert.True(result.TryGetValue("value", out var value));
+        Assert.True(result.TryGetValue("value", out object? value));
         Assert.IsType<bool>(value);
         Assert.True((bool)value);
     }
@@ -131,6 +133,48 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
     }
 
     [Fact]
+    public void Read_ScientificNotationOutsideDecimalRange_ReturnsDouble()
+    {
+        // Arrange
+        /* language=json */
+        const string json = """{"value": 1e100}""";
+
+        // Act
+        var result = _serializer.Deserialize<Dictionary<string, object?>>(json);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.IsType<double>(result["value"]);
+        Assert.Equal(1e100d, (double)result["value"]!);
+    }
+
+    [Fact]
+    public void Read_SubnormalDouble_ReturnsDouble()
+    {
+        /* language=json */
+        const string json = """{"value": 5e-324}""";
+
+        var result = _serializer.Deserialize<Dictionary<string, object?>>(json);
+
+        Assert.NotNull(result);
+        Assert.IsType<double>(result["value"]);
+        Assert.Equal(5e-324d, (double)result["value"]!);
+    }
+
+    [Fact]
+    public void Read_TinyNegativeDouble_ReturnsDouble()
+    {
+        /* language=json */
+        const string json = """{"value": -1.23456789e-100}""";
+
+        var result = _serializer.Deserialize<Dictionary<string, object?>>(json);
+
+        Assert.NotNull(result);
+        Assert.IsType<double>(result["value"]);
+        Assert.Equal(-1.23456789e-100d, (double)result["value"]!);
+    }
+
+    [Fact]
     public void Read_PlainString_ReturnsString()
     {
         // Arrange
@@ -174,7 +218,7 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
 
         // Assert
         Assert.NotNull(result);
-        Assert.True(result.TryGetValue("nothing", out var value));
+        Assert.True(result.TryGetValue("nothing", out object? value));
         Assert.Null(value);
     }
 
@@ -218,9 +262,10 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
     }
 
     [Fact]
-    public void Read_DateOnly_ReturnsDateTimeOffset()
+    public void Read_DateOnly_ReturnsString()
     {
-        // Arrange
+        // Arrange - date-only strings without time component are preserved as strings
+        // to match legacy Newtonsoft behavior (DateParseHandling.None for Data dictionary)
         /* language=json */
         const string json = """{"date": "2024-01-15"}""";
 
@@ -229,7 +274,8 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
 
         // Assert
         Assert.NotNull(result);
-        Assert.IsType<DateTimeOffset>(result["date"]);
+        Assert.IsType<string>(result["date"]);
+        Assert.Equal("2024-01-15", result["date"]);
     }
 
     [Fact]
@@ -645,8 +691,83 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
         Assert.IsType<long>(result1["value"]);
         Assert.Equal(Int64.MaxValue, result1["value"]);
 
-        // Assert - Number exceeding long.MaxValue becomes double
+        // Assert - Number exceeding long.MaxValue but fitting decimal remains decimal
         Assert.NotNull(result2);
         Assert.IsType<decimal>(result2["value"]);
+    }
+
+    [Fact]
+    public void Read_IntegerOutsideDecimalRange_ReturnsDouble()
+    {
+        // Arrange
+        /* language=json */
+        const string json = """{"value": 999999999999999999999999999999999999999999999999999999999999}""";
+
+        // Act
+        var result = _serializer.Deserialize<Dictionary<string, object?>>(json);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.IsType<double>(result["value"]);
+        Assert.Equal(1e60d, (double)result["value"]!, 12);
+    }
+
+    [Fact]
+    public void ConvertJsonElement_LargeExponent_ReturnsDouble()
+    {
+        // Arrange: 1e100 exceeds decimal range (~7.9×10²⁸), must not throw OverflowException
+        using var doc = JsonDocument.Parse("1e100");
+        var element = doc.RootElement;
+
+        // Act
+        object? result = JsonElementConverter.Convert(element);
+
+        // Assert
+        Assert.IsType<double>(result);
+        Assert.Equal(1e100d, (double)result);
+    }
+
+    [Fact]
+    public void ConvertJsonElement_SmallExponent_ReturnsDecimal()
+    {
+        // Arrange: 1.23e10 fits in decimal
+        using var doc = JsonDocument.Parse("1.23e10");
+        var element = doc.RootElement;
+
+        // Act
+        object? result = JsonElementConverter.Convert(element);
+
+        // Assert
+        Assert.IsType<decimal>(result);
+        Assert.Equal(12300000000m, (decimal)result);
+    }
+
+    [Fact]
+    public void ConvertJsonElement_VeryLargeInteger_ReturnsDecimal()
+    {
+        // Arrange: 9223372036854775808 (long.MaxValue + 1) doesn't fit in long
+        using var doc = JsonDocument.Parse("9223372036854775808");
+        var element = doc.RootElement;
+
+        // Act
+        object? result = JsonElementConverter.Convert(element);
+
+        // Assert
+        Assert.IsType<decimal>(result);
+    }
+
+    [Fact]
+    public void ConvertJsonElement_IntegerOutsideDecimalRange_ReturnsDouble()
+    {
+        // Arrange: integer exceeds decimal range, must not throw OverflowException
+        using var doc = JsonDocument.Parse("999999999999999999999999999999999999999999999999999999999999");
+        var element = doc.RootElement;
+
+        // Act
+        object? result = JsonElementConverter.Convert(element);
+
+        // Assert
+        Assert.IsType<double>(result);
+        Assert.Equal(1e60d, (double)result, 12);
     }
 }

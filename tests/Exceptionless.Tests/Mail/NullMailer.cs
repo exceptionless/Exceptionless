@@ -5,6 +5,11 @@ namespace Exceptionless.Tests.Mail;
 
 public class NullMailer : IMailer
 {
+    public Task<bool> SendContactRequestAsync(string name, string emailAddress, string? company, string? subject, string message, string? clientIpAddress, string? userAgent, string? referrer)
+    {
+        return Task.FromResult(true);
+    }
+
     public Task<bool> SendEventNoticeAsync(User user, PersistentEvent ev, Project project, bool isNew, bool isRegression, int totalOccurrences)
     {
         return Task.FromResult(true);

@@ -1,11 +1,11 @@
 using System.Collections.Concurrent;
-using System.Text.Json;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Queues;
+using Foundatio.Serializer;
 using HandlebarsDotNet;
 using Microsoft.Extensions.Logging;
 
@@ -18,17 +18,53 @@ public class Mailer : IMailer
     private readonly FormattingPluginManager _pluginManager;
     private readonly AppOptions _appOptions;
     private readonly TimeProvider _timeProvider;
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly ITextSerializer _serializer;
     private readonly ILogger _logger;
 
-    public Mailer(IQueue<MailMessage> queue, FormattingPluginManager pluginManager, JsonSerializerOptions jsonOptions, AppOptions appOptions, TimeProvider timeProvider, ILogger<Mailer> logger)
+    public Mailer(IQueue<MailMessage> queue, FormattingPluginManager pluginManager, ITextSerializer serializer, AppOptions appOptions, TimeProvider timeProvider, ILogger<Mailer> logger)
     {
         _queue = queue;
         _pluginManager = pluginManager;
         _appOptions = appOptions;
         _timeProvider = timeProvider;
-        _jsonOptions = jsonOptions;
+        _serializer = serializer;
         _logger = logger;
+    }
+
+    public async Task<bool> SendContactRequestAsync(string name, string emailAddress, string? company, string? subject, string message, string? clientIpAddress, string? userAgent, string? referrer)
+    {
+        string? contactEmailAddress = _appOptions.EmailOptions.ContactEmailAddress;
+        if (String.IsNullOrWhiteSpace(contactEmailAddress))
+        {
+            _logger.LogWarning("Contact request mail was not sent: ContactEmailAddress is not configured");
+            return false;
+        }
+
+        string requestSubject = String.IsNullOrWhiteSpace(subject)
+            ? "Website contact request"
+            : subject.Trim().StripInvisible().Truncate(100);
+        string mailSubject = $"[Contact] {requestSubject}";
+        const string template = "contact-request";
+        var data = new Dictionary<string, object?> {
+                { "Subject", mailSubject },
+                { "Name", name.Trim() },
+                { "EmailAddress", emailAddress.Trim() },
+                { "Company", company?.Trim() },
+                { "RequestSubject", requestSubject },
+                { "MessageLines", message.SplitLines().ToArray() },
+                { "ClientIpAddress", clientIpAddress },
+                { "UserAgent", userAgent },
+                { "Referrer", referrer }
+            };
+
+        string? messageId = await QueueMessageAsync(new MailMessage
+        {
+            To = contactEmailAddress,
+            ReplyTo = emailAddress.Trim(),
+            Subject = mailSubject,
+            Body = RenderTemplate(template, data)
+        }, template);
+        return !String.IsNullOrEmpty(messageId);
     }
 
     public async Task<bool> SendEventNoticeAsync(User user, PersistentEvent ev, Project project, bool isNew, bool isRegression, int totalOccurrences)
@@ -59,7 +95,7 @@ public class Mailer : IMailer
             };
 
         AddDefaultFields(ev, result.Data);
-        AddUserInfo(ev, messageData, _jsonOptions);
+        AddUserInfo(ev, messageData);
 
         const string template = "event-notice";
         await QueueMessageAsync(new MailMessage
@@ -71,10 +107,10 @@ public class Mailer : IMailer
         return true;
     }
 
-    private static void AddUserInfo(PersistentEvent ev, Dictionary<string, object?> data, JsonSerializerOptions jsonOptions)
+    private void AddUserInfo(PersistentEvent ev, Dictionary<string, object?> data)
     {
-        var ud = ev.GetUserDescription(jsonOptions);
-        var ui = ev.GetUserIdentity(jsonOptions);
+        var ud = ev.GetUserDescription(_serializer, _logger);
+        var ui = ev.GetUserIdentity(_serializer, _logger);
         if (!String.IsNullOrEmpty(ud?.Description))
             data["UserDescription"] = ud.Description;
 

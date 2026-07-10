@@ -19,7 +19,7 @@ public class XEnumNamesSchemaTransformer : IOpenApiSchemaTransformer
 
         // Get enum names and values
         string[] names = Enum.GetNames(type);
-        var values = Enum.GetValuesAsUnderlyingType(type).Cast<object>().ToArray();
+        object[] values = Enum.GetValuesAsUnderlyingType(type).Cast<object>().ToArray();
 
         // Add enum values if not already present
         if (schema.Enum is null || schema.Enum.Count == 0)

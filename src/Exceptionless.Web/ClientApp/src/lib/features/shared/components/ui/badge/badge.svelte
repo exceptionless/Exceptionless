@@ -11,7 +11,7 @@
 				outline: "border-border text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground",
 				ghost: "hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50",
 				link: "text-primary underline-offset-4 hover:underline",
-				// Custom semantic color variants — adapted to new [a]:hover: selector format
+				// CUSTOM: ADD PRODUCT-SPECIFIC SEMANTIC VARIANTS FOR STATE-BASED BADGE STYLING.
 				red: "bg-red-100 text-red-700 [a]:hover:bg-red-200 border-transparent focus-visible:ring-red-400 dark:bg-red-900/30 dark:text-red-300 dark:[a]:hover:bg-red-900/50",
 				info: "bg-primary/10 text-foreground border-transparent [a]:hover:bg-primary/15 focus-visible:ring-primary/30 dark:bg-primary/15 dark:[a]:hover:bg-primary/20",
 				yellow: "bg-yellow-100 text-yellow-700 [a]:hover:bg-yellow-200 border-transparent focus-visible:ring-yellow-400 dark:bg-yellow-900/30 dark:text-yellow-300 dark:[a]:hover:bg-yellow-900/50",

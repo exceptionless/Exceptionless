@@ -10,7 +10,7 @@
     import { deleteSuspendOrganization, postSetBonusOrganization, postSuspendOrganization } from '$features/organizations/api.svelte';
     import SetEventBonusDialog from '$features/organizations/components/dialogs/set-event-bonus-dialog.svelte';
     import SuspendOrganizationDialog from '$features/organizations/components/dialogs/suspend-organization-dialog.svelte';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { getProblemMessage } from '$features/shared/validation';
     import Award from '@lucide/svelte/icons/award';
     import Pause from '@lucide/svelte/icons/pause';
     import Play from '@lucide/svelte/icons/play';
@@ -55,8 +55,7 @@
             await markSuspended.mutateAsync(params);
             toastId = toast.success('Successfully suspended the organization.');
         } catch (error: unknown) {
-            const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
-            toastId = toast.error(`An error occurred while trying to suspend the organization: ${message}`);
+            toastId = toast.error(`An error occurred while trying to suspend the organization: ${getProblemMessage(error, 'Please try again.')}`);
             throw error;
         }
     }
@@ -68,8 +67,7 @@
             await setOrganizationBonus.mutateAsync(params);
             toastId = toast.success('Successfully set the organization bonus.');
         } catch (error: unknown) {
-            const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
-            toastId = toast.error(`An error occurred while trying to set the organization bonus: ${message}`);
+            toastId = toast.error(`An error occurred while trying to set the organization bonus: ${getProblemMessage(error, 'Please try again.')}`);
             throw error;
         }
     }
@@ -81,8 +79,7 @@
             await markUnsuspended.mutateAsync();
             toastId = toast.success('Successfully unsuspended the organization.');
         } catch (error: unknown) {
-            const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
-            toastId = toast.error(`An error occurred while trying to unsuspend the organization: ${message}`);
+            toastId = toast.error(`An error occurred while trying to unsuspend the organization: ${getProblemMessage(error, 'Please try again.')}`);
         }
     }
 
@@ -97,8 +94,7 @@
             await runJob.mutateAsync(params);
             toastId = toast.success('Successfully enqueued the Fix Stack Stats job.');
         } catch (error: unknown) {
-            const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
-            toastId = toast.error(`An error occurred while starting the job: ${message}`);
+            toastId = toast.error(`An error occurred while starting the job: ${getProblemMessage(error, 'Please try again.')}`);
             throw error;
         }
     }

@@ -51,7 +51,7 @@ public class FixStackStatsWorkItemHandler : WorkItemHandlerBase
             if (context.CancellationToken.IsCancellationRequested)
                 break;
 
-            var (organizationRepaired, organizationSkipped) = await ProcessOrganizationAsync(context, organizationIds[index], wi.UtcStart, utcEnd);
+            (int organizationRepaired, int organizationSkipped) = await ProcessOrganizationAsync(context, organizationIds[index], wi.UtcStart, utcEnd);
             repaired += organizationRepaired;
             skipped += organizationSkipped;
 

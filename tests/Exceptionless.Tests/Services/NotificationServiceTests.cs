@@ -19,7 +19,7 @@ public sealed class NotificationServiceTests : TestWithServices
     {
         // Arrange
         var messageBus = GetService<IMessageBus>();
-        var releaseCount = 0;
+        int releaseCount = 0;
         await messageBus.SubscribeAsync<CacheLockReleased>(_ =>
         {
             Interlocked.Increment(ref releaseCount);
@@ -27,7 +27,7 @@ public sealed class NotificationServiceTests : TestWithServices
         }, TestCancellationToken);
 
         // Act
-        var isLocked = await NotificationService.IsOrganizationNotificationLockedAsync(PrimaryOrganizationId, isOverMonthlyLimit: true);
+        bool isLocked = await NotificationService.IsOrganizationNotificationLockedAsync(PrimaryOrganizationId, isOverMonthlyLimit: true);
 
         // Assert
         Assert.False(isLocked);
