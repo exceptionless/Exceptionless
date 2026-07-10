@@ -115,17 +115,17 @@
         }
     }));
 
+    const debouncedFormSubmit = debounce(1000, (targetOrganizationId: string) => {
+        if (targetOrganizationId === organizationId) {
+            void form.handleSubmit();
+        }
+    });
+
     $effect(() => {
         if (organizationQuery.isSuccess && initializedOrganizationId !== organizationId) {
             debouncedFormSubmit.cancel();
             form.reset(getOrganizationBillingInformation(organizationQuery.data));
             initializedOrganizationId = organizationId;
-        }
-    });
-
-    const debouncedFormSubmit = debounce(1000, (targetOrganizationId: string) => {
-        if (targetOrganizationId === organizationId) {
-            void form.handleSubmit();
         }
     });
 
