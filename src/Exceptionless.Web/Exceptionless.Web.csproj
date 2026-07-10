@@ -22,6 +22,9 @@
          Keep this direct reference on the latest 2.x release until ASP.NET Core supports 3.x. -->
     <PackageReference Include="Microsoft.OpenApi" Version="2.12.0" />
     <PackageReference Include="ModelContextProtocol.AspNetCore" Version="2.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
+    <PackageReference Include="Microsoft.OpenApi" Version="2.7.5" />
+    <PackageReference Include="ModelContextProtocol.AspNetCore" Version="1.4.1" />
     <PackageReference Include="Riok.Mapperly" Version="4.3.1" />
     <PackageReference Include="MiniValidation" Version="0.10.0" />
     <PackageReference Include="OAuth2" Version="1.0.0" />

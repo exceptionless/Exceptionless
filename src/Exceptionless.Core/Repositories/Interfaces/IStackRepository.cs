@@ -15,4 +15,5 @@ public interface IStackRepository : IRepositoryOwnedByOrganizationAndProject<Sta
     Task<FindResults<Stack>> GetStacksForCleanupAsync(string organizationId, DateTime cutoff);
     Task<FindResults<Stack>> GetSoftDeleted();
     Task<long> SoftDeleteByProjectIdAsync(string organizationId, string projectId);
+    Task<IReadOnlyCollection<string>> GetDuplicateSignaturesAsync(int maxResults = 10000);
 }
