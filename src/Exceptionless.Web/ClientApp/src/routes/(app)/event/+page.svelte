@@ -43,7 +43,9 @@
     import EventsBulkActionsDropdownMenu from '$features/events/components/table/events-bulk-actions-dropdown-menu.svelte';
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
     import { defaultEventColumnVisibility, getColumns } from '$features/events/components/table/options.svelte';
+    import { filterUsesPremiumFeatures } from '$features/events/premium-filter';
     import { organization } from '$features/organizations/context.svelte';
+    import { premiumPage } from '$features/organizations/premium-page.svelte';
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
     import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import * as agg from '$features/shared/api/aggregations';
@@ -640,6 +642,10 @@
         set time(value) {
             queryParams.time = value ? serializeTimeQueryParam(value) : ALL_TIME_QUERY_VALUE;
         }
+    });
+
+    $effect(() => {
+        premiumPage.current = filterUsesPremiumFeatures(eventsQueryParameters.filter, 'event') ? 'search' : undefined;
     });
 
     const client = useFetchClient();

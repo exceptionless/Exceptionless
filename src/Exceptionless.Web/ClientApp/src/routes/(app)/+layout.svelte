@@ -11,7 +11,6 @@
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
     import { UpgradeRequiredDialog } from '$features/billing';
     import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
-    import { filterUsesPremiumFeatures } from '$features/events/premium-filter';
     import { buildIntercomBootOptions, IntercomShell } from '$features/intercom';
     import { shouldLoadIntercomOrganization } from '$features/intercom/config';
     import Notifications from '$features/notifications/components/notifications.svelte';
@@ -51,7 +50,7 @@
 
     let { children }: Props = $props();
     let isAuthenticated = $derived(!!accessToken.current);
-    let requiresPremium = $derived(premiumPage.requiresPremium || filterUsesPremiumFeatures(page.url.searchParams.get('filter')));
+    let requiresPremium = $derived(premiumPage.requiresPremium);
     const sidebar = useSidebar();
     let isCommandOpen = $state(false);
     let commandResetKey = $state(0);
