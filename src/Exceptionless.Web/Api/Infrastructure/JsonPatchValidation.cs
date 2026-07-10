@@ -33,20 +33,15 @@ public static class JsonPatchValidation
             if (operation.OperationType != OperationType.Replace && operation.OperationType != OperationType.Test)
                 return Result.Invalid(ValidationError.Create("patch", $"Operation '{operation.op}' is not supported. Only 'replace' and 'test' operations are allowed."));
 
-            // Reject empty/root paths — must target a specific property
-            if (String.IsNullOrWhiteSpace(operation.path) || operation.path == "/")
-                return Result.Invalid(ValidationError.Create("patch", "Path must target a specific property (root path is not allowed)."));
-
-            // Validate path format: must start with / and have exactly one segment
+            // Check immutable paths
             var normalizedPath = NormalizePath(operation.path);
-            var segments = normalizedPath.Split('/');
-            // segments[0] is always "" (before the leading /), segments[1] should be the property name
-            if (segments.Length != 2 || String.IsNullOrEmpty(segments[1]))
-                return Result.Invalid(ValidationError.Create("patch", $"Path '{operation.path}' is not valid. Only top-level property modifications are allowed."));
-
-            // Check immutable paths (case-insensitive to handle any casing variant)
             if (immutablePaths.Any(p => normalizedPath.Equals(NormalizePath(p), StringComparison.OrdinalIgnoreCase)))
-                return Result.Invalid(ValidationError.Create(segments[1], $"The property '{segments[1]}' cannot be modified."));
+                return Result.Invalid(ValidationError.Create(normalizedPath.TrimStart('/'), $"The property '{normalizedPath.TrimStart('/')}' cannot be modified."));
+
+            // Reject nested paths (only top-level properties allowed, matching Delta semantics)
+            var segments = normalizedPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length > 1)
+                return Result.Invalid(ValidationError.Create("patch", $"Nested path '{operation.path}' is not supported. Only top-level property modifications are allowed."));
         }
 
         return Result.Success();
