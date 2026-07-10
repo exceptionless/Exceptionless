@@ -9,7 +9,7 @@ describe('StackSortHeader', () => {
         render(StackSortHeader, { active: true, label: 'Events', onclick });
 
         const button = screen.getByRole('button', { name: 'Sort by Events descending' });
-        expect(button).toHaveAttribute('aria-pressed', 'true');
+        expect(button.getAttribute('aria-pressed')).toBe('true');
 
         await fireEvent.click(button);
 
@@ -19,6 +19,6 @@ describe('StackSortHeader', () => {
     it('does not mark inactive sort modes as selected', () => {
         render(StackSortHeader, { active: false, label: 'First', onclick: vi.fn() });
 
-        expect(screen.getByRole('button', { name: 'Sort by First descending' })).toHaveAttribute('aria-pressed', 'false');
+        expect(screen.getByRole('button', { name: 'Sort by First descending' }).getAttribute('aria-pressed')).toBe('false');
     });
 });
