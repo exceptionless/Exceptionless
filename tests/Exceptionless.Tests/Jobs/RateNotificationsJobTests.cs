@@ -6,6 +6,7 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Mail;
+using Exceptionless.Tests.Utility;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
@@ -80,6 +81,45 @@ public class RateNotificationsJobTests : IntegrationTestsBase
         Assert.NotNull(organization);
         organization.Features.Remove(OrganizationExtensions.RateNotificationsFeature);
         await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
+        await _queue.EnqueueAsync(notification);
+
+        // Act
+        var result = await _job.RunAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Empty(_mailer.RateNotifications);
+    }
+
+    [Fact]
+    public async Task RunAsync_UnverifiedEmail_SkipsNotification()
+    {
+        // Arrange
+        var (_, notification) = await CreateRuleAndNotificationAsync();
+        var user = await _userRepository.GetByIdAsync(notification.UserId);
+        Assert.NotNull(user);
+        user.IsEmailAddressVerified = false;
+        user.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
+        await _queue.EnqueueAsync(notification);
+
+        // Act
+        var result = await _job.RunAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Empty(_mailer.RateNotifications);
+    }
+
+    [Fact]
+    public async Task RunAsync_UserRemovedFromOrganization_SkipsNotification()
+    {
+        // Arrange
+        var (_, notification) = await CreateRuleAndNotificationAsync();
+        var user = await _userRepository.GetByIdAsync(notification.UserId);
+        Assert.NotNull(user);
+        user.OrganizationIds.Remove(notification.OrganizationId);
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
         await _queue.EnqueueAsync(notification);
 
         // Act

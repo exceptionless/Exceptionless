@@ -25,6 +25,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
     private readonly IOrganizationRepository _organizationRepository;
     private readonly ProjectData _projectData;
     private readonly IProjectRepository _projectRepository;
+    private readonly IRateNotificationRuleRepository _rateNotificationRuleRepository;
     private readonly StackData _stackData;
     private readonly IStackRepository _stackRepository;
     private readonly EventData _eventData;
@@ -46,6 +47,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
         _organizationRepository = GetService<IOrganizationRepository>();
         _projectData = GetService<ProjectData>();
         _projectRepository = GetService<IProjectRepository>();
+        _rateNotificationRuleRepository = GetService<IRateNotificationRuleRepository>();
         _stackData = GetService<StackData>();
         _stackRepository = GetService<IStackRepository>();
         _eventData = GetService<EventData>();
@@ -145,6 +147,24 @@ public class CleanupDataJobTests : IntegrationTestsBase
         var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
         var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
         var persistentEvent = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
+        var rule = await _rateNotificationRuleRepository.AddAsync(new RateNotificationRule
+        {
+            OrganizationId = organization.Id,
+            ProjectId = project.Id,
+            UserId = TestConstants.UserId,
+            Name = "Organization cleanup test",
+            IsEnabled = true,
+            Signal = RateNotificationSignal.Errors,
+            Subject = RateNotificationSubject.Project,
+            Threshold = 1,
+            Window = TimeSpan.FromMinutes(5),
+            Cooldown = TimeSpan.FromMinutes(5),
+            Version = 1,
+            CreatedUtc = TimeProvider.GetUtcNow().UtcDateTime,
+            UpdatedUtc = TimeProvider.GetUtcNow().UtcDateTime
+        }, o => o.ImmediateConsistency());
+        var ruleCache = GetService<RateNotificationRuleCache>();
+        Assert.Equal(1, (await ruleCache.GetCounterPlanAsync(project.Id, TestCancellationToken)).RuleCount);
         string iconPath = OrganizationStoragePaths.GetProfileImagePath(organization.Id, "icon.png");
         using var stream = new MemoryStream([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
         await _fileStorage.SaveFileAsync(iconPath, stream, TestCancellationToken);
@@ -155,6 +175,8 @@ public class CleanupDataJobTests : IntegrationTestsBase
         Assert.Null(await _projectRepository.GetByIdAsync(project.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await _stackRepository.GetByIdAsync(stack.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await _eventRepository.GetByIdAsync(persistentEvent.Id, o => o.IncludeSoftDeletes()));
+        Assert.Null(await _rateNotificationRuleRepository.GetByIdAsync(rule.Id, o => o.IncludeSoftDeletes()));
+        Assert.Equal(0, (await ruleCache.GetCounterPlanAsync(project.Id, TestCancellationToken)).RuleCount);
         Assert.False(await _fileStorage.ExistsAsync(iconPath));
     }
 
@@ -248,6 +270,24 @@ public class CleanupDataJobTests : IntegrationTestsBase
 
         var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
         var persistentEvent = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
+        var rule = await _rateNotificationRuleRepository.AddAsync(new RateNotificationRule
+        {
+            OrganizationId = organization.Id,
+            ProjectId = project.Id,
+            UserId = TestConstants.UserId,
+            Name = "Project cleanup test",
+            IsEnabled = true,
+            Signal = RateNotificationSignal.Errors,
+            Subject = RateNotificationSubject.Project,
+            Threshold = 1,
+            Window = TimeSpan.FromMinutes(5),
+            Cooldown = TimeSpan.FromMinutes(5),
+            Version = 1,
+            CreatedUtc = TimeProvider.GetUtcNow().UtcDateTime,
+            UpdatedUtc = TimeProvider.GetUtcNow().UtcDateTime
+        }, o => o.ImmediateConsistency());
+        var ruleCache = GetService<RateNotificationRuleCache>();
+        Assert.Equal(1, (await ruleCache.GetCounterPlanAsync(project.Id, TestCancellationToken)).RuleCount);
 
         await _job.RunAsync(TestCancellationToken);
 
@@ -255,6 +295,8 @@ public class CleanupDataJobTests : IntegrationTestsBase
         Assert.Null(await _projectRepository.GetByIdAsync(project.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await _stackRepository.GetByIdAsync(stack.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await _eventRepository.GetByIdAsync(persistentEvent.Id, o => o.IncludeSoftDeletes()));
+        Assert.Null(await _rateNotificationRuleRepository.GetByIdAsync(rule.Id, o => o.IncludeSoftDeletes()));
+        Assert.Equal(0, (await ruleCache.GetCounterPlanAsync(project.Id, TestCancellationToken)).RuleCount);
     }
 
     [Fact]

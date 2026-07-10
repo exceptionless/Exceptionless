@@ -4,6 +4,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
@@ -131,6 +132,8 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             CreatedUtc = now,
             UpdatedUtc = now
         }, o => o.ImmediateConsistency());
+        var ruleCache = GetService<RateNotificationRuleCache>();
+        Assert.Equal(1, (await ruleCache.GetCounterPlanAsync(project.Id, TestCancellationToken)).RuleCount);
 
         // Act
         var workItems = await SendRequestAsAsync<WorkInProgressResult>(r => r
@@ -149,7 +152,8 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         // Assert
         var deleted = await _projectRepository.GetByIdAsync(project.Id);
         Assert.Null(deleted);
-        Assert.Null(await _rateNotificationRuleRepository.GetByIdAsync(rule.Id));
+        Assert.Null(await _rateNotificationRuleRepository.GetByIdAsync(rule.Id, o => o.IncludeSoftDeletes()));
+        Assert.Equal(0, (await ruleCache.GetCounterPlanAsync(project.Id, TestCancellationToken)).RuleCount);
     }
 
     [Fact]

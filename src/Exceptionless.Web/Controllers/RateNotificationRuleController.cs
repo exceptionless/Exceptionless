@@ -47,8 +47,7 @@ public class RateNotificationRuleController : ExceptionlessApiController
         IUserRepository userRepository,
         IStackRepository stackRepository,
         ILockProvider lockProvider,
-        TimeProvider timeProvider,
-        ILoggerFactory loggerFactory) : base(timeProvider)
+        TimeProvider timeProvider) : base(timeProvider)
     {
         _ruleRepository = ruleRepository;
         _projectRepository = projectRepository;

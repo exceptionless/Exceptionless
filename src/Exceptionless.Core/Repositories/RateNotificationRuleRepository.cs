@@ -24,17 +24,6 @@ public sealed class RateNotificationRuleRepository : RepositoryOwnedByOrganizati
             .SortAscending(r => r.Name), options);
     }
 
-    public Task<FindResults<RateNotificationRule>> GetEnabledByProjectIdAsync(string projectId, CommandOptionsDescriptor<RateNotificationRule>? options = null)
-    {
-        ArgumentException.ThrowIfNullOrEmpty(projectId);
-
-        return FindAsync(q => q
-            .Project(projectId)
-            .FieldEquals(r => r.IsEnabled, true)
-            .FieldEquals(r => r.IsDeleted, false)
-            .SortAscending(r => r.Id), options);
-    }
-
     public Task<FindResults<RateNotificationRule>> GetByOrganizationIdAndUserIdAsync(string organizationId, string userId, CommandOptionsDescriptor<RateNotificationRule>? options = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(organizationId);
@@ -43,6 +32,17 @@ public sealed class RateNotificationRuleRepository : RepositoryOwnedByOrganizati
         return FindAsync(q => q
             .Organization(organizationId)
             .FieldEquals(r => r.UserId, userId)
+            .SortAscending(r => r.Id), options);
+    }
+
+    public Task<FindResults<RateNotificationRule>> GetEnabledByProjectIdAsync(string projectId, CommandOptionsDescriptor<RateNotificationRule>? options = null)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(projectId);
+
+        return FindAsync(q => q
+            .Project(projectId)
+            .FieldEquals(r => r.IsEnabled, true)
+            .FieldEquals(r => r.IsDeleted, false)
             .SortAscending(r => r.Id), options);
     }
 

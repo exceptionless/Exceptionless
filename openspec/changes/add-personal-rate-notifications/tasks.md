@@ -57,7 +57,7 @@
   - Fields: RuleId, RuleVersion, OrganizationId, ProjectId, UserId, SubjectKey, StackId, WindowStartUtc, WindowEndUtc, ObservedCount, Threshold
 
 - [x] **Register counter/evaluator services in DI**
-  - Register `RateNotificationRuleIndex`, `RateCounterService`, `RateNotificationEvaluatorJob`
+  - Register `RateNotificationRuleCache`, `RateCounterService`, `RateNotificationEvaluatorJob`
   - Register `IQueue<RateNotification>` in Core and Insulation bootstrappers
 
 ## Backend - Delivery
@@ -111,8 +111,9 @@
   - Validation matching backend constraints
   - Noise warning copy: "This rule may be noisy. Use a cooldown to avoid repeated emails."
 
-- [x] **Integrate into project settings**
-  - Add rate notifications section/tab in project notification settings
+- [x] **Integrate into account notification settings**
+  - Add a project-scoped rate notifications section to account notification settings
+  - Reuse the existing account notifications route and project selector
   - Gate the section with additive `ViewProject.has_rate_notifications`
 
 ## Tests
