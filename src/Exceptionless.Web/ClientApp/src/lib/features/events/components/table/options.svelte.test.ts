@@ -5,13 +5,16 @@ import { describe, expect, it } from 'vitest';
 import { getColumns } from './options.svelte';
 
 describe('getColumns', () => {
-    it('keeps stack events, first, and last columns sortable', () => {
+    it('uses dedicated stack-mode controls instead of API sort parameters', () => {
         const result = getColumns<StackSummaryModel<SummaryTemplateKeys>>('stack_frequent');
         const columnsById = Object.fromEntries(result.map((column) => [column.id, column]));
 
-        expect(columnsById.events?.enableSorting).toBeUndefined();
-        expect(columnsById.first?.enableSorting).toBeUndefined();
-        expect(columnsById.last?.enableSorting).toBeUndefined();
+        expect(columnsById.events?.enableSorting).toBe(false);
+        expect(columnsById.first?.enableSorting).toBe(false);
+        expect(columnsById.last?.enableSorting).toBe(false);
+        expect(columnsById.events?.header).toBeTypeOf('function');
+        expect(columnsById.first?.header).toBeTypeOf('function');
+        expect(columnsById.last?.header).toBeTypeOf('function');
     });
 
     it('keeps summary message column unsortable', () => {

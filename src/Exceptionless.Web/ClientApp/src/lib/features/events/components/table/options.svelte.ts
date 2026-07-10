@@ -12,6 +12,7 @@ import type { EventSummaryModel, StackSummaryModel, SummaryModel, SummaryTemplat
 import LogLevel from '../log-level.svelte';
 import Summary from '../summary/summary.svelte';
 import EventsUserIdentitySummaryCell from './events-user-identity-summary-cell.svelte';
+import StackSortHeader from './stack-sort-header.svelte';
 import StackStatusCell from './stack-status-cell.svelte';
 import StackUsersSummaryCell from './stack-users-summary-cell.svelte';
 
@@ -25,9 +26,11 @@ export const defaultEventColumnVisibility: ColumnVisibilityState = {
     version: false
 };
 
+export type StackSortMode = Extract<GetEventsMode, 'stack_frequent' | 'stack_new' | 'stack_recent'>;
+
 export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(
     mode: GetEventsMode = 'summary',
-    options?: { showType?: boolean }
+    options?: { onStackSort?: (mode: StackSortMode) => void; showType?: boolean }
 ): ColumnDef<StockFeatures, TSummaryModel, unknown>[] {
     const showType = options?.showType ?? true;
     const columns: ColumnDef<StockFeatures, TSummaryModel, unknown>[] = [
@@ -175,7 +178,13 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
             {
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('total'),
                 cell: (prop) => renderComponent(NumberFormatter, { value: prop.getValue<number>() }),
-                header: 'Events',
+                enableSorting: false,
+                header: () =>
+                    renderComponent(StackSortHeader, {
+                        active: mode === 'stack_frequent',
+                        label: 'Events',
+                        onclick: () => options?.onStackSort?.('stack_frequent')
+                    }),
                 id: 'events',
                 meta: {
                     class: 'w-24'
@@ -184,7 +193,13 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
             {
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('first_occurrence'),
                 cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue<string>() }),
-                header: 'First',
+                enableSorting: false,
+                header: () =>
+                    renderComponent(StackSortHeader, {
+                        active: mode === 'stack_new',
+                        label: 'First',
+                        onclick: () => options?.onStackSort?.('stack_new')
+                    }),
                 id: 'first',
                 meta: {
                     class: 'w-36'
@@ -193,7 +208,13 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
             {
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('last_occurrence'),
                 cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue<string>() }),
-                header: 'Last',
+                enableSorting: false,
+                header: () =>
+                    renderComponent(StackSortHeader, {
+                        active: mode === 'stack_recent',
+                        label: 'Last',
+                        onclick: () => options?.onStackSort?.('stack_recent')
+                    }),
                 id: 'last',
                 meta: {
                     class: 'w-36'
