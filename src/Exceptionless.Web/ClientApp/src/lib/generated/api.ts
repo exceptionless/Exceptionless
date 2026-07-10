@@ -7,11 +7,6 @@ export enum StackStatus {
   Discarded = "discarded",
 }
 
-export enum ProjectIngestLimitType {
-  Fixed = 0,
-  PercentOfOrganizationLimit = 1,
-}
-
 export enum BillingStatus {
   Trialing = 0,
   Active = 1,
@@ -135,7 +130,7 @@ export interface NewProject {
   organization_id: string;
   name: string;
   delete_bot_data_enabled: boolean;
-  ingest_limit?: null | ProjectIngestLimit;
+  promoted_tabs?: string[] | null;
 }
 
 export interface NewSavedView {
@@ -145,7 +140,7 @@ export interface NewSavedView {
   filter?: null | string;
   time?: null | string;
   sort?: null | string;
-  /** @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$ */
+  /** @pattern ^(?![a-f0-9]{24}$)[a-z0-9]+(?:-[a-z0-9]+)*$ */
   slug?: null | string;
   view_type: string;
   filter_definitions?: null | string;
@@ -201,13 +196,79 @@ export interface OAuthAccount {
   extra_data: Record<string, string>;
 }
 
-export interface OrganizationBudgetAlertSettings {
-  enabled: boolean;
-  /**
-   * Percentage thresholds of the organization's effective monthly event allowance.
-   * Example: [50, 80, 90].
-   */
-  thresholds: number[];
+export interface OAuthAuthorizationServerMetadata {
+  issuer: string;
+  authorization_endpoint: string;
+  token_endpoint: string;
+  registration_endpoint: string;
+  revocation_endpoint: string;
+  grant_types_supported: string[];
+  response_types_supported: string[];
+  code_challenge_methods_supported: string[];
+  token_endpoint_auth_methods_supported: string[];
+  scopes_supported: string[];
+  resource_documentation: string;
+  client_id_metadata_document_supported: boolean;
+}
+
+export interface OAuthAuthorizeConsentResponse {
+  client_id: string;
+  client_name: string;
+  redirect_uri: string;
+  resource: string;
+  scopes: string[];
+  required_scopes: string[];
+}
+
+export interface OAuthAuthorizeForm {
+  client_id: string;
+  response_type: string;
+  redirect_uri: string;
+  scope?: null | string;
+  state?: null | string;
+  code_challenge: string;
+  code_challenge_method: string;
+  resource?: null | string;
+  organization_ids?: string[] | null;
+}
+
+export interface OAuthClientRegistrationRequest {
+  redirect_uris?: string[] | null;
+  client_name?: null | string;
+  scope?: null | string;
+  grant_types?: string[] | null;
+  response_types?: string[] | null;
+  token_endpoint_auth_method?: null | string;
+}
+
+export interface OAuthClientRegistrationResponse {
+  client_id: string;
+  client_name: string;
+  redirect_uris: string[];
+  grant_types: string[];
+  response_types: string[];
+  scope: string;
+  token_endpoint_auth_method: string;
+  /** @format int64 */
+  client_id_issued_at: number;
+}
+
+export interface OAuthProtectedResourceMetadata {
+  resource: string;
+  authorization_servers: string[];
+  scopes_supported: string[];
+  bearer_methods_supported: string[];
+  resource_documentation: string;
+}
+
+export interface OAuthTokenResponse {
+  access_token: string;
+  token_type: string;
+  /** @format int32 */
+  expires_in: number;
+  refresh_token?: null | string;
+  scope?: null | string;
+  resource?: null | string;
 }
 
 export interface PersistentEvent {
@@ -287,14 +348,6 @@ export interface PredefinedSavedViewDefinition {
   columnOrder?: string[] | null;
   showStats?: null | boolean;
   showChart?: null | boolean;
-}
-
-export interface ProjectIngestLimit {
-  type: ProjectIngestLimitType;
-  /** @format int32 */
-  fixed_limit?: null | number;
-  /** @format double */
-  percent_of_organization_limit?: null | number;
 }
 
 export interface ResetPasswordModel {
@@ -406,16 +459,10 @@ export interface UpdateEvent {
 }
 
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
-export interface UpdateOrganization {
-  name: string;
-  budget_alert_settings: object;
-}
-
-/** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
 export interface UpdateProject {
   name: string;
   delete_bot_data_enabled: boolean;
-  ingest_limit: object;
+  promoted_tabs?: string[] | null;
 }
 
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
@@ -494,6 +541,7 @@ export interface User {
   full_name: string;
   /** @format email */
   email_address: string;
+  avatar_file_name?: null | string;
   email_notifications_enabled: boolean;
   is_email_address_verified: boolean;
   verify_email_address_token?: null | string;
@@ -526,11 +574,36 @@ export interface ViewCurrentUser {
   full_name: string;
   /** @format email */
   email_address: string;
+  avatar_url?: null | string;
   email_notifications_enabled: boolean;
   is_email_address_verified: boolean;
   is_active: boolean;
   is_invite: boolean;
   roles: string[];
+}
+
+export interface ViewOAuthGrant {
+  id: string;
+  client_id: string;
+  application_name: string;
+  is_application_disabled: boolean;
+  scopes: string[];
+  organization_ids: string[];
+  resources: ViewOAuthGrantResource[];
+  /** @format date-time */
+  created_utc: string;
+  /** @format date-time */
+  updated_utc: string;
+  /** @format date-time */
+  expires_utc?: null | string;
+  /** @format date-time */
+  refresh_expires_utc?: null | string;
+}
+
+export interface ViewOAuthGrantResource {
+  resource: string;
+  scopes: string[];
+  organization_ids: string[];
 }
 
 export interface ViewOrganization {
@@ -541,6 +614,7 @@ export interface ViewOrganization {
   /** @format date-time */
   updated_utc: string;
   name: string;
+  icon_url?: null | string;
   plan_id: string;
   plan_name: string;
   plan_description: string;
@@ -586,7 +660,6 @@ export interface ViewOrganization {
   is_throttled: boolean;
   is_over_monthly_limit: boolean;
   is_over_request_limit: boolean;
-  budget_alert_settings?: null | OrganizationBudgetAlertSettings;
 }
 
 export interface ViewProject {
@@ -608,12 +681,6 @@ export interface ViewProject {
   event_count: number;
   has_premium_features: boolean;
   has_slack_integration: boolean;
-  ingest_limit?: null | ProjectIngestLimit;
-  /** @format int32 */
-  effective_ingest_limit?: null | number;
-  is_smart_throttled: boolean;
-  /** @format double */
-  smart_throttle_sample_rate?: null | number;
   usage_hours: UsageHourInfo[];
   usage: UsageInfo[];
 }
@@ -678,6 +745,7 @@ export interface ViewUser {
   full_name: string;
   /** @format email */
   email_address: string;
+  avatar_url?: null | string;
   email_notifications_enabled: boolean;
   is_email_address_verified: boolean;
   is_active: boolean;

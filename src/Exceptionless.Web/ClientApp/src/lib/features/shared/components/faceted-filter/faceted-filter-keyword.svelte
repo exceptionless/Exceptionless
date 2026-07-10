@@ -16,9 +16,10 @@
         value?: string;
     }
 
-    let { changed, hidden = false, open = $bindable(), remove, title = 'Keyword', toggleHidden, value }: Props = $props();
+    let { changed, hidden = false, open = $bindable(), remove, title = 'Raw Filter', toggleHidden, value }: Props = $props();
 
     const DEBOUNCE_MS = 500;
+    const FILTERING_DOCUMENTATION_HREF = 'https://exceptionless.com/docs/filtering-and-searching/';
 
     // eslint-disable-next-line svelte/prefer-writable-derived
     let updatedValue = $state<string | undefined>();
@@ -111,7 +112,15 @@
                 autocomplete="off"
             />
         </div>
-        <div id={`${title}-help`} class="sr-only">Type keywords. Enter applies, Escape cancels.</div>
-        <FacetedFilter.Actions clear={onClearFilter} {hidden} {remove} showClear={!!updatedValue?.trim()} {toggleHidden} />
+        <div id={`${title}-help`} class="sr-only">Type a raw filter expression. Enter applies, Escape cancels.</div>
+        <FacetedFilter.Actions
+            clear={onClearFilter}
+            helpHref={FILTERING_DOCUMENTATION_HREF}
+            helpLabel="Open filtering documentation"
+            {hidden}
+            {remove}
+            showClear={!!updatedValue?.trim()}
+            {toggleHidden}
+        />
     </Popover.Content>
 </Popover.Root>

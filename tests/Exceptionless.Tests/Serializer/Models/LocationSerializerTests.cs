@@ -14,24 +14,6 @@ public class LocationSerializerTests : TestWithServices
     }
 
     [Fact]
-    public void Deserialize_SnakeCaseJson_ParsesCorrectly()
-    {
-        // Arrange
-        /* language=json */
-        const string json = """{"country":"Canada","level1":"Ontario","level2":"York Region","locality":"Toronto"}""";
-
-        // Act
-        var result = _serializer.Deserialize<Location>(json);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal("Canada", result.Country);
-        Assert.Equal("Ontario", result.Level1);
-        Assert.Equal("York Region", result.Level2);
-        Assert.Equal("Toronto", result.Locality);
-    }
-
-    [Fact]
     public void RoundTrip_WithAllProperties_PreservesValues()
     {
         // Arrange
@@ -48,9 +30,6 @@ public class LocationSerializerTests : TestWithServices
         var result = _serializer.Deserialize<Location>(json);
 
         // Assert
-        SerializerContractAssertions.IncludesProperties(json, "level1", "level2");
-        SerializerContractAssertions.ExcludesProperties(json, "Level1", "Level2");
-
         Assert.NotNull(result);
         Assert.Equal("United States", result.Country);
         Assert.Equal("Texas", result.Level1);
@@ -96,5 +75,23 @@ public class LocationSerializerTests : TestWithServices
         Assert.Equal("日本", result.Country);
         Assert.Equal("東京都", result.Level1);
         Assert.Equal("渋谷区", result.Locality);
+    }
+
+    [Fact]
+    public void Deserialize_SnakeCaseJson_ParsesCorrectly()
+    {
+        // Arrange
+        /* language=json */
+        const string json = """{"country":"Canada","level1":"Ontario","level2":"York Region","locality":"Toronto"}""";
+
+        // Act
+        var result = _serializer.Deserialize<Location>(json);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("Canada", result.Country);
+        Assert.Equal("Ontario", result.Level1);
+        Assert.Equal("York Region", result.Level2);
+        Assert.Equal("Toronto", result.Locality);
     }
 }

@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Models;
 using IIdentity = System.Security.Principal.IIdentity;
@@ -13,6 +13,8 @@ public static class IdentityUtils
     public const string OrganizationIdsClaim = "OrganizationIds";
     public const string ProjectIdClaim = "ProjectId";
     public const string DefaultProjectIdClaim = "DefaultProjectId";
+    public const string OAuthClientIdClaim = "OAuthClientId";
+    public const string OAuthResourceClaim = "OAuthResource";
 
     public static ClaimsIdentity ToIdentity(this Token token)
     {
@@ -48,10 +50,17 @@ public static class IdentityUtils
 
     public static ClaimsIdentity ToIdentity(this User user, Token? token = null)
     {
+        return user.ToIdentity(token, null);
+    }
+
+    public static ClaimsIdentity ToIdentity(this User user, Token? token, IReadOnlyCollection<string>? organizationIds)
+    {
+        organizationIds ??= user.OrganizationIds.ToArray();
+
         var claims = new List<Claim>(7 + user.Roles.Count) {
                     new(ClaimTypes.Name, user.EmailAddress),
                     new(ClaimTypes.NameIdentifier, user.Id),
-                    new(OrganizationIdsClaim, String.Join(",", user.OrganizationIds))
+                    new(OrganizationIdsClaim, String.Join(",", organizationIds))
                 };
 
         if (token is not null)
@@ -62,7 +71,12 @@ public static class IdentityUtils
                 claims.Add(new Claim(DefaultProjectIdClaim, token.DefaultProjectId));
         }
 
-        if (user.Roles.Count > 0)
+        if (token is { Type: TokenType.Access } && token.Scopes.Count > 0)
+        {
+            foreach (string scope in token.Scopes)
+                claims.Add(new Claim(ClaimTypes.Role, scope));
+        }
+        else if (user.Roles.Count > 0)
         {
             // add implied scopes
             var roles = user.Roles.ToHashSet();
@@ -83,6 +97,31 @@ public static class IdentityUtils
 
         string authenticationType = token is { Type: TokenType.Access } ? TokenAuthenticationType : UserAuthenticationType;
         return new ClaimsIdentity(claims, authenticationType);
+    }
+
+    public static ClaimsIdentity ToIdentity(this User user, OAuthToken token, IReadOnlyCollection<string>? organizationIds = null)
+    {
+        organizationIds ??= user.GetActiveOAuthOrganizationIds(token);
+
+        var claims = new List<Claim>(6 + token.Scopes.Count) {
+                    new(ClaimTypes.Name, user.EmailAddress),
+                    new(ClaimTypes.NameIdentifier, user.Id),
+                    new(OrganizationIdsClaim, String.Join(",", organizationIds)),
+                    new(LoggedInUsersTokenId, token.Id),
+                    new(OAuthClientIdClaim, token.ClientId),
+                    new(OAuthResourceClaim, token.Resource)
+                };
+
+        foreach (string scope in token.Scopes)
+            claims.Add(new Claim(ClaimTypes.Role, scope));
+
+        return new ClaimsIdentity(claims, TokenAuthenticationType);
+    }
+
+    public static IReadOnlyCollection<string> GetActiveOAuthOrganizationIds(this User user, OAuthToken token)
+    {
+        var userOrganizationIds = user.OrganizationIds.ToHashSet(StringComparer.Ordinal);
+        return token.OrganizationIds.Where(userOrganizationIds.Contains).Distinct(StringComparer.Ordinal).ToArray();
     }
 
     public static bool IsAuthenticated(this ClaimsPrincipal principal)
@@ -127,9 +166,8 @@ public static class IdentityUtils
     }
 
     /// <summary>
-    /// Gets the token id that authenticated the current user. If null, user logged in via oauth.
+    /// Gets the token id that authenticated the current user.
     /// </summary>
-    /// <param name="principal"></param>
     public static string? GetLoggedInUsersTokenId(this ClaimsPrincipal principal)
     {
         return IsUserAuthType(principal) ? GetClaimValue(principal, LoggedInUsersTokenId) : null;

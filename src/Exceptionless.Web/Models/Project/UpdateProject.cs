@@ -7,4 +7,5 @@ public record UpdateProject
     public string Name { get; set; } = null!;
     public bool DeleteBotDataEnabled { get; set; }
     public ProjectIngestLimit? IngestLimit { get; set; }
+    public List<string>? PromotedTabs { get; set; }
 }

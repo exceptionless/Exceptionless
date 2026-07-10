@@ -239,7 +239,7 @@ public class UpdateProjectNotificationSettingsWorkItemHandlerTests : Integration
         project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
         Assert.NotNull(project);
         Assert.Equal(settingsBefore.Count, project.NotificationSettings.Count);
-        foreach (var key in settingsBefore.Keys)
+        foreach (string key in settingsBefore.Keys)
             Assert.Contains(key, project.NotificationSettings.Keys);
     }
 

@@ -1,6 +1,6 @@
-using System.Text.Json;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Exceptionless.Core.Serialization;
 using Foundatio.Serializer;
 using Xunit;
 
@@ -14,13 +14,11 @@ namespace Exceptionless.Tests.Serializer.Models;
 public class PersistentEventSerializerTests : TestWithServices
 {
     private readonly ITextSerializer _serializer;
-    private readonly JsonSerializerOptions _jsonOptions;
     private static readonly DateTimeOffset FixedDate = new(2024, 1, 15, 12, 0, 0, TimeSpan.Zero);
 
     public PersistentEventSerializerTests(ITestOutputHelper output) : base(output)
     {
         _serializer = GetService<ITextSerializer>();
-        _jsonOptions = GetService<JsonSerializerOptions>();
         TimeProvider.SetUtcNow(FixedDate);
     }
 
@@ -36,6 +34,7 @@ public class PersistentEventSerializerTests : TestWithServices
             StackId = "stack012",
             Type = Event.KnownTypes.Error,
             Message = "Test error occurred",
+            CreatedUtc = new DateTime(2024, 1, 15, 12, 0, 0, DateTimeKind.Utc),
             Date = FixedDate,
             Tags = ["production", "critical"],
             Geo = "37.7749,-122.4194",
@@ -58,6 +57,51 @@ public class PersistentEventSerializerTests : TestWithServices
         Assert.Equal("Test error occurred", deserialized.Message);
         Assert.Equal(99.95m, deserialized.Value);
         Assert.Equal(3, deserialized.Count);
+    }
+
+    [Fact]
+    public void SerializeToString_CreatedUtc_PreservesUtcStorageFormat()
+    {
+        // Arrange
+        var ev = new PersistentEvent
+        {
+            Id = "event123",
+            OrganizationId = "org456",
+            ProjectId = "proj789",
+            StackId = "stack012",
+            Type = Event.KnownTypes.Error,
+            CreatedUtc = new DateTime(2024, 1, 15, 12, 0, 0, DateTimeKind.Utc),
+            Date = FixedDate
+        };
+
+        // Act
+        string? json = _serializer.SerializeToString(ev);
+
+        // Assert
+        Assert.Contains("\"created_utc\":\"2024-01-15T12:00:00Z\"", json);
+    }
+
+    [Fact]
+    public void ConfigureExceptionlessApiDefaults_CreatedUtc_UsesStandardUtcFormat()
+    {
+        // Arrange
+        var options = new System.Text.Json.JsonSerializerOptions().ConfigureExceptionlessApiDefaults();
+        var ev = new PersistentEvent
+        {
+            Id = "event123",
+            OrganizationId = "org456",
+            ProjectId = "proj789",
+            StackId = "stack012",
+            Type = Event.KnownTypes.Error,
+            CreatedUtc = new DateTime(2024, 1, 15, 12, 0, 0, DateTimeKind.Utc),
+            Date = FixedDate
+        };
+
+        // Act
+        string json = System.Text.Json.JsonSerializer.Serialize(ev, options);
+
+        // Assert
+        Assert.Contains("\"created_utc\":\"2024-01-15T12:00:00Z\"", json);
     }
 
     [Fact]
@@ -105,7 +149,7 @@ public class PersistentEventSerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(deserialized);
-        var userInfo = deserialized.GetUserIdentity(_jsonOptions);
+        var userInfo = deserialized.GetUserIdentity(_serializer, _logger);
         Assert.NotNull(userInfo);
         Assert.Equal("user@example.com", userInfo.Identity);
         Assert.Equal("Test User", userInfo.Name);
@@ -146,7 +190,7 @@ public class PersistentEventSerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(deserialized);
-        var error = deserialized.GetError(_jsonOptions);
+        var error = deserialized.GetError(_serializer, _logger);
         Assert.NotNull(error);
         Assert.Equal("Test exception", error.Message);
         Assert.Equal("System.InvalidOperationException", error.Type);
@@ -183,7 +227,7 @@ public class PersistentEventSerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(deserialized);
-        var request = deserialized.GetRequestInfo(_jsonOptions);
+        var request = deserialized.GetRequestInfo(_serializer, _logger);
         Assert.NotNull(request);
         Assert.Equal("POST", request.HttpMethod);
         Assert.Equal("/api/events", request.Path);
@@ -215,7 +259,7 @@ public class PersistentEventSerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(deserialized);
-        var env = deserialized.GetEnvironmentInfo(_jsonOptions);
+        var env = deserialized.GetEnvironmentInfo(_serializer, _logger);
         Assert.NotNull(env);
         Assert.Equal("PROD-SERVER-01", env.MachineName);
         Assert.Equal(8, env.ProcessorCount);
@@ -270,9 +314,9 @@ public class PersistentEventSerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(deserialized);
-        Assert.NotNull(deserialized.GetUserIdentity(_jsonOptions));
-        Assert.NotNull(deserialized.GetRequestInfo(_jsonOptions));
-        Assert.NotNull(deserialized.GetEnvironmentInfo(_jsonOptions));
+        Assert.NotNull(deserialized.GetUserIdentity(_serializer, _logger));
+        Assert.NotNull(deserialized.GetRequestInfo(_serializer, _logger));
+        Assert.NotNull(deserialized.GetEnvironmentInfo(_serializer, _logger));
         Assert.Equal("1.0.0", deserialized.GetVersion());
         Assert.Equal("Error", deserialized.GetLevel());
     }
@@ -328,7 +372,7 @@ public class PersistentEventSerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(ev);
-        var userInfo = ev.GetUserIdentity(_jsonOptions);
+        var userInfo = ev.GetUserIdentity(_serializer, _logger);
         Assert.NotNull(userInfo);
         Assert.Equal("parsed@example.com", userInfo.Identity);
         Assert.Equal("Parsed User", userInfo.Name);
@@ -352,20 +396,28 @@ public class PersistentEventSerializerTests : TestWithServices
     }
 
     [Fact]
-    public void Deserialize_JsonWithUnknownRootProperties_IgnoresUnknownProperties()
+    public void Deserialize_JsonWithUnknownRootProperties_MergesIntoData()
     {
-        // Arrange
+        // Arrange: unknown root properties are captured via [JsonExtensionData] and
+        // merged into Data dictionary via Event.OnDeserialized().
         /* language=json */
-        const string json = """{"id":"unk-1","organization_id":"org1","project_id":"proj1","type":"log","message":"Test","date":"2024-01-15T12:00:00+00:00","unknown_property":"should_be_ignored","another_unknown":123,"tags":[],"count":1,"data":{},"is_first_occurrence":false,"is_fixed":false,"is_hidden":false}""";
+        const string json = """{"id":"unk-1","organization_id":"org1","project_id":"proj1","type":"log","message":"Test","date":"2024-01-15T12:00:00+00:00","unknown_property":"should_be_captured","another_unknown":123,"tags":[],"count":1,"data":{},"is_first_occurrence":false,"is_fixed":false,"is_hidden":false}""";
 
         // Act
         var ev = _serializer.Deserialize<PersistentEvent>(json);
 
-        // Assert
+        // Assert — known properties are parsed correctly
         Assert.NotNull(ev);
         Assert.Equal("unk-1", ev.Id);
         Assert.Equal("log", ev.Type);
         Assert.Equal("Test", ev.Message);
+
+        // Unknown root properties are merged into Data via OnDeserialized
+        Assert.NotNull(ev.Data);
+        Assert.True(ev.Data.TryGetValue("unknown_property", out object? unknownProperty));
+        Assert.Equal("should_be_captured", unknownProperty);
+        Assert.True(ev.Data.TryGetValue("another_unknown", out object? anotherUnknown));
+        Assert.Equal(123, anotherUnknown);
     }
 
     [Fact]

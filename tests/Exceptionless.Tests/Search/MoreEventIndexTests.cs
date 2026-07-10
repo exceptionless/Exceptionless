@@ -109,6 +109,22 @@ public sealed class MoreEventIndexTests : IntegrationTestsBase
     }
 
     [Theory]
+    [InlineData("ref-12345678", 1)]
+    [InlineData("reference:ref-12345678", 1)]
+    public async Task GetByReferenceIdAsync(string search, int count)
+    {
+        await CreateDataAsync(d =>
+        {
+            d.Event().ReferenceId("ref-12345678");
+            d.Event().ReferenceId("ref-87654321");
+        });
+
+        var result = await GetEventsAsync(search);
+        Assert.NotNull(result);
+        Assert.Equal(count, result.Total);
+    }
+
+    [Theory]
     [InlineData("NOT _exists_:tag", 1)]
     [InlineData("tag:test", 1)]
     [InlineData("tag:Blake", 0)]

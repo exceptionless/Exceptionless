@@ -1,7 +1,9 @@
+using Elastic.Clients.Elasticsearch.IndexManagement;
+using Elastic.Clients.Elasticsearch.Mapping;
 using Exceptionless.Core.Models;
+using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
-using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration;
 
@@ -15,34 +17,35 @@ public sealed class UserIndex : VersionedIndex<User>
         _configuration = configuration;
     }
 
-    public override TypeMappingDescriptor<User> ConfigureIndexMapping(TypeMappingDescriptor<User> map)
+    public override void ConfigureIndexMapping(TypeMappingDescriptor<User> map)
     {
-        return map
-            .Dynamic(false)
+        map
+            .Dynamic(DynamicMapping.False)
             .Properties(p => p
                 .SetupDefaults()
-                .Keyword(f => f.Name(e => e.OrganizationIds))
-                .Text(f => f.Name(u => u.FullName).AddKeywordField())
-                .Text(f => f.Name(u => u.EmailAddress).Analyzer(KEYWORD_LOWERCASE_ANALYZER).AddKeywordField())
-                .Boolean(f => f.Name(u => u.IsEmailAddressVerified))
-                .Keyword(f => f.Name(u => u.VerifyEmailAddressToken))
-                .Date(f => f.Name(u => u.VerifyEmailAddressTokenExpiration))
-                .Keyword(f => f.Name(u => u.PasswordResetToken))
-                .Date(f => f.Name(u => u.PasswordResetTokenExpiration))
-                .Keyword(f => f.Name(u => u.Roles))
-                .Object<OAuthAccount>(f => f.Name(o => o.OAuthAccounts.First()).Properties(mp => mp
-                    .Keyword(fu => fu.Name(m => m.Provider))
-                    .Keyword(fu => fu.Name(m => m.ProviderUserId))
-                    .Keyword(fu => fu.Name(m => m.Username))))
+                .Keyword(e => e.OrganizationIds)
+                .Text(e => e.FullName, t => t.AddKeywordField())
+                .Text(e => e.EmailAddress, t => t.Analyzer(KEYWORD_LOWERCASE_ANALYZER).AddKeywordField())
+                .Boolean(e => e.IsEmailAddressVerified)
+                .Keyword(e => e.VerifyEmailAddressToken)
+                .Date(e => e.VerifyEmailAddressTokenExpiration)
+                .Keyword(e => e.PasswordResetToken)
+                .Date(e => e.PasswordResetTokenExpiration)
+                .Keyword(e => e.Roles)
+                .Object(e => e.OAuthAccounts, o => o.Properties(mp => mp
+                    .Keyword("provider")
+                    .Keyword("provider_user_id")
+                    .Keyword("username")))
             );
     }
 
-    public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx)
+    public override void ConfigureIndex(CreateIndexRequestDescriptor idx)
     {
-        return base.ConfigureIndex(idx.Settings(s => s
-            .Analysis(d => d.Analyzers(b => b.Custom(KEYWORD_LOWERCASE_ANALYZER, c => c.Filters("lowercase").Tokenizer("keyword"))))
+        base.ConfigureIndex(idx);
+        idx.Settings(s => s
+            .Analysis(d => d.Analyzers(b => b.Custom(KEYWORD_LOWERCASE_ANALYZER, c => c.Filter("lowercase").Tokenizer("keyword"))))
             .NumberOfShards(_configuration.Options.NumberOfShards)
             .NumberOfReplicas(_configuration.Options.NumberOfReplicas)
-            .Priority(5)));
+            .Priority(5));
     }
 }

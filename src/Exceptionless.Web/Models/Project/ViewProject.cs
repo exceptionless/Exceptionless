@@ -17,7 +17,7 @@ public class ViewProject : IIdentity, IData, IHaveCreatedDate
     public string Name { get; set; } = null!;
     public bool DeleteBotDataEnabled { get; set; }
     public Core.Models.DataDictionary? Data { get; set; }
-    public HashSet<string> PromotedTabs { get; set; } = null!;
+    public List<string> PromotedTabs { get; set; } = null!;
     public bool? IsConfigured { get; set; }
     public long StackCount { get; set; }
     public long EventCount { get; set; }

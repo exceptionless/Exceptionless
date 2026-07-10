@@ -19,9 +19,10 @@
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
-    import Configure from '@lucide/svelte/icons/cloud-download';
+    import CloudDownload from '@lucide/svelte/icons/cloud-download';
     import Database from '@lucide/svelte/icons/database';
     import Stacks from '@lucide/svelte/icons/layers';
+    import NotificationSettings from '@lucide/svelte/icons/mail';
     import X from '@lucide/svelte/icons/x';
     import { createForm } from '@tanstack/svelte-form';
     import { toast } from 'svelte-sonner';
@@ -199,7 +200,6 @@
 
 <div class="space-y-8">
     <Muted>General project settings</Muted>
-
     <form
         onsubmit={(e) => {
             e.preventDefault();
@@ -306,11 +306,14 @@
 
     <div class="flex w-full items-center justify-between">
         <div class="flex gap-2">
-            <Button variant="secondary" href={`${resolve('/(app)/stacks')}?filter=project:${projectId}`}>
+            <Button variant="secondary" href={`${resolve('/(app)/stack')}?filter=project:${projectId}`}>
                 <Stacks class="mr-2 size-4" /> Go To Stacks
             </Button>
             <Button variant="secondary" href={resolve('/(app)/project/[projectId]/configure', { projectId })}>
-                <Configure class="mr-2 size-4" /> Configure Project
+                <CloudDownload class="mr-2 size-4" /> Client Setup
+            </Button>
+            <Button variant="secondary" href={`${resolve('/(app)/account/notifications')}?project=${projectId}`}>
+                <NotificationSettings class="mr-2 size-4" /> Notifications
             </Button>
             <Button variant="secondary" onclick={generateProjectSampleData} disabled={generateSampleDataMutation.isPending}>
                 {#if generateSampleDataMutation.isPending}

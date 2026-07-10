@@ -1,12 +1,10 @@
 using Exceptionless.Core.Migrations;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
 using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
 using Foundatio.Utility;
-using Nest;
 using Xunit;
 
 namespace Exceptionless.Tests.Migrations;
@@ -51,7 +49,7 @@ public class SetStackDuplicateSignatureMigrationTests : IntegrationTestsBase
         Assert.NotEmpty(actualStack.SignatureHash);
         Assert.Equal($"{actualStack.ProjectId}:{actualStack.SignatureHash}", actualStack.DuplicateSignature);
 
-        var results = await _repository.FindAsync(q => q.ElasticFilter(Query<Stack>.Term(s => s.DuplicateSignature, expectedDuplicateSignature)));
+        var results = await _repository.FindAsync(q => q.FieldEquals(s => s.DuplicateSignature, expectedDuplicateSignature));
         Assert.Single(results.Documents);
     }
 }

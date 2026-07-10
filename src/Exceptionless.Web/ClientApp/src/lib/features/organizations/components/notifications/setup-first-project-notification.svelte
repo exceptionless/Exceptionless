@@ -13,6 +13,6 @@
     <NotificationDescription>
         Please
         <A href={resolve('/(app)/project/add')}>add a new project</A>
-        and start becoming exceptionless in less than 60 seconds!
+        and start becoming Exceptionless in less than 60 seconds!
     </NotificationDescription>
 </Notification>

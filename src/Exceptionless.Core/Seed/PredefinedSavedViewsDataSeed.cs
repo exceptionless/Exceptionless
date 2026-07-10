@@ -52,7 +52,7 @@ public class PredefinedSavedViewsDataSeed : IDataSeed
                 return;
             }
 
-            // Update existing views whose fields have drifted (e.g., viewType rename).
+            // Update existing views whose fields have drifted from the definitions.
             // Never re-create views that were manually deleted at runtime.
             var existingByKey = existingResults.Documents
                 .Where(v => !String.IsNullOrEmpty(v.PredefinedKey))
@@ -62,13 +62,7 @@ public class PredefinedSavedViewsDataSeed : IDataSeed
             foreach (var definition in definitions)
             {
                 if (!existingByKey.TryGetValue(definition.Key, out var existing))
-                {
-                    // Fallback: try legacy key format (e.g., "issues:*" → "stacks:*" rename).
-                    var legacyKey = definition.Key.Replace("stacks:", "issues:", StringComparison.Ordinal);
-                    if (String.Equals(legacyKey, definition.Key, StringComparison.Ordinal)
-                        || !existingByKey.TryGetValue(legacyKey, out existing))
-                        continue;
-                }
+                    continue;
 
                 if (ApplyDefinition(existing, definition))
                     toSave.Add(existing);
@@ -134,7 +128,7 @@ public class PredefinedSavedViewsDataSeed : IDataSeed
 
     private static string GetSeedFilePath()
     {
-        var seedFileName = Path.GetFileName(SeedFileName);
+        string seedFileName = Path.GetFileName(SeedFileName);
         return Path.Combine(AppContext.BaseDirectory, "Seed", seedFileName);
     }
 

@@ -2,6 +2,8 @@ name: Build
 
 on:
   workflow_dispatch:
+  repository_dispatch:
+    types: [preview]
   push:
     branches: [main]
     tags: ["v*"]
@@ -9,6 +11,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
   packages: write
   pull-requests: write
 
@@ -17,27 +20,86 @@ env:
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
 
 jobs:
+  preview-context:
+    if: ${{ (github.event_name == 'repository_dispatch' && github.event.action == 'preview') || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'dev-preview')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      pr-number: ${{ steps.pr.outputs.pr-number }}
+      pr-sha: ${{ steps.pr.outputs.pr-sha }}
+      pr-short-sha: ${{ steps.pr.outputs.pr-short-sha }}
+      branch: ${{ steps.pr.outputs.branch }}
+
+    steps:
+      - name: Resolve preview pull request
+        id: pr
+        uses: actions/github-script@v9
+        with:
+          script: |
+            if (context.eventName === "repository_dispatch") {
+              const payload = context.payload.client_payload ?? {};
+              const prNumber = Number(payload.pr_number);
+              const headSha = payload.head_sha;
+
+              if (!prNumber || !headSha) {
+                core.setFailed("Preview dispatch payload is missing pr_number or head_sha.");
+                return;
+              }
+
+              core.setOutput("pr-number", String(prNumber));
+              core.setOutput("pr-sha", headSha);
+              core.setOutput("pr-short-sha", headSha.slice(0, 12));
+              core.setOutput("branch", payload.head_label || payload.head_ref || "unknown");
+              return;
+            }
+
+            const pullRequest = context.payload.pull_request;
+            core.setOutput("pr-number", String(pullRequest.number));
+            core.setOutput("pr-sha", pullRequest.head.sha);
+            core.setOutput("pr-short-sha", pullRequest.head.sha.slice(0, 12));
+            core.setOutput("branch", pullRequest.head.label || pullRequest.head.ref);
+
+  preview-comment-running:
+    needs: [preview-context]
+    if: ${{ always() && needs.preview-context.outputs.pr-number != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Post sticky running comment
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          number: ${{ needs.preview-context.outputs.pr-number }}
+          header: exceptionless-preview
+          message: |
+            Preview deploy running - [view progress](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            Building images and deploying the shared dev environment. This comment will update with the dev URL when the deploy finishes.
+
+            - Branch: `${{ needs.preview-context.outputs.branch }}`
+            - Commit: [`${{ needs.preview-context.outputs.pr-short-sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ needs.preview-context.outputs.pr-sha }})
+
   version:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
       version: ${{ steps.version.outputs.version }}
-      should_publish: ${{ (github.event_name != 'pull_request' || (github.head_ref == vars.DEV_DEPLOY_BRANCH && vars.DEV_DEPLOY_BRANCH != 'main' && vars.DEV_DEPLOY_BRANCH != '')) && secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != '' }}
+      should_publish: ${{ (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'dev-preview')) && secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != '' }}
       is_prod_deploy: ${{ startsWith(github.ref, 'refs/tags/v') && github.event_name != 'pull_request' }}
-      is_dev_deploy: ${{ (github.event_name == 'push' && github.ref == format('refs/heads/{0}', vars.DEV_DEPLOY_BRANCH || 'main')) || (github.event_name == 'pull_request' && github.head_ref == vars.DEV_DEPLOY_BRANCH && vars.DEV_DEPLOY_BRANCH != 'main' && vars.DEV_DEPLOY_BRANCH != '') }}
+      is_dev_deploy: ${{ (github.event_name == 'repository_dispatch' && github.event.action == 'preview') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'dev-preview')) }}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_sha) || github.event.pull_request.head.sha || github.sha }}
 
       - name: Build Reason
         env:
           GITHUB_EVENT: ${{ toJson(github) }}
+          PREVIEW_HEAD_REF: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_ref) || '' }}
         run: |
-          branch=${GITHUB_HEAD_REF:-${GITHUB_REF##*/}}
+          branch=${PREVIEW_HEAD_REF:-${GITHUB_HEAD_REF:-${GITHUB_REF##*/}}}
           branch=${branch//\//.}.
           if [[ "$branch" = "main." || "$branch" = "master." || "${GITHUB_REF}" = refs/tags* ]]; then
             branch=""
@@ -48,7 +110,7 @@ jobs:
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: 10.0.300
+          dotnet-version: 10.0.301
 
       - name: Version
         id: version
@@ -73,14 +135,16 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_sha) || github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: 10.0.300
+          dotnet-version: 10.0.301
 
-      - uses: actions/cache@v5
+      - uses: actions/cache@v6
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
@@ -123,7 +187,9 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_sha) || github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v6
@@ -131,7 +197,7 @@ jobs:
           node-version: 24
 
       - name: Cache node_modules
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         id: cache-node-modules
         with:
           path: src/Exceptionless.Web/ClientApp/node_modules
@@ -156,6 +222,153 @@ jobs:
       - name: Run Integration Tests
         run: echo "npm run test:integration"
 
+  test-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.*
+          dotnet-quality: ga
+
+      - name: Install Aspire CLI
+        run: |
+          export PATH="$HOME/.dotnet/tools:$PATH"
+          if dotnet tool list --global | grep -Eiq '^aspire\.cli[[:space:]]'; then
+            dotnet tool update --global Aspire.Cli --version 13.3.4
+          else
+            dotnet tool install --global Aspire.Cli --version 13.3.4
+          fi
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+          aspire --version
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - uses: actions/cache@v5
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Nuget Restore
+        run: dotnet restore ./Exceptionless.slnx
+
+      - name: Build
+        run: dotnet build ./Exceptionless.slnx --no-restore --configuration Release
+
+      - name: Install Client Npm Packages
+        working-directory: src/Exceptionless.Web/ClientApp
+        run: npm ci
+
+      - name: Install Legacy Client Npm Packages
+        working-directory: src/Exceptionless.Web/ClientApp.angular
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        working-directory: src/Exceptionless.Web/ClientApp
+        run: npx playwright install chromium --with-deps
+
+      - name: Start AppHost
+        run: |
+          aspire run --non-interactive --nologo -- --ci-e2e > aspire-run.log 2>&1 &
+          echo "$!" > aspire-run.pid
+          sleep 5
+          if ! kill -0 "$(cat aspire-run.pid)" 2>/dev/null; then
+            cat aspire-run.log
+            exit 1
+          fi
+
+      - name: Wait for Aspire Resources
+        run: |
+          for attempt in {1..60}; do
+            if curl -fksS https://web-ex.dev.localhost:7131/api/v2/about > /dev/null &&
+              curl -fksS https://web-ex.dev.localhost:7131/next/login > /dev/null; then
+              break
+            fi
+
+            if ! kill -0 "$(cat aspire-run.pid)" 2>/dev/null; then
+              cat aspire-run.log
+              exit 1
+            fi
+
+            if [ "$attempt" -eq 60 ]; then
+              cat aspire-run.log
+              exit 1
+            fi
+
+            sleep 5
+          done
+
+      - name: Verify E2E Endpoints
+        run: |
+          curl -fksS https://web-ex.dev.localhost:7131/api/v2/about > /dev/null
+          curl -fksS https://web-ex.dev.localhost:7131/next/login > /dev/null
+
+      - name: Run Playwright E2E Tests
+        working-directory: src/Exceptionless.Web/ClientApp
+        env:
+          E2E_URL: https://web-ex.dev.localhost:7131
+          E2E_RUN_ID: ci-${{ github.run_id }}-${{ github.run_attempt }}
+        run: npm run test:e2e:ci
+
+      - name: Stop AppHost
+        if: ${{ always() }}
+        run: |
+          aspire stop --all --non-interactive || true
+          if [ -f aspire-run.pid ]; then
+            kill "$(cat aspire-run.pid)" 2>/dev/null || true
+          fi
+
+      - name: Collect Aspire Logs
+        if: ${{ !cancelled() }}
+        run: |
+          mkdir -p aspire-logs
+          if [ -f aspire-run.log ]; then
+            cp aspire-run.log aspire-logs/
+          fi
+          if [ -f aspire-run.pid ]; then
+            cp aspire-run.pid aspire-logs/
+          fi
+          if [ -d "$HOME/.aspire/cli/logs" ]; then
+            cp -r "$HOME/.aspire/cli/logs/." aspire-logs/
+          fi
+          if [ -d "$HOME/.aspire/logs" ]; then
+            cp -r "$HOME/.aspire/logs/." aspire-logs/
+          fi
+
+      - name: Upload Playwright Report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-report
+          path: src/Exceptionless.Web/ClientApp/playwright-report/
+          retention-days: 14
+
+      - name: Upload Playwright Test Results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-test-results
+          path: src/Exceptionless.Web/ClientApp/test-results/
+          retention-days: 14
+
+      - name: Upload Aspire Logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: aspire-logs
+          path: aspire-logs/
+          retention-days: 14
+
   docker-build:
     runs-on: ubuntu-latest
     needs: [version]
@@ -167,7 +380,9 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_sha) || github.event.pull_request.head.sha || github.sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -222,7 +437,7 @@ jobs:
   docker-publish:
     if: ${{ needs.version.outputs.should_publish == 'true' }}
     runs-on: ubuntu-latest
-    needs: [version, docker-build, test-api, test-client]
+    needs: [version, docker-build, test-api, test-client, test-e2e]
     timeout-minutes: 30
     env:
       VERSION: ${{ needs.version.outputs.version }}
@@ -303,29 +518,78 @@ jobs:
     needs: [version, docker-publish]
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    concurrency:
+      group: ${{ needs.version.outputs.is_dev_deploy == 'true' && 'dev-environment-deploy' || format('deploy-{0}', github.run_id) }}
+      cancel-in-progress: false
     env:
       VERSION: ${{ needs.version.outputs.version }}
+      CLUSTER_NAME: ex-k8s-v6
+      RESOURCE_GROUP: exceptionless-v6
+      DEV_NAMESPACE: ex-dev
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_sha) || github.event.pull_request.head.sha || github.sha }}
 
       - name: Install Helm
         uses: azure/setup-helm@v5
 
+      - name: Azure Login
+        if: ${{ needs.version.outputs.is_dev_deploy == 'true' || needs.version.outputs.is_prod_deploy == 'true' }}
+        run: az login --service-principal --username ${{ secrets.AZ_USERNAME }} --password ${{ secrets.AZ_PASSWORD }} --tenant ${{ secrets.AZ_TENANT }} --output none
+
+      - name: Get AKS Credentials
+        if: ${{ needs.version.outputs.is_dev_deploy == 'true' || needs.version.outputs.is_prod_deploy == 'true' }}
+        run: az aks get-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER_NAME --overwrite-existing
+
+      - name: Ensure Development Infrastructure is Running
+        if: ${{ needs.version.outputs.is_dev_deploy == 'true' }}
+        run: |
+          kubectl scale statefulset/ex-dev-es-main --replicas=1 --namespace $DEV_NAMESPACE
+          kubectl apply -f k8s/ex-dev-redis.yaml
+          kubectl wait --for=condition=ready --timeout=300s pod ex-dev-es-main-0 --namespace $DEV_NAMESPACE
+          kubectl scale deployment/ex-dev-kb --replicas=1 --namespace $DEV_NAMESPACE
+
       - name: Deploy Changes to Development Environment
         if: ${{ needs.version.outputs.is_dev_deploy == 'true' }}
         run: |
-          az login --service-principal --username ${{ secrets.AZ_USERNAME }} --password ${{ secrets.AZ_PASSWORD }} --tenant ${{ secrets.AZ_TENANT }} --output none
-          az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
           sed -i "s/^appVersion:.*$/appVersion: '${VERSION}'/" ./k8s/exceptionless/Chart.yaml
-          helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-dev-values.yaml ex-dev --namespace ex-dev ./k8s/exceptionless
+          helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-dev-values.yaml ex-dev --namespace $DEV_NAMESPACE ./k8s/exceptionless
+
+      - name: Ensure Development Workloads are Running
+        if: ${{ needs.version.outputs.is_dev_deploy == 'true' }}
+        run: |
+          kubectl scale deployment/ex-dev-app --replicas=1 --namespace $DEV_NAMESPACE
+          kubectl scale deployment/ex-dev-api --replicas=1 --namespace $DEV_NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-close-inactive-sessions --replicas=1 --namespace $DEV_NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-daily-summary --replicas=1 --namespace $DEV_NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-event-notifications --replicas=1 --namespace $DEV_NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-event-usage --replicas=1 --namespace $DEV_NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-event-posts --replicas=1 --namespace $DEV_NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-event-user-descriptions --replicas=1 --namespace $DEV_NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-mail-message --replicas=1 --namespace $DEV_NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-stack-event-count --replicas=1 --namespace $DEV_NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-web-hooks --replicas=1 --namespace $DEV_NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-work-item --replicas=1 --namespace $DEV_NAMESPACE
+
+          kubectl patch cronjob/ex-dev-jobs-cleanup-data -p '{"spec":{"suspend": false}}' --namespace $DEV_NAMESPACE
+          kubectl patch cronjob/ex-dev-jobs-cleanup-orphaned-data -p '{"spec":{"suspend": false}}' --namespace $DEV_NAMESPACE
+          kubectl patch cronjob/ex-dev-jobs-download-geoip-database -p '{"spec":{"suspend": false}}' --namespace $DEV_NAMESPACE
+          kubectl patch cronjob/ex-dev-jobs-maintain-indexes -p '{"spec":{"suspend": false}}' --namespace $DEV_NAMESPACE
+          kubectl patch cronjob/ex-dev-jobs-migration -p '{"spec":{"suspend": false}}' --namespace $DEV_NAMESPACE
+
+          kubectl wait --for=condition=available --timeout=300s deployment/ex-dev-app --namespace $DEV_NAMESPACE
+          kubectl wait --for=condition=available --timeout=300s deployment/ex-dev-api --namespace $DEV_NAMESPACE
+
+          kubectl annotate namespace $DEV_NAMESPACE exceptionless.io/dev-started-at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --overwrite
+          kubectl annotate namespace $DEV_NAMESPACE exceptionless.io/dev-auto-stop-days="1" --overwrite
+          kubectl annotate namespace $DEV_NAMESPACE exceptionless.io/dev-auto-stop-hours- --overwrite 2>/dev/null || true
 
       - name: Deploy Changes to Production Environment
         if: ${{ needs.version.outputs.is_prod_deploy == 'true' }}
         run: |
-          az login --service-principal --username ${{ secrets.AZ_USERNAME }} --password ${{ secrets.AZ_PASSWORD }} --tenant ${{ secrets.AZ_TENANT }} --output none
-          az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
           sed -i "s/^appVersion:.*$/appVersion: '${VERSION}'/" ./k8s/exceptionless/Chart.yaml
           helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-prod-values.yaml ex-prod --namespace ex-prod ./k8s/exceptionless
 
@@ -346,3 +610,47 @@ jobs:
           else
             echo "- **Deployment**: Skipped" >> $GITHUB_STEP_SUMMARY
           fi
+
+  deploy-website:
+    name: Deploy website
+    if: ${{ needs.version.outputs.is_prod_deploy == 'true' }}
+    needs: [version, deploy]
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/website.yml
+
+  preview-comment-result:
+    needs: [preview-context, version, test-api, test-client, docker-build, docker-publish, deploy]
+    if: ${{ always() && needs.preview-context.outputs.pr-number != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Post sticky deployed comment
+        if: ${{ needs.deploy.result == 'success' }}
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          number: ${{ needs.preview-context.outputs.pr-number }}
+          header: exceptionless-preview
+          message: |
+            Preview deployed
+
+            - **App:** https://dev-app.exceptionless.io
+            - **Collector:** https://dev-collector.exceptionless.io
+            - Commit: [`${{ needs.preview-context.outputs.pr-short-sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ needs.preview-context.outputs.pr-sha }})
+            - Version: `${{ needs.version.outputs.version }}`
+            - Workflow run: [view logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+      - name: Post sticky failed comment
+        if: ${{ needs.deploy.result != 'success' }}
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          number: ${{ needs.preview-context.outputs.pr-number }}
+          header: exceptionless-preview
+          message: |
+            Preview deploy failed or did not complete. See [run logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+
+            - Branch: `${{ needs.preview-context.outputs.branch }}`
+            - Commit: [`${{ needs.preview-context.outputs.pr-short-sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ needs.preview-context.outputs.pr-sha }})
+            - Version: `${{ needs.version.outputs.version || 'not computed' }}`

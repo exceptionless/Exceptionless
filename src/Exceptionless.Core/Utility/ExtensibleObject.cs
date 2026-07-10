@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel;
+using System.Text.Json;
 using Exceptionless.Core.Extensions;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Utility;
 
@@ -22,7 +21,6 @@ public interface IExtensibleObject
 
 public class ExtensibleObject : INotifyPropertyChanged, IExtensibleObject
 {
-    [JsonProperty]
     private readonly Dictionary<string, object?> _extendedData = new();
 
     public void SetProperty<T>(string name, T value)
@@ -37,6 +35,11 @@ public class ExtensibleObject : INotifyPropertyChanged, IExtensibleObject
 
     public T? GetProperty<T>(string name)
     {
+        return GetProperty<T>(name, null);
+    }
+
+    public T? GetProperty<T>(string name, JsonSerializerOptions? options)
+    {
         object? value = GetProperty(name);
         if (value is null)
             throw new InvalidOperationException($"Property value \"{name}\" is null.  Can't use generic method on null values.");
@@ -44,8 +47,18 @@ public class ExtensibleObject : INotifyPropertyChanged, IExtensibleObject
         if (value is T tValue)
             return tValue;
 
-        if (value is JContainer container)
-            return container.ToObject<T>();
+        // Handle JsonElement from STJ deserialization
+        if (value is JsonElement jsonElement)
+        {
+            try
+            {
+                return jsonElement.Deserialize<T>(options);
+            }
+            catch (JsonException)
+            {
+                // Fall through to ToType conversion
+            }
+        }
 
         return value.ToType<T>();
     }

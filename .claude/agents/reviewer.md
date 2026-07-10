@@ -45,9 +45,9 @@ If Pass 0 finds security BLOCKERs: **STOP**. Report immediately.
 
 # Pass 1 — Machine Checks
 
-Before running build/check commands, ensure infrastructure is healthy per AGENTS.md "Infrastructure before tests."
+Before running machine checks, ensure infrastructure is healthy per AGENTS.md "Infrastructure before tests."
 
-After Pass 0 clears, run the project's build/check commands (scope-appropriate).
+After Pass 0 clears, run only scope-appropriate machine checks needed for review confidence. For Svelte frontend changes, do not run broad validation unless the review is explicitly for pre-push/pre-PR readiness with pending unpushed frontend changes, or the user requested it. Use `npm run validate` for that broad check.
 
 If fails: report as BLOCKERs, **STOP**.
 

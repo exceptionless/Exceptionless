@@ -32,4 +32,4 @@
     }
 </script>
 
-<ExtendedDataItem data={event.data?.[title]} demote={onDemote} isPromoted={true} {title}></ExtendedDataItem>
+<ExtendedDataItem data={event.data?.[title]} demote={onDemote} isPromoted={true} showTitle={false} {title}></ExtendedDataItem>

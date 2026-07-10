@@ -4,6 +4,7 @@ namespace Exceptionless.Core.Mail;
 
 public interface IMailer
 {
+    Task<bool> SendContactRequestAsync(string name, string emailAddress, string? company, string? subject, string message, string? clientIpAddress, string? userAgent, string? referrer);
     Task<bool> SendEventNoticeAsync(User user, PersistentEvent ev, Project project, bool isNew, bool isRegression, int totalOccurrences);
     Task SendOrganizationAddedAsync(User sender, Organization organization, User user);
     Task SendOrganizationInviteAsync(User sender, Organization organization, Invite invite);
