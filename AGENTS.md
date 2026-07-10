@@ -99,6 +99,7 @@ tests/                         # C# tests and HTTP samples
 
 - Fill out the existing PR template when creating a PR.
 - Use `feature/` for feature branch names and `issue/` for bug fix or issue branch names; keep PR titles neutral and project-facing, and do not add `codex/`, `[codex]`, or other agent branding unless the user explicitly asks for it.
+- Before creating a PR branch, fetch the default branch and branch from `origin/main` (or the repository default), never from a detached or unknown worktree `HEAD`. Before pushing a long-running change, fetch again and rebase if the base branch moved.
 - Keep descriptions concise: what changed, why, affected APIs/behaviors, verification, and breaking changes.
 - In isolated Codex worktrees, Git metadata and GitHub network checks may be outside the sandbox. If `gh auth status` reports an invalid credential or Git ref writes fail as read-only, retry with elevated access before asking the user to reauthenticate or diagnosing a repository problem.
 - For dependency upgrades, review release notes/changelogs, identify breaking changes, search affected APIs, check security advisories, note release age, run the appropriate full test suite before push, and document the evidence in the PR.
