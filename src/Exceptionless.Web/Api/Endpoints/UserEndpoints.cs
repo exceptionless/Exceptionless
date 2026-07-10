@@ -27,7 +27,7 @@ public static class UserEndpoints
             .AddEndpointFilter<AutoValidationEndpointFilter>()
             .WithTags("User");
 
-        group.MapGet("users/me", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+        group.MapGet("users/me", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result<ViewCurrentUser>>(new UserMessages.GetCurrentUser())).ToHttpResult(resultMapper))
         .Produces<ViewCurrentUser>()
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -38,12 +38,12 @@ public static class UserEndpoints
             }
         });
 
-        group.MapGet("users/me/oauth-grants", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+        group.MapGet("users/me/oauth-grants", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result<IReadOnlyCollection<ViewOAuthGrant>>>(new UserMessages.GetCurrentUserOAuthGrants())).ToHttpResult(resultMapper))
         .Produces<IReadOnlyCollection<ViewOAuthGrant>>()
         .WithSummary("Get current user OAuth grants");
 
-        group.MapDelete("users/me/oauth-grants/{id:minlength(1)}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+        group.MapDelete("users/me/oauth-grants/{id:minlength(1)}", async (string id, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result>(new UserMessages.RevokeCurrentUserOAuthGrant(id))).ToHttpResult(resultMapper))
         .Produces(StatusCodes.Status204NoContent)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -57,7 +57,7 @@ public static class UserEndpoints
             }
         });
 
-        group.MapGet("users/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+        group.MapGet("users/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result<object>>(new UserMessages.GetUserById(id))).ToHttpResult(resultMapper))
         .WithName("GetUserById")
         .Produces<ViewUser>()
@@ -72,7 +72,7 @@ public static class UserEndpoints
             }
         });
 
-        group.MapGet("organizations/{organizationId:objectid}/users", async (string organizationId, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, int page = 1, int limit = 10)
+        group.MapGet("organizations/{organizationId:objectid}/users", async (string organizationId, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, int page = 1, int limit = 10)
             => (await mediator.InvokeAsync<Result<PagedResult<ViewUser>>>(new UserMessages.GetUsersByOrganization(organizationId, page, limit))).ToHttpResult(resultMapper))
         .Produces<IReadOnlyCollection<ViewUser>>()
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -88,7 +88,7 @@ public static class UserEndpoints
             }
         });
 
-        group.MapPatch("users/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] Delta<UpdateUser>? changes)
+        group.MapPatch("users/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] Delta<UpdateUser>? changes)
             => changes is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<object>>(new UserMessages.UpdateUserMessage(id, changes))).ToHttpResult(resultMapper))
         .Accepts<Delta<UpdateUser>>(false, "application/json")
         .Produces<ViewUser>()
@@ -106,7 +106,7 @@ public static class UserEndpoints
             }
         });
 
-        group.MapPut("users/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] Delta<UpdateUser>? changes)
+        group.MapPut("users/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] Delta<UpdateUser>? changes)
             => changes is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<object>>(new UserMessages.UpdateUserMessage(id, changes))).ToHttpResult(resultMapper))
         .Accepts<Delta<UpdateUser>>(false, "application/json")
         .Produces<ViewUser>()
@@ -176,7 +176,7 @@ public static class UserEndpoints
             }
         });
 
-        group.MapDelete("users/me", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+        group.MapDelete("users/me", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result<ModelActionResults>>(new UserMessages.DeleteCurrentUser())).ToHttpResult(resultMapper))
         .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -188,7 +188,7 @@ public static class UserEndpoints
             }
         });
 
-        group.MapDelete("users/{ids:objectids}", async (string ids, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+        group.MapDelete("users/{ids:objectids}", async (string ids, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result<ModelActionResults>>(new UserMessages.DeleteUsers(ids.FromDelimitedString()))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
         .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
@@ -208,7 +208,7 @@ public static class UserEndpoints
             }
         });
 
-        group.MapPost("users/{id:objectid}/email-address/{email:minlength(1)}", async (string id, string email, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+        group.MapPost("users/{id:objectid}/email-address/{email:minlength(1)}", async (string id, string email, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result<UpdateEmailAddressResult>>(new UserMessages.UpdateEmailAddress(id, email))).ToHttpResult(resultMapper))
         .Produces<UpdateEmailAddressResult>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -228,7 +228,7 @@ public static class UserEndpoints
             }
         });
 
-        group.MapGet("users/verify-email-address/{token:token}", async (string token, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+        group.MapGet("users/verify-email-address/{token:token}", async (string token, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result>(new UserMessages.VerifyEmailAddress(token))).ToHttpResult(resultMapper))
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -244,7 +244,7 @@ public static class UserEndpoints
             }
         });
 
-        group.MapGet("users/{id:objectid}/resend-verification-email", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+        group.MapGet("users/{id:objectid}/resend-verification-email", async (string id, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result>(new UserMessages.ResendVerificationEmail(id))).ToHttpResult(resultMapper))
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -259,21 +259,21 @@ public static class UserEndpoints
             }
         });
 
-        group.MapPost("users/unverify-email-address", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+        group.MapPost("users/unverify-email-address", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result>(new UserMessages.UnverifyEmailAddresses())).ToHttpResult(resultMapper))
         .Accepts<string>("text/plain")
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
         .Produces(StatusCodes.Status200OK)
         .ExcludeFromDescription();
 
-        group.MapPost("users/{id:objectid}/admin-role", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+        group.MapPost("users/{id:objectid}/admin-role", async (string id, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result>(new UserMessages.AddAdminRole(id))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ExcludeFromDescription();
 
-        group.MapDelete("users/{id:objectid}/admin-role", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+        group.MapDelete("users/{id:objectid}/admin-role", async (string id, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result>(new UserMessages.RemoveAdminRole(id))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
         .Produces(StatusCodes.Status204NoContent)
@@ -283,7 +283,7 @@ public static class UserEndpoints
         return endpoints;
     }
 
-    private static async Task<HttpIResult> UploadAvatarAsync(string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromServices] IFileStorage fileStorage, [FromForm] IFormFile? file, CancellationToken cancellationToken)
+    private static async Task<HttpIResult> UploadAvatarAsync(string id, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromServices] IFileStorage fileStorage, [FromForm] IFormFile? file, CancellationToken cancellationToken)
     {
         var modelState = new ModelStateDictionary();
         var image = await ProfileImageStorage.SaveAsync(fileStorage, file, "users", id, modelState, cancellationToken);
@@ -310,7 +310,7 @@ public static class UserEndpoints
         }
     }
 
-    private static async Task<HttpIResult> DeleteAvatarAsync(string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromServices] IFileStorage fileStorage, CancellationToken cancellationToken)
+    private static async Task<HttpIResult> DeleteAvatarAsync(string id, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromServices] IFileStorage fileStorage, CancellationToken cancellationToken)
     {
         var result = await mediator.InvokeAsync<Result<ProfileImageUpdate<object>>>(new UserMessages.DeleteUserAvatar(id));
         if (!result.IsSuccess)

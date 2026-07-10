@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 using Exceptionless.Core.Extensions;
+using Microsoft.Extensions.DependencyInjection;
 using MiniValidation;
 
 namespace Exceptionless.Web.Api.Filters;
@@ -16,12 +17,18 @@ public class AutoValidationEndpointFilter : IEndpointFilter
 
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
     {
+        var isService = context.HttpContext.RequestServices as IServiceProviderIsService;
         var validatableArguments = context.Arguments
-            .Where(arg => arg is not null && ShouldValidate(arg.GetType()));
+            .Where(arg => arg is not null && isService?.IsService(arg.GetType()) != true && ShouldValidate(arg.GetType()));
 
         foreach (var argument in validatableArguments)
         {
-            if (!MiniValidator.TryValidate(argument!, out var errors))
+            var (isValid, errors) = await MiniValidator.TryValidateAsync(
+                argument!,
+                context.HttpContext.RequestServices,
+                recurse: true);
+
+            if (!isValid)
             {
                 var normalizedErrors = errors.ToDictionary(
                     e => e.Key.ToLowerUnderscoredWords(),

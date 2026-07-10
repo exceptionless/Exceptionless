@@ -1,9 +1,9 @@
 using Exceptionless.Core.Authorization;
 using Exceptionless.Web.Api.Filters;
-using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Models;
 using Foundatio.Mediator;
+using HttpIResult = Microsoft.AspNetCore.Http.IResult;
 using Microsoft.AspNetCore.Mvc;
 using AuthMessages = Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Utility.OpenApi;
@@ -19,12 +19,8 @@ public static class AuthEndpoints
             .AddEndpointFilter<AutoValidationEndpointFilter>()
             .WithTags("Auth");
 
-        group.MapPost("login", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, IServiceProvider serviceProvider, HttpContext httpContext, [FromBody] Login model) =>
+        group.MapPost("login", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext, [FromBody] Login model) =>
         {
-            var validation = await ApiValidation.ValidateAsync(model, serviceProvider, StatusCodes.Status422UnprocessableEntity);
-            if (validation is not null)
-                return validation;
-
             return (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.LoginMessage(model, httpContext))).ToHttpResult(resultMapper);
         })
         .AllowAnonymous()
@@ -52,7 +48,7 @@ public static class AuthEndpoints
             }
         });
 
-        group.MapGet("intercom", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, HttpContext httpContext)
+        group.MapGet("intercom", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext)
             => (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.GetIntercomToken(httpContext))).ToHttpResult(resultMapper))
         .Produces<TokenResult>()
         .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -66,7 +62,7 @@ public static class AuthEndpoints
             }
         });
 
-        group.MapGet("logout", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, HttpContext httpContext)
+        group.MapGet("logout", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext)
             => (await mediator.InvokeAsync<Result>(new AuthMessages.LogoutMessage(httpContext))).ToHttpResult(resultMapper))
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -80,12 +76,8 @@ public static class AuthEndpoints
             }
         });
 
-        group.MapPost("signup", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, IServiceProvider serviceProvider, HttpContext httpContext, [FromBody] Signup model) =>
+        group.MapPost("signup", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext, [FromBody] Signup model) =>
         {
-            var validation = await ApiValidation.ValidateAsync(model, serviceProvider, StatusCodes.Status422UnprocessableEntity);
-            if (validation is not null)
-                return validation;
-
             return (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.SignupMessage(model, httpContext))).ToHttpResult(resultMapper);
         })
         .AllowAnonymous()
@@ -104,12 +96,8 @@ public static class AuthEndpoints
             }
         });
 
-        group.MapPost("github", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, IServiceProvider serviceProvider, HttpContext httpContext, [FromBody] ExternalAuthInfo value) =>
+        group.MapPost("github", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext, [FromBody] ExternalAuthInfo value) =>
         {
-            var validation = await ApiValidation.ValidateAsync(value, serviceProvider, StatusCodes.Status422UnprocessableEntity);
-            if (validation is not null)
-                return validation;
-
             return (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.GitHubLogin(value, httpContext))).ToHttpResult(resultMapper);
         })
         .AllowAnonymous()
@@ -126,12 +114,8 @@ public static class AuthEndpoints
             }
         });
 
-        group.MapPost("google", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, IServiceProvider serviceProvider, HttpContext httpContext, [FromBody] ExternalAuthInfo value) =>
+        group.MapPost("google", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext, [FromBody] ExternalAuthInfo value) =>
         {
-            var validation = await ApiValidation.ValidateAsync(value, serviceProvider, StatusCodes.Status422UnprocessableEntity);
-            if (validation is not null)
-                return validation;
-
             return (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.GoogleLogin(value, httpContext))).ToHttpResult(resultMapper);
         })
         .AllowAnonymous()
@@ -148,12 +132,8 @@ public static class AuthEndpoints
             }
         });
 
-        group.MapPost("facebook", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, IServiceProvider serviceProvider, HttpContext httpContext, [FromBody] ExternalAuthInfo value) =>
+        group.MapPost("facebook", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext, [FromBody] ExternalAuthInfo value) =>
         {
-            var validation = await ApiValidation.ValidateAsync(value, serviceProvider, StatusCodes.Status422UnprocessableEntity);
-            if (validation is not null)
-                return validation;
-
             return (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.FacebookLogin(value, httpContext))).ToHttpResult(resultMapper);
         })
         .AllowAnonymous()
@@ -170,12 +150,8 @@ public static class AuthEndpoints
             }
         });
 
-        group.MapPost("live", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, IServiceProvider serviceProvider, HttpContext httpContext, [FromBody] ExternalAuthInfo value) =>
+        group.MapPost("live", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext, [FromBody] ExternalAuthInfo value) =>
         {
-            var validation = await ApiValidation.ValidateAsync(value, serviceProvider, StatusCodes.Status422UnprocessableEntity);
-            if (validation is not null)
-                return validation;
-
             return (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.LiveLogin(value, httpContext))).ToHttpResult(resultMapper);
         })
         .AllowAnonymous()
@@ -192,7 +168,7 @@ public static class AuthEndpoints
             }
         });
 
-        group.MapPost("unlink/{providerName:minlength(1)}", async (string providerName, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, HttpContext httpContext, [FromBody] ValueFromBody<string> providerUserId)
+        group.MapPost("unlink/{providerName:minlength(1)}", async (string providerName, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext, [FromBody] ValueFromBody<string> providerUserId)
             => (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.RemoveExternalLogin(providerName, providerUserId, httpContext))).ToHttpResult(resultMapper))
         .Accepts<ValueFromBody<string>>("application/json", "application/*+json")
         .Produces<TokenResult>()
@@ -209,12 +185,8 @@ public static class AuthEndpoints
             }
         });
 
-        group.MapPost("change-password", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, IServiceProvider serviceProvider, HttpContext httpContext, [FromBody] ChangePasswordModel model) =>
+        group.MapPost("change-password", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext, [FromBody] ChangePasswordModel model) =>
         {
-            var validation = await ApiValidation.ValidateAsync(model, serviceProvider, StatusCodes.Status422UnprocessableEntity);
-            if (validation is not null)
-                return validation;
-
             return (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.ChangePassword(model, httpContext))).ToHttpResult(resultMapper);
         })
         .Accepts<ChangePasswordModel>("application/json", "application/*+json")
@@ -228,12 +200,12 @@ public static class AuthEndpoints
             }
         });
 
-        group.MapGet("check-email-address/{email:minlength(1)}", async (string email, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, HttpContext httpContext)
+        group.MapGet("check-email-address/{email:minlength(1)}", async (string email, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext)
             => (await mediator.InvokeAsync<Result>(new AuthMessages.CheckEmailAddress(email, httpContext))).ToHttpResult(resultMapper))
         .AllowAnonymous()
         .ExcludeFromDescription();
 
-        group.MapGet("forgot-password/{email:minlength(1)}", async (string email, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, HttpContext httpContext)
+        group.MapGet("forgot-password/{email:minlength(1)}", async (string email, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext)
             => (await mediator.InvokeAsync<Result>(new AuthMessages.ForgotPassword(email, httpContext))).ToHttpResult(resultMapper))
         .AllowAnonymous()
         .Produces(StatusCodes.Status200OK)
@@ -249,12 +221,8 @@ public static class AuthEndpoints
             }
         });
 
-        group.MapPost("reset-password", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, IServiceProvider serviceProvider, HttpContext httpContext, [FromBody] ResetPasswordModel model) =>
+        group.MapPost("reset-password", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext, [FromBody] ResetPasswordModel model) =>
         {
-            var validation = await ApiValidation.ValidateAsync(model, serviceProvider, StatusCodes.Status422UnprocessableEntity);
-            if (validation is not null)
-                return validation;
-
             return (await mediator.InvokeAsync<Result>(new AuthMessages.ResetPassword(model, httpContext))).ToHttpResult(resultMapper);
         })
         .AllowAnonymous()
@@ -269,7 +237,7 @@ public static class AuthEndpoints
             }
         });
 
-        group.MapPost("cancel-reset-password/{token:minlength(1)}", async (string token, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, HttpContext httpContext)
+        group.MapPost("cancel-reset-password/{token:minlength(1)}", async (string token, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext)
             => (await mediator.InvokeAsync<Result>(new AuthMessages.CancelResetPassword(token, httpContext))).ToHttpResult(resultMapper))
         .AllowAnonymous()
         .Produces(StatusCodes.Status200OK)

@@ -1,8 +1,10 @@
 using Exceptionless.Core;
+using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Services;
 using Exceptionless.Web.Api.Messages;
+using Foundatio.Mediator;
 using Foundatio.Queues;
 
 namespace Exceptionless.Web.Api.Handlers;
@@ -27,6 +29,8 @@ public class StatusHandler(
         };
     }
 
+    [HandlerAuthorize(Policies = [AuthorizationRoles.UserPolicy, AuthorizationRoles.GlobalAdminPolicy])]
+    [HandlerEndpoint(HandlerMethod.Get, "/api/v2/queue-stats", ExcludeFromDescription = true)]
     public async Task<object> Handle(GetQueueStats message)
     {
         var eventQueueStats = await eventQueue.GetQueueStatsAsync();

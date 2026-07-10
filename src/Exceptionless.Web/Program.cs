@@ -19,6 +19,7 @@ using Exceptionless.Web.Utility.OpenApi;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Mediator;
 using Foundatio.Repositories.Exceptions;
+using HttpIResult = Microsoft.AspNetCore.Http.IResult;
 using Joonasw.AspNetCore.SecurityHeaders;
 using Joonasw.AspNetCore.SecurityHeaders.Csp;
 using Microsoft.AspNetCore.Authorization;
@@ -186,9 +187,9 @@ public partial class Program
                 o.AddSchemaTransformer<XEnumNamesSchemaTransformer>();
             });
 
-            builder.Services.AddSingleton<IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult>, ApiResultMapper>();
+            builder.Services.AddSingleton<IMediatorResultMapper<HttpIResult>, ApiResultMapper>();
             builder.Services.AddMediator()
-                .ConfigureResultMapping<Microsoft.AspNetCore.Http.IResult>(resultMapping => resultMapping
+                .ConfigureResultMapping<HttpIResult>(resultMapping => resultMapping
                     .MapStatus(ResultStatus.BadRequest, ApiResultMapper.MapBadRequest)
                     .MapStatus(ResultStatus.Invalid, ApiResultMapper.MapValidation)
                     .MapStatus(ResultStatus.NotFound, ApiResultMapper.MapNotFound)

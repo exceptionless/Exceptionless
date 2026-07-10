@@ -3,6 +3,7 @@ using Exceptionless.Core.Services;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Models.OAuth;
 using Foundatio.Mediator;
+using HttpIResult = Microsoft.AspNetCore.Http.IResult;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Exceptionless.Web.Api.Endpoints;
@@ -12,17 +13,17 @@ public static class OAuthEndpoints
     public static IEndpointRouteBuilder MapOAuthEndpoints(this IEndpointRouteBuilder endpoints)
     {
         endpoints.MapGet(".well-known/oauth-authorization-server", async (IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new GetAuthorizationServerMetadata()))
+            => await mediator.InvokeAsync<HttpIResult>(new GetAuthorizationServerMetadata()))
             .AllowAnonymous()
             .Produces<OAuthAuthorizationServerMetadata>();
 
         endpoints.MapGet(".well-known/oauth-protected-resource/mcp", async (IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new GetMcpProtectedResourceMetadata()))
+            => await mediator.InvokeAsync<HttpIResult>(new GetMcpProtectedResourceMetadata()))
             .AllowAnonymous()
             .Produces<OAuthProtectedResourceMetadata>();
 
         endpoints.MapGet(".well-known/oauth-protected-resource/api/v2", async (IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new GetRestApiProtectedResourceMetadata()))
+            => await mediator.InvokeAsync<HttpIResult>(new GetRestApiProtectedResourceMetadata()))
             .AllowAnonymous()
             .Produces<OAuthProtectedResourceMetadata>();
 
@@ -39,26 +40,26 @@ public static class OAuthEndpoints
             [FromQuery(Name = "code_challenge")] string? codeChallenge = null,
             [FromQuery(Name = "code_challenge_method")] string? codeChallengeMethod = null,
             [FromQuery] string? resource = null)
-                => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new RedirectToAuthorizeBridge()))
+                => await mediator.InvokeAsync<HttpIResult>(new RedirectToAuthorizeBridge()))
             .AllowAnonymous()
             .Produces(StatusCodes.Status302Found);
 
         group.MapPost("authorize", async (IMediator mediator, [FromBody] OAuthAuthorizeForm form)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new CompleteOAuthAuthorization(form)))
+            => await mediator.InvokeAsync<HttpIResult>(new CompleteOAuthAuthorization(form)))
             .RequireAuthorization(AuthorizationRoles.UserPolicy)
             .Accepts<OAuthAuthorizeForm>("application/json", "application/*+json")
             .Produces<OAuthAuthorizeResponse>()
             .Produces<OAuthErrorResponse>(StatusCodes.Status400BadRequest);
 
         group.MapPost("authorize/consent", async (IMediator mediator, [FromBody] OAuthAuthorizeForm form)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new GetOAuthAuthorizeConsent(form)))
+            => await mediator.InvokeAsync<HttpIResult>(new GetOAuthAuthorizeConsent(form)))
             .RequireAuthorization(AuthorizationRoles.UserPolicy)
             .Accepts<OAuthAuthorizeForm>("application/json", "application/*+json")
             .Produces<OAuthAuthorizeConsentResponse>()
             .Produces<OAuthErrorResponse>(StatusCodes.Status400BadRequest);
 
         group.MapPost("register", async (IMediator mediator, [FromBody] OAuthClientRegistrationRequest request)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new RegisterOAuthClient(request)))
+            => await mediator.InvokeAsync<HttpIResult>(new RegisterOAuthClient(request)))
             .AllowAnonymous()
             .Accepts<OAuthClientRegistrationRequest>("application/json", "application/*+json")
             .Produces<OAuthClientRegistrationResponse>(StatusCodes.Status201Created)
@@ -81,7 +82,7 @@ public static class OAuthEndpoints
         return endpoints;
     }
 
-    private static async Task<Microsoft.AspNetCore.Http.IResult> IssueTokenAsync(IMediator mediator, HttpRequest request, CancellationToken cancellationToken)
+    private static async Task<HttpIResult> IssueTokenAsync(IMediator mediator, HttpRequest request, CancellationToken cancellationToken)
     {
         var form = await request.ReadFormAsync(cancellationToken);
         var tokenForm = new OAuthTokenForm
@@ -95,10 +96,10 @@ public static class OAuthEndpoints
             Resource = GetFormValue(form, "resource")
         };
 
-        return await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new IssueOAuthToken(tokenForm));
+        return await mediator.InvokeAsync<HttpIResult>(new IssueOAuthToken(tokenForm));
     }
 
-    private static async Task<Microsoft.AspNetCore.Http.IResult> RevokeTokenAsync(IMediator mediator, HttpRequest request, CancellationToken cancellationToken)
+    private static async Task<HttpIResult> RevokeTokenAsync(IMediator mediator, HttpRequest request, CancellationToken cancellationToken)
     {
         var form = await request.ReadFormAsync(cancellationToken);
         var revokeForm = new OAuthRevokeForm
@@ -107,7 +108,7 @@ public static class OAuthEndpoints
             ClientId = GetFormValue(form, "client_id")
         };
 
-        return await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new RevokeOAuthToken(revokeForm));
+        return await mediator.InvokeAsync<HttpIResult>(new RevokeOAuthToken(revokeForm));
     }
 
     private static string? GetFormValue(IFormCollection form, string key)

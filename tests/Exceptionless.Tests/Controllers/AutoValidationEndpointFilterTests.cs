@@ -5,6 +5,7 @@ using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Results;
 using Foundatio.Mediator;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
@@ -73,6 +74,30 @@ public sealed class AutoValidationEndpointFilterTests
         var context = new TestEndpointFilterInvocationContext(
             new DefaultHttpContext(),
             [null, "text", 42, new ServiceWithoutValidationMetadata()]);
+        var nextCalled = false;
+
+        // Act
+        var result = await filter.InvokeAsync(context, _ =>
+        {
+            nextCalled = true;
+            return ValueTask.FromResult<object?>("next");
+        });
+
+        // Assert
+        Assert.True(nextCalled);
+        Assert.Equal("next", result);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_ServiceBackedValidation_UsesRequestServices()
+    {
+        // Arrange
+        using var serviceProvider = new ServiceCollection()
+            .AddSingleton<ValidationDependency>()
+            .BuildServiceProvider();
+        var filter = new AutoValidationEndpointFilter();
+        var httpContext = new DefaultHttpContext { RequestServices = serviceProvider };
+        var context = new TestEndpointFilterInvocationContext(httpContext, [new ServiceBackedRequest()]);
         var nextCalled = false;
 
         // Act
@@ -229,6 +254,17 @@ public sealed class AutoValidationEndpointFilterTests
     {
         public string Name { get; set; } = String.Empty;
     }
+
+    private sealed class ServiceBackedRequest : IValidatableObject
+    {
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if (validationContext.GetService(typeof(ValidationDependency)) is null)
+                yield return new ValidationResult("Validation dependency is unavailable.");
+        }
+    }
+
+    private sealed class ValidationDependency;
 
     private sealed class TestEndpointFilterInvocationContext(HttpContext httpContext, IList<object?> arguments) : EndpointFilterInvocationContext
     {

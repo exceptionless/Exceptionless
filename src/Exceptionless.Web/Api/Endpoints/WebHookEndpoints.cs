@@ -3,12 +3,12 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Web.Api.Filters;
-using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Mediator;
+using HttpIResult = Microsoft.AspNetCore.Http.IResult;
 using Microsoft.AspNetCore.Mvc;
 using WebHookMessages = Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Utility.OpenApi;
@@ -24,7 +24,7 @@ public static class WebHookEndpoints
             .AddEndpointFilter<AutoValidationEndpointFilter>()
             .WithTags("WebHook");
 
-        group.MapGet("projects/{projectId:objectid}/webhooks", async (string projectId, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, int page = 1, int limit = 10)
+        group.MapGet("projects/{projectId:objectid}/webhooks", async (string projectId, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, int page = 1, int limit = 10)
             => (await mediator.InvokeAsync<Result<PagedResult<WebHook>>>(new WebHookMessages.GetWebHooksByProject(projectId, page, limit))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
@@ -41,7 +41,7 @@ public static class WebHookEndpoints
             }
         });
 
-        group.MapGet("webhooks/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+        group.MapGet("webhooks/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result<WebHook>>(new WebHookMessages.GetWebHookById(id))).ToHttpResult(resultMapper))
         .WithName("GetWebHookById")
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
@@ -57,15 +57,11 @@ public static class WebHookEndpoints
             }
         });
 
-        group.MapPost("webhooks", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, IServiceProvider serviceProvider, [FromBody] NewWebHook webHook) =>
+        group.MapPost("webhooks", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] NewWebHook webHook) =>
         {
             var requiredFieldValidation = ValidateRequiredFields(webHook);
             if (requiredFieldValidation is not null)
                 return requiredFieldValidation;
-
-            var validation = await ApiValidation.ValidateAsync(webHook, serviceProvider);
-            if (validation is not null)
-                return validation;
 
             return (await mediator.InvokeAsync<Result<WebHook>>(new WebHookMessages.CreateWebHook(webHook))).ToHttpResult(resultMapper);
         })
@@ -83,7 +79,7 @@ public static class WebHookEndpoints
             }
         });
 
-        group.MapDelete("webhooks/{ids:objectids}", async (string ids, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+        group.MapDelete("webhooks/{ids:objectids}", async (string ids, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result<ModelActionResults>>(new WebHookMessages.DeleteWebHooks(ids.FromDelimitedString()))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
@@ -103,46 +99,46 @@ public static class WebHookEndpoints
             }
         });
 
-        group.MapPost("webhooks/subscribe", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] JsonDocument data)
+        group.MapPost("webhooks/subscribe", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] JsonDocument data)
             => (await mediator.InvokeAsync<Result<WebHook>>(new WebHookMessages.SubscribeWebHook(data, 1))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .ExcludeFromDescription();
 
-        endpoints.MapPost("api/v{apiVersion:int=2}/webhooks/subscribe", async (int apiVersion, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] JsonDocument data)
+        endpoints.MapPost("api/v{apiVersion:int=2}/webhooks/subscribe", async (int apiVersion, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] JsonDocument data)
             => (await mediator.InvokeAsync<Result<WebHook>>(new WebHookMessages.SubscribeWebHook(data, apiVersion))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .ExcludeFromDescription();
 
-        group.MapPost("webhooks/unsubscribe", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] JsonDocument data)
+        group.MapPost("webhooks/unsubscribe", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] JsonDocument data)
             => (await mediator.InvokeAsync<Result>(new WebHookMessages.UnsubscribeWebHook(data))).ToHttpResult(resultMapper))
         .AllowAnonymous()
         .ExcludeFromDescription();
 
-        group.MapGet("webhooks/test", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+        group.MapGet("webhooks/test", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result<object[]>>(new WebHookMessages.TestWebHook())).ToHttpResult(resultMapper))
         .ExcludeFromDescription();
 
-        group.MapPost("webhooks/test", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+        group.MapPost("webhooks/test", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result<object[]>>(new WebHookMessages.TestWebHook())).ToHttpResult(resultMapper))
         .ExcludeFromDescription();
 
-        endpoints.MapPost("api/v1/projecthook/subscribe", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] JsonDocument data)
+        endpoints.MapPost("api/v1/projecthook/subscribe", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] JsonDocument data)
             => (await mediator.InvokeAsync<Result<WebHook>>(new WebHookMessages.SubscribeWebHook(data, 1))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .ExcludeFromDescription();
 
-        endpoints.MapPost("api/v1/projecthook/unsubscribe", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromBody] JsonDocument data)
+        endpoints.MapPost("api/v1/projecthook/unsubscribe", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] JsonDocument data)
             => (await mediator.InvokeAsync<Result>(new WebHookMessages.UnsubscribeWebHook(data))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AllowAnonymous()
         .ExcludeFromDescription();
 
-        endpoints.MapGet("api/v1/projecthook/test", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+        endpoints.MapGet("api/v1/projecthook/test", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result<object[]>>(new WebHookMessages.TestWebHook())).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .ExcludeFromDescription();
 
-        endpoints.MapPost("api/v1/projecthook/test", async (IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
+        endpoints.MapPost("api/v1/projecthook/test", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result<object[]>>(new WebHookMessages.TestWebHook())).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .ExcludeFromDescription();
@@ -150,7 +146,7 @@ public static class WebHookEndpoints
         return endpoints;
     }
 
-    private static Microsoft.AspNetCore.Http.IResult? ValidateRequiredFields(NewWebHook webHook)
+    private static HttpIResult? ValidateRequiredFields(NewWebHook webHook)
     {
         var errors = new Dictionary<string, string[]>();
 

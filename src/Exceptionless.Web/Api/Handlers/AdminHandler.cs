@@ -43,11 +43,13 @@ public class AdminHandler(
 {
     private readonly ILogger _logger = loggerFactory.CreateLogger<AdminHandler>();
 
+    [HandlerEndpoint(HandlerMethod.Get, "settings", Group = "Admin")]
     public Task<Result<object>> Handle(GetAdminSettings message)
     {
         return Task.FromResult<Result<object>>(appOptions);
     }
 
+    [HandlerEndpoint(HandlerMethod.Get, "stats", Group = "Admin")]
     public async Task<Result<object>> Handle(GetAdminStats message)
     {
         var organizationCountTask = organizationRepository.CountAsync(q => q
@@ -73,6 +75,7 @@ public class AdminHandler(
         );
     }
 
+    [HandlerEndpoint(HandlerMethod.Get, "migrations", Group = "Admin")]
     public async Task<Result<object>> Handle(GetAdminMigrations message)
     {
         var result = await migrationStateRepository.GetAllAsync(o => o.SearchAfterPaging().PageLimit(1000));
@@ -110,6 +113,7 @@ public class AdminHandler(
         });
     }
 
+    [HandlerEndpoint(HandlerMethod.Get, "assemblies", Group = "Admin")]
     public Task<Result<object>> Handle(GetAdminAssemblies message)
     {
         var details = AssemblyDetail.ExtractAll().Select(AssemblyDetailResponse.FromAssemblyDetail).ToArray();
@@ -160,6 +164,7 @@ public class AdminHandler(
         return Result.Success();
     }
 
+    [HandlerEndpoint(HandlerMethod.Get, "requeue", Group = "Admin")]
     public async Task<Result<object>> Handle(AdminRequeue message)
     {
         string path = message.Path ?? @"q\*";
@@ -174,6 +179,7 @@ public class AdminHandler(
         return new { Enqueued = enqueued };
     }
 
+    [HandlerEndpoint(HandlerMethod.Get, "maintenance/{name:minlength(1)}", Group = "Admin")]
     public async Task<Result> Handle(AdminRunMaintenance message)
     {
         switch (message.Name.ToLowerInvariant())
@@ -229,6 +235,7 @@ public class AdminHandler(
         return Result.Success();
     }
 
+    [HandlerEndpoint(HandlerMethod.Get, "elasticsearch", Group = "Admin")]
     public async Task<Result<object>> Handle(GetAdminElasticsearch message)
     {
         var client = configuration.Client;
@@ -282,6 +289,7 @@ public class AdminHandler(
         );
     }
 
+    [HandlerEndpoint(HandlerMethod.Get, "elasticsearch/snapshots", Group = "Admin")]
     public async Task<Result<object>> Handle(GetAdminElasticsearchSnapshots message)
     {
         var client = configuration.Client;

@@ -2,6 +2,7 @@ using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Api.Results;
 using Foundatio.Mediator;
+using HttpIResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Exceptionless.Web.Api.Endpoints;
 
@@ -9,7 +10,7 @@ public static class StripeEndpoints
 {
     public static IEndpointRouteBuilder MapStripeEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapPost("api/v2/stripe", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper) =>
+        endpoints.MapPost("api/v2/stripe", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper) =>
         {
             using var reader = new StreamReader(httpContext.Request.Body, leaveOpen: true);
             string json = await reader.ReadToEndAsync();
