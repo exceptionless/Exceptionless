@@ -247,6 +247,13 @@ public sealed class SpaIndexHtmlMiddlewareTests
         Assert.DoesNotContain("'unsafe-inline'", scriptDirective, StringComparison.Ordinal);
         Assert.DoesNotContain("'unsafe-eval'", scriptDirective, StringComparison.Ordinal);
         Assert.DoesNotContain("http://", policy, StringComparison.Ordinal);
+        Assert.DoesNotContain("intercomcdn.eu", policy, StringComparison.Ordinal);
+        Assert.DoesNotContain(".eu.intercom.io", policy, StringComparison.Ordinal);
+        Assert.DoesNotContain(".au.intercom.io", policy, StringComparison.Ordinal);
+        Assert.DoesNotContain("au.intercomcdn.com", policy, StringComparison.Ordinal);
+        Assert.DoesNotContain("static.au.intercomassets.com", policy, StringComparison.Ordinal);
+        Assert.DoesNotContain("intercom-attachments.eu", policy, StringComparison.Ordinal);
+        Assert.DoesNotContain("au.intercom-attachments.com", policy, StringComparison.Ordinal);
 
         var apiContext = new DefaultHttpContext();
         apiContext.Request.Path = "/api/v2/about";

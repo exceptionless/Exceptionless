@@ -10,6 +10,7 @@ var NONCE_BYTE_LENGTH = 32;
 var SCRIPT_NONCE_PATTERN = /\s+nonce(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?/gi;
 var SCRIPT_TAG_PATTERN = /<script\b((?:"[^"]*"|'[^']*'|[^'">])*)>/gi;
 
+// Exceptionless uses Intercom's US endpoints. Keep region-specific sources scoped to that workspace.
 var intercomChildSources = [
     "https://intercom-sheets.com",
     "https://www.intercom-reporting.com",
@@ -18,19 +19,9 @@ var intercomChildSources = [
     "https://fast.wistia.net",
 ];
 
-var intercomDownloadSources = [
-    "https://downloads.intercomcdn.com",
-    "https://downloads.intercomcdn.eu",
-    "https://downloads.au.intercomcdn.com",
-];
+var intercomDownloadSources = ["https://downloads.intercomcdn.com"];
 
-var intercomUploadSources = [
-    "https://uploads.intercomcdn.com",
-    "https://uploads.intercomcdn.eu",
-    "https://uploads.au.intercomcdn.com",
-    "https://uploads.eu.intercomcdn.com",
-    "https://uploads.intercomusercontent.com",
-];
+var intercomUploadSources = ["https://uploads.intercomcdn.com", "https://uploads.intercomusercontent.com"];
 
 var intercomAttachmentSources = [
     "https://*.intercom-attachments-1.com",
@@ -42,8 +33,6 @@ var intercomAttachmentSources = [
     "https://*.intercom-attachments-7.com",
     "https://*.intercom-attachments-8.com",
     "https://*.intercom-attachments-9.com",
-    "https://*.intercom-attachments.eu",
-    "https://*.au.intercom-attachments.com",
 ];
 
 var contentSecurityPolicyDirectives = [
@@ -74,13 +63,9 @@ var contentSecurityPolicyDirectives = [
             "https://*.link.com",
             "https://js.intercomcdn.com",
             "https://static.intercomassets.com",
-            "https://static.intercomassets.eu",
-            "https://static.au.intercomassets.com",
             "https://gifs.intercomcdn.com",
             "https://video-messages.intercomcdn.com",
             "https://messenger-apps.intercom.io",
-            "https://messenger-apps.eu.intercom.io",
-            "https://messenger-apps.au.intercom.io",
         ]
             .concat(intercomDownloadSources)
             .concat(intercomUploadSources)
@@ -110,11 +95,7 @@ var contentSecurityPolicyDirectives = [
             "https://*.link.com",
             "https://via.intercom.io",
             "https://api.intercom.io",
-            "https://api.au.intercom.io",
-            "https://api.eu.intercom.io",
             "https://api-iam.intercom.io",
-            "https://api-iam.eu.intercom.io",
-            "https://api-iam.au.intercom.io",
             "https://api-ping.intercom.io",
             "https://*.intercom-messenger.com",
             "wss://*.intercom-messenger.com",
@@ -122,10 +103,6 @@ var contentSecurityPolicyDirectives = [
             "wss://nexus-websocket-a.intercom.io",
             "https://nexus-websocket-b.intercom.io",
             "wss://nexus-websocket-b.intercom.io",
-            "https://nexus-europe-websocket.intercom.io",
-            "wss://nexus-europe-websocket.intercom.io",
-            "https://nexus-australia-websocket.intercom.io",
-            "wss://nexus-australia-websocket.intercom.io",
         ].concat(intercomUploadSources),
     ],
     [
@@ -141,16 +118,7 @@ var contentSecurityPolicyDirectives = [
     ],
     ["media-src", ["'self'", "blob:", "https://js.intercomcdn.com"].concat(intercomDownloadSources)],
     ["worker-src", ["'self'", "blob:"].concat(intercomChildSources)],
-    [
-        "form-action",
-        [
-            "'self'",
-            "https://intercom.help",
-            "https://api-iam.intercom.io",
-            "https://api-iam.eu.intercom.io",
-            "https://api-iam.au.intercom.io",
-        ],
-    ],
+    ["form-action", ["'self'", "https://intercom.help", "https://api-iam.intercom.io"]],
     ["manifest-src", ["'self'"]],
     ["base-uri", ["'none'"]],
     ["object-src", ["'none'"]],
