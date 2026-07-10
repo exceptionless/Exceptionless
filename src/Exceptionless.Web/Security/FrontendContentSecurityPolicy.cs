@@ -7,6 +7,7 @@ internal static class FrontendContentSecurityPolicy
 {
     public static void Configure(CspBuilder csp)
     {
+        // Exceptionless uses Intercom's US endpoints. Keep region-specific sources scoped to that workspace.
         csp.ByDefaultAllow.FromSelf();
 
         csp.AllowScripts.FromSelf()
@@ -32,24 +33,13 @@ internal static class FrontendContentSecurityPolicy
             .From("https://*.link.com")
             .From("https://js.intercomcdn.com")
             .From("https://static.intercomassets.com")
-            .From("https://static.intercomassets.eu")
-            .From("https://static.au.intercomassets.com")
             .From("https://downloads.intercomcdn.com")
-            .From("https://downloads.intercomcdn.eu")
-            .From("https://downloads.au.intercomcdn.com")
             .From("https://uploads.intercomcdn.com")
-            .From("https://uploads.intercomcdn.eu")
-            .From("https://uploads.au.intercomcdn.com")
-            .From("https://uploads.eu.intercomcdn.com")
             .From("https://uploads.intercomusercontent.com")
             .From("https://gifs.intercomcdn.com")
             .From("https://video-messages.intercomcdn.com")
             .From("https://messenger-apps.intercom.io")
-            .From("https://messenger-apps.eu.intercom.io")
-            .From("https://messenger-apps.au.intercom.io")
             .From("https://*.intercom-attachments-1.com")
-            .From("https://*.intercom-attachments.eu")
-            .From("https://*.au.intercom-attachments.com")
             .From("https://*.intercom-attachments-2.com")
             .From("https://*.intercom-attachments-3.com")
             .From("https://*.intercom-attachments-4.com")
@@ -77,11 +67,7 @@ internal static class FrontendContentSecurityPolicy
             .To("https://*.link.com")
             .To("https://via.intercom.io")
             .To("https://api.intercom.io")
-            .To("https://api.au.intercom.io")
-            .To("https://api.eu.intercom.io")
             .To("https://api-iam.intercom.io")
-            .To("https://api-iam.eu.intercom.io")
-            .To("https://api-iam.au.intercom.io")
             .To("https://api-ping.intercom.io")
             .To("https://*.intercom-messenger.com")
             .To("wss://*.intercom-messenger.com")
@@ -89,14 +75,7 @@ internal static class FrontendContentSecurityPolicy
             .To("wss://nexus-websocket-a.intercom.io")
             .To("https://nexus-websocket-b.intercom.io")
             .To("wss://nexus-websocket-b.intercom.io")
-            .To("https://nexus-europe-websocket.intercom.io")
-            .To("wss://nexus-europe-websocket.intercom.io")
-            .To("https://nexus-australia-websocket.intercom.io")
-            .To("wss://nexus-australia-websocket.intercom.io")
             .To("https://uploads.intercomcdn.com")
-            .To("https://uploads.intercomcdn.eu")
-            .To("https://uploads.au.intercomcdn.com")
-            .To("https://uploads.eu.intercomcdn.com")
             .To("https://uploads.intercomusercontent.com");
 
         csp.AllowFrames.FromSelf()
@@ -114,9 +93,7 @@ internal static class FrontendContentSecurityPolicy
         csp.AllowAudioAndVideo.FromSelf()
             .From("blob:")
             .From("https://js.intercomcdn.com")
-            .From("https://downloads.intercomcdn.com")
-            .From("https://downloads.intercomcdn.eu")
-            .From("https://downloads.au.intercomcdn.com");
+            .From("https://downloads.intercomcdn.com");
 
         csp.AllowWorkers.FromSelf()
             .From("blob:")
@@ -128,9 +105,7 @@ internal static class FrontendContentSecurityPolicy
 
         csp.AllowFormActions.ToSelf()
             .To("https://intercom.help")
-            .To("https://api-iam.intercom.io")
-            .To("https://api-iam.eu.intercom.io")
-            .To("https://api-iam.au.intercom.io");
+            .To("https://api-iam.intercom.io");
         csp.AllowManifest.FromSelf();
         csp.AllowPlugins.FromNowhere();
         csp.AllowBaseUri.FromNowhere();
