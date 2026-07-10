@@ -27,9 +27,8 @@ var createFolderGlobs = function (fileTypePatterns) {
         .concat(fileTypePatterns);
 };
 
-function configureGrunt(grunt) {
+module.exports = function (grunt) {
     var path = require("path");
-    var getWatchTasks = require("./grunt/watch-tasks");
 
     // load createFolderGlobs in options so it can be used across task configurations
     grunt.option("folderGlobs", createFolderGlobs);
@@ -67,15 +66,26 @@ function configureGrunt(grunt) {
     grunt.event.on("watch", function (action, filepath) {
         // https://github.com/gruntjs/grunt-contrib-watch/issues/156
 
-        var tasksToRun = getWatchTasks(filepath);
+        var tasksToRun = [];
 
-        if (tasksToRun.indexOf("eslint") !== -1) {
+        if (filepath.lastIndexOf(".html") !== -1 && filepath.lastIndexOf(".html") === filepath.length - 5) {
+            // validate the changed html file
+            grunt.config("htmlangular.main.files.src", [filepath]);
+            tasksToRun.push("htmlangular");
+        }
+
+        if (filepath.lastIndexOf(".js") !== -1 && filepath.lastIndexOf(".js") === filepath.length - 3) {
             // lint the changed js file
             grunt.config("eslint.main.src", filepath);
+            tasksToRun.push("eslint");
+        }
+
+        // if index.html changed, we need to reread the <script> tags so our next run of karma
+        // will have the correct environment
+        if (filepath === "index.html") {
+            tasksToRun.push("dom_munger:read");
         }
 
         grunt.config("watch.main.tasks", tasksToRun);
     });
-}
-
-module.exports = configureGrunt;
+};

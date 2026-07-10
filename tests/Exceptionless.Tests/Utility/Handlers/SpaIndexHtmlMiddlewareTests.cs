@@ -72,6 +72,16 @@ public sealed class SpaIndexHtmlMiddlewareTests
     }
 
     [Fact]
+    public void AddScriptNonce_InlineScriptContainsScriptLikeText_PreservesContent()
+    {
+        const string html = "<script>const marker = \"<script>\";</script>";
+
+        string result = SpaIndexHtmlMiddleware.AddScriptNonce(html, "new");
+
+        Assert.Equal("<script nonce=\"new\">const marker = \"<script>\";</script>", result);
+    }
+
+    [Fact]
     public void AddScriptNonce_SimilarlyNamedAttributes_PreservesAttributes()
     {
         const string html = "<script data-nonce=\"keep\" noncevalue=\"keep\" nonce-value=\"keep\"></script>";
