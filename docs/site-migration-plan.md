@@ -85,8 +85,7 @@ Run commands from `docs/`.
 {
   "tasks": {
     "lume": "deno run -P=lume lume/cli.ts",
-    "build": "deno task lume && deno task postbuild && deno task bundle:client",
-    "bundle:client": "deno bundle --platform=browser --minify --config=deno.json scripts/browser/exceptionless-client.ts -o _site/assets/js/exceptionless-client.js",
+    "build": "deno task lume && deno task postbuild && deno bundle --platform=browser --minify --config=deno.json scripts/browser/exceptionless-client.ts -o _site/assets/js/exceptionless-client.js",
     "serve": "deno task build && deno run --allow-read=_site --allow-net=localhost,127.0.0.1 --allow-env=PORT scripts/serve.ts",
     "postbuild": "deno run --allow-read --allow-write scripts/postbuild.ts",
     "check": "deno check _config.ts scripts/browser/exceptionless-client.ts scripts/site-collections.ts scripts/postbuild.ts scripts/serve.ts scripts/verify-links.ts scripts/find-unused.ts",
@@ -240,7 +239,7 @@ are generated.
 Commands:
 
 - `deno task build` builds the site and generates `/search-index.json`.
-- `deno task bundle:client` bundles the static-site Exceptionless browser bootstrap from the Deno npm dependency.
+- `deno task build` also bundles the static-site Exceptionless browser bootstrap from the Deno npm dependency.
 - The Codex environment exposes a `Run Lume Docs` action on port 7141.
 - The Aspire AppHost exposes a `Docs` resource at `http://localhost:7141` unless a scoped worktree assigns an ephemeral
   free port.
@@ -268,14 +267,13 @@ Build-time configuration:
 
 - `EXCEPTIONLESS_SITE_API_KEY`
 - `EXCEPTIONLESS_SITE_SERVER_URL`
-- `EXCEPTIONLESS_SITE_ENVIRONMENT`
 - `EXCEPTIONLESS_SITE_VERSION`
 
 Google Tag Manager is part of the public site layout and loads by default. Local Codex and Aspire docs runs do not force
 any Exceptionless configuration; the browser client script is not emitted unless an API key is supplied.
 
-Do not commit production keys. The Svelte app has its own `@exceptionless/browser` startup path in
-`src/Exceptionless.Web/ClientApp/src/hooks.client.ts`.
+Use a client-safe public API key and do not use a privileged server key. The Svelte app has its own
+`@exceptionless/browser` startup path in `src/Exceptionless.Web/ClientApp/src/hooks.client.ts`.
 
 ## Build Pipeline
 

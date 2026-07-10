@@ -1,8 +1,7 @@
 {
   "tasks": {
     "lume": "deno run -P=lume lume/cli.ts",
-    "build": "deno task lume && deno task postbuild && deno task bundle:client",
-    "bundle:client": "deno bundle --platform=browser --minify --config=deno.json scripts/browser/exceptionless-client.ts -o _site/assets/js/exceptionless-client.js",
+    "build": "deno task lume && deno task postbuild && deno bundle --platform=browser --minify --config=deno.json scripts/browser/exceptionless-client.ts -o _site/assets/js/exceptionless-client.js",
     "serve": "deno task build && deno run --allow-read=_site --allow-net=localhost,127.0.0.1 --allow-env=PORT scripts/serve.ts",
     "postbuild": "deno run --allow-read --allow-write scripts/postbuild.ts",
     "check": "deno check _config.ts scripts/browser/exceptionless-client.ts scripts/site-collections.ts scripts/postbuild.ts scripts/serve.ts scripts/verify-links.ts scripts/find-unused.ts",

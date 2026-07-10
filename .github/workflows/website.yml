@@ -3,9 +3,6 @@ name: Website
 on:
   workflow_dispatch:
   workflow_call:
-    secrets:
-      EXCEPTIONLESS_SITE_API_KEY:
-        required: false
   push:
     tags: ["v*"]
   pull_request:
@@ -25,9 +22,8 @@ jobs:
       run:
         working-directory: docs
     env:
-      EXCEPTIONLESS_SITE_API_KEY: ${{ secrets.EXCEPTIONLESS_SITE_API_KEY }}
+      EXCEPTIONLESS_SITE_API_KEY: ${{ vars.EXCEPTIONLESS_SITE_API_KEY }}
       EXCEPTIONLESS_SITE_SERVER_URL: ${{ vars.EXCEPTIONLESS_SITE_SERVER_URL }}
-      EXCEPTIONLESS_SITE_ENVIRONMENT: ${{ vars.EXCEPTIONLESS_SITE_ENVIRONMENT }}
       EXCEPTIONLESS_SITE_VERSION: ${{ github.sha }}
 
     steps:

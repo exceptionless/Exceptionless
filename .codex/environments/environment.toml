@@ -111,7 +111,7 @@ echo "deno:"
 deno --version
 
 echo "Starting Lume docs at http://127.0.0.1:$PORT/"
-deno task serve -- --port "$PORT"
+deno task serve
 '''
 
 [[actions]]

@@ -6,7 +6,7 @@ const apiKey = options.get("apiKey")
 if (apiKey) {
   await Exceptionless.startup((clientConfig) => {
     clientConfig.apiKey = apiKey
-    clientConfig.defaultTags.push("Website", "Docs", "Lume")
+    clientConfig.defaultTags.push("Website")
 
     const serverUrl = options.get("serverUrl")
     if (serverUrl) {
@@ -16,12 +16,6 @@ if (apiKey) {
     const version = options.get("version")
     if (version) {
       clientConfig.version = version
-    }
-
-    const environment = options.get("environment")
-    if (environment && environment.toLowerCase() !== "production") {
-      clientConfig.useDebugLogger()
-      clientConfig.settings["@@log:*"] = "debug"
     }
 
     clientConfig.useSessions()

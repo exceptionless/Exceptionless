@@ -620,8 +620,6 @@ jobs:
       pages: write
       id-token: write
     uses: ./.github/workflows/website.yml
-    secrets:
-      EXCEPTIONLESS_SITE_API_KEY: ${{ secrets.EXCEPTIONLESS_SITE_API_KEY }}
 
   preview-comment-result:
     needs: [preview-context, version, test-api, test-client, docker-build, docker-publish, deploy]

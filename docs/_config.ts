@@ -80,22 +80,12 @@ function exceptionlessClientScriptSrc(): string {
     params.set("serverUrl", serverUrl)
   }
 
-  const environment = (Deno.env.get("EXCEPTIONLESS_SITE_ENVIRONMENT") ?? "").trim()
-  if (isNonProduction(environment)) {
-    params.set("environment", environment)
-  }
-
   const version = (Deno.env.get("EXCEPTIONLESS_SITE_VERSION") ?? "").trim()
   if (version) {
     params.set("version", version)
   }
 
   return `/assets/js/exceptionless-client.js?${params}`
-}
-
-function isNonProduction(environment: string): boolean {
-  const normalizedEnvironment = environment.trim().toLowerCase()
-  return normalizedEnvironment !== "" && normalizedEnvironment !== "production" && normalizedEnvironment !== "prod"
 }
 
 function uniqueHeadingSlug(value: string, env: Record<string, unknown>): string {
