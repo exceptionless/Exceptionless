@@ -26,21 +26,24 @@
             return String(value) + "\r\n";
         }
 
-        function renderArray(value) {
+        function renderArray(value, depth) {
             var list = document.createElement("ul");
 
             value.forEach(function (item) {
                 var listItem = document.createElement("li");
-                listItem.appendChild(renderValue(item));
+                listItem.appendChild(renderValue(item, depth + 1));
                 list.appendChild(listItem);
             });
 
             return list;
         }
 
-        function renderObject(value) {
+        function renderObject(value, depth) {
             var table = document.createElement("table");
-            table.className = "table table-striped table-bordered table-fixed table-key-value b-t object-dump";
+            table.className = "table table-striped table-bordered table-key-value b-t object-dump";
+            if (depth === 0) {
+                table.classList.add("table-fixed");
+            }
 
             Object.keys(value).forEach(function (key) {
                 var row = document.createElement("tr");
@@ -48,7 +51,7 @@
                 var cell = document.createElement("td");
 
                 heading.textContent = key;
-                cell.appendChild(renderValue(value[key]));
+                cell.appendChild(renderValue(value[key], depth + 1));
                 row.appendChild(heading);
                 row.appendChild(cell);
                 table.appendChild(row);
@@ -57,17 +60,17 @@
             return table;
         }
 
-        function renderValue(value) {
+        function renderValue(value, depth) {
             if (isEmpty(value)) {
-                return document.createTextNode("");
+                return document.createTextNode("(Empty)\r\n");
             }
 
             if (isArray(value)) {
-                return renderArray(value);
+                return renderArray(value, depth);
             }
 
             if (isObject(value)) {
-                return renderObject(value);
+                return renderObject(value, depth);
             }
 
             return document.createTextNode(formatValue(value));
@@ -104,7 +107,7 @@
                         }
                     }
 
-                    var renderedContent = renderValue(content);
+                    var renderedContent = renderValue(content, 0);
                     if (usePreformattedText && !isEmpty(content)) {
                         var pre = document.createElement("pre");
                         pre.appendChild(renderedContent);
