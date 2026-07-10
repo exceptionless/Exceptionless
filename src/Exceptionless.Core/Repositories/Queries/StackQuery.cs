@@ -1,10 +1,12 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.QueryDsl;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Options;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
+using Foundatio.Repositories.Elasticsearch.Utility;
 using Foundatio.Repositories.Options;
-using Nest;
 
 namespace Exceptionless.Core.Repositories
 {
@@ -55,22 +57,21 @@ namespace Exceptionless.Core.Repositories.Queries
 {
     public class StackQueryBuilder : IElasticQueryBuilder
     {
-        private readonly string _stackIdFieldName = nameof(IOwnedByStack.StackId).ToLowerUnderscoredWords();
+        private static readonly Field StackIdField = nameof(IOwnedByStack.StackId).ToLowerUnderscoredWords();
 
         public Task BuildAsync<T>(QueryBuilderContext<T> ctx) where T : class, new()
         {
             var stackIds = ctx.Source.GetStacks();
-            var excludedStackIds = ctx.Source.GetExcludedStacks();
-
             if (stackIds.Count == 1)
-                ctx.Filter &= Query<T>.Term(_stackIdFieldName, stackIds.Single());
+                ctx.Filter &= new TermQuery { Field = StackIdField, Value = stackIds.Single() };
             else if (stackIds.Count > 1)
-                ctx.Filter &= Query<T>.Terms(d => d.Field(_stackIdFieldName).Terms(stackIds));
+                ctx.Filter &= new TermsQuery { Field = StackIdField, Terms = new TermsQueryField(stackIds.Select(FieldValueHelper.ToFieldValue).ToList()) };
 
+            var excludedStackIds = ctx.Source.GetExcludedStacks();
             if (excludedStackIds.Count == 1)
-                ctx.Filter &= Query<T>.Bool(b => b.MustNot(Query<T>.Term(_stackIdFieldName, excludedStackIds.Single())));
+                ctx.Filter &= new BoolQuery { MustNot = [new TermQuery { Field = StackIdField, Value = excludedStackIds.Single() }] };
             else if (excludedStackIds.Count > 1)
-                ctx.Filter &= Query<T>.Bool(b => b.MustNot(Query<T>.Terms(d => d.Field(_stackIdFieldName).Terms(excludedStackIds))));
+                ctx.Filter &= new BoolQuery { MustNot = [new TermsQuery { Field = StackIdField, Terms = new TermsQueryField(excludedStackIds.Select(FieldValueHelper.ToFieldValue).ToList()) }] };
 
             return Task.CompletedTask;
         }

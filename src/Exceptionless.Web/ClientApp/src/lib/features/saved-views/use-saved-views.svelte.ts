@@ -2,7 +2,7 @@ import type { IFilter } from '$comp/faceted-filter';
 import type { ColumnOrderState, ColumnVisibilityState } from '@tanstack/svelte-table';
 
 import { goto } from '$app/navigation';
-import { buildFilterCacheKey, deserializeFilters } from '$features/events/components/filters/helpers.svelte';
+import { buildFilterCacheKey, deserializeFilters, serializeFilters } from '$features/events/components/filters/helpers.svelte';
 import { organization } from '$features/organizations/context.svelte';
 
 import type { SavedView } from './models';
@@ -12,6 +12,7 @@ import { savedViewHref, savedViewResolvedSlug } from './slugs';
 
 export interface SavedViewQueryParams {
     filter: null | string | undefined;
+    filters?: null | string | undefined;
     saved?: null | string | undefined;
     sort?: null | string;
     time?: null | string;
@@ -20,6 +21,8 @@ export interface SavedViewQueryParams {
 export interface UseSavedViewsOptions {
     baseHref?: string;
     defaultColumnVisibility?: ColumnVisibilityState;
+    defaultFilter?: null | string;
+    defaultTime?: null | string;
     filterCacheKey: (filter: null | string) => string;
     getColumnOrder?: () => ColumnOrderState;
     getColumnVisibility?: () => ColumnVisibilityState;
@@ -46,8 +49,61 @@ export interface UseSavedViewsReturn {
     handleResetToSaved: () => void;
     isEnabled: boolean;
     isLoading: boolean;
+    isMissing: boolean;
     isModified: boolean;
     savedViews: SavedView[];
+}
+
+export function clearSavedViewQueryParams(queryParams: SavedViewQueryParams): void {
+    queryParams.filter = null;
+
+    if (supportsFiltersQueryParam(queryParams)) {
+        queryParams.filters = null;
+    }
+
+    setSortQueryParam(queryParams, null);
+    setTimeQueryParam(queryParams, null);
+
+    if (supportsSavedQueryParam(queryParams)) {
+        queryParams.saved = null;
+    }
+}
+
+export function filterDefinitionsEqual(a: null | string | undefined, b: null | string | undefined): boolean {
+    return normalizeFilterDefinitions(a) === normalizeFilterDefinitions(b);
+}
+
+export function getComparableSavedViewFilter(
+    filter: null | string | undefined,
+    filterDefinitions: null | string | undefined,
+    defaultFilter: null | string | undefined
+): null | string {
+    if (filter != null) {
+        return filter || null;
+    }
+
+    return filterDefinitions ? null : (defaultFilter ?? null);
+}
+
+export function getComparableSavedViewTime(time: null | string | undefined, defaultTime: null | string | undefined): null | string {
+    return time ?? defaultTime ?? null;
+}
+
+export function hasMissingSavedViewSlug(options: {
+    activeSavedView: SavedView | undefined;
+    isLoading: boolean;
+    savedViews: SavedView[] | undefined;
+    slug: string | undefined;
+}): boolean {
+    return !!options.slug && !options.activeSavedView && !!options.savedViews && !options.isLoading;
+}
+
+export function hasSavedColumnOrder(columnOrder: null | string[] | undefined): columnOrder is string[] {
+    return !!columnOrder?.length;
+}
+
+export function hasSavedColumnVisibility(columns: null | Record<string, boolean> | undefined): columns is Record<string, boolean> {
+    return columns != null;
 }
 
 export function setSortQueryParam(queryParams: SavedViewQueryParams, value: null | string): void {
@@ -179,11 +235,13 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return false;
         }
 
-        if ((options.getFilter?.() ?? options.queryParams.filter ?? null) !== (view.filter ?? null)) {
+        const savedViewFilter = getComparableSavedViewFilter(view.filter, view.filter_definitions, options.defaultFilter);
+        if ((options.getFilter?.() ?? options.queryParams.filter ?? null) !== savedViewFilter) {
             return true;
         }
 
-        if (supportsTime && (options.getTime?.() ?? options.queryParams.time ?? null) !== (view.time ?? null)) {
+        const savedViewTime = getComparableSavedViewTime(view.time, options.defaultTime);
+        if (supportsTime && (options.getTime?.() ?? options.queryParams.time ?? null) !== savedViewTime) {
             return true;
         }
 
@@ -195,11 +253,15 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return true;
         }
 
-        if (options.getColumnVisibility && !columnsEqual(options.getColumnVisibility(), view.columns, options.defaultColumnVisibility)) {
+        if (
+            options.getColumnVisibility &&
+            hasSavedColumnVisibility(view.columns) &&
+            !columnsEqual(options.getColumnVisibility(), view.columns, options.defaultColumnVisibility)
+        ) {
             return true;
         }
 
-        if (options.getColumnOrder && !columnOrderEqual(options.getColumnOrder(), view.column_order)) {
+        if (options.getColumnOrder && hasSavedColumnOrder(view.column_order) && !columnOrderEqual(options.getColumnOrder(), view.column_order)) {
             return true;
         }
 
@@ -213,6 +275,15 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
         return false;
     });
+
+    const isMissing = $derived(
+        hasMissingSavedViewSlug({
+            activeSavedView,
+            isLoading: savedViewsListQuery.isLoading,
+            savedViews: savedViewsListQuery.data,
+            slug: options.slug
+        })
+    );
 
     function handleLoadView(view: SavedView) {
         if (options.baseHref) {
@@ -239,6 +310,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         options.queryParams.filter = null;
+        options.queryParams.filters = null;
         setSortQueryParam(options.queryParams, null);
         setTimeQueryParam(options.queryParams, null);
         applyColumnState(view);
@@ -246,15 +318,9 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     }
 
     function handleClearSavedView() {
-        options.queryParams.filter = null;
-        setSortQueryParam(options.queryParams, null);
-        setTimeQueryParam(options.queryParams, null);
+        clearSavedViewQueryParams(options.queryParams);
         applyColumnState(undefined);
         applyDisplayState(undefined);
-
-        if (supportsSavedQueryParam(options.queryParams)) {
-            options.queryParams.saved = undefined;
-        }
 
         if (options.baseHref) {
             goto(options.baseHref);
@@ -273,6 +339,9 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         },
         get isLoading() {
             return savedViewsListQuery.isLoading;
+        },
+        get isMissing() {
+            return isMissing;
         },
         get isModified() {
             return isModified;
@@ -314,10 +383,6 @@ function columnsEqual(
     });
 }
 
-function filterDefinitionsEqual(a: null | string | undefined, b: null | string | undefined): boolean {
-    return normalizeFilterDefinitions(a) === normalizeFilterDefinitions(b);
-}
-
 function normalizeFilterDefinitions(value: null | string | undefined): string {
     if (!value) {
         return '[]';
@@ -329,10 +394,18 @@ function normalizeFilterDefinitions(value: null | string | undefined): string {
             return '[]';
         }
 
-        return JSON.stringify(parsed);
+        return serializeFilters(sortFilterDefinitions(deserializeFilters(value)));
     } catch {
         return value;
     }
+}
+
+function sortFilterDefinitions(filters: IFilter[]): IFilter[] {
+    return [...filters].sort((a, b) => a.key.localeCompare(b.key));
+}
+
+function supportsFiltersQueryParam(queryParams: SavedViewQueryParams): queryParams is SavedViewQueryParams & { filters: null | string | undefined } {
+    return Object.prototype.hasOwnProperty.call(queryParams, 'filters');
 }
 
 function supportsSavedQueryParam(queryParams: SavedViewQueryParams): queryParams is SavedViewQueryParams & { saved: null | string | undefined } {

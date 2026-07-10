@@ -11,7 +11,7 @@
     import { watch } from 'runed';
     import { toast } from 'svelte-sonner';
 
-    import { redirectToEventsWithFilter } from '../../../../redirect-to-events.svelte.js';
+    import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../../../../redirect-to-events.svelte.js';
 
     const stackId = $derived(page.params.stackId || '');
 
@@ -24,7 +24,7 @@
     );
 
     async function filterChanged(addedOrUpdated: IFilter) {
-        await redirectToEventsWithFilter(organization.current, addedOrUpdated);
+        await redirectToEventsWithFilter(organization.current, addedOrUpdated, getEventsNavigationOptionsForFilter(addedOrUpdated));
     }
 
     function handleError(problem: ProblemDetails) {
@@ -35,9 +35,13 @@
         toast.error('Unable to load stack event details.');
     }
 
+    async function handleDeleted() {
+        await goto(resolve('/(app)/project/[projectId]/stacks', { projectId: page.params.projectId || '' }));
+    }
+
     $effect(() => {
         document.title = 'Stack Details - Exceptionless';
     });
 </script>
 
-<StackDetails {filterChanged} {handleError} {stackId} />
+<StackDetails {filterChanged} {handleError} onDeleted={handleDeleted} {stackId} />

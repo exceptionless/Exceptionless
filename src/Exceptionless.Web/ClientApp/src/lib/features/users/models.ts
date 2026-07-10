@@ -1,4 +1,4 @@
-export type { UpdateEmailAddressResult, ViewCurrentUser, ViewUser } from '$generated/api';
+export type { ViewOAuthGrant as OAuthGrant, UpdateEmailAddressResult, ViewCurrentUser, ViewUser } from '$generated/api';
 
 export interface InviteUserForm {
     email: string;

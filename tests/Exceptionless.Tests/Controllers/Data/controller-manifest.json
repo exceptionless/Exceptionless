@@ -1,5 +1,50 @@
 [
   {
+    "Controller": "OAuthController",
+    "Action": "GetAuthorizationServerMetadataAsync",
+    "HttpMethod": "GET",
+    "Route": "/.well-known/oauth-authorization-server",
+    "Authorization": [
+      "AllowAnonymous"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OAuthController",
+    "Action": "GetRestApiProtectedResourceMetadataAsync",
+    "HttpMethod": "GET",
+    "Route": "/.well-known/oauth-protected-resource/api/v2",
+    "Authorization": [
+      "AllowAnonymous"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OAuthController",
+    "Action": "GetMcpProtectedResourceMetadataAsync",
+    "HttpMethod": "GET",
+    "Route": "/.well-known/oauth-protected-resource/mcp",
+    "Authorization": [
+      "AllowAnonymous"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
     "Controller": "EventController",
     "Action": "LegacyPostAsync",
     "HttpMethod": "POST",
@@ -225,7 +270,7 @@
     "HttpMethod": "POST",
     "Route": "/api/v1/stack/addlink",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)"
+      "Authorize(Policy=StacksWritePolicy)"
     ],
     "Consumes": [
       "application/json"
@@ -242,7 +287,7 @@
     "HttpMethod": "POST",
     "Route": "/api/v1/stack/markfixed",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)"
+      "Authorize(Policy=StacksWritePolicy)"
     ],
     "Consumes": [
       "application/json"
@@ -379,6 +424,66 @@
     "Action": "GetMigrationsAsync",
     "HttpMethod": "GET",
     "Route": "/api/v2/admin/migrations",
+    "Authorization": [
+      "Authorize(Policy=GlobalAdminPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": true
+  },
+  {
+    "Controller": "OAuthApplicationController",
+    "Action": "GetAllAsync",
+    "HttpMethod": "GET",
+    "Route": "/api/v2/admin/oauth-applications",
+    "Authorization": [
+      "Authorize(Policy=GlobalAdminPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": true
+  },
+  {
+    "Controller": "OAuthApplicationController",
+    "Action": "CreateAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/admin/oauth-applications",
+    "Authorization": [
+      "Authorize(Policy=GlobalAdminPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": true
+  },
+  {
+    "Controller": "OAuthApplicationController",
+    "Action": "DeleteAsync",
+    "HttpMethod": "DELETE",
+    "Route": "/api/v2/admin/oauth-applications/{id:objectid}",
+    "Authorization": [
+      "Authorize(Policy=GlobalAdminPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": true
+  },
+  {
+    "Controller": "OAuthApplicationController",
+    "Action": "UpdateAsync",
+    "HttpMethod": "PUT",
+    "Route": "/api/v2/admin/oauth-applications/{id:objectid}",
     "Authorization": [
       "Authorize(Policy=GlobalAdminPolicy)"
     ],
@@ -722,13 +827,47 @@
     "ExcludeFromDescription": false
   },
   {
+    "Controller": "ContactController",
+    "Action": "PostFormAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/contact",
+    "Authorization": [
+      "AllowAnonymous"
+    ],
+    "Consumes": [
+      "application/x-www-form-urlencoded",
+      "multipart/form-data"
+    ],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": true
+  },
+  {
+    "Controller": "ContactController",
+    "Action": "PostJsonAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/contact",
+    "Authorization": [
+      "AllowAnonymous"
+    ],
+    "Consumes": [
+      "application/json"
+    ],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": true
+  },
+  {
     "Controller": "EventController",
     "Action": "GetAllAsync",
     "HttpMethod": "GET",
     "Route": "/api/v2/events",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -761,8 +900,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/events/by-ref/{referenceId:identifier}",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -794,8 +932,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/events/count",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -825,8 +962,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/events/sessions",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -841,8 +977,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/events/sessions/{sessionId:identifier}",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -888,8 +1023,7 @@
     "Route": "/api/v2/events/{id:objectid}",
     "Name": "GetPersistentEventById",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -904,7 +1038,6 @@
     "HttpMethod": "DELETE",
     "Route": "/api/v2/events/{ids:objectids}",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -980,6 +1113,96 @@
       "application/problem\u002Bjson"
     ],
     "ExcludeFromDescription": true
+  },
+  {
+    "Controller": "OAuthController",
+    "Action": "AuthorizeAsync",
+    "HttpMethod": "GET",
+    "Route": "/api/v2/oauth/authorize",
+    "Authorization": [
+      "AllowAnonymous"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OAuthController",
+    "Action": "CompleteAuthorizeAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/oauth/authorize",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OAuthController",
+    "Action": "GetAuthorizeConsentAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/oauth/authorize/consent",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OAuthController",
+    "Action": "RegisterAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/oauth/register",
+    "Authorization": [
+      "AllowAnonymous"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OAuthController",
+    "Action": "RevokeAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/oauth/revoke",
+    "Authorization": [
+      "AllowAnonymous"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OAuthController",
+    "Action": "TokenAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/oauth/token",
+    "Authorization": [
+      "AllowAnonymous"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
   },
   {
     "Controller": "OrganizationController",
@@ -1174,6 +1397,55 @@
   },
   {
     "Controller": "OrganizationController",
+    "Action": "DeleteIconAsync",
+    "HttpMethod": "DELETE",
+    "Route": "/api/v2/organizations/{id:objectid}/icon",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OrganizationController",
+    "Action": "UploadIconAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/organizations/{id:objectid}/icon",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [
+      "multipart/form-data"
+    ],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OrganizationController",
+    "Action": "GetIconAsync",
+    "HttpMethod": "GET",
+    "Route": "/api/v2/organizations/{id:objectid}/icon/{fileName}",
+    "Name": "GetOrganizationIcon",
+    "Authorization": [
+      "AllowAnonymous",
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OrganizationController",
     "Action": "GetInvoicesAsync",
     "HttpMethod": "GET",
     "Route": "/api/v2/organizations/{id:objectid}/invoices",
@@ -1287,8 +1559,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/organizations/{organizationId:objectid}/events",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -1303,8 +1574,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/organizations/{organizationId:objectid}/events/count",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -1319,8 +1589,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/organizations/{organizationId:objectid}/events/sessions",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -1335,8 +1604,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/organizations/{organizationId:objectid}/projects",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=ProjectsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -1351,7 +1619,6 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/organizations/{organizationId:objectid}/projects/check-name",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -1395,6 +1662,22 @@
   },
   {
     "Controller": "SavedViewController",
+    "Action": "ExportOrganizationSavedViewsAsync",
+    "HttpMethod": "GET",
+    "Route": "/api/v2/organizations/{organizationId:objectid}/saved-views/export",
+    "Authorization": [
+      "Authorize(Policy=GlobalAdminPolicy)",
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "SavedViewController",
     "Action": "PostPredefinedAsync",
     "HttpMethod": "POST",
     "Route": "/api/v2/organizations/{organizationId:objectid}/saved-views/predefined",
@@ -1429,8 +1712,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/organizations/{organizationId:objectid}/stacks",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=StacksReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -1492,8 +1774,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/projects",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=ProjectsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -1508,7 +1789,6 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/projects",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [
@@ -1526,7 +1806,6 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/projects/check-name",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -1558,8 +1837,7 @@
     "Route": "/api/v2/projects/{id:objectid}",
     "Name": "GetProjectById",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=ProjectsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -1574,7 +1852,6 @@
     "HttpMethod": "PATCH",
     "Route": "/api/v2/projects/{id:objectid}",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [
@@ -1592,7 +1869,6 @@
     "HttpMethod": "PUT",
     "Route": "/api/v2/projects/{id:objectid}",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [
@@ -1610,7 +1886,6 @@
     "HttpMethod": "DELETE",
     "Route": "/api/v2/projects/{id:objectid}/config",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -1641,7 +1916,6 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/projects/{id:objectid}/config",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [
@@ -1659,7 +1933,6 @@
     "HttpMethod": "DELETE",
     "Route": "/api/v2/projects/{id:objectid}/data",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -1675,7 +1948,6 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/projects/{id:objectid}/data",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [
@@ -1693,7 +1965,6 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/projects/{id:objectid}/notifications",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=GlobalAdminPolicy)"
     ],
     "Consumes": [],
@@ -1709,7 +1980,6 @@
     "HttpMethod": "DELETE",
     "Route": "/api/v2/projects/{id:objectid}/promotedtabs",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -1725,7 +1995,6 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/projects/{id:objectid}/promotedtabs",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [
@@ -1743,7 +2012,6 @@
     "HttpMethod": "PUT",
     "Route": "/api/v2/projects/{id:objectid}/promotedtabs",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [
@@ -1761,7 +2029,6 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/projects/{id:objectid}/reset-data",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -1777,7 +2044,6 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/projects/{id:objectid}/reset-data",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -1793,7 +2059,6 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/projects/{id:objectid}/sample-data",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -1809,7 +2074,6 @@
     "HttpMethod": "DELETE",
     "Route": "/api/v2/projects/{id:objectid}/slack",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -1825,7 +2089,6 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/projects/{id:objectid}/slack",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [
@@ -1843,7 +2106,6 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/projects/{id:objectid}/{integration:minlength(1)}/notifications",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -1859,7 +2121,6 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/projects/{id:objectid}/{integration:minlength(1)}/notifications",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [
@@ -1877,7 +2138,6 @@
     "HttpMethod": "PUT",
     "Route": "/api/v2/projects/{id:objectid}/{integration:minlength(1)}/notifications",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [
@@ -1895,7 +2155,6 @@
     "HttpMethod": "DELETE",
     "Route": "/api/v2/projects/{ids:objectids}",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -1911,8 +2170,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/projects/{projectId:objectid}/events",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -1945,8 +2203,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -1978,8 +2235,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/projects/{projectId:objectid}/events/count",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -1994,8 +2250,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/projects/{projectId:objectid}/events/sessions",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -2010,8 +2265,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/projects/{projectId:objectid}/events/sessions/{sessionId:identifier}",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -2056,8 +2310,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/projects/{projectId:objectid}/stacks",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=StacksReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -2149,6 +2402,22 @@
     "Controller": "SavedViewController",
     "Action": "GetPredefinedAsync",
     "HttpMethod": "GET",
+    "Route": "/api/v2/saved-views/predefined",
+    "Authorization": [
+      "Authorize(Policy=GlobalAdminPolicy)",
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "SavedViewController",
+    "Action": "PutPredefinedAsync",
+    "HttpMethod": "PUT",
     "Route": "/api/v2/saved-views/predefined",
     "Authorization": [
       "Authorize(Policy=GlobalAdminPolicy)",
@@ -2279,8 +2548,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/stacks",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=StacksReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -2295,7 +2563,7 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/stacks/add-link",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)"
+      "Authorize(Policy=StacksWritePolicy)"
     ],
     "Consumes": [
       "application/json"
@@ -2312,7 +2580,7 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/stacks/mark-fixed",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)"
+      "Authorize(Policy=StacksWritePolicy)"
     ],
     "Consumes": [
       "application/json"
@@ -2330,8 +2598,7 @@
     "Route": "/api/v2/stacks/{id:objectid}",
     "Name": "GetStackById",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=StacksReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -2346,8 +2613,7 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/stacks/{id:objectid}/add-link",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=StacksWritePolicy)"
     ],
     "Consumes": [
       "application/json"
@@ -2364,7 +2630,6 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/stacks/{id:objectid}/promote",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -2380,8 +2645,7 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/stacks/{id:objectid}/remove-link",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=StacksWritePolicy)"
     ],
     "Consumes": [
       "application/json"
@@ -2398,7 +2662,6 @@
     "HttpMethod": "DELETE",
     "Route": "/api/v2/stacks/{ids:objectids}",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -2414,8 +2677,7 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/stacks/{ids:objectids}/change-status",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=StacksWritePolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -2430,8 +2692,7 @@
     "HttpMethod": "DELETE",
     "Route": "/api/v2/stacks/{ids:objectids}/mark-critical",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=StacksWritePolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -2446,8 +2707,7 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/stacks/{ids:objectids}/mark-critical",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=StacksWritePolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -2462,8 +2722,7 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/stacks/{ids:objectids}/mark-fixed",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=StacksWritePolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -2478,8 +2737,7 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/stacks/{ids:objectids}/mark-snoozed",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=StacksWritePolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -2494,8 +2752,7 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/stacks/{stackId:objectid}/events",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=EventsReadPolicy)"
     ],
     "Consumes": [],
     "Produces": [
@@ -2636,6 +2893,36 @@
   },
   {
     "Controller": "UserController",
+    "Action": "GetOAuthGrantsAsync",
+    "HttpMethod": "GET",
+    "Route": "/api/v2/users/me/oauth-grants",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "UserController",
+    "Action": "RevokeOAuthGrantAsync",
+    "HttpMethod": "DELETE",
+    "Route": "/api/v2/users/me/oauth-grants/{id:minlength(1)}",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "UserController",
     "Action": "UnverifyEmailAddressAsync",
     "HttpMethod": "POST",
     "Route": "/api/v2/users/unverify-email-address",
@@ -2751,6 +3038,55 @@
   },
   {
     "Controller": "UserController",
+    "Action": "DeleteAvatarAsync",
+    "HttpMethod": "DELETE",
+    "Route": "/api/v2/users/{id:objectid}/avatar",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "UserController",
+    "Action": "UploadAvatarAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/users/{id:objectid}/avatar",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [
+      "multipart/form-data"
+    ],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "UserController",
+    "Action": "GetAvatarAsync",
+    "HttpMethod": "GET",
+    "Route": "/api/v2/users/{id:objectid}/avatar/{fileName}",
+    "Name": "GetUserAvatar",
+    "Authorization": [
+      "AllowAnonymous",
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "UserController",
     "Action": "UpdateEmailAddressAsync",
     "HttpMethod": "POST",
     "Route": "/api/v2/users/{id:objectid}/email-address/{email:minlength(1)}",
@@ -2801,7 +3137,6 @@
     "HttpMethod": "DELETE",
     "Route": "/api/v2/users/{userId:objectid}/projects/{id:objectid}/notifications",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -2817,7 +3152,6 @@
     "HttpMethod": "GET",
     "Route": "/api/v2/users/{userId:objectid}/projects/{id:objectid}/notifications",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [],
@@ -2833,7 +3167,6 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/users/{userId:objectid}/projects/{id:objectid}/notifications",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [
@@ -2851,7 +3184,6 @@
     "HttpMethod": "PUT",
     "Route": "/api/v2/users/{userId:objectid}/projects/{id:objectid}/notifications",
     "Authorization": [
-      "Authorize(Policy=ClientPolicy)",
       "Authorize(Policy=UserPolicy)"
     ],
     "Consumes": [

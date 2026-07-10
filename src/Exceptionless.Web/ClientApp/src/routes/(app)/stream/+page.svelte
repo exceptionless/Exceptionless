@@ -39,7 +39,7 @@
     import { useEventListener, watch } from 'runed';
     import { debounce } from 'throttle-debounce';
 
-    import { redirectToEventsWithFilter } from '../redirect-to-events.svelte';
+    import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../redirect-to-events.svelte';
 
     let selectedEventId: null | string = $state(null);
 
@@ -53,7 +53,7 @@
     }
 
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
-        return resolve('/(app)/events/[eventId=objectid]', { eventId: row.id });
+        return resolve('/(app)/event/[eventId=objectid]', { eventId: row.id });
     }
 
     const DEFAULT_FILTERS = [new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
@@ -81,6 +81,7 @@
     const VIEW = 'stream';
     const savedViewsState = useSavedViews({
         defaultColumnVisibility: defaultEventColumnVisibility,
+        defaultFilter: DEFAULT_PARAMS.filter,
         filterCacheKey,
         getColumnOrder: () => table.state.columnOrder,
         getColumnVisibility: () => table.state.columnVisibility,
@@ -120,7 +121,7 @@
     async function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter) {
         // If this is a stack filter, redirect to the Events page
         if (addedOrUpdated.type === 'string' && addedOrUpdated.key === 'string-stack') {
-            await redirectToEventsWithFilter(organization.current, addedOrUpdated);
+            await redirectToEventsWithFilter(organization.current, addedOrUpdated, getEventsNavigationOptionsForFilter(addedOrUpdated));
             return;
         }
 

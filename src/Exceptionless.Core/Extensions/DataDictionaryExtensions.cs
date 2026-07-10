@@ -1,6 +1,12 @@
-﻿using System.Text.Json;
+﻿using System.Collections;
+using System.Collections.Concurrent;
+using System.Reflection;
+using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Serialization;
+using Foundatio.Serializer;
 
 namespace Exceptionless.Core.Extensions;
 
@@ -9,27 +15,15 @@ public static class DataDictionaryExtensions
     /// <summary>
     /// Retrieves a typed value from the <see cref="DataDictionary"/>, deserializing if necessary.
     /// </summary>
-    /// <typeparam name="T">The target type to deserialize to.</typeparam>
-    /// <param name="extendedData">The data dictionary containing the value.</param>
-    /// <param name="key">The key of the value to retrieve.</param>
-    /// <param name="options">The JSON serializer options to use for deserialization.</param>
-    /// <returns>The deserialized value, or <c>default</c> if deserialization fails.</returns>
-    /// <exception cref="KeyNotFoundException">Thrown when the key is not found in the dictionary.</exception>
-    /// <remarks>
-    /// <para>This method handles multiple source formats in priority order:</para>
-    /// <list type="number">
-    ///   <item><description>Direct type match - returns value directly</description></item>
-    ///   <item><description><see cref="JsonDocument"/> - extracts root element and deserializes</description></item>
-    ///   <item><description><see cref="JsonElement"/> - deserializes using provided options</description></item>
-    ///   <item><description><see cref="JsonNode"/> - deserializes using provided options</description></item>
-    ///   <item><description><see cref="Dictionary{TKey,TValue}"/> - re-serializes to JSON then deserializes (for ObjectToInferredTypesConverter output)</description></item>
-    ///   <item><description><see cref="List{T}"/> of objects - re-serializes to JSON then deserializes</description></item>
-    ///   <item><description><see cref="Newtonsoft.Json.Linq.JObject"/> - uses ToObject for Elasticsearch compatibility (data read from Elasticsearch uses JSON.NET)</description></item>
-    ///   <item><description>JSON string - parses and deserializes</description></item>
-    ///   <item><description>Fallback - attempts type conversion via ToType</description></item>
-    /// </list>
-    /// </remarks>
     public static T? GetValue<T>(this DataDictionary extendedData, string key, JsonSerializerOptions options)
+    {
+        return extendedData.GetValue<T>(key, new SystemTextJsonSerializer(options));
+    }
+
+    /// <summary>
+    /// Retrieves a typed value from the <see cref="DataDictionary"/>, deserializing if necessary.
+    /// </summary>
+    public static T? GetValue<T>(this DataDictionary extendedData, string key, ITextSerializer serializer)
     {
         if (!extendedData.TryGetValue(key, out object? data))
             throw new KeyNotFoundException($"Key \"{key}\" not found in the dictionary.");
@@ -41,11 +35,32 @@ public static class DataDictionaryExtensions
         if (data is JsonDocument jsonDocument)
             data = jsonDocument.RootElement;
 
-        // JsonElement (from STJ deserialization when ObjectToInferredTypesConverter wasn't used)
-        if (data is JsonElement jsonElement &&
-            TryDeserialize(jsonElement, options, out T? jsonElementResult))
+        if (data is JsonElement jsonElement)
         {
-            return jsonElementResult;
+            try
+            {
+                if (typeof(T) == typeof(string))
+                {
+                    object? s = jsonElement.ValueKind switch
+                    {
+                        JsonValueKind.String => jsonElement.GetString(),
+                        JsonValueKind.Number => jsonElement.GetRawText(),
+                        JsonValueKind.True => "true",
+                        JsonValueKind.False => "false",
+                        JsonValueKind.Null => null,
+                        _ => jsonElement.GetRawText()
+                    };
+
+                    return (T?)s;
+                }
+
+                string elementJson = jsonElement.GetRawText();
+                return serializer.Deserialize<T>(elementJson);
+            }
+            catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
+            {
+                // Ignored - fall through to next handler.
+            }
         }
 
         // JsonNode (JsonObject/JsonArray/JsonValue)
@@ -53,30 +68,27 @@ public static class DataDictionaryExtensions
         {
             try
             {
-                var result = jsonNode.Deserialize<T>(options);
-                if (result is not null)
-                    return result;
+                string jsonString = jsonNode.ToJsonString();
+                return serializer.Deserialize<T>(jsonString);
             }
-            catch
+            catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
             {
-                // Ignored - fall through to next handler
+                // Ignored - fall through to next handler.
             }
         }
 
-        // Dictionary<string, object?> from ObjectToInferredTypesConverter
-        // Re-serialize to JSON then deserialize to target type with proper naming policy
         if (data is Dictionary<string, object?> dictionary)
         {
             try
             {
-                string dictJson = JsonSerializer.Serialize(dictionary, options);
-                var result = JsonSerializer.Deserialize<T>(dictJson, options);
-                if (result is not null)
-                    return result;
+                object? normalizedDictionary = NormalizeValueForType(dictionary, typeof(T));
+                string? dictJson = serializer.SerializeToString(normalizedDictionary);
+                if (dictJson is not null)
+                    return serializer.Deserialize<T>(dictJson);
             }
-            catch
+            catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
             {
-                // Ignored - fall through to next handler
+                // Ignored - fall through to next handler.
             }
         }
 
@@ -85,29 +97,14 @@ public static class DataDictionaryExtensions
         {
             try
             {
-                string listJson = JsonSerializer.Serialize(list, options);
-                var result = JsonSerializer.Deserialize<T>(listJson, options);
-                if (result is not null)
-                    return result;
+                object? normalizedList = NormalizeValueForType(list, typeof(T));
+                string? listJson = serializer.SerializeToString(normalizedList);
+                if (listJson is not null)
+                    return serializer.Deserialize<T>(listJson);
             }
-            catch
+            catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
             {
-                // Ignored - fall through to next handler
-            }
-        }
-
-        // Newtonsoft.Json.Linq.JObject - for Elasticsearch compatibility.
-        // When data is read from Elasticsearch (which uses JSON.NET via NEST), complex objects
-        // in DataDictionary are deserialized as JObject. This handler converts them to the target type.
-        if (data is Newtonsoft.Json.Linq.JObject jObject)
-        {
-            try
-            {
-                return jObject.ToObject<T>();
-            }
-            catch
-            {
-                // Ignored - fall through to next handler
+                // Ignored - fall through to next handler.
             }
         }
 
@@ -116,13 +113,11 @@ public static class DataDictionaryExtensions
         {
             try
             {
-                var result = JsonSerializer.Deserialize<T>(json, options);
-                if (result is not null)
-                    return result;
+                return serializer.Deserialize<T>(json);
             }
-            catch
+            catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException or ArgumentException)
             {
-                // Ignored - fall through to next handler
+                // Ignored - fall through to direct type conversion.
             }
         }
 
@@ -130,61 +125,132 @@ public static class DataDictionaryExtensions
         try
         {
             if (data != null)
-            {
                 return data.ToType<T>();
-            }
         }
-        catch
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException or InvalidCastException or ArgumentException)
         {
-            // Ignored
+            // Ignored - preserve legacy GetValue<T> behavior: failed conversion returns default.
         }
 
         return default;
     }
 
-    private static bool TryDeserialize<T>(JsonElement element, JsonSerializerOptions options, out T? result)
+    private sealed record JsonPropertyBinding(string JsonName, Type PropertyType);
+
+    private static readonly ConcurrentDictionary<Type, Dictionary<string, JsonPropertyBinding>> _propertyMaps = new();
+    private static readonly JsonSerializerOptions _propertyNameOptions = new JsonSerializerOptions().ConfigureExceptionlessDefaults();
+
+    private static object? NormalizeValueForType(object? value, Type targetType)
     {
-        result = default;
+        if (value is null)
+            return null;
 
-        try
+        targetType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+
+        if (value is Dictionary<string, object?> dictionary)
+            return NormalizeDictionaryForType(dictionary, targetType);
+
+        if (value is List<object?> list)
         {
-            // Fast-path for common primitives where the element isn't an object/array
-            // (Deserialize<T> also works for these, but this avoids some edge cases and allocations)
-            if (typeof(T) == typeof(string))
-            {
-                object? s = element.ValueKind switch
-                {
-                    JsonValueKind.String => element.GetString(),
-                    JsonValueKind.Number => element.GetRawText(),
-                    JsonValueKind.True => "true",
-                    JsonValueKind.False => "false",
-                    JsonValueKind.Null => null,
-                    _ => element.GetRawText()
-                };
+            Type? elementType = GetEnumerableElementType(targetType);
+            if (elementType is null || elementType == typeof(object))
+                return list;
 
-                result = (T?)s;
-                return true;
-            }
-
-            // General case
-            var deserialized = element.Deserialize<T>(options);
-            if (deserialized is not null)
-            {
-                result = deserialized;
-                return true;
-            }
-        }
-        catch
-        {
-            // Ignored
+            return list.Select(item => NormalizeValueForType(item, elementType)).ToList();
         }
 
-        return false;
+        return value;
+    }
+
+    private static object NormalizeDictionaryForType(Dictionary<string, object?> dictionary, Type targetType)
+    {
+        if (ShouldPreserveDictionaryKeys(targetType))
+            return dictionary;
+
+        Dictionary<string, JsonPropertyBinding> propertyMap = _propertyMaps.GetOrAdd(targetType, CreatePropertyMap);
+        if (propertyMap.Count == 0)
+            return dictionary;
+
+        var normalized = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        var currentFormatKeys = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+
+        foreach ((string key, object? value) in dictionary)
+        {
+            if (!propertyMap.TryGetValue(key, out JsonPropertyBinding? property))
+            {
+                normalized[key] = value;
+                continue;
+            }
+
+            object? normalizedValue = NormalizeValueForType(value, property.PropertyType);
+            bool isCurrentFormatKey = String.Equals(key, property.JsonName, StringComparison.OrdinalIgnoreCase);
+
+            if (normalized.TryGetValue(property.JsonName, out _) && currentFormatKeys.TryGetValue(property.JsonName, out bool existingIsCurrentFormatKey) && existingIsCurrentFormatKey && !isCurrentFormatKey)
+                continue;
+
+            normalized[property.JsonName] = normalizedValue;
+            currentFormatKeys[property.JsonName] = isCurrentFormatKey;
+        }
+
+        return normalized;
+    }
+
+    private static Dictionary<string, JsonPropertyBinding> CreatePropertyMap(Type targetType)
+    {
+        var map = new Dictionary<string, JsonPropertyBinding>(StringComparer.OrdinalIgnoreCase);
+        JsonTypeInfo typeInfo = _propertyNameOptions.GetTypeInfo(targetType);
+
+        foreach (JsonPropertyInfo jsonProperty in typeInfo.Properties)
+        {
+            if (jsonProperty.AttributeProvider is not PropertyInfo property)
+                continue;
+
+            if (property.GetIndexParameters().Length > 0)
+                continue;
+
+            string jsonName = jsonProperty.Name;
+            var binding = new JsonPropertyBinding(jsonName, property.PropertyType);
+
+            map[jsonName] = binding;
+            map[property.Name] = binding;
+        }
+
+        return map;
+    }
+
+    private static bool ShouldPreserveDictionaryKeys(Type targetType)
+    {
+        targetType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+
+        if (targetType == typeof(object) || targetType == typeof(DataDictionary))
+            return true;
+
+        if (typeof(IDictionary).IsAssignableFrom(targetType))
+            return true;
+
+        return targetType.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDictionary<,>));
+    }
+
+    private static Type? GetEnumerableElementType(Type targetType)
+    {
+        if (targetType == typeof(string) || ShouldPreserveDictionaryKeys(targetType))
+            return null;
+
+        if (targetType.IsArray)
+            return targetType.GetElementType();
+
+        if (targetType.IsGenericType && targetType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            return targetType.GetGenericArguments()[0];
+
+        return targetType.GetInterfaces()
+            .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            .Select(i => i.GetGenericArguments()[0])
+            .FirstOrDefault();
     }
 
     public static void RemoveSensitiveData(this DataDictionary extendedData)
     {
-        string[] removeKeys = extendedData.Keys.Where(k => k.StartsWith('-')).ToArray();
+        string[] removeKeys = [.. extendedData.Keys.Where(k => k.StartsWith('-'))];
         foreach (string key in removeKeys)
             extendedData.Remove(key);
     }

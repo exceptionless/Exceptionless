@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
@@ -10,7 +11,12 @@ namespace Exceptionless.Tests.Controllers;
 
 public class StatusControllerTests : IntegrationTestsBase
 {
-    public StatusControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) { }
+    private readonly AppWebHostFactory _factory;
+
+    public StatusControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
+        _factory = factory;
+    }
 
     protected override async Task ResetDataAsync()
     {
@@ -57,11 +63,16 @@ public class StatusControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public Task GetAboutAsync_Anonymous_ReturnsVersionInfo()
+    public async Task GetAboutAsync_Anonymous_ReturnsVersionInfo()
     {
-        return SendRequestAsync(r => r
+        var response = await SendRequestAsync(r => r
             .AppendPath("about")
             .StatusCodeShouldBeOk());
+
+        var document = await response.DeserializeAsync<JsonDocument>();
+        Assert.NotNull(document);
+        using var _ = document;
+        Assert.Equal(_factory.AppScope, document.RootElement.GetProperty("app_scope").GetString());
     }
 
     [Fact]
@@ -102,12 +113,14 @@ public class StatusControllerTests : IntegrationTestsBase
             .Post()
             .AsGlobalAdminUser()
             .AppendPath("notifications/system")
-            .Content(new ValueFromBody<string>("System maintenance scheduled"))
+            .Content(new { message = "System maintenance scheduled", level = "Info", target = "Both" })
             .StatusCodeShouldBeOk());
 
         // Assert
         Assert.NotNull(notification);
         Assert.Equal("System maintenance scheduled", notification.Message);
+        Assert.Equal(SystemNotificationLevel.Info, notification.Level);
+        Assert.Equal(SystemNotificationTarget.Both, notification.Target);
         Assert.True(notification.Date.IsAfterOrEqual(utcNow));
     }
 
@@ -118,7 +131,7 @@ public class StatusControllerTests : IntegrationTestsBase
             .Post()
             .AsGlobalAdminUser()
             .AppendPath("notifications/system")
-            .Content(new ValueFromBody<string>(String.Empty))
+            .Content(new { message = String.Empty, level = "Info", target = "Both" })
             .StatusCodeShouldBeNotFound());
     }
 
@@ -129,7 +142,7 @@ public class StatusControllerTests : IntegrationTestsBase
             .Post()
             .AsTestOrganizationUser()
             .AppendPath("notifications/system")
-            .Content(new ValueFromBody<string>("test"))
+            .Content(new { message = "test", level = "Info", target = "Both" })
             .StatusCodeShouldBeForbidden());
     }
 
@@ -141,7 +154,7 @@ public class StatusControllerTests : IntegrationTestsBase
             .Post()
             .AsGlobalAdminUser()
             .AppendPath("notifications/system")
-            .Content(new ValueFromBody<string>("To be removed"))
+            .Content(new { message = "To be removed", level = "Info", target = "Both" })
             .StatusCodeShouldBeOk());
 
         // Act
@@ -156,7 +169,7 @@ public class StatusControllerTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath("notifications/system")
             .StatusCodeShouldBeOk());
-        var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        string content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.DoesNotContain("To be removed", content);
     }
 
@@ -178,7 +191,7 @@ public class StatusControllerTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath("notifications/system")
             .QueryString("publish", "false")
-            .Content(new ValueFromBody<string>("Silent notification"))
+            .Content(new { message = "Silent notification", level = "Info", target = "Both" })
             .StatusCodeShouldBeOk());
 
         // Assert — notification is persisted and returned

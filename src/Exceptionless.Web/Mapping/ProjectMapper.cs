@@ -23,6 +23,7 @@ public partial class ProjectMapper
     public ViewProject MapToViewProject(Project source)
     {
         var result = MapToViewProjectCore(source);
+        result.PromotedTabs ??= [];
         result.HasSlackIntegration = source.Data is not null && source.Data.ContainsKey(Project.KnownDataKeys.SlackToken);
         return result;
     }

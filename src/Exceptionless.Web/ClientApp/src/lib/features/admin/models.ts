@@ -72,13 +72,11 @@ export type MaintenanceAction = {
     description: string;
     hasDateRange?: boolean;
     hasOrganizationId?: boolean;
-    kind?: MaintenanceActionKind;
     label: string;
     name: string;
 };
 
 export type MaintenanceActionCategory = 'Billing' | 'Configuration' | 'Elasticsearch' | 'Maintenance' | 'Security' | 'Users';
-export type MaintenanceActionKind = 'maintenance-job' | 'predefined-saved-views';
 export type MigrationsResponse = {
     current_version: number;
     states: MigrationState[];
@@ -94,6 +92,29 @@ export type MigrationState = {
 };
 
 export type MigrationStatus = 'Completed' | 'Failed' | 'Pending' | 'Running';
+
+export type OAuthApplication = {
+    client_id: string;
+    created_by_user_id: string;
+    created_utc: string;
+    id: string;
+    is_disabled: boolean;
+    name: string;
+    notes?: null | string;
+    redirect_uris: string[];
+    scopes: string[];
+    updated_by_user_id?: null | string;
+    updated_utc: string;
+};
+
+export type OAuthApplicationRequest = {
+    client_id: string;
+    is_disabled: boolean;
+    name: string;
+    notes?: null | string;
+    redirect_uris: string[];
+    scopes: string[];
+};
 
 export type PredefinedSavedViewDefinition = {
     columnOrder?: null | string[];
@@ -148,15 +169,6 @@ export const maintenanceActions: MaintenanceAction[] = [
             'Re-stamps the latest system-default user-agent bot-filter patterns onto every project and bumps the configuration version, forcing all Exceptionless clients to refresh their local settings on the next request.',
         label: 'Update Project Default Bot Lists',
         name: 'update-project-default-bot-lists'
-    },
-    {
-        category: 'Configuration',
-        dangerous: false,
-        description:
-            'Loads the current global predefined saved views from the API and displays the seed JSON for review or copying into the bundled predefined saved views file.',
-        kind: 'predefined-saved-views',
-        label: 'View Predefined Saved Views',
-        name: 'predefined-saved-views'
     },
     {
         category: 'Configuration',

@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { deserializeFilters, quoteIfSpecialCharacters, serializeFilters, toFilter } from './helpers.svelte';
+import {
+    applyTimeFilter,
+    deserializeFilters,
+    filterChanged,
+    quoteIfSpecialCharacters,
+    serializeFilters,
+    toFilter,
+    toFilterFromSerializedFilters
+} from './helpers.svelte';
 import {
     BooleanFilter,
     DateFilter,
@@ -60,6 +68,79 @@ describe('helpers.svelte', () => {
             expect(quoteIfSpecialCharacters(char)).toBe(`"${char}"`);
             expect(quoteIfSpecialCharacters(`foo${char}bar`)).toBe(`"foo${char}bar"`);
         }
+    });
+});
+
+describe('TagFilter', () => {
+    it('quotes tag values with spaces', () => {
+        const filters = [new TagFilter(['First Chance'] as never[])];
+
+        expect(toFilter(filters)).toBe('tag:"First Chance"');
+    });
+
+    it('quotes multiple tag values with spaces', () => {
+        const filters = [new TagFilter(['First Chance', 'Second Chance'] as never[])];
+
+        expect(toFilter(filters)).toBe('(tag:"First Chance" OR tag:"Second Chance")');
+    });
+});
+
+describe('applyTimeFilter', () => {
+    it('removes an existing date filter when time is explicitly empty', () => {
+        // Arrange
+        const filters = [new DateFilter('date', '[now-7d TO now]'), new StringFilter('stack', 'stack-1')];
+
+        // Act
+        const result = applyTimeFilter(filters, null);
+
+        // Assert
+        expect(result.map((filter) => filter.key)).toEqual(['string-stack']);
+    });
+});
+
+describe('filterChanged', () => {
+    it('merges duplicate multi-value filters by key', () => {
+        // Arrange
+        const existing = new StatusFilter(['open'] as never[]);
+        const added = new StatusFilter(['regressed'] as never[]);
+
+        // Act
+        const result = filterChanged([existing], added);
+
+        // Assert
+        expect(result).toHaveLength(1);
+        expect(result[0]).toBeInstanceOf(StatusFilter);
+        expect((result[0] as StatusFilter).value).toEqual(['open', 'regressed']);
+    });
+
+    it('replaces duplicate scalar filters by key', () => {
+        // Arrange
+        const existing = new ReferenceFilter('ref-1');
+        const added = new ReferenceFilter('ref-2');
+
+        // Act
+        const result = filterChanged([existing], added);
+
+        // Assert
+        expect(result).toHaveLength(1);
+        expect(result[0]).toBeInstanceOf(ReferenceFilter);
+        expect((result[0] as ReferenceFilter).value).toBe('ref-2');
+    });
+
+    it('deduplicates hidden filters by key', () => {
+        // Arrange
+        const existing = new BooleanFilter('bot', true);
+        existing.hidden = true;
+        const added = new BooleanFilter('bot');
+
+        // Act
+        const result = filterChanged([existing], added);
+
+        // Assert
+        expect(result).toHaveLength(1);
+        expect(result[0]).toBeInstanceOf(BooleanFilter);
+        expect((result[0] as BooleanFilter).value).toBe(true);
+        expect(result[0]?.hidden).toBe(false);
     });
 });
 
@@ -183,6 +264,30 @@ describe('serializeFilters', () => {
         expect(result[0].type).toBe('keyword');
         expect(result[1].type).toBe('status');
         expect(result[2].type).toBe('boolean');
+    });
+});
+
+describe('toFilterFromSerializedFilters', () => {
+    it('derives the filter expression from serialized filter controls', () => {
+        // Arrange
+        const serialized = serializeFilters([new DateFilter('date', '[now-7d TO now]'), new StringFilter('stack', 'stack-1')]);
+
+        // Act
+        const result = toFilterFromSerializedFilters(serialized);
+
+        // Assert
+        expect(result).toBe('stack:"stack-1"');
+    });
+
+    it('returns null when serialized filters contain only date controls', () => {
+        // Arrange
+        const serialized = serializeFilters([new DateFilter('date', '[now-7d TO now]')]);
+
+        // Act
+        const result = toFilterFromSerializedFilters(serialized);
+
+        // Assert
+        expect(result).toBeNull();
     });
 });
 

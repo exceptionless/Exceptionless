@@ -1,6 +1,7 @@
 import { resolve } from '$app/paths';
 import { enableOAuthLogin } from '$features/auth/index.svelte';
 import Notifications from '@lucide/svelte/icons/bell';
+import Bot from '@lucide/svelte/icons/bot';
 import Password from '@lucide/svelte/icons/key-round';
 import ExternalLogin from '@lucide/svelte/icons/link';
 import Verify from '@lucide/svelte/icons/shield-check';
@@ -29,6 +30,18 @@ export function routes(): NavigationItem[] {
             href: resolve('/(app)/account/notifications'),
             icon: Notifications,
             title: 'Notifications'
+        },
+        {
+            group: 'My Account',
+            href: resolve('/(app)/account/ai-tools'),
+            icon: Bot,
+            title: 'AI Tools'
+        },
+        {
+            group: 'My Account',
+            href: resolve('/(app)/account/applications'),
+            icon: ExternalLogin,
+            title: 'Applications'
         },
         {
             group: 'My Account',

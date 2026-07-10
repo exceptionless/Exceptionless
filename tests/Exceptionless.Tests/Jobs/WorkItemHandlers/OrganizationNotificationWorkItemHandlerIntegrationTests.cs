@@ -378,7 +378,7 @@ public class OrganizationNotificationWorkItemHandlerIntegrationTests : Integrati
         // Act
         await Assert.ThrowsAsync<InvalidOperationException>(() => HandleWorkItemAsync(workItem));
 
-        var sentMarkerExists = await NotificationService.IsOrganizationNotificationSentAsync(PrimaryOrganizationId, isOverMonthlyLimit: true);
+        bool sentMarkerExists = await NotificationService.IsOrganizationNotificationSentAsync(PrimaryOrganizationId, isOverMonthlyLimit: true);
 
         Mailer.ShouldThrow = false;
         await HandleWorkItemAsync(workItem);
