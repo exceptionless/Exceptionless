@@ -56,6 +56,7 @@ tests/                         # C# tests and HTTP samples
   - API health: `https://api-ex.dev.localhost:7111/api/v2/about`
   - API health fallback for command-line tools with local TLS issues: `http://api-ex.dev.localhost:7110/api/v2/about`
 - Aspire may assign dynamic local ports; when it does, use the endpoints emitted by the AppHost rather than assuming the fixed URLs above.
+- With the AppHost running, discover current endpoints with `aspire describe --apphost src/Exceptionless.AppHost --format Json --non-interactive`; use the reported resource endpoint instead of guessing a port.
 - Dogfood, browser automation, E2E, and API smoke tests must target localhost only unless the user explicitly provides an external URL and asks to use it. Never use production URLs in scripts or tests.
 - If infrastructure is required, start or verify Aspire once. If it still blocks verification, report the exact blocker and command output instead of looping.
 - For bug reports, work on reproducing the reported behavior locally before attempting a fix. If reproduction is blocked, document the exact blocker and get confirmation before moving from diagnosis to implementation.
