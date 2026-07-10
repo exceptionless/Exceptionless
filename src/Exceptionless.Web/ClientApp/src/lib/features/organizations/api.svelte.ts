@@ -57,12 +57,7 @@ export interface ChangePlanMutationRequest {
 
 export interface DeleteOrganizationDataParams {
     key: string;
-}
-
-export interface DeleteOrganizationDataRequest {
-    route: {
-        id: string | undefined;
-    };
+    organizationId: string;
 }
 
 export interface DeleteOrganizationRequest {
@@ -155,13 +150,8 @@ export interface PatchOrganizationRequest {
 
 export interface PostOrganizationDataParams {
     key: string;
+    organizationId: string;
     value: string;
-}
-
-export interface PostOrganizationDataRequest {
-    route: {
-        id: string | undefined;
-    };
 }
 
 export interface PostSetBonusOrganizationParams {
@@ -247,22 +237,22 @@ export function deleteOrganization(request: DeleteOrganizationRequest) {
     }));
 }
 
-export function deleteOrganizationData(request: DeleteOrganizationDataRequest) {
+export function deleteOrganizationData() {
     const queryClient = useQueryClient();
 
     return createMutation<boolean, ProblemDetails, DeleteOrganizationDataParams>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.id,
-        mutationFn: async ({ key }: DeleteOrganizationDataParams) => {
+        enabled: () => !!accessToken.current,
+        mutationFn: async ({ key, organizationId }: DeleteOrganizationDataParams) => {
             const client = useFetchClient();
-            const response = await client.delete(`organizations/${request.route.id}/data/${encodeURIComponent(key)}`);
+            const response = await client.delete(`organizations/${organizationId}/data/${encodeURIComponent(key)}`);
             return response.ok;
         },
-        mutationKey: queryKeys.data(request.route.id),
-        onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
+        mutationKey: queryKeys.data(undefined),
+        onError: (_, { organizationId }) => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(organizationId, undefined) });
         },
-        onSuccess: (_, { key }) => {
-            updateOrganizationQueryData(queryClient, request.route.id, (organization) => {
+        onSuccess: (_, { key, organizationId }) => {
+            updateOrganizationQueryData(queryClient, organizationId, (organization) => {
                 if (!organization.data) {
                     return organization;
                 }
@@ -513,22 +503,22 @@ export function postOrganization() {
     }));
 }
 
-export function postOrganizationData(request: PostOrganizationDataRequest) {
+export function postOrganizationData() {
     const queryClient = useQueryClient();
 
     return createMutation<boolean, ProblemDetails, PostOrganizationDataParams>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.id,
-        mutationFn: async ({ key, value }: PostOrganizationDataParams) => {
+        enabled: () => !!accessToken.current,
+        mutationFn: async ({ key, organizationId, value }: PostOrganizationDataParams) => {
             const client = useFetchClient();
-            const response = await client.post(`organizations/${request.route.id}/data/${encodeURIComponent(key)}`, <StringValueFromBody>{ value });
+            const response = await client.post(`organizations/${organizationId}/data/${encodeURIComponent(key)}`, <StringValueFromBody>{ value });
             return response.ok;
         },
-        mutationKey: queryKeys.data(request.route.id),
-        onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
+        mutationKey: queryKeys.data(undefined),
+        onError: (_, { organizationId }) => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(organizationId, undefined) });
         },
-        onSuccess: (_, { key, value }) => {
-            updateOrganizationQueryData(queryClient, request.route.id, (organization) => ({
+        onSuccess: (_, { key, organizationId, value }) => {
+            updateOrganizationQueryData(queryClient, organizationId, (organization) => ({
                 ...organization,
                 data: {
                     ...(organization.data ?? {}),

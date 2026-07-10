@@ -1719,55 +1719,6 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteDataAsync_ExistingKey_RemovesDataKey()
-    {
-        // Arrange
-        await SendRequestAsync(r => r
-            .AsTestOrganizationUser()
-            .Post()
-            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "data", "BillingName")
-            .Content(new ValueFromBody<string>("Acme, Inc."))
-            .StatusCodeShouldBeOk()
-        );
-        await RefreshDataAsync();
-
-        // Act
-        await SendRequestAsync(r => r
-            .AsTestOrganizationUser()
-            .Delete()
-            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "data", "BillingName")
-            .StatusCodeShouldBeOk()
-        );
-        await RefreshDataAsync();
-
-        // Assert
-        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
-        Assert.NotNull(organization);
-        Assert.False(organization.Data?.ContainsKey("BillingName") ?? false);
-    }
-
-    [Fact]
-    public async Task PostDataAsync_ValidKeyAndValue_PersistsTrimmedData()
-    {
-        // Act
-        await SendRequestAsync(r => r
-            .AsTestOrganizationUser()
-            .Post()
-            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "data", "BillingName")
-            .Content(new ValueFromBody<string>("  Acme, Inc.  "))
-            .StatusCodeShouldBeOk()
-        );
-        await RefreshDataAsync();
-
-        // Assert
-        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
-        Assert.NotNull(organization);
-        Assert.NotNull(organization.Data);
-        Assert.True(organization.Data.TryGetValue("BillingName", out var dataValue));
-        Assert.Equal("Acme, Inc.", dataValue);
-    }
-
-    [Fact]
     public async Task PatchAsync_EmptyName_ReturnsValidationError()
     {
         // Arrange

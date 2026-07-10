@@ -14,11 +14,7 @@
     import { env } from '$env/dynamic/public';
     import { ChangePlanDialog } from '$features/billing';
     import { deleteOrganizationData, getInvoicesQuery, getOrganizationQuery, postOrganizationData } from '$features/organizations/api.svelte';
-    import {
-        getOrganizationBillingInformation,
-        normalizeOrganizationBillingInformationValue,
-        organizationBillingInformationDataKeys
-    } from '$features/organizations/billing-information';
+    import { getOrganizationBillingInformation, getOrganizationBillingInformationChanges } from '$features/organizations/billing-information';
     import { type OrganizationBillingInformationFormData, OrganizationBillingInformationSchema } from '$features/organizations/schemas';
     import { ariaInvalid, getFormErrorMessages, getProblemMessage, mapFieldErrors } from '$features/shared/validation';
     import GlobalUser from '$features/users/components/global-user.svelte';
@@ -30,13 +26,6 @@
     import { onDestroy } from 'svelte';
     import { toast } from 'svelte-sonner';
     import { debounce } from 'throttle-debounce';
-
-    const billingInformationFields = [
-        { key: organizationBillingInformationDataKeys.name, name: 'name' },
-        { key: organizationBillingInformationDataKeys.address, name: 'address' },
-        { key: organizationBillingInformationDataKeys.vatNumber, name: 'vatNumber' },
-        { key: organizationBillingInformationDataKeys.vatId, name: 'vatId' }
-    ] as const;
 
     const organizationId = $derived(page.params.organizationId || '');
     const organizationQuery = getOrganizationQuery({
@@ -55,21 +44,8 @@
         }
     });
 
-    const updateOrganizationData = postOrganizationData({
-        route: {
-            get id() {
-                return organizationId;
-            }
-        }
-    });
-
-    const removeOrganizationData = deleteOrganizationData({
-        route: {
-            get id() {
-                return organizationId;
-            }
-        }
-    });
+    const updateOrganizationData = postOrganizationData();
+    const removeOrganizationData = deleteOrganizationData();
 
     const canChangePlan = $derived(organizationQuery.isSuccess && !!env.PUBLIC_STRIPE_PUBLISHABLE_KEY);
     const billingInformation = $derived(getOrganizationBillingInformation(organizationQuery.data));
@@ -81,6 +57,7 @@
     });
 
     let changePlanDialogOpen = $state(!!params.changePlan);
+    let initializedOrganizationId = $state<string>();
     let toastId = $state<number | string>();
 
     const form = createForm(() => ({
@@ -88,40 +65,63 @@
         validators: {
             onSubmit: OrganizationBillingInformationSchema,
             onSubmitAsync: async ({ value }) => {
-                if (!organizationId) {
+                const targetOrganizationId = organizationId;
+                if (!targetOrganizationId) {
                     return { form: 'Organization ID is required.' };
                 }
 
-                const currentBillingInformation = getOrganizationBillingInformation(organizationQuery.data);
-                const changedFields = billingInformationFields.filter((field) => value[field.name] !== currentBillingInformation[field.name]);
-                if (changedFields.length === 0) {
+                const changes = getOrganizationBillingInformationChanges(getOrganizationBillingInformation(organizationQuery.data), value);
+                if (changes.length === 0) {
                     return null;
                 }
 
                 toast.dismiss(toastId);
 
                 try {
-                    await Promise.all(
-                        changedFields.map((field) => {
-                            const normalizedValue = normalizeOrganizationBillingInformationValue(value[field.name]);
-                            if (normalizedValue) {
-                                return updateOrganizationData.mutateAsync({ key: field.key, value: normalizedValue });
+                    const results = await Promise.allSettled(
+                        changes.map((change) => {
+                            if (change.value) {
+                                return updateOrganizationData.mutateAsync({ key: change.key, organizationId: targetOrganizationId, value: change.value });
                             }
 
-                            return removeOrganizationData.mutateAsync({ key: field.key });
+                            return removeOrganizationData.mutateAsync({ key: change.key, organizationId: targetOrganizationId });
                         })
                     );
 
-                    toastId = toast.success('Successfully updated billing information.');
+                    const failedResult = results.find((result) => result.status === 'rejected');
+                    if (failedResult) {
+                        throw failedResult.reason;
+                    }
+
+                    if (targetOrganizationId === organizationId) {
+                        toastId = toast.success('Successfully updated billing information.');
+                    }
+
                     return null;
                 } catch (error: unknown) {
                     const message = getProblemMessage(error, 'Please try again.');
-                    toastId = toast.error(`Error saving billing information. ${message}`);
+                    if (targetOrganizationId === organizationId) {
+                        toastId = toast.error(`Error saving billing information. ${message}`);
+                    }
+
                     return { form: `Error saving billing information. ${message}` };
+                } finally {
+                    const hasNewChanges = getOrganizationBillingInformationChanges(value, form.state.values).length > 0;
+                    if (targetOrganizationId === organizationId && hasNewChanges) {
+                        debouncedFormSubmit(targetOrganizationId);
+                    }
                 }
             }
         }
     }));
+
+    $effect(() => {
+        if (organizationQuery.isSuccess && initializedOrganizationId !== organizationId) {
+            debouncedFormSubmit.cancel();
+            form.reset(getOrganizationBillingInformation(organizationQuery.data));
+            initializedOrganizationId = organizationId;
+        }
+    });
 
     const debouncedFormSubmit = debounce(1000, (targetOrganizationId: string) => {
         if (targetOrganizationId === organizationId) {
