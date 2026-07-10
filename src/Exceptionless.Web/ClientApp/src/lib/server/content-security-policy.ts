@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto';
 const NONCE_BYTE_LENGTH = 32;
 const NONCE_PATTERN = /^[A-Za-z\d+/]{43}=$/;
 const NONCE_ATTRIBUTE_PATTERN = /\s+nonce(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?/gi;
-const SCRIPT_OPENING_TAG_PATTERN = /<script\b((?:"[^"]*"|'[^']*'|[^'">])*)>/gi;
+const SCRIPT_ELEMENT_PATTERN = /(<script\b)((?:"[^"]*"|'[^']*'|[^'">])*)>([\s\S]*?)(<\/script\s*>)/gi;
 
 // Exceptionless uses Intercom's US endpoints. Keep region-specific sources scoped to that workspace.
 const intercomChildSources = [
@@ -121,11 +121,10 @@ interface ContentSecurityPolicyOptions {
 export function addNonceToScripts(html: string, nonce: string): string {
     validateNonce(nonce);
 
-    return html.replace(SCRIPT_OPENING_TAG_PATTERN, (openingTag, attributes: string) => {
+    return html.replace(SCRIPT_ELEMENT_PATTERN, (_scriptElement, scriptTagName: string, attributes: string, content: string, closingTag: string) => {
         const attributesWithoutNonce = attributes.replace(NONCE_ATTRIBUTE_PATTERN, '');
-        const scriptTagName = openingTag.slice(0, '<script'.length);
 
-        return `${scriptTagName} nonce="${nonce}"${attributesWithoutNonce}>`;
+        return `${scriptTagName} nonce="${nonce}"${attributesWithoutNonce}>${content}${closingTag}`;
     });
 }
 
@@ -151,7 +150,7 @@ export function createNonce(): string {
 }
 
 export async function secureHtmlResponse(response: Response, options: ContentSecurityPolicyOptions = {}): Promise<Response> {
-    if (!response.headers.get('content-type')?.startsWith('text/html')) {
+    if (!response.headers.get('content-type')?.startsWith('text/html') || response.body === null) {
         return response;
     }
 

@@ -76,15 +76,15 @@ internal sealed partial class SpaIndexHtmlMiddleware
 
     internal static string AddScriptNonce(string html, string nonce)
     {
-        return ScriptTagRegex().Replace(html, match =>
+        return ScriptElementRegex().Replace(html, match =>
         {
             string attributes = NonceAttributeRegex().Replace(match.Groups["attributes"].Value, String.Empty);
-            return $"<script nonce=\"{nonce}\"{attributes}>";
+            return $"<script nonce=\"{nonce}\"{attributes}>{match.Groups["content"].Value}{match.Groups["closingTag"].Value}";
         });
     }
 
-    [GeneratedRegex("<script\\b(?<attributes>(?:\"[^\"]*\"|'[^']*'|[^'\">])*)>", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]
-    private static partial Regex ScriptTagRegex();
+    [GeneratedRegex("<script\\b(?<attributes>(?:\"[^\"]*\"|'[^']*'|[^'\">])*)>(?<content>.*?)(?<closingTag></script\\s*>)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Singleline | RegexOptions.NonBacktracking)]
+    private static partial Regex ScriptElementRegex();
 
     [GeneratedRegex("\\snonce(?=[\\s=>/]|$)(?:\\s*=\\s*(?:\"[^\"]*\"|'[^']*'|[^\\s>]+))?", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex NonceAttributeRegex();
