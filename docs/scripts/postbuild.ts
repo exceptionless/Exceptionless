@@ -19,7 +19,20 @@ type SearchIndexEntry = {
   title: string
   url: string
   description: string
+  prose: string
   text: string
+  codeBlocks?: SearchCodeBlock[]
+}
+
+type SearchCodeBlock = {
+  language: string
+  text: string
+  tokens: SearchCodeToken[]
+}
+
+type SearchCodeToken = {
+  text: string
+  classes?: string[]
 }
 
 type SiteData = {
@@ -157,8 +170,13 @@ function removeDuplicatePostHeading(html: string): string {
 }
 
 function normalizeHtmlText(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, "")
+  return decodeHtmlEntities(html.replace(/<[^>]*>/g, ""))
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+function decodeHtmlEntities(value: string): string {
+  return value
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     .replace(/&quot;/g, '"')
@@ -167,8 +185,6 @@ function normalizeHtmlText(html: string): string {
     .replace(/&gt;/g, ">")
     .replace(/&#(\d+);/g, (_match, value: string) => String.fromCodePoint(Number(value)))
     .replace(/&#x([0-9a-f]+);/gi, (_match, value: string) => String.fromCodePoint(parseInt(value, 16)))
-    .replace(/\s+/g, " ")
-    .trim()
 }
 
 function rewriteYouTubeEmbeds(html: string): string {
@@ -337,6 +353,8 @@ async function writeSearchIndex(root: string, routes: string[]): Promise<void> {
 
     const cleanedHtml = stripSearchIgnoredContent(stripHtmlComments(html))
     const mainHtml = extractMainHtml(cleanedHtml) || cleanedHtml
+    const codeBlocks = extractSearchCodeBlocks(mainHtml)
+    const prose = htmlToText(removeCodeBlocks(mainHtml))
     const text = htmlToText(mainHtml)
     if (!text) {
       continue
@@ -346,7 +364,9 @@ async function writeSearchIndex(root: string, routes: string[]): Promise<void> {
       title: pageTitle(cleanedHtml) || titleFromRoute(route),
       url: route,
       description: pageDescription(cleanedHtml),
+      prose,
       text,
+      ...(codeBlocks.length ? { codeBlocks } : {}),
     })
   }
 
@@ -425,6 +445,83 @@ function htmlToText(html: string): string {
         " ",
       ),
   )
+}
+
+function removeCodeBlocks(html: string): string {
+  return html.replace(/<pre\b[^>]*>\s*<code\b[^>]*>[\s\S]*?<\/code>\s*<\/pre>/gi, " ")
+}
+
+function extractSearchCodeBlocks(html: string): SearchCodeBlock[] {
+  const blocks: SearchCodeBlock[] = []
+  const pattern = /<pre\b([^>]*)>\s*<code\b([^>]*)>([\s\S]*?)<\/code>\s*<\/pre>/gi
+
+  for (const match of html.matchAll(pattern)) {
+    const tokens = extractSearchCodeTokens(match[3])
+    const text = tokens.map((token) => token.text).join("")
+    if (!text.trim()) {
+      continue
+    }
+
+    blocks.push({
+      language: codeLanguage(`${match[1]} ${match[2]}`),
+      text,
+      tokens,
+    })
+  }
+
+  return blocks
+}
+
+function extractSearchCodeTokens(html: string): SearchCodeToken[] {
+  const tokens: SearchCodeToken[] = []
+  const classStack: string[][] = []
+
+  for (const match of html.matchAll(/<span\b[^>]*>|<\/span>|[^<]+|</gi)) {
+    const part = match[0]
+    if (/^<span\b/i.test(part)) {
+      classStack.push(highlightClasses(part))
+      continue
+    }
+
+    if (/^<\/span>$/i.test(part)) {
+      classStack.pop()
+      continue
+    }
+
+    appendSearchCodeToken(tokens, decodeHtmlEntities(part), [...new Set(classStack.flat())])
+  }
+
+  return tokens
+}
+
+function highlightClasses(span: string): string[] {
+  const value = span.match(/\bclass\s*=\s*["']([^"']*)["']/i)?.[1] ?? ""
+  return value
+    .split(/\s+/)
+    .filter((className) => /^hljs-[a-z0-9_-]+$/i.test(className) || /^[a-z][a-z0-9_-]*_$/i.test(className))
+}
+
+function appendSearchCodeToken(tokens: SearchCodeToken[], text: string, classes: string[]): void {
+  if (!text) {
+    return
+  }
+
+  const previous = tokens.at(-1)
+  if (previous && sameClasses(previous.classes, classes)) {
+    previous.text += text
+    return
+  }
+
+  tokens.push({ text, ...(classes.length ? { classes } : {}) })
+}
+
+function sameClasses(left: string[] | undefined, right: string[]): boolean {
+  const leftClasses = left ?? []
+  return leftClasses.length === right.length && leftClasses.every((className, index) => className === right[index])
+}
+
+function codeLanguage(attributes: string): string {
+  return attributes.match(/\blanguage-([a-z0-9_-]+)/i)?.[1]?.toLowerCase() ?? "text"
 }
 
 async function collectRedirectAliases(root: string, posts: ContentPage[]): Promise<RedirectAlias[]> {

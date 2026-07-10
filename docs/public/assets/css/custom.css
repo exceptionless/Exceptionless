@@ -619,6 +619,28 @@ body.site-search-open {
     line-height: 1.55;
 }
 
+.site-search-result-code {
+    max-height: 180px;
+    margin: 10px 0 0;
+    padding: 10px 12px;
+    overflow: auto;
+    border: 1px solid #d8d8d8;
+    border-radius: 3px;
+    background: #f5f5f5;
+    color: #393a34;
+    font: 12px/1.45 "Consolas", "Bitstream Vera Sans Mono", "Courier New", monospace;
+    white-space: pre;
+}
+
+.site-search-result-code code {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    white-space: inherit;
+}
+
 .site-search-result mark {
     padding: 1px 2px;
     border-radius: 2px;

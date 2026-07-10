@@ -268,12 +268,48 @@ function initializeSiteSearch(modal) {
     metadata.append(path)
     item.append(metadata)
 
-    const excerpt = document.createElement("p")
-    excerpt.className = "site-search-result-excerpt"
-    appendHighlightedText(excerpt, result.excerpt || result.description || result.text, query)
-    item.append(excerpt)
+    if (result.excerpt) {
+      const excerpt = document.createElement("p")
+      excerpt.className = "site-search-result-excerpt"
+      appendHighlightedText(excerpt, result.excerpt, query)
+      item.append(excerpt)
+    }
+
+    if (result.codeExcerpt) {
+      item.append(renderCodeExcerpt(result.codeExcerpt, query))
+    }
 
     return item
+  }
+
+  function renderCodeExcerpt(excerpt, query) {
+    const pre = document.createElement("pre")
+    pre.className = `site-search-result-code language-${excerpt.language}`
+
+    const code = document.createElement("code")
+    code.className = `hljs language-${excerpt.language}`
+    if (excerpt.hasLeadingContent) {
+      code.append(document.createTextNode("…\n"))
+    }
+
+    for (const token of excerpt.tokens) {
+      const target = token.classes?.length ? document.createElement("span") : code
+      if (target !== code) {
+        target.classList.add(...token.classes)
+      }
+
+      appendHighlightedText(target, token.text, query)
+      if (target !== code) {
+        code.append(target)
+      }
+    }
+
+    if (excerpt.hasTrailingContent) {
+      code.append(document.createTextNode("\n…"))
+    }
+
+    pre.append(code)
+    return pre
   }
 
   function setActiveResult(index) {
@@ -352,7 +388,12 @@ function searchEntries(entries, query) {
   return entries
     .map((entry) => {
       const score = scoreSearchEntry(entry, tokens, phrase)
-      return score > 0 ? { ...entry, excerpt: excerptFor(entry, tokens), score } : null
+      if (score <= 0) {
+        return null
+      }
+
+      const codeExcerpt = codeExcerptFor(entry.codeBlocks || [], tokens)
+      return { ...entry, excerpt: excerptFor(entry, tokens, Boolean(codeExcerpt)), codeExcerpt, score }
     })
     .filter(Boolean)
     .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title))
@@ -407,13 +448,17 @@ function scoreSearchEntry(entry, tokens, phrase) {
   return score
 }
 
-function excerptFor(entry, tokens) {
-  const source = [entry.text, entry.description]
+function excerptFor(entry, tokens, hasCodeExcerpt) {
+  const source = [entry.description, entry.prose]
     .filter(Boolean)
     .find((value) => {
       const normalized = normalizeSearchText(value)
       return tokens.some((token) => normalized.includes(token))
-    }) || entry.description || entry.text || ""
+    }) || entry.description || entry.prose || (hasCodeExcerpt ? "" : entry.text) || ""
+  if (!source) {
+    return ""
+  }
+
   const normalized = normalizeSearchText(source)
   const firstMatch = tokens
     .map((token) => normalized.indexOf(token))
@@ -427,6 +472,80 @@ function excerptFor(entry, tokens) {
   const prefix = start > 0 ? "... " : ""
   const suffix = end < source.length ? " ..." : ""
   return `${prefix}${source.slice(start, end).trim()}${suffix}`
+}
+
+function codeExcerptFor(blocks, queryTokens) {
+  const exactBlock = blocks.find((candidate) => {
+    const text = normalizeSearchText(candidate.text)
+    return queryTokens.every((token) => text.includes(token))
+  })
+  const block = exactBlock || (queryTokens.length === 1
+    ? blocks.find((candidate) => {
+      const text = normalizeSearchText(candidate.text)
+      return queryTokens.some((token) => text.includes(token))
+    })
+    : null)
+
+  if (!block) {
+    return null
+  }
+
+  const normalized = normalizeSearchText(block.text)
+  const firstMatch = queryTokens
+    .map((token) => normalized.indexOf(token))
+    .filter((index) => index >= 0)
+    .sort((left, right) => left - right)[0] ?? 0
+  const lineRanges = codeLineRanges(block.text)
+  const matchLine = Math.max(0, lineRanges.findIndex((range) => firstMatch < range.end))
+  let start = lineRanges[Math.max(0, matchLine - 1)]?.start ?? 0
+  let end = lineRanges[Math.min(lineRanges.length - 1, matchLine + 3)]?.end ?? block.text.length
+
+  if (end - start > 700) {
+    start = Math.max(start, firstMatch - 180)
+    end = Math.min(end, firstMatch + 520)
+  }
+
+  return {
+    language: block.language,
+    tokens: sliceCodeTokens(block.tokens, start, end),
+    hasLeadingContent: start > 0,
+    hasTrailingContent: end < block.text.length,
+  }
+}
+
+function codeLineRanges(value) {
+  const ranges = []
+  let start = 0
+  for (let index = 0; index < value.length; index++) {
+    if (value[index] === "\n") {
+      ranges.push({ start, end: index })
+      start = index + 1
+    }
+  }
+
+  ranges.push({ start, end: value.length })
+  return ranges
+}
+
+function sliceCodeTokens(tokens, start, end) {
+  const sliced = []
+  let offset = 0
+
+  for (const token of tokens) {
+    const tokenStart = offset
+    const tokenEnd = offset + token.text.length
+    offset = tokenEnd
+    if (tokenEnd <= start || tokenStart >= end) {
+      continue
+    }
+
+    const text = token.text.slice(Math.max(0, start - tokenStart), Math.min(token.text.length, end - tokenStart))
+    if (text) {
+      sliced.push({ text, ...(token.classes?.length ? { classes: token.classes } : {}) })
+    }
+  }
+
+  return sliced
 }
 
 function nextWordBoundary(value, index) {
