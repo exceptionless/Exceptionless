@@ -1,9 +1,86 @@
 (function () {
     "use strict";
 
-    // NOTE: We had a ton of existing handlebars code that would of been time consuming to convert to angular.
-    // We will convert this when porting to angular 2.0.
-    angular.module("exceptionless.object-dump").directive("objectDump", function (handlebarsService) {
+    angular.module("exceptionless.object-dump").directive("objectDump", function () {
+        function isArray(value) {
+            return Object.prototype.toString.call(value) === "[object Array]" || value instanceof Array;
+        }
+
+        function isObject(value) {
+            return (typeof value === "object" || value instanceof Object) && value !== null && !isArray(value);
+        }
+
+        function isEmpty(value) {
+            return (isArray(value) || isObject(value)) && Object.keys(value).length === 0;
+        }
+
+        function formatValue(value) {
+            if (typeof value === "boolean" || value instanceof Boolean) {
+                return value ? "True\r\n" : "False\r\n";
+            }
+
+            if (value === null) {
+                return "(Null)\r\n";
+            }
+
+            return String(value) + "\r\n";
+        }
+
+        function renderArray(value) {
+            var list = document.createElement("ul");
+
+            value.forEach(function (item) {
+                var listItem = document.createElement("li");
+                listItem.appendChild(renderValue(item));
+                list.appendChild(listItem);
+            });
+
+            return list;
+        }
+
+        function renderObject(value) {
+            var table = document.createElement("table");
+            table.className = "table table-striped table-bordered table-fixed table-key-value b-t object-dump";
+
+            Object.keys(value).forEach(function (key) {
+                var row = document.createElement("tr");
+                var heading = document.createElement("th");
+                var cell = document.createElement("td");
+
+                heading.textContent = key;
+                cell.appendChild(renderValue(value[key]));
+                row.appendChild(heading);
+                row.appendChild(cell);
+                table.appendChild(row);
+            });
+
+            return table;
+        }
+
+        function renderValue(value) {
+            if (isEmpty(value)) {
+                return document.createTextNode("");
+            }
+
+            if (isArray(value)) {
+                return renderArray(value);
+            }
+
+            if (isObject(value)) {
+                return renderObject(value);
+            }
+
+            return document.createTextNode(formatValue(value));
+        }
+
+        function replaceContent(element, content) {
+            while (element.firstChild) {
+                element.removeChild(element.firstChild);
+            }
+
+            element.appendChild(content);
+        }
+
         return {
             restrict: "E",
             scope: {
@@ -17,17 +94,24 @@
 
                 try {
                     var content = scope.content;
-                    var template = handlebarsService.getTemplate(scope.templateKey);
+                    var usePreformattedText = scope.templateKey === "pre";
 
                     if (typeof content === "string" || content instanceof String) {
                         try {
                             content = JSON.parse(scope.content);
                         } catch (ex) {
-                            template = handlebarsService.getTemplate("pre");
+                            usePreformattedText = true;
                         }
                     }
 
-                    element.html(template(content));
+                    var renderedContent = renderValue(content);
+                    if (usePreformattedText && !isEmpty(content)) {
+                        var pre = document.createElement("pre");
+                        pre.appendChild(renderedContent);
+                        renderedContent = pre;
+                    }
+
+                    replaceContent(element[0], renderedContent);
                 } catch (ex) {
                     element.text(scope.content);
                 }
