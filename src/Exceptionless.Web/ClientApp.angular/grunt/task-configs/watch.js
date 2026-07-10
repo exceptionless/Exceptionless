@@ -1,10 +1,15 @@
-module.exports = function (grunt) {
+var devCertificate = require("../dev-certificate");
+var createLiveReloadOptions = require("../live-reload-options");
+
+function createWatchConfig(grunt) {
     var liveReloadPort = Number(process.env.LIVERELOAD_PORT) || 35729;
+    var useHttps = String(process.env.USE_HTTPS || "").toLowerCase() === "true";
+    var certificate = useHttps ? devCertificate.getDevCertificate() : {};
 
     return {
         main: {
             options: {
-                livereload: liveReloadPort,
+                livereload: createLiveReloadOptions(liveReloadPort, useHttps, certificate),
                 livereloadOnError: false,
                 spawn: false,
             },
@@ -12,4 +17,6 @@ module.exports = function (grunt) {
             tasks: [], // all the tasks are run dynamically during the watch event handler
         },
     };
-};
+}
+
+module.exports = createWatchConfig;

@@ -4,7 +4,8 @@
     "scripts": {
         "build": "npx grunt build",
         "serve": "npx grunt serve",
-        "prod-serve": "cross-env ASPNETCORE_URLS=https://api.exceptionless.io npx grunt serve",
+        "prod-serve": "cross-env API_HTTPS=https://api.exceptionless.io npx grunt serve",
+        "test": "node --test grunt/csp-middleware.test.js grunt/watch-config.test.js",
         "lint": "eslint . --ext .js",
         "lint:fix": "eslint . --ext .js --fix",
         "prettier": "prettier . --write --ignore-unknown",
@@ -12,6 +13,7 @@
         "prettier:staged": "prettier --write --ignore-unknown"
     },
     "devDependencies": {
+        "connect-livereload": "0.6.1",
         "cross-env": "7.0.3",
         "eslint": "^8.45.0",
         "eslint-config-airbnb-base": "^15.0.0",
@@ -71,7 +73,6 @@
         "d3": "3.5.17",
         "exceptionless": "1.6.4",
         "font-awesome": "4.7.0",
-        "handlebars": "4.7.7",
         "jquery": "3.7.0",
         "less": "4.1.3",
         "li": "1.3.0",
