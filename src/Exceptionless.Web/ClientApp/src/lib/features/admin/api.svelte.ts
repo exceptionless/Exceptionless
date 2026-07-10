@@ -165,6 +165,19 @@ export function postOAuthApplicationMutation() {
     }));
 }
 
+export function postForceUpdatePredefinedSavedViewsMutation() {
+    return createMutation<void, ProblemDetails, void>(() => ({
+        mutationFn: async () => {
+            const client = useFetchClient();
+            const response = await client.post('saved-views/predefined/force-update');
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+        }
+    }));
+}
+
 export function putOAuthApplicationMutation() {
     const queryClient = useQueryClient();
 

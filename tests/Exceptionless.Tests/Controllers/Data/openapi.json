@@ -503,6 +503,29 @@
         }
       }
     },
+    "/api/v2/saved-views/predefined/force-update": {
+      "post": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Force update organization saved views that match a predefined saved view key",
+        "responses": {
+          "202": {
+            "description": "The predefined saved view force update was queued.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkInProgressResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The predefined saved view definitions contain duplicate keys."
+          }
+        }
+      }
+    },
     "/api/v2/saved-views/{id}/predefined": {
       "post": {
         "tags": [

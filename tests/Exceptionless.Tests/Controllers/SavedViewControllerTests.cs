@@ -7,8 +7,10 @@ using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
+using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
 using FluentRest;
+using Foundatio.Jobs;
 using Foundatio.Repositories;
 using Xunit;
 
@@ -138,6 +140,92 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         return SendRequestAsync(r => r
             .AsTestOrganizationUser()
             .AppendPaths("saved-views", "predefined")
+            .StatusCodeShouldBeForbidden()
+        );
+    }
+
+    [Fact]
+    public async Task PostForceUpdatePredefinedAsync_GlobalAdmin_OverwritesMatchingOrganizationSavedViews()
+    {
+        // Arrange
+        var predefinedViews = await SendRequestAsAsync<List<ViewSavedView>>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views", "predefined")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(predefinedViews);
+        var logs = predefinedViews.First(view => IsPredefinedSavedView(view, "events", "Logs"));
+        var savedLogs = await _savedViewRepository.GetByIdAsync(logs.Id);
+        Assert.NotNull(savedLogs);
+        savedLogs.PredefinedKey = "EVENTS:LOGS";
+        savedLogs.Filter = "type:error";
+        savedLogs.Slug = "custom-logs";
+        await _savedViewRepository.SaveAsync(savedLogs, o => o.ImmediateConsistency());
+
+        var testUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(testUser);
+        var privateLogs = await _savedViewRepository.AddAsync(new SavedView
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            UserId = testUser.Id,
+            CreatedByUserId = testUser.Id,
+            PredefinedKey = "events:logs",
+            Name = "Private Logs",
+            Slug = "private-logs",
+            ViewType = "events",
+            Filter = "type:error"
+        }, o => o.ImmediateConsistency());
+
+        var legacyLogs = await _savedViewRepository.AddAsync(new SavedView
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            CreatedByUserId = testUser.Id,
+            Name = "Legacy Logs",
+            Slug = "legacy-logs",
+            ViewType = "events",
+            Filter = "type:error"
+        }, o => o.ImmediateConsistency());
+
+        await RefreshDataAsync();
+
+        // Act
+        var workItems = await SendRequestAsAsync<WorkInProgressResult>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", "predefined", "force-update")
+            .StatusCodeShouldBeAccepted()
+        );
+
+        Assert.NotNull(workItems);
+        Assert.NotEmpty(workItems.Workers);
+        await GetService<WorkItemJob>().RunUntilEmptyAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        // Assert
+        var updatedLogs = await _savedViewRepository.GetByIdAsync(logs.Id);
+        Assert.NotNull(updatedLogs);
+        Assert.Equal("type:log (status:open OR status:regressed)", updatedLogs.Filter);
+        Assert.Equal("logs", updatedLogs.Slug);
+        Assert.Equal(PredefinedSavedViewContentHasher.GetContentHash(updatedLogs), updatedLogs.PredefinedContentHash);
+
+        var unchangedPrivateLogs = await _savedViewRepository.GetByIdAsync(privateLogs.Id);
+        Assert.NotNull(unchangedPrivateLogs);
+        Assert.Equal("type:error", unchangedPrivateLogs.Filter);
+
+        var unchangedLegacyLogs = await _savedViewRepository.GetByIdAsync(legacyLogs.Id);
+        Assert.NotNull(unchangedLegacyLogs);
+        Assert.Equal("type:error", unchangedLegacyLogs.Filter);
+    }
+
+    [Fact]
+    public Task PostForceUpdatePredefinedAsync_User_ReturnsForbidden()
+    {
+        return SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("saved-views", "predefined", "force-update")
             .StatusCodeShouldBeForbidden()
         );
     }
@@ -672,7 +760,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task PostPredefinedAsync_ExistingViews_UpdatesByNameAndViewTypeAndPreservesCustomViews()
+    public async Task PostPredefinedAsync_ExistingModifiedPredefinedView_PreservesCustomConfiguration()
     {
         // Arrange
         var predefinedViews = await SendRequestAsAsync<List<ViewSavedView>>(r => r
@@ -720,10 +808,93 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         var updatedLogs = updatedPredefinedViews.FirstOrDefault(view => IsPredefinedSavedView(view, "events", "Logs"));
         Assert.NotNull(updatedLogs);
         Assert.Equal(logs.Id, updatedLogs.Id);
-        Assert.Equal("type:log (status:open OR status:regressed)", updatedLogs.Filter);
-        Assert.Equal("logs", updatedLogs.Slug);
+        Assert.Equal("type:error", updatedLogs.Filter);
+        Assert.Equal("legacy-logs", updatedLogs.Slug);
 
         Assert.NotNull(await _savedViewRepository.GetByIdAsync(customView.Id));
+    }
+
+    [Fact]
+    public async Task GetByOrganizationAsync_PredefinedDefinitionChanges_UpdatesUnmodifiedView()
+    {
+        // Arrange
+        var initialViews = await SendRequestAsAsync<List<ViewSavedView>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(initialViews);
+        var logs = initialViews.First(view => IsPredefinedSavedView(view, "events", "Logs"));
+        var systemLogs = (await GetSystemPredefinedSavedViewsAsync()).First(view => String.Equals(view.PredefinedKey, "events:logs", StringComparison.Ordinal));
+        systemLogs.Filter = "type:log level:warn";
+        systemLogs.PredefinedContentHash = PredefinedSavedViewContentHasher.GetContentHash(systemLogs);
+        await _savedViewRepository.SaveAsync(systemLogs, o => o.ImmediateConsistency());
+        await RefreshDataAsync();
+
+        // Act
+        var updatedViews = await SendRequestAsAsync<List<ViewSavedView>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updatedViews);
+        var updatedLogs = updatedViews.First(view => view.Id == logs.Id);
+        Assert.Equal("type:log level:warn", updatedLogs.Filter);
+
+        var savedLogs = await _savedViewRepository.GetByIdAsync(logs.Id);
+        Assert.NotNull(savedLogs);
+        Assert.Equal(PredefinedSavedViewContentHasher.GetContentHash(savedLogs), savedLogs.PredefinedContentHash);
+    }
+
+    [Fact]
+    public async Task GetByOrganizationAsync_PredefinedDefinitionChanges_UpdatesViewRevertedToBaseline()
+    {
+        // Arrange
+        var initialViews = await SendRequestAsAsync<List<ViewSavedView>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(initialViews);
+        var logs = initialViews.First(view => IsPredefinedSavedView(view, "events", "Logs"));
+
+        await SendRequestAsync(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("saved-views", logs.Id)
+            .Content(new UpdateSavedView { Filter = "type:error" })
+            .StatusCodeShouldBeOk()
+        );
+
+        await SendRequestAsync(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("saved-views", logs.Id)
+            .Content(new UpdateSavedView { Filter = "type:log (status:open OR status:regressed)" })
+            .StatusCodeShouldBeOk()
+        );
+
+        var systemLogs = (await GetSystemPredefinedSavedViewsAsync()).First(view => String.Equals(view.PredefinedKey, "events:logs", StringComparison.Ordinal));
+        systemLogs.Filter = "type:log level:warn";
+        systemLogs.PredefinedContentHash = PredefinedSavedViewContentHasher.GetContentHash(systemLogs);
+        await _savedViewRepository.SaveAsync(systemLogs, o => o.ImmediateConsistency());
+        await RefreshDataAsync();
+
+        // Act
+        var updatedViews = await SendRequestAsAsync<List<ViewSavedView>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updatedViews);
+        var updatedLogs = updatedViews.First(view => view.Id == logs.Id);
+        Assert.Equal("type:log level:warn", updatedLogs.Filter);
     }
 
     [Fact]
