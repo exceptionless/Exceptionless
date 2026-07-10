@@ -11,10 +11,17 @@ extraStyles:
   <div id="responsive-menu" data-search-ignore><button class="btn btn-primary" type="button" data-docs-toc-toggle>Table of Contents</button></div>
   <div id="content" class="row-fluid">
     <div class="toc well span3 visible-toc" data-search-ignore>
-      <form class="input-append" data-site-search-form role="search">
-        <input class="span9" name="q" type="search" placeholder="Search docs..." autocomplete="off" data-site-search-query>
-        <button class="btn" type="submit">Go!</button>
-      </form>
+      <button
+        class="docs-search-trigger"
+        type="button"
+        data-site-search-open
+        aria-label="Search documentation"
+        aria-keyshortcuts="Meta+K Control+K /"
+      >
+        <i class="icon-search" aria-hidden="true"></i>
+        <span>Search docs...</span>
+        <kbd aria-hidden="true">/</kbd>
+      </button>
       {{ docsNavHtml(search, url) }}
     </div>
     <div class="well span9 docs">

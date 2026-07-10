@@ -56,19 +56,7 @@ function initializeSiteSearch(modal) {
   document.querySelectorAll("[data-site-search-open]").forEach((trigger) => {
     trigger.addEventListener("click", (event) => {
       event.preventDefault()
-      openSearch("", trigger)
-    })
-  })
-
-  document.querySelectorAll("[data-site-search-form]").forEach((searchForm) => {
-    searchForm.addEventListener("submit", (event) => {
-      event.preventDefault()
-      const queryInput = searchForm.querySelector("[data-site-search-query]")
-      const query = queryInput instanceof HTMLInputElement ? queryInput.value : ""
-      openSearch(query, searchForm)
-      if (queryInput instanceof HTMLInputElement) {
-        queryInput.value = ""
-      }
+      openSearch(trigger)
     })
   })
 
@@ -80,7 +68,7 @@ function initializeSiteSearch(modal) {
     const key = event.key.toLowerCase()
     if ((key === "k" && (event.ctrlKey || event.metaKey)) || key === "/") {
       event.preventDefault()
-      openSearch("", document.activeElement)
+      openSearch(document.activeElement)
     }
   })
 
@@ -162,17 +150,12 @@ function initializeSiteSearch(modal) {
     setActiveResult(Number(item.dataset.siteSearchResultIndex))
   })
 
-  function openSearch(query, sourceElement) {
+  function openSearch(sourceElement) {
     lastActiveElement = sourceElement instanceof HTMLElement ? sourceElement : document.activeElement
     modal.hidden = false
     document.body.classList.add("site-search-open")
 
-    const trimmedQuery = query.trim()
-    if (trimmedQuery) {
-      input.value = query
-      resetResults(`Searching for "${trimmedQuery}"...`, false)
-      void performSearch(query)
-    } else if (!input.value.trim()) {
+    if (!input.value.trim()) {
       clearResults()
     }
 
@@ -270,10 +253,20 @@ function initializeSiteSearch(modal) {
     appendHighlightedText(link, result.title, query)
     item.append(link)
 
-    const path = document.createElement("p")
-    path.className = "site-search-result-url"
-    path.textContent = result.url
-    item.append(path)
+    const metadata = document.createElement("p")
+    metadata.className = "site-search-result-metadata"
+
+    const type = document.createElement("span")
+    type.className = "site-search-result-type"
+    type.textContent = resultType(result.url)
+    metadata.append(type)
+
+    const path = document.createElement("span")
+    path.className = "site-search-result-path"
+    path.textContent = formatResultPath(result.url)
+    path.title = result.url
+    metadata.append(path)
+    item.append(metadata)
 
     const excerpt = document.createElement("p")
     excerpt.className = "site-search-result-excerpt"
@@ -427,11 +420,59 @@ function excerptFor(entry, tokens) {
     .filter((index) => index >= 0)
     .sort((a, b) => a - b)[0] ?? 0
 
-  const start = Math.max(0, firstMatch - 90)
-  const end = Math.min(source.length, firstMatch + 180)
+  const approximateStart = Math.max(0, firstMatch - 90)
+  const approximateEnd = Math.min(source.length, firstMatch + 180)
+  const start = approximateStart > 0 ? nextWordBoundary(source, approximateStart) : 0
+  const end = approximateEnd < source.length ? previousWordBoundary(source, approximateEnd) : source.length
   const prefix = start > 0 ? "... " : ""
   const suffix = end < source.length ? " ..." : ""
   return `${prefix}${source.slice(start, end).trim()}${suffix}`
+}
+
+function nextWordBoundary(value, index) {
+  const boundary = value.indexOf(" ", index)
+  return boundary >= 0 ? boundary + 1 : index
+}
+
+function previousWordBoundary(value, index) {
+  const boundary = value.lastIndexOf(" ", index)
+  return boundary >= 0 ? boundary : index
+}
+
+function resultType(url) {
+  if (url.startsWith("/docs/")) {
+    return "Docs"
+  }
+
+  if (url.startsWith("/news/")) {
+    return "News"
+  }
+
+  return "Site"
+}
+
+function formatResultPath(url) {
+  const segments = url
+    .split(/[?#]/, 1)[0]
+    .split("/")
+    .filter(Boolean)
+
+  if (segments[0] === "docs" || segments[0] === "news") {
+    segments.shift()
+  }
+
+  return segments.length ? segments.map(formatPathSegment).join(" › ") : "Home"
+}
+
+function formatPathSegment(segment) {
+  const decoded = decodeURIComponent(segment).replace(/[-_]+/g, " ")
+  const knownNames = {
+    api: "API",
+    faq: "FAQ",
+    javascript: "JavaScript",
+  }
+
+  return knownNames[decoded.toLowerCase()] ?? decoded.replace(/\b\w/g, (character) => character.toUpperCase())
 }
 
 function appendHighlightedText(parent, text, query) {

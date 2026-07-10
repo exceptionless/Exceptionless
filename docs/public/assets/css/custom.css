@@ -431,6 +431,51 @@ body.site-search-open {
     overflow: hidden;
 }
 
+.docs-search-trigger {
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 30px;
+    margin-bottom: 10px;
+    padding: 4px 8px;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    background: #ffffff;
+    color: #777777;
+    font: inherit;
+    text-align: left;
+}
+
+.docs-search-trigger:hover,
+.docs-search-trigger:focus {
+    border-color: #598e0e;
+    color: #333333;
+    outline: none;
+    box-shadow: 0 0 6px rgba(89, 142, 14, 0.35);
+}
+
+.docs-search-trigger i {
+    margin-right: 7px;
+}
+
+.docs-search-trigger span {
+    flex: 1 1 auto;
+}
+
+.docs-search-trigger kbd {
+    flex: 0 0 auto;
+    min-width: 18px;
+    padding: 1px 4px;
+    border: 1px solid #cccccc;
+    border-bottom-color: #aaaaaa;
+    border-radius: 3px;
+    background: #f7f7f7;
+    color: #777777;
+    font: 11px/1.4 "Open Sans", Arial, sans-serif;
+    text-align: center;
+}
+
 .site-search-modal[hidden] {
     display: none;
 }
@@ -522,9 +567,12 @@ body.site-search-open {
     margin: 0;
     padding: 14px 18px;
     border-bottom: 1px solid #eeeeee;
+    border-left: 3px solid transparent;
 }
 
+.site-search-result:hover,
 .site-search-result.is-active {
+    border-left-color: #73a818;
     background: #f3f7ed;
 }
 
@@ -536,11 +584,31 @@ body.site-search-open {
     line-height: 1.3;
 }
 
-.site-search-result-url {
+.site-search-result-metadata {
+    display: flex;
+    align-items: center;
+    gap: 7px;
     margin: 3px 0 7px;
     color: #777;
     font-size: 12px;
     line-height: 1.4;
+}
+
+.site-search-result-type {
+    flex: 0 0 auto;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: #e7efd9;
+    color: #497800;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.5;
+    text-transform: uppercase;
+}
+
+.site-search-result-path {
+    min-width: 0;
     word-break: break-word;
 }
 
