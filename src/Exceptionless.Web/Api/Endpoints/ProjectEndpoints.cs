@@ -574,7 +574,7 @@ public static class ProjectEndpoints
         IOptions<HttpJsonOptions> jsonOptions,
         [FromBody] JsonElement body)
     {
-        var patchDocument = JsonPatchValidation.FromJsonBody<UpdateProject>(body, jsonOptions.Value.SerializerOptions);
+        var patchDocument = CreatePatchDocument(body, jsonOptions.Value.SerializerOptions);
         if (patchDocument is null)
         {
             return HttpResults.ValidationProblem(new Dictionary<string, string[]>
@@ -586,4 +586,11 @@ public static class ProjectEndpoints
         return (await mediator.InvokeAsync<Result<ViewProject>>(new ProjectMessages.UpdateProjectMessage(id, patchDocument, httpContext))).ToHttpResult(resultMapper);
     }
 
+    private static JsonPatchDocument<UpdateProject>? CreatePatchDocument(JsonElement body, JsonSerializerOptions options)
+    {
+        if (body.ValueKind is JsonValueKind.Array)
+            return body.Deserialize<JsonPatchDocument<UpdateProject>>(options);
+
+        return JsonPatchValidation.FromPartialObject<UpdateProject>(body, options);
+    }
 }

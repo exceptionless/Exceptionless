@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Seed;
@@ -12,10 +11,6 @@ using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 using Microsoft.AspNetCore.Mvc;
 using SavedViewMessages = Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Utility.OpenApi;
-using Microsoft.Extensions.Options;
-using HttpJsonOptions = Microsoft.AspNetCore.Http.Json.JsonOptions;
-using HttpIResult = Microsoft.AspNetCore.Http.IResult;
-using HttpResults = Microsoft.AspNetCore.Http.Results;
 
 namespace Exceptionless.Web.Api.Endpoints;
 
@@ -189,8 +184,8 @@ public static class SavedViewEndpoints
             }
         });
 
-        group.MapPatch("saved-views/{id:objectid}", UpdateSavedViewAsync)
-        .WithDisplayName("HTTP: PATCH api/v2/saved-views/{id:objectid}")
+        group.MapPatch("saved-views/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, JsonPatchDocument<UpdateSavedView> patchDocument)
+            => (await mediator.InvokeAsync<Result<ViewSavedView>>(new SavedViewMessages.UpdateSavedViewMessage(id, patchDocument))).ToHttpResult(resultMapper))
         .Produces<ViewSavedView>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -206,11 +201,10 @@ public static class SavedViewEndpoints
                 ["400"] = "An error occurred while updating the saved view.",
                 ["404"] = "The saved view could not be found.",
             }
-        })
-        .WithMetadata(new JsonPatchRequestBodyAttribute<UpdateSavedView>());
+        });
 
-        group.MapPut("saved-views/{id:objectid}", UpdateSavedViewAsync)
-        .WithDisplayName("HTTP: PUT api/v2/saved-views/{id:objectid}")
+        group.MapPut("saved-views/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, JsonPatchDocument<UpdateSavedView> patchDocument)
+            => (await mediator.InvokeAsync<Result<ViewSavedView>>(new SavedViewMessages.UpdateSavedViewMessage(id, patchDocument))).ToHttpResult(resultMapper))
         .Produces<ViewSavedView>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -226,8 +220,7 @@ public static class SavedViewEndpoints
                 ["400"] = "An error occurred while updating the saved view.",
                 ["404"] = "The saved view could not be found.",
             }
-        })
-        .WithMetadata(new JsonPatchRequestBodyAttribute<UpdateSavedView>());
+        });
 
         group.MapDelete("saved-views/{ids:objectids}", async (string ids, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper)
             => (await mediator.InvokeAsync<Result<ModelActionResults>>(new SavedViewMessages.DeleteSavedViews(ids.FromDelimitedString()))).ToHttpResult(resultMapper))
@@ -249,24 +242,5 @@ public static class SavedViewEndpoints
         });
 
         return endpoints;
-    }
-
-    private static async Task<HttpIResult> UpdateSavedViewAsync(
-        string id,
-        IMediator mediator,
-        IMediatorResultMapper<HttpIResult> resultMapper,
-        IOptions<HttpJsonOptions> jsonOptions,
-        [FromBody] JsonElement body)
-    {
-        var patchDocument = JsonPatchValidation.FromJsonBody<UpdateSavedView>(body, jsonOptions.Value.SerializerOptions);
-        if (patchDocument is null)
-        {
-            return HttpResults.ValidationProblem(new Dictionary<string, string[]>
-            {
-                ["patch"] = ["Invalid patch document."]
-            });
-        }
-
-        return (await mediator.InvokeAsync<Result<ViewSavedView>>(new SavedViewMessages.UpdateSavedViewMessage(id, patchDocument))).ToHttpResult(resultMapper);
     }
 }

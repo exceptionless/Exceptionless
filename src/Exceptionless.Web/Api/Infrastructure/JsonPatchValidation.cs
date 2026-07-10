@@ -175,12 +175,4 @@ public static class JsonPatchValidation
 
         return JsonSerializer.Deserialize<JsonPatchDocument<T>>(ops.ToJsonString(), options);
     }
-
-    public static JsonPatchDocument<T>? FromJsonBody<T>(JsonElement body, JsonSerializerOptions options) where T : class
-    {
-        if (body.ValueKind is JsonValueKind.Array)
-            return body.Deserialize<JsonPatchDocument<T>>(options);
-
-        return FromPartialObject<T>(body, options);
-    }
 }

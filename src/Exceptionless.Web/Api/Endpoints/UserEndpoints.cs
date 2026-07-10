@@ -1,8 +1,6 @@
-using System.Text.Json;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Web.Api.Filters;
-using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
@@ -15,8 +13,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using UserMessages = Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Utility.OpenApi;
-using Microsoft.Extensions.Options;
-using HttpJsonOptions = Microsoft.AspNetCore.Http.Json.JsonOptions;
 using HttpIResult = Microsoft.AspNetCore.Http.IResult;
 using HttpResults = Microsoft.AspNetCore.Http.Results;
 
@@ -92,8 +88,8 @@ public static class UserEndpoints
             }
         });
 
-        group.MapPatch("users/{id:objectid}", UpdateUserAsync)
-        .WithDisplayName("HTTP: PATCH api/v2/users/{id:objectid}")
+        group.MapPatch("users/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, JsonPatchDocument<UpdateUser> patchDocument)
+            => (await mediator.InvokeAsync<Result<object>>(new UserMessages.UpdateUserMessage(id, patchDocument))).ToHttpResult(resultMapper))
         .Produces<ViewUser>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -107,11 +103,10 @@ public static class UserEndpoints
                 ["400"] = "An error occurred while updating the user.",
                 ["404"] = "The user could not be found.",
             }
-        })
-        .WithMetadata(new JsonPatchRequestBodyAttribute<UpdateUser>());
+        });
 
-        group.MapPut("users/{id:objectid}", UpdateUserAsync)
-        .WithDisplayName("HTTP: PUT api/v2/users/{id:objectid}")
+        group.MapPut("users/{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, JsonPatchDocument<UpdateUser> patchDocument)
+            => (await mediator.InvokeAsync<Result<object>>(new UserMessages.UpdateUserMessage(id, patchDocument))).ToHttpResult(resultMapper))
         .Produces<ViewUser>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -125,8 +120,7 @@ public static class UserEndpoints
                 ["400"] = "An error occurred while updating the user.",
                 ["404"] = "The user could not be found.",
             }
-        })
-        .WithMetadata(new JsonPatchRequestBodyAttribute<UpdateUser>());
+        });
 
         group.MapPost("users/{id:objectid}/avatar", UploadAvatarAsync)
         .Accepts<IFormFile>("multipart/form-data")
@@ -285,25 +279,6 @@ public static class UserEndpoints
         .ExcludeFromDescription();
 
         return endpoints;
-    }
-
-    private static async Task<HttpIResult> UpdateUserAsync(
-        string id,
-        IMediator mediator,
-        IMediatorResultMapper<HttpIResult> resultMapper,
-        IOptions<HttpJsonOptions> jsonOptions,
-        [FromBody] JsonElement body)
-    {
-        var patchDocument = JsonPatchValidation.FromJsonBody<UpdateUser>(body, jsonOptions.Value.SerializerOptions);
-        if (patchDocument is null)
-        {
-            return HttpResults.ValidationProblem(new Dictionary<string, string[]>
-            {
-                ["patch"] = ["Invalid patch document."]
-            });
-        }
-
-        return (await mediator.InvokeAsync<Result<object>>(new UserMessages.UpdateUserMessage(id, patchDocument))).ToHttpResult(resultMapper);
     }
 
     private static async Task<HttpIResult> UploadAvatarAsync(string id, IMediator mediator, IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult> resultMapper, [FromServices] IFileStorage fileStorage, [FromForm] IFormFile? file, CancellationToken cancellationToken)
