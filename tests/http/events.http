@@ -115,6 +115,79 @@ Content-Type: application/json
   }
 }
 
+### Post Complex Object Renderer Dogfood Event
+# @name postComplexObjectEvent
+POST {{apiUrl}}/events?access_token={{clientToken}}
+Content-Type: application/json
+
+{
+  "type": "log",
+  "source": "Complex Object Renderer Dogfood",
+  "message": "Reusable mixed-shape payload for legacy and Svelte object renderer parity",
+  "reference_id": "complex-object-dogfood-v1",
+  "data": {
+    "Complex Object Dogfood": {
+      "primitives": {
+        "null_value": null,
+        "true_value": true,
+        "false_value": false,
+        "zero": 0,
+        "positive_integer": 42,
+        "negative_integer": -17,
+        "decimal": 1234.5678,
+        "scientific_number": 1.2e3,
+        "empty_string": "",
+        "plain_string": "Exceptionless object rendering",
+        "unicode": "Snowman ☃, rocket 🚀, Japanese 例",
+        "multiline": "first line\nsecond line\nthird line",
+        "iso_date_string": "2026-07-10T15:30:45.123Z",
+        "guid_string": "6f9619ff-8b86-d011-b42d-00cf4fc964ff",
+        "url_string": "https://example.test/path?alpha=1&beta=two",
+        "html_like_text": "<script>window.rendererDogfood = 'must stay text';</script>"
+      },
+      "empty_containers": {
+        "empty_object": {},
+        "empty_array": []
+      },
+      "arrays": {
+        "numbers": [0, 1, -2, 3.14159, 1000000],
+        "strings": ["alpha", "", "line one\nline two", "<strong>not markup</strong>"],
+        "mixed": [null, true, false, 0, "text", { "nested": "object" }, ["nested", "array"]],
+        "objects": [
+          { "id": 1, "name": "first", "enabled": true },
+          { "id": 2, "name": "second", "enabled": false, "metadata": { "score": 9.5 } }
+        ]
+      },
+      "deep_object": {
+        "level_1": {
+          "level_2": {
+            "level_3": {
+              "level_4": {
+                "level_5": {
+                  "leaf": "deep value",
+                  "nullable_leaf": null,
+                  "leaf_array": [1, { "two": [3, 4] }]
+                }
+              }
+            }
+          }
+        }
+      },
+      "unusual_keys": {
+        "key with spaces": "spaces",
+        "dotted.key": "dot",
+        "slash/key": "slash",
+        "colon:key": "colon",
+        "@symbol_key": "at sign"
+      }
+    }
+  }
+}
+
+### Find Complex Object Renderer Dogfood Event
+GET {{apiUrl}}/events/by-ref/complex-object-dogfood-v1
+Authorization: Bearer {{token}}
+
 ### GET Submit Random Parameters
 GET {{apiUrl}}/events/submit?access_token={{clientToken}}&foo=bar&edit=&spam=eggs=ham&tags=blue&tags=red&message=foo
 
