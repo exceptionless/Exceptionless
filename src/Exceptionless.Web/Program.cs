@@ -173,6 +173,7 @@ public partial class Program
             {
                 o.CreateSchemaReferenceId = SchemaReferenceIdHelper.CreateSchemaReferenceId;
                 o.AddDocumentTransformer<AggregateDocumentTransformer>();
+                o.AddDocumentTransformer<XmlDocumentationDocumentTransformer>();
                 o.AddDocumentTransformer<DocumentInfoTransformer>();
                 o.AddDocumentTransformer<RemoveProblemJsonFromSuccessResponsesTransformer>();
                 o.AddOperationTransformer<ObsoleteOperationTransformer>();

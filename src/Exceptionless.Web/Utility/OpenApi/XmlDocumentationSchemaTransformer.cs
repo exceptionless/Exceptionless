@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Reflection;
 using System.Xml.Linq;
 using Microsoft.AspNetCore.OpenApi;
@@ -10,6 +11,8 @@ namespace Exceptionless.Web.Utility.OpenApi;
 /// </summary>
 public sealed class XmlDocumentationSchemaTransformer : IOpenApiSchemaTransformer
 {
+    private static readonly ConcurrentDictionary<string, ConcurrentDictionary<string, string>> PropertyDescriptions = new();
+
     public async Task TransformAsync(OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
     {
         var type = context.JsonTypeInfo.Type;
@@ -41,8 +44,56 @@ public sealed class XmlDocumentationSchemaTransformer : IOpenApiSchemaTransforme
             if (description is null)
                 continue;
 
-            if (propertySchema is OpenApiSchema mutableSchema)
+            string? schemaName = SchemaReferenceIdHelper.CreateSchemaReferenceId(context.JsonTypeInfo);
+            string? propertyName = JsonPropertyNameResolver.GetJsonPropertyName(context.JsonTypeInfo, property);
+            if (schemaName is not null && propertyName is not null)
+            {
+                var descriptions = PropertyDescriptions.GetOrAdd(schemaName, _ => new());
+                descriptions[propertyName] = description;
+            }
+
+            var propertyType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+            if (!propertyType.IsEnum && propertySchema is OpenApiSchema mutableSchema && propertySchema is not OpenApiSchemaReference)
+            {
                 mutableSchema.Description = description;
+            }
+        }
+    }
+
+    internal static void ApplyReferencedPropertyDescriptions(OpenApiDocument document)
+    {
+        if (document.Components?.Schemas is null)
+            return;
+
+        var componentDescriptions = document.Components.Schemas
+            .Where(pair => pair.Value is OpenApiSchema)
+            .ToDictionary(pair => pair.Key, pair => ((OpenApiSchema)pair.Value).Description);
+
+        foreach (var (schemaName, propertyDescriptions) in PropertyDescriptions)
+        {
+            if (!document.Components.Schemas.TryGetValue(schemaName, out var componentSchema) ||
+                componentSchema is not OpenApiSchema schema || schema.Properties is null)
+            {
+                continue;
+            }
+
+            foreach (var (propertyName, description) in propertyDescriptions)
+            {
+                if (schema.Properties.TryGetValue(propertyName, out var propertySchema) &&
+                    propertySchema is OpenApiSchemaReference referenceSchema)
+                {
+                    referenceSchema.Description = description;
+                }
+            }
+        }
+
+        foreach (var (schemaName, description) in componentDescriptions)
+        {
+            if (document.Components.Schemas.TryGetValue(schemaName, out var componentSchema) &&
+                componentSchema is OpenApiSchema schema)
+            {
+                schema.Description = description;
+            }
         }
     }
 
@@ -91,5 +142,17 @@ public sealed class XmlDocumentationSchemaTransformer : IOpenApiSchemaTransforme
     {
         var documentedType = type.IsGenericType ? type.GetGenericTypeDefinition() : type;
         return documentedType.FullName?.Replace('+', '.') ?? documentedType.Name;
+    }
+}
+
+/// <summary>
+/// Applies XML descriptions to referenced properties without moving them onto shared component schemas.
+/// </summary>
+public sealed class XmlDocumentationDocumentTransformer : IOpenApiDocumentTransformer
+{
+    public Task TransformAsync(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
+    {
+        XmlDocumentationSchemaTransformer.ApplyReferencedPropertyDescriptions(document);
+        return Task.CompletedTask;
     }
 }

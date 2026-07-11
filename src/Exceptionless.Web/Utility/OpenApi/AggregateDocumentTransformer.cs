@@ -22,29 +22,7 @@ public class AggregateDocumentTransformer : IOpenApiDocumentTransformer
         // Then fix CountResult.aggregations to reference IAggregate
         FixCountResultSchema(document);
 
-        RestoreStackStatusDescription(document);
-
         return Task.CompletedTask;
-    }
-
-    private static void RestoreStackStatusDescription(OpenApiDocument document)
-    {
-        if (document.Components?.Schemas is null ||
-            !document.Components.Schemas.TryGetValue("Stack", out var stackSchema) ||
-            stackSchema is not OpenApiSchema schema ||
-            schema.Properties is null ||
-            !schema.Properties.TryGetValue("status", out var statusSchema) ||
-            statusSchema is not OpenApiSchemaReference referenceSchema)
-        {
-            return;
-        }
-
-        referenceSchema.Description = "The stack status (ie. open, fixed, regressed,";
-        if (document.Components.Schemas.TryGetValue("StackStatus", out var stackStatusSchema) &&
-            stackStatusSchema is OpenApiSchema mutableStackStatusSchema)
-        {
-            mutableStackStatusSchema.Description = null;
-        }
     }
 
     private static void EnsureIAggregateSchema(OpenApiDocument document)
