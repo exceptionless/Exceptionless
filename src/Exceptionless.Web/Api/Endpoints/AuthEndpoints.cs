@@ -1,5 +1,6 @@
 using Exceptionless.Core.Authorization;
 using Exceptionless.Web.Api.Filters;
+using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Models;
 using Foundatio.Mediator;
@@ -237,8 +238,14 @@ public static class AuthEndpoints
             }
         });
 
-        group.MapPost("cancel-reset-password/{token:minlength(1)}", async (string token, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext)
-            => (await mediator.InvokeAsync<Result>(new AuthMessages.CancelResetPassword(token, httpContext))).ToHttpResult(resultMapper))
+        group.MapPost("cancel-reset-password/{token:minlength(1)}", async (string token, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext) =>
+        {
+            var contentTypeResult = ApiValidation.ValidateJsonContentType(httpContext.Request);
+            if (contentTypeResult is not null)
+                return contentTypeResult;
+
+            return (await mediator.InvokeAsync<Result>(new AuthMessages.CancelResetPassword(token, httpContext))).ToHttpResult(resultMapper);
+        })
         .AllowAnonymous()
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)

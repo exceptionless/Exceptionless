@@ -13,6 +13,7 @@ using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Utility;
+using Foundatio.Storage;
 using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
@@ -25,6 +26,7 @@ public class AdminControllerTests : IntegrationTestsBase
     private readonly IEventRepository _eventRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly IUserRepository _userRepository;
+    private readonly IFileStorage _fileStorage;
     private readonly StackData _stackData;
     private readonly EventData _eventData;
 
@@ -36,6 +38,7 @@ public class AdminControllerTests : IntegrationTestsBase
         _eventRepository = GetService<IEventRepository>();
         _projectRepository = GetService<IProjectRepository>();
         _userRepository = GetService<IUserRepository>();
+        _fileStorage = GetService<IFileStorage>();
         _stackData = GetService<StackData>();
         _eventData = GetService<EventData>();
     }
@@ -45,6 +48,25 @@ public class AdminControllerTests : IntegrationTestsBase
         await base.ResetDataAsync();
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
+    }
+
+    [Fact]
+    public async Task RequeueAsync_WithEmptyPath_UsesDefaultQueuePath()
+    {
+        // Arrange
+        await using var stream = new MemoryStream([1]);
+        await _fileStorage.SaveFileAsync("q/empty-path-event.json", stream, TestCancellationToken);
+
+        // Act
+        var response = await SendRequestAsAsync<RequeueResult>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "requeue")
+            .QueryString("path", String.Empty)
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(response);
+        Assert.Equal(1, response.Enqueued);
     }
 
     [Fact]

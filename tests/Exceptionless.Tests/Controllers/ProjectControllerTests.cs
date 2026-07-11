@@ -1073,6 +1073,27 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.Equal(["gamma", "alpha", "beta"], persistedProject.PromotedTabs);
     }
 
+    [Theory]
+    [InlineData("POST")]
+    [InlineData("PUT")]
+    public async Task PromoteTabAsync_WithNonJsonBody_ReturnsUnsupportedMediaType(string method)
+    {
+        // Arrange
+        var httpMethod = new HttpMethod(method);
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .Method(httpMethod)
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "promotedtabs")
+            .QueryString("name", "regressions")
+            .Content("ignored", "text/plain")
+            .ExpectedStatus(HttpStatusCode.UnsupportedMediaType));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.UnsupportedMediaType, response.StatusCode);
+    }
+
     [Fact]
     public async Task PromoteTabAsync_WithValidName_AddsPromotedTab()
     {

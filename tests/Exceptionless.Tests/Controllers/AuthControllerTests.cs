@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Net;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
@@ -1149,6 +1150,23 @@ public class AuthControllerTests : IntegrationTestsBase
             .AppendPath("auth/forgot-password/missing-password-user@exceptionless.io")
             .StatusCodeShouldBeOk()
         );
+    }
+
+    [Fact]
+    public async Task CancelResetPasswordAsync_WithNonJsonBody_ReturnsUnsupportedMediaType()
+    {
+        // Arrange
+        const string token = "test-token";
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .Post()
+            .AppendPath($"auth/cancel-reset-password/{token}")
+            .Content("ignored", "text/plain")
+            .ExpectedStatus(HttpStatusCode.UnsupportedMediaType));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.UnsupportedMediaType, response.StatusCode);
     }
 
     [Fact]

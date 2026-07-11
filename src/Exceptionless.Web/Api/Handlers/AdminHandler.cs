@@ -167,7 +167,7 @@ public class AdminHandler(
     [HandlerEndpoint(HandlerMethod.Get, "requeue", Group = "Admin")]
     public async Task<Result<object>> Handle(AdminRequeue message)
     {
-        string path = message.Path ?? @"q\*";
+        string path = String.IsNullOrEmpty(message.Path) ? @"q\*" : message.Path;
 
         int enqueued = 0;
         foreach (var file in await fileStorage.GetFileListAsync(path))
@@ -365,16 +365,7 @@ public class AdminHandler(
 
             return new ElasticsearchSnapshotsResponse(successfulRepositoryNames, snapshots);
         }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogError(ex, "Unable to retrieve snapshot information");
-            return Result.Error("Unable to retrieve snapshot information.");
-        }
-        catch (TimeoutException ex)
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Unable to retrieve snapshot information");
             return Result.Error("Unable to retrieve snapshot information.");

@@ -414,8 +414,14 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPut("projects/{id:objectid}/promotedtabs", async (string id, string name, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
-            => (await mediator.InvokeAsync<Result>(new ProjectMessages.PromoteProjectTab(id, name, httpContext))).ToHttpResult(resultMapper))
+        group.MapPut("projects/{id:objectid}/promotedtabs", async (string id, string name, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper) =>
+        {
+            var contentTypeResult = ApiValidation.ValidateJsonContentType(httpContext.Request);
+            if (contentTypeResult is not null)
+                return contentTypeResult;
+
+            return (await mediator.InvokeAsync<Result>(new ProjectMessages.PromoteProjectTab(id, name, httpContext))).ToHttpResult(resultMapper);
+        })
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -432,8 +438,14 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPost("projects/{id:objectid}/promotedtabs", async (string id, string name, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
-            => (await mediator.InvokeAsync<Result>(new ProjectMessages.PromoteProjectTab(id, name, httpContext))).ToHttpResult(resultMapper))
+        group.MapPost("projects/{id:objectid}/promotedtabs", async (string id, string name, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper) =>
+        {
+            var contentTypeResult = ApiValidation.ValidateJsonContentType(httpContext.Request);
+            if (contentTypeResult is not null)
+                return contentTypeResult;
+
+            return (await mediator.InvokeAsync<Result>(new ProjectMessages.PromoteProjectTab(id, name, httpContext))).ToHttpResult(resultMapper);
+        })
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
