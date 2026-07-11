@@ -6,5 +6,7 @@ public record ForcePredefinedSavedViewsWorkItem : IHaveUniqueIdentifier
 {
     public required string UserId { get; init; }
 
-    public string UniqueIdentifier => nameof(ForcePredefinedSavedViewsWorkItem);
+    public Guid RunId { get; init; } = Guid.NewGuid();
+
+    public string UniqueIdentifier => $"{nameof(ForcePredefinedSavedViewsWorkItem)}:{RunId:N}";
 }
