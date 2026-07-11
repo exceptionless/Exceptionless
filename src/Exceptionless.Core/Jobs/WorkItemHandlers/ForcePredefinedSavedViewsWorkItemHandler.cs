@@ -12,21 +12,17 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers;
 
 public class ForcePredefinedSavedViewsWorkItemHandler : WorkItemHandlerBase
 {
-    private const int OrganizationPageLimit = 100;
     private const int SavedViewPageLimit = 1000;
     private static readonly string[] ValidViewTypes = ["events", "stacks", "stream"];
 
-    private readonly IOrganizationRepository _organizationRepository;
     private readonly ISavedViewRepository _savedViewRepository;
     private readonly ILockProvider _lockProvider;
 
     public ForcePredefinedSavedViewsWorkItemHandler(
-        IOrganizationRepository organizationRepository,
         ISavedViewRepository savedViewRepository,
         ILockProvider lockProvider,
         ILoggerFactory loggerFactory) : base(loggerFactory)
     {
-        _organizationRepository = organizationRepository;
         _savedViewRepository = savedViewRepository;
         _lockProvider = lockProvider;
     }
@@ -48,19 +44,25 @@ public class ForcePredefinedSavedViewsWorkItemHandler : WorkItemHandlerBase
 
         int organizationsUpdated = 0;
         int savedViewsUpdated = 0;
-        var organizations = await _organizationRepository.GetAllAsync(o => o.SearchAfterPaging().PageLimit(OrganizationPageLimit));
+        var savedViews = await _savedViewRepository.GetPredefinedForForceUpdateAsync(
+            PredefinedSavedViewsDataSeed.SystemOrganizationId,
+            predefinedSavedViewsByKey.Keys.ToArray(),
+            o => o.SearchAfterPaging().PageLimit(SavedViewPageLimit));
 
         do
         {
-            foreach (var organization in organizations.Documents)
+            foreach (var savedViewsByOrganization in savedViews.Documents.GroupBy(savedView => savedView.OrganizationId))
             {
                 if (context.CancellationToken.IsCancellationRequested)
                     break;
 
-                if (String.Equals(organization.Id, PredefinedSavedViewsDataSeed.SystemOrganizationId, StringComparison.Ordinal))
-                    continue;
+                var updateResult = await UpdateOrganizationSavedViewsAsync(
+                    savedViewsByOrganization.Key,
+                    savedViewsByOrganization.Select(savedView => savedView.Id),
+                    workItem.UserId,
+                    predefinedSavedViewsByKey);
 
-                int updatedForOrganization = await ForceUpdateOrganizationSavedViewsAsync(organization.Id, workItem.UserId, predefinedSavedViewsByKey);
+                int updatedForOrganization = updateResult;
                 if (updatedForOrganization > 0)
                 {
                     organizationsUpdated++;
@@ -69,7 +71,7 @@ public class ForcePredefinedSavedViewsWorkItemHandler : WorkItemHandlerBase
 
                 await context.RenewLockAsync();
             }
-        } while (!context.CancellationToken.IsCancellationRequested && await organizations.NextPageAsync());
+        } while (!context.CancellationToken.IsCancellationRequested && await savedViews.NextPageAsync());
 
         Log.LogInformation(
             "Completed predefined saved view force update. OrganizationsUpdated: {OrganizationsUpdated} SavedViewsUpdated: {SavedViewsUpdated} InitiatedByUserId: {UserId}",
@@ -95,15 +97,16 @@ public class ForcePredefinedSavedViewsWorkItemHandler : WorkItemHandlerBase
         return savedViewsByKey;
     }
 
-    private async Task<int> ForceUpdateOrganizationSavedViewsAsync(
+    private async Task<int> UpdateOrganizationSavedViewsAsync(
         string organizationId,
+        IEnumerable<string> savedViewIds,
         string userId,
         IReadOnlyDictionary<string, SavedView> predefinedSavedViewsByKey)
     {
         int updatedSavedViews = 0;
         bool lockAcquired = await _lockProvider.TryUsingAsync($"predefined-saved-views:{organizationId}", async () =>
         {
-            updatedSavedViews = await ForceUpdateOrganizationSavedViewsWithLockAsync(organizationId, userId, predefinedSavedViewsByKey);
+            updatedSavedViews = await UpdateOrganizationSavedViewsWithLockAsync(organizationId, savedViewIds, userId, predefinedSavedViewsByKey);
         }, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15));
 
         if (!lockAcquired)
@@ -112,19 +115,21 @@ public class ForcePredefinedSavedViewsWorkItemHandler : WorkItemHandlerBase
         return updatedSavedViews;
     }
 
-    private async Task<int> ForceUpdateOrganizationSavedViewsWithLockAsync(
+    private async Task<int> UpdateOrganizationSavedViewsWithLockAsync(
         string organizationId,
+        IEnumerable<string> savedViewIds,
         string userId,
         IReadOnlyDictionary<string, SavedView> predefinedSavedViewsByKey)
     {
         var savedViewsToSave = new List<SavedView>();
+        var savedViewIdsToUpdate = savedViewIds.ToHashSet(StringComparer.Ordinal);
+        var results = await _savedViewRepository.FindAsync(q => q.Organization(organizationId), o => o.PageLimit(SavedViewPageLimit));
+        var savedViewsByViewType = results.Documents.GroupBy(savedView => savedView.ViewType, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.OrdinalIgnoreCase);
 
-        foreach (string viewType in ValidViewTypes)
+        foreach (var savedViews in savedViewsByViewType.Values)
         {
-            var results = await _savedViewRepository.GetByViewAsync(organizationId, viewType, o => o.PageLimit(SavedViewPageLimit));
-            var savedViews = results.Documents.ToList();
-
-            foreach (var savedView in savedViews)
+            foreach (var savedView in savedViews.Where(savedView => savedViewIdsToUpdate.Contains(savedView.Id)))
             {
                 if (savedView.UserId is not null
                     || String.IsNullOrWhiteSpace(savedView.PredefinedKey)

@@ -12,7 +12,7 @@ public sealed class SavedViewIndex : VersionedIndex<Models.SavedView>
 
     private readonly ExceptionlessElasticConfiguration _configuration;
 
-    public SavedViewIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "saved-views", 1)
+    public SavedViewIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "saved-views", 2)
     {
         _configuration = configuration;
     }
@@ -27,6 +27,7 @@ public sealed class SavedViewIndex : VersionedIndex<Models.SavedView>
                 .Keyword(e => e.UserId)
                 .Keyword(e => e.CreatedByUserId)
                 .Keyword(e => e.UpdatedByUserId)
+                .Keyword(e => e.PredefinedKey)
                 .Text(e => e.Name, t => t.Analyzer(KEYWORD_LOWERCASE_ANALYZER).AddKeywordField())
                 .Keyword(e => e.ViewType)
                 .IntegerNumber(e => e.Version));
