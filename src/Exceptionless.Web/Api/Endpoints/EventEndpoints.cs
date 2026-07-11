@@ -726,6 +726,7 @@ public static class EventEndpoints
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithMetadata(new ObsoleteAttribute("Use POST /api/v2/events"))
+        .WithMetadata(new RequestBodyContentAttribute())
         .WithMetadata(new EndpointDocumentation {
             AdditionalParameters = EventEndpointHelpers.PostUserAgentParameter,
             ResponseDescriptions = new() {
@@ -746,6 +747,7 @@ public static class EventEndpoints
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithMetadata(new ObsoleteAttribute("Use POST /api/v2/events"))
+        .WithMetadata(new RequestBodyContentAttribute())
         .WithMetadata(new EndpointDocumentation {
             AdditionalParameters = EventEndpointHelpers.PostUserAgentParameter,
             ResponseDescriptions = new() {
@@ -766,6 +768,7 @@ public static class EventEndpoints
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithMetadata(new ObsoleteAttribute("Use POST /api/v2/events"))
+        .WithMetadata(new RequestBodyContentAttribute())
         .WithMetadata(new EndpointDocumentation {
             AdditionalParameters = EventEndpointHelpers.PostUserAgentParameter,
             ResponseDescriptions = new() {
@@ -797,9 +800,14 @@ public static class EventEndpoints
             Simple log event with user identity:
             ```{ "type": "log", "message": "Exceptionless is amazing!", "date":"2030-01-01T12:00:00.0000000-05:00", "@user":{ "identity":"123456789", "name": "Test User" } }```
 
+            Multiple events from string content:
+            ```Exceptionless is amazing!
+            Exceptionless is really amazing!```
+
             Simple error:
             ```{ "type": "error", "date":"2030-01-01T12:00:00.0000000-05:00", "@simple_error": { "message": "Simple Exception", "type": "System.Exception", "stack_trace": "   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77" } }```
             """)
+        .WithMetadata(new RequestBodyContentAttribute())
         .WithMetadata(new EndpointDocumentation {
             AdditionalParameters = EventEndpointHelpers.PostUserAgentParameter,
             ParameterDescriptions = new() {
@@ -833,9 +841,14 @@ public static class EventEndpoints
             Simple log event with user identity:
             ```{ "type": "log", "message": "Exceptionless is amazing!", "date":"2030-01-01T12:00:00.0000000-05:00", "@user":{ "identity":"123456789", "name": "Test User" } }```
 
+            Multiple events from string content:
+            ```Exceptionless is amazing!
+            Exceptionless is really amazing!```
+
             Simple error:
             ```{ "type": "error", "date":"2030-01-01T12:00:00.0000000-05:00", "@simple_error": { "message": "Simple Exception", "type": "System.Exception", "stack_trace": "   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77" } }```
             """)
+        .WithMetadata(new RequestBodyContentAttribute())
         .WithMetadata(new EndpointDocumentation {
             AdditionalParameters = EventEndpointHelpers.PostUserAgentParameter,
             ParameterDescriptions = new() {

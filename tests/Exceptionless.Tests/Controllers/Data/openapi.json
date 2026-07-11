@@ -59,7 +59,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/.well-known/oauth-authorization-server": {
@@ -154,7 +155,8 @@
           "200": {
             "description": "OK"
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/api/v1/events/submit": {
@@ -307,7 +309,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/api/v1/events/submit/{type}": {
@@ -469,7 +472,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/api/v1/projects/{projectId}/events/submit": {
@@ -631,7 +635,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/api/v1/projects/{projectId}/events/submit/{type}": {
@@ -802,7 +807,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/api/v1/error": {
@@ -824,12 +830,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string"
+                "type": "string",
+                "example": ""
               }
             },
             "text/plain": {
               "schema": {
-                "type": "string"
+                "type": "string",
+                "example": ""
               }
             }
           },
@@ -862,7 +870,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/api/v1/events": {
@@ -884,12 +893,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string"
+                "type": "string",
+                "example": ""
               }
             },
             "text/plain": {
               "schema": {
-                "type": "string"
+                "type": "string",
+                "example": ""
               }
             }
           },
@@ -922,7 +933,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/api/v1/projects/{projectId}/events": {
@@ -953,12 +965,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string"
+                "type": "string",
+                "example": ""
               }
             },
             "text/plain": {
               "schema": {
-                "type": "string"
+                "type": "string",
+                "example": ""
               }
             }
           },
@@ -991,7 +1005,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/api/v2/auth/login": {
@@ -3619,10 +3634,15 @@
           "content": {
             "multipart/form-data": {
               "schema": {
+                "required": [
+                  "file"
+                ],
                 "type": "object",
                 "properties": {
                   "file": {
-                    "$ref": "#/components/schemas/IFormFile"
+                    "type": "string",
+                    "description": "The image file to upload.",
+                    "format": "binary"
                   }
                 }
               }
@@ -5888,10 +5908,15 @@
           "content": {
             "multipart/form-data": {
               "schema": {
+                "required": [
+                  "file"
+                ],
                 "type": "object",
                 "properties": {
                   "file": {
-                    "$ref": "#/components/schemas/IFormFile"
+                    "type": "string",
+                    "description": "The image file to upload.",
+                    "format": "binary"
                   }
                 }
               }
@@ -8247,7 +8272,7 @@
           "Event"
         ],
         "summary": "Submit event by POST",
-        "description": "You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON object into the events data collection.\n\nYou can also post a multi-line string. We automatically split strings by the \\n character and create a new log event for every line.\n\nSimple event:\n\u0060\u0060\u0060{ \u0022message\u0022: \u0022Exceptionless is amazing!\u0022 }\u0060\u0060\u0060\n\nSimple log event with user identity:\n\u0060\u0060\u0060{ \u0022type\u0022: \u0022log\u0022, \u0022message\u0022: \u0022Exceptionless is amazing!\u0022, \u0022date\u0022:\u00222030-01-01T12:00:00.0000000-05:00\u0022, \u0022@user\u0022:{ \u0022identity\u0022:\u0022123456789\u0022, \u0022name\u0022: \u0022Test User\u0022 } }\u0060\u0060\u0060\n\nSimple error:\n\u0060\u0060\u0060{ \u0022type\u0022: \u0022error\u0022, \u0022date\u0022:\u00222030-01-01T12:00:00.0000000-05:00\u0022, \u0022@simple_error\u0022: { \u0022message\u0022: \u0022Simple Exception\u0022, \u0022type\u0022: \u0022System.Exception\u0022, \u0022stack_trace\u0022: \u0022   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77\u0022 } }\u0060\u0060\u0060",
+        "description": "You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON object into the events data collection.\n\nYou can also post a multi-line string. We automatically split strings by the \\n character and create a new log event for every line.\n\nSimple event:\n\u0060\u0060\u0060{ \u0022message\u0022: \u0022Exceptionless is amazing!\u0022 }\u0060\u0060\u0060\n\nSimple log event with user identity:\n\u0060\u0060\u0060{ \u0022type\u0022: \u0022log\u0022, \u0022message\u0022: \u0022Exceptionless is amazing!\u0022, \u0022date\u0022:\u00222030-01-01T12:00:00.0000000-05:00\u0022, \u0022@user\u0022:{ \u0022identity\u0022:\u0022123456789\u0022, \u0022name\u0022: \u0022Test User\u0022 } }\u0060\u0060\u0060\n\nMultiple events from string content:\n\u0060\u0060\u0060Exceptionless is amazing!\nExceptionless is really amazing!\u0060\u0060\u0060\n\nSimple error:\n\u0060\u0060\u0060{ \u0022type\u0022: \u0022error\u0022, \u0022date\u0022:\u00222030-01-01T12:00:00.0000000-05:00\u0022, \u0022@simple_error\u0022: { \u0022message\u0022: \u0022Simple Exception\u0022, \u0022type\u0022: \u0022System.Exception\u0022, \u0022stack_trace\u0022: \u0022   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77\u0022 } }\u0060\u0060\u0060",
         "parameters": [
           {
             "name": "userAgent",
@@ -8262,12 +8287,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string"
+                "type": "string",
+                "example": ""
               }
             },
             "text/plain": {
               "schema": {
-                "type": "string"
+                "type": "string",
+                "example": ""
               }
             }
           },
@@ -8603,7 +8630,7 @@
           "Event"
         ],
         "summary": "Submit event by POST for a specific project",
-        "description": "You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON object into the events data collection.\n\nYou can also post a multi-line string. We automatically split strings by the \\n character and create a new log event for every line.\n\nSimple event:\n\u0060\u0060\u0060{ \u0022message\u0022: \u0022Exceptionless is amazing!\u0022 }\u0060\u0060\u0060\n\nSimple log event with user identity:\n\u0060\u0060\u0060{ \u0022type\u0022: \u0022log\u0022, \u0022message\u0022: \u0022Exceptionless is amazing!\u0022, \u0022date\u0022:\u00222030-01-01T12:00:00.0000000-05:00\u0022, \u0022@user\u0022:{ \u0022identity\u0022:\u0022123456789\u0022, \u0022name\u0022: \u0022Test User\u0022 } }\u0060\u0060\u0060\n\nSimple error:\n\u0060\u0060\u0060{ \u0022type\u0022: \u0022error\u0022, \u0022date\u0022:\u00222030-01-01T12:00:00.0000000-05:00\u0022, \u0022@simple_error\u0022: { \u0022message\u0022: \u0022Simple Exception\u0022, \u0022type\u0022: \u0022System.Exception\u0022, \u0022stack_trace\u0022: \u0022   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77\u0022 } }\u0060\u0060\u0060",
+        "description": "You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON object into the events data collection.\n\nYou can also post a multi-line string. We automatically split strings by the \\n character and create a new log event for every line.\n\nSimple event:\n\u0060\u0060\u0060{ \u0022message\u0022: \u0022Exceptionless is amazing!\u0022 }\u0060\u0060\u0060\n\nSimple log event with user identity:\n\u0060\u0060\u0060{ \u0022type\u0022: \u0022log\u0022, \u0022message\u0022: \u0022Exceptionless is amazing!\u0022, \u0022date\u0022:\u00222030-01-01T12:00:00.0000000-05:00\u0022, \u0022@user\u0022:{ \u0022identity\u0022:\u0022123456789\u0022, \u0022name\u0022: \u0022Test User\u0022 } }\u0060\u0060\u0060\n\nMultiple events from string content:\n\u0060\u0060\u0060Exceptionless is amazing!\nExceptionless is really amazing!\u0060\u0060\u0060\n\nSimple error:\n\u0060\u0060\u0060{ \u0022type\u0022: \u0022error\u0022, \u0022date\u0022:\u00222030-01-01T12:00:00.0000000-05:00\u0022, \u0022@simple_error\u0022: { \u0022message\u0022: \u0022Simple Exception\u0022, \u0022type\u0022: \u0022System.Exception\u0022, \u0022stack_trace\u0022: \u0022   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77\u0022 } }\u0060\u0060\u0060",
         "parameters": [
           {
             "name": "projectId",
@@ -8628,12 +8655,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string"
+                "type": "string",
+                "example": ""
               }
             },
             "text/plain": {
               "schema": {
-                "type": "string"
+                "type": "string",
+                "example": ""
               }
             }
           },
@@ -10932,10 +10961,6 @@
         },
         "description": "Base interface for aggregation results. Concrete types include ValueAggregate, BucketAggregate, StatsAggregate, etc. See client-side type definitions for full type information."
       },
-      "IFormFile": {
-        "type": "string",
-        "format": "binary"
-      },
       "Invite": {
         "required": [
           "token",
@@ -11051,7 +11076,8 @@
         "type": "object",
         "properties": {
           "email": {
-            "type": "string"
+            "type": "string",
+            "description": "The email address or domain username"
           },
           "password": {
             "maxLength": 100,
@@ -11203,7 +11229,8 @@
             "type": [
               "null",
               "boolean"
-            ]
+            ],
+            "description": "If true, the view will only be visible to the current user. Defaults to false."
           }
         }
       },
@@ -11294,7 +11321,8 @@
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "The schema version that should be used."
           }
         }
       },
@@ -11798,31 +11826,37 @@
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
-            "type": "string"
+            "type": "string",
+            "description": "Unique id that identifies an event."
           },
           "organization_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
-            "type": "string"
+            "type": "string",
+            "description": "The organization that the event belongs to."
           },
           "project_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
-            "type": "string"
+            "type": "string",
+            "description": "The project that the event belongs to."
           },
           "stack_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
-            "type": "string"
+            "type": "string",
+            "description": "The stack that the event belongs to."
           },
           "is_first_occurrence": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the event resulted in the creation of a new stack."
           },
           "created_utc": {
             "type": "string",
+            "description": "The date that the event was created in the system.",
             "format": "date-time"
           },
           "idx": {
@@ -11830,7 +11864,8 @@
               "null",
               "object"
             ],
-            "additionalProperties": {}
+            "additionalProperties": {},
+            "description": "Used to store primitive data type custom data values for searching the event."
           },
           "type": {
             "maxLength": 100,
@@ -11838,7 +11873,8 @@
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "The event type (ie. error, log message, feature usage). Check KnownTypes for standard event types.\nNullable in transit; the pipeline infers a default before save. Validated as required on repository save."
           },
           "source": {
             "maxLength": 2000,
@@ -11846,10 +11882,12 @@
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "The event source (ie. machine name, log name, feature name)."
           },
           "date": {
             "type": "string",
+            "description": "The date that the event occurred on.",
             "format": "date-time"
           },
           "tags": {
@@ -11860,7 +11898,8 @@
             ],
             "items": {
               "type": "string"
-            }
+            },
+            "description": "A list of tags used to categorize this event."
           },
           "message": {
             "maxLength": 2000,
@@ -11868,19 +11907,22 @@
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "The event message."
           },
           "geo": {
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "The geo coordinates where the event happened."
           },
           "value": {
             "type": [
               "null",
               "number"
             ],
+            "description": "The value of the event if any.",
             "format": "double"
           },
           "count": {
@@ -11888,6 +11930,7 @@
               "null",
               "integer"
             ],
+            "description": "The number of duplicated events.",
             "format": "int32"
           },
           "data": {
@@ -11895,13 +11938,15 @@
               "null",
               "object"
             ],
-            "additionalProperties": {}
+            "additionalProperties": {},
+            "description": "Optional data entries that contain additional information about this event."
           },
           "reference_id": {
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "An optional identifier to be used for referencing this event instance at a later time."
           }
         }
       },
@@ -12053,7 +12098,8 @@
             "type": "string"
           },
           "email": {
-            "type": "string"
+            "type": "string",
+            "description": "The email address or domain username"
           },
           "password": {
             "maxLength": 100,
@@ -12098,26 +12144,31 @@
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
-            "type": "string"
+            "type": "string",
+            "description": "Unique id that identifies a stack."
           },
           "organization_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
-            "type": "string"
+            "type": "string",
+            "description": "The organization that the stack belongs to."
           },
           "project_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
-            "type": "string"
+            "type": "string",
+            "description": "The project that the stack belongs to."
           },
           "type": {
             "maxLength": 100,
             "minLength": 1,
-            "type": "string"
+            "type": "string",
+            "description": "The stack type (ie. error, log message, feature usage). Check KnownTypes for standard stack types."
           },
           "status": {
+            "description": "The stack status (ie. open, fixed, regressed,",
             "$ref": "#/components/schemas/StackStatus"
           },
           "snooze_until_utc": {
@@ -12125,71 +12176,85 @@
               "null",
               "string"
             ],
+            "description": "The date that the stack should be snoozed until.",
             "format": "date-time"
           },
           "signature_hash": {
-            "type": "string"
+            "type": "string",
+            "description": "The signature used for stacking future occurrences."
           },
           "signature_info": {
             "type": "object",
             "additionalProperties": {
               "type": "string"
-            }
+            },
+            "description": "The collection of information that went into creating the signature hash for the stack."
           },
           "fixed_in_version": {
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "The version the stack was fixed in."
           },
           "date_fixed": {
             "type": [
               "null",
               "string"
             ],
+            "description": "The date the stack was fixed.",
             "format": "date-time"
           },
           "title": {
             "maxLength": 1000,
             "minLength": 0,
-            "type": "string"
+            "type": "string",
+            "description": "The stack title."
           },
           "total_occurrences": {
             "type": "integer",
+            "description": "The total number of occurrences in the stack.",
             "format": "int32"
           },
           "first_occurrence": {
             "type": "string",
+            "description": "The date of the 1st occurrence of this stack in UTC time.",
             "format": "date-time"
           },
           "last_occurrence": {
             "type": "string",
+            "description": "The date of the last occurrence of this stack in UTC time.",
             "format": "date-time"
           },
           "description": {
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "The stack description."
           },
           "occurrences_are_critical": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "If true, all future occurrences will be marked as critical."
           },
           "references": {
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "A list of references."
           },
           "tags": {
             "uniqueItems": true,
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "A list of tags used to categorize this stack."
           },
           "duplicate_signature": {
-            "type": "string"
+            "type": "string",
+            "description": "The signature used for finding duplicate stacks. (ProjectId, SignatureHash)"
           },
           "created_utc": {
             "type": "string",
@@ -12265,13 +12330,6 @@
       "UpdateEvent": {
         "type": "object",
         "properties": {
-          "unknown_properties": {
-            "type": [
-              "null",
-              "object"
-            ],
-            "readOnly": true
-          },
           "email_address": {
             "type": [
               "null",
@@ -12285,18 +12343,12 @@
               "string"
             ]
           }
-        }
+        },
+        "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
       },
       "UpdateProject": {
         "type": "object",
         "properties": {
-          "unknown_properties": {
-            "type": [
-              "null",
-              "object"
-            ],
-            "readOnly": true
-          },
           "name": {
             "type": "string"
           },
@@ -12312,18 +12364,12 @@
               "type": "string"
             }
           }
-        }
+        },
+        "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
       },
       "UpdateSavedView": {
         "type": "object",
         "properties": {
-          "unknown_properties": {
-            "type": [
-              "null",
-              "object"
-            ],
-            "readOnly": true
-          },
           "name": {
             "type": [
               "null",
@@ -12391,18 +12437,12 @@
               "boolean"
             ]
           }
-        }
+        },
+        "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
       },
       "UpdateToken": {
         "type": "object",
         "properties": {
-          "unknown_properties": {
-            "type": [
-              "null",
-              "object"
-            ],
-            "readOnly": true
-          },
           "is_disabled": {
             "type": "boolean"
           },
@@ -12412,25 +12452,20 @@
               "string"
             ]
           }
-        }
+        },
+        "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
       },
       "UpdateUser": {
         "type": "object",
         "properties": {
-          "unknown_properties": {
-            "type": [
-              "null",
-              "object"
-            ],
-            "readOnly": true
-          },
           "full_name": {
             "type": "string"
           },
           "email_notifications_enabled": {
             "type": "boolean"
           }
-        }
+        },
+        "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
       },
       "UsageHourInfo": {
         "required": [
@@ -12533,14 +12568,16 @@
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
-            "type": "string"
+            "type": "string",
+            "description": "Unique id that identifies an user."
           },
           "organization_ids": {
             "uniqueItems": true,
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "The organizations that the user has access to."
           },
           "password": {
             "type": [
@@ -12571,7 +12608,8 @@
             }
           },
           "full_name": {
-            "type": "string"
+            "type": "string",
+            "description": "Gets or sets the users Full Name."
           },
           "email_address": {
             "type": "string",
@@ -12602,7 +12640,8 @@
             "format": "date-time"
           },
           "is_active": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Gets or sets the users active state."
           },
           "roles": {
             "uniqueItems": true,
@@ -12642,7 +12681,8 @@
               "null",
               "object"
             ],
-            "additionalProperties": {}
+            "additionalProperties": {},
+            "description": "Extended data entries for this user description."
           }
         }
       },
@@ -13433,7 +13473,8 @@
             "type": "boolean"
           },
           "version": {
-            "type": "string"
+            "type": "string",
+            "description": "The schema version that should be used."
           },
           "created_utc": {
             "type": "string",

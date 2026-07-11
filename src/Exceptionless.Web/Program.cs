@@ -181,6 +181,7 @@ public partial class Program
                 o.AddOperationTransformer<EndpointDocumentationOperationTransformer>();
                 o.AddSchemaTransformer<DataAnnotationsSchemaTransformer>();
                 o.AddSchemaTransformer<DeltaSchemaTransformer>();
+                o.AddSchemaTransformer<XmlDocumentationSchemaTransformer>();
                 o.AddSchemaTransformer<DictionarySubclassSchemaTransformer>();
                 o.AddSchemaTransformer<NumericTypeSchemaTransformer>();
                 o.AddSchemaTransformer<ReadOnlyPropertySchemaTransformer>();

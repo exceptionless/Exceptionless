@@ -32,6 +32,7 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
 
         // Add properties from the inner type
         schema.Properties ??= new Dictionary<string, IOpenApiSchema>();
+        schema.Properties.Clear();
 
         foreach (var property in innerType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Where(p => p.CanRead && p.CanWrite))

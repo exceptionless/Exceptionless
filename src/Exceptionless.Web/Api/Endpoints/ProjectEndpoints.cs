@@ -163,6 +163,7 @@ public static class ProjectEndpoints
             => (await mediator.InvokeAsync<Result<object>>(new ProjectMessages.GetLegacyProjectConfig(v, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .WithTags("Project")
+        .WithMetadata(new ObsoleteAttribute("Use GET /api/v2/projects/config"))
         .Produces<ClientConfiguration>()
         .Produces(StatusCodes.Status304NotModified)
         .ProducesProblem(StatusCodes.Status404NotFound);
