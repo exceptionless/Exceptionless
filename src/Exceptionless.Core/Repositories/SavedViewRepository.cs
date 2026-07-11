@@ -53,12 +53,18 @@ public class SavedViewRepository : RepositoryOwnedByOrganization<SavedView>, ISa
         if (predefinedKeys.Count == 0)
             return FindAsync(q => q.FieldEquals(e => e.Id, String.Empty), options);
 
-        return FindAsync(q => q
-            .FieldEmpty(e => e.UserId!)
-            .FieldNotEquals(e => e.OrganizationId, systemOrganizationId)
-            .FieldEquals(e => e.PredefinedKey!, predefinedKeys.ToArray())
-            .SortAscending(e => e.OrganizationId)
-            .SortAscending(e => e.Id), options);
+        return FindAsync(q =>
+        {
+            q.FieldEmpty(e => e.UserId!)
+                .FieldNotEquals(e => e.OrganizationId, systemOrganizationId)
+                .FieldOr(g =>
+                {
+                    foreach (string predefinedKey in predefinedKeys)
+                        g.FieldContains(e => e.PredefinedKey!, predefinedKey);
+                });
+
+            return q.SortAscending(e => e.OrganizationId).SortAscending(e => e.Id);
+        }, options);
     }
 
     public async Task<long> RemovePrivateByUserIdAsync(string organizationId, string userId)
