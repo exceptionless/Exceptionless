@@ -42,11 +42,9 @@ const contentSecurityPolicyDirectives: ReadonlyArray<readonly [string, readonly 
             'https://maps.googleapis.com',
             'https://app.intercom.io',
             'https://widget.intercom.io',
-            'https://js.intercomcdn.com',
-            'https://cdn.jsdelivr.net'
+            'https://js.intercomcdn.com'
         ]
     ],
-    ['script-src-attr', ["'none'"]],
     ['style-src', ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdn.jsdelivr.net']],
     [
         'img-src',
