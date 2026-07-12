@@ -27,4 +27,4 @@ public record SetOrganizationData(string Id, string Key, ValueFromBody<string> V
 public record DeleteOrganizationData(string Id, string Key, HttpContext Context);
 public record SetOrganizationFeature(string Id, string Feature, HttpContext Context);
 public record RemoveOrganizationFeature(string Id, string Feature, HttpContext Context);
-public record CheckOrganizationName(string Name, HttpContext Context);
+public record CheckOrganizationName(string? Name, HttpContext Context);

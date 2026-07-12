@@ -552,8 +552,14 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPost("projects/{id:objectid}/slack", async (string id, string code, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
-            => (await mediator.InvokeAsync<Result<object>>(new ProjectMessages.AddProjectSlack(id, code, httpContext))).ToHttpResult(resultMapper))
+        group.MapPost("projects/{id:objectid}/slack", async (string id, string code, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper) =>
+        {
+            var contentTypeResult = ApiValidation.ValidateJsonContentType(httpContext.Request);
+            if (contentTypeResult is not null)
+                return contentTypeResult;
+
+            return (await mediator.InvokeAsync<Result<object>>(new ProjectMessages.AddProjectSlack(id, code, httpContext))).ToHttpResult(resultMapper);
+        })
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status304NotModified)

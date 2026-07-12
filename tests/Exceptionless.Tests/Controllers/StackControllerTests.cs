@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text.Json;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
@@ -279,6 +280,33 @@ public class StackControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ChangeStatusAsync_WithOmittedStatus_DefaultsToOpen()
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/mark-fixed")
+            .StatusCodeShouldBeOk());
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/change-status")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        Assert.Equal(StackStatus.Open, stack.Status);
+        Assert.Null(stack.DateFixed);
+        Assert.Null(stack.FixedInVersion);
+    }
+
+    [Fact]
     public async Task DeleteAsync_ExistingStack_ReturnsAccepted()
     {
         // Arrange
@@ -491,11 +519,14 @@ public class StackControllerTests : IntegrationTestsBase
         organization.SuspendedByUserId = user.Id;
         await organizationRepository.SaveAsync(organization, o => o.Originals().ImmediateConsistency().Cache());
 
-        // Act & Assert
-        await SendRequestAsync(r => r
+        // Act
+        using var response = await SendRequestAsync(r => r
             .AsGlobalAdminUser()
             .AppendPaths("organizations", organization.Id, "stacks")
             .StatusCodeShouldBeUpgradeRequired());
+
+        // Assert
+        Assert.Equal(HttpStatusCode.UpgradeRequired, response.StatusCode);
     }
 
     [Fact]
@@ -710,6 +741,27 @@ public class StackControllerTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath("stacks/000000000000000000000000/promote")
             .StatusCodeShouldBeNotFound());
+    }
+
+    [Fact]
+    public async Task SnoozeAsync_WithOmittedDate_ReturnsBadRequest()
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/mark-snoozed")
+            .StatusCodeShouldBeBadRequest());
+
+        // Assert
+        var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        Assert.Equal(StackStatus.Open, stack.Status);
+        Assert.Null(stack.SnoozeUntilUtc);
     }
 
     [Fact]

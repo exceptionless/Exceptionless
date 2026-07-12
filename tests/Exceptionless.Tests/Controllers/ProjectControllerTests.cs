@@ -64,6 +64,29 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task AddSlackAsync_WithNonJsonBody_ReturnsUnsupportedMediaType()
+    {
+        // Arrange
+        const string code = "valid-slack-code";
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "slack")
+            .QueryString("code", code)
+            .Content("ignored", "text/plain")
+            .ExpectedStatus(HttpStatusCode.UnsupportedMediaType)
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.UnsupportedMediaType, response.StatusCode);
+        var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+        Assert.False(project.NotificationSettings.ContainsKey(Project.NotificationIntegrations.Slack));
+    }
+
+    [Fact]
     public async Task AddSlackAsync_WithValidCode_PersistsSlackToken()
     {
         // Arrange
@@ -843,6 +866,49 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.True(root.TryGetProperty("delete_bot_data_enabled", out var deleteBotDataEnabled), "Expected lower_case_underscore response property 'delete_bot_data_enabled'.");
         Assert.True(deleteBotDataEnabled.GetBoolean());
         Assert.False(root.TryGetProperty("DeleteBotDataEnabled", out _), "Response must not drift back to PascalCase 'DeleteBotDataEnabled'.");
+    }
+
+    [Fact]
+    public async Task PatchAsync_WithNullAndWhitespacePromotedTabs_RemovesInvalidTabs()
+    {
+        // Arrange
+        var project = await SendRequestAsAsync<ViewProject>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPath("projects")
+            .Content(new NewProject
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Name = "Nullable Promoted Tabs Project",
+                DeleteBotDataEnabled = false
+            })
+            .StatusCodeShouldBeCreated()
+        );
+        Assert.NotNull(project);
+
+        /* language=json */
+        const string json = """
+                            {
+                                "promoted_tabs": [null, "", "   ", "  timeline  "]
+                            }
+                            """;
+
+        // Act
+        var updatedProject = await SendRequestAsAsync<ViewProject>(r => r
+            .AsTestOrganizationUser()
+            .Patch()
+            .AppendPaths("projects", project.Id)
+            .Content(json, "application/json")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updatedProject);
+        Assert.Equal(["timeline"], updatedProject.PromotedTabs);
+
+        var persisted = await _projectRepository.GetByIdAsync(project.Id);
+        Assert.NotNull(persisted);
+        Assert.Equal(["timeline"], persisted.PromotedTabs);
     }
 
     [Fact]

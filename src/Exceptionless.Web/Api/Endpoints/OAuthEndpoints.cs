@@ -116,7 +116,7 @@ public static class OAuthEndpoints
 
     private static string? GetFormValue(IFormCollection form, string key)
     {
-        string value = form[key].ToString();
-        return String.IsNullOrEmpty(value) ? null : value;
+        string? value = form[key].FirstOrDefault();
+        return String.IsNullOrWhiteSpace(value) ? null : value;
     }
 }

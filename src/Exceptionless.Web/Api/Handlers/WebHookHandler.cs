@@ -108,7 +108,7 @@ public class WebHookHandler(
             Version = new Version(message.ApiVersion >= 0 ? message.ApiVersion : 0, 0)
         };
 
-        if (!webHook.Url.StartsWith("https://hooks.zapier.com", StringComparison.OrdinalIgnoreCase))
+        if (!webHook.Url.StartsWith("https://hooks.zapier.com"))
             return Result.NotFound("Webhook target not found.");
 
         return await PostImplAsync(webHook);
@@ -117,7 +117,7 @@ public class WebHookHandler(
     public async Task<Result> Handle(UnsubscribeWebHook message)
     {
         string? targetUrl = message.Data.RootElement.TryGetProperty("target_url", out var urlProp) ? urlProp.GetString() : null;
-        if (targetUrl is null || !targetUrl.StartsWith("https://hooks.zapier.com", StringComparison.OrdinalIgnoreCase))
+        if (targetUrl is null || !targetUrl.StartsWith("https://hooks.zapier.com"))
             return Result.NotFound("Webhook target not found.");
 
         var results = await repository.GetByUrlAsync(targetUrl);

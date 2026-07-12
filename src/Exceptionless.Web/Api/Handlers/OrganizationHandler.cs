@@ -916,7 +916,7 @@ public class OrganizationHandler(
         return viewOrganizations;
     }
 
-    private async Task<bool> IsOrganizationNameAvailableInternalAsync(string name, HttpContext httpContext)
+    private async Task<bool> IsOrganizationNameAvailableInternalAsync(string? name, HttpContext httpContext)
     {
         if (String.IsNullOrWhiteSpace(name))
             return false;
@@ -933,6 +933,9 @@ public class OrganizationHandler(
 
         if (permission.StatusCode == StatusCodes.Status422UnprocessableEntity)
             return Result.Invalid(ValidationError.Create("general", permission.Message ?? "Validation failed."));
+
+        if (permission.StatusCode == StatusCodes.Status400BadRequest)
+            return Result.BadRequest(permission.Message ?? "Invalid request.");
 
         return Result.Forbidden(permission.Message ?? "Access denied.");
     }

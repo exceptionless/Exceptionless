@@ -717,7 +717,6 @@ public static class EventEndpoints
         // Submit via POST - v1 legacy
         endpoints.MapPost("api/v1/error", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => await SubmitEventByPostAsync(null, 1, httpContext, mediator, resultMapper))
-        .Accepts<string>("application/json", "text/plain")
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .WithTags("Event")
@@ -726,7 +725,7 @@ public static class EventEndpoints
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithMetadata(new ObsoleteAttribute("Use POST /api/v2/events"))
-        .WithMetadata(new RequestBodyContentAttribute())
+        .WithMetadata(new RequestBodyContentAttribute("application/json", "text/plain"))
         .WithMetadata(new EndpointDocumentation {
             AdditionalParameters = EventEndpointHelpers.PostUserAgentParameter,
             ResponseDescriptions = new() {
@@ -738,7 +737,6 @@ public static class EventEndpoints
 
         endpoints.MapPost("api/v1/events", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => await SubmitEventByPostAsync(null, 1, httpContext, mediator, resultMapper))
-        .Accepts<string>("application/json", "text/plain")
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .WithTags("Event")
@@ -747,7 +745,7 @@ public static class EventEndpoints
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithMetadata(new ObsoleteAttribute("Use POST /api/v2/events"))
-        .WithMetadata(new RequestBodyContentAttribute())
+        .WithMetadata(new RequestBodyContentAttribute("application/json", "text/plain"))
         .WithMetadata(new EndpointDocumentation {
             AdditionalParameters = EventEndpointHelpers.PostUserAgentParameter,
             ResponseDescriptions = new() {
@@ -759,7 +757,6 @@ public static class EventEndpoints
 
         endpoints.MapPost("api/v1/projects/{projectId:objectid}/events", async (string projectId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => await SubmitEventByPostAsync(projectId, 1, httpContext, mediator, resultMapper))
-        .Accepts<string>("application/json", "text/plain")
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .WithTags("Event")
@@ -768,7 +765,7 @@ public static class EventEndpoints
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithMetadata(new ObsoleteAttribute("Use POST /api/v2/events"))
-        .WithMetadata(new RequestBodyContentAttribute())
+        .WithMetadata(new RequestBodyContentAttribute("application/json", "text/plain"))
         .WithMetadata(new EndpointDocumentation {
             AdditionalParameters = EventEndpointHelpers.PostUserAgentParameter,
             ResponseDescriptions = new() {
@@ -781,7 +778,6 @@ public static class EventEndpoints
         // Submit via POST - v2
         group.MapPost("events", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => await SubmitEventByPostAsync(null, 2, httpContext, mediator, resultMapper))
-        .Accepts<string>("application/json", "text/plain")
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .Produces(StatusCodes.Status202Accepted)
@@ -807,7 +803,7 @@ public static class EventEndpoints
             Simple error:
             ```{ "type": "error", "date":"2030-01-01T12:00:00.0000000-05:00", "@simple_error": { "message": "Simple Exception", "type": "System.Exception", "stack_trace": "   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77" } }```
             """)
-        .WithMetadata(new RequestBodyContentAttribute())
+        .WithMetadata(new RequestBodyContentAttribute("application/json", "text/plain"))
         .WithMetadata(new EndpointDocumentation {
             AdditionalParameters = EventEndpointHelpers.PostUserAgentParameter,
             ParameterDescriptions = new() {
@@ -822,7 +818,6 @@ public static class EventEndpoints
 
         group.MapPost("projects/{projectId:objectid}/events", async (string projectId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => await SubmitEventByPostAsync(projectId, 2, httpContext, mediator, resultMapper))
-        .Accepts<string>("application/json", "text/plain")
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .Produces(StatusCodes.Status202Accepted)
@@ -848,7 +843,7 @@ public static class EventEndpoints
             Simple error:
             ```{ "type": "error", "date":"2030-01-01T12:00:00.0000000-05:00", "@simple_error": { "message": "Simple Exception", "type": "System.Exception", "stack_trace": "   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77" } }```
             """)
-        .WithMetadata(new RequestBodyContentAttribute())
+        .WithMetadata(new RequestBodyContentAttribute("application/json", "text/plain"))
         .WithMetadata(new EndpointDocumentation {
             AdditionalParameters = EventEndpointHelpers.PostUserAgentParameter,
             ParameterDescriptions = new() {
@@ -888,6 +883,10 @@ public static class EventEndpoints
 
     private static async Task<HttpIResult> SubmitEventByPostAsync(string? projectId, int apiVersion, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
     {
+        var contentTypeResult = ApiValidation.ValidateContentType(httpContext.Request, "application/json", "text/plain");
+        if (contentTypeResult is not null)
+            return contentTypeResult;
+
         if (httpContext.Request.ContentLength is <= 0)
             return Microsoft.AspNetCore.Http.Results.StatusCode(StatusCodes.Status202Accepted);
 

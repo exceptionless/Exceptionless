@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Exceptionless.Core.Models;
@@ -186,6 +187,31 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
         Assert.NotNull(problemDetails);
         Assert.Single(problemDetails.Errors);
         Assert.Contains(problemDetails.Errors, error => String.Equals(error.Key, "event_types"));
+    }
+
+    [Fact]
+    public async Task SubscribeAsync_UppercaseZapierPrefix_ReturnsNotFound()
+    {
+        // Arrange
+        const string zapierUrl = "https://HOOKS.ZAPIER.COM/hooks/12345";
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("webhooks/subscribe")
+            .Content(new Dictionary<string, string>
+            {
+                { "event", WebHook.KnownEventTypes.StackPromoted },
+                { "target_url", zapierUrl }
+            })
+            .StatusCodeShouldBeNotFound()
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        var webHooks = await _webHookRepository.GetByUrlAsync(zapierUrl);
+        Assert.Empty(webHooks.Documents);
     }
 
     [Fact]
@@ -494,6 +520,24 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
             .Content(new Dictionary<string, string> { { "other_field", "value" } })
             .StatusCodeShouldBeNotFound()
         );
+    }
+
+    [Fact]
+    public async Task UnsubscribeAsync_UppercaseZapierPrefix_ReturnsNotFound()
+    {
+        // Arrange
+        const string zapierUrl = "https://HOOKS.ZAPIER.COM/hooks/unsubtest";
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .Post()
+            .AppendPath("webhooks/unsubscribe")
+            .Content(new Dictionary<string, string> { { "target_url", zapierUrl } })
+            .StatusCodeShouldBeNotFound()
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     private sealed record ZapierTestMessage(

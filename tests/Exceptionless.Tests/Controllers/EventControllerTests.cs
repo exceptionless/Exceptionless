@@ -147,11 +147,14 @@ public partial class EventControllerTests : IntegrationTestsBase
         organization.SuspendedByUserId = user.Id;
         await _organizationRepository.SaveAsync(organization, o => o.Originals().ImmediateConsistency().Cache());
 
-        // Act & Assert
-        await SendRequestAsync(r => r
+        // Act
+        using var response = await SendRequestAsync(r => r
             .AsGlobalAdminUser()
             .AppendPaths("organizations", organization.Id, "events")
             .StatusCodeShouldBeUpgradeRequired());
+
+        // Assert
+        Assert.Equal(HttpStatusCode.UpgradeRequired, response.StatusCode);
     }
 
     [Fact]
@@ -214,17 +217,20 @@ public partial class EventControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public Task GetCount_WithDisallowedAggregation_ReturnsBadRequest()
+    public async Task GetCount_WithDisallowedAggregation_ReturnsBadRequest()
     {
         // Arrange
         const string aggregation = "terms:message";
 
-        // Act & Assert
-        return SendRequestAsync(r => r
+        // Act
+        using var response = await SendRequestAsync(r => r
             .AsGlobalAdminUser()
             .AppendPaths("events", "count")
             .QueryString("aggregations", aggregation)
             .StatusCodeShouldBeBadRequest());
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -609,6 +615,26 @@ public partial class EventControllerTests : IntegrationTestsBase
 
         var files = await GetService<IFileStorage>().GetFileListAsync(cancellationToken: TestCancellationToken);
         Assert.Empty(files);
+    }
+
+    [Fact]
+    public async Task PostEvent_WithUnsupportedContentType_ReturnsUnsupportedMediaType()
+    {
+        // Arrange
+        const string payload = "<event><message>not supported</message></event>";
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content(payload, "application/xml")
+            .ExpectedStatus(HttpStatusCode.UnsupportedMediaType));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.UnsupportedMediaType, response.StatusCode);
+        var stats = await _eventQueue.GetQueueStatsAsync();
+        Assert.Equal(0, stats.Enqueued);
     }
 
     [Fact]

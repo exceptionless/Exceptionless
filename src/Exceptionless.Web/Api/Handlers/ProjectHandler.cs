@@ -739,8 +739,8 @@ public class ProjectHandler(
     private static string GetCurrentUserId(HttpContext httpContext) => GetCurrentUser(httpContext).Id;
     private static bool IsStatsMode(string? mode) => !String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase);
     private static List<string> NormalizePromotedTabs(IEnumerable<string>? tabs) => tabs?
+        .Where(tab => !String.IsNullOrWhiteSpace(tab))
         .Select(tab => tab.Trim())
-        .Where(tab => !String.IsNullOrEmpty(tab))
         .Distinct(StringComparer.Ordinal)
         .ToList() ?? [];
 }

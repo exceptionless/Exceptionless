@@ -1,3 +1,4 @@
+using System.Net;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -214,6 +215,22 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .QueryString("name", name)
             .StatusCodeShouldBeNoContent()
         );
+    }
+
+    [Fact]
+    public async Task IsNameAvailableAsync_WithOmittedName_ReturnsCreated()
+    {
+        // Arrange
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", "check-name")
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }
 
     [Fact]
@@ -436,6 +453,24 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         Assert.NotNull(storedOrganization);
         Assert.Equal(organization.IconUrl?.Split('/').Last(), storedOrganization.IconFileName);
         Assert.DoesNotContain("/", storedOrganization.IconFileName!);
+    }
+
+    [Fact]
+    public async Task UploadIconAsync_NonExistentOrganizationWithoutFile_ReturnsNotFound()
+    {
+        // Arrange
+        using var content = new MultipartFormDataContent();
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("organizations", "000000000000000000000000", "icon")
+            .Content(content)
+            .ExpectedStatus(HttpStatusCode.NotFound));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
@@ -766,6 +801,45 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .AppendPaths("organizations", viewOrg.Id)
             .StatusCodeShouldBeNotFound()
         );
+    }
+
+    [Fact]
+    public async Task DeleteAsync_OrganizationWithProjects_ReturnsBadRequest()
+    {
+        // Arrange
+        const string organizationId = SampleDataService.TEST_ORG_ID;
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Delete()
+            .AppendPaths("organizations", organizationId)
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SuspendAsync_WithUnsupportedContentType_ReturnsUnsupportedMediaType()
+    {
+        // Arrange
+        const string payload = "not json";
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "suspend")
+            .Content(payload, "text/plain")
+            .ExpectedStatus(HttpStatusCode.UnsupportedMediaType));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.UnsupportedMediaType, response.StatusCode);
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        Assert.False(organization.IsSuspended);
     }
 
     [Fact]
@@ -1684,18 +1758,21 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public Task GetInvoiceAsync_StripeException_ReturnsNotFound()
+    public async Task GetInvoiceAsync_StripeException_ReturnsNotFound()
     {
         // Arrange
         StripeBillingClient.GetInvoiceException = new StripeException("Stripe unavailable");
 
-        // Act & Assert
-        return WithBillingEnabledAsync(() =>
+        // Act
+        using var response = await WithBillingEnabledAsync(() =>
             SendRequestAsync(r => r
                 .AsTestOrganizationUser()
                 .AppendPaths("organizations", "invoice", "abc1234567")
                 .StatusCodeShouldBeNotFound()
             ));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]

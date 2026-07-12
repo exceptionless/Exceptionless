@@ -1170,6 +1170,52 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task RevokeAsync_DuplicateTokenFields_UsesFirstValue()
+    {
+        // Arrange
+        var token = await IssueTokenAsync();
+        using var client = CreateHttpClient();
+        using var revokeContent = new FormUrlEncodedContent([
+            new KeyValuePair<string, string>("client_id", ClientId),
+            new KeyValuePair<string, string>("token", token.AccessToken),
+            new KeyValuePair<string, string>("token", "not-the-issued-token")
+        ]);
+
+        // Act
+        var response = await client.PostAsync("oauth/revoke", revokeContent, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var storedToken = await GetStoredOAuthTokenAsync(token.AccessToken);
+        Assert.NotNull(storedToken);
+        Assert.True(storedToken.IsDisabled);
+        Assert.Null(storedToken.RefreshTokenHash);
+    }
+
+    [Fact]
+    public async Task RevokeAsync_WhitespaceFirstTokenValue_IgnoresSubsequentValue()
+    {
+        // Arrange
+        var token = await IssueTokenAsync();
+        using var client = CreateHttpClient();
+        using var revokeContent = new FormUrlEncodedContent([
+            new KeyValuePair<string, string>("client_id", ClientId),
+            new KeyValuePair<string, string>("token", "   "),
+            new KeyValuePair<string, string>("token", token.AccessToken)
+        ]);
+
+        // Act
+        var response = await client.PostAsync("oauth/revoke", revokeContent, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var storedToken = await GetStoredOAuthTokenAsync(token.AccessToken);
+        Assert.NotNull(storedToken);
+        Assert.False(storedToken.IsDisabled);
+        Assert.NotNull(storedToken.RefreshTokenHash);
+    }
+
+    [Fact]
     public async Task RevokeAsync_WithDifferentClientId_DoesNotDisableOAuthToken()
     {
         var token = await IssueTokenAsync();

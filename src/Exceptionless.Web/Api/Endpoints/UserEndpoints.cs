@@ -261,9 +261,14 @@ public static class UserEndpoints
             }
         });
 
-        group.MapPost("users/unverify-email-address", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
-            => (await mediator.InvokeAsync<Result>(new UserMessages.UnverifyEmailAddresses())).ToHttpResult(resultMapper))
-        .Accepts<string>("text/plain")
+        group.MapPost("users/unverify-email-address", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper) =>
+        {
+            var contentTypeResult = ApiValidation.ValidateContentType(httpContext.Request, "text/plain");
+            if (contentTypeResult is not null)
+                return contentTypeResult;
+
+            return (await mediator.InvokeAsync<Result>(new UserMessages.UnverifyEmailAddresses())).ToHttpResult(resultMapper);
+        })
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
         .Produces(StatusCodes.Status200OK)
         .ExcludeFromDescription();
@@ -285,8 +290,14 @@ public static class UserEndpoints
         return endpoints;
     }
 
-    private static async Task<HttpIResult> UploadAvatarAsync(string id, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromServices] IFileStorage fileStorage, [FromForm] IFormFile? file, CancellationToken cancellationToken)
+    private static async Task<HttpIResult> UploadAvatarAsync(string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromServices] IFileStorage fileStorage, CancellationToken cancellationToken)
     {
+        var accessResult = await mediator.InvokeAsync<Result<object>>(new UserMessages.GetUserById(id));
+        if (!accessResult.IsSuccess)
+            return accessResult.ToHttpResult(resultMapper);
+
+        var form = await httpContext.Request.ReadFormAsync(cancellationToken);
+        var file = form.Files.GetFile("file");
         var modelState = new ModelStateDictionary();
         var image = await ProfileImageStorage.SaveAsync(fileStorage, file, "users", id, modelState, cancellationToken);
         if (image is null)

@@ -13,12 +13,17 @@ public static class ApiValidation
 
     public static IResult? ValidateJsonContentType(HttpRequest request)
     {
+        return ValidateContentType(request, "application/json");
+    }
+
+    public static IResult? ValidateContentType(HttpRequest request, params string[] allowedContentTypes)
+    {
         var bodyDetection = request.HttpContext.Features.Get<IHttpRequestBodyDetectionFeature>();
         if (bodyDetection?.CanHaveBody != true)
             return null;
 
         string? contentType = request.ContentType?.Split(';', 2)[0].Trim();
-        return String.Equals(contentType, "application/json", StringComparison.OrdinalIgnoreCase)
+        return allowedContentTypes.Contains(contentType, StringComparer.OrdinalIgnoreCase)
             ? null
             : global::Microsoft.AspNetCore.Http.Results.StatusCode(StatusCodes.Status415UnsupportedMediaType);
     }

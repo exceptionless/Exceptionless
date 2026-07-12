@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -316,8 +317,14 @@ public static class OrganizationEndpoints
             }
         });
 
-        group.MapPost("organizations/{id:objectid}/suspend", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, SuspensionCode? code = null, string? notes = null)
-            => (await mediator.InvokeAsync<Result>(new OrganizationMessages.SuspendOrganization(id, code ?? SuspensionCode.Billing, notes, httpContext))).ToHttpResult(resultMapper))
+        group.MapPost("organizations/{id:objectid}/suspend", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, SuspensionCode? code = null, string? notes = null) =>
+        {
+            var contentTypeResult = ApiValidation.ValidateJsonContentType(httpContext.Request);
+            if (contentTypeResult is not null)
+                return contentTypeResult;
+
+            return (await mediator.InvokeAsync<Result>(new OrganizationMessages.SuspendOrganization(id, code ?? SuspensionCode.Billing, notes, httpContext))).ToHttpResult(resultMapper);
+        })
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -379,7 +386,7 @@ public static class OrganizationEndpoints
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ExcludeFromDescription();
 
-        group.MapGet("organizations/check-name", async (string name, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
+        group.MapGet("organizations/check-name", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [Required] string? name = null)
             => (await mediator.InvokeAsync<Result>(new OrganizationMessages.CheckOrganizationName(name, httpContext))).ToHttpResult(resultMapper))
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status201Created)
@@ -398,8 +405,14 @@ public static class OrganizationEndpoints
         return endpoints;
     }
 
-    private static async Task<HttpIResult> UploadIconAsync(string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromServices] IFileStorage fileStorage, [FromForm] IFormFile? file, CancellationToken cancellationToken)
+    private static async Task<HttpIResult> UploadIconAsync(string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromServices] IFileStorage fileStorage, CancellationToken cancellationToken)
     {
+        var accessResult = await mediator.InvokeAsync<Result<ViewOrganization>>(new OrganizationMessages.GetOrganizationById(id, null, httpContext));
+        if (!accessResult.IsSuccess)
+            return accessResult.ToHttpResult(resultMapper);
+
+        var form = await httpContext.Request.ReadFormAsync(cancellationToken);
+        var file = form.Files.GetFile("file");
         var modelState = new ModelStateDictionary();
         var image = await ProfileImageStorage.SaveAsync(fileStorage, file, "organizations", id, modelState, cancellationToken);
         if (image is null)

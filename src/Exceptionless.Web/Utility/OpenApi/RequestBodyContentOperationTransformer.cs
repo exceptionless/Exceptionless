@@ -57,12 +57,14 @@ public class RequestBodyContentOperationTransformer : IOpenApiOperationTransform
             return Task.CompletedTask;
         }
 
-        bool hasRequestBodyContent = endpointMetadata.OfType<RequestBodyContentAttribute>().Any()
-            || methodInfo?.GetCustomAttributes(typeof(RequestBodyContentAttribute), true).Any() == true;
-        if (!hasRequestBodyContent)
+        var requestBodyContentAttribute = endpointMetadata.OfType<RequestBodyContentAttribute>().FirstOrDefault()
+            ?? methodInfo?.GetCustomAttributes(typeof(RequestBodyContentAttribute), true).OfType<RequestBodyContentAttribute>().FirstOrDefault();
+        if (requestBodyContentAttribute is null)
             return Task.CompletedTask;
 
-        var contentTypes = (endpointMetadata.OfType<ConsumesAttribute>().FirstOrDefault()
+        IEnumerable<string>? contentTypes = requestBodyContentAttribute.ContentTypes.Count > 0
+            ? requestBodyContentAttribute.ContentTypes
+            : (endpointMetadata.OfType<ConsumesAttribute>().FirstOrDefault()
                 ?? methodInfo?.GetCustomAttributes(typeof(ConsumesAttribute), true).FirstOrDefault() as ConsumesAttribute)
             ?.ContentTypes.AsEnumerable()
             ?? operation.RequestBody?.Content?.Keys;
@@ -93,6 +95,12 @@ public class RequestBodyContentOperationTransformer : IOpenApiOperationTransform
 [AttributeUsage(AttributeTargets.Method)]
 public class RequestBodyContentAttribute : Attribute
 {
+    public RequestBodyContentAttribute(params string[] contentTypes)
+    {
+        ContentTypes = contentTypes;
+    }
+
+    public IReadOnlyList<string> ContentTypes { get; }
 }
 
 /// <summary>
