@@ -110,5 +110,9 @@ public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISup
 
         if (IngestLimit.Type is ProjectIngestLimitType.PercentOfOrganizationLimit && IngestLimit.PercentOfOrganizationLimit is null or <= 0 or > 100)
             yield return new ValidationResult("The project ingest percentage must be greater than 0 and no more than 100.", [nameof(IngestLimit)]);
+
+        if (IngestLimit.Type is ProjectIngestLimitType.PercentOfOrganizationLimit &&
+            IngestLimit.PercentOfOrganizationLimit is { } percentage && percentage != Decimal.Round(percentage, 4))
+            yield return new ValidationResult("The project ingest percentage can have no more than 4 decimal places.", [nameof(IngestLimit)]);
     }
 }

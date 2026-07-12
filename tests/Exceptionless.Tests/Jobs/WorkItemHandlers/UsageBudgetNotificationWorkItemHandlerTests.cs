@@ -2,16 +2,19 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Mail;
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Mail;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Jobs;
 using Foundatio.Repositories;
 using Microsoft.Extensions.DependencyInjection;
+using System.Text.Json;
 using Xunit;
 
 namespace Exceptionless.Tests.Jobs.WorkItemHandlers;
@@ -86,6 +89,18 @@ public class UsageBudgetNotificationWorkItemHandlerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public void UsageNotificationContracts_LegacyPayloadWithoutPeriod_Deserializes()
+    {
+        const string organizationPayload = """{"OrganizationId":"organization","Threshold":50,"ThresholdEventCount":500,"CurrentEventCount":600,"EventLimit":1000}""";
+        const string projectPayload = """{"OrganizationId":"organization","ProjectId":"project","SampleRate":0.05,"CurrentEventCount":600,"EventLimit":1000}""";
+
+        Assert.Equal(0, JsonSerializer.Deserialize<OrganizationBudgetAlert>(organizationPayload)!.UsagePeriod);
+        Assert.Equal(0, JsonSerializer.Deserialize<OrganizationBudgetAlertWorkItem>(organizationPayload)!.UsagePeriod);
+        Assert.Equal(0, JsonSerializer.Deserialize<ProjectSmartThrottleApplied>(projectPayload)!.UsagePeriod);
+        Assert.Equal(0, JsonSerializer.Deserialize<ProjectSmartThrottleWorkItem>(projectPayload)!.UsagePeriod);
+    }
+
+    [Fact]
     public async Task OrganizationHandler_DisabledAfterQueue_SuppressesStaleEmail()
     {
         var organization = await OrganizationRepository.GetByIdAsync(OrganizationId);
@@ -99,7 +114,8 @@ public class UsageBudgetNotificationWorkItemHandlerTests : IntegrationTestsBase
             Threshold = 50,
             ThresholdEventCount = 500_000,
             CurrentEventCount = 600_000,
-            EventLimit = 1_000_000
+            EventLimit = 1_000_000,
+            UsagePeriod = TimeProvider.GetUtcNow().UtcDateTime.StartOfMonth().ToEpoch()
         });
 
         Assert.Empty(Mailer.OrganizationBudgetAlertCalls);
@@ -123,7 +139,8 @@ public class UsageBudgetNotificationWorkItemHandlerTests : IntegrationTestsBase
             ProjectId = ProjectId,
             SampleRate = 0.05,
             CurrentEventCount = 1,
-            EventLimit = 1
+            EventLimit = 1,
+            UsagePeriod = TimeProvider.GetUtcNow().UtcDateTime.StartOfMonth().ToEpoch()
         });
 
         var call = Assert.Single(Mailer.ProjectThrottleCalls);
@@ -141,10 +158,70 @@ public class UsageBudgetNotificationWorkItemHandlerTests : IntegrationTestsBase
             ProjectId = ProjectId,
             SampleRate = 0.05,
             CurrentEventCount = 1,
-            EventLimit = 1
+            EventLimit = 1,
+            UsagePeriod = TimeProvider.GetUtcNow().UtcDateTime.StartOfMonth().ToEpoch()
         });
 
         Assert.Empty(Mailer.ProjectThrottleCalls);
+    }
+
+    [Fact]
+    public async Task OrganizationHandler_PartialFailureRetry_SendsEachRecipientOnce()
+    {
+        var organization = await OrganizationRepository.GetByIdAsync(OrganizationId);
+        Assert.NotNull(organization);
+        organization.GetCurrentUsage(TimeProvider).Total = 600_000;
+        await OrganizationRepository.SaveAsync(organization, options => options.ImmediateConsistency().Cache());
+
+        var secondUser = GetService<UserData>().GenerateUser(generateId: true, organizationId: OrganizationId, emailAddress: "second-owner@example.org");
+        secondUser.IsEmailAddressVerified = true;
+        secondUser.EmailNotificationsEnabled = true;
+        await UserRepository.AddAsync(secondUser, options => options.ImmediateConsistency().Cache());
+
+        var workItem = new OrganizationBudgetAlertWorkItem
+        {
+            OrganizationId = OrganizationId,
+            Threshold = 50,
+            ThresholdEventCount = 500_000,
+            CurrentEventCount = 600_000,
+            EventLimit = 1_000_000,
+            UsagePeriod = TimeProvider.GetUtcNow().UtcDateTime.StartOfMonth().ToEpoch()
+        };
+        Mailer.ThrowOnOrganizationBudgetAlertAttempt = 2;
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => HandleAsync(GetService<OrganizationBudgetAlertWorkItemHandler>(), workItem));
+        Mailer.ThrowOnOrganizationBudgetAlertAttempt = null;
+        await HandleAsync(GetService<OrganizationBudgetAlertWorkItemHandler>(), workItem);
+
+        Assert.Equal(2, Mailer.OrganizationBudgetAlertCalls.Count);
+        Assert.Equal(2, Mailer.OrganizationBudgetAlertCalls.Select(call => call.UserId).Distinct().Count());
+    }
+
+    [Fact]
+    public async Task ProjectHandler_DuplicateDelivery_SendsRecipientOnce()
+    {
+        var organization = await OrganizationRepository.GetByIdAsync(OrganizationId);
+        var project = await ProjectRepository.GetByIdAsync(ProjectId);
+        Assert.NotNull(organization);
+        Assert.NotNull(project);
+        int spike = GetCurrentWindowSpike(organization.MaxEventsPerMonth);
+        await UsageService.IncrementTotalAsync(organization, project.Id, spike);
+        Assert.True((await UsageService.GetEventIngestAllowanceAsync(organization, project)).SmartThrottle.IsThrottled);
+
+        var workItem = new ProjectSmartThrottleWorkItem
+        {
+            OrganizationId = OrganizationId,
+            ProjectId = ProjectId,
+            SampleRate = 0.05,
+            CurrentEventCount = spike,
+            EventLimit = 333_333,
+            UsagePeriod = TimeProvider.GetUtcNow().UtcDateTime.StartOfMonth().ToEpoch()
+        };
+
+        await HandleAsync(GetService<ProjectSmartThrottleWorkItemHandler>(), workItem);
+        await HandleAsync(GetService<ProjectSmartThrottleWorkItemHandler>(), workItem);
+
+        Assert.Single(Mailer.ProjectThrottleCalls);
     }
 
     private int GetCurrentWindowSpike(int maxEventsPerMonth)

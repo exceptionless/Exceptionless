@@ -11,6 +11,8 @@ namespace Exceptionless.Core.Services;
 
 public partial class UsageService
 {
+    private const int MinimumColdBucketSmartThrottleBatchSize = 100;
+
     /// <summary>
     /// Calculates the complete organization, explicit project, and automatic smart-throttle allowance
     /// from the models already loaded by the ingestion job.
@@ -31,6 +33,13 @@ public partial class UsageService
 
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         var totals = await GetAcceptedUsageTotalsAsync(utcNow, organization, project);
+
+        return await CalculateEventIngestAllowanceAsync(utcNow, organization, project, maxEventsPerMonth, effectiveProjectLimit, totals, 0, true);
+    }
+
+    private async Task<EventIngestAllowance> CalculateEventIngestAllowanceAsync(DateTime utcNow, Organization organization, Project project,
+        int maxEventsPerMonth, int effectiveProjectLimit, AcceptedUsageTotals totals, int submittedEventCount, bool activateSmartThrottle)
+    {
 
         int organizationEventsLeft = GetOrganizationEventsLeft(maxEventsPerMonth, totals.OrganizationTotal, totals.OrganizationCurrentBucket);
         if (organizationEventsLeft <= 0)
@@ -56,7 +65,10 @@ public partial class UsageService
             };
         }
 
-        var smartThrottle = await GetSmartThrottleResultAsync(utcNow, organization, project, maxEventsPerMonth, totals);
+        var smartThrottle = await GetSmartThrottleResultAsync(utcNow, organization, maxEventsPerMonth, totals, submittedEventCount);
+        if (activateSmartThrottle && smartThrottle.IsThrottled)
+            await ActivateSmartThrottleAsync(utcNow, organization, project, smartThrottle);
+
         return new EventIngestAllowance
         {
             EventsLeft = Math.Min(organizationEventsLeft, projectEventsLeft),
@@ -128,7 +140,7 @@ public partial class UsageService
             maxEventsPerMonth < 0)
             return -1;
 
-        return Math.Min(maxEventsPerMonth, (int)Math.Ceiling(maxEventsPerMonth * (double)ingestLimit.PercentOfOrganizationLimit.Value / 100));
+        return Math.Min(maxEventsPerMonth, decimal.ToInt32(decimal.Ceiling(maxEventsPerMonth * ingestLimit.PercentOfOrganizationLimit.Value / 100m)));
     }
 
     private async Task<AcceptedUsageTotals> GetAcceptedUsageTotalsAsync(DateTime utcNow, Organization organization, Project project)
@@ -151,12 +163,13 @@ public partial class UsageService
 
         int organizationCurrent = GetCachedValue(values, organizationCurrentKey);
         int projectCurrent = GetCachedValue(values, projectCurrentKey);
+        bool includePreviousBucket = GetTotalBucket(utcNow) == GetTotalBucket(utcNow.Subtract(_bucketSize));
         int organizationTotal = GetCachedValue(values, organizationTotalKey, organization.GetCurrentUsage(_timeProvider).Total)
             + organizationCurrent
-            + GetCachedValue(values, organizationPreviousKey);
+            + (includePreviousBucket ? GetCachedValue(values, organizationPreviousKey) : 0);
         int projectTotal = GetCachedValue(values, projectTotalKey, project.GetCurrentUsage(_timeProvider).Total)
             + projectCurrent
-            + GetCachedValue(values, projectPreviousKey);
+            + (includePreviousBucket ? GetCachedValue(values, projectPreviousKey) : 0);
 
         return new AcceptedUsageTotals(organizationTotal, projectTotal, organizationCurrent, projectCurrent);
     }
@@ -176,9 +189,9 @@ public partial class UsageService
         return Math.Min(monthlyEventsLeft, bucketEventsLeft);
     }
 
-    private async Task<SmartThrottleResult> GetSmartThrottleResultAsync(DateTime utcNow, Organization organization, Project project, int maxEventsPerMonth, AcceptedUsageTotals totals)
+    private async Task<SmartThrottleResult> GetSmartThrottleResultAsync(DateTime utcNow, Organization organization, int maxEventsPerMonth, AcceptedUsageTotals totals, int submittedEventCount)
     {
-        if (!_appOptions.EnableSmartProjectThrottling || maxEventsPerMonth <= 0 || totals.OrganizationCurrentBucket <= 0 || totals.ProjectCurrentBucket <= 0)
+        if (!_appOptions.EnableSmartProjectThrottling || maxEventsPerMonth <= 0)
             return SmartThrottleResult.NoThrottle;
 
         int remainingAllowance = Math.Max(0, maxEventsPerMonth - totals.OrganizationTotal);
@@ -187,7 +200,16 @@ public partial class UsageService
 
         double windowsLeft = Math.Max(1, Math.Ceiling((utcNow.EndOfMonth() - utcNow).TotalMinutes / _bucketSize.TotalMinutes));
         double sustainableWindowAllowance = remainingAllowance / windowsLeft * 10;
-        if (totals.OrganizationCurrentBucket < sustainableWindowAllowance * 0.8)
+        bool isColdBucket = totals.OrganizationCurrentBucket == 0 && totals.ProjectCurrentBucket == 0;
+        // Do not turn a normal small first post into a 5% sample merely because it belongs to one
+        // project. The explicit organization/project allowance still caps it; smart throttling is
+        // reserved for meaningfully noisy cold-bucket batches.
+        if (isColdBucket && submittedEventCount < MinimumColdBucketSmartThrottleBatchSize)
+            return SmartThrottleResult.NoThrottle;
+
+        int projectedOrganizationCurrentBucket = checked(totals.OrganizationCurrentBucket + submittedEventCount);
+        int projectedProjectCurrentBucket = checked(totals.ProjectCurrentBucket + submittedEventCount);
+        if (projectedOrganizationCurrentBucket < sustainableWindowAllowance * 0.8 || projectedProjectCurrentBucket <= 0)
             return SmartThrottleResult.NoThrottle;
 
         int projectCount = (int)Math.Max(1, (await _projectRepository.GetCountByOrganizationIdAsync(organization.Id)).Total);
@@ -195,7 +217,7 @@ public partial class UsageService
             return SmartThrottleResult.NoThrottle;
 
         double fairShareWindowAllowance = sustainableWindowAllowance / projectCount;
-        double fairShareRatio = fairShareWindowAllowance > 0 ? totals.ProjectCurrentBucket / fairShareWindowAllowance : Double.PositiveInfinity;
+        double fairShareRatio = fairShareWindowAllowance > 0 ? projectedProjectCurrentBucket / fairShareWindowAllowance : Double.PositiveInfinity;
         if (fairShareRatio <= 2)
             return SmartThrottleResult.NoThrottle;
 
@@ -203,13 +225,11 @@ public partial class UsageService
         {
             IsThrottled = true,
             SampleRate = SmartThrottleResult.DefaultSampleRate,
-            ProjectShare = (double)totals.ProjectTotal / Math.Max(1, totals.OrganizationTotal),
+            ProjectShare = (double)(totals.ProjectTotal + submittedEventCount) / Math.Max(1, totals.OrganizationTotal + submittedEventCount),
             FairShareRatio = fairShareRatio,
-            CurrentProjectUsage = totals.ProjectTotal,
+            CurrentProjectUsage = totals.ProjectTotal + submittedEventCount,
             FairShareLimit = maxEventsPerMonth / projectCount
         };
-
-        await ActivateSmartThrottleAsync(utcNow, organization, project, result);
         return result;
     }
 
@@ -248,7 +268,8 @@ public partial class UsageService
                 ProjectId = project.Id,
                 SampleRate = result.SampleRate,
                 CurrentEventCount = result.CurrentProjectUsage,
-                EventLimit = result.FairShareLimit
+                EventLimit = result.FairShareLimit,
+                UsagePeriod = GetTotalBucket(utcNow)
             });
         }
         catch (Exception ex)
@@ -314,9 +335,10 @@ public partial class UsageService
         string currentKey = GetBucketTotalCacheKey(utcNow, organization.Id);
         string previousKey = GetBucketTotalCacheKey(utcNow.Subtract(_bucketSize), organization.Id);
         var values = await _cache.GetAllAsync<int>([totalKey, currentKey, previousKey]);
+        bool includePreviousBucket = GetTotalBucket(utcNow) == GetTotalBucket(utcNow.Subtract(_bucketSize));
         int currentTotal = GetCachedValue(values, totalKey, organization.GetCurrentUsage(_timeProvider).Total)
             + GetCachedValue(values, currentKey)
-            + GetCachedValue(values, previousKey);
+            + (includePreviousBucket ? GetCachedValue(values, previousKey) : 0);
 
         await PublishCrossedBudgetAlertsAsync(organization, 0, currentTotal, maxEventsPerMonth, thresholds);
     }
@@ -333,7 +355,7 @@ public partial class UsageService
             if (threshold is <= 0 or >= 100)
                 continue;
 
-            int thresholdEventCount = (int)Math.Ceiling((double)threshold / 100 * maxEventsPerMonth);
+            int thresholdEventCount = GetBudgetThresholdEventCount(maxEventsPerMonth, threshold);
             if (previousTotal >= thresholdEventCount || currentTotal < thresholdEventCount)
                 continue;
 
@@ -352,7 +374,8 @@ public partial class UsageService
                     Threshold = threshold,
                     ThresholdEventCount = thresholdEventCount,
                     CurrentEventCount = currentTotal,
-                    EventLimit = maxEventsPerMonth
+                    EventLimit = maxEventsPerMonth,
+                    UsagePeriod = GetTotalBucket(utcNow)
                 });
             }
             catch (Exception ex)
@@ -372,6 +395,11 @@ public partial class UsageService
                 _logger.LogError(ex, "Failed to publish budget alert {Threshold}% for organization {OrganizationId}", threshold, organization.Id);
             }
         }
+    }
+
+    internal static int GetBudgetThresholdEventCount(int eventLimit, int threshold)
+    {
+        return checked((int)((threshold * (long)eventLimit + 99) / 100));
     }
 
     private sealed record AcceptedUsageTotals(int OrganizationTotal, int ProjectTotal, int OrganizationCurrentBucket, int ProjectCurrentBucket);

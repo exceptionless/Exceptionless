@@ -8,6 +8,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Exceptionless.Tests.Extensions;
 using Foundatio.AsyncEx;
+using Foundatio.Caching;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Xunit;
@@ -369,8 +370,8 @@ public sealed partial class UsageServiceTests
         var firstAlert = new AsyncCountdownEvent(1);
         await messageBus.SubscribeAsync<OrganizationBudgetAlert>(a =>
         {
-            alertCount++;
-            if (alertCount == 1) firstAlert.Signal();
+            int count = Interlocked.Increment(ref alertCount);
+            if (count == 1) firstAlert.Signal();
         }, TestCancellationToken);
 
         var organization = new Organization
@@ -405,8 +406,8 @@ public sealed partial class UsageServiceTests
         var firstAlert = new AsyncCountdownEvent(1);
         await messageBus.SubscribeAsync<OrganizationBudgetAlert>(_ =>
         {
-            alertCount++;
-            if (alertCount == 1) firstAlert.Signal();
+            int count = Interlocked.Increment(ref alertCount);
+            if (count == 1) firstAlert.Signal();
         }, TestCancellationToken);
 
         var organization = new Organization
@@ -440,7 +441,7 @@ public sealed partial class UsageServiceTests
     {
         var messageBus = GetService<IMessageBus>();
         int alertCount = 0;
-        await messageBus.SubscribeAsync<OrganizationBudgetAlert>(_ => { alertCount++; }, TestCancellationToken);
+        await messageBus.SubscribeAsync<OrganizationBudgetAlert>(_ => { Interlocked.Increment(ref alertCount); }, TestCancellationToken);
 
         var organization = new Organization
         {
@@ -510,5 +511,171 @@ public sealed partial class UsageServiceTests
         // 1% of 50 = 0.5 → must ceil to 1, not floor to 0
         var result = await _usageService.GetEventIngestAllowanceAsync(organization.Id, project.Id);
         Assert.True(result.EffectiveProjectLimit >= 1, $"EffectiveProjectLimit was {result.EffectiveProjectLimit}, expected >= 1 (floor bug would produce 0)");
+    }
+
+    [Fact]
+    public async Task GetEventIngestAllowanceAsync_DecimalPercentage_UsesExactCeiling()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 3000, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project
+        {
+            Name = "Test",
+            OrganizationId = organization.Id,
+            NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks,
+            IngestLimit = new ProjectIngestLimit { Type = ProjectIngestLimitType.PercentOfOrganizationLimit, PercentOfOrganizationLimit = 1.1m }
+        }, o => o.ImmediateConsistency().Cache());
+
+        var result = await _usageService.GetEventIngestAllowanceAsync(organization, project);
+
+        Assert.Equal(33, result.EffectiveProjectLimit);
+    }
+
+    [Fact]
+    public void GetBudgetThresholdEventCount_ExactPercentage_DoesNotRoundPastInteger()
+    {
+        Assert.Equal(210, UsageService.GetBudgetThresholdEventCount(3000, 7));
+        Assert.Equal(5250, UsageService.GetBudgetThresholdEventCount(75000, 7));
+    }
+
+    [Fact]
+    public async Task ReserveEventIngestAsync_ConcurrentProjectCapReservations_DoNotExceedRemainingLimit()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 1000, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project
+        {
+            Name = "Test",
+            OrganizationId = organization.Id,
+            NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks,
+            IngestLimit = new ProjectIngestLimit { Type = ProjectIngestLimitType.Fixed, FixedLimit = 100 }
+        }, o => o.ImmediateConsistency().Cache());
+        await _usageService.IncrementTotalAsync(organization, project.Id, 90);
+
+        var candidates = Enumerable.Range(0, 10).Select(index => new EventIngestCandidate(index, (ulong)index)).ToArray();
+        var reservations = await Task.WhenAll(Enumerable.Range(0, 10).Select(index =>
+            _usageService.ReserveEventIngestAsync(organization, project, $"reservation-{index}", candidates, TestCancellationToken)));
+
+        Assert.Equal(10, reservations.Sum(reservation => reservation.ReservedCount));
+
+        await Task.WhenAll(reservations.Select(_usageService.ReleaseEventIngestReservationAsync));
+    }
+
+    [Fact]
+    public async Task CompleteEventIngestReservationAsync_ReleasesUnprocessedCapacity()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 1000, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project
+        {
+            Name = "Test",
+            OrganizationId = organization.Id,
+            NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks,
+            IngestLimit = new ProjectIngestLimit { Type = ProjectIngestLimitType.Fixed, FixedLimit = 100 }
+        }, o => o.ImmediateConsistency().Cache());
+        await _usageService.IncrementTotalAsync(organization, project.Id, 90);
+        var candidates = Enumerable.Range(0, 10).Select(index => new EventIngestCandidate(index, (ulong)index)).ToArray();
+        var first = await _usageService.ReserveEventIngestAsync(organization, project, "first", candidates, TestCancellationToken);
+
+        await _usageService.CompleteEventIngestReservationAsync(first, organization, 4);
+        var second = await _usageService.ReserveEventIngestAsync(organization, project, "second", candidates, TestCancellationToken);
+
+        Assert.Equal(6, second.ReservedCount);
+        await _usageService.ReleaseEventIngestReservationAsync(second);
+    }
+
+    [Fact]
+    public async Task ReserveEventIngestAsync_AfterRelease_RecreatesReservationWithoutDoubleDecrement()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Retry", MaxEventsPerMonth = 1000, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project
+        {
+            Name = "Retry",
+            OrganizationId = organization.Id,
+            NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks,
+            IngestLimit = new ProjectIngestLimit { Type = ProjectIngestLimitType.Fixed, FixedLimit = 10 }
+        }, o => o.ImmediateConsistency().Cache());
+        var candidates = Enumerable.Range(0, 10).Select(index => new EventIngestCandidate(index, (ulong)index)).ToArray();
+        var first = await _usageService.ReserveEventIngestAsync(organization, project, "retry", candidates, TestCancellationToken);
+        await _usageService.ReleaseEventIngestReservationAsync(first);
+
+        var retried = await _usageService.ReserveEventIngestAsync(organization, project, "retry", candidates, TestCancellationToken);
+        var competing = await _usageService.ReserveEventIngestAsync(organization, project, "competing", candidates, TestCancellationToken);
+
+        Assert.Equal(10, retried.ReservedCount);
+        Assert.Equal(0, competing.ReservedCount);
+        await _usageService.ReleaseEventIngestReservationAsync(retried);
+        await _usageService.CompleteEventIngestReservationAsync(competing, organization, 0);
+    }
+
+    [Fact]
+    public async Task ReserveEventIngestAsync_AfterCompletion_ReturnsCompletedTombstone()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Completed", MaxEventsPerMonth = 100, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Completed", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        var candidates = Enumerable.Range(0, 2).Select(index => new EventIngestCandidate(index, (ulong)index)).ToArray();
+        var reservation = await _usageService.ReserveEventIngestAsync(organization, project, "completed", candidates, TestCancellationToken);
+        await _usageService.CompleteEventIngestReservationAsync(reservation, organization, 2);
+
+        var retry = await _usageService.ReserveEventIngestAsync(organization, project, "completed", candidates, TestCancellationToken);
+
+        Assert.True(retry.IsCompleted);
+        Assert.Equal(2, retry.ProcessedCount);
+    }
+
+    [Fact]
+    public async Task ReserveEventIngestAsync_ColdBucketNoisyBatch_IsSampledImmediately()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 1_000_000, PlanId = _plans.ExtraLargePlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Noisy", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        await _projectRepository.AddAsync(new Project { Name = "Quiet", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        await _projectRepository.AddAsync(new Project { Name = "Other", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        int spike = 2000;
+        var candidates = Enumerable.Range(0, spike)
+            .Select(index => new EventIngestCandidate(index, (ulong)index * 7919UL))
+            .ToArray();
+
+        var reservation = await _usageService.ReserveEventIngestAsync(organization, project, "cold-bucket", candidates, TestCancellationToken);
+
+        Assert.True(reservation.SmartThrottle.IsThrottled);
+        Assert.InRange(reservation.ReservedCount, 60, 140);
+        await _usageService.ReleaseEventIngestReservationAsync(reservation);
+    }
+
+    [Fact]
+    public async Task GetEventIngestAllowanceAsync_FirstMinutesOfMonth_IgnoresPreviousMonthBucket()
+    {
+        TimeProvider.SetUtcNow(new DateTimeOffset(2026, 7, 31, 23, 59, 0, TimeSpan.Zero));
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 1000, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        await _usageService.IncrementTotalAsync(organization, project.Id, 900);
+        TimeProvider.Advance(TimeSpan.FromMinutes(3));
+
+        var result = await _usageService.GetEventIngestAllowanceAsync(organization, project);
+
+        Assert.Equal(1000, result.EventsLeft);
+    }
+
+    [Fact]
+    public async Task CompleteEventIngestReservationAsync_AfterMonthBoundary_ChargesCurrentPeriodWithoutReleasingCapacity()
+    {
+        TimeProvider.SetUtcNow(new DateTimeOffset(2026, 7, 31, 23, 59, 0, TimeSpan.Zero));
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Boundary", MaxEventsPerMonth = 100, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Boundary", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        var candidates = Enumerable.Range(0, 10).Select(index => new EventIngestCandidate(index, (ulong)index)).ToArray();
+        var reservation = await _usageService.ReserveEventIngestAsync(organization, project, "month-boundary", candidates, TestCancellationToken);
+
+        TimeProvider.Advance(TimeSpan.FromMinutes(2));
+        await _usageService.CompleteEventIngestReservationAsync(reservation, organization, 10);
+
+        Assert.Equal(90, (await _usageService.GetEventIngestAllowanceAsync(organization, project)).EventsLeft);
+    }
+
+    [Fact]
+    public async Task CompleteEventIngestReservationAsync_MissingState_FailsClosed()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Missing", MaxEventsPerMonth = 100, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Missing", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        var reservation = await _usageService.ReserveEventIngestAsync(organization, project, "missing-state", [new EventIngestCandidate(0, 0)], TestCancellationToken);
+        await GetService<ICacheClient>().RemoveAsync($"usage:ingest-reservation:{{{organization.Id}}}:missing-state");
+
+        await Assert.ThrowsAsync<UsageServiceException>(() => _usageService.CompleteEventIngestReservationAsync(reservation, organization, 1));
     }
 }

@@ -4,8 +4,10 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Jobs;
+using Foundatio.Lock;
 using Foundatio.Messaging;
 using Foundatio.Queues;
 using Foundatio.Repositories;
@@ -17,12 +19,14 @@ public class EnqueueOrganizationBudgetAlertOnUsageThreshold : IStartupAction
 {
     private readonly IQueue<WorkItemData> _workItemQueue;
     private readonly IMessageSubscriber _subscriber;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
 
-    public EnqueueOrganizationBudgetAlertOnUsageThreshold(IQueue<WorkItemData> workItemQueue, IMessageSubscriber subscriber, ILoggerFactory loggerFactory)
+    public EnqueueOrganizationBudgetAlertOnUsageThreshold(IQueue<WorkItemData> workItemQueue, IMessageSubscriber subscriber, TimeProvider timeProvider, ILoggerFactory loggerFactory)
     {
         _workItemQueue = workItemQueue;
         _subscriber = subscriber;
+        _timeProvider = timeProvider;
         _logger = loggerFactory.CreateLogger<EnqueueOrganizationBudgetAlertOnUsageThreshold>();
     }
 
@@ -38,7 +42,8 @@ public class EnqueueOrganizationBudgetAlertOnUsageThreshold : IStartupAction
                 Threshold = alert.Threshold,
                 ThresholdEventCount = alert.ThresholdEventCount,
                 CurrentEventCount = alert.CurrentEventCount,
-                EventLimit = alert.EventLimit
+                EventLimit = alert.EventLimit,
+                UsagePeriod = alert.UsagePeriod > 0 ? alert.UsagePeriod : _timeProvider.GetUtcNow().UtcDateTime.StartOfMonth().ToEpoch()
             });
         }, shutdownToken);
     }
@@ -50,19 +55,39 @@ public class OrganizationBudgetAlertWorkItemHandler : WorkItemHandlerBase
     private readonly IUserRepository _userRepository;
     private readonly IMailer _mailer;
     private readonly UsageService _usageService;
+    private readonly NotificationService _notificationService;
+    private readonly TimeProvider _timeProvider;
 
-    public OrganizationBudgetAlertWorkItemHandler(IOrganizationRepository organizationRepository, IUserRepository userRepository, IMailer mailer, UsageService usageService, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public OrganizationBudgetAlertWorkItemHandler(IOrganizationRepository organizationRepository, IUserRepository userRepository, IMailer mailer, UsageService usageService,
+        NotificationService notificationService, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _userRepository = userRepository;
         _mailer = mailer;
         _usageService = usageService;
+        _notificationService = notificationService;
+        _timeProvider = timeProvider;
+    }
+
+    public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = default)
+    {
+        var wi = (OrganizationBudgetAlertWorkItem)workItem;
+        int currentUsagePeriod = _timeProvider.GetUtcNow().UtcDateTime.StartOfMonth().ToEpoch();
+        return _notificationService.TryAcquireUsageNotificationLockAsync(wi.GetUniqueIdentifier(currentUsagePeriod));
     }
 
     public override async Task HandleItemAsync(WorkItemContext context)
     {
         var wi = context.GetData<OrganizationBudgetAlertWorkItem>()!;
         Log.LogInformation("Received budget alert work item for organization: {OrganizationId} Threshold: {Threshold}%", wi.OrganizationId, wi.Threshold);
+
+        int usagePeriod = wi.UsagePeriod > 0 ? wi.UsagePeriod : _timeProvider.GetUtcNow().UtcDateTime.StartOfMonth().ToEpoch();
+        string notificationIdentifier = wi.GetUniqueIdentifier(usagePeriod);
+        if (usagePeriod != _timeProvider.GetUtcNow().UtcDateTime.StartOfMonth().ToEpoch())
+        {
+            Log.LogInformation("Budget alert period {UsagePeriod} is stale for organization {OrganizationId}, skipping", wi.UsagePeriod, wi.OrganizationId);
+            return;
+        }
 
         var organization = await _organizationRepository.GetByIdAsync(wi.OrganizationId, o => o.Cache());
         if (organization is null)
@@ -85,7 +110,7 @@ public class OrganizationBudgetAlertWorkItemHandler : WorkItemHandlerBase
             return;
         }
 
-        int thresholdEventCount = (int)Math.Ceiling(eventLimit * wi.Threshold / 100d);
+        int thresholdEventCount = UsageService.GetBudgetThresholdEventCount(eventLimit, wi.Threshold);
         int currentEventCount = (await _usageService.GetUsageAsync(organization.Id)).CurrentUsage.Total;
         if (currentEventCount < thresholdEventCount)
         {
@@ -108,8 +133,16 @@ public class OrganizationBudgetAlertWorkItemHandler : WorkItemHandlerBase
                 continue;
             }
 
+            if (await _notificationService.IsUsageNotificationRecipientSentAsync(notificationIdentifier, user.Id))
+                continue;
+
+            await using var recipientLock = await _notificationService.TryAcquireUsageNotificationRecipientLockAsync(notificationIdentifier, user.Id);
+            if (recipientLock is null || await _notificationService.IsUsageNotificationRecipientSentAsync(notificationIdentifier, user.Id))
+                continue;
+
             Log.LogTrace("Sending budget alert email to {EmailAddress}...", user.EmailAddress);
             await _mailer.SendOrganizationBudgetAlertAsync(user, organization, wi.Threshold, thresholdEventCount, currentEventCount, eventLimit);
+            await _notificationService.MarkUsageNotificationRecipientSentAsync(notificationIdentifier, user.Id, usagePeriod);
         }
 
         Log.LogTrace("Done sending budget alert emails");

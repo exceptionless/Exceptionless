@@ -164,50 +164,53 @@ public class EventPostsJob : QueueJobBase<EventPost>
 
         int submittedEventCount = events.Count;
         bool isSingleEvent = submittedEventCount == 1;
-        var ingestAllowance = await _usageService.GetEventIngestAllowanceAsync(organization, project);
         var candidates = events
             .Select((persistentEvent, index) => new EventCandidate(persistentEvent, index, GetStableEventHash(entry.Id, persistentEvent, index)))
             .ToList();
-
-        int smartThrottleBlocked = 0;
-        if (ingestAllowance.SmartThrottle.IsThrottled)
+        var reservation = await _usageService.ReserveEventIngestAsync(
+            organization,
+            project,
+            entry.Id,
+            candidates.Select(candidate => new EventIngestCandidate(candidate.Index, candidate.Hash)).ToArray(),
+            context.CancellationToken);
+        if (reservation.IsCompleted)
         {
-            int sampleThreshold = (int)(ingestAllowance.SmartThrottle.SampleRate * 10_000);
-            candidates = candidates.Where(candidate => IsHashSelected(candidate.Hash, sampleThreshold)).ToList();
-            smartThrottleBlocked = submittedEventCount - candidates.Count;
-            _usageService.RecordSmartThrottle(smartThrottleBlocked);
-        }
-
-        if (candidates.Count > ingestAllowance.EventsLeft)
-        {
-            candidates = candidates
-                .OrderBy(candidate => candidate.Hash)
-                .Take(ingestAllowance.EventsLeft)
-                .ToList();
-        }
-
-        events = candidates
-            .OrderBy(candidate => candidate.Index)
-            .Select(candidate => candidate.Event)
-            .ToList();
-
-        int blockedEventCount = submittedEventCount - events.Count;
-        if (blockedEventCount > 0)
-            await _usageService.IncrementBlockedAsync(organization.Id, project.Id, blockedEventCount);
-
-        if (events.Count == 0)
-        {
-            if (!isInternalProject)
-                _logger.LogDebug("Unable to process EventPost {FilePath}: accepted 0/{SubmittedEventCount} events after usage budget evaluation", payloadPath, submittedEventCount);
-
-            await CompleteEntryAsync(entry, ep, _timeProvider.GetUtcNow().UtcDateTime);
+            await _usageService.CompleteEventIngestReservationAsync(reservation, organization, reservation.ProcessedCount);
+            await CompleteEntryAsync(entry, ep, createdUtc);
             return JobResult.Success;
         }
 
         int errorCount = 0;
+        bool reservationCompleted = false;
+        bool reservationCompletionStarted = false;
         var eventsToRetry = new List<PersistentEvent>();
         try
         {
+            var acceptedIndexes = reservation.AcceptedIndexes.ToHashSet();
+            candidates = candidates.Where(candidate => acceptedIndexes.Contains(candidate.Index)).ToList();
+            _usageService.RecordSmartThrottle(reservation.SmartThrottleBlockedCount);
+
+            events = candidates
+                .OrderBy(candidate => candidate.Index)
+                .Select(candidate => candidate.Event)
+                .ToList();
+
+            int blockedEventCount = submittedEventCount - events.Count;
+            if (blockedEventCount > 0)
+                await _usageService.IncrementBlockedAsync(organization.Id, project.Id, blockedEventCount);
+
+            if (events.Count == 0)
+            {
+                if (!isInternalProject)
+                    _logger.LogDebug("Unable to process EventPost {FilePath}: accepted 0/{SubmittedEventCount} events after usage budget evaluation", payloadPath, submittedEventCount);
+
+                reservationCompletionStarted = true;
+                await _usageService.CompleteEventIngestReservationAsync(reservation, organization, 0);
+                reservationCompleted = true;
+                await CompleteEntryAsync(entry, ep, _timeProvider.GetUtcNow().UtcDateTime);
+                return JobResult.Success;
+            }
+
             var contexts = await _eventPipeline.RunAsync(events, organization, project, ep);
             if (!isInternalProject && isDebugLogLevelEnabled)
             {
@@ -217,7 +220,9 @@ public class EventPostsJob : QueueJobBase<EventPost>
 
             // increment the plan usage counters (note: OverageHandler already incremented usage by 1)
             int processedEvents = contexts.Count(c => c.IsProcessed);
-            await _usageService.IncrementTotalAsync(organization, project.Id, processedEvents);
+            reservationCompletionStarted = true;
+            await _usageService.CompleteEventIngestReservationAsync(reservation, organization, processedEvents);
+            reservationCompleted = true;
 
             int discardedEvents = contexts.Count(c => c.IsDiscarded);
             await _usageService.IncrementDiscardedAsync(organization.Id, project.Id, discardedEvents);
@@ -245,6 +250,14 @@ public class EventPostsJob : QueueJobBase<EventPost>
         catch (Exception ex)
         {
             if (!isInternalProject) _logger.LogError(ex, "Error processing EventPost {QueueEntryId} {FilePath}: {Message}", entry.Id, payloadPath, ex.Message);
+            if (reservationCompletionStarted)
+            {
+                // Completion is an idempotent transition keyed by this queue entry. Never fork new
+                // queue IDs after it starts: retry the original so it can observe Active vs Completed.
+                await AbandonEntryAsync(entry);
+                return JobResult.FailedWithMessage($"Unable to finalize usage for EventPost '{entry.Id}': {ex.Message}");
+            }
+
             if (ex is ArgumentException || ex is DocumentNotFoundException)
             {
                 await CompleteEntryAsync(entry, ep, createdUtc);
@@ -254,6 +267,11 @@ public class EventPostsJob : QueueJobBase<EventPost>
             errorCount++;
             if (!isSingleEvent)
                 eventsToRetry.AddRange(events);
+        }
+        finally
+        {
+            if (!reservationCompleted && !reservationCompletionStarted)
+                await _usageService.ReleaseEventIngestReservationAsync(reservation);
         }
 
         if (eventsToRetry.Count > 0)

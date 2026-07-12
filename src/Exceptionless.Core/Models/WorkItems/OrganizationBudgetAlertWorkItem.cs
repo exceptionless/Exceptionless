@@ -9,6 +9,8 @@ public record OrganizationBudgetAlertWorkItem : IHaveUniqueIdentifier
     public required int ThresholdEventCount { get; init; }
     public required int CurrentEventCount { get; init; }
     public required int EventLimit { get; init; }
+    public int UsagePeriod { get; init; }
 
-    public string UniqueIdentifier => $"BudgetAlert:{OrganizationId}:{Threshold}";
+    public string UniqueIdentifier => $"BudgetAlert:{UsagePeriod}:{OrganizationId}:{Threshold}";
+    public string GetUniqueIdentifier(int fallbackUsagePeriod) => $"BudgetAlert:{(UsagePeriod > 0 ? UsagePeriod : fallbackUsagePeriod)}:{OrganizationId}:{Threshold}";
 }

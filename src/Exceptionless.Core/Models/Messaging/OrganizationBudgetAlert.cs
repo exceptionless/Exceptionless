@@ -7,4 +7,5 @@ public record OrganizationBudgetAlert
     public required int ThresholdEventCount { get; init; }
     public required int CurrentEventCount { get; init; }
     public required int EventLimit { get; init; }
+    public int UsagePeriod { get; init; }
 }

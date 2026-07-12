@@ -6,6 +6,7 @@ namespace Exceptionless.Tests.Mail;
 public class CountingMailer : IMailer
 {
     private int _organizationNoticeCount;
+    private int _organizationBudgetAlertAttemptCount;
 
     public int OrganizationNoticeCount => _organizationNoticeCount;
 
@@ -18,6 +19,7 @@ public class CountingMailer : IMailer
     /// Reset by <see cref="Reset"/>.
     /// </summary>
     public bool ShouldThrow { get; set; }
+    public int? ThrowOnOrganizationBudgetAlertAttempt { get; set; }
 
     public Task<bool> SendContactRequestAsync(string name, string emailAddress, string? company, string? subject, string message, string? clientIpAddress, string? userAgent, string? referrer)
     {
@@ -59,6 +61,10 @@ public class CountingMailer : IMailer
 
     public Task SendOrganizationBudgetAlertAsync(User user, Organization organization, int threshold, int thresholdEventCount, int currentEventCount, int eventLimit)
     {
+        int attempt = Interlocked.Increment(ref _organizationBudgetAlertAttemptCount);
+        if (ThrowOnOrganizationBudgetAlertAttempt == attempt)
+            throw new InvalidOperationException("Simulated budget alert mailer failure.");
+
         lock (OrganizationBudgetAlertCalls)
         {
             OrganizationBudgetAlertCalls.Add(new OrganizationBudgetAlertCall(user.Id, organization.Id, threshold, thresholdEventCount, currentEventCount, eventLimit));
@@ -93,6 +99,7 @@ public class CountingMailer : IMailer
     public void Reset()
     {
         Interlocked.Exchange(ref _organizationNoticeCount, 0);
+        Interlocked.Exchange(ref _organizationBudgetAlertAttemptCount, 0);
         lock (OrganizationNoticeCalls)
         {
             OrganizationNoticeCalls.Clear();
@@ -106,6 +113,7 @@ public class CountingMailer : IMailer
             ProjectThrottleCalls.Clear();
         }
         ShouldThrow = false;
+        ThrowOnOrganizationBudgetAlertAttempt = null;
     }
 }
 

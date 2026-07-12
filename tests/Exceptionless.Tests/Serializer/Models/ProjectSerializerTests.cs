@@ -69,4 +69,50 @@ public class ProjectSerializerTests : TestWithServices
         Assert.Equal("My Project", deserialized.Name);
         Assert.True(deserialized.IsConfigured);
     }
+
+    [Fact]
+    public void Deserialize_LegacyJsonWithoutIngestLimit_DefaultsToNull()
+    {
+        var project = _serializer.Deserialize<Project>("""{"id":"proj-legacy","organization_id":"org1","name":"Legacy"}""");
+
+        Assert.NotNull(project);
+        Assert.Null(project.IngestLimit);
+    }
+
+    public static TheoryData<ProjectIngestLimitType, int?, decimal?> IngestLimits => new()
+    {
+        { ProjectIngestLimitType.Fixed, 100, null },
+        { ProjectIngestLimitType.PercentOfOrganizationLimit, null, 8.3m }
+    };
+
+    [Theory]
+    [MemberData(nameof(IngestLimits))]
+    public void RoundTrip_WithIngestLimit_PreservesSnakeCaseValues(ProjectIngestLimitType type, int? fixedLimit, decimal? percentage)
+    {
+        var project = new Project
+        {
+            Id = "proj-budget",
+            OrganizationId = "org1",
+            Name = "Budgeted",
+            IngestLimit = new ProjectIngestLimit { Type = type, FixedLimit = fixedLimit, PercentOfOrganizationLimit = percentage }
+        };
+
+        string json = _serializer.SerializeToString(project);
+        var result = _serializer.Deserialize<Project>(json);
+
+        Assert.Contains("\"ingest_limit\"", json);
+        Assert.NotNull(result?.IngestLimit);
+        Assert.Equal(type, result.IngestLimit.Type);
+        Assert.Equal(fixedLimit, result.IngestLimit.FixedLimit);
+        Assert.Equal(percentage, result.IngestLimit.PercentOfOrganizationLimit);
+    }
+
+    [Fact]
+    public void RoundTrip_WithNullIngestLimit_OmitsPersistedField()
+    {
+        string json = _serializer.SerializeToString(new Project { Id = "proj-default", OrganizationId = "org1", Name = "Default" });
+
+        Assert.DoesNotContain("ingest_limit", json);
+        Assert.Null(_serializer.Deserialize<Project>(json)?.IngestLimit);
+    }
 }

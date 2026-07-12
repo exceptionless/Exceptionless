@@ -70,6 +70,7 @@ public class Bootstrapper
             ResiliencePolicyProvider = s.GetRequiredService<IResiliencePolicyProvider>(),
             LoggerFactory = s.GetRequiredService<ILoggerFactory>()
         }));
+        services.AddSingleton<IAtomicCacheBatch, InMemoryAtomicCacheBatch>();
 
         services.AddSingleton<ExceptionlessElasticConfiguration>();
         services.AddSingleton<ElasticsearchClient>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().Client);

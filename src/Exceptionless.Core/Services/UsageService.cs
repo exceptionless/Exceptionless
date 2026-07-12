@@ -5,6 +5,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
+using Foundatio.Lock;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Microsoft.Extensions.Logging;
@@ -16,6 +17,8 @@ public partial class UsageService
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly ICacheClient _cache;
+    private readonly ILockProvider _lockProvider;
+    private readonly IAtomicCacheBatch _atomicCacheBatch;
     private readonly IMessagePublisher _messagePublisher;
     private readonly NotificationService _notificationService;
     private readonly AppOptions _appOptions;
@@ -23,7 +26,7 @@ public partial class UsageService
     private readonly ILogger _logger;
     private readonly TimeSpan _bucketSize = TimeSpan.FromMinutes(5);
 
-    public UsageService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ICacheClient cache, IMessagePublisher messagePublisher,
+    public UsageService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ICacheClient cache, ILockProvider lockProvider, IAtomicCacheBatch atomicCacheBatch, IMessagePublisher messagePublisher,
         NotificationService notificationService,
         AppOptions appOptions,
         TimeProvider timeProvider,
@@ -32,6 +35,8 @@ public partial class UsageService
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
         _cache = cache;
+        _lockProvider = lockProvider;
+        _atomicCacheBatch = atomicCacheBatch;
         _messagePublisher = messagePublisher;
         _notificationService = notificationService;
         _appOptions = appOptions;
@@ -309,6 +314,9 @@ public partial class UsageService
 
         var bucketUtc = lastUsageSave;
         var currentBucketUtc = utcNow.Floor(_bucketSize);
+        var currentMonthUtc = utcNow.StartOfMonth();
+        if (bucketUtc < currentMonthUtc)
+            bucketUtc = currentMonthUtc;
         var isThrottled = await _cache.GetAsync<bool>(GetThrottledKey(currentBucketUtc, organizationId));
 
         UsageInfoResponse usage;
@@ -411,8 +419,11 @@ public partial class UsageService
             currentTotal += bucketTotal.Value;
 
         // get previous bucket counter and add it to total since it might not be saved yet
-        var previousBucketTotal = await _cache.GetAsync<int>(GetBucketTotalCacheKey(utcNow.Subtract(_bucketSize), organizationId));
-        if (previousBucketTotal.HasValue)
+        var previousBucketUtc = utcNow.Subtract(_bucketSize);
+        var previousBucketTotal = GetTotalBucket(previousBucketUtc) == GetTotalBucket(utcNow)
+            ? await _cache.GetAsync<int>(GetBucketTotalCacheKey(previousBucketUtc, organizationId))
+            : default;
+        if (previousBucketTotal is { HasValue: true })
             currentTotal += previousBucketTotal.Value;
 
         // check to see if adding this bucket puts the org over the limit
@@ -451,6 +462,13 @@ public partial class UsageService
             _cache.ListAddAsync(GetProjectSetKey(utcNow), projectId, TimeSpan.FromHours(8))
         );
 
+        await PublishUsageIncrementNotificationsAsync(organization, projectId, eventCount, utcNow, bucketTotal, organizationId);
+    }
+
+    private async Task PublishUsageIncrementNotificationsAsync(Organization? organization, string projectId, int eventCount, DateTime utcNow, long bucketTotal, string? organizationId = null)
+    {
+        organizationId ??= organization?.Id ?? throw new ArgumentNullException(nameof(organization));
+
         int maxEventsPerMonth = organization?.GetMaxEventsPerMonthWithBonus(_timeProvider) ?? await GetMaxEventsPerMonthAsync(organizationId);
         int bucketLimit = GetBucketEventLimit(maxEventsPerMonth);
 
@@ -464,7 +482,9 @@ public partial class UsageService
             ]);
 
             int baseTotal = GetCachedValue(totals, GetTotalCacheKey(utcNow, organizationId), persistedTotal);
-            int previousBucketTotal = GetCachedValue(totals, GetBucketTotalCacheKey(utcNow.Subtract(_bucketSize), organizationId));
+            int previousBucketTotal = GetTotalBucket(utcNow.Subtract(_bucketSize)) == GetTotalBucket(utcNow)
+                ? GetCachedValue(totals, GetBucketTotalCacheKey(utcNow.Subtract(_bucketSize), organizationId))
+                : 0;
             int currentTotal = checked(baseTotal + previousBucketTotal + (int)bucketTotal);
             int previousTotal = Math.Max(0, currentTotal - eventCount);
 

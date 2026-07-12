@@ -137,4 +137,41 @@ public class OrganizationSerializerTests : TestWithServices
         Assert.Equal("EX_SMALL", result.PlanId);
         Assert.Equal(10000, result.MaxEventsPerMonth);
     }
+
+    [Fact]
+    public void Deserialize_LegacyJsonWithoutBudgetSettings_DefaultsToNull()
+    {
+        var result = _serializer.Deserialize<Organization>("""{"id":"550000000000000000000005","name":"Legacy"}""");
+
+        Assert.NotNull(result);
+        Assert.Null(result.BudgetAlertSettings);
+    }
+
+    [Fact]
+    public void RoundTrip_WithBudgetSettings_PreservesSnakeCaseValues()
+    {
+        var organization = new Organization
+        {
+            Id = "550000000000000000000006",
+            Name = "Budgeted",
+            BudgetAlertSettings = new OrganizationBudgetAlertSettings { Enabled = true, Thresholds = [50, 80] }
+        };
+
+        string json = _serializer.SerializeToString(organization);
+        var result = _serializer.Deserialize<Organization>(json);
+
+        Assert.Contains("\"budget_alert_settings\"", json);
+        Assert.NotNull(result?.BudgetAlertSettings);
+        Assert.True(result.BudgetAlertSettings.Enabled);
+        Assert.Equal([50, 80], result.BudgetAlertSettings.Thresholds);
+    }
+
+    [Fact]
+    public void RoundTrip_WithNullBudgetSettings_OmitsPersistedField()
+    {
+        string json = _serializer.SerializeToString(new Organization { Id = "550000000000000000000007", Name = "Default" });
+
+        Assert.DoesNotContain("budget_alert_settings", json);
+        Assert.Null(_serializer.Deserialize<Organization>(json)?.BudgetAlertSettings);
+    }
 }
