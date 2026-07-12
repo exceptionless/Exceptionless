@@ -2,9 +2,16 @@
     import { defineMeta } from '@storybook/addon-svelte-csf';
     import EmailPreview from './EmailPreview.svelte';
     import rawHtml from '../../../Exceptionless.Core/Mail/Templates/event-notice.html?raw';
-    import { fillTokens, eventNoticeTokens } from './sample-data.js';
+    import {
+        eventNoticeTokens,
+        fillTokens,
+        reoccurredEventNoticeTokens,
+        regressedEventNoticeTokens
+    } from './sample-data.js';
 
-    const html = fillTokens(rawHtml, eventNoticeTokens);
+    const newEventHtml = fillTokens(rawHtml, eventNoticeTokens);
+    const regressedEventHtml = fillTokens(rawHtml, regressedEventNoticeTokens);
+    const reoccurredEventHtml = fillTokens(rawHtml, reoccurredEventNoticeTokens);
 
     const { Story } = defineMeta({
         component: EmailPreview,
@@ -16,4 +23,6 @@
     });
 </script>
 
-<Story name="Default" args={{ html, height: 700 }} />
+<Story name="New Critical Event" args={{ html: newEventHtml, height: 700 }} />
+<Story name="Critical Regression" args={{ html: regressedEventHtml, height: 700 }} />
+<Story name="Reoccurred Without Details" args={{ html: reoccurredEventHtml, height: 550 }} />

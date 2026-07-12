@@ -240,15 +240,14 @@ jobs:
         with:
           node-version: 24
 
-      - name: Cache node_modules
+      - name: Cache npm packages
         uses: actions/cache@v6
-        id: cache-email-template-node-modules
+        id: cache-email-template-npm
         with:
-          path: src/Exceptionless.EmailTemplates/node_modules
-          key: node-modules-email-${{ hashFiles('src/Exceptionless.EmailTemplates/package-lock.json') }}
+          path: ~/.npm
+          key: npm-email-${{ runner.os }}-${{ hashFiles('src/Exceptionless.EmailTemplates/package-lock.json') }}
 
       - name: Install Npm Packages
-        if: steps.cache-email-template-node-modules.outputs.cache-hit != 'true'
         run: npm ci
 
       - name: Lint
@@ -260,10 +259,15 @@ jobs:
       - name: Build Templates
         run: npm run build
 
+      - name: Build Storybook
+        run: npm run build-storybook
+
       - name: Verify Generated HTML is Up-To-Date
         run: |
-          if ! git diff --exit-code ../Exceptionless.Core/Mail/Templates/; then
-            echo "::error::Generated HTML templates are stale. Run 'npm run build' in src/Exceptionless.EmailTemplates and commit the updated files."
+          changes="$(git status --short --untracked-files=all -- ../Exceptionless.Core/Mail/Templates/ generated-templates.json)"
+          if [ -n "$changes" ]; then
+            echo "$changes"
+            echo "::error::Generated email artifacts are stale. Run 'npm run build' in src/Exceptionless.EmailTemplates and commit the updated files."
             exit 1
           fi
 

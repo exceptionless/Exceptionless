@@ -196,7 +196,26 @@ public sealed class MailerTests : TestWithServices
         });
     }
 
-    private async Task SendEventNoticeAsync(PersistentEvent ev)
+    [Fact]
+    public async Task SendEventNoticeAsync_WithHostileUserDescription_EncodesHtmlAndMailtoComponents()
+    {
+        var body = await SendEventNoticeAsync(new PersistentEvent
+        {
+            Type = Event.KnownTypes.Error,
+            Message = "Hostile user description",
+            Data = new Core.Models.DataDictionary {
+                    { Event.KnownDataKeys.UserInfo, new UserInfo("user-id", "<img src=x onerror=alert(1)>") },
+                    { Event.KnownDataKeys.UserDescription, new UserDescription("victim@example.com", "hello&bcc=attacker@example.com") }
+                }
+        });
+
+        Assert.Contains("mailto:victim%40example.com?body=hello%26bcc%3Dattacker%40example.com", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("&bcc=", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("&lt;img", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("<img src=x onerror=alert(1)>", body, StringComparison.Ordinal);
+    }
+
+    private async Task<string> SendEventNoticeAsync(PersistentEvent ev)
     {
         var user = _userData.GenerateSampleUser();
         var project = _projectData.GenerateSampleProject();
@@ -209,6 +228,7 @@ public sealed class MailerTests : TestWithServices
         await _mailer.SendEventNoticeAsync(user, ev, project, RandomData.GetBool(), RandomData.GetBool(), 1);
         var body = await RunMailJobAsync();
         Assert.Contains("View Event Details", body, StringComparison.Ordinal);
+        return body;
     }
 
     [Fact]
@@ -364,6 +384,7 @@ public sealed class MailerTests : TestWithServices
         await _mailer.SendUserPasswordResetAsync(user);
         var body = await RunMailJobAsync();
         Assert.Contains("Reset Password", body, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("?cancel=true", body, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

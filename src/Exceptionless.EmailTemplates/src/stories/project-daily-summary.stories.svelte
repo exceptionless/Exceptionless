@@ -2,9 +2,16 @@
     import { defineMeta } from '@storybook/addon-svelte-csf';
     import EmailPreview from './EmailPreview.svelte';
     import rawHtml from '../../../Exceptionless.Core/Mail/Templates/project-daily-summary.html?raw';
-    import { fillTokens, dailySummaryTokens } from './sample-data.js';
+    import {
+        blockedDailySummaryTokens,
+        dailySummaryTokens,
+        fillTokens,
+        unconfiguredDailySummaryTokens
+    } from './sample-data.js';
 
-    const html = fillTokens(rawHtml, dailySummaryTokens);
+    const defaultHtml = fillTokens(rawHtml, dailySummaryTokens);
+    const blockedHtml = fillTokens(rawHtml, blockedDailySummaryTokens);
+    const unconfiguredHtml = fillTokens(rawHtml, unconfiguredDailySummaryTokens);
 
     const { Story } = defineMeta({
         component: EmailPreview,
@@ -16,4 +23,6 @@
     });
 </script>
 
-<Story name="Default" args={{ html, height: 900 }} />
+<Story name="Default" args={{ html: defaultHtml, height: 900 }} />
+<Story name="Discarded Events and Free Plan" args={{ html: blockedHtml, height: 1500 }} />
+<Story name="Unconfigured Project" args={{ html: unconfiguredHtml, height: 650 }} />

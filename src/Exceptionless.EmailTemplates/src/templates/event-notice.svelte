@@ -1,26 +1,15 @@
 <script module lang="ts">
     import { Button, Text, Heading, Section, Hr, Link } from '@better-svelte-email/components';
     import EmailLayout from '../components/EmailLayout.svelte';
-    import { wrapJsonLd } from '../lib/json-ld';
+    import { buildEmailMetadata } from '../lib/email-metadata';
     import ActionsFooter from '../components/ActionsFooter.svelte';
 
-    const jsonLd = wrapJsonLd(`
+    const jsonLd = buildEmailMetadata(`
 {
-  "@context": "http://schema.org",
-  "@type": "EmailMessage",
-  "description": "{{Subject}}",
-  "potentialAction": {
-    "@type": "ViewAction",
-    "target": "{{BaseUrl}}/event/{{EventId}}",
-    "url": "{{BaseUrl}}/event/{{EventId}}",
-    "name": "View Event Details"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "Exceptionless",
-    "url": "https://exceptionless.com",
-    "logo": "https://be.exceptionless.io/img/exceptionless-48.png"
-  }
+  "@type": "ViewAction",
+  "target": "{{BaseUrl}}/event/{{EventId}}",
+  "url": "{{BaseUrl}}/event/{{EventId}}",
+  "name": "View Event Details"
 }
 `);
 </script>
@@ -57,7 +46,7 @@
             <Section class="border border-border rounded-[3px] bg-white p-[10px] my-4">
                 {@html '{{#if UserDisplayName}}'}
                 <Text class="text-base text-dark leading-[1.3] my-[10px]"
-                    >{@html '<strong>Name</strong><br />{{#if UserEmail}}<a href="mailto:{{UserEmail}}?body={{UserDescription}}" style="color:#5E9A00;text-decoration:none">{{UserDisplayName}}</a>{{else}}<span style="word-wrap:break-word;word-break:break-all">{{UserDisplayName}}</span>{{/if}}'}</Text
+                    >{@html '<strong>Name</strong><br />{{#if UserEmail}}<a href="{{UserEmailHref}}" style="color:#5E9A00;text-decoration:none">{{UserDisplayName}}</a>{{else}}<span style="word-wrap:break-word;word-break:break-all">{{UserDisplayName}}</span>{{/if}}'}</Text
                 >
                 {@html '{{#if UserDescription}}'}
                 <Hr class="border-bg" />

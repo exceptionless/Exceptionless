@@ -14,6 +14,8 @@ int oldAppPort = worktreePorts?.OldAppHttps ?? 7121;
 int oldAppLiveReloadPort = worktreePorts?.OldAppLiveReload ?? 35729;
 string oldAppAspNetCoreUrls = String.Concat("http://localhost:", oldAppHttpPort);
 int appPort = worktreePorts?.AppHttps ?? 7131;
+int storybookPort = worktreePorts?.Storybook ?? 6006;
+int emailStorybookPort = worktreePorts?.EmailStorybook ?? 6008;
 const int DefaultApiHttpsPort = 7111;
 string exceptionlessServerUrl = worktreePorts?.ApiHttpsUrl ?? $"https://api-ex.dev.localhost:{DefaultApiHttpsPort}";
 const string SharedEmailConnectionString = "smtp://localhost:1025";
@@ -208,25 +210,30 @@ if (!servicesOnly)
     }
 #pragma warning restore ASPIREBROWSERLOGS001
 
-    builder.AddJavaScriptApp("Storybook", "../Exceptionless.Web/ClientApp", "storybook")
-        .WithHttpEndpoint(port: 6006, targetPort: 6006, name: "http", isProxied: false)
-        .WithUrlForEndpoint("http", u =>
-        {
-            u.DisplayText = "Component Library";
-            u.DisplayOrder = 200;
-        })
-        .WithHttpHealthCheck("/")
-        .WithParentRelationship(api);
+    if (includeDevTools)
+    {
+        builder.AddJavaScriptApp("Storybook", "../Exceptionless.Web/ClientApp", "storybook")
+            .WithRunScript("storybook", ["--", "--port", storybookPort.ToString(), "--no-open"])
+            .WithHttpEndpoint(port: storybookPort, targetPort: storybookPort, name: "http", isProxied: false)
+            .WithUrlForEndpoint("http", u =>
+            {
+                u.DisplayText = "Component Library";
+                u.DisplayOrder = 200;
+            })
+            .WithHttpHealthCheck("/")
+            .WithParentRelationship(api);
 
-    builder.AddJavaScriptApp("EmailStorybook", "../Exceptionless.EmailTemplates", "storybook")
-        .WithHttpEndpoint(port: 6008, targetPort: 6008, name: "http", isProxied: false)
-        .WithUrlForEndpoint("http", u =>
-        {
-            u.DisplayText = "Email Templates";
-            u.DisplayOrder = 300;
-        })
-        .WithHttpHealthCheck("/")
-        .WithParentRelationship(api);
+        builder.AddJavaScriptApp("EmailStorybook", "../Exceptionless.EmailTemplates", "storybook")
+            .WithRunScript("storybook", ["--", "--port", emailStorybookPort.ToString(), "--no-open"])
+            .WithHttpEndpoint(port: emailStorybookPort, targetPort: emailStorybookPort, name: "http", isProxied: false)
+            .WithUrlForEndpoint("http", u =>
+            {
+                u.DisplayText = "Email Templates";
+                u.DisplayOrder = 300;
+            })
+            .WithHttpHealthCheck("/")
+            .WithParentRelationship(api);
+    }
 }
 
 await builder.Build().RunAsync();
