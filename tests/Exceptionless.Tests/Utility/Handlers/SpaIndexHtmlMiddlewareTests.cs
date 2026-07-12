@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using Exceptionless.Web;
 using Exceptionless.Web.Security;
 using Exceptionless.Web.Utility.Handlers;
@@ -256,6 +257,7 @@ public sealed class SpaIndexHtmlMiddlewareTests
         Assert.Contains("'strict-dynamic'", scriptDirective, StringComparison.Ordinal);
         Assert.DoesNotContain("'unsafe-inline'", scriptDirective, StringComparison.Ordinal);
         Assert.DoesNotContain("'unsafe-eval'", scriptDirective, StringComparison.Ordinal);
+        Assert.DoesNotContain("https://cdn.jsdelivr.net", scriptDirective, StringComparison.Ordinal);
         Assert.DoesNotContain("http://", policy, StringComparison.Ordinal);
         Assert.DoesNotContain("intercomcdn.eu", policy, StringComparison.Ordinal);
         Assert.DoesNotContain(".eu.intercom.io", policy, StringComparison.Ordinal);
@@ -270,6 +272,21 @@ public sealed class SpaIndexHtmlMiddlewareTests
         var sendingHeaderContext = new CspSendingHeaderContext(apiContext);
         await options.OnSendingHeader(sendingHeaderContext);
         Assert.True(sendingHeaderContext.ShouldNotSend);
+    }
+
+    [Fact]
+    public void ConfigureContentSecurityPolicy_DefaultPolicy_MatchesCanonicalCrossRuntimeContract()
+    {
+        var builder = new CspBuilder();
+        FrontendContentSecurityPolicy.Configure(builder);
+        (_, string policy) = builder.BuildCspOptions().ToString(new TestNonceService("contract-nonce"));
+
+        IReadOnlyDictionary<string, string[]> expected = ReadPolicyContract();
+        IReadOnlyDictionary<string, string[]> actual = NormalizePolicy(policy);
+
+        Assert.Equal(expected.Keys.Order(), actual.Keys.Order());
+        foreach ((string directive, string[] expectedSources) in expected)
+            Assert.Equal(expectedSources, actual[directive]);
     }
 
     [Fact]
@@ -374,6 +391,27 @@ public sealed class SpaIndexHtmlMiddlewareTests
     private static string GetDirective(string policy, string directiveName)
     {
         return policy.Split(';').Single(directive => directive.StartsWith(directiveName + " ", StringComparison.Ordinal));
+    }
+
+    private static IReadOnlyDictionary<string, string[]> NormalizePolicy(string policy)
+    {
+        return policy.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(directive => directive.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            .ToDictionary(
+                parts => parts[0],
+                parts => parts.Skip(1)
+                    .Where(source => !source.StartsWith("'nonce-", StringComparison.Ordinal))
+                    .Order()
+                    .ToArray());
+    }
+
+    private static IReadOnlyDictionary<string, string[]> ReadPolicyContract()
+    {
+        string contractPath = Path.Combine(AppContext.BaseDirectory, "Security", "frontend-content-security-policy.contract.json");
+        var contract = JsonSerializer.Deserialize<Dictionary<string, string[]>>(File.ReadAllText(contractPath));
+        Assert.NotNull(contract);
+
+        return contract.ToDictionary(entry => entry.Key, entry => entry.Value.Order().ToArray());
     }
 
     private sealed class TestNonceService(string nonce) : ICspNonceService
