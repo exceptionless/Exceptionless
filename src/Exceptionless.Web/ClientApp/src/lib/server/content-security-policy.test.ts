@@ -44,7 +44,7 @@ describe('addNonceToScripts', () => {
 describe('createContentSecurityPolicy', () => {
     it('matches the canonical cross-runtime policy contract', () => {
         const nonce = createNonce();
-        const policy = normalizePolicy(createContentSecurityPolicy(nonce));
+        const policy = normalizeDevelopmentPolicy(createContentSecurityPolicy(nonce, { allowDevelopmentConnections: true }));
 
         expect(policy).toEqual(readPolicyContract());
     });
@@ -159,11 +159,19 @@ function getDirective(policy: string, name: string): string[] {
     return directive.slice(name.length + 1).split(' ');
 }
 
-function normalizePolicy(policy: string): Record<string, string[]> {
+function normalizeDevelopmentPolicy(policy: string): Record<string, string[]> {
     return Object.fromEntries(
         policy.split('; ').map((directive) => {
             const [name, ...sources] = directive.split(' ');
-            return [name, sources.filter((source) => !source.startsWith("'nonce-")).sort()];
+            const developmentSources = sources.filter((source) => source === 'ws:' || source === 'wss:');
+
+            if (name === 'connect-src') {
+                expect(developmentSources).toEqual(['ws:', 'wss:']);
+            } else {
+                expect(developmentSources).toEqual([]);
+            }
+
+            return [name, sources.filter((source) => !source.startsWith("'nonce-") && source !== 'ws:' && source !== 'wss:').sort()];
         })
     );
 }

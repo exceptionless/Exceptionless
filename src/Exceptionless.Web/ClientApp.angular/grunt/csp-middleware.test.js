@@ -108,7 +108,7 @@ test("preserves script-like text inside inline scripts", function () {
 });
 
 test("matches the canonical cross-runtime policy contract", function () {
-    var policy = normalizePolicy(csp.createContentSecurityPolicy(csp.createNonce()), ["ws:", "wss:"]);
+    var policy = normalizeDevelopmentPolicy(csp.createContentSecurityPolicy(csp.createNonce()));
     var contractPath = path.join(__dirname, "..", "..", "Security", "frontend-content-security-policy.contract.json");
     var contract = normalizeContract(JSON.parse(fs.readFileSync(contractPath, "utf8")));
 
@@ -181,13 +181,19 @@ test("leaves Angular template XHR caching unchanged", async function (context) {
     assert.equal(response.headers.get("Cache-Control"), null);
 });
 
-function normalizePolicy(policy, excludedSources) {
+function normalizeDevelopmentPolicy(policy) {
     return Object.fromEntries(
         policy.split("; ").map(function (directive) {
             var parts = directive.split(" ");
             var name = parts.shift();
+            var developmentSources = parts.filter(function (source) {
+                return source === "ws:" || source === "wss:";
+            });
+
+            assert.deepEqual(developmentSources, name === "connect-src" ? ["ws:", "wss:"] : []);
+
             var sources = parts.filter(function (source) {
-                return !source.startsWith("'nonce-") && excludedSources.indexOf(source) === -1;
+                return !source.startsWith("'nonce-") && source !== "ws:" && source !== "wss:";
             });
 
             return [name, sources.sort()];
