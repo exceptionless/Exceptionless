@@ -141,7 +141,9 @@
 </div>
 
 {#if organizationQuery.data}
-    <OrganizationBudgetAlertCard organization={organizationQuery.data} />
+    {#key organizationQuery.data.id}
+        <OrganizationBudgetAlertCard organization={organizationQuery.data} />
+    {/key}
 {/if}
 
 {#if changePlanDialogOpen && organizationQuery.data}

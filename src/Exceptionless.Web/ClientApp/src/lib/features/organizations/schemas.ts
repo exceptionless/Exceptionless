@@ -1,18 +1,8 @@
-import { array, boolean, date, type infer as Infer, number, object, string, enum as zodEnum } from 'zod';
+import { boolean, date, type infer as Infer, number, object, string, enum as zodEnum } from 'zod';
 
 import { SuspensionCode } from './models';
 
 export { type NewOrganizationFormData, NewOrganizationSchema } from '$generated/schemas';
-
-export const BudgetAlertSettingsSchema = object({
-    enabled: boolean(),
-    thresholds: array(number().int().min(1).max(99))
-}).superRefine((settings, context) => {
-    if (settings.enabled && settings.thresholds.length === 0) {
-        context.addIssue({ code: 'custom', message: 'At least one threshold is required when alerts are enabled.', path: ['thresholds'] });
-    }
-});
-export type BudgetAlertSettingsFormData = Infer<typeof BudgetAlertSettingsSchema>;
 
 export const BudgetAlertCardSchema = object({
     enabled: boolean(),
@@ -33,12 +23,6 @@ export const BudgetAlertCardSchema = object({
     }
 });
 export type BudgetAlertCardFormData = Infer<typeof BudgetAlertCardSchema>;
-
-export const UpdateOrganizationSchema = object({
-    budget_alert_settings: BudgetAlertSettingsSchema.nullable().optional(),
-    name: string().min(1, 'Name is required').optional()
-});
-export type UpdateOrganizationFormData = Infer<typeof UpdateOrganizationSchema>;
 
 export const SetBonusOrganizationSchema = object({
     bonusEvents: number().int('Bonus events must be a whole number'),

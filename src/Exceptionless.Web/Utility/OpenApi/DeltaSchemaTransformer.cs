@@ -38,6 +38,9 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
         {
             bool isNullable = IsPropertyNullable(property);
             var generatedSchema = await context.GetOrCreateSchemaAsync(property.PropertyType, cancellationToken: cancellationToken);
+            DataAnnotationHelper.ApplyToSchema(generatedSchema, property);
+            ApplyArrayAnnotations(generatedSchema, property);
+
             OpenApiSchema propertySchema;
 
             if (isNullable && RequiresNullableWrapper(property.PropertyType))
@@ -57,10 +60,6 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
                 if (isNullable)
                     propertySchema.Type = propertySchema.Type.GetValueOrDefault() | JsonSchemaType.Null;
             }
-
-            // Apply data annotations from the inner type's property
-            DataAnnotationHelper.ApplyToSchema(propertySchema, property);
-            ApplyArrayAnnotations(propertySchema, property);
 
             string propertyName = property.Name.ToLowerUnderscoredWords();
             schema.Properties[propertyName] = propertySchema;

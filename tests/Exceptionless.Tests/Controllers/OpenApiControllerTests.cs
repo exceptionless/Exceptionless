@@ -96,13 +96,23 @@ public class OpenApiControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetOpenApiJson_DeltaNullableComplexProperties_UseReferencedSchemas()
+    public async Task GetOpenApiJson_DeltaNullableComplexProperties_PreserveSchemasAndAnnotations()
     {
         using var document = await GetOpenApiDocumentAsync();
         var schemas = document.RootElement.GetProperty("components").GetProperty("schemas");
 
         AssertNullableReference(schemas, "UpdateOrganization", "budget_alert_settings", "OrganizationBudgetAlertSettings");
         AssertNullableReference(schemas, "UpdateProject", "ingest_limit", "ProjectIngestLimit");
+
+        var columnOrderAlternatives = schemas
+            .GetProperty("UpdateSavedView")
+            .GetProperty("properties")
+            .GetProperty("column_order")
+            .GetProperty("oneOf")
+            .EnumerateArray();
+        var columnOrderArray = Assert.Single(columnOrderAlternatives, alternative =>
+            alternative.TryGetProperty("type", out var type) && type.GetString() == "array");
+        Assert.Equal(50, columnOrderArray.GetProperty("maxItems").GetInt32());
     }
 
     private static string NormalizeOpenApiJson(string json)

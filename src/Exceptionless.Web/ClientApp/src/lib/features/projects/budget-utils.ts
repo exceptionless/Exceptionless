@@ -35,5 +35,8 @@ export function getEffectiveProjectLimit(organizationLimit: number, ingestLimit:
         return null;
     }
 
-    return Math.min(organizationLimit, Math.ceil((organizationLimit * percentage) / 100));
+    // The API accepts at most 4 decimal places. Scaling both operands to integers keeps this preview
+    // aligned with the server's exact decimal ceiling without binary floating-point boundary errors.
+    const scaledPercentage = Math.round(percentage * 10_000);
+    return Math.min(organizationLimit, Math.ceil((organizationLimit * scaledPercentage) / 1_000_000));
 }

@@ -171,7 +171,9 @@
 </div>
 
 {#if projectQuery.data && organizationQuery.data}
-    <ProjectIngestLimitCard project={projectQuery.data} {organizationLimit} />
+    {#key projectQuery.data.id}
+        <ProjectIngestLimitCard project={projectQuery.data} {organizationLimit} />
+    {/key}
 {/if}
 
 {#if changePlanDialogOpen && organizationQuery.data}

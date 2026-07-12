@@ -10253,6 +10253,7 @@
                 "type": "null"
               },
               {
+                "maxItems": 50,
                 "type": "array",
                 "items": {
                   "type": "string"

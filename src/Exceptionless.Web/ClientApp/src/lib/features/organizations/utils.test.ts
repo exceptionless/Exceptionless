@@ -24,4 +24,8 @@ describe('getEffectiveEventLimit', () => {
     it('preserves unlimited organizations', () => {
         expect(getEffectiveEventLimit(organization({ max_events_per_month: -1 }))).toBe(-1);
     });
+
+    it('treats legacy zero-limit organizations as unlimited', () => {
+        expect(getEffectiveEventLimit(organization({ max_events_per_month: 0 }))).toBe(-1);
+    });
 });
