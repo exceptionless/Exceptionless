@@ -59,4 +59,25 @@ public class PublicApiCompatibilityTests
         Assert.Equal("compat-node", environment.MachineName);
         Assert.Equal("Linux", environment.OSName);
     }
+
+    [Fact]
+    public void Stack_InternalCleanupState_IsNotSerializedByApi()
+    {
+        var stack = new Stack
+        {
+            RedirectToStackId = "target-stack",
+            MergedDuplicateStackTotals = new Dictionary<string, int> { ["source-stack"] = 42 },
+            NeedsRedirectReconciliation = true
+        };
+
+        string apiJson = JsonSerializer.Serialize(stack, new JsonSerializerOptions().ConfigureExceptionlessApiDefaults());
+        string storageJson = JsonSerializer.Serialize(stack, new JsonSerializerOptions().ConfigureExceptionlessDefaults());
+
+        Assert.DoesNotContain("redirect_to_stack_id", apiJson);
+        Assert.DoesNotContain("merged_duplicate_stack_totals", apiJson);
+        Assert.DoesNotContain("needs_redirect_reconciliation", apiJson);
+        Assert.Contains("redirect_to_stack_id", storageJson);
+        Assert.Contains("merged_duplicate_stack_totals", storageJson);
+        Assert.Contains("needs_redirect_reconciliation", storageJson);
+    }
 }

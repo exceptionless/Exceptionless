@@ -46,7 +46,7 @@ public partial class CleanupDataJobTests
     }
 
     [Fact]
-    public async Task EnforceRetention_WithMultipleOrganizations_RespectsPerOrgRetention()
+    public async Task EnforceRetention_WithMultipleOrganizations_RespectsPerOrganizationRetention()
     {
         // Arrange
         // Retention enforcement uses the next plan above the organization's retention:

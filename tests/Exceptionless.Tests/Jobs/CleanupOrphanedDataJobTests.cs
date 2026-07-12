@@ -3,6 +3,7 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
@@ -24,6 +25,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     private readonly IEventRepository _eventRepository;
     private readonly BillingManager _billingManager;
     private readonly BillingPlans _plans;
+    private readonly ExceptionlessElasticConfiguration _configuration;
 
     public CleanupOrphanedDataJobTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
@@ -38,6 +40,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         _eventRepository = GetService<IEventRepository>();
         _billingManager = GetService<BillingManager>();
         _plans = GetService<BillingPlans>();
+        _configuration = GetService<ExceptionlessElasticConfiguration>();
     }
 
     [Fact]
@@ -596,6 +599,129 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task FixDuplicateStacks_AfterPartialTargetMerge_DoesNotDoubleApplyMetadata()
+    {
+        // Arrange
+        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
+        await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
+        var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
+
+        var targetStack = _stackData.GenerateStack(generateId: true, organizationId: organization.Id, projectId: project.Id);
+        targetStack.TotalOccurrences = 100;
+        var sourceStack = targetStack.DeepClone();
+        sourceStack.Id = ObjectId.GenerateNewId().ToString();
+        sourceStack.TotalOccurrences = 10;
+        await _stackRepository.AddAsync([targetStack, sourceStack], o => o.ImmediateConsistency());
+        await _eventRepository.AddAsync(_eventData.GenerateEvents(100, organization.Id, project.Id, targetStack.Id), o => o.ImmediateConsistency());
+        await _eventRepository.AddAsync(_eventData.GenerateEvents(10, organization.Id, project.Id, sourceStack.Id), o => o.ImmediateConsistency());
+
+        // Simulate a prior run that merged the target but failed before hiding the source.
+        await _stackRepository.MergeDuplicateStackAsync(targetStack.Id, sourceStack);
+
+        // Act
+        await _job.RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        // Assert
+        var updatedTarget = await _stackRepository.GetByIdAsync(targetStack.Id, o => o.IncludeSoftDeletes());
+        var updatedSource = await _stackRepository.GetByIdAsync(sourceStack.Id, o => o.IncludeSoftDeletes());
+        Assert.NotNull(updatedTarget);
+        Assert.NotNull(updatedSource);
+        Assert.Equal(110, updatedTarget.TotalOccurrences);
+        Assert.False(updatedTarget.IsDeleted);
+        Assert.True(updatedSource.IsDeleted);
+        Assert.Equal(110, await _eventRepository.CountAsync(q => q.Stack(targetStack.Id), o => o.ImmediateConsistency()));
+        Assert.Equal(0, await _eventRepository.CountAsync(q => q.Stack(sourceStack.Id)));
+    }
+
+    [Fact]
+    public async Task DeleteOrphanedEventsByStack_WithRedirectedSource_ReassignsLateEvents()
+    {
+        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
+        await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
+        var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
+
+        var targetStack = _stackData.GenerateStack(generateId: true, organizationId: organization.Id, projectId: project.Id);
+        targetStack.TotalOccurrences = 100;
+        var sourceStack = targetStack.DeepClone();
+        sourceStack.Id = ObjectId.GenerateNewId().ToString();
+        sourceStack.TotalOccurrences = 10;
+        await _stackRepository.AddAsync([targetStack, sourceStack], o => o.ImmediateConsistency());
+        await _stackRepository.SetDuplicateStackRedirectAsync(sourceStack, targetStack.Id, isDeleted: true);
+
+        await _eventRepository.AddAsync(
+            _eventData.GenerateEvents(10, organization.Id, project.Id, sourceStack.Id),
+            o => o.ImmediateConsistency());
+
+        await RefreshDataAsync();
+        await _job.RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        Assert.Equal(10, await _eventRepository.CountAsync(q => q.Stack(targetStack.Id), o => o.ImmediateConsistency()));
+        Assert.Equal(0, await _eventRepository.CountAsync(q => q.Stack(sourceStack.Id), o => o.ImmediateConsistency()));
+
+        var updatedTarget = await _stackRepository.GetByIdAsync(targetStack.Id, o => o.ImmediateConsistency());
+        Assert.NotNull(updatedTarget);
+        Assert.Equal(110, updatedTarget.TotalOccurrences);
+
+        var redirectTombstone = await _stackRepository.GetByIdAsync(sourceStack.Id, o => o.IncludeSoftDeletes());
+        Assert.NotNull(redirectTombstone);
+        Assert.True(redirectTombstone.IsDeleted);
+        Assert.Equal(targetStack.Id, redirectTombstone.RedirectToStackId);
+        Assert.False(redirectTombstone.NeedsRedirectReconciliation);
+    }
+
+    [Fact]
+    public async Task DeleteOrphanedEventsByStack_WithLateCounterAndNoSourceEvents_ReconcilesTombstone()
+    {
+        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
+        await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
+        var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
+
+        var targetStack = _stackData.GenerateStack(generateId: true, organizationId: organization.Id, projectId: project.Id);
+        targetStack.TotalOccurrences = 100;
+        var sourceStack = targetStack.DeepClone();
+        sourceStack.Id = ObjectId.GenerateNewId().ToString();
+        sourceStack.TotalOccurrences = 10;
+        await _stackRepository.AddAsync([targetStack, sourceStack], o => o.ImmediateConsistency());
+        await _stackRepository.MergeDuplicateStackAsync(targetStack.Id, sourceStack);
+        await _stackRepository.SetDuplicateStackRedirectAsync(sourceStack, targetStack.Id, isDeleted: true);
+
+        await _stackRepository.IncrementEventCounterAsync(
+            sourceStack.OrganizationId,
+            sourceStack.ProjectId,
+            sourceStack.Id,
+            sourceStack.FirstOccurrence,
+            sourceStack.LastOccurrence.AddMinutes(1),
+            5,
+            sendNotifications: false);
+
+        var incrementedSource = await _stackRepository.GetByIdAsync(sourceStack.Id, o => o.IncludeSoftDeletes().ImmediateConsistency());
+        Assert.NotNull(incrementedSource);
+        Assert.Equal(15, incrementedSource.TotalOccurrences);
+
+        Assert.Equal(0, await _eventRepository.CountAsync(q => q.Stack(sourceStack.Id), o => o.ImmediateConsistency()));
+
+        await RefreshDataAsync();
+        await _job.RunAsync(TestCancellationToken);
+
+        var updatedTarget = await _stackRepository.GetByIdAsync(targetStack.Id, o => o.ImmediateConsistency());
+        Assert.NotNull(updatedTarget);
+        Assert.Equal(115, updatedTarget.TotalOccurrences);
+
+        var reconciledSource = await _stackRepository.GetByIdAsync(sourceStack.Id, o => o.IncludeSoftDeletes().ImmediateConsistency());
+        Assert.NotNull(reconciledSource);
+        Assert.False(reconciledSource.NeedsRedirectReconciliation);
+        Assert.Empty((await _stackRepository.GetRedirectedStacksNeedingReconciliationAsync()).Documents);
+
+        DateTime targetUpdatedUtc = updatedTarget.UpdatedUtc;
+        await _job.RunAsync(TestCancellationToken);
+        updatedTarget = await _stackRepository.GetByIdAsync(targetStack.Id, o => o.ImmediateConsistency());
+        Assert.NotNull(updatedTarget);
+        Assert.Equal(targetUpdatedUtc, updatedTarget.UpdatedUtc);
+    }
+
+    [Fact]
     public async Task FixDuplicateStacks_NoDuplicates_DoesNotModifyAnything()
     {
         // Arrange
@@ -656,6 +782,48 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         Assert.NotNull(updatedDuplicate);
         Assert.False(updatedOriginal.IsDeleted);
         Assert.True(updatedDuplicate.IsDeleted);
+    }
+
+    [Fact]
+    public async Task FixDuplicateStacks_WithClosedEventIndex_KeepsAllStacksActive()
+    {
+        // Arrange
+        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
+        await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
+        var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
+
+        var occurrenceDate = _configuration.TimeProvider.GetUtcNow().AddDays(-1);
+        var originalStack = _stackData.GenerateStack(generateId: true, organizationId: organization.Id, projectId: project.Id);
+        var duplicateStack = originalStack.DeepClone();
+        duplicateStack.Id = ObjectId.GenerateNewId().ToString();
+        await _stackRepository.AddAsync([originalStack, duplicateStack], o => o.ImmediateConsistency());
+        await _eventRepository.AddAsync(
+            Enumerable.Range(0, 10).Select(_ => _eventData.GenerateEvent(
+                organization.Id, project.Id, duplicateStack.Id, occurrenceDate: occurrenceDate)),
+            o => o.ImmediateConsistency());
+
+        string eventIndex = _configuration.Events.GetVersionedIndex(occurrenceDate.UtcDateTime);
+        var closeResponse = await _configuration.Client.Indices.CloseAsync(eventIndex, TestContext.Current.CancellationToken);
+        Assert.True(closeResponse.IsValidResponse, closeResponse.DebugInformation);
+
+        try
+        {
+            // Act
+            await _job.RunAsync(TestCancellationToken);
+        }
+        finally
+        {
+            var openResponse = await _configuration.Client.Indices.OpenAsync(eventIndex, TestContext.Current.CancellationToken);
+            Assert.True(openResponse.IsValidResponse, openResponse.DebugInformation);
+        }
+
+        // Assert
+        var stacks = await _stackRepository.GetByIdsAsync(
+            [originalStack.Id, duplicateStack.Id],
+            o => o.IncludeSoftDeletes().ImmediateConsistency());
+        Assert.Equal(2, stacks.Count);
+        Assert.All(stacks, stack => Assert.False(stack.IsDeleted));
+        Assert.Equal(10, await _eventRepository.CountAsync(q => q.Stack(duplicateStack.Id), o => o.ImmediateConsistency()));
     }
 
     [Fact]
