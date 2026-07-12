@@ -476,8 +476,12 @@ body.site-search-open {
     text-align: center;
 }
 
-.site-search-modal[hidden] {
-    display: none;
+.site-search-dialog {
+    padding: 0;
+}
+
+.site-search-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.8);
 }
 
 .site-search-form {

@@ -67,7 +67,8 @@ docs/
   public/                   # static assets copied to output
   scripts/
     site-collections.ts     # normalizes Lume page data into docs/news collections
-    postbuild.ts            # copies assets, rewrites refs, writes feeds/sitemap/LLMS
+    postbuild.ts            # copies assets, rewrites refs, writes feeds/sitemap/LLMS/search
+    site-search.test.js     # focused ranking and generated-code excerpt coverage
     serve.ts                # serves final _site output with clean URLs
     verify-links.ts         # verifies generated local links, anchors, CSS URLs, srcset, and assets
   site-data.json.vto        # temporary Lume-rendered metadata page consumed by postbuild
@@ -250,9 +251,10 @@ Search implementation notes:
   the removed `/search/` route.
 - The docs layout's generic `Documentation` page heading, responsive table-of-contents control, and sidebar navigation
   use `data-search-ignore` so results use the actual content page title and article text.
-- `public/assets/js/site.js` lazy-loads `/search-index.json`, opens the search modal from the header, keyboard shortcut,
-  or docs sidebar form, and supports debounced input, excerpts, highlight marks, clear, and keyboard selection.
-- The docs sidebar search form opens the modal with the entered query. It does not navigate to `/search/?q=...`.
+- `public/assets/js/site-search.js` lazy-loads `/search-index.json`, opens the search modal from the header, keyboard
+  shortcut, or docs sidebar trigger, and supports debounced input, excerpts, highlight marks, clear, and keyboard
+  selection.
+- The docs sidebar search trigger opens the same modal. It does not navigate to `/search/?q=...`.
 - The docs site uses the migrated Bootstrap-era theme CSS, not Tailwind. Keep search-specific CSS limited to modal and
   result presentation that the legacy theme does not already provide.
 
@@ -270,7 +272,13 @@ Build-time configuration:
 - `EXCEPTIONLESS_SITE_VERSION`
 
 Google Tag Manager is part of the public site layout and loads by default. Local Codex and Aspire docs runs do not force
-any Exceptionless configuration; the browser client script is not emitted unless an API key is supplied.
+any Exceptionless configuration; the browser client script is not emitted unless an API key is supplied. Website
+deployments require the repository variable, while pull-request CI exercises both configured and unconfigured builds.
+Website CI pins Deno 2.5.7 so the experimental bundle output cannot drift with the moving `lts` channel.
+
+The bootstrap disables private-information capture, omits query strings and fragments from page context, and does not
+enable session heartbeats. This keeps the public site integration focused on errors without collecting cookies or
+creating telemetry failures when the collector is unavailable.
 
 Use a client-safe public API key and do not use a privileged server key. The Svelte app has its own
 `@exceptionless/browser` startup path in `src/Exceptionless.Web/ClientApp/src/hooks.client.ts`.

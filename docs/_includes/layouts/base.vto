@@ -88,9 +88,7 @@
       {{ content }}
     </main>
 
-    <div id="site-search-modal" class="site-search-modal" role="dialog" aria-modal="true" aria-labelledby="site-search-title" hidden data-search-ignore>
-      <div class="modal-backdrop in" data-site-search-close></div>
-      <div class="modal site-search-dialog" role="document">
+    <dialog id="site-search-modal" class="modal site-search-dialog" aria-labelledby="site-search-title" data-search-ignore>
         <div class="modal-header">
           <button class="close" type="button" data-site-search-close aria-label="Close search">&times;</button>
           <h3 id="site-search-title">Search Exceptionless</h3>
@@ -99,20 +97,30 @@
           <form id="site-search-form" class="site-search-form" role="search">
           <div class="site-search-input-row">
             <i class="icon-search" aria-hidden="true"></i>
-            <input id="site-search-input" type="search" placeholder="Search docs, clients, self-hosting..." autocomplete="off" spellcheck="false" aria-labelledby="site-search-title">
+            <input
+              id="site-search-input"
+              type="search"
+              role="combobox"
+              placeholder="Search docs, clients, self-hosting..."
+              autocomplete="off"
+              spellcheck="false"
+              aria-labelledby="site-search-title"
+              aria-autocomplete="list"
+              aria-controls="site-search-results"
+              aria-expanded="false"
+            >
             <button id="site-search-clear" class="site-search-clear" type="button" aria-label="Clear search" hidden>&times;</button>
           </div>
           </form>
           <p id="site-search-status" class="site-search-status" role="status" aria-live="polite">Start typing to search.</p>
-          <ol id="site-search-results" class="site-search-results"></ol>
+          <ol id="site-search-results" class="site-search-results" role="listbox" aria-label="Search results"></ol>
         </div>
         <div class="modal-footer site-search-footer" aria-hidden="true">
           <span>Up/Down to move</span>
           <span>Enter to open</span>
           <span>Esc to close</span>
         </div>
-      </div>
-    </div>
+    </dialog>
 
     <div id="footer-wrapper">
   <footer id="content-info" class="container" role="contentinfo">
