@@ -38,7 +38,7 @@ echo "Restoring .NET workloads..."
 dotnet workload restore
 
 echo "Restoring Exceptionless.slnx..."
-dotnet restore Exceptionless.slnx -p:WarningsNotAsErrors=NU1903
+dotnet restore Exceptionless.slnx
 
 echo "Installing Svelte frontend dependencies..."
 npm ci --prefix src/Exceptionless.Web/ClientApp --prefer-offline --no-audit
