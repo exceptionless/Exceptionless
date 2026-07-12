@@ -18,8 +18,7 @@ internal static class FrontendContentSecurityPolicy
             .From("https://maps.googleapis.com")
             .From("https://app.intercom.io")
             .From("https://widget.intercom.io")
-            .From("https://js.intercomcdn.com")
-            .From("https://cdn.jsdelivr.net");
+            .From("https://js.intercomcdn.com");
 
         csp.AllowStyles.FromSelf()
             .AllowUnsafeInline()

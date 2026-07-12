@@ -48,10 +48,8 @@ var contentSecurityPolicyDirectives = [
             "https://app.intercom.io",
             "https://widget.intercom.io",
             "https://js.intercomcdn.com",
-            "https://cdn.jsdelivr.net",
         ],
     ],
-    ["script-src-attr", ["'none'"]],
     ["style-src", ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"]],
     [
         "img-src",

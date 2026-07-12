@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import { addNonceToScripts, createContentSecurityPolicy, createNonce, secureHtmlResponse } from './content-security-policy';
@@ -40,6 +43,13 @@ describe('addNonceToScripts', () => {
 });
 
 describe('createContentSecurityPolicy', () => {
+    it('matches the canonical cross-runtime policy contract', () => {
+        const nonce = createNonce();
+        const policy = normalizePolicy(createContentSecurityPolicy(nonce));
+
+        expect(policy).toEqual(readPolicyContract());
+    });
+
     it('uses a strict nonce policy with compatibility sources', () => {
         const nonce = createNonce();
         const policy = createContentSecurityPolicy(nonce);
@@ -54,7 +64,7 @@ describe('createContentSecurityPolicy', () => {
         expect(scriptDirective).toContain('https://widget.intercom.io');
         expect(scriptDirective).not.toContain("'unsafe-inline'");
         expect(scriptDirective).not.toContain("'unsafe-eval'");
-        expect(getDirective(policy, 'script-src-attr')).toEqual(["'none'"]);
+        expect(scriptDirective).not.toContain('https://cdn.jsdelivr.net');
 
         expect(connectDirective).toContain("'self'");
         expect(connectDirective).toContain('https://api.stripe.com');
@@ -148,4 +158,20 @@ function getDirective(policy: string, name: string): string[] {
     }
 
     return directive.slice(name.length + 1).split(' ');
+}
+
+function normalizePolicy(policy: string): Record<string, string[]> {
+    return Object.fromEntries(
+        policy.split('; ').map((directive) => {
+            const [name, ...sources] = directive.split(' ');
+            return [name, sources.filter((source) => !source.startsWith("'nonce-")).sort()];
+        })
+    );
+}
+
+function readPolicyContract(): Record<string, string[]> {
+    const contractPath = resolve(process.cwd(), '../Security/frontend-content-security-policy.contract.json');
+    const contract = JSON.parse(readFileSync(contractPath, 'utf8')) as Record<string, string[]>;
+
+    return Object.fromEntries(Object.entries(contract).map(([name, sources]) => [name, [...sources].sort()]));
 }

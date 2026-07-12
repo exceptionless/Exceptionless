@@ -3,7 +3,9 @@
 "use strict";
 
 var assert = require("node:assert/strict");
+var fs = require("node:fs");
 var http = require("node:http");
+var path = require("node:path");
 var test = require("node:test");
 var livereload = require("connect-livereload");
 var csp = require("./csp-middleware");
@@ -105,6 +107,14 @@ test("preserves script-like text inside inline scripts", function () {
     assert.equal(csp.stampScriptNonces(html, "nonce"), '<script nonce="nonce">const marker = "<script>";</script>');
 });
 
+test("matches the canonical cross-runtime policy contract", function () {
+    var policy = normalizePolicy(csp.createContentSecurityPolicy(csp.createNonce()), ["ws:", "wss:"]);
+    var contractPath = path.join(__dirname, "..", "..", "Security", "frontend-content-security-policy.contract.json");
+    var contract = normalizeContract(JSON.parse(fs.readFileSync(contractPath, "utf8")));
+
+    assert.deepEqual(policy, contract);
+});
+
 test("serves HTML with a strict script policy and no cache", async function (context) {
     var server = await startServer();
     context.after(function () {
@@ -124,7 +134,6 @@ test("serves HTML with a strict script policy and no cache", async function (con
     assert.deepEqual(directiveNames, [
         "default-src",
         "script-src",
-        "script-src-attr",
         "style-src",
         "img-src",
         "font-src",
@@ -143,7 +152,7 @@ test("serves HTML with a strict script policy and no cache", async function (con
     assert.match(scriptDirective, /'strict-dynamic'/);
     assert.doesNotMatch(scriptDirective, /'unsafe-inline'/);
     assert.doesNotMatch(scriptDirective, /'unsafe-eval'/);
-    assert.match(policy, /script-src-attr 'none'/);
+    assert.doesNotMatch(scriptDirective, /https:\/\/cdn\.jsdelivr\.net/);
     assert.match(styleDirective, /'unsafe-inline'/);
     assert.match(connectDirective, /(?:^| )ws:(?: |$)/);
     assert.match(connectDirective, /(?:^| )wss:(?: |$)/);
@@ -171,3 +180,25 @@ test("leaves Angular template XHR caching unchanged", async function (context) {
     assert.equal(response.headers.get(csp.CSP_HEADER), null);
     assert.equal(response.headers.get("Cache-Control"), null);
 });
+
+function normalizePolicy(policy, excludedSources) {
+    return Object.fromEntries(
+        policy.split("; ").map(function (directive) {
+            var parts = directive.split(" ");
+            var name = parts.shift();
+            var sources = parts.filter(function (source) {
+                return !source.startsWith("'nonce-") && excludedSources.indexOf(source) === -1;
+            });
+
+            return [name, sources.sort()];
+        })
+    );
+}
+
+function normalizeContract(contract) {
+    return Object.fromEntries(
+        Object.entries(contract).map(function (entry) {
+            return [entry[0], entry[1].slice().sort()];
+        })
+    );
+}
