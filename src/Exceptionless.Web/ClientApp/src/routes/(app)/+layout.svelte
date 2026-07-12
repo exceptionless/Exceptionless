@@ -178,8 +178,10 @@
                     type: 'Project'
                 };
 
-                await invalidateOrganizationQueries(queryClient, organizationChangedMessage);
-                await invalidateProjectQueries(queryClient, projectChangedMessage);
+                await Promise.all([
+                    invalidateOrganizationQueries(queryClient, organizationChangedMessage),
+                    invalidateProjectQueries(queryClient, projectChangedMessage)
+                ]);
             }
         }
     }

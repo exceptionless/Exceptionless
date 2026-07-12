@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { accessToken } from '../auth/index.svelte';
 import { SSE_CLOSED, SSE_CONNECTING, SSE_OPEN, SseClient, type SseClientOptions } from './sse-client.svelte';
 
 // Mock the auth module
@@ -74,6 +75,7 @@ describe('SseClient', () => {
     let activeClients: SseClient[] = [];
 
     beforeEach(() => {
+        accessToken.current = 'test-token-123';
         fetchMock = vi.fn<typeof fetch>();
         global.fetch = fetchMock as typeof fetch;
     });
@@ -232,6 +234,7 @@ describe('SseClient', () => {
             expect(onClose).toHaveBeenCalledTimes(1);
             expect(client.readyState).toBe(SSE_CLOSED);
             expect(fetchMock).toHaveBeenCalledTimes(1);
+            expect(accessToken.current).toBe('');
         });
 
         it('should NOT reconnect on 403', async () => {
@@ -246,19 +249,18 @@ describe('SseClient', () => {
             expect(fetchMock).toHaveBeenCalledTimes(1);
         });
 
-        it('should NOT reconnect when push endpoint is unavailable', async () => {
+        it('should slowly probe again when push endpoint is unavailable', async () => {
             const onClose = vi.fn();
             fetchMock.mockImplementation(() => Promise.resolve(new Response(null, { status: 404 })));
 
-            const client = trackedClient();
+            const client = trackedClient({ unavailableRetryDelay: 25 });
             client.onClose = onClose;
             client.connect();
 
             await new Promise((resolve) => setTimeout(resolve, 100));
 
-            expect(onClose).toHaveBeenCalledTimes(1);
-            expect(client.readyState).toBe(SSE_CLOSED);
-            expect(fetchMock).toHaveBeenCalledTimes(1);
+            expect(onClose).toHaveBeenCalled();
+            expect(fetchMock.mock.calls.length).toBeGreaterThan(1);
         });
     });
 
@@ -366,6 +368,30 @@ describe('SseClient', () => {
                 })
             );
             client.close();
+        });
+
+        it('should parse CRLF-delimited and multiline SSE data', async () => {
+            const onMessage = vi.fn();
+            fetchMock.mockResolvedValue(createSseResponse(['data: first\r\ndata: second\r\n\r\n']));
+
+            const client = trackedClient();
+            client.onMessage = onMessage;
+            client.connect();
+
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            expect(onMessage).toHaveBeenCalledWith(expect.objectContaining({ data: 'first\nsecond' }));
+        });
+
+        it('should reject a successful response with a non-SSE content type', async () => {
+            const onError = vi.fn();
+            fetchMock.mockResolvedValue(new Response('<html></html>', { headers: { 'Content-Type': 'text/html' }, status: 200 }));
+
+            const client = trackedClient({ reconnectDelay: () => 1000 });
+            client.onError = onError;
+            client.connect();
+
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('invalid content type') }));
         });
     });
 

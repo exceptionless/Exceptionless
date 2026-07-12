@@ -19,6 +19,8 @@ export interface SseClientOptions {
      * For testing, can return 0 to reconnect immediately
      */
     reconnectDelay?: (attempt: number) => number;
+    /** Delay before probing again when push is disabled or a rolling-deploy replica returns 404. */
+    unavailableRetryDelay?: number;
 }
 
 // SSE connection state constants (same values as EventSource.*)
@@ -54,7 +56,6 @@ export class SseClient {
     private accessToken: null | string = null;
     private authFailed: boolean = false;
     private connectionTimeoutId: null | ReturnType<typeof setTimeout> = null;
-    private endpointUnavailable: boolean = false;
     private forcedClose: boolean = false;
     private hasConnectedBefore: boolean = false;
     private pausedForVisibility: boolean = false;
@@ -78,7 +79,6 @@ export class SseClient {
                 this.accessToken = accessToken.current;
                 this.reconnectAttempts = 0;
                 this.authFailed = false;
-                this.endpointUnavailable = false;
                 this.pausedForVisibility = false;
                 this.close(false);
             } else if (!visibility.visible) {
@@ -94,7 +94,6 @@ export class SseClient {
                 this.readyState === SSE_CLOSED &&
                 this.reconnectTimeoutId === null &&
                 !this.authFailed &&
-                !this.endpointUnavailable &&
                 !this.forcedClose
             ) {
                 this.connect();
@@ -164,21 +163,14 @@ export class SseClient {
         return Math.min(1000 * Math.pow(2, attempt - 1), 30000);
     }
 
-    private scheduleReconnect() {
-        if (
-            this.reconnectTimeoutId !== null ||
-            this.authFailed ||
-            this.endpointUnavailable ||
-            this.forcedClose ||
-            this.pausedForVisibility ||
-            !(this.accessToken ?? accessToken.current)
-        ) {
+    private scheduleReconnect(delayOverride?: number) {
+        if (this.reconnectTimeoutId !== null || this.authFailed || this.forcedClose || this.pausedForVisibility || !(this.accessToken ?? accessToken.current)) {
             this.readyState = SSE_CLOSED;
             return;
         }
 
         this.reconnectAttempts++;
-        const delay = this.getReconnectDelay(this.reconnectAttempts);
+        const delay = delayOverride ?? this.getReconnectDelay(this.reconnectAttempts);
 
         this.readyState = SSE_CONNECTING;
         this.onConnecting(true);
@@ -210,16 +202,18 @@ export class SseClient {
                 if (response.status === 401 || response.status === 403) {
                     console.warn('[SseClient] Auth failure, not reconnecting', { status: response.status });
                     this.authFailed = true;
+                    if (response.status === 401 && accessToken.current) {
+                        accessToken.current = '';
+                    }
+
                     this.readyState = SSE_CLOSED;
                     this.onClose();
                     return;
                 }
 
                 if (response.status === 404) {
-                    console.info('[SseClient] Push endpoint unavailable, not reconnecting');
-                    this.endpointUnavailable = true;
-                    this.readyState = SSE_CLOSED;
-                    this.onClose();
+                    console.info('[SseClient] Push endpoint unavailable, probing again later');
+                    this.scheduleReconnect(this._options.unavailableRetryDelay ?? 300000);
                     return;
                 }
 
@@ -235,6 +229,11 @@ export class SseClient {
 
             if (!response.body) {
                 throw new Error('SSE response has no body');
+            }
+
+            const contentType = response.headers.get('content-type')?.split(';', 1).at(0)?.trim().toLowerCase();
+            if (contentType !== 'text/event-stream') {
+                throw new Error(`SSE response has invalid content type: ${contentType ?? 'missing'}`);
             }
 
             if (generation !== this.streamGeneration) {
@@ -267,7 +266,7 @@ export class SseClient {
                 buffer += decoder.decode(value, { stream: true });
 
                 // Process complete SSE messages (separated by double newline)
-                const messages = buffer.split('\n\n');
+                const messages = buffer.split(/\r?\n\r?\n/);
                 buffer = messages.pop() ?? '';
 
                 for (const message of messages) {
@@ -276,21 +275,22 @@ export class SseClient {
                     }
 
                     // Parse SSE format
-                    const lines = message.split('\n');
-                    let data = '';
+                    const lines = message.split(/\r?\n/);
+                    const dataLines: string[] = [];
 
                     for (const line of lines) {
                         if (line.startsWith('data: ')) {
-                            data += line.slice(6);
+                            dataLines.push(line.slice(6));
                         } else if (line.startsWith('data:')) {
-                            data += line.slice(5);
+                            dataLines.push(line.slice(5));
                         } else if (line.startsWith(':')) {
                             // Comment (keep-alive), ignore
                             continue;
                         }
                     }
 
-                    if (data) {
+                    if (dataLines.length > 0) {
+                        const data = dataLines.join('\n');
                         // Create a MessageEvent-like object for compatibility
                         const event = new MessageEvent('message', { data });
                         this.onMessage(event);
