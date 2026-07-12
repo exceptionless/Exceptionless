@@ -39,6 +39,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
     protected readonly TestServer _server;
     private readonly ProxyTimeProvider _timeProvider;
     protected readonly IList<IDisposable> _disposables = new List<IDisposable>();
+    private bool _dataResetLockHeld;
 
     public IntegrationTestsBase(ITestOutputHelper output, AppWebHostFactory factory) : base(output)
     {
@@ -86,7 +87,18 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         Log.SetLogLevel("Microsoft.AspNetCore.Hosting.Internal.WebHost", LogLevel.Information);
         Log.SetLogLevel("Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService", LogLevel.Information);
 
-        await ResetDataAsync();
+        await _factory.DataResetLock.WaitAsync(TestContext.Current.CancellationToken);
+        _dataResetLockHeld = true;
+
+        try
+        {
+            await ResetDataAsync();
+        }
+        catch
+        {
+            ReleaseDataResetLock();
+            throw;
+        }
     }
 
     protected ProxyTimeProvider TimeProvider => _timeProvider;
@@ -149,7 +161,6 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
 
     protected virtual async Task ResetDataAsync()
     {
-        await _factory.DataResetLock.WaitAsync(TestContext.Current.CancellationToken);
         var oldLoggingLevel = Log.DefaultLogLevel;
         Log.DefaultLogLevel = LogLevel.Warning;
 
@@ -195,7 +206,6 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         }
         finally
         {
-            _factory.DataResetLock.Release();
             Log.DefaultLogLevel = oldLoggingLevel;
             _logger.LogDebug("Reset data for {AppScope}", _factory.AppScope);
         }
@@ -282,20 +292,36 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         return response.DeserializeAsync<T>();
     }
 
-    public override ValueTask DisposeAsync()
+    public override async ValueTask DisposeAsync()
     {
-        foreach (var disposable in _disposables)
+        try
         {
-            try
+            foreach (var disposable in _disposables)
             {
-                disposable.Dispose();
+                try
+                {
+                    disposable.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Error disposing resource");
+                }
             }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Error disposing resource");
-            }
-        }
 
-        return base.DisposeAsync();
+            await base.DisposeAsync();
+        }
+        finally
+        {
+            ReleaseDataResetLock();
+        }
+    }
+
+    private void ReleaseDataResetLock()
+    {
+        if (!_dataResetLockHeld)
+            return;
+
+        _factory.DataResetLock.Release();
+        _dataResetLockHeld = false;
     }
 }
