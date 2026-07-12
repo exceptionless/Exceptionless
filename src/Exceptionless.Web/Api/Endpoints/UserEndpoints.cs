@@ -166,7 +166,6 @@ public static class UserEndpoints
         .WithName("GetUserAvatar")
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)
-        .WithMetadata(new ResponseCacheAttribute { Duration = 31536000, Location = ResponseCacheLocation.Any })
         .WithSummary("Get avatar")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -334,8 +333,10 @@ public static class UserEndpoints
         return HttpResults.Ok(update.View);
     }
 
-    private static async Task<HttpIResult> GetAvatarAsync(string id, string fileName, [FromServices] IFileStorage fileStorage, CancellationToken cancellationToken)
+    private static async Task<HttpIResult> GetAvatarAsync(string id, string fileName, HttpContext httpContext, [FromServices] IFileStorage fileStorage, CancellationToken cancellationToken)
     {
+        httpContext.Response.Headers.CacheControl = ProfileImageStorage.PublicCacheControl;
+
         if (!ProfileImageStorage.TryGetContentType(fileName, out string contentType))
             return HttpResults.NotFound();
 

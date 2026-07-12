@@ -676,7 +676,7 @@ public class ProjectHandler(
         return await organizationRepository.GetByIdsAsync(associatedOrganizationIds.ToArray(), o => o.Cache());
     }
 
-    private async Task<bool> IsProjectNameAvailableInternalAsync(string? organizationId, string name, HttpContext httpContext)
+    private async Task<bool> IsProjectNameAvailableInternalAsync(string? organizationId, string? name, HttpContext httpContext)
     {
         if (String.IsNullOrWhiteSpace(name))
             return false;

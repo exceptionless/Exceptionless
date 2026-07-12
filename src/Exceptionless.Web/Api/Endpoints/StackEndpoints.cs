@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
@@ -72,7 +71,7 @@ public static class StackEndpoints
         .ExcludeFromDescription();
 
         // Snooze
-        group.MapPost("stacks/{ids:objectids}/mark-snoozed", async (string ids, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [Required] DateTime? snoozeUntilUtc = null)
+        group.MapPost("stacks/{ids:objectids}/mark-snoozed", async (string ids, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, DateTime? snoozeUntilUtc = null)
             => (await mediator.InvokeAsync<Result>(new SnoozeStacks(ids, snoozeUntilUtc ?? DateTime.MinValue, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.StacksWritePolicy)
         .Produces(StatusCodes.Status200OK)
@@ -176,7 +175,7 @@ public static class StackEndpoints
         });
 
         // Change status
-        group.MapPost("stacks/{ids:objectids}/change-status", async (string ids, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [Required] StackStatus? status = null)
+        group.MapPost("stacks/{ids:objectids}/change-status", async (string ids, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, StackStatus? status = null)
             => (await mediator.InvokeAsync<Result>(new ChangeStacksStatus(ids, status ?? StackStatus.Open, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.StacksWritePolicy)
         .Produces(StatusCodes.Status200OK)

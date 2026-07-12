@@ -203,7 +203,7 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPost("projects/{id:objectid}/config", async (string id, string key, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] ValueFromBody<string> value)
+        group.MapPost("projects/{id:objectid}/config", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] ValueFromBody<string> value, string? key = null)
             => (await mediator.InvokeAsync<Result>(new ProjectMessages.SetProjectConfig(id, key, value, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Accepts<ValueFromBody<string>>("application/json", "application/*+json")
@@ -223,7 +223,7 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapDelete("projects/{id:objectid}/config", async (string id, string key, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
+        group.MapDelete("projects/{id:objectid}/config", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? key = null)
             => (await mediator.InvokeAsync<Result>(new ProjectMessages.DeleteProjectConfig(id, key, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
@@ -415,7 +415,7 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPut("projects/{id:objectid}/promotedtabs", async (string id, string name, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper) =>
+        group.MapPut("projects/{id:objectid}/promotedtabs", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? name = null) =>
         {
             var contentTypeResult = ApiValidation.ValidateJsonContentType(httpContext.Request);
             if (contentTypeResult is not null)
@@ -439,7 +439,7 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPost("projects/{id:objectid}/promotedtabs", async (string id, string name, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper) =>
+        group.MapPost("projects/{id:objectid}/promotedtabs", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? name = null) =>
         {
             var contentTypeResult = ApiValidation.ValidateJsonContentType(httpContext.Request);
             if (contentTypeResult is not null)
@@ -463,7 +463,7 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapDelete("projects/{id:objectid}/promotedtabs", async (string id, string name, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
+        group.MapDelete("projects/{id:objectid}/promotedtabs", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? name = null)
             => (await mediator.InvokeAsync<Result>(new ProjectMessages.DemoteProjectTab(id, name, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
@@ -481,7 +481,7 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapGet("projects/check-name", async (string name, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? organizationId = null)
+        group.MapGet("projects/check-name", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? name = null, string? organizationId = null)
             => (await mediator.InvokeAsync<Result>(new ProjectMessages.CheckProjectName(name, organizationId, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status201Created)
@@ -497,7 +497,7 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapGet("organizations/{organizationId:objectid}/projects/check-name", async (string organizationId, string name, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
+        group.MapGet("organizations/{organizationId:objectid}/projects/check-name", async (string organizationId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? name = null)
             => (await mediator.InvokeAsync<Result>(new ProjectMessages.CheckProjectName(name, organizationId, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status201Created)
@@ -514,7 +514,7 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapPost("projects/{id:objectid}/data", async (string id, string key, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] ValueFromBody<string> value)
+        group.MapPost("projects/{id:objectid}/data", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] ValueFromBody<string> value, string? key = null)
             => (await mediator.InvokeAsync<Result>(new ProjectMessages.SetProjectData(id, key, value, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Accepts<ValueFromBody<string>>("application/json", "application/*+json")
@@ -534,7 +534,7 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapDelete("projects/{id:objectid}/data", async (string id, string key, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
+        group.MapDelete("projects/{id:objectid}/data", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? key = null)
             => (await mediator.InvokeAsync<Result>(new ProjectMessages.DeleteProjectData(id, key, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)

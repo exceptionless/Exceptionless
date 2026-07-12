@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -179,7 +178,6 @@ public static class OrganizationEndpoints
         .WithName("GetOrganizationIcon")
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)
-        .WithMetadata(new ResponseCacheAttribute { Duration = 31536000, Location = ResponseCacheLocation.Any })
         .WithSummary("Get icon")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -386,7 +384,7 @@ public static class OrganizationEndpoints
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ExcludeFromDescription();
 
-        group.MapGet("organizations/check-name", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [Required] string? name = null)
+        group.MapGet("organizations/check-name", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? name = null)
             => (await mediator.InvokeAsync<Result>(new OrganizationMessages.CheckOrganizationName(name, httpContext))).ToHttpResult(resultMapper))
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status201Created)
@@ -449,8 +447,10 @@ public static class OrganizationEndpoints
         return HttpResults.Ok(update.View);
     }
 
-    private static async Task<HttpIResult> GetIconAsync(string id, string fileName, [FromServices] IFileStorage fileStorage, CancellationToken cancellationToken)
+    private static async Task<HttpIResult> GetIconAsync(string id, string fileName, HttpContext httpContext, [FromServices] IFileStorage fileStorage, CancellationToken cancellationToken)
     {
+        httpContext.Response.Headers.CacheControl = ProfileImageStorage.PublicCacheControl;
+
         if (!ProfileImageStorage.TryGetContentType(fileName, out string contentType))
             return HttpResults.NotFound();
 

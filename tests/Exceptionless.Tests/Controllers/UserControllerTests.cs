@@ -341,6 +341,8 @@ public sealed class UserControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.Equal("image/png", response.Content.Headers.ContentType?.MediaType);
+        Assert.True(response.Headers.CacheControl?.Public);
+        Assert.Equal(TimeSpan.FromDays(365), response.Headers.CacheControl?.MaxAge);
     }
 
     [Fact]

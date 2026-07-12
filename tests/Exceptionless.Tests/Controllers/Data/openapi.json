@@ -4597,7 +4597,6 @@
             "name": "key",
             "in": "query",
             "description": "The key name of the configuration object.",
-            "required": true,
             "schema": {
               "type": "string"
             }
@@ -4665,7 +4664,6 @@
             "name": "key",
             "in": "query",
             "description": "The key name of the configuration object.",
-            "required": true,
             "schema": {
               "type": "string"
             }
@@ -5248,7 +5246,6 @@
             "name": "name",
             "in": "query",
             "description": "The tab name.",
-            "required": true,
             "schema": {
               "type": "string"
             }
@@ -5300,7 +5297,6 @@
             "name": "name",
             "in": "query",
             "description": "The tab name.",
-            "required": true,
             "schema": {
               "type": "string"
             }
@@ -5352,7 +5348,6 @@
             "name": "name",
             "in": "query",
             "description": "The tab name.",
-            "required": true,
             "schema": {
               "type": "string"
             }
@@ -5396,7 +5391,6 @@
             "name": "name",
             "in": "query",
             "description": "The project name to check.",
-            "required": true,
             "schema": {
               "type": "string"
             }
@@ -5440,7 +5434,6 @@
             "name": "name",
             "in": "query",
             "description": "The project name to check.",
-            "required": true,
             "schema": {
               "type": "string"
             }
@@ -5477,7 +5470,6 @@
             "name": "key",
             "in": "query",
             "description": "The key name of the data object.",
-            "required": true,
             "schema": {
               "type": "string"
             }
@@ -5545,7 +5537,6 @@
             "name": "key",
             "in": "query",
             "description": "The key name of the data object.",
-            "required": true,
             "schema": {
               "type": "string"
             }
@@ -6654,7 +6645,6 @@
             "name": "name",
             "in": "query",
             "description": "The organization name to check.",
-            "required": true,
             "schema": {
               "type": "string"
             }
@@ -6788,7 +6778,6 @@
             "name": "snoozeUntilUtc",
             "in": "query",
             "description": "A time that the stack should be snoozed until.",
-            "required": true,
             "schema": {
               "type": "string",
               "format": "date-time"
@@ -7023,7 +7012,6 @@
             "name": "status",
             "in": "query",
             "description": "The status that the stack should be changed to.",
-            "required": true,
             "schema": {
               "$ref": "#/components/schemas/StackStatus"
             }

@@ -163,6 +163,19 @@ public sealed class OpenApiSnapshotTests
         AssertOperationTag(paths, "/.well-known/oauth-protected-resource/mcp", "OAuth");
         AssertOperationTag(paths, "/.well-known/oauth-protected-resource/api/v2", "OAuth");
 
+        AssertOptionalParameter(paths, "/api/v2/organizations/check-name", "get", "name");
+        AssertOptionalParameter(paths, "/api/v2/organizations/{organizationId}/projects/check-name", "get", "name");
+        AssertOptionalParameter(paths, "/api/v2/projects/check-name", "get", "name");
+        AssertOptionalParameter(paths, "/api/v2/projects/{id}/config", "delete", "key");
+        AssertOptionalParameter(paths, "/api/v2/projects/{id}/config", "post", "key");
+        AssertOptionalParameter(paths, "/api/v2/projects/{id}/data", "delete", "key");
+        AssertOptionalParameter(paths, "/api/v2/projects/{id}/data", "post", "key");
+        AssertOptionalParameter(paths, "/api/v2/projects/{id}/promotedtabs", "delete", "name");
+        AssertOptionalParameter(paths, "/api/v2/projects/{id}/promotedtabs", "post", "name");
+        AssertOptionalParameter(paths, "/api/v2/projects/{id}/promotedtabs", "put", "name");
+        AssertOptionalParameter(paths, "/api/v2/stacks/{ids}/change-status", "post", "status");
+        AssertOptionalParameter(paths, "/api/v2/stacks/{ids}/mark-snoozed", "post", "snoozeUntilUtc");
+
         var eventById = paths.GetProperty("/api/v2/events/{id}").GetProperty("get");
         Assert.Contains(eventById.GetProperty("parameters").EnumerateArray(), parameter =>
             String.Equals(parameter.GetProperty("name").GetString(), "expected_stack_id", StringComparison.Ordinal));
@@ -222,6 +235,17 @@ public sealed class OpenApiSnapshotTests
     {
         var tags = paths.GetProperty(path).GetProperty("get").GetProperty("tags");
         Assert.Equal(expectedTag, Assert.Single(tags.EnumerateArray()).GetString());
+    }
+
+    private static void AssertOptionalParameter(JsonElement paths, string path, string method, string parameterName)
+    {
+        var parameter = Assert.Single(paths.GetProperty(path)
+            .GetProperty(method)
+            .GetProperty("parameters")
+            .EnumerateArray(),
+            parameter => String.Equals(parameter.GetProperty("name").GetString(), parameterName, StringComparison.Ordinal));
+
+        Assert.False(parameter.TryGetProperty("required", out var required) && required.GetBoolean());
     }
 
     private static void AssertRequestContentTypes(JsonElement paths, string path, string method, params string[] expectedContentTypes)

@@ -215,6 +215,24 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task DeleteDataAsync_OmittedKey_ReturnsBadRequest()
+    {
+        // Arrange
+        string projectId = SampleDataService.TEST_PROJECT_ID;
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Delete()
+            .AppendPaths("projects", projectId, "data")
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task DemoteTabAsync_WithExistingPromotedTab_RemovesPromotedTab()
     {
         // Arrange
@@ -237,6 +255,24 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.NotNull(updatedProject);
         Assert.DoesNotContain("regressions", updatedProject.PromotedTabs ?? []);
         Assert.Contains("timeline", updatedProject.PromotedTabs ?? []);
+    }
+
+    [Fact]
+    public async Task DemoteTabAsync_WithOmittedName_ReturnsBadRequest()
+    {
+        // Arrange
+        string projectId = SampleDataService.TEST_PROJECT_ID;
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Delete()
+            .AppendPaths("projects", projectId, "promotedtabs")
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -541,6 +577,25 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task SetConfigAsync_WithOmittedKey_ReturnsBadRequest()
+    {
+        // Arrange
+        string projectId = SampleDataService.TEST_PROJECT_ID;
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("projects", projectId, "config")
+            .Content(new ValueFromBody<string>("SomeValue"))
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task SetConfigAsync_RoundTrip_JsonSerializesCorrectly()
     {
         // Arrange - set a config value
@@ -653,6 +708,24 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
 
         Assert.NotNull(configAfter);
         Assert.Equal(configBefore.Version, configAfter.Version);
+    }
+
+    [Fact]
+    public async Task DeleteConfigAsync_WithOmittedKey_ReturnsBadRequest()
+    {
+        // Arrange
+        string projectId = SampleDataService.TEST_PROJECT_ID;
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Delete()
+            .AppendPaths("projects", projectId, "config")
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -800,6 +873,40 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .QueryString("name", "UniqueProjectName_" + Guid.NewGuid().ToString("N"))
             .StatusCodeShouldBeNoContent()
         );
+    }
+
+    [Fact]
+    public async Task IsNameAvailableAsync_OmittedName_ReturnsCreated()
+    {
+        // Arrange
+        string path = "projects/check-name";
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPath(path)
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task IsNameAvailableAsync_OmittedNameWithOrganizationScope_ReturnsCreated()
+    {
+        // Arrange
+        string organizationId = SampleDataService.TEST_ORG_ID;
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", organizationId, "projects", "check-name")
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }
 
     [Fact]
@@ -1161,6 +1268,25 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PromoteTabAsync_WithOmittedName_ReturnsBadRequest()
+    {
+        // Arrange
+        string projectId = SampleDataService.TEST_PROJECT_ID;
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("projects", projectId, "promotedtabs")
+            .Content(new { })
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task PromoteTabAsync_WithValidName_AddsPromotedTab()
     {
         // Arrange
@@ -1243,6 +1369,25 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .Content(new ValueFromBody<string>("SomeValue"))
             .StatusCodeShouldBeNotFound()
         );
+    }
+
+    [Fact]
+    public async Task PostDataAsync_OmittedKey_ReturnsBadRequest()
+    {
+        // Arrange
+        string projectId = SampleDataService.TEST_PROJECT_ID;
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("projects", projectId, "data")
+            .Content(new ValueFromBody<string>("SomeValue"))
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]

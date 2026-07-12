@@ -13,8 +13,8 @@ public record UpdateProjectMessage(string Id, Delta<UpdateProject> Changes, Http
 public record DeleteProjects(string[] Ids, HttpContext Context);
 public record GetLegacyProjectConfig(int? Version, HttpContext Context);
 public record GetProjectConfig(string? Id, int? Version, HttpContext Context);
-public record SetProjectConfig(string Id, string Key, ValueFromBody<string> Value, HttpContext Context);
-public record DeleteProjectConfig(string Id, string Key, HttpContext Context);
+public record SetProjectConfig(string Id, string? Key, ValueFromBody<string> Value, HttpContext Context);
+public record DeleteProjectConfig(string Id, string? Key, HttpContext Context);
 public record GenerateProjectSampleData(string Id, HttpContext Context);
 public record ResetProjectData(string Id, HttpContext Context);
 public record GetProjectNotificationSettings(string Id, HttpContext Context);
@@ -23,10 +23,10 @@ public record GetProjectIntegrationNotificationSettings(string Id, string Integr
 public record SetProjectUserNotificationSettings(string Id, string UserId, NotificationSettings? Settings, HttpContext Context);
 public record SetProjectIntegrationNotificationSettings(string Id, string Integration, NotificationSettings? Settings, HttpContext Context);
 public record DeleteProjectNotificationSettings(string Id, string UserId, HttpContext Context);
-public record PromoteProjectTab(string Id, string Name, HttpContext Context);
-public record DemoteProjectTab(string Id, string Name, HttpContext Context);
-public record CheckProjectName(string Name, string? OrganizationId, HttpContext Context);
-public record SetProjectData(string Id, string Key, ValueFromBody<string> Value, HttpContext Context);
-public record DeleteProjectData(string Id, string Key, HttpContext Context);
+public record PromoteProjectTab(string Id, string? Name, HttpContext Context);
+public record DemoteProjectTab(string Id, string? Name, HttpContext Context);
+public record CheckProjectName(string? Name, string? OrganizationId, HttpContext Context);
+public record SetProjectData(string Id, string? Key, ValueFromBody<string> Value, HttpContext Context);
+public record DeleteProjectData(string Id, string? Key, HttpContext Context);
 public record AddProjectSlack(string Id, string Code, HttpContext Context);
 public record RemoveProjectSlack(string Id, HttpContext Context);

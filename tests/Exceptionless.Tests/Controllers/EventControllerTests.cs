@@ -594,6 +594,25 @@ public partial class EventControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostAsync_V1Event_ReturnsLegacyConfigurationVersionHeader()
+    {
+        // Arrange
+        var payload = new Event { Type = Event.KnownTypes.Log, Message = "Legacy configuration header" };
+
+        // Act
+        using var response = await SendRequestAsync(r => AppendApiV1Path(
+                r.Post().AsTestOrganizationClientUser(),
+                "events")
+            .Content(payload)
+            .StatusCodeShouldBeAccepted()
+        );
+
+        // Assert
+        Assert.True(response.Headers.Contains(Headers.LegacyConfigurationVersion));
+        Assert.False(response.Headers.Contains(Headers.ConfigurationVersion));
+    }
+
+    [Fact]
     public async Task PostEvent_WithUnknownLengthPayloadOverLimit_ReturnsRequestEntityTooLargeAsync()
     {
         var options = GetService<AppOptions>();
@@ -2407,6 +2426,24 @@ public partial class EventControllerTests : IntegrationTestsBase
             WriteIndented = true
         };
         return JsonSerializer.Serialize(document.RootElement, prettyJsonOptions);
+    }
+
+    [Fact]
+    public async Task LegacyPatchAsync_WithEmptyBody_ReturnsOk()
+    {
+        // Arrange
+        const string eventId = "507f1f77bcf86cd799439011";
+
+        // Act
+        using var response = await SendRequestAsync(r => AppendApiV1Path(
+                r.Patch().AsTestOrganizationClientUser(),
+                "error",
+                eventId)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]

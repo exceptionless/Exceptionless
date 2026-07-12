@@ -12,6 +12,7 @@ using Foundatio.Repositories.Models;
 using Exceptionless.Web.Api.Results;
 using Foundatio.Mediator;
 using HttpIResult = Microsoft.AspNetCore.Http.IResult;
+using HttpResults = Microsoft.AspNetCore.Http.Results;
 using Microsoft.AspNetCore.Mvc;
 using Exceptionless.Web.Utility.OpenApi;
 
@@ -471,7 +472,7 @@ public static class EventEndpoints
 
         // Legacy patch (v1)
         endpoints.MapPatch("api/v1/error/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] Delta<UpdateEvent>? changes)
-            => changes is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result>(new LegacyPatchEvent(id, changes, httpContext))).ToHttpResult(resultMapper))
+            => changes is null ? HttpResults.Ok() : (await mediator.InvokeAsync<Result>(new LegacyPatchEvent(id, changes, httpContext))).ToHttpResult(resultMapper))
         .Accepts<Delta<UpdateEvent>>("application/json", "application/*+json")
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
