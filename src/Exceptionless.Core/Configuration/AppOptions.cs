@@ -61,6 +61,13 @@ public class AppOptions
     /// </summary>
     public bool EnablePush { get; internal set; }
 
+    [Obsolete("Use EnablePush instead. This alias remains for source compatibility during the push transport rollout.")]
+    public bool EnableWebSockets
+    {
+        get => EnablePush;
+        internal set => EnablePush = value;
+    }
+
     public string? Version { get; internal set; }
 
     public string? InformationalVersion { get; internal set; }

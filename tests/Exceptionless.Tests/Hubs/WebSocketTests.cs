@@ -1,6 +1,5 @@
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Utility;
 using Exceptionless.Web.Hubs;
 using Foundatio.Repositories.Models;
 using Xunit;
@@ -15,14 +14,14 @@ namespace Exceptionless.Tests.Hubs;
 public sealed class WebSocketTests : TestWithServices
 {
     private readonly MessageBusBroker _broker;
-    private readonly IConnectionMapping _connectionMapping;
     private readonly WebSocketConnectionManager _connectionManager;
+    private readonly PushConnectionRegistry _connectionRegistry;
 
     public WebSocketTests(ITestOutputHelper output) : base(output)
     {
         _broker = GetService<MessageBusBroker>();
-        _connectionMapping = GetService<IConnectionMapping>();
         _connectionManager = GetService<WebSocketConnectionManager>();
+        _connectionRegistry = GetService<PushConnectionRegistry>();
     }
 
     [Fact]
@@ -37,15 +36,12 @@ public sealed class WebSocketTests : TestWithServices
         string connectionId1 = _connectionManager.AddWebSocket(socket1);
         string connectionId2 = _connectionManager.AddWebSocket(socket2);
         string unrelatedConnectionId = _connectionManager.AddWebSocket(unrelatedSocket);
+        Assert.True(_connectionRegistry.TryRegister(connectionId1, userId, "test-token-id", [organizationId]));
+        Assert.True(_connectionRegistry.TryRegister(connectionId2, userId, "test-token-id", [organizationId]));
+        Assert.True(_connectionRegistry.TryRegister(unrelatedConnectionId, "unrelated-user", "unrelated-token-id", [organizationId]));
 
         try
         {
-            await _connectionMapping.UserIdAddAsync(userId, connectionId1);
-            await _connectionMapping.UserIdAddAsync(userId, connectionId2);
-            await _connectionMapping.GroupAddAsync(organizationId, connectionId1);
-            await _connectionMapping.GroupAddAsync(organizationId, connectionId2);
-            await _connectionMapping.GroupAddAsync(organizationId, unrelatedConnectionId);
-
             var entityChanged = new EntityChanged
             {
                 Id = "test-token-id",
@@ -66,17 +62,18 @@ public sealed class WebSocketTests : TestWithServices
             Assert.Equal(1, socket2.CloseCount);
             Assert.Equal(0, unrelatedSocket.CloseCount);
 
-            var remaining = await _connectionMapping.GetUserIdConnectionsAsync(userId);
-            Assert.Empty(remaining);
-            var organizationConnections = await _connectionMapping.GetGroupConnectionsAsync(organizationId);
+            Assert.Empty(_connectionRegistry.GetUserConnections(userId));
+            var organizationConnections = _connectionRegistry.GetGroupConnections(organizationId);
             Assert.DoesNotContain(connectionId1, organizationConnections);
             Assert.DoesNotContain(connectionId2, organizationConnections);
             Assert.Contains(unrelatedConnectionId, organizationConnections);
         }
         finally
         {
-            await _connectionMapping.GroupRemoveAsync(organizationId, unrelatedConnectionId);
             await _connectionManager.RemoveWebSocketAsync(unrelatedConnectionId);
+            _connectionRegistry.Unregister(connectionId1);
+            _connectionRegistry.Unregister(connectionId2);
+            _connectionRegistry.Unregister(unrelatedConnectionId);
         }
     }
 
@@ -86,11 +83,10 @@ public sealed class WebSocketTests : TestWithServices
         const string userId = "test-user-id-2";
         var socket = new TestWebSocket();
         string connectionId = _connectionManager.AddWebSocket(socket);
+        Assert.True(_connectionRegistry.TryRegister(connectionId, userId, "authentication-token", []));
 
         try
         {
-            await _connectionMapping.UserIdAddAsync(userId, connectionId);
-
             var entityChanged = new EntityChanged
             {
                 Id = "test-api-token-id",
@@ -106,8 +102,8 @@ public sealed class WebSocketTests : TestWithServices
         }
         finally
         {
-            await _connectionMapping.UserIdRemoveAsync(userId, connectionId);
             await _connectionManager.RemoveWebSocketAsync(connectionId);
+            _connectionRegistry.Unregister(connectionId);
         }
     }
 }

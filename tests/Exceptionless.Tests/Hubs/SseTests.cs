@@ -1,7 +1,6 @@
 using Exceptionless.Core;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Utility;
 using Exceptionless.Web.Hubs;
 using Foundatio.Repositories.Models;
 using Foundatio.Serializer;
@@ -126,101 +125,20 @@ public sealed class SseConnectionManagerTests : TestWithServices
     }
 }
 
-public sealed class PushMiddlewareMappingTests : TestWithServices
-{
-    private readonly IConnectionMapping _connectionMapping;
-
-    public PushMiddlewareMappingTests(ITestOutputHelper output) : base(output)
-    {
-        _connectionMapping = GetService<IConnectionMapping>();
-    }
-
-    [Fact]
-    public async Task OnConnectedAndDisconnected_SseMiddleware_UpdatesReverseConnectionMappings()
-    {
-        // Arrange
-        const string userId = "middleware-user";
-        const string connectionId = "sse-middleware-conn";
-        var context = CreateUserContext(userId, "organization-a", "organization-b");
-        var middleware = new SseMiddleware(_ => Task.CompletedTask, GetService<SseConnectionManager>(), _connectionMapping, Log.CreateLogger<SseMiddleware>());
-
-        // Act
-        await middleware.OnConnected(context, connectionId);
-
-        // Assert
-        Assert.Contains(connectionId, await _connectionMapping.GetGroupConnectionsAsync("organization-a"));
-        Assert.Contains(connectionId, await _connectionMapping.GetGroupConnectionsAsync("organization-b"));
-        Assert.Contains("organization-a", await _connectionMapping.GetConnectionGroupsAsync(connectionId));
-        Assert.Contains("organization-b", await _connectionMapping.GetConnectionGroupsAsync(connectionId));
-        Assert.Contains(connectionId, await _connectionMapping.GetUserIdConnectionsAsync(userId));
-
-        // Act
-        await middleware.OnDisconnected(context, connectionId);
-
-        // Assert
-        Assert.Empty(await _connectionMapping.GetConnectionGroupsAsync(connectionId));
-        Assert.Empty(await _connectionMapping.GetUserIdConnectionsAsync(userId));
-        Assert.Empty(await _connectionMapping.GetGroupConnectionsAsync("organization-a"));
-        Assert.Empty(await _connectionMapping.GetGroupConnectionsAsync("organization-b"));
-    }
-
-    [Fact]
-    public async Task OnConnectedAndDisconnected_WebSocketPushMiddleware_UpdatesReverseConnectionMappings()
-    {
-        // Arrange
-        const string userId = "ws-middleware-user";
-        const string connectionId = "ws-middleware-conn";
-        var context = CreateUserContext(userId, "organization-a", "organization-b");
-        var middleware = new WebSocketPushMiddleware(_ => Task.CompletedTask, GetService<WebSocketConnectionManager>(), _connectionMapping, Log.CreateLogger<WebSocketPushMiddleware>());
-
-        // Act
-        await middleware.OnConnected(context, connectionId);
-
-        // Assert
-        Assert.Contains(connectionId, await _connectionMapping.GetGroupConnectionsAsync("organization-a"));
-        Assert.Contains(connectionId, await _connectionMapping.GetGroupConnectionsAsync("organization-b"));
-        Assert.Contains("organization-a", await _connectionMapping.GetConnectionGroupsAsync(connectionId));
-        Assert.Contains("organization-b", await _connectionMapping.GetConnectionGroupsAsync(connectionId));
-        Assert.Contains(connectionId, await _connectionMapping.GetUserIdConnectionsAsync(userId));
-
-        // Act
-        await middleware.OnDisconnected(context, connectionId);
-
-        // Assert
-        Assert.Empty(await _connectionMapping.GetConnectionGroupsAsync(connectionId));
-        Assert.Empty(await _connectionMapping.GetUserIdConnectionsAsync(userId));
-        Assert.Empty(await _connectionMapping.GetGroupConnectionsAsync("organization-a"));
-        Assert.Empty(await _connectionMapping.GetGroupConnectionsAsync("organization-b"));
-    }
-
-    private static DefaultHttpContext CreateUserContext(string userId, params string[] organizationIds)
-    {
-        var context = new DefaultHttpContext();
-        context.User = new ClaimsPrincipal(new ClaimsIdentity(
-        [
-            new Claim(ClaimTypes.NameIdentifier, userId),
-            new Claim(Exceptionless.Core.Extensions.IdentityUtils.OrganizationIdsClaim, String.Join(",", organizationIds))
-        ], Exceptionless.Core.Extensions.IdentityUtils.UserAuthenticationType));
-
-        return context;
-    }
-
-}
-
 /// <summary>
 /// Tests for MessageBusBroker using SSE connections.
 /// </summary>
 public sealed class SseBrokerTests : TestWithServices
 {
     private readonly MessageBusBroker _broker;
-    private readonly IConnectionMapping _connectionMapping;
     private readonly SseConnectionManager _connectionManager;
+    private readonly PushConnectionRegistry _connectionRegistry;
 
     public SseBrokerTests(ITestOutputHelper output) : base(output)
     {
         _broker = GetService<MessageBusBroker>();
-        _connectionMapping = GetService<IConnectionMapping>();
         _connectionManager = GetService<SseConnectionManager>();
+        _connectionRegistry = GetService<PushConnectionRegistry>();
     }
 
     [Fact]
@@ -260,15 +178,12 @@ public sealed class SseBrokerTests : TestWithServices
         _connectionManager.AddConnection(connId1, response1, cts1.Token);
         _connectionManager.AddConnection(connId2, response2, cts2.Token);
         _connectionManager.AddConnection(unrelatedConnId, unrelatedResponse, ctsu.Token);
+        Assert.True(_connectionRegistry.TryRegister(connId1, userId, "test-token-id", [organizationId]));
+        Assert.True(_connectionRegistry.TryRegister(connId2, userId, "test-token-id", [organizationId]));
+        Assert.True(_connectionRegistry.TryRegister(unrelatedConnId, "unrelated-user", "unrelated-token", [organizationId]));
 
         try
         {
-            await _connectionMapping.UserIdAddAsync(userId, connId1);
-            await _connectionMapping.UserIdAddAsync(userId, connId2);
-            await _connectionMapping.GroupAddAsync(organizationId, connId1);
-            await _connectionMapping.GroupAddAsync(organizationId, connId2);
-            await _connectionMapping.GroupAddAsync(organizationId, unrelatedConnId);
-
             var entityChanged = new EntityChanged
             {
                 Id = "test-token-id",
@@ -286,20 +201,14 @@ public sealed class SseBrokerTests : TestWithServices
             Assert.Null(_connectionManager.GetConnectionById(connId2));
             Assert.NotNull(_connectionManager.GetConnectionById(unrelatedConnId));
 
-            // User mapping cleared
-            var remaining = await _connectionMapping.GetUserIdConnectionsAsync(userId);
-            Assert.Empty(remaining);
-
-            // Org mapping only has unrelated connection
-            var orgConnections = await _connectionMapping.GetGroupConnectionsAsync(organizationId);
-            Assert.DoesNotContain(connId1, orgConnections);
-            Assert.DoesNotContain(connId2, orgConnections);
-            Assert.Contains(unrelatedConnId, orgConnections);
+            Assert.Empty(_connectionRegistry.GetUserConnections(userId));
         }
         finally
         {
-            await _connectionMapping.GroupRemoveAsync(organizationId, unrelatedConnId);
             await _connectionManager.RemoveConnectionAsync(unrelatedConnId);
+            _connectionRegistry.Unregister(connId1);
+            _connectionRegistry.Unregister(connId2);
+            _connectionRegistry.Unregister(unrelatedConnId);
         }
     }
 
@@ -312,11 +221,10 @@ public sealed class SseBrokerTests : TestWithServices
 
         string connectionId = "conn-nonauth";
         _connectionManager.AddConnection(connectionId, response, cts.Token);
+        Assert.True(_connectionRegistry.TryRegister(connectionId, userId, "authentication-token", []));
 
         try
         {
-            await _connectionMapping.UserIdAddAsync(userId, connectionId);
-
             var entityChanged = new EntityChanged
             {
                 Id = "test-api-token-id",
@@ -333,8 +241,8 @@ public sealed class SseBrokerTests : TestWithServices
         }
         finally
         {
-            await _connectionMapping.UserIdRemoveAsync(userId, connectionId);
             await _connectionManager.RemoveConnectionAsync(connectionId);
+            _connectionRegistry.Unregister(connectionId);
         }
     }
 
@@ -353,12 +261,11 @@ public sealed class SseBrokerTests : TestWithServices
 
         _connectionManager.AddConnection(inOrgConn, responseInOrg, cts1.Token);
         _connectionManager.AddConnection(outOrgConn, responseOutOrg, cts2.Token);
+        Assert.True(_connectionRegistry.TryRegister(inOrgConn, "user-in", "token-in", [orgId]));
+        Assert.True(_connectionRegistry.TryRegister(outOrgConn, "user-out", "token-out", [otherOrgId]));
 
         try
         {
-            await _connectionMapping.GroupAddAsync(orgId, inOrgConn);
-            await _connectionMapping.GroupAddAsync(otherOrgId, outOrgConn);
-
             var entityChanged = new EntityChanged
             {
                 Id = "stack-123",
@@ -378,10 +285,10 @@ public sealed class SseBrokerTests : TestWithServices
         }
         finally
         {
-            await _connectionMapping.GroupRemoveAsync(orgId, inOrgConn);
-            await _connectionMapping.GroupRemoveAsync(otherOrgId, outOrgConn);
             await _connectionManager.RemoveConnectionAsync(inOrgConn);
             await _connectionManager.RemoveConnectionAsync(outOrgConn);
+            _connectionRegistry.Unregister(inOrgConn);
+            _connectionRegistry.Unregister(outOrgConn);
         }
     }
 
@@ -400,12 +307,11 @@ public sealed class SseBrokerTests : TestWithServices
 
         _connectionManager.AddConnection(targetConn, responseTarget, cts1.Token);
         _connectionManager.AddConnection(otherConn, responseOther, cts2.Token);
+        Assert.True(_connectionRegistry.TryRegister(targetConn, userId, "target-token", []));
+        Assert.True(_connectionRegistry.TryRegister(otherConn, otherUserId, "other-token", []));
 
         try
         {
-            await _connectionMapping.UserIdAddAsync(userId, targetConn);
-            await _connectionMapping.UserIdAddAsync(otherUserId, otherConn);
-
             var entityChanged = new EntityChanged
             {
                 Id = userId,
@@ -422,10 +328,10 @@ public sealed class SseBrokerTests : TestWithServices
         }
         finally
         {
-            await _connectionMapping.UserIdRemoveAsync(userId, targetConn);
-            await _connectionMapping.UserIdRemoveAsync(otherUserId, otherConn);
             await _connectionManager.RemoveConnectionAsync(targetConn);
             await _connectionManager.RemoveConnectionAsync(otherConn);
+            _connectionRegistry.Unregister(targetConn);
+            _connectionRegistry.Unregister(otherConn);
         }
     }
 
@@ -444,12 +350,11 @@ public sealed class SseBrokerTests : TestWithServices
 
         _connectionManager.AddConnection(connectionId1, response1, cts1.Token);
         _connectionManager.AddConnection(connectionId2, response2, cts2.Token);
+        Assert.True(_connectionRegistry.TryRegister(connectionId1, userId, "membership-token", []));
+        Assert.True(_connectionRegistry.TryRegister(connectionId2, userId, "membership-token", []));
 
         try
         {
-            await _connectionMapping.UserIdAddAsync(userId, connectionId1);
-            await _connectionMapping.UserIdAddAsync(userId, connectionId2);
-
             var addMessage = new UserMembershipChanged {
                 UserId = userId,
                 OrganizationId = organizationId,
@@ -458,25 +363,25 @@ public sealed class SseBrokerTests : TestWithServices
 
             await _broker.OnUserMembershipChangedAsync(addMessage, TestContext.Current.CancellationToken);
 
-            var organizationConnections = await _connectionMapping.GetGroupConnectionsAsync(organizationId);
+            var organizationConnections = _connectionRegistry.GetGroupConnections(organizationId);
             Assert.Contains(connectionId1, organizationConnections);
             Assert.Contains(connectionId2, organizationConnections);
-            Assert.Contains(organizationId, await _connectionMapping.GetConnectionGroupsAsync(connectionId1));
-            Assert.Contains(organizationId, await _connectionMapping.GetConnectionGroupsAsync(connectionId2));
+            Assert.Contains(organizationId, _connectionRegistry.GetGroups(connectionId1));
+            Assert.Contains(organizationId, _connectionRegistry.GetGroups(connectionId2));
 
             var removeMessage = addMessage with { ChangeType = ChangeType.Removed };
             await _broker.OnUserMembershipChangedAsync(removeMessage, TestContext.Current.CancellationToken);
 
-            Assert.Empty(await _connectionMapping.GetGroupConnectionsAsync(organizationId));
-            Assert.Empty(await _connectionMapping.GetConnectionGroupsAsync(connectionId1));
-            Assert.Empty(await _connectionMapping.GetConnectionGroupsAsync(connectionId2));
+            Assert.Empty(_connectionRegistry.GetGroupConnections(organizationId));
+            Assert.Empty(_connectionRegistry.GetGroups(connectionId1));
+            Assert.Empty(_connectionRegistry.GetGroups(connectionId2));
         }
         finally
         {
-            await _connectionMapping.UserIdRemoveAsync(userId, connectionId1);
-            await _connectionMapping.UserIdRemoveAsync(userId, connectionId2);
             await _connectionManager.RemoveConnectionAsync(connectionId1);
             await _connectionManager.RemoveConnectionAsync(connectionId2);
+            _connectionRegistry.Unregister(connectionId1);
+            _connectionRegistry.Unregister(connectionId2);
         }
     }
 
@@ -496,15 +401,11 @@ public sealed class SseBrokerTests : TestWithServices
 
         _connectionManager.AddConnection(removedConnectionId, removedResponse, removedCts.Token);
         _connectionManager.AddConnection(remainingConnectionId, remainingResponse, remainingCts.Token);
+        Assert.True(_connectionRegistry.TryRegister(removedConnectionId, removedUserId, "removed-token", [organizationId]));
+        Assert.True(_connectionRegistry.TryRegister(remainingConnectionId, remainingUserId, "remaining-token", [organizationId]));
 
         try
         {
-            await _connectionMapping.UserIdAddAsync(removedUserId, removedConnectionId);
-            await _connectionMapping.UserIdAddAsync(remainingUserId, remainingConnectionId);
-            await _connectionMapping.GroupAddAsync(organizationId, removedConnectionId);
-            await _connectionMapping.GroupAddAsync(organizationId, remainingConnectionId);
-            await _connectionMapping.ConnectionGroupAddAsync(removedConnectionId, organizationId);
-
             var message = new UserMembershipChanged {
                 UserId = removedUserId,
                 OrganizationId = organizationId,
@@ -516,23 +417,20 @@ public sealed class SseBrokerTests : TestWithServices
 
             Assert.Contains(nameof(UserMembershipChanged), removedResponse.WrittenData);
             Assert.Contains(nameof(UserMembershipChanged), remainingResponse.WrittenData);
-            Assert.DoesNotContain(removedConnectionId, await _connectionMapping.GetGroupConnectionsAsync(organizationId));
-            Assert.Empty(await _connectionMapping.GetConnectionGroupsAsync(removedConnectionId));
+            Assert.DoesNotContain(removedConnectionId, _connectionRegistry.GetGroupConnections(organizationId));
+            Assert.Empty(_connectionRegistry.GetGroups(removedConnectionId));
         }
         finally
         {
-            await _connectionMapping.UserIdRemoveAsync(removedUserId, removedConnectionId);
-            await _connectionMapping.UserIdRemoveAsync(remainingUserId, remainingConnectionId);
-            await _connectionMapping.GroupRemoveAsync(organizationId, removedConnectionId);
-            await _connectionMapping.GroupRemoveAsync(organizationId, remainingConnectionId);
-            await _connectionMapping.ConnectionGroupRemoveAsync(removedConnectionId, organizationId);
             await _connectionManager.RemoveConnectionAsync(removedConnectionId);
             await _connectionManager.RemoveConnectionAsync(remainingConnectionId);
+            _connectionRegistry.Unregister(removedConnectionId);
+            _connectionRegistry.Unregister(remainingConnectionId);
         }
     }
 
     [Fact]
-    public async Task OnEntityChangedAsync_AuthTokenRemoved_ClearsAllTrackedOrganizationMappings()
+    public async Task OnEntityChangedAsync_AuthTokenRemoved_ClearsAllLocalOrganizationRegistrations()
     {
         const string userId = "tracked-user";
         const string firstOrganizationId = "tracked-org-1";
@@ -542,15 +440,10 @@ public sealed class SseBrokerTests : TestWithServices
 
         string connectionId = "tracked-conn";
         _connectionManager.AddConnection(connectionId, response, cts.Token);
+        Assert.True(_connectionRegistry.TryRegister(connectionId, userId, "tracked-token-id", [firstOrganizationId, secondOrganizationId]));
 
         try
         {
-            await _connectionMapping.UserIdAddAsync(userId, connectionId);
-            await _connectionMapping.GroupAddAsync(firstOrganizationId, connectionId);
-            await _connectionMapping.GroupAddAsync(secondOrganizationId, connectionId);
-            await _connectionMapping.ConnectionGroupAddAsync(connectionId, firstOrganizationId);
-            await _connectionMapping.ConnectionGroupAddAsync(connectionId, secondOrganizationId);
-
             var entityChanged = new EntityChanged
             {
                 Id = "tracked-token-id",
@@ -564,19 +457,44 @@ public sealed class SseBrokerTests : TestWithServices
             await _broker.OnEntityChangedAsync(entityChanged, CancellationToken.None);
 
             Assert.Null(_connectionManager.GetConnectionById(connectionId));
-            Assert.Empty(await _connectionMapping.GetUserIdConnectionsAsync(userId));
-            Assert.Empty(await _connectionMapping.GetConnectionGroupsAsync(connectionId));
-            Assert.Empty(await _connectionMapping.GetGroupConnectionsAsync(firstOrganizationId));
-            Assert.Empty(await _connectionMapping.GetGroupConnectionsAsync(secondOrganizationId));
+            Assert.Empty(_connectionRegistry.GetUserConnections(userId));
         }
         finally
         {
-            await _connectionMapping.UserIdRemoveAsync(userId, connectionId);
-            await _connectionMapping.GroupRemoveAsync(firstOrganizationId, connectionId);
-            await _connectionMapping.GroupRemoveAsync(secondOrganizationId, connectionId);
-            await _connectionMapping.ConnectionGroupRemoveAsync(connectionId, firstOrganizationId);
-            await _connectionMapping.ConnectionGroupRemoveAsync(connectionId, secondOrganizationId);
+            _connectionRegistry.Unregister(connectionId);
         }
+    }
+
+    [Fact]
+    public async Task OnEntityChangedAsync_AuthTokenRemoved_NonOwnerCannotConsumeOwnerRevocation()
+    {
+        const string userId = "replicated-user";
+        const string tokenId = "replicated-token";
+        const string connectionId = "owner-connection";
+        using var ownerResponse = new FakeHttpResponse();
+        using var ownerCancellation = new CancellationTokenSource();
+        using var ownerSse = new SseConnectionManager(new AppOptions { EnablePush = true }, GetService<ITextSerializer>(), Log);
+        using var ownerWebSocket = new WebSocketConnectionManager(new AppOptions { EnablePush = true }, GetService<ITextSerializer>(), Log);
+        using var nonOwnerSse = new SseConnectionManager(new AppOptions { EnablePush = true }, GetService<ITextSerializer>(), Log);
+        using var nonOwnerWebSocket = new WebSocketConnectionManager(new AppOptions { EnablePush = true }, GetService<ITextSerializer>(), Log);
+        var ownerRegistry = new PushConnectionRegistry(TimeProvider);
+        var nonOwnerRegistry = new PushConnectionRegistry(TimeProvider);
+        var options = new AppOptions { EnablePush = true };
+        var subscriber = GetService<Foundatio.Messaging.IMessageSubscriber>();
+        var ownerBroker = new MessageBusBroker(ownerSse, ownerWebSocket, ownerRegistry, subscriber, options, Log.CreateLogger<MessageBusBroker>());
+        var nonOwnerBroker = new MessageBusBroker(nonOwnerSse, nonOwnerWebSocket, nonOwnerRegistry, subscriber, options, Log.CreateLogger<MessageBusBroker>());
+
+        ownerSse.AddConnection(connectionId, ownerResponse, ownerCancellation.Token);
+        Assert.True(ownerRegistry.TryRegister(connectionId, userId, tokenId, ["organization"]));
+        var message = new EntityChanged { Id = tokenId, Type = nameof(Token), ChangeType = ChangeType.Removed };
+        message.Data[ExtendedEntityChanged.KnownKeys.UserId] = userId;
+        message.Data[ExtendedEntityChanged.KnownKeys.IsAuthenticationToken] = true;
+
+        await nonOwnerBroker.OnEntityChangedAsync(message, TestContext.Current.CancellationToken);
+        Assert.NotNull(ownerSse.GetConnectionById(connectionId));
+
+        await ownerBroker.OnEntityChangedAsync(message, TestContext.Current.CancellationToken);
+        Assert.Null(ownerSse.GetConnectionById(connectionId));
     }
 
 }
@@ -692,17 +610,19 @@ public sealed class SseDeduplicationTests : TestWithServices
         using var queue = new SseConnection.DedupQueue(3);
 
         // Act
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 3; i++)
             queue.TryEnqueue(new SseConnection.SseEvent { Data = $"msg-{i}", DedupeKey = $"key-{i}" });
+        var overflow = queue.TryEnqueue(new SseConnection.SseEvent { Data = "overflow", DedupeKey = "overflow" });
 
         var item1 = await queue.DequeueAsync(TestContext.Current.CancellationToken);
         var item2 = await queue.DequeueAsync(TestContext.Current.CancellationToken);
         var item3 = await queue.DequeueAsync(TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Equal("msg-2", item1!.Value.Data);
-        Assert.Equal("msg-3", item2!.Value.Data);
-        Assert.Equal("msg-4", item3!.Value.Data);
+        Assert.Equal(SseConnection.EnqueueResult.Full, overflow);
+        Assert.Equal("msg-0", item1!.Value.Data);
+        Assert.Equal("msg-1", item2!.Value.Data);
+        Assert.Equal("msg-2", item3!.Value.Data);
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         cts.CancelAfter(TimeSpan.FromMilliseconds(50));
@@ -710,21 +630,21 @@ public sealed class SseDeduplicationTests : TestWithServices
     }
 
     [Fact]
-    public async Task CriticalMessage_WhenQueueFull_DropsOldestDroppableMessageFirst()
+    public async Task CriticalMessage_WhenQueueFull_ReturnsFullWithoutEvictingQueuedMessages()
     {
         var queue = new SseConnection.DedupQueue(2);
-        queue.TryEnqueue(new SseConnection.SseEvent { Data = "lossy-1", DedupeKey = "lossy-1", CanDrop = true });
-        queue.TryEnqueue(new SseConnection.SseEvent { Data = "critical-1", CanDrop = false });
+        queue.TryEnqueue(new SseConnection.SseEvent { Data = "lossy-1", DedupeKey = "lossy-1" });
+        queue.TryEnqueue(new SseConnection.SseEvent { Data = "critical-1" });
 
-        var result = queue.TryEnqueue(new SseConnection.SseEvent { Data = "critical-2", CanDrop = false });
+        var result = queue.TryEnqueue(new SseConnection.SseEvent { Data = "critical-2" });
 
         using var cts = new CancellationTokenSource();
         var item1 = await queue.DequeueAsync(cts.Token);
         var item2 = await queue.DequeueAsync(cts.Token);
 
-        Assert.Equal(SseConnection.EnqueueResult.DroppedQueuedMessage, result);
-        Assert.Equal("critical-1", item1!.Value.Data);
-        Assert.Equal("critical-2", item2!.Value.Data);
+        Assert.Equal(SseConnection.EnqueueResult.Full, result);
+        Assert.Equal("lossy-1", item1!.Value.Data);
+        Assert.Equal("critical-1", item2!.Value.Data);
     }
 
     [Fact]
@@ -732,14 +652,14 @@ public sealed class SseDeduplicationTests : TestWithServices
     {
         // Arrange
         using var queue = new SseConnection.DedupQueue(1);
-        queue.TryEnqueue(new SseConnection.SseEvent { Data = "critical-1", CanDrop = false });
+        queue.TryEnqueue(new SseConnection.SseEvent { Data = "critical-1" });
 
         // Act
-        var result = queue.TryEnqueue(new SseConnection.SseEvent { Data = "lossy-1", DedupeKey = "lossy-1", CanDrop = true });
+        var result = queue.TryEnqueue(new SseConnection.SseEvent { Data = "lossy-1", DedupeKey = "lossy-1" });
         var item = await queue.DequeueAsync(TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Equal(SseConnection.EnqueueResult.Skipped, result);
+        Assert.Equal(SseConnection.EnqueueResult.Full, result);
         Assert.True(item.HasValue);
         Assert.Equal("critical-1", item.GetValueOrDefault().Data);
     }
@@ -748,14 +668,14 @@ public sealed class SseDeduplicationTests : TestWithServices
     public async Task KeepAlive_WhenQueueFull_DoesNotEvictCriticalMessage()
     {
         var queue = new SseConnection.DedupQueue(1);
-        queue.TryEnqueue(new SseConnection.SseEvent { Data = "critical-1", CanDrop = false });
+        queue.TryEnqueue(new SseConnection.SseEvent { Data = "critical-1" });
 
         var result = queue.TryEnqueue(SseConnection.SseEvent.KeepAlive);
 
         using var cts = new CancellationTokenSource();
         var item = await queue.DequeueAsync(cts.Token);
 
-        Assert.Equal(SseConnection.EnqueueResult.Skipped, result);
+        Assert.Equal(SseConnection.EnqueueResult.Full, result);
         Assert.True(item.HasValue);
         var dequeued = item.GetValueOrDefault();
         Assert.Equal("critical-1", dequeued.Data);

@@ -34,6 +34,13 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
     public int InstanceId { get; }
     public bool IndexesHaveBeenConfigured { get; set; }
 
+    public async Task<string> GetRedisConnectionStringAsync(CancellationToken cancellationToken)
+    {
+        var app = await s_sharedAppHost.Value;
+        return await app.GetConnectionStringAsync("Redis", cancellationToken)
+            ?? throw new InvalidOperationException("Redis did not expose a connection string.");
+    }
+
     public async ValueTask InitializeAsync()
     {
         _ = await s_sharedAppHost.Value;

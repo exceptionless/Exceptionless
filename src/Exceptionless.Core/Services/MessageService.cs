@@ -6,7 +6,6 @@ using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Repositories.Elasticsearch;
 using Foundatio.Repositories.Models;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Exceptionless.Core.Services;
 
@@ -19,9 +18,7 @@ public class MessageService : IDisposable, IStartupAction
     private readonly IEventRepository _eventRepository;
     private readonly ITokenRepository _tokenRepository;
     private readonly IWebHookRepository _webHookRepository;
-    private readonly IConnectionMapping _connectionMapping;
     private readonly AppOptions _options;
-    private readonly ILogger _logger;
     private readonly List<Action> _disposeActions = [];
 
     public MessageService(
@@ -43,9 +40,12 @@ public class MessageService : IDisposable, IStartupAction
         _eventRepository = eventRepository;
         _tokenRepository = tokenRepository;
         _webHookRepository = webHookRepository;
-        _connectionMapping = connectionMapping;
         _options = options;
-        _logger = loggerFactory.CreateLogger<MessageService>() ?? NullLogger<MessageService>.Instance;
+
+        // Preserve the public constructor shape for existing composition roots while push
+        // publication no longer depends on distributed connection state or trace logging.
+        _ = connectionMapping;
+        _ = loggerFactory;
     }
 
     public Task RunAsync(CancellationToken shutdownToken = default)
@@ -74,22 +74,13 @@ public class MessageService : IDisposable, IStartupAction
         _disposeActions.Add(() => repo.BeforePublishEntityChanged.RemoveHandler(handler));
     }
 
-    private async Task OnBeforePublishEntityChangedAsync<T>(object sender, BeforePublishEntityChangedEventArgs<T> args)
+    private Task OnBeforePublishEntityChangedAsync<T>(object sender, BeforePublishEntityChangedEventArgs<T> args)
         where T : class, IIdentity, new()
     {
-        int listenerCount = await GetNumberOfListeners(args.Message);
-        args.Cancel = listenerCount == 0;
-        if (args.Cancel)
-            _logger.LogTrace("Cancelled {EntityType} Entity Changed Message: {@Message}", typeof(T).Name, args.Message);
-    }
-
-    private Task<int> GetNumberOfListeners(EntityChanged message)
-    {
-        var entityChanged = ExtendedEntityChanged.Create(message, false);
-        if (String.IsNullOrEmpty(entityChanged.OrganizationId))
-            return Task.FromResult(1); // Return 1 as we have no idea if people are listening.
-
-        return _connectionMapping.GetGroupConnectionCountAsync(entityChanged.OrganizationId);
+        // Push routing is replica-local. Publishing must not depend on immortal distributed
+        // connection indexes because another replica may own the interested client.
+        args.Cancel = false;
+        return Task.CompletedTask;
     }
 
     public void Dispose()

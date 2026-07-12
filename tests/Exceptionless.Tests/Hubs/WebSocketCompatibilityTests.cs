@@ -2,7 +2,6 @@ using System.Net.WebSockets;
 using Exceptionless.Core;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Utility;
 using Exceptionless.Web.Hubs;
 using Foundatio.Repositories.Models;
 using Foundatio.Serializer;
@@ -65,16 +64,16 @@ public sealed class WebSocketConnectionCompatibilityTests : TestWithServices
 public sealed class PushCompatibilityBrokerTests : TestWithServices
 {
     private readonly MessageBusBroker _broker;
-    private readonly IConnectionMapping _connectionMapping;
     private readonly SseConnectionManager _sseConnectionManager;
     private readonly WebSocketConnectionManager _webSocketConnectionManager;
+    private readonly PushConnectionRegistry _connectionRegistry;
 
     public PushCompatibilityBrokerTests(ITestOutputHelper output) : base(output)
     {
         _broker = GetService<MessageBusBroker>();
-        _connectionMapping = GetService<IConnectionMapping>();
         _sseConnectionManager = GetService<SseConnectionManager>();
         _webSocketConnectionManager = GetService<WebSocketConnectionManager>();
+        _connectionRegistry = GetService<PushConnectionRegistry>();
     }
 
     [Fact]
@@ -88,12 +87,11 @@ public sealed class PushCompatibilityBrokerTests : TestWithServices
         string sseConnectionId = "compat-sse";
         string webSocketConnectionId = _webSocketConnectionManager.AddConnection(socket);
         _sseConnectionManager.AddConnection(sseConnectionId, response, cts.Token);
+        Assert.True(_connectionRegistry.TryRegister(sseConnectionId, "sse-user", "sse-token", [organizationId]));
+        Assert.True(_connectionRegistry.TryRegister(webSocketConnectionId, "websocket-user", "websocket-token", [organizationId]));
 
         try
         {
-            await _connectionMapping.GroupAddAsync(organizationId, sseConnectionId);
-            await _connectionMapping.GroupAddAsync(organizationId, webSocketConnectionId);
-
             var entityChanged = new EntityChanged
             {
                 Id = "stack-compat",
@@ -111,26 +109,24 @@ public sealed class PushCompatibilityBrokerTests : TestWithServices
         }
         finally
         {
-            await _connectionMapping.GroupRemoveAsync(organizationId, sseConnectionId);
-            await _connectionMapping.GroupRemoveAsync(organizationId, webSocketConnectionId);
             await _sseConnectionManager.RemoveConnectionAsync(sseConnectionId);
             await _webSocketConnectionManager.RemoveConnectionAsync(webSocketConnectionId);
+            _connectionRegistry.Unregister(sseConnectionId);
+            _connectionRegistry.Unregister(webSocketConnectionId);
         }
     }
 
     [Fact]
-    public async Task OnEntityChangedAsync_AuthTokenRemoved_ClosesWebSocketConnectionsAndClearsMapping()
+    public async Task OnEntityChangedAsync_AuthTokenRemoved_ClosesWebSocketConnectionsAndClearsLocalRegistration()
     {
         const string userId = "compat-user";
         const string organizationId = "compat-org";
         var socket = new TestWebSocket();
         string connectionId = _webSocketConnectionManager.AddConnection(socket);
+        Assert.True(_connectionRegistry.TryRegister(connectionId, userId, "compat-token", [organizationId]));
 
         try
         {
-            await _connectionMapping.UserIdAddAsync(userId, connectionId);
-            await _connectionMapping.GroupAddAsync(organizationId, connectionId);
-
             var entityChanged = new EntityChanged
             {
                 Id = "compat-token",
@@ -145,12 +141,11 @@ public sealed class PushCompatibilityBrokerTests : TestWithServices
 
             Assert.Null(_webSocketConnectionManager.GetConnectionById(connectionId));
             Assert.Equal(1, socket.CloseCount);
-            Assert.Empty(await _connectionMapping.GetUserIdConnectionsAsync(userId));
+            Assert.Empty(_connectionRegistry.GetUserConnections(userId));
         }
         finally
         {
-            await _connectionMapping.GroupRemoveAsync(organizationId, connectionId);
-            await _connectionMapping.UserIdRemoveAsync(userId, connectionId);
+            _connectionRegistry.Unregister(connectionId);
         }
     }
 }

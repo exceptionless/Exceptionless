@@ -112,6 +112,7 @@ public class Bootstrapper
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IQueueBehavior<WorkItemData>, WorkItemDuplicateDetectionQueueBehavior>());
 
         services.AddSingleton<IConnectionMapping, ConnectionMapping>();
+        services.AddSingleton<IConnectionLeaseStore, ConnectionLeaseStore>();
         services.AddSingleton<MessageService>();
         services.AddStartupAction<MessageService>();
         services.AddSingleton<IMessageBus>(s => new InMemoryMessageBus(new InMemoryMessageBusOptions

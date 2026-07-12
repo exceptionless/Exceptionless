@@ -6,21 +6,27 @@ namespace Exceptionless.Web.Hubs;
 /// <summary>
 /// Handles SSE connections at /api/v2/push. Replaces MessageBusBrokerMiddleware (WebSocket).
 /// Accepts authenticated GET requests, sets SSE response headers, registers the connection
-/// with IConnectionMapping, and holds the response open until the client disconnects.
+/// in the process-local ownership registry, and holds the response open until disconnect.
 /// </summary>
 public class SseMiddleware
 {
     private static readonly PathString _sseEndpoint = new("/api/v2/push");
     private readonly ILogger _logger;
     private readonly SseConnectionManager _connectionManager;
-    private readonly IConnectionMapping _connectionMapping;
+    private readonly IConnectionLeaseStore _leaseStore;
+    private readonly PushConnectionRegistry _connectionRegistry;
+    private readonly TimeProvider _timeProvider;
+    private readonly IHostApplicationLifetime _applicationLifetime;
     private readonly RequestDelegate _next;
 
-    public SseMiddleware(RequestDelegate next, SseConnectionManager connectionManager, IConnectionMapping connectionMapping, ILogger<SseMiddleware> logger)
+    public SseMiddleware(RequestDelegate next, SseConnectionManager connectionManager, IConnectionLeaseStore leaseStore, PushConnectionRegistry connectionRegistry, TimeProvider timeProvider, IHostApplicationLifetime applicationLifetime, ILogger<SseMiddleware> logger)
     {
         _next = next;
         _connectionManager = connectionManager;
-        _connectionMapping = connectionMapping;
+        _leaseStore = leaseStore;
+        _connectionRegistry = connectionRegistry;
+        _timeProvider = timeProvider;
+        _applicationLifetime = applicationLifetime;
         _logger = logger;
     }
 
@@ -48,89 +54,64 @@ public class SseMiddleware
         }
 
         string connectionId = Guid.NewGuid().ToString("N");
-        if (!await _connectionMapping.TryReserveUserConnectionAsync(userId, connectionId, _connectionManager.MaxConnectionsPerUser))
+        PushConnectionLease? lease;
+        try
+        {
+            lease = await PushConnectionLease.TryAcquireAsync(_leaseStore, _timeProvider, _logger, userId, connectionId, _connectionManager.MaxConnectionsPerUser).ConfigureAwait(false);
+        }
+        catch (ConnectionLeaseStoreException ex)
+        {
+            _logger.LogError(ex, "Push lease store is unavailable");
+            context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+            return;
+        }
+
+        if (lease is null)
         {
             _logger.LogWarning("User {UserId} exceeded max SSE connections ({Max})", userId, _connectionManager.MaxConnectionsPerUser);
             context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
             return;
         }
 
-        SseConnection? connection = null;
-
-        try
+        await using (lease)
+        using (var connectionLifetime = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted, lease.LeaseLost, _applicationLifetime.ApplicationStopping))
         {
-            // Set SSE response headers
-            context.Response.Headers.ContentType = "text/event-stream";
-            context.Response.Headers.CacheControl = "no-cache, no-store";
-            context.Response.Headers["X-Accel-Buffering"] = "no"; // nginx
+            if (!_connectionRegistry.TryRegister(connectionId, userId, context.User.GetLoggedInUsersTokenId(), context.User.GetOrganizationIds()))
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return;
+            }
 
-            // Disable response buffering
-            var bufferingFeature = context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpResponseBodyFeature>();
-            bufferingFeature?.DisableBuffering();
+            SseConnection? connection = null;
 
-            connection = _connectionManager.AddConnection(connectionId, context.Response, context.RequestAborted);
-            await OnConnected(context, connectionId).ConfigureAwait(false);
-
-            // Send initial connected event
-            connection.TryWrite(new { type = "Connected", message = new { connection_id = connectionId } });
-
-            // Hold the response open until the client disconnects or the connection is aborted
-            await Task.Delay(Timeout.Infinite, connection.ConnectionAborted).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) { }
-        finally
-        {
             try
             {
-                await OnDisconnected(context, connectionId).ConfigureAwait(false);
+                // Set SSE response headers
+                context.Response.Headers.ContentType = "text/event-stream";
+                context.Response.Headers.CacheControl = "no-cache, no-store";
+                context.Response.Headers["X-Accel-Buffering"] = "no"; // nginx
+
+                // Disable response buffering
+                var bufferingFeature = context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpResponseBodyFeature>();
+                bufferingFeature?.DisableBuffering();
+
+                connection = _connectionManager.AddConnection(connectionId, context.Response, connectionLifetime.Token);
+                _logger.LogTrace("SSE connected {ConnectionId}", connectionId);
+
+                // Send initial connected event
+                connection.TryWrite(new { type = "Connected", message = new { connection_id = connectionId } });
+
+                // Hold the response open until the client disconnects or the connection is aborted
+                await Task.Delay(Timeout.Infinite, connection.ConnectionAborted).ConfigureAwait(false);
             }
+            catch (OperationCanceledException) { }
             finally
             {
+                _logger.LogTrace("SSE disconnected {ConnectionId}", connectionId);
                 if (connection is not null)
                     await _connectionManager.RemoveConnectionAsync(connectionId).ConfigureAwait(false);
+                _connectionRegistry.Unregister(connectionId);
             }
-        }
-    }
-
-    internal async Task OnConnected(HttpContext context, string connectionId)
-    {
-        _logger.LogTrace("SSE connected {ConnectionId}", connectionId);
-        foreach (string organizationId in context.User.GetOrganizationIds())
-        {
-            await _connectionMapping.GroupAddAsync(organizationId, connectionId).ConfigureAwait(false);
-            await _connectionMapping.ConnectionGroupAddAsync(connectionId, organizationId).ConfigureAwait(false);
-        }
-
-        string? userId = context.User.GetUserId();
-        if (!String.IsNullOrEmpty(userId))
-            await _connectionMapping.UserIdAddAsync(userId, connectionId).ConfigureAwait(false);
-    }
-
-    internal async Task OnDisconnected(HttpContext context, string connectionId)
-    {
-        _logger.LogTrace("SSE disconnected {ConnectionId}", connectionId);
-
-        try
-        {
-            foreach (string organizationId in context.User.GetOrganizationIds())
-            {
-                await _connectionMapping.GroupRemoveAsync(organizationId, connectionId).ConfigureAwait(false);
-                await _connectionMapping.ConnectionGroupRemoveAsync(connectionId, organizationId).ConfigureAwait(false);
-            }
-        }
-        catch (OperationCanceledException ex)
-        {
-            _logger.LogDebug(ex, "SSE disconnect was canceled for {ConnectionId}", connectionId);
-        }
-        catch (ObjectDisposedException ex)
-        {
-            _logger.LogDebug(ex, "SSE disconnect raced with disposal for {ConnectionId}", connectionId);
-        }
-        finally
-        {
-            string? userId = context.User.GetUserId();
-            if (!String.IsNullOrEmpty(userId))
-                await _connectionMapping.UserIdRemoveAsync(userId, connectionId).ConfigureAwait(false);
         }
     }
 }

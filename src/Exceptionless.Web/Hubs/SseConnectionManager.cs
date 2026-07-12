@@ -81,7 +81,11 @@ public sealed class SseConnectionManager : IDisposable, IAsyncDisposable
     public SseConnection AddConnection(string connectionId, HttpResponse response, CancellationToken requestAborted)
     {
         var connection = new SseConnection(connectionId, response, _serializer, requestAborted, _logger);
-        _connections.TryAdd(connectionId, connection);
+        if (!_connections.TryAdd(connectionId, connection))
+        {
+            connection.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            throw new InvalidOperationException($"An SSE connection with id '{connectionId}' is already registered.");
+        }
         AppDiagnostics.PushSseConnectionsOpened.Add(1);
         AppDiagnostics.Gauge("push.connections.sse.active", _connections.Count);
         return connection;
@@ -116,7 +120,11 @@ public sealed class SseConnectionManager : IDisposable, IAsyncDisposable
             return false;
         }
 
-        return connection.TryWrite(message, canDrop);
+        if (connection.TryWrite(message, canDrop))
+            return true;
+
+        TryRemove(connectionId);
+        return false;
     }
 
     public void SendMessage(IEnumerable<string> connectionIds, object message, bool canDrop = true)
@@ -135,7 +143,8 @@ public sealed class SseConnectionManager : IDisposable, IAsyncDisposable
                 continue;
             }
 
-            connection.TryWrite(message, canDrop);
+            if (!connection.TryWrite(message, canDrop))
+                TryRemove(connectionId);
         }
     }
 

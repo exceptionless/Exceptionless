@@ -1,7 +1,6 @@
 ﻿using Exceptionless.Core;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Utility;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Messaging;
 using Foundatio.Repositories.Models;
@@ -15,16 +14,16 @@ public sealed class MessageBusBroker : IStartupAction
     private static readonly string UserTypeName = nameof(User);
     private readonly SseConnectionManager _sseConnectionManager;
     private readonly WebSocketConnectionManager _webSocketConnectionManager;
-    private readonly IConnectionMapping _connectionMapping;
+    private readonly PushConnectionRegistry _connectionRegistry;
     private readonly IMessageSubscriber _subscriber;
     private readonly AppOptions _options;
     private readonly ILogger _logger;
 
-    public MessageBusBroker(SseConnectionManager sseConnectionManager, WebSocketConnectionManager webSocketConnectionManager, IConnectionMapping connectionMapping, IMessageSubscriber subscriber, AppOptions options, ILogger<MessageBusBroker> logger)
+    public MessageBusBroker(SseConnectionManager sseConnectionManager, WebSocketConnectionManager webSocketConnectionManager, PushConnectionRegistry connectionRegistry, IMessageSubscriber subscriber, AppOptions options, ILogger<MessageBusBroker> logger)
     {
         _sseConnectionManager = sseConnectionManager;
         _webSocketConnectionManager = webSocketConnectionManager;
-        _connectionMapping = connectionMapping;
+        _connectionRegistry = connectionRegistry;
         _subscriber = subscriber;
         _options = options;
         _logger = logger;
@@ -56,7 +55,7 @@ public sealed class MessageBusBroker : IStartupAction
         }
 
         // manage user organization group membership
-        var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(userMembershipChanged.UserId);
+        var userConnectionIds = _connectionRegistry.GetUserConnections(userMembershipChanged.UserId);
         _logger.LogTrace("Attempting to update user {User} active groups for {UserConnectionCount} connections", userMembershipChanged.UserId, userConnectionIds.Count);
         if (userMembershipChanged.ChangeType is ChangeType.Removed && userConnectionIds.Count > 0)
             TypedSend(userConnectionIds, userMembershipChanged);
@@ -65,13 +64,11 @@ public sealed class MessageBusBroker : IStartupAction
         {
             if (userMembershipChanged.ChangeType is ChangeType.Added)
             {
-                await _connectionMapping.GroupAddAsync(userMembershipChanged.OrganizationId, connectionId);
-                await _connectionMapping.ConnectionGroupAddAsync(connectionId, userMembershipChanged.OrganizationId);
+                _connectionRegistry.AddGroup(connectionId, userMembershipChanged.OrganizationId);
             }
             else if (userMembershipChanged.ChangeType is ChangeType.Removed)
             {
-                await _connectionMapping.GroupRemoveAsync(userMembershipChanged.OrganizationId, connectionId);
-                await _connectionMapping.ConnectionGroupRemoveAsync(connectionId, userMembershipChanged.OrganizationId);
+                _connectionRegistry.RemoveGroup(connectionId, userMembershipChanged.OrganizationId);
             }
         }
 
@@ -99,7 +96,7 @@ public sealed class MessageBusBroker : IStartupAction
                 return;
             }
 
-            var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(entityChanged.Id);
+            var userConnectionIds = _connectionRegistry.GetUserConnections(entityChanged.Id);
             _logger.LogTrace("Sending {UserTypeName} message to user: {UserId} (to {UserConnectionCount} connections)", UserTypeName, entityChanged.Id, userConnectionIds.Count);
             foreach (string connectionId in userConnectionIds)
                 TypedSend(connectionId, entityChanged);
@@ -115,28 +112,20 @@ public sealed class MessageBusBroker : IStartupAction
 
             if (userId is not null)
             {
-                var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(userId);
+                var userConnectionIds = _connectionRegistry.GetUserConnections(userId);
 
                 // Auth token removed = logout. Close connections immediately without sending;
                 // there is no point delivering a message to a connection we are about to tear down.
                 if (isAuthToken && entityChanged.ChangeType is ChangeType.Removed)
                 {
-                    _logger.LogTrace("Auth token removed for user {UserId}; closing {ConnectionCount} push connection(s)", userId, userConnectionIds.Count);
-                    foreach (string connectionId in userConnectionIds)
+                    string? tokenId = entityChanged.Id;
+                    var localConnectionIds = tokenId is null ? userConnectionIds : _connectionRegistry.RevokeToken(tokenId);
+                    _logger.LogTrace("Auth token removed for user {UserId}; closing {ConnectionCount} local push connection(s)", userId, localConnectionIds.Count);
+                    foreach (string connectionId in localConnectionIds)
                     {
-                        var organizationIds = await _connectionMapping.GetConnectionGroupsAsync(connectionId);
-                        if (organizationIds.Count is 0 && entityChanged.OrganizationId is { Length: > 0 } fallbackOrganizationId)
-                            organizationIds = [fallbackOrganizationId];
-
-                        foreach (string organizationId in organizationIds)
-                        {
-                            await _connectionMapping.GroupRemoveAsync(organizationId, connectionId);
-                            await _connectionMapping.ConnectionGroupRemoveAsync(connectionId, organizationId);
-                        }
-
-                        await _connectionMapping.UserIdRemoveAsync(userId, connectionId);
                         await _sseConnectionManager.RemoveConnectionAsync(connectionId);
                         await _webSocketConnectionManager.RemoveConnectionAsync(connectionId);
+                        _connectionRegistry.Unregister(connectionId);
                     }
 
                     return;
@@ -201,16 +190,17 @@ public sealed class MessageBusBroker : IStartupAction
         return Task.CompletedTask;
     }
 
-    private async Task GroupSendAsync(string group, object value)
+    private Task GroupSendAsync(string group, object value)
     {
-        var connectionIds = await _connectionMapping.GetGroupConnectionsAsync(group);
+        var connectionIds = _connectionRegistry.GetGroupConnections(group);
         if (connectionIds.Count is 0)
         {
             _logger.LogTrace("Ignoring group message to {Group}: No Connections", group);
-            return;
+            return Task.CompletedTask;
         }
 
         TypedSend(connectionIds, value);
+        return Task.CompletedTask;
     }
 
     public void TypedSend(string connectionId, object value)

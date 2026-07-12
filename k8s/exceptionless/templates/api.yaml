@@ -48,7 +48,7 @@ spec:
             preStop:
               # Give the ALB ~15s to deregister this pod before SIGTERM fires.
               # The total graceful window is terminationGracePeriodSeconds (60s) minus
-              # this sleep, leaving ~45s for ASP.NET Core to drain active SSE connections.
+              # this sleep, leaving 45s. ASP.NET Core uses 40s and keeps 5s of safety margin.
               exec:
                 command: ["sleep", "15"]
           livenessProbe:

@@ -15,6 +15,7 @@ public class Bootstrapper
     {
         services.AddSingleton<SseConnectionManager>();
         services.AddSingleton<WebSocketConnectionManager>();
+        services.AddSingleton<PushConnectionRegistry>();
         services.AddSingleton<MessageBusBroker>();
 
         services.AddSingleton<ApiMapper>();

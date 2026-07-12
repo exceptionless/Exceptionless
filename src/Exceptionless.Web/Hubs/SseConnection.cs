@@ -7,10 +7,8 @@ namespace Exceptionless.Web.Hubs;
 /// all sends through a bounded dedup queue, preventing concurrent writes to the
 /// underlying HttpResponse stream.
 ///
-/// Design: delivery is best-effort. Under burst load, oldest unwritten events are
-/// dropped. This is intentional — SSE push messages trigger client-side cache
-/// invalidation refetches, so a dropped message results in stale cache until the
-/// next push or manual refresh, not data loss.
+/// Design: delivery is best-effort. If a slow client fills the bounded queue, the
+/// connection is aborted so reconnect handling performs a full cache resynchronization.
 ///
 /// Deduplication: messages with the same serialized payload are coalesced — if an
 /// identical message is already queued, the newer duplicate is skipped. This reduces
@@ -63,7 +61,7 @@ public sealed class SseConnection : IAsyncDisposable
             return false;
 
         string data = _serializer.SerializeToString(message);
-        var result = _queue.TryEnqueue(new SseEvent { Data = data, DedupeKey = canDrop ? data : null, CanDrop = canDrop });
+        var result = _queue.TryEnqueue(new SseEvent { Data = data, DedupeKey = canDrop ? data : null });
 
         if (result == EnqueueResult.Deduped)
         {
@@ -71,23 +69,29 @@ public sealed class SseConnection : IAsyncDisposable
             return true;
         }
 
-        if (result is EnqueueResult.DroppedQueuedMessage or EnqueueResult.Skipped)
+        if (result is EnqueueResult.Full)
+        {
             Interlocked.Increment(ref _droppedMessages);
+            Abort();
+            return false;
+        }
+
+        if (result is EnqueueResult.Closed)
+            return false;
 
         return true;
     }
 
     /// <summary>
     /// Send a keep-alive comment to prevent proxy/LB timeouts.
-    /// Keep-alives bypass dedup (always enqueued).
+    /// Keep-alives bypass dedup and are skipped when the data queue is full.
     /// </summary>
     public bool TryWriteKeepAlive()
     {
         if (_cts.IsCancellationRequested)
             return false;
 
-        _queue.TryEnqueue(SseEvent.KeepAlive);
-        return true;
+        return _queue.TryEnqueue(SseEvent.KeepAlive) is not EnqueueResult.Closed;
     }
 
     /// <summary>
@@ -144,7 +148,7 @@ public sealed class SseConnection : IAsyncDisposable
         finally
         {
             // Always signal ConnectionAborted so the middleware's Task.Delay unblocks
-            // and cleanup (IConnectionMapping removal) happens reliably.
+            // and process-local registration and lease cleanup happens reliably.
             _queue.Complete();
             if (!_cts.IsCancellationRequested)
             {
@@ -170,23 +174,21 @@ public sealed class SseConnection : IAsyncDisposable
         /// the same client-side cache invalidation, so coalescing is safe.
         /// </summary>
         public string? DedupeKey { get; init; }
-        public bool CanDrop { get; init; }
-
         public bool IsKeepAlive { get; init; }
-        public static SseEvent KeepAlive => new() { IsKeepAlive = true, CanDrop = true };
+        public static SseEvent KeepAlive => new() { IsKeepAlive = true };
     }
 
     internal enum EnqueueResult
     {
         Enqueued,
         Deduped,
-        DroppedQueuedMessage,
-        Skipped
+        Full,
+        Closed
     }
 
     /// <summary>
     /// Bounded FIFO queue with deduplication. Thread-safe for multiple writers and a single reader.
-    /// When full, drops the oldest item to make room (like BoundedChannelFullMode.DropOldest).
+    /// When full, rejects new items so the owner can abort and force a reconnect resynchronization.
     /// If an item with the same DedupeKey is already queued, the new item is skipped.
     /// </summary>
     internal sealed class DedupQueue : IDisposable
@@ -208,38 +210,21 @@ public sealed class SseConnection : IAsyncDisposable
             lock (_lock)
             {
                 if (_completed)
-                    return EnqueueResult.Enqueued;
+                    return EnqueueResult.Closed;
 
                 // Dedup check: if same key is already queued, skip
                 if (evt.DedupeKey is not null && _index.ContainsKey(evt.DedupeKey))
                     return EnqueueResult.Deduped;
 
-                var result = EnqueueResult.Enqueued;
-                bool queueCountIncreased = true;
-
-                // Enforce capacity: drop the oldest droppable message first so direct user
-                // notifications do not get crowded out by stale cache invalidations.
                 if (_list.Count >= _capacity)
-                {
-                    if (evt.IsKeepAlive)
-                        return EnqueueResult.Skipped;
-
-                    var queuedToDrop = FindFirstDroppableNode();
-                    if (queuedToDrop is null && evt.CanDrop)
-                        return EnqueueResult.Skipped;
-
-                    RemoveNode(queuedToDrop ?? _list.First!);
-                    result = EnqueueResult.DroppedQueuedMessage;
-                    queueCountIncreased = false;
-                }
+                    return EnqueueResult.Full;
 
                 var node = _list.AddLast(evt);
                 if (evt.DedupeKey is not null)
                     _index[evt.DedupeKey] = node;
 
-                if (queueCountIncreased)
-                    _signal.Release();
-                return result;
+                _signal.Release();
+                return EnqueueResult.Enqueued;
             }
         }
 
@@ -272,20 +257,6 @@ public sealed class SseConnection : IAsyncDisposable
         public void Dispose()
         {
             _signal.Dispose();
-        }
-
-        private LinkedListNode<SseEvent>? FindFirstDroppableNode()
-        {
-            var current = _list.First;
-            while (current is not null)
-            {
-                if (current.Value.CanDrop)
-                    return current;
-
-                current = current.Next;
-            }
-
-            return null;
         }
 
         private void RemoveNode(LinkedListNode<SseEvent> node)

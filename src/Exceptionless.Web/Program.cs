@@ -77,8 +77,8 @@ public class Program
             .ConfigureHostOptions(o =>
             {
                 // Align with k8s terminationGracePeriodSeconds (60s) minus preStop sleep (15s).
-                // Gives ASP.NET Core 45s to drain active SSE connections before the pod is force-killed.
-                o.ShutdownTimeout = TimeSpan.FromSeconds(45);
+                // Keep a five-second safety margin for kubelet/runtime termination overhead.
+                o.ShutdownTimeout = TimeSpan.FromSeconds(40);
             })
             .ConfigureLogging(b => b.ClearProviders()) // clears .net providers since we are telling serilog to write to providers we only want it to be the otel provider
             .UseSerilog((ctx, sp, c) =>
