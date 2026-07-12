@@ -4,12 +4,13 @@ using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 using Exceptionless.Core.Attributes;
+using Exceptionless.Core.Serialization;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models;
 
 [DebuggerDisplay("Id={Id} Type={Type} Status={Status} IsDeleted={IsDeleted} Title={Title} TotalOccurrences={TotalOccurrences}")]
-public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISupportSoftDeletes, IValidatableObject
+public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISupportSoftDeletes, IVersioned, IValidatableObject
 {
     /// <summary>
     /// Unique id that identifies a stack.
@@ -119,6 +120,36 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
     public DateTime CreatedUtc { get; set; }
     public DateTime UpdatedUtc { get; set; }
     public bool IsDeleted { get; set; }
+
+    /// <summary>
+    /// The canonical stack for events that still reference this duplicate stack.
+    /// This is internal cleanup state and is not part of the public API contract.
+    /// </summary>
+    [JsonInclude]
+    [JsonIgnoreForExternalSerialization]
+    internal string? RedirectToStackId { get; set; }
+
+    /// <summary>
+    /// Tracks how many occurrences from each duplicate stack have already been merged.
+    /// This is internal cleanup state and is not part of the public API contract.
+    /// </summary>
+    [JsonInclude]
+    [JsonIgnoreForExternalSerialization]
+    internal IDictionary<string, int> MergedDuplicateStackTotals { get; set; } = new Dictionary<string, int>();
+
+    [JsonInclude]
+    [JsonIgnoreForExternalSerialization]
+    internal bool NeedsRedirectReconciliation { get; set; }
+
+    [JsonInclude]
+    [JsonIgnoreForExternalSerialization]
+    internal string ElasticVersion { get; set; } = null!;
+
+    string IVersioned.Version
+    {
+        get => ElasticVersion;
+        set => ElasticVersion = value;
+    }
 
     public bool AllowNotifications => Status != StackStatus.Fixed && Status != StackStatus.Ignored && Status != StackStatus.Discarded && Status != StackStatus.Snoozed;
 

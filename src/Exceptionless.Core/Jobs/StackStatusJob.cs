@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Repositories;
+﻿using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
@@ -42,10 +41,7 @@ public class StackStatusJob : JobWithLockBase, IHealthCheck
         var results = await _stackRepository.GetExpiredSnoozedStatuses(_timeProvider.GetUtcNow().UtcDateTime, o => o.PageLimit(LIMIT));
         while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
         {
-            foreach (var stack in results.Documents)
-                stack.MarkOpen();
-
-            await _stackRepository.SaveAsync(results.Documents);
+            await _stackRepository.MarkOpenAsync(results.Documents.Select(stack => stack.Id));
 
             // Sleep so we are not hammering the backend.
             await Task.Delay(TimeSpan.FromSeconds(2.5), _timeProvider);

@@ -7,6 +7,7 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Options;
 using Foundatio.Repositories.Utility;
 using Foundatio.Serializer;
@@ -334,5 +335,302 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
         var duplicates = await _repository.GetDuplicateSignaturesAsync();
         // The soft-deleted stack should be excluded, leaving only 1 stack with this signature
         Assert.DoesNotContain($"{uniqueProjectId}:softdelete_sig", duplicates);
+    }
+
+    [Fact]
+    public async Task GetSoftDeleted_WithRedirect_ExcludesRedirectTombstone()
+    {
+        var source = _stackData.GenerateSampleStack();
+        source.IsDeleted = true;
+        source.RedirectToStackId = ObjectId.GenerateNewId().ToString();
+        source.NeedsRedirectReconciliation = true;
+        await _repository.AddAsync(source, o => o.ImmediateConsistency());
+
+        var softDeleted = await _repository.GetSoftDeleted();
+        var redirected = await _repository.GetRedirectedStacksNeedingReconciliationAsync();
+
+        Assert.DoesNotContain(softDeleted.Documents, stack => stack.Id == source.Id);
+        Assert.Contains(redirected.Documents, stack => stack.Id == source.Id);
+    }
+
+    [Fact]
+    public async Task GetCanonicalStack_WithRedirect_ReturnsActiveTarget()
+    {
+        var target = _stackData.GenerateSampleStack();
+        var source = target.DeepClone();
+        source.Id = ObjectId.GenerateNewId().ToString();
+        source.IsDeleted = true;
+        source.RedirectToStackId = target.Id;
+        await _repository.AddAsync([target, source], o => o.ImmediateConsistency());
+
+        var canonical = await _repository.GetCanonicalStackAsync(source.Id);
+        await _repository.AddEventTagsAsync(source.Id, ["redirected-tag"]);
+        var updatedTarget = await _repository.GetByIdAsync(target.Id, o => o.ImmediateConsistency());
+
+        Assert.NotNull(canonical);
+        Assert.Equal(target.Id, canonical.Id);
+        Assert.NotNull(updatedTarget);
+        Assert.Contains("redirected-tag", updatedTarget.Tags);
+    }
+
+    [Fact]
+    public async Task SetDuplicateStackRedirect_WithCycle_Throws()
+    {
+        var stackA = _stackData.GenerateSampleStack();
+        var stackB = stackA.DeepClone();
+        stackB.Id = ObjectId.GenerateNewId().ToString();
+        await _repository.AddAsync([stackA, stackB], o => o.ImmediateConsistency());
+        await _repository.SetDuplicateStackRedirectAsync(stackA, stackB.Id);
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _repository.SetDuplicateStackRedirectAsync(stackB, stackA.Id));
+
+        var unchangedTarget = await _repository.GetByIdAsync(stackB.Id, o => o.ImmediateConsistency());
+        Assert.NotNull(unchangedTarget);
+        Assert.Null(unchangedTarget.RedirectToStackId);
+    }
+
+    [Fact]
+    public async Task Save_WithStaleVersion_CannotOverwriteDuplicateMerge()
+    {
+        var target = _stackData.GenerateSampleStack();
+        target.TotalOccurrences = 100;
+        var source = target.DeepClone();
+        source.Id = ObjectId.GenerateNewId().ToString();
+        source.TotalOccurrences = 10;
+        await _repository.AddAsync([target, source], o => o.ImmediateConsistency());
+
+        var staleTarget = await _repository.GetByIdAsync(target.Id, o => o.ImmediateConsistency());
+        Assert.NotNull(staleTarget);
+        await _repository.MergeDuplicateStackAsync(target.Id, source);
+
+        staleTarget.Title = "stale write";
+        await Assert.ThrowsAsync<VersionConflictDocumentException>(() =>
+            _repository.SaveAsync(staleTarget, o => o.ImmediateConsistency()));
+
+        var mergedTarget = await _repository.GetByIdAsync(target.Id, o => o.ImmediateConsistency());
+        Assert.NotNull(mergedTarget);
+        Assert.Equal(110, mergedTarget.TotalOccurrences);
+        Assert.Equal(10, mergedTarget.MergedDuplicateStackTotals[source.Id]);
+    }
+
+    [Fact]
+    public async Task AddEventTags_WithConcurrentCounterUpdates_PreservesBothChanges()
+    {
+        var stack = _stackData.GenerateSampleStack();
+        stack.TotalOccurrences = 0;
+        await _repository.AddAsync(stack, o => o.ImmediateConsistency());
+
+        await Task.WhenAll(Enumerable.Range(0, 20).Select(async index =>
+        {
+            await Task.WhenAll(
+                _repository.AddEventTagsAsync(stack.Id, [$"tag-{index}"]),
+                _repository.IncrementEventCounterAsync(
+                    stack.OrganizationId,
+                    stack.ProjectId,
+                    stack.Id,
+                    stack.FirstOccurrence,
+                    stack.LastOccurrence.AddMinutes(index + 1),
+                    1,
+                    sendNotifications: false));
+        }));
+
+        var updated = await _repository.GetByIdAsync(stack.Id, o => o.ImmediateConsistency());
+        Assert.NotNull(updated);
+        Assert.Equal(20, updated.TotalOccurrences);
+        Assert.All(Enumerable.Range(0, 20), index => Assert.Contains($"tag-{index}", updated.Tags));
+    }
+
+    [Fact]
+    public async Task MarkOpen_WithConcurrentCounterUpdate_PreservesBothChanges()
+    {
+        var stack = _stackData.GenerateSampleStack();
+        stack.Status = StackStatus.Snoozed;
+        stack.SnoozeUntilUtc = DateTime.UtcNow.AddMinutes(-1);
+        stack.TotalOccurrences = 10;
+        await _repository.AddAsync(stack, o => o.ImmediateConsistency());
+
+        await Task.WhenAll(
+            _repository.MarkOpenAsync([stack.Id]),
+            _repository.IncrementEventCounterAsync(
+                stack.OrganizationId,
+                stack.ProjectId,
+                stack.Id,
+                stack.FirstOccurrence,
+                stack.LastOccurrence.AddMinutes(1),
+                1,
+                sendNotifications: false));
+
+        var updated = await _repository.GetByIdAsync(stack.Id, o => o.ImmediateConsistency());
+        Assert.NotNull(updated);
+        Assert.Equal(StackStatus.Open, updated.Status);
+        Assert.Null(updated.SnoozeUntilUtc);
+        Assert.Equal(11, updated.TotalOccurrences);
+    }
+
+    [Fact]
+    public async Task MarkAsRegressed_WithConcurrentCounterUpdate_PreservesBothChanges()
+    {
+        var stack = _stackData.GenerateSampleStack();
+        stack.Status = StackStatus.Fixed;
+        stack.TotalOccurrences = 10;
+        await _repository.AddAsync(stack, o => o.ImmediateConsistency());
+
+        await Task.WhenAll(
+            _repository.MarkAsRegressedAsync(stack.Id),
+            _repository.IncrementEventCounterAsync(
+                stack.OrganizationId,
+                stack.ProjectId,
+                stack.Id,
+                stack.FirstOccurrence,
+                stack.LastOccurrence.AddMinutes(1),
+                1,
+                sendNotifications: false));
+
+        var updated = await _repository.GetByIdAsync(stack.Id, o => o.ImmediateConsistency());
+        Assert.NotNull(updated);
+        Assert.Equal(StackStatus.Regressed, updated.Status);
+        Assert.Equal(11, updated.TotalOccurrences);
+    }
+
+    [Fact]
+    public async Task MergeDuplicateStack_WithRedirectChain_AppliesOnlyLateDelta()
+    {
+        var stackA = _stackData.GenerateSampleStack();
+        stackA.TotalOccurrences = 100;
+        var stackB = stackA.DeepClone();
+        stackB.Id = ObjectId.GenerateNewId().ToString();
+        stackB.TotalOccurrences = 10;
+        var stackC = stackA.DeepClone();
+        stackC.Id = ObjectId.GenerateNewId().ToString();
+        stackC.TotalOccurrences = 50;
+        await _repository.AddAsync([stackA, stackB, stackC], o => o.ImmediateConsistency());
+
+        await _repository.MergeDuplicateStackAsync(stackA.Id, stackB);
+        await _repository.SetDuplicateStackRedirectAsync(stackB, stackA.Id, isDeleted: true);
+
+        stackA = await _repository.GetByIdAsync(stackA.Id, o => o.ImmediateConsistency()) ?? throw new InvalidOperationException();
+        await _repository.MergeDuplicateStackAsync(stackC.Id, stackA);
+        await _repository.SetDuplicateStackRedirectAsync(stackA, stackC.Id, isDeleted: true);
+
+        await _repository.IncrementEventCounterAsync(
+            stackB.OrganizationId,
+            stackB.ProjectId,
+            stackB.Id,
+            stackB.FirstOccurrence,
+            stackB.LastOccurrence.AddMinutes(1),
+            5,
+            sendNotifications: false);
+        stackB = await _repository.GetByIdAsync(stackB.Id, o => o.IncludeSoftDeletes().ImmediateConsistency()) ?? throw new InvalidOperationException();
+        await _repository.MergeDuplicateStackAsync(stackC.Id, stackB);
+
+        var canonical = await _repository.GetCanonicalStackAsync(stackB.Id);
+        var mergedTarget = await _repository.GetByIdAsync(stackC.Id, o => o.ImmediateConsistency());
+        Assert.NotNull(canonical);
+        Assert.Equal(stackC.Id, canonical.Id);
+        Assert.NotNull(mergedTarget);
+        Assert.Equal(165, mergedTarget.TotalOccurrences);
+        Assert.Equal(100, mergedTarget.MergedDuplicateStackTotals[stackA.Id]);
+        Assert.Equal(15, mergedTarget.MergedDuplicateStackTotals[stackB.Id]);
+    }
+
+    [Fact]
+    public async Task RemoveAllByProjectId_WithRedirectTombstone_RemovesAllStacks()
+    {
+        string organizationId = ObjectId.GenerateNewId().ToString();
+        string projectId = ObjectId.GenerateNewId().ToString();
+        var target = _stackData.GenerateStack(generateId: true, organizationId: organizationId, projectId: projectId);
+        var source = target.DeepClone();
+        source.Id = ObjectId.GenerateNewId().ToString();
+        await _repository.AddAsync([target, source], o => o.ImmediateConsistency());
+        await _repository.SetDuplicateStackRedirectAsync(source, target.Id, isDeleted: true);
+
+        await _repository.RemoveAllByProjectIdAsync(organizationId, projectId);
+
+        var remaining = await _repository.GetByIdsAsync([target.Id, source.Id], o => o.IncludeSoftDeletes().ImmediateConsistency());
+        Assert.Empty(remaining);
+    }
+
+    [Fact]
+    public async Task RemoveAllByOrganizationId_WithRedirectTombstone_RemovesAllStacks()
+    {
+        string organizationId = ObjectId.GenerateNewId().ToString();
+        string projectId = ObjectId.GenerateNewId().ToString();
+        var target = _stackData.GenerateStack(generateId: true, organizationId: organizationId, projectId: projectId);
+        var source = target.DeepClone();
+        source.Id = ObjectId.GenerateNewId().ToString();
+        await _repository.AddAsync([target, source], o => o.ImmediateConsistency());
+        await _repository.SetDuplicateStackRedirectAsync(source, target.Id, isDeleted: true);
+
+        await _repository.RemoveAllByOrganizationIdAsync(organizationId);
+
+        var remaining = await _repository.GetByIdsAsync([target.Id, source.Id], o => o.IncludeSoftDeletes().ImmediateConsistency());
+        Assert.Empty(remaining);
+    }
+
+    [Fact]
+    public async Task MergeDuplicateStack_WithRepeatedSource_AppliesMetadataOnce()
+    {
+        // Arrange
+        var target = _stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId);
+        target.CreatedUtc = new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc);
+        target.LastOccurrence = new DateTime(2026, 1, 2, 1, 0, 0, DateTimeKind.Utc);
+        target.TotalOccurrences = 100;
+        target.Tags.Add("target");
+        target.References.Add("target-reference");
+
+        var source = _stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId);
+        source.CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        source.LastOccurrence = new DateTime(2026, 1, 3, 1, 0, 0, DateTimeKind.Utc);
+        source.TotalOccurrences = 10;
+        source.Status = StackStatus.Fixed;
+        source.Tags.Add("source");
+        source.References.Add("source-reference");
+        source.OccurrencesAreCritical = true;
+
+        await _repository.AddAsync([target, source], o => o.ImmediateConsistency());
+
+        // Act
+        DateTime updatedBeforeMerge = target.UpdatedUtc;
+        await _repository.MergeDuplicateStackAsync(target.Id, source);
+
+        var targetAfterMerge = await _repository.GetByIdAsync(target.Id, o => o.ImmediateConsistency());
+        Assert.NotNull(targetAfterMerge);
+        Assert.True(targetAfterMerge.UpdatedUtc > updatedBeforeMerge);
+
+        await _repository.MergeDuplicateStackAsync(target.Id, source);
+        var targetAfterNoOp = await _repository.GetByIdAsync(target.Id, o => o.ImmediateConsistency());
+        Assert.NotNull(targetAfterNoOp);
+        Assert.Equal(targetAfterMerge.UpdatedUtc, targetAfterNoOp.UpdatedUtc);
+
+        // A normal full save must preserve the internal retry ledger.
+        targetAfterMerge.Title = "updated after merge";
+        await _repository.SaveAsync(targetAfterMerge, o => o.ImmediateConsistency());
+
+        await _repository.MergeDuplicateStackAsync(target.Id, source);
+
+        // Assert
+        var merged = await _repository.GetByIdAsync(target.Id, o => o.ImmediateConsistency());
+        Assert.NotNull(merged);
+        Assert.Equal(110, merged.TotalOccurrences);
+        Assert.Equal(source.CreatedUtc, merged.CreatedUtc);
+        Assert.Equal(source.LastOccurrence, merged.LastOccurrence);
+        Assert.Equal(StackStatus.Fixed, merged.Status);
+        Assert.Contains("target", merged.Tags);
+        Assert.Contains("source", merged.Tags);
+        Assert.Contains("target-reference", merged.References);
+        Assert.Contains("source-reference", merged.References);
+        Assert.True(merged.OccurrencesAreCritical);
+
+        // Late in-flight occurrences on the redirected source are merged as a delta.
+        source.TotalOccurrences = 15;
+        source.LastOccurrence = source.LastOccurrence.AddMinutes(1);
+        await _repository.SaveAsync(source, o => o.ImmediateConsistency());
+        await _repository.MergeDuplicateStackAsync(target.Id, source);
+
+        merged = await _repository.GetByIdAsync(target.Id, o => o.ImmediateConsistency());
+        Assert.NotNull(merged);
+        Assert.Equal(115, merged.TotalOccurrences);
+        Assert.Equal(source.LastOccurrence, merged.LastOccurrence);
     }
 }

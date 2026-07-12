@@ -4,6 +4,7 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
 using Foundatio.Resilience;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -88,11 +89,34 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             if (missingStackIds.Length == 0)
                 continue;
 
-            long deletedCount = await _eventRepository.RemoveAllByStackIdsAsync(missingStackIds);
+            // Redirect tombstones are intentionally retained so events from an in-flight ingestion
+            // context can never be mistaken for orphaned data. Move those late events to the
+            // canonical stack and refresh its metadata before deleting only truly missing stacks.
+            var redirectedStacks = await _stackRepository.GetByIdsAsync(
+                missingStackIds,
+                o => o.SoftDeleteMode(SoftDeleteQueryMode.All));
+            var redirectedStackIds = redirectedStacks
+                .Where(s => !String.IsNullOrEmpty(s.RedirectToStackId))
+                .Select(s => s.Id)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var redirectedStackDocuments = redirectedStacks
+                .Where(s => redirectedStackIds.Contains(s.Id))
+                .ToList();
+
+            if (redirectedStackDocuments.Count > 0)
+                await ReconcileRedirectedStacksAsync(redirectedStackDocuments, context);
+
+            string[] orphanedStackIds = missingStackIds.Where(id => !redirectedStackIds.Contains(id)).ToArray();
+            if (orphanedStackIds.Length == 0)
+                continue;
+
+            long deletedCount = await _eventRepository.RemoveAllByStackIdsAsync(orphanedStackIds, o => o.Notifications(false));
             totalOrphanedEvents += deletedCount;
 
-            _logger.LogInformation("Deleted {DeletedCount} orphaned events from {MissingStackCount} missing stacks out of {StackIdCount} checked", deletedCount, missingStackIds.Length, stackIds.Count);
+            _logger.LogInformation("Deleted {DeletedCount} orphaned events from {MissingStackCount} missing stacks out of {StackIdCount} checked", deletedCount, orphanedStackIds.Length, stackIds.Count);
         }
+
+        await ReconcileDirtyRedirectedStacksAsync(context);
 
         _logger.LogInformation("Completed orphaned events cleanup by stack: deleted {TotalOrphanedEvents} events, checked {TotalStackIds} stacks", totalOrphanedEvents, totalStackIds);
     }
@@ -125,7 +149,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             if (missingProjectIds.Length == 0)
                 continue;
 
-            long deletedCount = await _eventRepository.RemoveAllByProjectIdsAsync(missingProjectIds);
+            long deletedCount = await _eventRepository.RemoveAllByProjectIdsAsync(missingProjectIds, o => o.Notifications(false));
             totalOrphanedEvents += deletedCount;
 
             _logger.LogInformation("Deleted {DeletedCount} orphaned events from {MissingProjectCount} missing projects out of {ProjectIdCount} checked", deletedCount, missingProjectIds.Length, projectIds.Count);
@@ -162,7 +186,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             if (missingOrganizationIds.Length == 0)
                 continue;
 
-            long deletedCount = await _eventRepository.RemoveAllByOrganizationIdsAsync(missingOrganizationIds);
+            long deletedCount = await _eventRepository.RemoveAllByOrganizationIdsAsync(missingOrganizationIds, o => o.Notifications(false));
             totalOrphanedEvents += deletedCount;
 
             _logger.LogInformation("Deleted {DeletedCount} orphaned events from {MissingOrganizationCount} missing organizations out of {OrganizationIdCount} checked", deletedCount, missingOrganizationIds.Length, organizationIds.Count);
@@ -222,6 +246,13 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                         continue;
                     }
 
+                    var targetCandidates = stacks.Documents.Where(s => String.IsNullOrEmpty(s.RedirectToStackId)).ToList();
+                    if (targetCandidates.Count == 0)
+                    {
+                        _logger.LogError("Did not find a canonical stack for signature {SignatureHash} and project {ProjectId}", signature, projectId);
+                        continue;
+                    }
+
                     var eventCounts = await _eventRepository.CountAsync(q => q.Stack(stacks.Documents.Select(s => s.Id)).AggregationsExpression("terms:stack_id"));
                     var eventCountBuckets = eventCounts.Aggregations.Terms("terms_stack_id")?.Buckets ?? new List<KeyedBucket<string>>();
 
@@ -229,44 +260,44 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                     bool shouldUpdateEvents = eventCountBuckets.Count > 1;
 
                     // Default to using the oldest stack.
-                    var targetStack = stacks.Documents.OrderBy(s => s.CreatedUtc).First();
-                    var duplicateStacks = stacks.Documents.OrderBy(s => s.CreatedUtc).Skip(1).ToList();
+                    var targetStack = targetCandidates.OrderBy(s => s.CreatedUtc).First();
+                    var duplicateStacks = stacks.Documents.Where(s => s.Id != targetStack.Id).OrderBy(s => s.CreatedUtc).ToList();
 
                     // Use the stack that has the most events on it so we can reduce the number of updates.
-                    if (eventCountBuckets.Count > 0)
+                    var targetCandidateIds = targetCandidates.Select(s => s.Id).ToHashSet(StringComparer.Ordinal);
+                    var targetBuckets = eventCountBuckets.Where(b => targetCandidateIds.Contains(b.Key)).ToList();
+                    if (targetBuckets.Count > 0)
                     {
-                        string targetStackId = eventCountBuckets.OrderByDescending(b => b.Total).First().Key;
-                        targetStack = stacks.Documents.Single(d => d.Id == targetStackId);
-                        duplicateStacks = stacks.Documents.Where(d => d.Id != targetStackId).ToList();
+                        string targetStackId = targetBuckets.OrderByDescending(b => b.Total).First().Key;
+                        targetStack = targetCandidates.Single(d => d.Id == targetStackId);
+                        duplicateStacks = stacks.Documents.Where(d => d.Id != targetStackId).OrderBy(d => d.CreatedUtc).ToList();
                     }
 
-                    targetStack.CreatedUtc = stacks.Documents.Min(d => d.CreatedUtc);
-                    targetStack.Status = stacks.Documents.FirstOrDefault(d => d.Status != StackStatus.Open)?.Status ?? StackStatus.Open;
-                    targetStack.LastOccurrence = stacks.Documents.Max(d => d.LastOccurrence);
-                    targetStack.SnoozeUntilUtc = stacks.Documents.Max(d => d.SnoozeUntilUtc);
-                    targetStack.DateFixed = stacks.Documents.Max(d => d.DateFixed);
-                    targetStack.TotalOccurrences += duplicateStacks.Sum(d => d.TotalOccurrences);
-                    targetStack.Tags.UnionWith(duplicateStacks.SelectMany(d => d.Tags));
-                    targetStack.References = stacks.Documents.SelectMany(d => d.References).Distinct().ToList();
-                    targetStack.OccurrencesAreCritical = stacks.Documents.Any(d => d.OccurrencesAreCritical);
+                    // Publish durable redirects before moving events. New ingestion resolves these
+                    // immediately, and any already in-flight writes are preserved by the orphan pass.
+                    foreach (var duplicateStack in duplicateStacks)
+                        await _stackRepository.SetDuplicateStackRedirectAsync(duplicateStack, targetStack.Id);
 
-                    duplicateStacks.ForEach(s => s.IsDeleted = true);
+                    // Always run strict verification, even when open-index counts show no source
+                    // events. Closed or unavailable daily indices must block stack deletion.
+                    long affectedRecords = await AwaitWithLockRenewalAsync(
+                        _eventRepository.ReassignStackAsync(
+                            duplicateStacks.Select(s => s.Id), targetStack.Id, context.CancellationToken),
+                        context);
 
-                    if (shouldUpdateEvents)
+                    _logger.LogInformation("Migrated stack events: Target={TargetId} Events={UpdatedEvents} Dupes={DuplicateIds}", targetStack.Id, affectedRecords, duplicateStacks.Select(s => s.Id));
+                    totalUpdatedEventCount += affectedRecords;
+
+                    context.CancellationToken.ThrowIfCancellationRequested();
+
+                    // Apply each source's metadata to the target using a durable occurrence ledger,
+                    // then hide the redirected source. This ordering is retry-safe when any write fails.
+                    foreach (var duplicateStack in duplicateStacks)
                     {
-                        // Reassign events before soft-deleting duplicates: if event reassignment
-                        // fails, the duplicate stacks remain visible and no data is lost.
-                        long affectedRecords = await _eventRepository.ReassignStackAsync(
-                            duplicateStacks.Select(s => s.Id), targetStack.Id);
-
-                        _logger.LogInformation("Migrated stack events: Target={TargetId} Events={UpdatedEvents} Dupes={DuplicateIds}", targetStack.Id, affectedRecords, duplicateStacks.Select(s => s.Id));
-                        totalUpdatedEventCount += affectedRecords;
+                        await _stackRepository.MergeDuplicateStackAsync(targetStack.Id, duplicateStack);
+                        await _stackRepository.SetDuplicateStackRedirectAsync(duplicateStack, targetStack.Id, isDeleted: true);
                     }
 
-                    // Soft-delete duplicates and save after events are safely migrated.
-                    // No per-item ImmediateConsistency needed: GetDuplicateSignaturesAsync
-                    // forces a refresh before each batch aggregation call.
-                    await _stackRepository.SaveAsync([.. duplicateStacks, targetStack]);
                     processed++;
                     batchProcessed++;
 
@@ -305,10 +336,109 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
         _logger.LogInformation("Done de-duping stacks: Total={Processed}/{Total} Errors={ErrorCount} UpdatedEvents={UpdatedEventCount}", processed, total, error, totalUpdatedEventCount);
     }
 
+    private async Task ReconcileDirtyRedirectedStacksAsync(JobContext context)
+    {
+        var redirectedStacks = await _stackRepository.GetRedirectedStacksNeedingReconciliationAsync();
+        while (redirectedStacks.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
+        {
+            await ReconcileRedirectedStacksAsync(redirectedStacks.Documents, context);
+
+            if (!await redirectedStacks.NextPageAsync())
+                break;
+        }
+    }
+
+    private async Task ReconcileRedirectedStacksAsync(IReadOnlyCollection<Stack> redirectedStacks, JobContext context)
+    {
+        var stacksByTarget = new Dictionary<string, (Stack Target, List<Stack> Sources)>(StringComparer.Ordinal);
+        foreach (var sourceStack in redirectedStacks)
+        {
+            context.CancellationToken.ThrowIfCancellationRequested();
+
+            try
+            {
+                var targetStack = await _stackRepository.GetCanonicalStackAsync(sourceStack.RedirectToStackId!);
+                if (targetStack is null)
+                {
+                    _logger.LogWarning(
+                        "Preserving redirected stack {SourceStackId} because target stack {TargetStackId} is unavailable",
+                        sourceStack.Id,
+                        sourceStack.RedirectToStackId);
+                    continue;
+                }
+
+                if (!stacksByTarget.TryGetValue(targetStack.Id, out var group))
+                {
+                    group = (targetStack, []);
+                    stacksByTarget[targetStack.Id] = group;
+                }
+
+                group.Sources.Add(sourceStack);
+            }
+            catch (DocumentException ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Unable to resolve redirected stack {SourceStackId} to target {TargetStackId}",
+                    sourceStack.Id,
+                    sourceStack.RedirectToStackId);
+            }
+        }
+
+        foreach (var (_, group) in stacksByTarget)
+        {
+            // Merge metadata first. If event reassignment fails, the contribution ledger makes
+            // this safe to retry. Counter patches mark a tombstone dirty, while event-bearing
+            // tombstones are discovered directly by the orphan scan.
+            foreach (var sourceStack in group.Sources)
+                await _stackRepository.MergeDuplicateStackAsync(group.Target.Id, sourceStack);
+
+            long reassigned = await AwaitWithLockRenewalAsync(
+                _eventRepository.ReassignStackAsync(
+                    group.Sources.Select(s => s.Id), group.Target.Id, context.CancellationToken),
+                context);
+
+            foreach (var sourceStack in group.Sources)
+            {
+                if (!sourceStack.IsDeleted)
+                {
+                    await _stackRepository.SetDuplicateStackRedirectAsync(sourceStack, group.Target.Id, isDeleted: true);
+                    sourceStack.IsDeleted = true;
+                    sourceStack.RedirectToStackId = group.Target.Id;
+                }
+
+                await _stackRepository.MarkDuplicateStackReconciledAsync(sourceStack);
+            }
+
+            if (reassigned > 0)
+            {
+                _logger.LogInformation(
+                    "Reassigned {EventCount} late event(s) from {SourceStackCount} duplicate stack(s) to {TargetStackId}",
+                    reassigned,
+                    group.Sources.Count,
+                    group.Target.Id);
+            }
+        }
+    }
+
     private Task RenewLockAsync(JobContext context)
     {
         _lastRun = _timeProvider.GetUtcNow().UtcDateTime;
         return context.RenewLockAsync();
+    }
+
+    private async Task<T> AwaitWithLockRenewalAsync<T>(Task<T> operation, JobContext context)
+    {
+        while (!operation.IsCompleted)
+        {
+            var completed = await Task.WhenAny(operation, Task.Delay(TimeSpan.FromSeconds(30), _timeProvider));
+            if (completed == operation)
+                break;
+
+            await RenewLockAsync(context);
+        }
+
+        return await operation;
     }
 
     public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)

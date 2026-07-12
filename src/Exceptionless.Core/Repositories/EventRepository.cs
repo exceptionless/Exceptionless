@@ -213,30 +213,33 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
     }
 
     public Task<long> RemoveAllByStackIdsAsync(string[] stackIds)
+        => RemoveAllByStackIdsAsync(stackIds, null);
+
+    public Task<long> RemoveAllByStackIdsAsync(string[] stackIds, CommandOptionsDescriptor<PersistentEvent>? options)
     {
         ArgumentNullException.ThrowIfNull(stackIds);
         if (stackIds is [])
             throw new ArgumentOutOfRangeException(nameof(stackIds));
 
-        return RemoveAllIgnoringMissingEventIndexesAsync(q => q.Stack(stackIds));
+        return RemoveAllIgnoringMissingEventIndexesAsync(q => q.Stack(stackIds), options);
     }
 
-    public Task<long> RemoveAllByProjectIdsAsync(string[] projectIds)
+    public Task<long> RemoveAllByProjectIdsAsync(string[] projectIds, CommandOptionsDescriptor<PersistentEvent>? options = null)
     {
         ArgumentNullException.ThrowIfNull(projectIds);
         if (projectIds is [])
             throw new ArgumentOutOfRangeException(nameof(projectIds));
 
-        return RemoveAllIgnoringMissingEventIndexesAsync(q => q.Project(projectIds));
+        return RemoveAllIgnoringMissingEventIndexesAsync(q => q.Project(projectIds), options);
     }
 
-    public Task<long> RemoveAllByOrganizationIdsAsync(string[] organizationIds)
+    public Task<long> RemoveAllByOrganizationIdsAsync(string[] organizationIds, CommandOptionsDescriptor<PersistentEvent>? options = null)
     {
         ArgumentNullException.ThrowIfNull(organizationIds);
         if (organizationIds is [])
             throw new ArgumentOutOfRangeException(nameof(organizationIds));
 
-        return RemoveAllIgnoringMissingEventIndexesAsync(q => q.Organization(organizationIds));
+        return RemoveAllIgnoringMissingEventIndexesAsync(q => q.Organization(organizationIds), options);
     }
 
     private async Task<long> RemoveAllIgnoringMissingEventIndexesAsync(
@@ -286,23 +289,80 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
     /// Reassigns all events from the source stacks to the target stack using a parameterized
     /// Painless script (no string interpolation) to prevent script injection.
     /// </summary>
-    public Task<long> ReassignStackAsync(IEnumerable<string> sourceStackIds, string targetStackId)
+    /// <remarks>
+    /// Foundatio's update-by-query task cannot be interrupted safely once submitted. The token is
+    /// observed before submission and by both strict verification reads; the caller must retain its
+    /// lease until this method returns so cancellation cannot leave an unobserved background write.
+    /// </remarks>
+    public async Task<long> ReassignStackAsync(IEnumerable<string> sourceStackIds, string targetStackId, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(sourceStackIds);
         ArgumentException.ThrowIfNullOrEmpty(targetStackId);
 
         // Materialize to avoid multiple enumeration and guard against empty; an empty
         // .Stack() filter would match ALL events and reassign them to the target stack.
-        var sourceIds = sourceStackIds.ToList();
+        var sourceIds = sourceStackIds.Distinct(StringComparer.Ordinal).ToList();
         if (sourceIds.Count == 0)
-            return Task.FromResult(0L);
+            return 0;
+        if (sourceIds.Contains(targetStackId, StringComparer.Ordinal))
+            throw new ArgumentException("Source and target stack ids must be different.", nameof(sourceStackIds));
 
-        return PatchAllAsync(
-            q => q.Stack(sourceIds),
-            new ScriptPatch("ctx._source.stack_id = params.targetStackId")
-            {
-                Params = new Dictionary<string, object> { ["targetStackId"] = targetStackId }
-            });
+        const int maxAttempts = 5;
+        long remaining = await CountEventsByStackIdsStrictAsync(sourceIds, cancellationToken);
+        long affected = 0;
+
+        for (int attempt = 1; remaining > 0 && attempt <= maxAttempts; attempt++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            affected += await PatchAllAsync(
+                q => q.Stack(sourceIds),
+                new ScriptPatch("ctx._source.stack_id = params.targetStackId")
+                {
+                    Params = new Dictionary<string, object> { ["targetStackId"] = targetStackId }
+                },
+                o => o.ImmediateConsistency().Notifications(false));
+
+            // ScriptPatch uses update-by-query with Conflicts.Proceed. Verify strictly against
+            // the same alias and retry any documents skipped by version conflicts.
+            remaining = await CountEventsByStackIdsStrictAsync(sourceIds, cancellationToken);
+        }
+
+        if (remaining > 0)
+            throw new DocumentException($"Unable to reassign {remaining} event(s) after {maxAttempts} attempts.");
+
+        return affected;
+    }
+
+    private async Task<long> CountEventsByStackIdsStrictAsync(IReadOnlyCollection<string> stackIds, CancellationToken cancellationToken)
+    {
+        var count = await _configuration.Client.CountAsync<PersistentEvent>(s => s
+            .Indices(_configuration.Events.Name)
+            .AllowNoIndices(true)
+            .IgnoreUnavailable(false)
+            .ExpandWildcards(ExpandWildcard.All)
+            .Query(q => q.Terms(t => t
+                .Field(e => e.StackId)
+                .Terms(new TermsQueryField(stackIds.Select(id => (FieldValue)id).ToList())))), cancellationToken);
+
+        // A brand-new installation can have no event alias yet. Fall back to every concrete
+        // version only for that specific state so an alias transition can never look like zero.
+        if (!count.IsValidResponse && count.ElasticsearchServerError is not null && IsIndexNotFound(count.ElasticsearchServerError))
+        {
+            count = await _configuration.Client.CountAsync<PersistentEvent>(s => s
+                .Indices($"{_configuration.Events.Name}-v*-*")
+                .AllowNoIndices(true)
+                .IgnoreUnavailable(false)
+                .ExpandWildcards(ExpandWildcard.All)
+                .Query(q => q.Terms(t => t
+                    .Field(e => e.StackId)
+                    .Terms(new TermsQueryField(stackIds.Select(id => (FieldValue)id).ToList())))), cancellationToken);
+        }
+
+        if (!count.IsValidResponse || count.Shards.Failed > 0)
+            throw new DocumentException($"Unable to verify event reassignment through the event alias: {count.DebugInformation}", count.ApiCallDetails.OriginalException);
+
+        return count.Count;
     }
 
     public Task<DistinctValuePage> GetDistinctStackIdsAsync(int batchSize, string? afterValue = null, CancellationToken cancellationToken = default)
