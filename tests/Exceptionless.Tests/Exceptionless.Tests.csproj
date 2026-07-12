@@ -26,6 +26,9 @@
 
   <ItemGroup>
     <None Update="**\*.json" CopyToOutputDirectory="Always" />
+    <None Include="..\..\src\Exceptionless.Web\Security\frontend-content-security-policy.contract.json"
+          Link="Security\frontend-content-security-policy.contract.json"
+          CopyToOutputDirectory="Always" />
     <Content Include="appsettings.yml" CopyToOutputDirectory="Always" />
   </ItemGroup>
 </Project>
