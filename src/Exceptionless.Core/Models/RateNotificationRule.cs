@@ -24,13 +24,13 @@ public class RateNotificationRule : IOwnedByOrganizationAndProjectWithIdentity, 
     [ObjectId]
     public string UserId { get; set; } = null!;
 
-    public int Version { get; set; } = 1;
+    public int Version { get; set; }
 
     [Required]
     [MaxLength(100)]
     public string Name { get; set; } = null!;
 
-    public bool IsEnabled { get; set; } = true;
+    public bool IsEnabled { get; set; }
 
     [EnumDataType(typeof(RateNotificationSignal))]
     public RateNotificationSignal Signal { get; set; }
@@ -42,11 +42,11 @@ public class RateNotificationRule : IOwnedByOrganizationAndProjectWithIdentity, 
     public string? StackId { get; set; }
 
     [Range(1, int.MaxValue)]
-    public int Threshold { get; set; } = 10;
+    public int Threshold { get; set; }
 
-    public TimeSpan Window { get; set; } = TimeSpan.FromHours(1);
+    public TimeSpan Window { get; set; }
 
-    public TimeSpan Cooldown { get; set; } = TimeSpan.FromHours(1);
+    public TimeSpan Cooldown { get; set; }
 
     public DateTime? SnoozedUntilUtc { get; set; }
 

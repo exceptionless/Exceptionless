@@ -205,6 +205,10 @@ public class RateNotificationRuleController : ExceptionlessApiController
         if (project is null)
             return NotFound();
 
+        await using var mutationLock = await TryAcquireRuleMutationLockAsync(ruleId);
+        if (mutationLock is null)
+            return RuleMutationConflict();
+
         var rule = await GetRuleAndCheckAccessAsync(ruleId, userId, project);
         if (rule is null)
             return NotFound();
@@ -294,6 +298,10 @@ public class RateNotificationRuleController : ExceptionlessApiController
         if (project is null)
             return NotFound();
 
+        await using var mutationLock = await TryAcquireRuleMutationLockAsync(ruleId);
+        if (mutationLock is null)
+            return RuleMutationConflict();
+
         var rule = await GetRuleAndCheckAccessAsync(ruleId, userId, project);
         if (rule is null)
             return NotFound();
@@ -318,6 +326,10 @@ public class RateNotificationRuleController : ExceptionlessApiController
         var project = await GetProjectAndCheckAccessAsync(projectId, userId);
         if (project is null)
             return NotFound();
+
+        await using var mutationLock = await TryAcquireRuleMutationLockAsync(ruleId);
+        if (mutationLock is null)
+            return RuleMutationConflict();
 
         var rule = await GetRuleAndCheckAccessAsync(ruleId, userId, project);
         if (rule is null)
@@ -352,6 +364,10 @@ public class RateNotificationRuleController : ExceptionlessApiController
         if (project is null)
             return NotFound();
 
+        await using var mutationLock = await TryAcquireRuleMutationLockAsync(ruleId);
+        if (mutationLock is null)
+            return RuleMutationConflict();
+
         var rule = await GetRuleAndCheckAccessAsync(ruleId, userId, project);
         if (rule is null)
             return NotFound();
@@ -372,6 +388,19 @@ public class RateNotificationRuleController : ExceptionlessApiController
     {
         // User can manage their own rules; global admins can manage any user's rules
         return String.Equals(CurrentUser.Id, userId, StringComparison.Ordinal) || Request.IsGlobalAdmin();
+    }
+
+    private Task<ILock?> TryAcquireRuleMutationLockAsync(string ruleId)
+    {
+        return _lockProvider.TryAcquireAsync(
+            $"rate-notification:mutation:{ruleId}",
+            TimeSpan.FromSeconds(15),
+            TimeSpan.FromSeconds(5));
+    }
+
+    private ConflictObjectResult RuleMutationConflict()
+    {
+        return Conflict(new ProblemDetails { Detail = "Another update to this rate notification rule is in progress. Please retry." });
     }
 
     private async Task<Project?> GetProjectAndCheckAccessAsync(string projectId, string userId)

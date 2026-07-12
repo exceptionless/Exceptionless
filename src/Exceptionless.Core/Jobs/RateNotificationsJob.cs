@@ -23,6 +23,7 @@ public class RateNotificationsJob : QueueJobBase<RateNotification>
     private readonly IProjectRepository _projectRepository;
     private readonly IUserRepository _userRepository;
     private readonly IStackRepository _stackRepository;
+    private readonly ProjectNotificationThrottleService _projectNotificationThrottle;
 
     public RateNotificationsJob(
         IQueue<RateNotification> queue,
@@ -32,6 +33,7 @@ public class RateNotificationsJob : QueueJobBase<RateNotification>
         IProjectRepository projectRepository,
         IUserRepository userRepository,
         IStackRepository stackRepository,
+        ProjectNotificationThrottleService projectNotificationThrottle,
         TimeProvider timeProvider,
         IResiliencePolicyProvider resiliencePolicyProvider,
         ILoggerFactory loggerFactory) : base(queue, timeProvider, resiliencePolicyProvider, loggerFactory)
@@ -42,6 +44,7 @@ public class RateNotificationsJob : QueueJobBase<RateNotification>
         _projectRepository = projectRepository;
         _userRepository = userRepository;
         _stackRepository = stackRepository;
+        _projectNotificationThrottle = projectNotificationThrottle;
     }
 
     protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<RateNotification> context)
@@ -70,6 +73,9 @@ public class RateNotificationsJob : QueueJobBase<RateNotification>
 
         if (!rule.IsEnabled)
             return Skip($"Rule {wi.RuleId} is disabled; skipping.");
+
+        if (rule.SnoozedUntilUtc > _timeProvider.GetUtcNow().UtcDateTime)
+            return Skip($"Rule {wi.RuleId} is snoozed; skipping.");
 
         if (!RateNotificationCounterPlan.IsValidRuntimeDefinition(rule, rule.ProjectId))
         {
@@ -146,6 +152,13 @@ public class RateNotificationsJob : QueueJobBase<RateNotification>
             {
                 return Skip($"Stack {rule.StackId} cannot receive rate notifications; skipping.");
             }
+        }
+
+        long notificationCount = await _projectNotificationThrottle.IncrementAsync(project.Id, context.CancellationToken);
+        if (notificationCount > ProjectNotificationThrottleService.NotificationLimit)
+        {
+            _logger.LogInformation("Skipping rate notification because of project throttling: project={ProjectId} count={NotificationCount}", project.Id, notificationCount);
+            return Skip($"Project {project.Id} exceeded its notification budget; skipping.");
         }
 
         await _mailer.SendRateNotificationAsync(user, project, rule, wi.ObservedCount, wi.WindowStartUtc, wi.WindowEndUtc, stack);

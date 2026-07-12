@@ -1,17 +1,21 @@
 import type { ViewRateNotificationRule } from '$generated/api';
+import type { FetchClientResponse } from '@exceptionless/fetchclient';
 
 import { RateNotificationSignal, RateNotificationSubject } from '$generated/api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
+    cancelQueries: vi.fn(),
     client: {
         delete: vi.fn(),
         getJSON: vi.fn(),
         postJSON: vi.fn(),
         putJSON: vi.fn()
     },
+    getQueriesData: vi.fn(),
     invalidateQueries: vi.fn(),
-    setQueriesData: vi.fn()
+    setQueriesData: vi.fn(),
+    setQueryData: vi.fn()
 }));
 
 vi.mock('$features/auth/index.svelte', () => ({
@@ -25,7 +29,13 @@ vi.mock('@exceptionless/fetchclient', () => ({
 vi.mock('@tanstack/svelte-query', () => ({
     createMutation: (factory: () => unknown) => factory(),
     createQuery: (factory: () => unknown) => factory(),
-    useQueryClient: () => ({ invalidateQueries: mocks.invalidateQueries, setQueriesData: mocks.setQueriesData })
+    useQueryClient: () => ({
+        cancelQueries: mocks.cancelQueries,
+        getQueriesData: mocks.getQueriesData,
+        invalidateQueries: mocks.invalidateQueries,
+        setQueriesData: mocks.setQueriesData,
+        setQueryData: mocks.setQueryData
+    })
 }));
 
 import {
@@ -39,6 +49,9 @@ import {
 
 interface Mutation<TVariables, TData = unknown> {
     mutationFn: (variables: TVariables) => Promise<unknown>;
+    onError?: (error: unknown, variables: TVariables, context: unknown) => void;
+    onMutate?: (variables: TVariables) => Promise<unknown>;
+    onSettled?: (data: TData | undefined, error: unknown, variables: TVariables) => void;
     onSuccess: (data: TData, variables: TVariables) => void;
 }
 
@@ -49,6 +62,8 @@ describe('rate notification API', () => {
         mocks.client.getJSON.mockResolvedValue({ data: [] });
         mocks.client.postJSON.mockResolvedValue({ data: { id: 'rule-id' } });
         mocks.client.putJSON.mockResolvedValue({ data: { id: 'rule-id' } });
+        mocks.cancelQueries.mockResolvedValue(undefined);
+        mocks.getQueriesData.mockReturnValue([]);
     });
 
     afterEach(() => {
@@ -179,5 +194,24 @@ describe('rate notification API', () => {
 
         vi.advanceTimersByTime(1500);
         expect(mocks.invalidateQueries).toHaveBeenCalledWith({ queryKey: ['RateNotificationRule', route.userId, route.projectId] });
+    });
+
+    it('rolls back an optimistic rule update when the request fails', async () => {
+        // Arrange
+        const route = { projectId: 'project-id', userId: 'user-id' };
+        const variables = { ...route, body: { is_enabled: false }, ruleId: 'rule-id' };
+        const queryKey = ['RateNotificationRule', route.userId, route.projectId, { params: undefined }] as const;
+        const previousResponse = { data: [{ id: variables.ruleId, is_enabled: true }] } as FetchClientResponse<ViewRateNotificationRule[]>;
+        mocks.getQueriesData.mockReturnValue([[queryKey, previousResponse]]);
+        const mutation = putRateNotificationRule() as unknown as Mutation<typeof variables, ViewRateNotificationRule>;
+
+        // Act
+        const context = await mutation.onMutate?.(variables);
+        mutation.onError?.(new Error('request failed'), variables, context);
+
+        // Assert
+        expect(mocks.cancelQueries).toHaveBeenCalledWith({ queryKey: ['RateNotificationRule', route.userId, route.projectId] });
+        expect(mocks.setQueriesData).toHaveBeenCalledOnce();
+        expect(mocks.setQueryData).toHaveBeenCalledWith(queryKey, previousResponse);
     });
 });

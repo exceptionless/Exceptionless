@@ -58,6 +58,7 @@ public class UpdateRateCountersActionIntegrationTests : IntegrationTestsBase
             Threshold = 1,
             Window = TimeSpan.FromMinutes(5),
             Cooldown = TimeSpan.FromMinutes(5),
+            Version = 1,
             CreatedUtc = TimeProvider.GetUtcNow().UtcDateTime,
             UpdatedUtc = TimeProvider.GetUtcNow().UtcDateTime
         }, o => o.ImmediateConsistency());

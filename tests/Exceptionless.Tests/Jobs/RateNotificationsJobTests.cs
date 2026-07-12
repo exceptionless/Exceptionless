@@ -4,9 +4,11 @@ using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Mail;
 using Exceptionless.Tests.Utility;
+using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
@@ -196,6 +198,23 @@ public class RateNotificationsJobTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task RunAsync_ActivelySnoozedRule_SkipsNotification()
+    {
+        // Arrange
+        var (rule, notification) = await CreateRuleAndNotificationAsync();
+        rule.SnoozedUntilUtc = TimeProvider.GetUtcNow().UtcDateTime.AddHours(1);
+        await _ruleRepository.SaveAsync(rule, o => o.ImmediateConsistency());
+        await _queue.EnqueueAsync(notification);
+
+        // Act
+        var result = await _job.RunAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Empty(_mailer.RateNotifications);
+    }
+
+    [Fact]
     public async Task RunAsync_UnverifiedUser_SkipsNotification()
     {
         // Arrange
@@ -356,6 +375,26 @@ public class RateNotificationsJobTests : IntegrationTestsBase
         // Assert
         var stats = await _queue.GetQueueStatsAsync();
         Assert.Equal(1, stats.Enqueued);
+    }
+
+    [Fact]
+    public async Task RunAsync_ManyMatchingRules_EnforcesSharedProjectNotificationBudget()
+    {
+        // Arrange
+        for (int index = 0; index <= ProjectNotificationThrottleService.NotificationLimit; index++)
+        {
+            var (_, notification) = await CreateRuleAndNotificationAsync();
+            await _queue.EnqueueAsync(notification);
+        }
+
+        // Act
+        var results = new List<JobResult>();
+        for (int index = 0; index <= ProjectNotificationThrottleService.NotificationLimit; index++)
+            results.Add(await _job.RunAsync(TestContext.Current.CancellationToken));
+
+        // Assert
+        Assert.All(results, result => Assert.True(result.IsSuccess));
+        Assert.Equal(ProjectNotificationThrottleService.NotificationLimit, _mailer.RateNotifications.Count);
     }
 
     private async Task<(RateNotificationRule Rule, RateNotification Notification)> CreateRuleAndNotificationAsync()

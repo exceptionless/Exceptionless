@@ -1,13 +1,13 @@
-import type {
-    NewRateNotificationRule,
-    SnoozeRateNotificationRuleRequest,
-    UpdateRateNotificationRule,
-    ViewRateNotificationRule
-} from '$features/rate-notifications/types';
-
 import { accessToken } from '$features/auth/index.svelte';
+import {
+    type NewRateNotificationRule,
+    RateNotificationSubject,
+    type SnoozeRateNotificationRuleRequest,
+    type UpdateRateNotificationRule,
+    type ViewRateNotificationRule
+} from '$features/rate-notifications/types';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
-import { createMutation, createQuery, type QueryClient, useQueryClient } from '@tanstack/svelte-query';
+import { createMutation, createQuery, type QueryClient, type QueryKey, useQueryClient } from '@tanstack/svelte-query';
 
 const CONSISTENCY_REFRESH_DELAY_MS = 1500;
 
@@ -18,6 +18,10 @@ interface BodyMutationVariables<TBody> extends MutationRoute {
 interface MutationRoute {
     projectId: string;
     userId: string;
+}
+
+interface RateNotificationMutationContext {
+    previousRules: [QueryKey, FetchClientResponse<ViewRateNotificationRule[]> | undefined][];
 }
 
 interface RateNotificationRoute {
@@ -125,17 +129,77 @@ export function postUnsnoozeRateNotificationRule() {
 export function putRateNotificationRule() {
     const queryClient = useQueryClient();
 
-    return createMutation<ViewRateNotificationRule, ProblemDetails, RuleBodyMutationVariables<UpdateRateNotificationRule>>(() => ({
-        mutationFn: async ({ body, ruleId, ...route }) => {
-            const client = useFetchClient();
-            const response = await client.putJSON<ViewRateNotificationRule>(ruleRoute(route, ruleId), body);
-            return response.data!;
-        },
-        onSuccess: (rule, variables) => {
-            updateRulesCache(queryClient, variables, (rules) => upsertRule(rules, rule));
-            scheduleConsistencyRefresh(queryClient, variables);
-        }
-    }));
+    return createMutation<ViewRateNotificationRule, ProblemDetails, RuleBodyMutationVariables<UpdateRateNotificationRule>, RateNotificationMutationContext>(
+        () => ({
+            mutationFn: async ({ body, ruleId, ...route }) => {
+                const client = useFetchClient();
+                const response = await client.putJSON<ViewRateNotificationRule>(ruleRoute(route, ruleId), body);
+                return response.data!;
+            },
+            onError: (_error, _variables, context) => {
+                for (const [queryKey, response] of context?.previousRules ?? []) {
+                    queryClient.setQueryData(queryKey, response);
+                }
+            },
+            onMutate: async (variables) => {
+                const queryKey = queryKeys.list(variables.userId, variables.projectId);
+                await queryClient.cancelQueries({ queryKey });
+                const previousRules = queryClient.getQueriesData<FetchClientResponse<ViewRateNotificationRule[]>>({ queryKey });
+                updateRulesCache(queryClient, variables, (rules) =>
+                    rules.map((rule) => (rule.id === variables.ruleId ? applyOptimisticUpdate(rule, variables.body) : rule))
+                );
+                return { previousRules };
+            },
+            onSettled: (_data, _error, variables) => {
+                scheduleConsistencyRefresh(queryClient, variables);
+            },
+            onSuccess: (rule, variables) => {
+                updateRulesCache(queryClient, variables, (rules) => upsertRule(rules, rule));
+            }
+        })
+    );
+}
+
+function applyOptimisticUpdate(rule: ViewRateNotificationRule, body: UpdateRateNotificationRule): ViewRateNotificationRule {
+    const updated = { ...rule };
+
+    if (body.name != null) {
+        updated.name = body.name;
+    }
+
+    if (body.signal != null) {
+        updated.signal = body.signal;
+    }
+
+    if (body.subject != null) {
+        updated.subject = body.subject;
+    }
+
+    if (body.stack_id != null) {
+        updated.stack_id = body.stack_id;
+    }
+
+    if (body.threshold != null) {
+        updated.threshold = body.threshold;
+    }
+
+    if (body.window != null) {
+        updated.window = body.window;
+    }
+
+    if (body.cooldown != null) {
+        updated.cooldown = body.cooldown;
+    }
+
+    if (body.is_enabled != null) {
+        updated.is_enabled = body.is_enabled;
+    }
+
+    if (updated.subject === RateNotificationSubject.Project) {
+        updated.stack_id = null;
+    }
+
+    return updated;
 }
 
 function ruleRoute(route: RateNotificationRoute, ruleId?: string): string {

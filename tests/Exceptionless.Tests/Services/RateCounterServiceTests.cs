@@ -344,4 +344,25 @@ public class RateCounterServiceTests
         Assert.True(first);
         Assert.False(second);
     }
+
+    [Fact]
+    public async Task TryAcquireEvaluationClaimAsync_WithoutEnqueue_DoesNotStartCooldownAndExpiresQuickly()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var (service, timeProvider, _) = Create();
+
+        // Act
+        bool first = await service.TryAcquireEvaluationClaimAsync(RuleId, SubjectKey, ct);
+        bool concurrent = await service.TryAcquireEvaluationClaimAsync(RuleId, SubjectKey, ct);
+        bool onCooldown = await service.IsOnCooldownAsync(RuleId, SubjectKey, ct);
+        timeProvider.Advance(TimeSpan.FromMinutes(2));
+        bool retry = await service.TryAcquireEvaluationClaimAsync(RuleId, SubjectKey, ct);
+
+        // Assert
+        Assert.True(first);
+        Assert.False(concurrent);
+        Assert.False(onCooldown);
+        Assert.True(retry);
+    }
 }

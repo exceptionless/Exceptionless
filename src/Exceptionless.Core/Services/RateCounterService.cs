@@ -16,6 +16,7 @@ public class RateCounterService
     private readonly TimeProvider _timeProvider;
 
     private static readonly TimeSpan BucketTtl = TimeSpan.FromHours(3);
+    private static readonly TimeSpan EvaluationClaimTtl = TimeSpan.FromMinutes(2);
     private const string LastEvaluatedMinuteKey = "rate:v1:evaluator:last-minute";
 
     public RateCounterService(ICacheClient cache, TimeProvider timeProvider)
@@ -94,6 +95,26 @@ public class RateCounterService
         return _cache.AddAsync(GetCooldownKey(ruleId, subjectKey), true, duration);
     }
 
+    /// <summary>Claims an evaluation briefly so a crash before enqueue cannot consume the full cooldown.</summary>
+    public Task<bool> TryAcquireEvaluationClaimAsync(string ruleId, string subjectKey, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        return _cache.AddAsync(GetEvaluationClaimKey(ruleId, subjectKey), true, EvaluationClaimTtl);
+    }
+
+    /// <summary>Starts the configured cooldown after the notification has been durably enqueued.</summary>
+    public Task SetCooldownAsync(string ruleId, string subjectKey, TimeSpan duration, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        return _cache.SetAsync(GetCooldownKey(ruleId, subjectKey), true, duration);
+    }
+
+    public Task RemoveEvaluationClaimAsync(string ruleId, string subjectKey, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        return _cache.RemoveAsync(GetEvaluationClaimKey(ruleId, subjectKey));
+    }
+
     public Task RemoveCooldownAsync(string ruleId, string subjectKey, CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
@@ -126,4 +147,7 @@ public class RateCounterService
 
     private static string GetCooldownKey(string ruleId, string subjectKey)
         => $"rate:v1:cooldown:{ruleId}:{subjectKey}";
+
+    private static string GetEvaluationClaimKey(string ruleId, string subjectKey)
+        => $"rate:v1:evaluation-claim:{ruleId}:{subjectKey}";
 }

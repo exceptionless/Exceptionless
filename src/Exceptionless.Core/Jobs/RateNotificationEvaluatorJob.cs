@@ -10,6 +10,7 @@ using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Queues;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Utility;
 using Foundatio.Resilience;
 using Microsoft.Extensions.Logging;
@@ -198,12 +199,16 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
         // Build subject key (for cooldown scoping)
         string subjectKey = BuildSubjectKey(rule);
 
-        // Atomically claim the cooldown before enqueueing so overlapping evaluators cannot duplicate alerts.
-        if (!await _counterService.TrySetCooldownAsync(rule.Id, subjectKey, rule.Cooldown, ct))
+        if (await _counterService.IsOnCooldownAsync(rule.Id, subjectKey, ct))
         {
             _logger.LogDebug("Rule {RuleId} is on cooldown for subject {SubjectKey}", rule.Id, subjectKey);
             return;
         }
+
+        // Use a short-lived claim while enqueueing. The full cooldown starts only after the
+        // queue accepts the notification, so a process crash cannot silence the rule for hours.
+        if (!await _counterService.TryAcquireEvaluationClaimAsync(rule.Id, subjectKey, ct))
+            return;
 
         try
         {
@@ -221,17 +226,20 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
                 ObservedCount = observedCount,
                 Threshold = rule.Threshold
             });
+            await _counterService.SetCooldownAsync(rule.Id, subjectKey, rule.Cooldown, ct);
             AppDiagnostics.RateNotificationsEnqueued.Add(1);
         }
-        catch
+        finally
         {
-            await _counterService.RemoveCooldownAsync(rule.Id, subjectKey, ct);
-            throw;
+            await _counterService.RemoveEvaluationClaimAsync(rule.Id, subjectKey, ct);
         }
 
-        // Update LastFiredUtc
-        rule.LastFiredUtc = evaluationEndUtc;
-        await _ruleRepository.SaveAsync(rule, o => o.Notifications(false));
+        // LastFiredUtc is evaluator-owned bookkeeping. Patch only that field so a concurrent
+        // user edit, disable, or snooze cannot be overwritten by this previously loaded snapshot.
+        await _ruleRepository.PatchAsync(
+            rule.Id,
+            new PartialPatch(new { last_fired_utc = evaluationEndUtc }),
+            o => o.Notifications(false));
 
         _logger.LogInformation("Rate notification fired: rule={RuleId} project={ProjectId} observed={Observed} threshold={Threshold}",
             rule.Id, rule.ProjectId, observedCount, rule.Threshold);

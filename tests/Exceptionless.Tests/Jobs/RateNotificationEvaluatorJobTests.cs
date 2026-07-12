@@ -89,6 +89,9 @@ public class RateNotificationEvaluatorJobTests : IntegrationTestsBase
         // Assert — notification enqueued
         var stats = await _notificationQueue.GetQueueStatsAsync();
         Assert.True(stats.Enqueued > 0, "Expected a RateNotification to be enqueued when threshold is crossed.");
+        var savedRule = await _ruleRepository.GetByIdAsync(rule.Id);
+        Assert.NotNull(savedRule);
+        Assert.Equal(now, savedRule.LastFiredUtc);
     }
 
     [Fact]

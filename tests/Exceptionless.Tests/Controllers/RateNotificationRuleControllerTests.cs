@@ -159,6 +159,27 @@ public sealed class RateNotificationRuleControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostAsync_MissingRequiredField_ReturnsBadRequest()
+    {
+        var user = await GetTestOrganizationUserAsync();
+
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath(RuleUrl(user.Id, SampleDataService.TEST_PROJECT_ID))
+            .Content(new
+            {
+                name = "Missing enabled state",
+                signal = RateNotificationSignal.Errors,
+                subject = RateNotificationSubject.Project,
+                threshold = 10,
+                window = TimeSpan.FromMinutes(5),
+                cooldown = TimeSpan.FromMinutes(30)
+            })
+            .StatusCodeShouldBeBadRequest());
+    }
+
+    [Fact]
     public async Task PostAsync_InvalidWindow_Returns422()
     {
         var user = await GetTestOrganizationUserAsync();
@@ -463,6 +484,50 @@ public sealed class RateNotificationRuleControllerTests : IntegrationTestsBase
         Assert.NotNull(fetched);
         Assert.Equal(created.Id, fetched.Id);
         Assert.Equal("Get-by-id test", fetched.Name);
+    }
+
+    [Fact]
+    public async Task PutAsync_ConcurrentUpdates_PreservesBothChanges()
+    {
+        var user = await GetTestOrganizationUserAsync();
+        var created = await SendRequestAsAsync<ViewRateNotificationRule>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath(RuleUrl(user.Id, SampleDataService.TEST_PROJECT_ID))
+            .Content(new NewRateNotificationRule
+            {
+                Name = "Concurrent update test",
+                Signal = RateNotificationSignal.Errors,
+                Subject = RateNotificationSubject.Project,
+                Threshold = 5,
+                Window = TimeSpan.FromMinutes(5),
+                Cooldown = TimeSpan.FromMinutes(30)
+            })
+            .StatusCodeShouldBeCreated());
+
+        Assert.NotNull(created);
+
+        Task<HttpResponseMessage> UpdateAsync(object model) => SendRequestAsync(r => r
+            .Put()
+            .AsTestOrganizationUser()
+            .AppendPath(RuleUrl(user.Id, SampleDataService.TEST_PROJECT_ID, created.Id))
+            .Content(model));
+
+        var responses = await Task.WhenAll(
+            UpdateAsync(new { Name = "Concurrent rename" }),
+            UpdateAsync(new { Threshold = 6 }));
+
+        Assert.All(responses, response => Assert.Equal(HttpStatusCode.OK, response.StatusCode));
+
+        var updated = await SendRequestAsAsync<ViewRateNotificationRule>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath(RuleUrl(user.Id, SampleDataService.TEST_PROJECT_ID, created.Id))
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(updated);
+        Assert.Equal("Concurrent rename", updated.Name);
+        Assert.Equal(6, updated.Threshold);
+        Assert.Equal(created.Version + 2, updated.Version);
     }
 
     [Fact]

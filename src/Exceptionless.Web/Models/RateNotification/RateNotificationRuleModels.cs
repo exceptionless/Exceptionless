@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using Exceptionless.Core.Attributes;
 using Exceptionless.Core.Models;
 
@@ -10,20 +11,26 @@ public record NewRateNotificationRule
     [MaxLength(100)]
     public string Name { get; init; } = null!;
 
+    [JsonRequired]
     public RateNotificationSignal Signal { get; init; }
 
+    [JsonRequired]
     public RateNotificationSubject Subject { get; init; }
 
     [ObjectId]
     public string? StackId { get; init; }
 
     [Range(1, int.MaxValue)]
-    public int Threshold { get; init; } = 10;
+    [JsonRequired]
+    public int Threshold { get; init; }
 
-    public TimeSpan Window { get; init; } = TimeSpan.FromHours(1);
+    [JsonRequired]
+    public TimeSpan Window { get; init; }
 
-    public TimeSpan Cooldown { get; init; } = TimeSpan.FromHours(1);
+    [JsonRequired]
+    public TimeSpan Cooldown { get; init; }
 
+    [JsonRequired]
     public bool IsEnabled { get; init; } = true;
 }
 

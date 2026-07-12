@@ -197,7 +197,8 @@ public class UpdateRateCountersActionTests
             StackId = stackId,
             Threshold = 1,
             Window = TimeSpan.FromMinutes(5),
-            Cooldown = TimeSpan.FromMinutes(5)
+            Cooldown = TimeSpan.FromMinutes(5),
+            Version = 1
         };
     }
 
