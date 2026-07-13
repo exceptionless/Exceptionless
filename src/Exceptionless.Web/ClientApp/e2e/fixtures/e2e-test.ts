@@ -81,7 +81,9 @@ export const test = base.extend<E2EFixtures>({
             await page.addInitScript(
                 ({ organizationId, token }) => {
                     window.localStorage.setItem('satellizer_token', token);
-                    window.localStorage.setItem('organization', JSON.stringify(organizationId));
+                    if (!window.localStorage.getItem('organization')) {
+                        window.localStorage.setItem('organization', JSON.stringify(organizationId));
+                    }
                 },
                 { organizationId: organization.id, token: userToken }
             );
