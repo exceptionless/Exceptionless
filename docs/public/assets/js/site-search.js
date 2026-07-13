@@ -64,11 +64,6 @@ export function initializeSiteSearch(modal) {
   modal.addEventListener("click", (event) => {
     if (event.target === modal) {
       closeSearch()
-      return
-    }
-
-    if (event.target instanceof Element && event.target.closest("[data-site-search-close]")) {
-      closeSearch()
     }
   })
 
@@ -101,13 +96,15 @@ export function initializeSiteSearch(modal) {
 
   input.addEventListener("input", () => {
     window.clearTimeout(debounceTimer)
+    activeSearchId++
     const query = input.value.trim()
     if (!query) {
       clearResults()
       return
     }
 
-    resetResults(`Searching for "${query}"...`, false)
+    clearButton.hidden = false
+    setStatus(`Searching for "${query}"...`)
     debounceTimer = window.setTimeout(() => performSearch(input.value), 120)
   })
 

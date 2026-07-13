@@ -64,15 +64,6 @@
           <li class="menu-pricing"><a href="/pricing/">Pricing</a></li>
           <li class="menu-news"><a href="/news/">News</a></li>
           <li class="menu-help"><a href="/docs/">Docs</a></li>
-          <li class="menu-search">
-            <a
-              href="#site-search-modal"
-              data-site-search-open
-              aria-label="Search Exceptionless"
-              aria-keyshortcuts="Meta+K Control+K /"
-              title="Search Exceptionless (Command+K, Ctrl+K, or /)"
-            >Search</a>
-          </li>
           <li class="menu-log-in"><a href="{{ site.appUrl }}">Log In</a></li>
           <li class="menu-sign-up"><a href="{{ site.signupUrl }}">Sign Up</a></li>
         </ul>
@@ -88,11 +79,7 @@
       {{ content }}
     </main>
 
-    <dialog id="site-search-modal" class="modal site-search-dialog" aria-labelledby="site-search-title" data-search-ignore>
-        <div class="modal-header">
-          <button class="close" type="button" data-site-search-close aria-label="Close search">&times;</button>
-          <h3 id="site-search-title">Search Exceptionless</h3>
-        </div>
+    <dialog id="site-search-modal" class="modal site-search-dialog" aria-label="Search Exceptionless" data-search-ignore>
         <div class="modal-body site-search-body">
           <form id="site-search-form" class="site-search-form" role="search">
           <div class="site-search-input-row">
@@ -104,7 +91,7 @@
               placeholder="Search docs, clients, self-hosting..."
               autocomplete="off"
               spellcheck="false"
-              aria-labelledby="site-search-title"
+              aria-label="Search Exceptionless"
               aria-autocomplete="list"
               aria-controls="site-search-results"
               aria-expanded="false"
