@@ -248,3 +248,74 @@ Completion requires all of the following evidence:
 - Microbenchmark reports and end-to-end load results for the scenario matrix.
 - A staged rollout through the internal project and selected projects with a
   documented rollback switch.
+
+## Implemented API and client behavior
+
+V3 is exposed through `POST /api/v3/events` and
+`POST /api/v3/projects/{projectId}/events`. Both are Minimal API routes and
+require a client-scoped bearer token. The request content type is
+`application/x-ndjson`; each event is one complete top-level JSON value. The
+routes accept identity, gzip, and Brotli content encoding and reject top-level
+arrays.
+
+Clients must generate one stable `id` per captured event and reuse it whenever
+the containing segment is replayed. They should also send the original event
+`date`; when omitted, the server receipt time is used. The configured
+`IdempotencyWindow` retains the server-date mapping for retries whose original
+event omitted a date. `reference_id` remains a separate business identifier and
+is not transport idempotency.
+
+Clients write events to the HTTP request as they occur, but close and reopen the
+segment at a bounded count, byte size, elapsed time, flush, or shutdown
+boundary. They retain only the unacknowledged segment. A connection loss, 5xx,
+or timeout replays the complete segment with the same event ids. A 200 response
+returns terminal counts for `persisted`, `discarded`, `duplicate`, `blocked`,
+and `invalid`. Earlier microbatches may already be durable when a later part of
+the segment produces a request-level failure; replay remains safe.
+
+Error clients send `exception_type` and the original `stack_trace`. The server
+parses .NET, Java, JavaScript, and Python frame forms, preserves caused-by
+chains, and stores structured frames. Unsupported formats use a normalized,
+hashed raw-trace fallback and increment a parser-fallback metric without logging
+the trace. Optional `stacking.signature_data` and `stacking.title` provide
+explicit manual stacking.
+
+The executable reference client and repeatable load harness live in
+`benchmarks/Exceptionless.Ingestion.Load`; usage is documented in
+`benchmarks/README.md`. Request examples live in `tests/http/events-v3.http`,
+and the isolated OpenAPI document is available at `/docs/v3/openapi.json`.
+
+## Configuration and rollout
+
+`EventIngestionV3:Enabled` defaults to `false`. Rollout can be constrained with
+`AllowedProjectIds` and `AllowedOrganizationIds`; empty sets allow every
+authenticated project. Other controls are:
+
+- `MicroBatchSize`, `MaximumMicroBatchBytes`, and `MaximumEventSize`.
+- `MaximumCompressedBodySize`, `MaximumDecompressedBodySize`, and
+  `MaximumEventsPerRequest`.
+- `MaximumConcurrentRequests`, `ConcurrencyQueueLimit`, and
+  `MaximumStackCreationConcurrency`.
+- `RequestTimeout` and `IdempotencyWindow`.
+- `StackRouteCacheDuration` and `NegativeStackRouteCacheDuration`.
+
+Start with the internal Exceptionless project in the allowlist, compare V2 and
+V3 stack signatures, terminal counts, usage, route-cache metrics, allocation
+profiles, and datastore saturation, then expand the allowlists gradually.
+Rollback is immediate: disable `EventIngestionV3:Enabled` and have clients use
+the unchanged V2 endpoint. V2 retains its controller, queued payload handoff,
+payload formats, and 202 response. Shared distributed quota primitives and
+stack-route cache lifecycle improvements do not change that contract.
+
+## Durable side effects
+
+The primary event and deterministic side-effect work item are required before
+acknowledgement. The background handler performs stack-usage repair,
+request/environment/geolocation enrichment, notifications, webhooks, post-save
+plugins, and deterministic archive export when archival is enabled. Work-item,
+notification, and webhook identities are stable for the configured idempotency
+window, so a client replay or work-item retry cannot enqueue the same
+user-visible effect twice. Distributed completion markers are keyed per event
+for stack statistics, notification/webhook enqueueing, and post-save plugins;
+failed effects release only the markers they claimed so a retry can repair them
+from the authoritative event documents.

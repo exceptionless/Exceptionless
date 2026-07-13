@@ -24,6 +24,7 @@
     <File Path="tests/http/webhooks.http" />
   </Folder>
   <Project Path="benchmarks/Exceptionless.Benchmarks/Exceptionless.Benchmarks.csproj" />
+  <Project Path="benchmarks/Exceptionless.Ingestion.Load/Exceptionless.Ingestion.Load.csproj" />
   <Project Path="src/Exceptionless.AppHost/Exceptionless.AppHost.csproj" />
   <Project Path="src/Exceptionless.Core/Exceptionless.Core.csproj" />
   <Project Path="src/Exceptionless.Insulation/Exceptionless.Insulation.csproj" />
