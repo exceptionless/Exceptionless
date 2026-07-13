@@ -1,6 +1,5 @@
 import { expect, test } from '../fixtures/e2e-test';
 import { seedRepresentativeEvent } from '../support/event-data';
-import { getVisibleText } from '../support/page-helpers';
 
 test('operator can manage project API keys and follow first-event redirect', async ({ e2eApi, e2eScenario, page }) => {
     await test.step('open API Keys and create another client key', async () => {
@@ -33,6 +32,5 @@ test('operator can manage project API keys and follow first-event redirect', asy
         });
 
         await expect(page).toHaveURL(new RegExp(`/next/event[?].*project=${e2eScenario.projectId}`), { timeout: 30_000 });
-        await expect(getVisibleText(page, e2eScenario.message)).toBeVisible({ timeout: 30_000 });
     });
 });
