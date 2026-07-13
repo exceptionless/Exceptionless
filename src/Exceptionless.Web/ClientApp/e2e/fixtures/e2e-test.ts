@@ -22,9 +22,18 @@ export interface E2EScenario {
     userToken: string;
 }
 
+export interface E2ESecondaryProject {
+    message: string;
+    projectId: string;
+    projectName: string;
+    projectToken: string;
+    referenceId: string;
+}
+
 interface E2EFixtures {
     e2eApi: E2EApiClient;
     e2eScenario: E2EScenario;
+    e2eSecondaryProject: E2ESecondaryProject;
 }
 
 export const test = base.extend<E2EFixtures>({
@@ -101,6 +110,38 @@ export const test = base.extend<E2EFixtures>({
                 await runCleanupStep(cleanupErrors, 'delete generated user', async () => {
                     await e2eApi.deleteCurrentUser(userToken!);
                     await e2eApi.waitForCurrentUserDeleted(userToken!);
+                });
+            }
+
+            throwIfCleanupFailed(cleanupErrors);
+        }
+    },
+
+    e2eSecondaryProject: async ({ e2eApi, e2eScenario }, use) => {
+        const projectName = `Playwright Secondary Project ${e2eScenario.run}`;
+        const referenceId = `${e2eScenario.referenceId}-secondary`;
+        const message = `Playwright secondary project event ${e2eScenario.run}`;
+        let projectId: string | undefined;
+
+        try {
+            const project = await e2eApi.createProject(e2eScenario.userToken, e2eScenario.organizationId, projectName);
+            projectId = project.id;
+            const projectToken = await e2eApi.getProjectDefaultToken(e2eScenario.userToken, project.id);
+
+            await use({
+                message,
+                projectId: project.id,
+                projectName,
+                projectToken: projectToken.id,
+                referenceId
+            });
+        } finally {
+            const cleanupErrors: Error[] = [];
+
+            if (projectId) {
+                await runCleanupStep(cleanupErrors, `delete secondary project ${projectId}`, async () => {
+                    await e2eApi.deleteProject(e2eScenario.userToken, projectId!);
+                    await e2eApi.waitForProjectDeleted(e2eScenario.userToken, projectId!);
                 });
             }
 

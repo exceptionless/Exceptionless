@@ -5,6 +5,7 @@ import type { E2EScenario } from '../fixtures/e2e-test';
 
 import { createRunName, E2E_ORGANIZATION_NAME_PREFIX } from '../fixtures/e2e-test';
 import { runCleanupStep, throwIfCleanupFailed } from './cleanup';
+import { seedRepresentativeEvent } from './event-data';
 import {
     getIdFromUrl,
     getProjectTokenFromConfigurePage,
@@ -14,7 +15,6 @@ import {
     selectProjectType,
     waitForEmailValidation
 } from './page-helpers';
-import { createRepresentativeEvent } from './synthetic-event';
 
 const FIXED_VERSION = '1.0.0';
 const PASSWORD = 'tester';
@@ -179,17 +179,19 @@ export class ExceptionlessE2EJourney {
 
     async markStackFixed(version = FIXED_VERSION): Promise<void> {
         expect(this.stackId).toBeTruthy();
-        expect(this.userToken).toBeTruthy();
 
         await this.expectEventDetails();
         await this.page.getByRole('button', { exact: true, name: 'Open' }).click();
         await this.page.getByRole('menuitem', { name: 'Fixed' }).click();
         await expect(this.page.getByRole('heading', { name: 'Mark Stack As Fixed' })).toBeVisible();
         await this.page.getByLabel('Version', { exact: true }).fill(version);
-        await this.page.getByRole('button', { name: 'Mark Stack Fixed' }).click();
 
-        await expect.poll(async () => (await this.e2eApi.getStack(this.userToken!, this.stackId!)).status, { timeout: 30_000 }).toBe('fixed');
+        await this.page.getByRole('button', { name: 'Mark Stack Fixed' }).click();
         await expect(this.page.getByRole('button', { name: 'Fixed' })).toBeVisible({ timeout: 30_000 });
+
+        await this.page.reload();
+        await expect(this.page.getByRole('button', { name: 'Fixed' })).toBeVisible({ timeout: 30_000 });
+        await expect(getVisibleText(this.page, `Fixed in ${version}`)).toBeVisible();
     }
 
     async onboardProject(): Promise<void> {
@@ -230,18 +232,12 @@ export class ExceptionlessE2EJourney {
         expect(this.projectToken).toBeTruthy();
         expect(this.userToken).toBeTruthy();
 
-        await this.e2eApi.submitEvent(
-            this.projectId!,
-            this.projectToken!,
-            createRepresentativeEvent({
-                appUrl: this.e2eApi.environment.appUrl,
-                message: this.message,
-                referenceId: this.referenceId,
-                runId: this.e2eApi.environment.runId
-            })
-        );
-
-        const event = await this.e2eApi.pollForEventByReference(this.userToken!, this.projectId!, this.referenceId);
+        const event = await seedRepresentativeEvent(this.e2eApi, this.userToken!, {
+            message: this.message,
+            projectId: this.projectId!,
+            projectToken: this.projectToken!,
+            referenceId: this.referenceId
+        });
         expect(event.reference_id).toBe(this.referenceId);
         expect(event.stack_id).toBeTruthy();
 
