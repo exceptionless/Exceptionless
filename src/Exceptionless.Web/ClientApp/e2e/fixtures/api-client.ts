@@ -333,6 +333,28 @@ export class E2EApiClient {
         );
     }
 
+    async waitForOrganizationListed(token: string, organizationId: string, timeoutMs = 30_000): Promise<void> {
+        const deadline = Date.now() + timeoutMs;
+        let lastError: Error | undefined;
+
+        while (Date.now() < deadline) {
+            try {
+                const organizations = await this.getOrganizations(token);
+                if (organizations.some((organization) => organization.id === organizationId)) {
+                    return;
+                }
+            } catch (error) {
+                lastError = error instanceof Error ? error : new Error(String(error));
+            }
+
+            await delay(1_000);
+        }
+
+        throw new Error(
+            `Timed out waiting for E2E organization ${organizationId} to appear in the organizations list${lastError ? `: ${lastError.message}` : ''}`
+        );
+    }
+
     async waitForProjectDeleted(token: string, projectId: string, timeoutMs = 30_000): Promise<void> {
         const deadline = Date.now() + timeoutMs;
         let lastError: Error | undefined;

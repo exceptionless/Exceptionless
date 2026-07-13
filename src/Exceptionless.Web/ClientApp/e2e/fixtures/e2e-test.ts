@@ -144,6 +144,7 @@ export const test = base.extend<E2EFixtures>({
         try {
             const organization = await e2eApi.createOrganization(e2eScenario.userToken, organizationName);
             organizationId = organization.id;
+            await e2eApi.waitForOrganizationListed(e2eScenario.userToken, organization.id);
             const project = await e2eApi.createProject(e2eScenario.userToken, organization.id, projectName);
             projectId = project.id;
             const projectToken = await e2eApi.getProjectDefaultToken(e2eScenario.userToken, project.id);
