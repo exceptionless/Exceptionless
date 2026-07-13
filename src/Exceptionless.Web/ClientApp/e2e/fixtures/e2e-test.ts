@@ -4,7 +4,7 @@ import { runCleanupStep, throwIfCleanupFailed } from '../support/cleanup';
 import { E2EApiClient } from './api-client';
 import { getE2EEnvironment } from './environment';
 
-const PASSWORD = 'tester';
+export const E2E_TEST_PASSWORD = 'tester';
 
 export const E2E_ORGANIZATION_NAME_PREFIX = 'E2E Playwright Org';
 
@@ -34,6 +34,7 @@ interface E2EFixtures {
     e2eApi: E2EApiClient;
     e2eScenario: E2EScenario;
     e2eSecondaryProject: E2ESecondaryProject;
+    e2eUseGeneratedUser: boolean;
 }
 
 export const test = base.extend<E2EFixtures>({
@@ -41,7 +42,7 @@ export const test = base.extend<E2EFixtures>({
         await use(new E2EApiClient(request, getE2EEnvironment()));
     },
 
-    e2eScenario: async ({ e2eApi, page }, use, testInfo) => {
+    e2eScenario: async ({ e2eApi, e2eUseGeneratedUser, page }, use, testInfo) => {
         const run = createRunName(e2eApi.environment.runId, testInfo);
         const userName = `Playwright User ${run}`;
         const email = `playwright-${run}@exceptionless.test`.toLowerCase();
@@ -55,10 +56,10 @@ export const test = base.extend<E2EFixtures>({
         let createdUser = false;
 
         try {
-            if (!e2eApi.environment.isProduction && e2eApi.environment.email && e2eApi.environment.password) {
+            if (!e2eUseGeneratedUser && !e2eApi.environment.isProduction && e2eApi.environment.email && e2eApi.environment.password) {
                 userToken = await e2eApi.login();
             } else {
-                userToken = await e2eApi.signup(userName, email, PASSWORD);
+                userToken = await e2eApi.signup(userName, email, E2E_TEST_PASSWORD);
                 createdUser = true;
             }
 
@@ -91,6 +92,12 @@ export const test = base.extend<E2EFixtures>({
             });
         } finally {
             const cleanupErrors: Error[] = [];
+
+            if (createdUser && userToken) {
+                await runCleanupStep(cleanupErrors, 'restore generated user session for cleanup', async () => {
+                    userToken = await e2eApi.login(email, E2E_TEST_PASSWORD);
+                });
+            }
 
             if (userToken && projectId) {
                 await runCleanupStep(cleanupErrors, `delete project ${projectId}`, async () => {
@@ -147,7 +154,9 @@ export const test = base.extend<E2EFixtures>({
 
             throwIfCleanupFailed(cleanupErrors);
         }
-    }
+    },
+
+    e2eUseGeneratedUser: [false, { option: true }]
 });
 
 export { expect };

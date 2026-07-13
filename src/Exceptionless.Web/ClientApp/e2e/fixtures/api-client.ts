@@ -197,15 +197,15 @@ export class E2EApiClient {
         return toStack(await readJson(response));
     }
 
-    async login(): Promise<string> {
-        if (!this.environment.email || !this.environment.password) {
-            throw new Error('E2E_EMAIL and E2E_PASSWORD are required when using API login.');
+    async login(email = this.environment.email, password = this.environment.password): Promise<string> {
+        if (!email || !password) {
+            throw new Error('Email and password are required when using API login.');
         }
 
         const response = await this.request.post(this.url('auth/login'), {
             data: {
-                email: this.environment.email,
-                password: this.environment.password
+                email,
+                password
             }
         });
 

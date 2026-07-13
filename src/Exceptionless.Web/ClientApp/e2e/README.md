@@ -20,7 +20,7 @@ These tests protect user-visible release workflows. They complement backend inte
 
 ## Coverage Shape
 
-- Authentication: validation, successful login, and session restoration.
+- Authentication: validation, successful login, session restoration, logout, and protected-route redirect.
 - Discovery: sidebar navigation, filters, empty states, and recovery.
 - Investigation: open event and stack details through rendered tables and sheets.
 - Triage: mutate stack state and verify the persisted UI after reload.
