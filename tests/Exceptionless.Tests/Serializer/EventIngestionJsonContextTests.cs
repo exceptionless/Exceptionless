@@ -54,6 +54,29 @@ public sealed class EventIngestionJsonContextTests
     }
 
     [Fact]
+    public async Task DeserializeAsyncEnumerable_ClientMetadata_ReadsOptionalFields()
+    {
+        const string payload = """{"id":"event-1","type":"log","version":"3.4.0","level":"warning","client":{"name":"exceptionless.rust","version":"0.1.0"}}""";
+
+        var events = await DeserializeAsync(payload);
+
+        var ev = Assert.Single(events);
+        Assert.Equal("3.4.0", ev.Version);
+        Assert.Equal("warning", ev.Level);
+        Assert.NotNull(ev.Client);
+        Assert.Equal("exceptionless.rust", ev.Client.Name);
+        Assert.Equal("0.1.0", ev.Client.Version);
+    }
+
+    [Fact]
+    public Task DeserializeAsyncEnumerable_ClientWithoutVersion_ThrowsJsonException()
+    {
+        const string payload = """{"id":"event-1","type":"log","client":{"name":"exceptionless.rust"}}""";
+
+        return Assert.ThrowsAsync<JsonException>(() => DeserializeAsync(payload));
+    }
+
+    [Fact]
     public Task DeserializeAsyncEnumerable_TopLevelArray_ThrowsJsonException()
     {
         const string payload = """[{"id":"event-1","type":"log"}]""";

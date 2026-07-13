@@ -46,6 +46,19 @@ public sealed class EventMaterializer(StackTraceParser stackTraceParser, TimePro
                 ev.SetManualStackingInfo(fingerprint.Title, fingerprint.SignatureData.ToDictionary(pair => pair.Key, pair => pair.Value));
         }
 
+        if (!String.IsNullOrWhiteSpace(source.Version))
+            ev.SetVersion(source.Version);
+        if (!String.IsNullOrWhiteSpace(source.Level))
+            ev.SetLevel(source.Level.Trim());
+        if (source.Client is not null)
+        {
+            ev.SetSubmissionClient(new SubmissionClient
+            {
+                UserAgent = source.Client.Name.Trim(),
+                Version = source.Client.Version.Trim()
+            });
+        }
+
         if (source.User is not null)
         {
             ev.SetUserIdentity(new UserInfo(source.User.Identity ?? String.Empty, source.User.Name)

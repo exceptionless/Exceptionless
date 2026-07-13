@@ -11,6 +11,10 @@ public static class EventIngestionV3Limits
     public const int MaximumStackTraceLength = 256 * 1024;
     public const int MaximumUserIdentityLength = 255;
     public const int MaximumUserNameLength = 255;
+    public const int MaximumVersionLength = 255;
+    public const int MaximumLevelLength = 32;
+    public const int MaximumClientNameLength = 255;
+    public const int MaximumClientVersionLength = 255;
     public const int MaximumTags = 50;
     public const int MaximumTagLength = 255;
     public const int MaximumMetadataEntries = 100;

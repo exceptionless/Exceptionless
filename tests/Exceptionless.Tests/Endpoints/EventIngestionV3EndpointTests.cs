@@ -95,6 +95,29 @@ public sealed class EventIngestionV3EndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task Post_ClientMetadata_PersistsFirstClassEventData()
+    {
+        const string payload = """
+            {"id":"v3-client-metadata-0001","type":"log","message":"started","reference_id":"v3-client-metadata-ref-0001","version":"3.4.0","level":"info","client":{"name":"exceptionless.go","version":"1.2.0"}}
+            """;
+
+        using HttpResponseMessage httpResponse = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/x-ndjson"));
+        EventIngestionV3Response response = await DeserializeAsync(httpResponse);
+
+        Assert.Equal(1, response.Persisted);
+        await RefreshDataAsync();
+        var ev = Assert.Single((await _eventRepository.GetByReferenceIdAsync(TestConstants.ProjectId, "v3-client-metadata-ref-0001")).Documents);
+        Assert.Equal("3.4.0", ev.GetVersion());
+        Assert.Equal("info", ev.GetLevel());
+        var client = ev.GetSubmissionClient(
+            GetService<Foundatio.Serializer.ITextSerializer>(),
+            GetService<ILogger<EventIngestionV3EndpointTests>>());
+        Assert.NotNull(client);
+        Assert.Equal("exceptionless.go", client.UserAgent);
+        Assert.Equal("1.2.0", client.Version);
+    }
+
+    [Fact]
     public async Task Post_ReplayedEvent_ReturnsDuplicateWithoutSecondWrite()
     {
         const string payload = """{"id":"v3-duplicate-event-0001","type":"log","message":"once","reference_id":"v3-duplicate-ref-0001"}""";

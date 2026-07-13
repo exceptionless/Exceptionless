@@ -10,8 +10,11 @@ public static class EventIngestionV3EventSizer
         long size = 128;
         size += GetSize(source.Id) + GetSize(source.Type) + GetSize(source.Source) + GetSize(source.Message);
         size += GetSize(source.ReferenceId) + GetSize(source.ExceptionType) + GetSize(source.StackTrace);
+        size += GetSize(source.Version) + GetSize(source.Level);
         size += GetSize(source.Tags);
         size += GetSize(source.Data);
+        if (source.Client is not null)
+            size += 32 + GetSize(source.Client.Name) + GetSize(source.Client.Version);
         if (source.Stacking is not null)
             size += 32 + GetSize(source.Stacking.Title) + GetSize(source.Stacking.SignatureData);
 

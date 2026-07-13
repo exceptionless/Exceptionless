@@ -303,6 +303,25 @@
   },
   "components": {
     "schemas": {
+      "EventIngestionV3Client": {
+        "required": [
+          "name",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "version": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          }
+        }
+      },
       "EventIngestionV3Environment": {
         "type": "object",
         "properties": {
@@ -482,6 +501,32 @@
             "items": {
               "type": "string"
             }
+          },
+          "version": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "level": {
+            "maxLength": 32,
+            "minLength": 1,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "client": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EventIngestionV3Client"
+              }
+            ]
           },
           "exception_type": {
             "maxLength": 2000,

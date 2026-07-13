@@ -32,6 +32,14 @@ public sealed record EventIngestionV3Event
 
     public string[]? Tags { get; init; }
 
+    [StringLength(EventIngestionV3Limits.MaximumVersionLength, MinimumLength = 1)]
+    public string? Version { get; init; }
+
+    [StringLength(EventIngestionV3Limits.MaximumLevelLength, MinimumLength = 1)]
+    public string? Level { get; init; }
+
+    public EventIngestionV3Client? Client { get; init; }
+
     [StringLength(EventIngestionV3Limits.MaximumExceptionTypeLength, MinimumLength = 1)]
     public string? ExceptionType { get; init; }
 
@@ -47,6 +55,17 @@ public sealed record EventIngestionV3Event
     public EventIngestionV3Environment? Environment { get; init; }
 
     public JsonElement? Data { get; init; }
+}
+
+public sealed record EventIngestionV3Client
+{
+    [Required]
+    [StringLength(EventIngestionV3Limits.MaximumClientNameLength, MinimumLength = 1)]
+    public required string Name { get; init; }
+
+    [Required]
+    [StringLength(EventIngestionV3Limits.MaximumClientVersionLength, MinimumLength = 1)]
+    public required string Version { get; init; }
 }
 
 public sealed record EventIngestionV3Stacking

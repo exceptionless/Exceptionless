@@ -5,6 +5,10 @@ methodology for [issue #2368](https://github.com/exceptionless/Exceptionless/iss
 It is deliberately separate from the public API documentation until the V3
 contract is ready for rollout.
 
+The companion [client protocol and ecosystem plan](event-ingestion-v3-client-protocol.md)
+defines the minimum sender, capability profiles, Sentry and Raygun comparison,
+and compatibility rules for future event and non-event telemetry.
+
 ## Objectives
 
 Event ingestion V3 is a breaking, performance-first API with these invariants:
@@ -22,6 +26,9 @@ Event ingestion V3 is a breaking, performance-first API with these invariants:
   not enqueue it for another process to deserialize.
 - Clients send raw stack traces. The server computes the grouping fingerprint
   and builds the persisted structured error.
+- A new language can implement the core sender using only its standard HTTPS
+  and JSON facilities. Advanced reliability and framework features are
+  independently testable capability profiles, not ingestion prerequisites.
 - Events assigned to discarded stacks terminate before billable admission,
   full error materialization, event persistence, stack statistics, or side
   effects.
@@ -245,6 +252,9 @@ Completion requires all of the following evidence:
 - Multi-instance tests for route status changes and quota reservation.
 - V2 serialization audit results before and after shared-service adoption.
 - OpenAPI V3 baseline and HTTP samples.
+- Language-neutral client specification, golden fixtures, black-box conformance
+  tests, and timed new-language implementation evidence meeting the client
+  effort gates.
 - Microbenchmark reports and end-to-end load results for the scenario matrix.
 - A staged rollout through the internal project and selected projects with a
   documented rollback switch.
@@ -279,6 +289,18 @@ chains, and stores structured frames. Unsupported formats use a normalized,
 hashed raw-trace fallback and increment a parser-fallback metric without logging
 the trace. Optional `stacking.signature_data` and `stacking.title` provide
 explicit manual stacking.
+
+Only `id` and `type` are required. Maintained SDKs should also identify
+themselves with `client.name` and `client.version`; applications can send
+first-class `version` and `level` values without knowing internal event data
+keys. Unknown event properties are ignored so additions remain compatible.
+
+`/api/v3/events` remains an event-only NDJSON stream. It will not acquire a
+per-line kind/payload wrapper or a stream header. A future optional,
+length-delimited advanced transport can carry the exact same event JSON beside
+attachments, minidumps, profiles, or other typed items. This keeps the minimum
+client smaller than Sentry's envelope implementation without forcing binary or
+heterogeneous data into the event object.
 
 The executable reference client and repeatable load harness live in
 `benchmarks/Exceptionless.Ingestion.Load`; usage is documented in

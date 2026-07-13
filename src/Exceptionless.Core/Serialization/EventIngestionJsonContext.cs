@@ -12,6 +12,7 @@ namespace Exceptionless.Core.Serialization;
     UseStringEnumConverter = false)]
 [JsonSerializable(typeof(EventIngestionV3Event))]
 [JsonSerializable(typeof(EventIngestionV3Event[]))]
+[JsonSerializable(typeof(EventIngestionV3Client))]
 [JsonSerializable(typeof(EventIngestionV3User))]
 [JsonSerializable(typeof(EventIngestionV3Request))]
 [JsonSerializable(typeof(EventIngestionV3Environment))]

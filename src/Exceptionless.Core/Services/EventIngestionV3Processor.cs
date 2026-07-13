@@ -163,6 +163,17 @@ public sealed class EventIngestionV3Processor(
             return $"exception_type cannot exceed {EventIngestionV3Limits.MaximumExceptionTypeLength} characters.";
         if (source.StackTrace?.Length > EventIngestionV3Limits.MaximumStackTraceLength)
             return $"stack_trace cannot exceed {EventIngestionV3Limits.MaximumStackTraceLength} characters.";
+        if (source.Version is not null && (String.IsNullOrWhiteSpace(source.Version) || source.Version.Length > EventIngestionV3Limits.MaximumVersionLength))
+            return $"version must contain between 1 and {EventIngestionV3Limits.MaximumVersionLength} characters.";
+        if (source.Level is not null && (String.IsNullOrWhiteSpace(source.Level) || source.Level.Length > EventIngestionV3Limits.MaximumLevelLength))
+            return $"level must contain between 1 and {EventIngestionV3Limits.MaximumLevelLength} characters.";
+        if (source.Client is not null)
+        {
+            if (String.IsNullOrWhiteSpace(source.Client.Name) || source.Client.Name.Length > EventIngestionV3Limits.MaximumClientNameLength)
+                return $"client.name must contain between 1 and {EventIngestionV3Limits.MaximumClientNameLength} characters.";
+            if (String.IsNullOrWhiteSpace(source.Client.Version) || source.Client.Version.Length > EventIngestionV3Limits.MaximumClientVersionLength)
+                return $"client.version must contain between 1 and {EventIngestionV3Limits.MaximumClientVersionLength} characters.";
+        }
         if (source.Stacking?.Title?.Length > EventIngestionV3Limits.MaximumMessageLength)
             return $"stacking.title cannot exceed {EventIngestionV3Limits.MaximumMessageLength} characters.";
         string? stackingError = ValidateDictionary(source.Stacking?.SignatureData, "stacking.signature_data", value => value.Length <= EventIngestionV3Limits.MaximumMetadataValueLength);
