@@ -48,7 +48,7 @@ try {
 }
 ```
 
-Exceptionless supports a wide range of platforms. For a full list, see the [supported platforms page here](/docs/clients/dotnet/supported-platforms).
+Exceptionless supports a wide range of .NET application types. See the [.NET packages and platforms page](/docs/clients/dotnet/supported-platforms) for the complete package list, or browse the [client directory](/docs/clients/) for other languages and runtimes.
 
 ---
 

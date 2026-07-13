@@ -1,9 +1,11 @@
 ---
-title: "Supported Platforms"
+title: ".NET Packages and Platforms"
 order: 5
 ---
 
-# Supported Platforms
+# .NET Packages and Platforms
+
+This page lists packages for the Exceptionless .NET SDK. For Browser, Node.js, Deno, React Native, Expo, Java, Go, and other clients, see the [complete client directory](/docs/clients/).
 
 ## [Exceptionless](https://www.nuget.org/packages/Exceptionless/)
 

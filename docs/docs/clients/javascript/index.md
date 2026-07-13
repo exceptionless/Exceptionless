@@ -4,27 +4,31 @@ title: "JavaScript Client"
 
 # JavaScript Client
 
-The Exceptionless JavaScript client SDK makes it easy to report errors, log details, track feature usage and more. Be sure you have an Exceptionless account ([you can sign up here](/)) or that you are self-hosting a running instance of Exceptionless.
+The Exceptionless JavaScript and TypeScript SDK makes it easy to report errors, submit logs, track feature usage, and capture runtime-specific context. It supports Browser, Node.js, Deno, React Native, and Expo applications, with packages and examples for popular frameworks.
 
----
+## Choose your environment
 
-Full guides can be found below:
+| Environment | Package | Guide |
+| --- | --- | --- |
+| Browser and browser frameworks | `@exceptionless/browser` | [Browser quickstart below](#browser-quickstart) |
+| Node.js | `@exceptionless/node` | [Node.js example](/docs/clients/javascript/node-example/) |
+| Deno | `@exceptionless/core` | [Deno guide](/docs/clients/javascript/guides/deno/) |
+| React Native and Expo | `@exceptionless/react-native` | [React Native and Expo guide](/docs/clients/javascript/guides/react-native-expo/) |
+| React | `@exceptionless/react` | [React guide](/docs/clients/javascript/guides/react/) |
+| Vue | `@exceptionless/vue` | [Vue guide](/docs/clients/javascript/guides/vue/) |
+| AngularJS | `@exceptionless/angularjs` | [Angular guide](/docs/clients/javascript/guides/angular/) |
 
-* [React](/docs/clients/javascript/guides/react)
-* [Vue](/docs/clients/javascript/guides/vue)
-* [Angular](/docs/clients/javascript/guides/angular)
-* [Node](/docs/clients/javascript/node-example)
-* [Express](/docs/clients/javascript/guides/express)
+See the [supported platforms matrix](/docs/clients/javascript/supported-platforms/) for automatic-capture behavior, runtime requirements, and example applications including Express, Next.js, SvelteKit, and Expo.
 
----
+## Browser quickstart
 
-This quickstart focuses on the vanilla JavaScript implementation of Exceptionless.
+You need an Exceptionless project API key from either [Exceptionless Cloud](/) or your self-hosted instance.
 
 ## npm
 
 To install with npm, run: `npm install @exceptionless/browser`
 
-Next, you just need to call startup during your apps startup to automatically capture unhandled errors.
+Call `startup` during application startup to automatically capture unhandled browser errors.
 
 ```js
 import { Exceptionless } from "@exceptionless/browser";
@@ -38,12 +42,12 @@ try {
 }
 ```
 
-## CDN
+### CDN
 
 To install via a script tag referencing Exceptionless over a CDN, add the following before your closing `<body>` tag and call startup like so:
 
 ```html
-`<script type="module">`
+<script type="module">
   import { Exceptionless } from "https://unpkg.com/@exceptionless/browser";
   await Exceptionless.startup("API KEY HERE");
 
@@ -52,7 +56,7 @@ To install via a script tag referencing Exceptionless over a CDN, add the follow
   } catch (error) {
     await Exceptionless.submitException(error);
   }
-`</script>`
+</script>
 ```
 
 ---

@@ -75,7 +75,7 @@ You will only pass in the `ServerUrl` if you are self-hosting Exceptionless. You
 
 With this configured, you can now call the Exceptionless client from anywhere in your server application without first defining the client.
 
-This is just one example of one platform Exceptionless supports. But Exceptionless supports a wide range of platforms. For a full list, see the [supported platforms page here](/docs/clients/dotnet/supported-platforms).
+This is one of the .NET application types Exceptionless supports. See the [.NET packages and platforms page](/docs/clients/dotnet/supported-platforms) for the complete package list, or browse the [client directory](/docs/clients/) for other languages and runtimes.
 
 ---
 
