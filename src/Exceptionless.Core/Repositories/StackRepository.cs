@@ -1,5 +1,6 @@
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Ingestion;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
@@ -7,18 +8,21 @@ using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
 using Microsoft.Extensions.Logging;
+using Foundatio.Caching;
 
 namespace Exceptionless.Core.Repositories;
 
 public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, IStackRepository
 {
     private readonly TimeProvider _timeProvider;
+    private readonly AppOptions _appOptions;
     private const string STACKING_VERSION = "v2";
 
     public StackRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options)
         : base(configuration.Stacks, validator, options)
     {
         _timeProvider = configuration.TimeProvider;
+        _appOptions = options;
         AddRequiredField(s => s.SignatureHash);
     }
 
@@ -158,6 +162,25 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
         return hit?.Document;
     }
 
+    public async Task<IReadOnlyDictionary<string, StackRoute>> GetStackRoutesBySignatureHashAsync(string projectId, IReadOnlyCollection<string> signatureHashes)
+    {
+        if (signatureHashes.Count == 0)
+            return new Dictionary<string, StackRoute>();
+
+        var results = await FindAsync(
+            q => q.Project(projectId).SignatureHash(signatureHashes).Include(s => s.Id, s => s.SignatureHash, s => s.Status),
+            o => o.PageLimit(signatureHashes.Count));
+
+        var routes = new Dictionary<string, StackRoute>(results.Documents.Count);
+        foreach (var stack in results.Documents)
+        {
+            if (!String.IsNullOrEmpty(stack.SignatureHash))
+                routes[stack.SignatureHash] = new StackRoute(stack.Id, stack.Status);
+        }
+
+        return routes;
+    }
+
     public Task<FindResults<Stack>> GetIdsByQueryAsync(RepositoryQueryDescriptor<Stack> query, CommandOptionsDescriptor<Stack>? options = null)
     {
         return FindAsync(q => query.Configure().OnlyIds(), options);
@@ -176,15 +199,17 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
         await SaveAsync(stack, o => o.Cache());
     }
 
-    public Task<long> SoftDeleteByProjectIdAsync(string organizationId, string projectId)
+    public async Task<long> SoftDeleteByProjectIdAsync(string organizationId, string projectId)
     {
         ArgumentException.ThrowIfNullOrEmpty(organizationId);
         ArgumentException.ThrowIfNullOrEmpty(projectId);
 
-        return PatchAllAsync(
+        long deleted = await PatchAllAsync(
             q => q.Organization(organizationId).Project(projectId),
             new PartialPatch(new { is_deleted = true, updated_utc = _timeProvider.GetUtcNow().UtcDateTime })
         );
+        await Cache.RemoveByPrefixAsync(GetStackRouteCachePrefix(projectId));
+        return deleted;
     }
 
     protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<Stack>> findHits, ICommandOptions options, bool isDirtyRead)
@@ -197,15 +222,47 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
 
         if (cacheEntries.Count > 0)
             await AddDocumentsToCacheWithKeyAsync(cacheEntries, options.GetExpiresIn());
+
+        var routeEntries = new Dictionary<string, StackRouteCacheEntry>();
+        foreach (var stack in findHits.Select(hit => hit.Document))
+        {
+            if (stack is null || stack.IsDeleted || String.IsNullOrEmpty(stack.ProjectId) || String.IsNullOrEmpty(stack.SignatureHash))
+                continue;
+
+            routeEntries[GetStackRouteCacheKey(stack.ProjectId, stack.SignatureHash)] = new StackRouteCacheEntry(true, stack.Id, stack.Status);
+        }
+        if (routeEntries.Count > 0)
+            await Cache.SetAllAsync(routeEntries, _appOptions.EventIngestionV3.StackRouteCacheDuration);
     }
 
     protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<Stack>> documents, ChangeType? changeType = null)
     {
         var keysToRemove = documents.UnionOriginalAndModified().Select(GetStackSignatureCacheKey).Distinct();
         await Cache.RemoveAllAsync(keysToRemove);
+        var routeKeysToRemove = documents.UnionOriginalAndModified()
+            .Where(s => !String.IsNullOrEmpty(s.ProjectId) && !String.IsNullOrEmpty(s.SignatureHash))
+            .Select(s => GetStackRouteCacheKey(s.ProjectId, s.SignatureHash))
+            .Distinct();
+        await Cache.RemoveAllAsync(routeKeysToRemove);
         await base.InvalidateCacheAsync(documents, changeType);
+
+        if (changeType is ChangeType.Added or ChangeType.Saved)
+        {
+            var routeEntries = new Dictionary<string, StackRouteCacheEntry>();
+            foreach (var stack in documents.Select(d => d.Value))
+            {
+                if (stack.IsDeleted || String.IsNullOrEmpty(stack.ProjectId) || String.IsNullOrEmpty(stack.SignatureHash))
+                    continue;
+
+                routeEntries[GetStackRouteCacheKey(stack.ProjectId, stack.SignatureHash)] = new StackRouteCacheEntry(true, stack.Id, stack.Status);
+            }
+            if (routeEntries.Count > 0)
+                await Cache.SetAllAsync(routeEntries, _appOptions.EventIngestionV3.StackRouteCacheDuration);
+        }
     }
 
     private static string GetStackSignatureCacheKey(Stack stack) => GetStackSignatureCacheKey(stack.ProjectId, stack.SignatureHash);
     private static string GetStackSignatureCacheKey(string projectId, string signatureHash) => String.Concat(projectId, ":", signatureHash, ":", STACKING_VERSION);
+    internal static string GetStackRouteCacheKey(string projectId, string signatureHash) => String.Concat("stack-route:v3:v1:", projectId, ":", signatureHash);
+    internal static string GetStackRouteCachePrefix(string projectId) => String.Concat("stack-route:v3:v1:", projectId, ":");
 }

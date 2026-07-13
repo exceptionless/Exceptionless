@@ -38,6 +38,8 @@ public sealed record EventIngestionV3Event
     [StringLength(EventIngestionV3Limits.MaximumStackTraceLength, MinimumLength = 1)]
     public string? StackTrace { get; init; }
 
+    public EventIngestionV3Stacking? Stacking { get; init; }
+
     public EventIngestionV3User? User { get; init; }
 
     public EventIngestionV3Request? Request { get; init; }
@@ -45,6 +47,14 @@ public sealed record EventIngestionV3Event
     public EventIngestionV3Environment? Environment { get; init; }
 
     public JsonElement? Data { get; init; }
+}
+
+public sealed record EventIngestionV3Stacking
+{
+    [StringLength(EventIngestionV3Limits.MaximumMessageLength, MinimumLength = 1)]
+    public string? Title { get; init; }
+
+    public required Dictionary<string, string> SignatureData { get; init; }
 }
 
 public sealed record EventIngestionV3User

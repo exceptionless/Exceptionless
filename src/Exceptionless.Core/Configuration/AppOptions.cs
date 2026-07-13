@@ -80,6 +80,7 @@ public class AppOptions
     public StripeOptions StripeOptions { get; internal set; } = null!;
     public AuthOptions AuthOptions { get; internal set; } = null!;
     public OAuthServerOptions OAuthServerOptions { get; internal set; } = null!;
+    public EventIngestionV3Options EventIngestionV3 { get; internal set; } = null!;
 
     public static AppOptions ReadFromConfiguration(IConfiguration config)
     {
@@ -133,8 +134,53 @@ public class AppOptions
         options.StripeOptions = StripeOptions.ReadFromConfiguration(config);
         options.AuthOptions = AuthOptions.ReadFromConfiguration(config);
         options.OAuthServerOptions = OAuthServerOptions.ReadFromConfiguration(config);
+        options.EventIngestionV3 = EventIngestionV3Options.ReadFromConfiguration(config);
 
         return options;
+    }
+}
+
+public sealed class EventIngestionV3Options
+{
+    public bool Enabled { get; internal set; }
+    public int MicroBatchSize { get; internal set; }
+    public long MaximumMicroBatchBytes { get; internal set; }
+    public long MaximumEventSize { get; internal set; }
+    public long MaximumCompressedBodySize { get; internal set; }
+    public long MaximumDecompressedBodySize { get; internal set; }
+    public TimeSpan RequestTimeout { get; internal set; }
+    public TimeSpan IdempotencyWindow { get; internal set; }
+    public TimeSpan StackRouteCacheDuration { get; internal set; }
+    public TimeSpan NegativeStackRouteCacheDuration { get; internal set; }
+    public int MaximumEventsPerRequest { get; internal set; }
+    public int MaximumConcurrentRequests { get; internal set; }
+    public int ConcurrencyQueueLimit { get; internal set; }
+    public int MaximumStackCreationConcurrency { get; internal set; }
+    public IReadOnlySet<string> AllowedProjectIds { get; internal set; } = new HashSet<string>();
+    public IReadOnlySet<string> AllowedOrganizationIds { get; internal set; } = new HashSet<string>();
+
+    internal static EventIngestionV3Options ReadFromConfiguration(IConfiguration config)
+    {
+        IConfigurationSection section = config.GetSection(nameof(AppOptions.EventIngestionV3));
+        return new EventIngestionV3Options
+        {
+            Enabled = section.GetValue(nameof(Enabled), false),
+            MicroBatchSize = Math.Clamp(section.GetValue(nameof(MicroBatchSize), 100), 1, 1000),
+            MaximumMicroBatchBytes = Math.Max(section.GetValue(nameof(MaximumMicroBatchBytes), 1024L * 1024), 1),
+            MaximumEventSize = Math.Max(section.GetValue(nameof(MaximumEventSize), 512L * 1024), 1),
+            MaximumCompressedBodySize = Math.Max(section.GetValue(nameof(MaximumCompressedBodySize), 10L * 1024 * 1024), 1),
+            MaximumDecompressedBodySize = Math.Max(section.GetValue(nameof(MaximumDecompressedBodySize), 50L * 1024 * 1024), 1),
+            RequestTimeout = section.GetValue(nameof(RequestTimeout), TimeSpan.FromMinutes(2)),
+            IdempotencyWindow = section.GetValue(nameof(IdempotencyWindow), TimeSpan.FromDays(7)),
+            StackRouteCacheDuration = section.GetValue(nameof(StackRouteCacheDuration), TimeSpan.FromHours(1)),
+            NegativeStackRouteCacheDuration = section.GetValue(nameof(NegativeStackRouteCacheDuration), TimeSpan.FromSeconds(30)),
+            MaximumEventsPerRequest = Math.Clamp(section.GetValue(nameof(MaximumEventsPerRequest), 10000), 1, 100000),
+            MaximumConcurrentRequests = Math.Max(section.GetValue(nameof(MaximumConcurrentRequests), Math.Max(Environment.ProcessorCount * 4, 16)), 1),
+            ConcurrencyQueueLimit = Math.Max(section.GetValue(nameof(ConcurrencyQueueLimit), Math.Max(Environment.ProcessorCount * 16, 64)), 0),
+            MaximumStackCreationConcurrency = Math.Clamp(section.GetValue(nameof(MaximumStackCreationConcurrency), 8), 1, 64),
+            AllowedProjectIds = section.GetSection(nameof(AllowedProjectIds)).Get<string[]>()?.ToHashSet(StringComparer.Ordinal) ?? new HashSet<string>(StringComparer.Ordinal),
+            AllowedOrganizationIds = section.GetSection(nameof(AllowedOrganizationIds)).Get<string[]>()?.ToHashSet(StringComparer.Ordinal) ?? new HashSet<string>(StringComparer.Ordinal)
+        };
     }
 }
 

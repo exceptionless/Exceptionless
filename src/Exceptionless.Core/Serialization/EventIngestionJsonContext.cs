@@ -15,4 +15,7 @@ namespace Exceptionless.Core.Serialization;
 [JsonSerializable(typeof(EventIngestionV3User))]
 [JsonSerializable(typeof(EventIngestionV3Request))]
 [JsonSerializable(typeof(EventIngestionV3Environment))]
+[JsonSerializable(typeof(EventIngestionV3Stacking))]
+[JsonSerializable(typeof(EventIngestionV3Response))]
+[JsonSerializable(typeof(EventIngestionV3Error))]
 public sealed partial class EventIngestionJsonContext : JsonSerializerContext;

@@ -100,6 +100,7 @@ public class Bootstrapper
             handlers.Register<UpdateProjectNotificationSettingsWorkItem>(s.GetRequiredService<UpdateProjectNotificationSettingsWorkItemHandler>);
             handlers.Register<UserMaintenanceWorkItem>(s.GetRequiredService<UserMaintenanceWorkItemHandler>);
             handlers.Register<GenerateSampleEventsWorkItem>(s.GetRequiredService<GenerateSampleEventsWorkItemHandler>);
+            handlers.Register<EventIngestionSideEffectsWorkItem>(s.GetRequiredService<EventIngestionSideEffectsWorkItemHandler>);
             return handlers;
         });
 
@@ -111,6 +112,8 @@ public class Bootstrapper
         services.AddSingleton(s => CreateQueue<WorkItemData>(s, TimeSpan.FromHours(1)));
 
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IQueueBehavior<WorkItemData>, WorkItemDuplicateDetectionQueueBehavior>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IQueueBehavior<EventNotification>, EventNotificationDuplicateDetectionQueueBehavior>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IQueueBehavior<WebHookNotification>, WebHookNotificationDuplicateDetectionQueueBehavior>());
 
         services.AddSingleton<IConnectionMapping, ConnectionMapping>();
         services.AddSingleton<MessageService>();
@@ -197,6 +200,16 @@ public class Bootstrapper
         services.AddSingleton<UsageService>();
         services.AddSingleton<SlackService>();
         services.AddSingleton<StackService>();
+        services.AddSingleton<StackTraceParser>();
+        services.AddSingleton<StackFingerprintService>();
+        services.AddSingleton<IStackFingerprintService>(s => s.GetRequiredService<StackFingerprintService>());
+        services.AddSingleton<StackRouteResolver>();
+        services.AddSingleton<IStackRouteResolver>(s => s.GetRequiredService<StackRouteResolver>());
+        services.AddSingleton<EventIngestionV3Processor>();
+        services.AddSingleton<IEventIngestionProcessor>(s => s.GetRequiredService<EventIngestionV3Processor>());
+        services.AddSingleton<IEventMaterializer, EventMaterializer>();
+        services.AddSingleton<IEventBatchWriter, EventBatchWriter>();
+        services.AddSingleton<IIngestionQuotaService, IngestionQuotaService>();
 
         services.AddTransient<IDomainLoginProvider, ActiveDirectoryLoginProvider>();
     }
@@ -320,6 +333,12 @@ public class Bootstrapper
         });
     }
 
-    private sealed class WorkItemDuplicateDetectionQueueBehavior(ICacheClient cacheClient, ILoggerFactory loggerFactory)
-        : DuplicateDetectionQueueBehavior<WorkItemData>(cacheClient, loggerFactory, TimeSpan.FromHours(24));
+    private sealed class WorkItemDuplicateDetectionQueueBehavior(ICacheClient cacheClient, AppOptions options, ILoggerFactory loggerFactory)
+        : DuplicateDetectionQueueBehavior<WorkItemData>(cacheClient, loggerFactory, options.EventIngestionV3.IdempotencyWindow);
+
+    private sealed class EventNotificationDuplicateDetectionQueueBehavior(ICacheClient cacheClient, AppOptions options, ILoggerFactory loggerFactory)
+        : DuplicateDetectionQueueBehavior<EventNotification>(cacheClient, loggerFactory, options.EventIngestionV3.IdempotencyWindow);
+
+    private sealed class WebHookNotificationDuplicateDetectionQueueBehavior(ICacheClient cacheClient, AppOptions options, ILoggerFactory loggerFactory)
+        : DuplicateDetectionQueueBehavior<WebHookNotification>(cacheClient, loggerFactory, options.EventIngestionV3.IdempotencyWindow);
 }

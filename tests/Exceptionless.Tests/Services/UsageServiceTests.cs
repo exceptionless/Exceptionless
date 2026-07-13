@@ -639,6 +639,45 @@ public sealed class UsageServiceTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ReserveEventsAsync_ConcurrentCallers_DoNotOverReserve()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization
+        {
+            Name = "Concurrent reservation",
+            MaxEventsPerMonth = 750,
+            PlanId = _plans.SmallPlan.Id
+        }, o => o.ImmediateConsistency().Cache());
+        int available = await _usageService.GetEventsLeftAsync(organization.Id);
+
+        int[] reservations = await Task.WhenAll(Enumerable.Range(0, 8)
+            .Select(_ => _usageService.ReserveEventsAsync(organization.Id, available)));
+
+        Assert.Equal(available, reservations.Sum());
+        await _usageService.ReleaseEventReservationAsync(organization.Id, reservations.Sum());
+        Assert.Equal(available, await _usageService.ReserveEventsAsync(organization.Id, available));
+        await _usageService.ReleaseEventReservationAsync(organization.Id, available);
+    }
+
+    [Fact]
+    public async Task ReserveEventsAsync_PartialCapacity_IsAdmittedDeterministically()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization
+        {
+            Name = "Partial reservation",
+            MaxEventsPerMonth = 750,
+            PlanId = _plans.SmallPlan.Id
+        }, o => o.ImmediateConsistency().Cache());
+        int available = await _usageService.GetEventsLeftAsync(organization.Id);
+
+        int first = await _usageService.ReserveEventsAsync(organization.Id, available - 1);
+        int second = await _usageService.ReserveEventsAsync(organization.Id, 5);
+
+        Assert.Equal(available - 1, first);
+        Assert.Equal(1, second);
+        await _usageService.ReleaseEventReservationAsync(organization.Id, first + second);
+    }
+
+    [Fact]
     public async Task RunBenchmarkAsync()
     {
         const int iterations = 10000;

@@ -1,5 +1,7 @@
 ﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Models.Ingestion;
+using Exceptionless.Core.Services;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
@@ -15,15 +17,17 @@ public class StackStatusJob : JobWithLockBase, IHealthCheck
 {
     private readonly IStackRepository _stackRepository;
     private readonly ILockProvider _lockProvider;
+    private readonly IStackRouteResolver _stackRouteResolver;
     private DateTime? _lastRun;
 
-    public StackStatusJob(IStackRepository stackRepository, ICacheClient cacheClient,
+    public StackStatusJob(IStackRepository stackRepository, IStackRouteResolver stackRouteResolver, ICacheClient cacheClient,
         TimeProvider timeProvider,
         IResiliencePolicyProvider resiliencePolicyProvider,
         ILoggerFactory loggerFactory
     ) : base(timeProvider, resiliencePolicyProvider, loggerFactory)
     {
         _stackRepository = stackRepository;
+        _stackRouteResolver = stackRouteResolver;
         _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromSeconds(10), timeProvider, resiliencePolicyProvider, loggerFactory);
     }
 
@@ -46,6 +50,8 @@ public class StackStatusJob : JobWithLockBase, IHealthCheck
                 stack.MarkOpen();
 
             await _stackRepository.SaveAsync(results.Documents);
+            await Task.WhenAll(results.Documents.Select(stack =>
+                _stackRouteResolver.UpdateAsync(stack.ProjectId, stack.SignatureHash, new StackRoute(stack.Id, stack.Status))));
 
             // Sleep so we are not hammering the backend.
             await Task.Delay(TimeSpan.FromSeconds(2.5), _timeProvider);

@@ -14,6 +14,7 @@ namespace Exceptionless.Core.Repositories
     {
         internal const string StacksKey = "@Stacks";
         internal const string ExcludedStacksKey = "@ExcludedStacks";
+        internal const string SignatureHashesKey = "@SignatureHashes";
 
         public static T Stack<T>(this T query, string stackId) where T : IRepositoryQuery
         {
@@ -34,6 +35,11 @@ namespace Exceptionless.Core.Repositories
         {
             return query.AddCollectionOptionValue(ExcludedStacksKey, stackIds);
         }
+
+        public static T SignatureHash<T>(this T query, IEnumerable<string> signatureHashes) where T : IRepositoryQuery
+        {
+            return query.AddCollectionOptionValue(SignatureHashesKey, signatureHashes.Distinct());
+        }
     }
 }
 
@@ -50,6 +56,12 @@ namespace Exceptionless.Core.Repositories.Options
         {
             return query.SafeGetCollection<string>(StackQueryExtensions.ExcludedStacksKey);
         }
+
+
+        public static ICollection<string> GetSignatureHashes(this IRepositoryQuery query)
+        {
+            return query.SafeGetCollection<string>(StackQueryExtensions.SignatureHashesKey);
+        }
     }
 }
 
@@ -58,6 +70,7 @@ namespace Exceptionless.Core.Repositories.Queries
     public class StackQueryBuilder : IElasticQueryBuilder
     {
         private static readonly Field StackIdField = nameof(IOwnedByStack.StackId).ToLowerUnderscoredWords();
+        private static readonly Field SignatureHashField = nameof(Stack.SignatureHash).ToLowerUnderscoredWords();
 
         public Task BuildAsync<T>(QueryBuilderContext<T> ctx) where T : class, new()
         {
@@ -72,6 +85,12 @@ namespace Exceptionless.Core.Repositories.Queries
                 ctx.Filter &= new BoolQuery { MustNot = [new TermQuery { Field = StackIdField, Value = excludedStackIds.Single() }] };
             else if (excludedStackIds.Count > 1)
                 ctx.Filter &= new BoolQuery { MustNot = [new TermsQuery { Field = StackIdField, Terms = new TermsQueryField(excludedStackIds.Select(FieldValueHelper.ToFieldValue).ToList()) }] };
+
+            var signatureHashes = ctx.Source.GetSignatureHashes();
+            if (signatureHashes.Count == 1)
+                ctx.Filter &= new TermQuery { Field = SignatureHashField, Value = signatureHashes.Single() };
+            else if (signatureHashes.Count > 1)
+                ctx.Filter &= new TermsQuery { Field = SignatureHashField, Terms = new TermsQueryField(signatureHashes.Select(FieldValueHelper.ToFieldValue).ToList()) };
 
             return Task.CompletedTask;
         }

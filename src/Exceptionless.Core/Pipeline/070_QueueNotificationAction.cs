@@ -40,7 +40,8 @@ public class QueueNotificationAction : EventPipelineActionBase
                 EventId = ctx.Event.Id,
                 IsNew = ctx.IsNew,
                 IsRegression = ctx.IsRegression,
-                TotalOccurrences = ctx.Stack.TotalOccurrences
+                TotalOccurrences = ctx.Stack.TotalOccurrences,
+                DeduplicationId = String.Concat("event-notification:", ctx.Event.Id)
             });
 
         var webHooks = await _webHookRepository.GetByOrganizationIdOrProjectIdAsync(ctx.Event.OrganizationId, ctx.Event.ProjectId);
@@ -59,6 +60,7 @@ public class QueueNotificationAction : EventPipelineActionBase
                 Type = WebHookType.General,
                 Data = await _webHookDataPluginManager.CreateFromEventAsync(context)
             };
+            notification.DeduplicationId = String.Concat("event-webhook:", ctx.Event.Id, ":", hook.Id, ":", notification.Type);
 
             if (notification.Data is null)
             {

@@ -422,6 +422,39 @@ public class UsageService
         return Math.Max(eventsLeftInBucket, 0);
     }
 
+    public async Task<int> ReserveEventsAsync(string organizationId, int eventCount)
+    {
+        if (eventCount <= 0)
+            return 0;
+
+        int eventsLeft = await GetEventsLeftAsync(organizationId);
+        if (eventsLeft == Int32.MaxValue)
+            return eventCount;
+
+        string key = GetReservationCacheKey(organizationId);
+        long reservedAfter = await _cache.IncrementAsync(key, eventCount, TimeSpan.FromMinutes(10));
+        long reservedBefore = reservedAfter - eventCount;
+        int admitted = (int)Math.Clamp(eventsLeft - reservedBefore, 0, eventCount);
+
+        int unused = eventCount - admitted;
+        if (unused > 0)
+            await _cache.IncrementAsync(key, -unused, TimeSpan.FromMinutes(10));
+
+        return admitted;
+    }
+
+    public async Task ReleaseEventReservationAsync(string organizationId, int eventCount)
+    {
+        if (eventCount <= 0)
+            return;
+
+        int maxEventsPerMonth = await GetMaxEventsPerMonthAsync(organizationId);
+        if (maxEventsPerMonth < 0)
+            return;
+
+        await _cache.IncrementAsync(GetReservationCacheKey(organizationId), -eventCount, TimeSpan.FromMinutes(10));
+    }
+
     public async Task IncrementTotalAsync(string organizationId, string projectId, int eventCount = 1)
     {
         if (eventCount <= 0)
@@ -561,6 +594,8 @@ public class UsageService
 
         return $"usage:{bucket}:{organizationId}:{projectId}:total";
     }
+
+    private static string GetReservationCacheKey(string organizationId) => $"usage:{organizationId}:reservations:v3";
 
     private string GetBucketBlockedCacheKey(DateTime utcTime, string organizationId, string? projectId = null)
     {

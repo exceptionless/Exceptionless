@@ -1,8 +1,11 @@
+using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Ingestion;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Utility;
+using Exceptionless.Core.Services;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
@@ -80,15 +83,47 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
 
         var stack = await _repository.AddAsync(_stackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: DateTime.UtcNow.SubtractMonths(1)), o => o.Cache());
         Assert.NotNull(stack?.Id);
-        Assert.Equal(count + 2, _cache.Count);
+        Assert.Equal(count + 3, _cache.Count);
         Assert.Equal(hits, _cache.Hits);
         Assert.Equal(misses, _cache.Misses);
 
         var result = await _repository.GetStackBySignatureHashAsync(stack.ProjectId, stack.SignatureHash);
         JsonAssert.AssertJsonEquivalent(_serializer.SerializeToString(stack), _serializer.SerializeToString(result));
-        Assert.Equal(count + 2, _cache.Count);
+        Assert.Equal(count + 3, _cache.Count);
         Assert.Equal(hits + 1, _cache.Hits);
         Assert.Equal(misses, _cache.Misses);
+    }
+
+    [Fact]
+    public async Task StackRouteCache_TwoConsumersObserveCreateDiscardReopenAndRemove()
+    {
+        var options = GetService<AppOptions>();
+        var firstResolver = new StackRouteResolver(_repository, _cache, options);
+        var secondResolver = new StackRouteResolver(_repository, _cache, options);
+        var stack = _stackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId);
+
+        Assert.Empty(await firstResolver.ResolveAsync(stack.ProjectId, [stack.SignatureHash], TestCancellationToken));
+        await _repository.AddAsync(stack, o => o.ImmediateConsistency().Cache());
+        await firstResolver.UpdateAsync(stack.ProjectId, stack.SignatureHash, new StackRoute(stack.Id, stack.Status));
+
+        var openRoutes = await secondResolver.ResolveAsync(stack.ProjectId, [stack.SignatureHash], TestCancellationToken);
+        Assert.Equal(StackStatus.Open, openRoutes[stack.SignatureHash].Status);
+
+        stack.Status = StackStatus.Discarded;
+        await _repository.SaveAsync(stack, o => o.ImmediateConsistency().Cache());
+        await firstResolver.UpdateAsync(stack.ProjectId, stack.SignatureHash, new StackRoute(stack.Id, stack.Status));
+        var discardedRoutes = await secondResolver.ResolveAsync(stack.ProjectId, [stack.SignatureHash], TestCancellationToken);
+        Assert.Equal(StackStatus.Discarded, discardedRoutes[stack.SignatureHash].Status);
+
+        stack.Status = StackStatus.Open;
+        await _repository.SaveAsync(stack, o => o.ImmediateConsistency().Cache());
+        await firstResolver.UpdateAsync(stack.ProjectId, stack.SignatureHash, new StackRoute(stack.Id, stack.Status));
+        var reopenedRoutes = await secondResolver.ResolveAsync(stack.ProjectId, [stack.SignatureHash], TestCancellationToken);
+        Assert.Equal(StackStatus.Open, reopenedRoutes[stack.SignatureHash].Status);
+
+        await _repository.RemoveAsync(stack, o => o.ImmediateConsistency().Cache());
+        await firstResolver.RemoveAsync(stack.ProjectId, stack.SignatureHash);
+        Assert.Empty(await secondResolver.ResolveAsync(stack.ProjectId, [stack.SignatureHash], TestCancellationToken));
     }
 
     [Fact]
