@@ -28,15 +28,22 @@ test('operator can switch organizations without leaking event data', async ({ e2
     });
 
     await test.step('switch organizations through the sidebar and persist the selection', async () => {
-        await page.getByRole('button').filter({ hasText: e2eScenario.organizationName }).filter({ visible: true }).first().click();
+        await page.getByRole('button', { name: `Switch organization. Current organization: ${e2eScenario.organizationName}` }).click();
         await page.getByRole('menuitem', { exact: true, name: e2eSecondaryOrganization.organizationName }).click();
+        await expect
+            .poll(async () => page.evaluate(() => JSON.parse(window.localStorage.getItem('organization') ?? 'null')))
+            .toBe(e2eSecondaryOrganization.organizationId);
+
+        await page.goto('/next/event?time=all');
 
         await expect(getVisibleText(page, e2eSecondaryOrganization.message)).toBeVisible({ timeout: 30_000 });
         await expect(getVisibleText(page, e2eScenario.message)).toBeHidden();
 
         await page.reload();
 
-        await expect(page.getByRole('button').filter({ hasText: e2eSecondaryOrganization.organizationName }).filter({ visible: true }).first()).toBeVisible();
+        await expect(
+            page.getByRole('button', { name: `Switch organization. Current organization: ${e2eSecondaryOrganization.organizationName}` })
+        ).toBeVisible();
         await expect(getVisibleText(page, e2eSecondaryOrganization.message)).toBeVisible({ timeout: 30_000 });
         await expect(getVisibleText(page, e2eScenario.message)).toBeHidden();
     });

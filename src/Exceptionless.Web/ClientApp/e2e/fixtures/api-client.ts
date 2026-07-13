@@ -236,16 +236,14 @@ export class E2EApiClient {
         const deadline = Date.now() + timeoutMs;
 
         while (Date.now() < deadline) {
-            const searchResponse = await this.request.get(`${this.environment.mailUrl}/api/v1/search`, {
-                params: { query: `to:${email}` }
-            });
-            await expectStatus(searchResponse, [200], 'search local mail');
-            const searchResult = toRecord(await readJson(searchResponse), 'mail search response');
-            const messages = searchResult.Messages ?? searchResult.messages;
+            const messagesResponse = await this.request.get(`${this.environment.mailUrl}/api/v1/messages`);
+            await expectStatus(messagesResponse, [200], 'list local mail');
+            const messagesResult = toRecord(await readJson(messagesResponse), 'mail messages response');
+            const messages = messagesResult.Messages ?? messagesResult.messages;
 
             if (Array.isArray(messages)) {
                 for (const message of messages) {
-                    if (!isRecord(message)) {
+                    if (!isRecord(message) || !JSON.stringify(message).toLowerCase().includes(email.toLowerCase())) {
                         continue;
                     }
 
