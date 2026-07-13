@@ -69,6 +69,12 @@ public class JobRunnerOptions
         if (StackEventCount && args.Length != 0)
             JobName = nameof(StackEventCount);
 
+        IngestionStackEventCount = args.Length == 0
+            || args.Contains(nameof(IngestionStackEventCount), StringComparer.OrdinalIgnoreCase)
+            || args.Contains(nameof(StackEventCount), StringComparer.OrdinalIgnoreCase);
+        if (args.Contains(nameof(IngestionStackEventCount), StringComparer.OrdinalIgnoreCase))
+            JobName = nameof(IngestionStackEventCount);
+
         WebHooks = args.Length == 0 || args.Contains(nameof(WebHooks), StringComparer.OrdinalIgnoreCase);
         if (WebHooks && args.Length != 0)
             JobName = nameof(WebHooks);
@@ -95,6 +101,7 @@ public class JobRunnerOptions
     public bool Migration { get; }
     public bool StackStatus { get; }
     public bool StackEventCount { get; }
+    public bool IngestionStackEventCount { get; }
     public bool WebHooks { get; }
     public bool WorkItem { get; }
 }

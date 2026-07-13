@@ -11,11 +11,11 @@ public sealed record EventIngestionV3Event
 {
     [Required]
     [StringLength(EventIngestionV3Limits.MaximumEventIdLength, MinimumLength = 1)]
-    public required string Id { get; init; }
+    public string Id { get; init; } = null!;
 
     [Required]
     [StringLength(EventIngestionV3Limits.MaximumTypeLength, MinimumLength = 1)]
-    public required string Type { get; init; }
+    public string Type { get; init; } = null!;
 
     public DateTimeOffset? Date { get; init; }
 
@@ -25,11 +25,12 @@ public sealed record EventIngestionV3Event
     [StringLength(EventIngestionV3Limits.MaximumMessageLength, MinimumLength = 1)]
     public string? Message { get; init; }
 
-    [StringLength(EventIngestionV3Limits.MaximumReferenceIdLength, MinimumLength = 1)]
+    [StringLength(EventIngestionV3Limits.MaximumReferenceIdLength, MinimumLength = EventIngestionV3Limits.MinimumReferenceIdLength)]
     public string? ReferenceId { get; init; }
 
     public decimal? Value { get; init; }
 
+    [MaxLength(EventIngestionV3Limits.MaximumTags)]
     public string[]? Tags { get; init; }
 
     [StringLength(EventIngestionV3Limits.MaximumVersionLength, MinimumLength = 1)]
@@ -61,19 +62,20 @@ public sealed record EventIngestionV3Client
 {
     [Required]
     [StringLength(EventIngestionV3Limits.MaximumClientNameLength, MinimumLength = 1)]
-    public required string Name { get; init; }
+    public string Name { get; init; } = null!;
 
     [Required]
     [StringLength(EventIngestionV3Limits.MaximumClientVersionLength, MinimumLength = 1)]
-    public required string Version { get; init; }
+    public string Version { get; init; } = null!;
 }
 
 public sealed record EventIngestionV3Stacking
 {
-    [StringLength(EventIngestionV3Limits.MaximumMessageLength, MinimumLength = 1)]
+    [StringLength(EventIngestionV3Limits.MaximumStackTitleLength, MinimumLength = 1)]
     public string? Title { get; init; }
 
-    public required Dictionary<string, string> SignatureData { get; init; }
+    [Required]
+    public Dictionary<string, string> SignatureData { get; init; } = null!;
 }
 
 public sealed record EventIngestionV3User

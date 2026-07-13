@@ -162,6 +162,30 @@ public sealed class StackTraceParserTests
     }
 
     [Fact]
+    public void Fingerprint_InnerFrameworkFramesAndOuterUserFrame_MatchesStructuredV2()
+    {
+        const string trace = "System.OuterException: outer\n ---> System.InnerException: inner\n   at System.Threading.Task.Run()\n   --- End of inner exception stack trace ---\n   at Example.OrderService.Save() in /src/OrderService.cs:line 42";
+        Error error = _parser.ParseError(trace, "System.OuterException", "outer");
+        var serializer = new SystemTextJsonSerializer(new JsonSerializerOptions());
+        var v2 = new ErrorSignature(error, serializer, ["Example"], shouldFlagSignatureTarget: false);
+        var source = new EventIngestionV3Event
+        {
+            Id = "event-nested",
+            Type = Event.KnownTypes.Error,
+            ExceptionType = error.Type,
+            StackTrace = trace
+        };
+        var project = new Project { Data = new DataDictionary { ["UserNamespaces"] = "Example" } };
+
+        StackFingerprint v3 = new StackFingerprintService(_parser).Create(source, new Organization(), project);
+
+        Assert.Equal("System.OuterException", v3.SignatureData["ExceptionType"]);
+        Assert.Equal("Example.OrderService.Save()", v3.SignatureData["Method"]);
+        Assert.Equal(v2.SignatureHash, v3.SignatureHash);
+        Assert.Equal(v2.SignatureInfo, v3.SignatureData);
+    }
+
+    [Fact]
     public void Fingerprint_ManualStacking_TakesPrecedenceOverRawTrace()
     {
         var source = new EventIngestionV3Event
@@ -182,5 +206,37 @@ public sealed class StackTraceParserTests
         Assert.Equal("Orders failed", fingerprint.Title);
         Assert.Equal("Save", fingerprint.SignatureData["OrderOperation"]);
         Assert.Single(fingerprint.SignatureData);
+    }
+
+    [Fact]
+    public void Fingerprint_ManualStacking_IsCanonicalAcrossPropertyOrderAndIncludesKeys()
+    {
+        var service = new StackFingerprintService(_parser);
+        EventIngestionV3Event Create(Dictionary<string, string> signatureData) => new()
+        {
+            Id = "event-1",
+            Type = Event.KnownTypes.Error,
+            Stacking = new EventIngestionV3Stacking { SignatureData = signatureData }
+        };
+
+        StackFingerprint first = service.Create(Create(new Dictionary<string, string>
+        {
+            ["Operation"] = "Save",
+            ["Entity"] = "Order"
+        }), new Organization(), new Project());
+        StackFingerprint reordered = service.Create(Create(new Dictionary<string, string>
+        {
+            ["Entity"] = "Order",
+            ["Operation"] = "Save"
+        }), new Organization(), new Project());
+        StackFingerprint differentKeys = service.Create(Create(new Dictionary<string, string>
+        {
+            ["Action"] = "Save",
+            ["Aggregate"] = "Order"
+        }), new Organization(), new Project());
+
+        Assert.Equal(first.SignatureHash, reordered.SignatureHash);
+        Assert.NotEqual(first.SignatureHash, differentKeys.SignatureHash);
+        Assert.Equal(["Entity", "Operation"], first.SignatureData.Keys);
     }
 }

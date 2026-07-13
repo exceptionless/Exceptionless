@@ -24,6 +24,11 @@ public sealed class StackTraceParser
 
     public Error ParseError(string stackTrace, string? exceptionType, string? message)
     {
+        return ParseErrorWithCoverage(stackTrace, exceptionType, message).Error;
+    }
+
+    public StackTraceParseResult ParseErrorWithCoverage(string stackTrace, string? exceptionType, string? message)
+    {
         var error = new Error
         {
             Type = exceptionType,
@@ -32,6 +37,7 @@ public sealed class StackTraceParser
         };
         InnerError current = error;
         var parents = new Stack<InnerError>();
+        bool isComplete = true;
 
         ReadOnlySpan<char> remaining = stackTrace.AsSpan();
         while (!remaining.IsEmpty)
@@ -49,7 +55,8 @@ public sealed class StackTraceParser
                 continue;
             }
 
-            if (line.Trim().StartsWith("--- End of inner exception", StringComparison.OrdinalIgnoreCase))
+            ReadOnlySpan<char> trimmedLine = line.Trim();
+            if (trimmedLine.StartsWith("--- End of inner exception", StringComparison.OrdinalIgnoreCase))
             {
                 if (parents.TryPop(out var parent))
                     current = parent;
@@ -57,12 +64,17 @@ public sealed class StackTraceParser
             }
 
             if (TryParseFrame(line, out var frame))
+            {
                 current.StackTrace ??= [];
-            if (frame is not null)
                 current.StackTrace!.Add(frame);
+                continue;
+            }
+
+            if (!trimmedLine.IsEmpty && !IsOuterExceptionHeader(trimmedLine, exceptionType))
+                isComplete = false;
         }
 
-        return error;
+        return new StackTraceParseResult(error, isComplete);
     }
 
     public bool TryFindFrame(
@@ -70,11 +82,20 @@ public sealed class StackTraceParser
         Func<StackFrame, bool> predicate,
         out StackFrame? firstFrame,
         out StackFrame? matchingFrame,
-        out string? innermostExceptionType)
+        out string? selectedExceptionType)
     {
         firstFrame = null;
         matchingFrame = null;
-        innermostExceptionType = null;
+        selectedExceptionType = null;
+
+        // Preserve the exception nesting while retaining only the two frames needed for
+        // fingerprinting. ErrorSignature examines user frames from the innermost exception
+        // outward, then falls back to the innermost exception's first frame. A flat scan can
+        // incorrectly combine an inner exception type with an outer user frame.
+        var root = new FingerprintSegment(null);
+        var segments = new List<FingerprintSegment> { root };
+        var parents = new Stack<FingerprintSegment>();
+        FingerprintSegment current = root;
 
         ReadOnlySpan<char> remaining = stackTrace.AsSpan();
         while (!remaining.IsEmpty)
@@ -85,21 +106,45 @@ public sealed class StackTraceParser
 
             if (TryParseInnerExceptionHeader(line, out string? innerType, out _))
             {
-                firstFrame = null;
-                matchingFrame = null;
-                innermostExceptionType = innerType;
+                var inner = new FingerprintSegment(innerType);
+                segments.Add(inner);
+                parents.Push(current);
+                current = inner;
+                continue;
+            }
+
+            ReadOnlySpan<char> trimmedLine = line.Trim();
+            if (trimmedLine.StartsWith("--- End of inner exception", StringComparison.OrdinalIgnoreCase))
+            {
+                if (parents.TryPop(out var parent))
+                    current = parent;
                 continue;
             }
 
             if (!TryParseFrame(line, out var frame))
                 continue;
 
-            firstFrame ??= frame;
-            if (matchingFrame is null && predicate(frame))
-                matchingFrame = frame;
+            current.FirstFrame ??= frame;
+            if (current.MatchingFrame is null && predicate(frame))
+                current.MatchingFrame = frame;
         }
 
-        return firstFrame is not null;
+        for (int index = segments.Count - 1; index >= 0; index--)
+        {
+            if (segments[index].MatchingFrame is null)
+                continue;
+
+            matchingFrame = segments[index].MatchingFrame;
+            selectedExceptionType = segments[index].ExceptionType;
+            break;
+        }
+
+        FingerprintSegment innermost = segments[^1];
+        firstFrame = innermost.FirstFrame;
+        if (matchingFrame is null)
+            selectedExceptionType = innermost.ExceptionType;
+
+        return firstFrame is not null || matchingFrame is not null;
     }
 
     internal static bool TryParseFrame(ReadOnlySpan<char> rawLine, out StackFrame frame)
@@ -231,6 +276,16 @@ public sealed class StackTraceParser
         return true;
     }
 
+    private static bool IsOuterExceptionHeader(ReadOnlySpan<char> line, string? exceptionType)
+    {
+        if (String.IsNullOrWhiteSpace(exceptionType)
+            || !line.StartsWith(exceptionType.AsSpan(), StringComparison.Ordinal))
+            return false;
+
+        ReadOnlySpan<char> remainder = line[exceptionType.Length..];
+        return remainder.IsEmpty || remainder[0] == ':';
+    }
+
     private static ReadOnlySpan<char> StripParameters(ReadOnlySpan<char> method)
     {
         int openParen = method.IndexOf('(');
@@ -291,4 +346,13 @@ public sealed class StackTraceParser
 
         frame.FileName = location.ToString();
     }
+
+    private sealed class FingerprintSegment(string? exceptionType)
+    {
+        public string? ExceptionType { get; } = exceptionType;
+        public StackFrame? FirstFrame { get; set; }
+        public StackFrame? MatchingFrame { get; set; }
+    }
 }
+
+public sealed record StackTraceParseResult(Error Error, bool IsComplete);

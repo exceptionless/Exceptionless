@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Threading.RateLimiting;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -12,6 +13,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Utility;
+using Exceptionless.Web.Utility;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Queues;
@@ -95,6 +97,32 @@ public sealed class EventIngestionV3EndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task Post_MalformedGzipBody_ReturnsBadRequest()
+    {
+        using var content = new ByteArrayContent("not-a-gzip-stream"u8.ToArray());
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/x-ndjson");
+        content.Headers.ContentEncoding.Add("gzip");
+
+        using HttpResponseMessage response = await PostAsync(content);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
+    public async Task Post_MalformedBrotliBody_ReturnsBadRequest()
+    {
+        using var content = new ByteArrayContent("not-a-brotli-stream"u8.ToArray());
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/x-ndjson");
+        content.Headers.ContentEncoding.Add("br");
+
+        using HttpResponseMessage response = await PostAsync(content);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
     public async Task Post_ClientMetadata_PersistsFirstClassEventData()
     {
         const string payload = """
@@ -115,6 +143,73 @@ public sealed class EventIngestionV3EndpointTests : IntegrationTestsBase
         Assert.NotNull(client);
         Assert.Equal("exceptionless.go", client.UserAgent);
         Assert.Equal("1.2.0", client.Version);
+    }
+
+    [Fact]
+    public async Task Post_ValuesAtDurableLimits_PersistsWithoutTruncationOrDropping()
+    {
+        string message = new('m', EventIngestionV3Limits.MaximumMessageLength);
+        string referenceId = new('r', EventIngestionV3Limits.MaximumReferenceIdLength);
+        string tag = new('t', EventIngestionV3Limits.MaximumTagLength);
+        string title = new('s', EventIngestionV3Limits.MaximumStackTitleLength);
+        var source = new EventIngestionV3Event
+        {
+            Id = "v3-durable-boundaries-0001",
+            Type = Event.KnownTypes.Log,
+            Message = message,
+            ReferenceId = referenceId,
+            Tags = [tag],
+            Stacking = new EventIngestionV3Stacking
+            {
+                Title = title,
+                SignatureData = new Dictionary<string, string> { ["boundary"] = "exact" }
+            }
+        };
+        string payload = JsonSerializer.Serialize(
+            source,
+            Exceptionless.Core.Serialization.EventIngestionJsonContext.Default.EventIngestionV3Event);
+
+        using HttpResponseMessage httpResponse = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/x-ndjson"));
+        EventIngestionV3Response response = await DeserializeAsync(httpResponse);
+
+        Assert.Equal(HttpStatusCode.OK, httpResponse.StatusCode);
+        Assert.Equal(1, response.Persisted);
+        await RefreshDataAsync();
+        var ev = Assert.Single((await _eventRepository.GetByReferenceIdAsync(TestConstants.ProjectId, referenceId)).Documents);
+        Assert.Equal(message, ev.Message);
+        Assert.Equal(tag, Assert.Single(ev.Tags!));
+        var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        Assert.Equal(title, stack.Title);
+    }
+
+    [Fact]
+    public async Task Post_ReservedTopLevelDataKey_ReturnsValidationProblemWithoutPersistence()
+    {
+        const string referenceId = "v3-reserved-data-ref-0001";
+        const string payload = """
+            {"id":"v3-reserved-data-0001","type":"log","reference_id":"v3-reserved-data-ref-0001","data":{"@request":{"cookies":{"authorization":"secret"}}}}
+            """;
+
+        using HttpResponseMessage response = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/x-ndjson"));
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        await RefreshDataAsync();
+        Assert.Empty((await _eventRepository.GetByReferenceIdAsync(TestConstants.ProjectId, referenceId)).Documents);
+    }
+
+    [Fact]
+    public async Task Post_NullManualStackingValue_ReturnsValidationProblem()
+    {
+        const string payload = """
+            {"id":"v3-null-manual-stack-0001","type":"log","stacking":{"signature_data":{"hash":null}}}
+            """;
+
+        using HttpResponseMessage response = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/x-ndjson"));
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
     }
 
     [Fact]
@@ -139,6 +234,52 @@ public sealed class EventIngestionV3EndpointTests : IntegrationTestsBase
         Assert.Equal(initialQueueStats.Enqueued + 1, firstQueueStats.Enqueued);
         Assert.Equal(firstQueueStats.Enqueued, secondQueueStats.Enqueued);
         Assert.Single((await _eventRepository.GetByReferenceIdAsync(TestConstants.ProjectId, "v3-duplicate-ref-0001")).Documents);
+    }
+
+    [Fact]
+    public async Task Post_RetryAfterStackOnlyWrite_RecoversFirstOccurrence()
+    {
+        var project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
+        Assert.NotNull(project);
+        var organization = await GetService<IOrganizationRepository>().GetByIdAsync(project.OrganizationId);
+        Assert.NotNull(organization);
+        DateTimeOffset eventDate = TimeProvider.GetUtcNow();
+        var source = new EventIngestionV3Event
+        {
+            Id = "v3-first-occurrence-recovery-01",
+            Type = Event.KnownTypes.Log,
+            Date = eventDate,
+            Source = "Example.FirstOccurrence",
+            Message = "recover first event",
+            ReferenceId = "v3-first-recovery-ref-01"
+        };
+        StackFingerprint fingerprint = GetService<StackFingerprintService>().Create(source, organization, project);
+        string eventId = EventBatchWriter.GetDeterministicEventId(project.Id, source.Id, eventDate.UtcDateTime);
+        await _stackRepository.AddAsync(new Stack
+        {
+            OrganizationId = organization.Id,
+            ProjectId = project.Id,
+            Type = source.Type,
+            Status = StackStatus.Open,
+            SignatureHash = fingerprint.SignatureHash,
+            SignatureInfo = new SettingsDictionary(fingerprint.SignatureData.ToDictionary(pair => pair.Key, pair => pair.Value)),
+            DuplicateSignature = $"{project.Id}:{fingerprint.SignatureHash}",
+            Title = source.Message,
+            TotalOccurrences = 0,
+            FirstOccurrence = TimeProvider.GetUtcNow().UtcDateTime,
+            LastOccurrence = TimeProvider.GetUtcNow().UtcDateTime,
+            IngestionFirstEventId = eventId
+        }, o => o.ImmediateConsistency().Cache());
+
+        string payload = JsonSerializer.Serialize(source, Exceptionless.Core.Serialization.EventIngestionJsonContext.Default.EventIngestionV3Event);
+        using HttpResponseMessage httpResponse = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/x-ndjson"));
+        EventIngestionV3Response response = await DeserializeAsync(httpResponse);
+
+        Assert.Equal(1, response.Persisted);
+        await RefreshDataAsync();
+        var persisted = Assert.Single((await _eventRepository.GetByReferenceIdAsync(project.Id, source.ReferenceId)).Documents);
+        Assert.Equal(eventId, persisted.Id);
+        Assert.True(persisted.IsFirstOccurrence);
     }
 
     [Fact]
@@ -180,6 +321,48 @@ public sealed class EventIngestionV3EndpointTests : IntegrationTestsBase
         Assert.Equal(0, response.Persisted);
         await RefreshDataAsync();
         Assert.Empty((await _eventRepository.GetByReferenceIdAsync(TestConstants.ProjectId, source.ReferenceId)).Documents);
+    }
+
+    [Fact]
+    public async Task Post_DiscardedStackWithHugeInvalidOptionalContext_DiscardsBeforeFullDeserialization()
+    {
+        var project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
+        Assert.NotNull(project);
+        var organization = await GetService<IOrganizationRepository>().GetByIdAsync(project.OrganizationId);
+        Assert.NotNull(organization);
+        var routingEvent = new EventIngestionV3Event
+        {
+            Id = "v3-discarded-projection-01",
+            Type = Event.KnownTypes.Error,
+            ExceptionType = "Example.ProjectedException",
+            StackTrace = "at Example.Projected.Run() in /src/Projected.cs:line 42"
+        };
+        StackFingerprint fingerprint = GetService<StackFingerprintService>().Create(routingEvent, organization, project);
+        await _stackRepository.AddAsync(new Stack
+        {
+            OrganizationId = TestConstants.OrganizationId,
+            ProjectId = TestConstants.ProjectId,
+            Type = Event.KnownTypes.Error,
+            Status = StackStatus.Discarded,
+            SignatureHash = fingerprint.SignatureHash,
+            SignatureInfo = new SettingsDictionary(fingerprint.SignatureData.ToDictionary(pair => pair.Key, pair => pair.Value)),
+            DuplicateSignature = $"{TestConstants.ProjectId}:{fingerprint.SignatureHash}",
+            Title = "discarded projection",
+            FirstOccurrence = TimeProvider.GetUtcNow().UtcDateTime,
+            LastOccurrence = TimeProvider.GetUtcNow().UtcDateTime
+        }, o => o.ImmediateConsistency().Cache());
+
+        string payload = $$"""
+            {"id":"{{routingEvent.Id}}","type":"error","exception_type":"{{routingEvent.ExceptionType}}","stack_trace":"{{routingEvent.StackTrace}}","data":{"value":"{{new string('x', 64 * 1024)}}"},"request":"not-an-object"}
+            """;
+        using HttpResponseMessage httpResponse = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/x-ndjson"));
+        EventIngestionV3Response response = await DeserializeAsync(httpResponse);
+
+        Assert.Equal(HttpStatusCode.OK, httpResponse.StatusCode);
+        Assert.Equal(1, response.Received);
+        Assert.Equal(1, response.Discarded);
+        Assert.Equal(0, response.Invalid);
+        Assert.Equal(0, response.Persisted);
     }
 
     [Fact]
@@ -330,6 +513,117 @@ public sealed class EventIngestionV3EndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task Post_HighCompressionRatioWithinIndependentLimits_PersistsEvent()
+    {
+        var options = GetService<AppOptions>().EventIngestionV3;
+        long originalCompressedLimit = options.MaximumCompressedBodySize;
+        long originalDecompressedLimit = options.MaximumDecompressedBodySize;
+        options.MaximumCompressedBodySize = 1024;
+        options.MaximumDecompressedBodySize = 8192;
+        try
+        {
+            string payload = $$"""{"id":"v3-high-ratio-0001","type":"log","reference_id":"v3-high-ratio-ref-0001","message":"{{new string('x', 1900)}}"}""";
+            byte[] compressed;
+            await using (var output = new MemoryStream())
+            {
+                await using (var gzip = new GZipStream(output, CompressionMode.Compress, leaveOpen: true))
+                    await gzip.WriteAsync(Encoding.UTF8.GetBytes(payload), TestCancellationToken);
+                compressed = output.ToArray();
+            }
+            Assert.True(compressed.Length < options.MaximumCompressedBodySize);
+
+            using var content = new ByteArrayContent(compressed);
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/x-ndjson");
+            content.Headers.ContentEncoding.Add("gzip");
+            using HttpResponseMessage httpResponse = await PostAsync(content);
+            EventIngestionV3Response response = await DeserializeAsync(httpResponse);
+
+            Assert.Equal(HttpStatusCode.OK, httpResponse.StatusCode);
+            Assert.Equal(1, response.Persisted);
+        }
+        finally
+        {
+            options.MaximumCompressedBodySize = originalCompressedLimit;
+            options.MaximumDecompressedBodySize = originalDecompressedLimit;
+        }
+    }
+
+    [Fact]
+    public async Task Post_CompressedBodyOverDecompressedLimit_ReturnsRequestEntityTooLarge()
+    {
+        var options = GetService<AppOptions>().EventIngestionV3;
+        long originalCompressedLimit = options.MaximumCompressedBodySize;
+        long originalDecompressedLimit = options.MaximumDecompressedBodySize;
+        options.MaximumCompressedBodySize = 1024;
+        options.MaximumDecompressedBodySize = 128;
+        try
+        {
+            string payload = $$"""{"id":"v3-decompressed-gzip-limit","type":"log","message":"{{new string('x', 512)}}"}""";
+            byte[] compressed;
+            await using (var output = new MemoryStream())
+            {
+                await using (var gzip = new GZipStream(output, CompressionMode.Compress, leaveOpen: true))
+                    await gzip.WriteAsync(Encoding.UTF8.GetBytes(payload), TestCancellationToken);
+                compressed = output.ToArray();
+            }
+
+            using var content = new ByteArrayContent(compressed);
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/x-ndjson");
+            content.Headers.ContentEncoding.Add("gzip");
+            using HttpResponseMessage response = await PostAsync(content);
+
+            Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
+        }
+        finally
+        {
+            options.MaximumCompressedBodySize = originalCompressedLimit;
+            options.MaximumDecompressedBodySize = originalDecompressedLimit;
+        }
+    }
+
+    [Fact]
+    public async Task Post_InvalidJsonAfterPersistedPrefix_ReturnsReplayablePartialResult()
+    {
+        var options = GetService<AppOptions>().EventIngestionV3;
+        int originalMicroBatchSize = options.MicroBatchSize;
+        options.MicroBatchSize = 1;
+        try
+        {
+            const string payload = """
+                {"id":"v3-partial-prefix-0001","type":"log","reference_id":"v3-partial-prefix-ref-0001"}
+                {"id":"broken"
+                """;
+            using HttpResponseMessage response = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/x-ndjson"));
+            string json = await response.Content.ReadAsStringAsync(TestCancellationToken);
+            using JsonDocument document = JsonDocument.Parse(json);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            JsonElement partialResult = document.RootElement.GetProperty("partial_result");
+            Assert.Equal(1, partialResult.GetProperty("received").GetInt32());
+            Assert.Equal(1, partialResult.GetProperty("persisted").GetInt32());
+            Assert.Contains("Retry the complete request", document.RootElement.GetProperty("retry_guidance").GetString() ?? String.Empty);
+
+            await RefreshDataAsync();
+            Assert.Single((await _eventRepository.GetByReferenceIdAsync(TestConstants.ProjectId, "v3-partial-prefix-ref-0001")).Documents);
+        }
+        finally
+        {
+            options.MicroBatchSize = originalMicroBatchSize;
+        }
+    }
+
+    [Fact]
+    public async Task Post_NullNestedHeaderValue_ReturnsValidationProblem()
+    {
+        const string payload = """{"id":"v3-null-header-0001","type":"log","request":{"headers":{"x-test":null}}}""";
+
+        using HttpResponseMessage response = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/x-ndjson"));
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
     public async Task Post_AtQuota_DiscardsKnownStackAndBlocksNewEvent()
     {
         var organizationRepository = GetService<IOrganizationRepository>();
@@ -383,11 +677,11 @@ public sealed class EventIngestionV3EndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task Post_EventOverLogicalSizeLimit_ReturnsRequestEntityTooLarge()
+    public async Task Post_EventOverUtf8RecordSizeLimit_ReturnsRequestEntityTooLarge()
     {
         var options = GetService<AppOptions>().EventIngestionV3;
         long originalLimit = options.MaximumEventSize;
-        options.MaximumEventSize = 64;
+        options.MaximumEventSize = 60;
         try
         {
             using HttpResponseMessage response = await PostAsync(new StringContent("{\"id\":\"v3-event-size-limit\",\"type\":\"log\",\"message\":\"payload\"}", Encoding.UTF8, "application/x-ndjson"));
@@ -423,6 +717,45 @@ public sealed class EventIngestionV3EndpointTests : IntegrationTestsBase
         using HttpResponseMessage response = await _server.CreateClient().SendAsync(request, TestCancellationToken);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Post_ExplicitProject_AcquiresActualOrganizationStreamPermit()
+    {
+        var project = await _projectRepository.GetByIdAsync(SampleDataService.INTERNAL_PROJECT_ID);
+        Assert.NotNull(project);
+        Assert.NotEqual(TestConstants.OrganizationId, project.OrganizationId);
+
+        var limiter = GetService<EventIngestionV3ConcurrencyLimiter>();
+        int permitLimit = GetService<AppOptions>().EventIngestionV3.MaximumActiveStreamsPerOrganization;
+        var heldLeases = new List<RateLimitLease>(permitLimit);
+        try
+        {
+            for (int index = 0; index < permitLimit; index++)
+            {
+                RateLimitLease lease = await limiter.AcquireOrganizationActiveStreamAsync(project.OrganizationId, TestCancellationToken);
+                Assert.True(lease.IsAcquired);
+                heldLeases.Add(lease);
+            }
+
+            using var request = new HttpRequestMessage(
+                HttpMethod.Post,
+                new Uri(_server.BaseAddress, $"/api/v3/projects/{project.Id}/events"));
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", TestConstants.UserApiKey);
+            request.Content = new StringContent(
+                "{\"id\":\"v3-explicit-project-limit-0001\",\"type\":\"log\"}",
+                Encoding.UTF8,
+                "application/x-ndjson");
+
+            using HttpResponseMessage response = await _server.CreateClient().SendAsync(request, TestCancellationToken);
+
+            Assert.Equal(HttpStatusCode.TooManyRequests, response.StatusCode);
+        }
+        finally
+        {
+            foreach (RateLimitLease lease in heldLeases)
+                lease.Dispose();
+        }
     }
 
     [Fact]

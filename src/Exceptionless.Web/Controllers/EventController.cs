@@ -1255,6 +1255,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     ///  </code>
     ///  </remarks>
     ///  <param name="userAgent">The user agent that submitted the event.</param>
+    ///  <param name="trackProcessing">Whether to return an event-post identifier that can be polled for terminal processing.</param>
     ///  <response code="202">Accepted</response>
     ///  <response code="400">No project id specified and no default project was found.</response>
     ///  <response code="404">No project was found.</response>
@@ -1265,9 +1266,9 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [ConfigurationResponseFilter]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status413RequestEntityTooLarge)]
-    public Task<IActionResult> PostV2Async([FromHeader][UserAgent] string? userAgent = null)
+    public Task<IActionResult> PostV2Async([FromHeader][UserAgent] string? userAgent = null, [FromHeader(Name = Headers.TrackEventPost)] bool trackProcessing = false)
     {
-        return PostAsync(null, 2, userAgent);
+        return PostAsync(null, 2, userAgent, trackProcessing);
     }
 
     ///  <summary>
@@ -1316,6 +1317,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     ///  </remarks>
     ///  <param name="projectId">The identifier of the project.</param>
     ///  <param name="userAgent">The user agent that submitted the event.</param>
+    ///  <param name="trackProcessing">Whether to return an event-post identifier that can be polled for terminal processing.</param>
     ///  <response code="202">Accepted</response>
     ///  <response code="400">No project id specified and no default project was found.</response>
     ///  <response code="404">No project was found.</response>
@@ -1326,13 +1328,14 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [ConfigurationResponseFilter]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status413RequestEntityTooLarge)]
-    public Task<IActionResult> PostByProjectV2Async(string? projectId = null, [FromHeader][UserAgent] string? userAgent = null)
+    public Task<IActionResult> PostByProjectV2Async(string? projectId = null, [FromHeader][UserAgent] string? userAgent = null, [FromHeader(Name = Headers.TrackEventPost)] bool trackProcessing = false)
     {
-        return PostAsync(projectId, 2, userAgent);
+        return PostAsync(projectId, 2, userAgent, trackProcessing);
     }
 
-    private async Task<IActionResult> PostAsync(string? projectId = null, int apiVersion = 2, [FromHeader][UserAgent] string? userAgent = null)
+    private async Task<IActionResult> PostAsync(string? projectId = null, int apiVersion = 2, [FromHeader][UserAgent] string? userAgent = null, bool trackProcessing = false)
     {
+        trackProcessing &= _appOptions.EventIngestionV3.EnableProcessingStatus;
         string? claimProjectId = Request.GetProjectId();
         if (projectId is not null && claimProjectId is not null && !String.Equals(projectId, claimProjectId))
         {
@@ -1356,6 +1359,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         // Set the project for the configuration response filter.
         Request.SetProject(project);
 
+        EventPostEnqueueResult result;
         try
         {
             string mediaType = String.Empty;
@@ -1371,7 +1375,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                 ? new EventPostRequestBodyStream(Request.Body, _appOptions.MaximumEventPostSize)
                 : Request.Body;
 
-            var result = await _eventPostService.SaveAndEnqueueAsync(new EventPost(_appOptions.EnableArchive)
+            result = await _eventPostService.SaveAndEnqueueAsync(new EventPost(_appOptions.EnableArchive)
             {
                 ApiVersion = apiVersion,
                 CharSet = charSet,
@@ -1380,6 +1384,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                 MediaType = mediaType,
                 OrganizationId = project.OrganizationId,
                 ProjectId = project.Id,
+                TrackProcessing = trackProcessing,
                 UserAgent = userAgent,
             }, requestBody, HttpContext.RequestAborted);
 
@@ -1401,6 +1406,9 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
             throw;
         }
+
+        if (trackProcessing && result.QueueEntryId is { Length: > 0 } queueEntryId)
+            Response.Headers[Headers.EventPostId] = queueEntryId;
 
         return StatusCode(StatusCodes.Status202Accepted);
     }

@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.Unicode;
+using Exceptionless.Core.Attributes;
 
 namespace Exceptionless.Core.Serialization;
 
@@ -35,7 +36,21 @@ public static class JsonSerializerOptionsExtensions
     public static JsonSerializerOptions ConfigureExceptionlessApiDefaults(this JsonSerializerOptions options)
     {
         ConfigureExceptionlessDefaults(options, skipEmptyCollections: false);
+        if (options.TypeInfoResolver is DefaultJsonTypeInfoResolver resolver)
+            resolver.Modifiers.Add(RemoveApiIgnoredProperties);
         return options;
+    }
+
+    private static void RemoveApiIgnoredProperties(JsonTypeInfo typeInfo)
+    {
+        if (typeInfo.Kind is not JsonTypeInfoKind.Object)
+            return;
+
+        for (int index = typeInfo.Properties.Count - 1; index >= 0; index--)
+        {
+            if (typeInfo.Properties[index].AttributeProvider?.IsDefined(typeof(ApiIgnoreAttribute), inherit: true) is true)
+                typeInfo.Properties.RemoveAt(index);
+        }
     }
 
     private static JsonSerializerOptions ConfigureExceptionlessDefaults(JsonSerializerOptions options, bool skipEmptyCollections)

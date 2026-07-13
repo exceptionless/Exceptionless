@@ -26,15 +26,6 @@
           "Event Ingestion V3"
         ],
         "operationId": "PostEventsV3",
-        "parameters": [
-          {
-            "name": "projectId",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
         "requestBody": {
           "content": {
             "application/x-ndjson": {
@@ -156,7 +147,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v3/projects/{projectId}/events": {
@@ -297,7 +293,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     }
   },
@@ -408,14 +409,11 @@
             "format": "int64"
           },
           "data": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/JsonElement"
-              }
-            ]
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": { }
           }
         }
       },
@@ -471,7 +469,7 @@
             ]
           },
           "message": {
-            "maxLength": 4000,
+            "maxLength": 2000,
             "minLength": 1,
             "type": [
               "null",
@@ -480,7 +478,7 @@
           },
           "reference_id": {
             "maxLength": 100,
-            "minLength": 1,
+            "minLength": 8,
             "type": [
               "null",
               "string"
@@ -494,11 +492,14 @@
             "format": "double"
           },
           "tags": {
+            "maxItems": 50,
             "type": [
               "null",
               "array"
             ],
             "items": {
+              "maxLength": 100,
+              "minLength": 1,
               "type": "string"
             }
           },
@@ -585,14 +586,11 @@
             ]
           },
           "data": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/JsonElement"
-              }
-            ]
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": { }
           }
         },
         "description": "A compact V3 ingestion event. Organization and project ownership come from\nthe authenticated request rather than the event payload."
@@ -690,14 +688,11 @@
             ]
           },
           "data": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/JsonElement"
-              }
-            ]
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": { }
           }
         }
       },
@@ -752,7 +747,7 @@
         "type": "object",
         "properties": {
           "title": {
-            "maxLength": 4000,
+            "maxLength": 1000,
             "minLength": 1,
             "type": [
               "null",
@@ -760,8 +755,11 @@
             ]
           },
           "signature_data": {
+            "maxProperties": 100,
+            "minProperties": 1,
             "type": "object",
             "additionalProperties": {
+              "maxLength": 16384,
               "type": "string"
             }
           }
@@ -787,14 +785,11 @@
             ]
           },
           "data": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/JsonElement"
-              }
-            ]
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": { }
           }
         }
       },
@@ -866,6 +861,11 @@
       }
     }
   },
+  "security": [
+    {
+      "Bearer": [ ]
+    }
+  ],
   "tags": [
     {
       "name": "Event Ingestion V3"

@@ -16,12 +16,13 @@ public sealed class EventMaterializer(StackTraceParser stackTraceParser, TimePro
 {
     public PersistentEvent Materialize(EventIngestionV3Event source, StackFingerprint fingerprint, Organization organization, Project project)
     {
+        DateTimeOffset utcNow = timeProvider.GetUtcNow();
         var ev = new PersistentEvent
         {
             Type = source.Type,
             Source = source.Source,
-            Date = source.Date ?? timeProvider.GetUtcNow(),
-            CreatedUtc = timeProvider.GetUtcNow().UtcDateTime,
+            Date = source.Date ?? utcNow,
+            CreatedUtc = utcNow.UtcDateTime,
             Message = source.Message,
             ReferenceId = source.ReferenceId,
             Value = source.Value,
@@ -33,9 +34,25 @@ public sealed class EventMaterializer(StackTraceParser stackTraceParser, TimePro
 
         if (String.Equals(source.Type, Event.KnownTypes.Error, StringComparison.OrdinalIgnoreCase))
         {
-            ev.SetError(String.IsNullOrEmpty(source.StackTrace)
-                ? new Error { Type = source.ExceptionType, Message = source.Message, StackTrace = [] }
-                : stackTraceParser.ParseError(source.StackTrace, source.ExceptionType, source.Message));
+            StackTraceParseResult? parseResult = String.IsNullOrEmpty(source.StackTrace)
+                ? null
+                : stackTraceParser.ParseErrorWithCoverage(source.StackTrace, source.ExceptionType, source.Message);
+            var error = parseResult?.Error
+                ?? new Error { Type = source.ExceptionType, Message = source.Message, StackTrace = [] };
+            ev.SetError(error);
+
+            // Keep unsupported or only partially understood traces lossless so a newer server-side
+            // parser can recover sections that this version could not represent. Fully parsed traces
+            // are not duplicated because stack payloads can be large.
+            if (!String.IsNullOrEmpty(source.StackTrace) && parseResult is { IsComplete: false })
+            {
+                ev.SetSimpleError(new SimpleError
+                {
+                    Type = source.ExceptionType,
+                    Message = source.Message,
+                    StackTrace = source.StackTrace
+                });
+            }
         }
 
         if (String.Equals(source.Type, Event.KnownTypes.Error, StringComparison.OrdinalIgnoreCase) || source.Stacking is not null)
@@ -67,14 +84,30 @@ public sealed class EventMaterializer(StackTraceParser stackTraceParser, TimePro
             });
         }
 
+        bool includePrivateInformation = project.Configuration.Settings.GetBoolean(SettingsDictionary.KnownKeys.IncludePrivateInformation, true);
         if (source.Request is not null)
-            ev.Data![Event.KnownDataKeys.RequestInfo] = Map(source.Request);
+        {
+            RequestInfo request = Map(source.Request);
+            var exclusions = RequestInfoExtensions.DefaultDataExclusions
+                .Union(project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.DataExclusions))
+                .ToList();
+            request.ApplyDataExclusions(exclusions, RequestInfoExtensions.MaximumDataValueLength);
+            if (!includePrivateInformation)
+            {
+                request.ClientIpAddress = null;
+                request.Cookies?.Clear();
+                request.PostData = null;
+                request.QueryString?.Clear();
+            }
+
+            ev.Data![Event.KnownDataKeys.RequestInfo] = request;
+        }
 
         if (source.Environment is not null)
             ev.SetEnvironmentInfo(Map(source.Environment));
 
-        if (timeProvider.GetUtcNow().UtcDateTime < ev.Date.UtcDateTime)
-            ev.Date = timeProvider.GetUtcNow();
+        if (utcNow.UtcDateTime < ev.Date.UtcDateTime)
+            ev.Date = utcNow;
 
         ev.Tags?.RemoveExcessTags();
         ev.Message = String.IsNullOrWhiteSpace(ev.Message) ? null : ev.Message.Truncate(2000);
@@ -85,18 +118,9 @@ public sealed class EventMaterializer(StackTraceParser stackTraceParser, TimePro
             ev.ReferenceId = "invalid-reference-id";
         }
 
-        bool includePrivateInformation = project.Configuration.Settings.GetBoolean(SettingsDictionary.KnownKeys.IncludePrivateInformation, true);
         if (!includePrivateInformation)
         {
             ev.RemoveUserIdentity();
-            if (ev.Data.TryGetValue(Event.KnownDataKeys.RequestInfo, out object? requestValue) && requestValue is RequestInfo request)
-            {
-                request.ClientIpAddress = null;
-                request.Cookies?.Clear();
-                request.PostData = null;
-                request.QueryString?.Clear();
-            }
-
             if (ev.Data.TryGetValue(Event.KnownDataKeys.EnvironmentInfo, out object? environmentValue) && environmentValue is EnvironmentInfo environment)
                 environment.MachineName = null;
         }

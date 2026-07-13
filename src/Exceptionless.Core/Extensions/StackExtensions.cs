@@ -10,6 +10,7 @@ public static class StackExtensions
         stack.Status = StackStatus.Fixed;
         stack.DateFixed = timeProvider.GetUtcNow().UtcDateTime;
         stack.FixedInVersion = version?.ToString();
+        stack.RegressionEventId = null;
         stack.SnoozeUntilUtc = null;
     }
 
@@ -18,6 +19,7 @@ public static class StackExtensions
         stack.Status = StackStatus.Open;
         stack.DateFixed = null;
         stack.FixedInVersion = null;
+        stack.RegressionEventId = null;
         stack.SnoozeUntilUtc = null;
     }
 

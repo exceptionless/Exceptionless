@@ -16,3 +16,12 @@ Authorization: Bearer {{clientToken}}
 Content-Type: application/x-ndjson
 
 {"id":"01K0V3EXAMPLE000000000003","type":"log","source":"Example.Service","message":"Explicit project route"}
+
+### Check full processing while V3 side-effect completion markers are retained
+POST {{apiUrl}}/projects/{{projectId}}/events/processing/status
+Authorization: Bearer {{clientToken}}
+Content-Type: application/json
+
+{
+  "client_ids": ["01K0V3EXAMPLE000000000003"]
+}

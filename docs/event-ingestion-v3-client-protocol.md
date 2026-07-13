@@ -26,9 +26,10 @@ The minimum useful error event is therefore:
 {"id":"018f5f5e-8f6d-7a30-bf5b-9a10b0c4d6e7","type":"error","message":"checkout failed","exception_type":"PaymentError","stack_trace":"PaymentError: checkout failed\n    at charge (/app/payments.js:42:7)"}
 ```
 
-The client writes a newline and may immediately write the next event. The
-server owns stack parsing, canonical grouping, discarded-stack detection,
-quota admission, and persistence.
+The client writes a newline before writing the next event. Every nonblank line
+contains exactly one JSON object; adjacent objects on the same line are invalid.
+The final event may omit its trailing newline. The server owns stack parsing,
+canonical grouping, discarded-stack detection, quota admission, and persistence.
 
 Client effort is a release gate. Before the public contract is frozen, run a
 timed implementation exercise with developers who have not worked on V3:
@@ -54,7 +55,7 @@ A dependency-free client has five mandatory responsibilities:
 2. Generate a stable event `id` and preserve it for retries.
 3. Serialize an object containing `id` and `type`; error clients add the raw
    `stack_trace` and normally `message` and `exception_type`.
-4. POST UTF-8 JSON values separated by newlines with
+4. POST UTF-8 JSON objects with exactly one object per nonblank line and
    `Content-Type: application/x-ndjson` and `Authorization: Bearer <token>`.
 5. Close the bounded request segment, read the terminal response, and replay
    the same ids after a timeout, connection failure, or retryable HTTP status.
@@ -120,9 +121,15 @@ Only `id` and `type` are required. Optional fields are additive and a server
 must ignore unknown fields so an upgraded client can continue sending to an
 older V3 server.
 
+The launch contract accepts `error`, `log`, `usage`, and stable custom event
+types. The legacy stateful types `404`, `session`, `sessionend`, and `heartbeat`
+must continue using V2 until their preprocessing semantics have native V3
+contracts; V3 rejects them per event instead of silently changing grouping or
+session behavior.
+
 | Concern | V3 field | Client work |
 | --- | --- | --- |
-| Idempotency | `id` | Generate once and retain through retries. |
+| Idempotency | `id` | Generate once and retain through retries; replay the same `date` too when supplied. |
 | Classification | `type` | Use a known type or a stable custom type. |
 | Capture time | `date` | RFC 3339 timestamp; server time is the fallback. |
 | Display | `source`, `message`, `value`, `tags` | Optional scalars and string tags. |
@@ -132,7 +139,26 @@ older V3 server.
 | Error | `exception_type`, `stack_trace` | Send the runtime's original text. |
 | Grouping override | `stacking` | Advanced opt-in only. |
 | Context | `user`, `request`, `environment` | Optional typed objects. |
-| Custom extension | `data` | Arbitrary JSON object within documented limits. |
+| Custom extension | `data` | JSON object for user-defined values within documented limits. |
+
+The launch limits match the values that can be stored without truncation or
+filtering:
+
+| Field | Limit |
+| --- | --- |
+| `id` | 1-100 characters. |
+| `type` | 1-100 characters. |
+| `source`, `message` | 1-2,000 characters when present. |
+| `reference_id` | 8-100 letters, digits, or `-`. |
+| `tags` | At most 50 nonblank values, each at most 100 characters. |
+| `stacking.title` | 1-1,000 characters when present. |
+| `stacking.signature_data` | 1-100 entries; keys are 1-255 characters and values must be non-null and at most 16 KiB. |
+| Object metadata | At most 2,000 JSON values, 32 levels deep, with property names at most 255 characters and string values at most 64 KiB. |
+
+When `stacking` is supplied, `stacking.signature_data` must contain at least one
+key/value pair. The server canonicalizes pairs by ordinal key and hashes both
+length-delimited keys and values, so JSON property order never changes grouping
+and distinct keys cannot collide merely because their values match.
 
 `client.name` should be stable and ecosystem-wide, for example
 `exceptionless.go`, and `client.version` should be the SDK package version, not
@@ -140,10 +166,15 @@ the application version. The server maps these fields to submission-client
 metadata. This is necessary for compatibility analysis, rollout targeting, and
 support without requiring every language to emulate a historical User-Agent.
 
-`data` is an escape hatch for user data and experiments. New Exceptionless
-features must not permanently hide standardized semantics in magic `data` keys.
-Frequently used, searchable, billable, grouping-sensitive, or security-sensitive
-semantics graduate to documented optional fields.
+`data` is an escape hatch for user data and experiments, not a second route to
+first-class event metadata. Top-level keys beginning with `@` are reserved by
+Exceptionless, as are the legacy state keys `sessionend` and `haserror`; V3
+rejects them case-insensitively. This prevents custom data from bypassing typed
+request redaction, project PII settings, grouping, or other first-class
+semantics. These names remain valid inside a nested custom object because only
+the event data object's top level can collide with persisted event metadata.
+Frequently used, searchable, billable, grouping-sensitive, or
+security-sensitive semantics graduate to documented optional fields.
 
 ## Comparison with Sentry
 
@@ -230,7 +261,7 @@ instrumentation.
 | Minimum event shape | `id`, `type` | `occurredOn`, `details`, error, stack frame line | Envelope header, item header, event id, event JSON |
 | Stack input | Original string | Structured frames | Structured frames |
 | Chained errors | Server parses common raw forms | Client builds inner-error graph | Client builds ordered exception values/tree |
-| Multiple events | Stream independent JSON values | Single documents or buffered JSON array bulk | Multiple envelope items only where item rules allow |
+| Multiple events | Stream one JSON object per NDJSON line | Single documents or buffered JSON array bulk | Multiple envelope items only where item rules allow |
 | Binary attachment | Future advanced transport | Not part of crash JSON contract | Native length-delimited attachment item |
 | Unknown future fields | Ignored; additive | Optional/custom data | Preserved/ignored according to envelope scope |
 | Minimum retry identity | Required stable event id | No equivalent id in documented crash body | Event id |
@@ -316,10 +347,11 @@ retry semantics need executable, language-neutral evidence:
 1. Publish a short normative wire specification with exact request, response,
    status, retry, size, compression, and field-precedence rules.
 2. Publish JSON Schema for one event and keep the isolated V3 OpenAPI document.
-   Explain that OpenAPI's single request schema represents each streamed value,
+   Explain that OpenAPI's single request schema represents each NDJSON line,
    not an array.
 3. Publish golden request and response fixtures for minimal log, minimal error,
-   Unicode, multiline stacks, multiple values, compression, partial invalid
+   Unicode, multiline stacks, multiple lines, optional final newline,
+   same-line adjacent-object rejection, compression, partial invalid
    results, duplicates, discarded events, and unknown future fields.
 4. Ship a black-box conformance runner. It starts a local receiver, invokes a
    client adapter, deliberately drops a response, splits JSON across writes,

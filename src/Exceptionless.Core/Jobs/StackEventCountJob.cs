@@ -34,7 +34,7 @@ public class StackEventCountJob : JobWithLockBase, IHealthCheck
     {
         _lastRun = _timeProvider.GetUtcNow().UtcDateTime;
         _logger.LogTrace("Start save stack event counts");
-        await _stackService.SaveStackUsagesAsync(cancellationToken: context.CancellationToken);
+        await _stackService.SaveLegacyStackUsagesAsync(cancellationToken: context.CancellationToken);
         _logger.LogTrace("Finished save stack event counts");
         return JobResult.Success;
     }

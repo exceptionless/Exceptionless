@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Exceptionless.Core.Models.Ingestion;
 using Exceptionless.Tests.Extensions;
 using Xunit;
 
@@ -88,6 +89,14 @@ public class OpenApiControllerTests : IntegrationTestsBase
         Assert.True(userDescriptionPost.TryGetProperty("requestBody", out _));
         AssertResponseCodes(userDescriptionPost, "202");
 
+        Assert.True(paths.TryGetProperty("/api/v2/projects/{projectId}/events", out var projectEventsPath));
+        Assert.True(projectEventsPath.TryGetProperty("post", out var projectEventsPost));
+        Assert.Contains(projectEventsPost.GetProperty("parameters").EnumerateArray(), parameter =>
+            parameter.GetProperty("name").GetString() == "X-Exceptionless-Track-Event-Post"
+            && parameter.GetProperty("in").GetString() == "header");
+
+        Assert.False(paths.TryGetProperty("/api/v2/projects/{projectId}/events/posts/status", out _));
+
         Assert.False(paths.TryGetProperty("/api/v3/events", out _));
 
         using var v3Document = await GetOpenApiDocumentAsync("v3");
@@ -100,7 +109,13 @@ public class OpenApiControllerTests : IntegrationTestsBase
 
         Assert.True(v3Paths.TryGetProperty("/api/v3/projects/{projectId}/events", out var projectIngestionPath));
         Assert.True(projectIngestionPath.TryGetProperty("post", out _));
+        Assert.False(v3Paths.TryGetProperty("/api/v3/projects/{projectId}/events/processing/status", out _));
         Assert.Equal(2, v3Paths.EnumerateObject().Count());
+
+        var security = v3Document.RootElement.GetProperty("security");
+        var requirement = Assert.Single(security.EnumerateArray());
+        Assert.True(requirement.TryGetProperty("Bearer", out var scopes));
+        Assert.Empty(scopes.EnumerateArray());
     }
 
     [Fact]
@@ -128,6 +143,91 @@ public class OpenApiControllerTests : IntegrationTestsBase
         Assert.True(securitySchemes.TryGetProperty("Token", out var token));
         Assert.Equal("apiKey", token.GetProperty("type").GetString());
         Assert.Equal("access_token", token.GetProperty("name").GetString());
+    }
+
+    [Fact]
+    public async Task GetOpenApiJson_InternalIngestionFields_AreExcluded()
+    {
+        using var document = await GetOpenApiDocumentAsync();
+        var persistentEvent = document.RootElement
+            .GetProperty("components")
+            .GetProperty("schemas")
+            .GetProperty("PersistentEvent");
+        string[] required = persistentEvent.GetProperty("required")
+            .EnumerateArray()
+            .Select(value => value.GetString()!)
+            .ToArray();
+        var properties = persistentEvent.GetProperty("properties");
+        Assert.DoesNotContain("is_regression", required);
+        Assert.True(properties.GetProperty("is_regression").GetProperty("readOnly").GetBoolean());
+        Assert.False(properties.TryGetProperty("ingestion_is_regression_candidate", out _));
+        Assert.False(properties.TryGetProperty("ingestion_regression_fixed_in_version", out _));
+        Assert.False(properties.TryGetProperty("ingestion_regression_date_fixed", out _));
+
+        var stackProperties = document.RootElement
+            .GetProperty("components")
+            .GetProperty("schemas")
+            .GetProperty("Stack")
+            .GetProperty("properties");
+        Assert.False(stackProperties.TryGetProperty("ingestion_first_event_id", out _));
+        Assert.False(stackProperties.TryGetProperty("ingestion_stack_usage_sequence", out _));
+
+        Assert.Contains("is_first_occurrence", required);
+        Assert.Contains("created_utc", required);
+    }
+
+    [Fact]
+    public async Task GetOpenApiJson_V3ObjectMetadata_IsNullableObjectWithArbitraryProperties()
+    {
+        using var document = await GetOpenApiDocumentAsync("v3");
+        var schemas = document.RootElement.GetProperty("components").GetProperty("schemas");
+        string[] objectDataSchemas =
+        [
+            "EventIngestionV3Event",
+            "EventIngestionV3User",
+            "EventIngestionV3Request",
+            "EventIngestionV3Environment"
+        ];
+
+        foreach (string schemaName in objectDataSchemas)
+        {
+            var data = schemas.GetProperty(schemaName).GetProperty("properties").GetProperty("data");
+            string[] types = data.GetProperty("type").EnumerateArray().Select(value => value.GetString()!).ToArray();
+            Assert.Contains("object", types);
+            Assert.Contains("null", types);
+            Assert.True(data.TryGetProperty("additionalProperties", out var additionalProperties));
+            Assert.Equal(JsonValueKind.Object, additionalProperties.ValueKind);
+            Assert.False(data.TryGetProperty("oneOf", out _));
+        }
+
+        var postData = schemas.GetProperty("EventIngestionV3Request").GetProperty("properties").GetProperty("post_data");
+        Assert.True(postData.TryGetProperty("oneOf", out _));
+    }
+
+    [Fact]
+    public async Task GetOpenApiJson_V3StringLimits_MatchDurableModels()
+    {
+        using var document = await GetOpenApiDocumentAsync("v3");
+        var schemas = document.RootElement.GetProperty("components").GetProperty("schemas");
+        var eventProperties = schemas.GetProperty("EventIngestionV3Event").GetProperty("properties");
+        var message = eventProperties.GetProperty("message");
+        var referenceId = eventProperties.GetProperty("reference_id");
+        var tags = eventProperties.GetProperty("tags");
+        var title = schemas.GetProperty("EventIngestionV3Stacking").GetProperty("properties").GetProperty("title");
+
+        Assert.Equal(EventIngestionV3Limits.MaximumMessageLength, message.GetProperty("maxLength").GetInt32());
+        Assert.Equal(EventIngestionV3Limits.MinimumReferenceIdLength, referenceId.GetProperty("minLength").GetInt32());
+        Assert.Equal(EventIngestionV3Limits.MaximumReferenceIdLength, referenceId.GetProperty("maxLength").GetInt32());
+        Assert.Equal(EventIngestionV3Limits.MaximumTags, tags.GetProperty("maxItems").GetInt32());
+        Assert.Equal(EventIngestionV3Limits.MaximumTagLength, tags.GetProperty("items").GetProperty("maxLength").GetInt32());
+        Assert.Equal(EventIngestionV3Limits.MaximumStackTitleLength, title.GetProperty("maxLength").GetInt32());
+
+        var signatureData = schemas.GetProperty("EventIngestionV3Stacking").GetProperty("properties").GetProperty("signature_data");
+        Assert.Equal(1, signatureData.GetProperty("minProperties").GetInt32());
+        Assert.Equal(EventIngestionV3Limits.MaximumMetadataEntries, signatureData.GetProperty("maxProperties").GetInt32());
+        Assert.Equal(
+            EventIngestionV3Limits.MaximumMetadataValueLength,
+            signatureData.GetProperty("additionalProperties").GetProperty("maxLength").GetInt32());
     }
 
     private static string NormalizeOpenApiJson(string json)

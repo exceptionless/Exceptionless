@@ -37,6 +37,7 @@ Apm:
 
 EventIngestionV3:
   Enabled: false
+  EnableProcessingStatus: false
   MicroBatchSize: 100
   MaximumMicroBatchBytes: 1048576
   MaximumEventSize: 524288

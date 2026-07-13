@@ -4,6 +4,7 @@ using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Foundatio.Queues;
+using Foundatio.Repositories.Models;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Pipeline;
@@ -35,22 +36,64 @@ public class QueueNotificationAction : EventPipelineActionBase
             return;
 
         if (ShouldQueueNotification(ctx))
-            await _notificationQueue.EnqueueAsync(new EventNotification
-            {
-                EventId = ctx.Event.Id,
-                IsNew = ctx.IsNew,
-                IsRegression = ctx.IsRegression,
-                TotalOccurrences = ctx.Stack.TotalOccurrences,
-                DeduplicationId = String.Concat("event-notification:", ctx.Event.Id)
-            });
+            await QueueEventNotificationAsync(ctx);
 
-        var webHooks = await _webHookRepository.GetByOrganizationIdOrProjectIdAsync(ctx.Event.OrganizationId, ctx.Event.ProjectId);
-        foreach (var hook in webHooks.Documents)
+        var webHooks = await GetWebHooksAsync(ctx.Event.OrganizationId, ctx.Event.ProjectId);
+        await QueueWebHooksAsync(ctx, webHooks.Documents);
+    }
+
+    /// <summary>
+    /// Queues V3 notifications as a bounded, sequential batch. Webhooks are loaded once for each
+    /// organization/project pair and queue failures are allowed to escape so the side-effect worker
+    /// can retry the batch. Deterministic queue identifiers suppress already-enqueued work on retry.
+    /// </summary>
+    public async Task ProcessIngestionV3BatchAsync(IReadOnlyCollection<EventContext> contexts)
+    {
+        ArgumentNullException.ThrowIfNull(contexts);
+
+        var eligibleContexts = contexts
+            .Where(ctx => ctx.Organization.HasPremiumFeatures && ctx.Stack?.AllowNotifications is true)
+            .ToArray();
+
+        foreach (var group in eligibleContexts.GroupBy(ctx => (ctx.Event.OrganizationId, ctx.Event.ProjectId)))
+        {
+            var webHooks = await GetWebHooksAsync(group.Key.OrganizationId, group.Key.ProjectId);
+            foreach (var ctx in group)
+            {
+                if (ShouldQueueNotification(ctx))
+                    await QueueEventNotificationAsync(ctx);
+
+                await QueueWebHooksAsync(ctx, webHooks.Documents);
+            }
+        }
+    }
+
+    private Task<FindResults<WebHook>> GetWebHooksAsync(string organizationId, string projectId)
+    {
+        return _webHookRepository.GetByOrganizationIdOrProjectIdAsync(organizationId, projectId);
+    }
+
+    private Task QueueEventNotificationAsync(EventContext ctx)
+    {
+        return _notificationQueue.EnqueueAsync(new EventNotification
+        {
+            EventId = ctx.Event.Id,
+            IsNew = ctx.IsNew,
+            IsRegression = ctx.IsRegression,
+            TotalOccurrences = ctx.Stack!.TotalOccurrences,
+            DeduplicationId = String.Concat("event-notification:", ctx.Event.Id),
+            UseDurableDeduplication = ctx.IsIngestionV3
+        });
+    }
+
+    private async Task QueueWebHooksAsync(EventContext ctx, IReadOnlyCollection<WebHook> webHooks)
+    {
+        foreach (var hook in webHooks)
         {
             if (!ShouldCallWebHook(hook, ctx))
                 continue;
 
-            var context = new WebHookDataContext(hook, ctx.Organization, ctx.Project, ctx.Stack, ctx.Event, ctx.IsNew, ctx.IsRegression);
+            var context = new WebHookDataContext(hook, ctx.Organization, ctx.Project, ctx.Stack!, ctx.Event, ctx.IsNew, ctx.IsRegression);
             var notification = new WebHookNotification
             {
                 OrganizationId = ctx.Event.OrganizationId,
@@ -58,9 +101,10 @@ public class QueueNotificationAction : EventPipelineActionBase
                 WebHookId = hook.Id,
                 Url = hook.Url,
                 Type = WebHookType.General,
-                Data = await _webHookDataPluginManager.CreateFromEventAsync(context)
+                Data = await _webHookDataPluginManager.CreateFromEventAsync(context),
+                DeduplicationId = String.Concat("event-webhook:", ctx.Event.Id, ":", hook.Id, ":", WebHookType.General),
+                UseDurableDeduplication = ctx.IsIngestionV3
             };
-            notification.DeduplicationId = String.Concat("event-webhook:", ctx.Event.Id, ":", hook.Id, ":", notification.Type);
 
             if (notification.Data is null)
             {

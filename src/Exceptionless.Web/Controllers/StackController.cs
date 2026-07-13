@@ -584,7 +584,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         await _stackRepository.SaveAsync(stacks);
         await Task.WhenAll(stacks
             .Where(stack => !String.IsNullOrEmpty(stack.ProjectId) && !String.IsNullOrEmpty(stack.SignatureHash))
-            .Select(stack => _stackRouteResolver.UpdateAsync(stack.ProjectId, stack.SignatureHash, new StackRoute(stack.Id, stack.Status))));
+            .Select(stack => _stackRouteResolver.UpdateAsync(stack.ProjectId, stack.SignatureHash, StackRouteResolver.CreateRoute(stack))));
     }
 
     private Task<Organization?> GetOrganizationAsync(string? organizationId, bool useCache = true)

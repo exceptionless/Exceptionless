@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
@@ -62,6 +63,12 @@ public class RequiredPropertySchemaTransformer : IOpenApiSchemaTransformer
             if (schema.Required.Contains(schemaPropertyName))
                 continue;
 
+            // A conditionally ignored property can be absent from valid serialized output,
+            // even when its CLR type is non-nullable. Advertising it as required would make
+            // the OpenAPI contract stricter than the JSON produced by System.Text.Json.
+            if (CanBeOmittedWhenWriting(property, context.JsonTypeInfo.Options.DefaultIgnoreCondition))
+                continue;
+
             // Determine if property should be required
             if (IsPropertyRequired(property, nullabilityContext))
             {
@@ -76,6 +83,20 @@ public class RequiredPropertySchemaTransformer : IOpenApiSchemaTransformer
         }
 
         return Task.CompletedTask;
+    }
+
+    private static bool CanBeOmittedWhenWriting(PropertyInfo property, JsonIgnoreCondition defaultIgnoreCondition)
+    {
+        JsonIgnoreAttribute? ignoreAttribute = property.GetCustomAttribute<JsonIgnoreAttribute>();
+        if (ignoreAttribute?.Condition is JsonIgnoreCondition.WhenWritingDefault or JsonIgnoreCondition.WhenWritingNull)
+            return true;
+        if (ignoreAttribute?.Condition is JsonIgnoreCondition.Never)
+            return false;
+
+        // The application currently uses WhenWritingNull globally, which does not change the
+        // required status of a correctly populated non-nullable property. WhenWritingDefault,
+        // however, can omit every non-nullable value type at its default value.
+        return defaultIgnoreCondition is JsonIgnoreCondition.WhenWritingDefault;
     }
 
     private static bool IsPropertyRequired(PropertyInfo property, NullabilityInfoContext nullabilityContext)

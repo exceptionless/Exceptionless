@@ -9,6 +9,7 @@ using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
 using Microsoft.Extensions.Logging;
 using Foundatio.Caching;
+using Exceptionless.Core.Services;
 
 namespace Exceptionless.Core.Repositories;
 
@@ -16,13 +17,18 @@ public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, I
 {
     private readonly TimeProvider _timeProvider;
     private readonly AppOptions _appOptions;
+    private readonly IStackRouteCache _stackRouteCache;
     private const string STACKING_VERSION = "v2";
 
-    public StackRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options)
+    public StackRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options, IStackRouteCache stackRouteCache)
         : base(configuration.Stacks, validator, options)
     {
         _timeProvider = configuration.TimeProvider;
         _appOptions = options;
+        _stackRouteCache = stackRouteCache;
+        // Both the legacy signature cache and the V3 route cache must invalidate the previous
+        // key when a stack's signature changes or it is soft-deleted.
+        OriginalsEnabled = true;
         AddRequiredField(s => s.SignatureHash);
     }
 
@@ -106,6 +112,77 @@ ctx._source.total_occurrences += params.count;";
         return true;
     }
 
+    public async Task ApplyIngestionStackUsageAsync(
+        string organizationId,
+        string projectId,
+        string stackId,
+        DateTime minOccurrenceDateUtc,
+        DateTime maxOccurrenceDateUtc,
+        int count,
+        long settlementSequence,
+        bool sendNotifications = true)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(settlementSequence);
+
+        const string script = @"
+Instant parseDate(def dt) {
+  if (dt != null) {
+    try {
+      return Instant.parse(dt);
+    } catch(DateTimeParseException e) {}
+  }
+  return Instant.MIN;
+}
+
+long appliedSequence = ctx._source.ingestion_stack_usage_sequence == null
+  ? 0
+  : ctx._source.ingestion_stack_usage_sequence;
+if (appliedSequence >= params.settlementSequence) {
+  ctx.op = 'noop';
+} else {
+  if (ctx._source.total_occurrences == 0 || parseDate(ctx._source.first_occurrence).isAfter(parseDate(params.minOccurrenceDateUtc))) {
+    ctx._source.first_occurrence = params.minOccurrenceDateUtc;
+  }
+
+  if (parseDate(ctx._source.last_occurrence).isBefore(parseDate(params.maxOccurrenceDateUtc))) {
+    ctx._source.last_occurrence = params.maxOccurrenceDateUtc;
+  }
+
+  if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
+    ctx._source.updated_utc = params.updatedUtc;
+  }
+
+  ctx._source.total_occurrences += params.count;
+  ctx._source.ingestion_stack_usage_sequence = params.settlementSequence;
+}";
+
+        var operation = new ScriptPatch(script.TrimScript())
+        {
+            Params = new Dictionary<string, object>(5)
+            {
+                { "minOccurrenceDateUtc", minOccurrenceDateUtc },
+                { "maxOccurrenceDateUtc", maxOccurrenceDateUtc },
+                { "count", count },
+                { "settlementSequence", settlementSequence },
+                { "updatedUtc", _timeProvider.GetUtcNow().UtcDateTime }
+            }
+        };
+
+        bool modified;
+        try
+        {
+            modified = await PatchAsync(stackId, operation, o => o.Notifications(false));
+        }
+        catch (DocumentNotFoundException)
+        {
+            return;
+        }
+
+        if (modified && sendNotifications)
+            await PublishMessageAsync(CreateEntityChanged(ChangeType.Saved, organizationId, projectId, null, stackId));
+    }
+
     public async Task<bool> SetEventCounterAsync(string stackId, DateTime firstOccurrenceUtc, DateTime lastOccurrenceUtc, long totalOccurrences, bool sendNotifications = true)
     {
         const string script = @"
@@ -157,7 +234,8 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
 
     public async Task<Stack?> GetStackBySignatureHashAsync(string projectId, string signatureHash)
     {
-        string key = GetStackSignatureCacheKey(projectId, signatureHash);
+        long projectGeneration = await _stackRouteCache.GetProjectGenerationAsync(projectId);
+        string key = GetStackSignatureCacheKey(projectId, signatureHash, projectGeneration);
         var hit = await FindOneAsync(q => q.Project(projectId).FieldEquals(s => s.SignatureHash, signatureHash), o => o.Cache(key));
         return hit?.Document;
     }
@@ -168,14 +246,23 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
             return new Dictionary<string, StackRoute>();
 
         var results = await FindAsync(
-            q => q.Project(projectId).SignatureHash(signatureHashes).Include(s => s.Id, s => s.SignatureHash, s => s.Status),
+            q => q.Project(projectId).SignatureHash(signatureHashes).Include(
+                s => s.Id,
+                s => s.SignatureHash,
+                s => s.Status,
+                s => s.UpdatedUtc,
+                s => s.FixedInVersion,
+                s => s.DateFixed,
+                s => s.OccurrencesAreCritical,
+                s => s.RegressionEventId,
+                s => s.IngestionFirstEventId),
             o => o.PageLimit(signatureHashes.Count));
 
         var routes = new Dictionary<string, StackRoute>(results.Documents.Count);
         foreach (var stack in results.Documents)
         {
             if (!String.IsNullOrEmpty(stack.SignatureHash))
-                routes[stack.SignatureHash] = new StackRoute(stack.Id, stack.Status);
+                routes[stack.SignatureHash] = StackRouteResolver.CreateRoute(stack);
         }
 
         return routes;
@@ -206,9 +293,13 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
 
         long deleted = await PatchAllAsync(
             q => q.Organization(organizationId).Project(projectId),
-            new PartialPatch(new { is_deleted = true, updated_utc = _timeProvider.GetUtcNow().UtcDateTime })
+            new PartialPatch(new { is_deleted = true, updated_utc = _timeProvider.GetUtcNow().UtcDateTime }),
+            o => o.ImmediateConsistency()
         );
-        await Cache.RemoveByPrefixAsync(GetStackRouteCachePrefix(projectId));
+        // The same generation scopes both V3 route entries and legacy signature lookups. Any
+        // lookup that began before deletion can only refill the old namespace and is invisible
+        // after the durable, immediately-consistent patch advances it.
+        await _stackRouteCache.AdvanceProjectGenerationAsync(projectId);
         return deleted;
     }
 
@@ -216,53 +307,121 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
     {
         await base.AddDocumentsToCacheAsync(findHits, options, isDirtyRead);
 
+        Stack[] signatureStacks = findHits
+            .Select(hit => hit.Document)
+            .Where(stack => stack is not null && !String.IsNullOrEmpty(stack.ProjectId) && !String.IsNullOrEmpty(stack.SignatureHash))
+            .Cast<Stack>()
+            .ToArray();
+        var signatureGenerations = await GetProjectGenerationsAsync(signatureStacks);
         var cacheEntries = new Dictionary<string, FindHit<Stack>>();
         foreach (var hit in findHits.Where(d => !String.IsNullOrEmpty(d.Document?.SignatureHash)))
-            cacheEntries[GetStackSignatureCacheKey(hit.Document!)] = hit;
+        {
+            Stack stack = hit.Document!;
+            cacheEntries[GetStackSignatureCacheKey(
+                stack.ProjectId,
+                stack.SignatureHash,
+                signatureGenerations[stack.ProjectId])] = hit;
+        }
 
         if (cacheEntries.Count > 0)
             await AddDocumentsToCacheWithKeyAsync(cacheEntries, options.GetExpiresIn());
 
-        var routeEntries = new Dictionary<string, StackRouteCacheEntry>();
-        foreach (var stack in findHits.Select(hit => hit.Document))
-        {
-            if (stack is null || stack.IsDeleted || String.IsNullOrEmpty(stack.ProjectId) || String.IsNullOrEmpty(stack.SignatureHash))
-                continue;
-
-            routeEntries[GetStackRouteCacheKey(stack.ProjectId, stack.SignatureHash)] = new StackRouteCacheEntry(true, stack.Id, stack.Status);
-        }
-        if (routeEntries.Count > 0)
-            await Cache.SetAllAsync(routeEntries, _appOptions.EventIngestionV3.StackRouteCacheDuration);
+        // Route resolver misses carry the generation observed before their repository lookup
+        // and populate the route cache themselves. Generic repository read-through cannot
+        // safely infer that generation, so only authoritative mutations write routes here.
     }
 
     protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<Stack>> documents, ChangeType? changeType = null)
     {
-        var keysToRemove = documents.UnionOriginalAndModified().Select(GetStackSignatureCacheKey).Distinct();
-        await Cache.RemoveAllAsync(keysToRemove);
-        var routeKeysToRemove = documents.UnionOriginalAndModified()
-            .Where(s => !String.IsNullOrEmpty(s.ProjectId) && !String.IsNullOrEmpty(s.SignatureHash))
-            .Select(s => GetStackRouteCacheKey(s.ProjectId, s.SignatureHash))
+        Stack[] cacheStacks = documents
+            .UnionOriginalAndModified()
+            .Where(stack => !String.IsNullOrEmpty(stack.ProjectId) && !String.IsNullOrEmpty(stack.SignatureHash))
+            .ToArray();
+        var projectGenerations = await GetProjectGenerationsAsync(cacheStacks);
+        var keysToRemove = cacheStacks
+            .Select(stack => GetStackSignatureCacheKey(
+                stack.ProjectId,
+                stack.SignatureHash,
+                projectGenerations[stack.ProjectId]))
             .Distinct();
-        await Cache.RemoveAllAsync(routeKeysToRemove);
+        await Cache.RemoveAllAsync(keysToRemove);
         await base.InvalidateCacheAsync(documents, changeType);
 
+        Stack[] routeStacks = cacheStacks;
         if (changeType is ChangeType.Added or ChangeType.Saved)
         {
+            var obsoleteRouteKeys = documents
+                .SelectMany(document => new[] { document.Original, document.Value })
+                .Where(stack => stack is not null
+                    && !String.IsNullOrEmpty(stack.ProjectId)
+                    && !String.IsNullOrEmpty(stack.SignatureHash))
+                .Select(stack => new
+                {
+                    Stack = stack!,
+                    Key = GetStackRouteCacheKey(
+                        stack!.ProjectId,
+                        stack.SignatureHash,
+                        projectGenerations[stack.ProjectId])
+                })
+                .Where(item => item.Stack.IsDeleted || !documents.Any(document =>
+                    !document.Value.IsDeleted
+                    && !String.IsNullOrEmpty(document.Value.ProjectId)
+                    && !String.IsNullOrEmpty(document.Value.SignatureHash)
+                    && GetStackRouteCacheKey(
+                        document.Value.ProjectId,
+                        document.Value.SignatureHash,
+                        projectGenerations[document.Value.ProjectId]) == item.Key))
+                .Select(item => item.Key)
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            if (obsoleteRouteKeys.Length > 0)
+                await _stackRouteCache.RemoveAllAsync(obsoleteRouteKeys, _appOptions.EventIngestionV3.StackRouteCacheDuration);
+
             var routeEntries = new Dictionary<string, StackRouteCacheEntry>();
             foreach (var stack in documents.Select(d => d.Value))
             {
                 if (stack.IsDeleted || String.IsNullOrEmpty(stack.ProjectId) || String.IsNullOrEmpty(stack.SignatureHash))
                     continue;
 
-                routeEntries[GetStackRouteCacheKey(stack.ProjectId, stack.SignatureHash)] = new StackRouteCacheEntry(true, stack.Id, stack.Status);
+                routeEntries[GetStackRouteCacheKey(
+                    stack.ProjectId,
+                    stack.SignatureHash,
+                    projectGenerations[stack.ProjectId])] = StackRouteCacheEntry.FromRoute(StackRouteResolver.CreateRoute(stack));
             }
             if (routeEntries.Count > 0)
-                await Cache.SetAllAsync(routeEntries, _appOptions.EventIngestionV3.StackRouteCacheDuration);
+                await _stackRouteCache.SetAllAuthoritativeAsync(routeEntries, _appOptions.EventIngestionV3.StackRouteCacheDuration);
+        }
+        else if (changeType is ChangeType.Removed)
+        {
+            string[] routeKeys = routeStacks
+                .Select(stack => GetStackRouteCacheKey(
+                    stack.ProjectId,
+                    stack.SignatureHash,
+                    projectGenerations[stack.ProjectId]))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            await _stackRouteCache.RemoveAllAsync(routeKeys, _appOptions.EventIngestionV3.StackRouteCacheDuration);
         }
     }
 
-    private static string GetStackSignatureCacheKey(Stack stack) => GetStackSignatureCacheKey(stack.ProjectId, stack.SignatureHash);
-    private static string GetStackSignatureCacheKey(string projectId, string signatureHash) => String.Concat(projectId, ":", signatureHash, ":", STACKING_VERSION);
-    internal static string GetStackRouteCacheKey(string projectId, string signatureHash) => String.Concat("stack-route:v3:v1:", projectId, ":", signatureHash);
+    private async Task<IReadOnlyDictionary<string, long>> GetProjectGenerationsAsync(IEnumerable<Stack> stacks)
+    {
+        string[] projectIds = stacks
+            .Select(stack => stack.ProjectId)
+            .Where(projectId => !String.IsNullOrEmpty(projectId))
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+        var generations = await Task.WhenAll(projectIds.Select(async projectId => new
+        {
+            ProjectId = projectId,
+            Generation = await _stackRouteCache.GetProjectGenerationAsync(projectId)
+        }));
+        return generations.ToDictionary(item => item.ProjectId, item => item.Generation, StringComparer.Ordinal);
+    }
+
+    private static string GetStackSignatureCacheKey(string projectId, string signatureHash, long projectGeneration) =>
+        String.Concat(projectId, ":", signatureHash, ":", STACKING_VERSION, ":", projectGeneration);
+    internal static string GetStackRouteCacheKey(string projectId, string signatureHash, long projectGeneration = 0) =>
+        StackRouteResolver.GetCacheKey(projectId, signatureHash, projectGeneration);
     internal static string GetStackRouteCachePrefix(string projectId) => String.Concat("stack-route:v3:v1:", projectId, ":");
 }

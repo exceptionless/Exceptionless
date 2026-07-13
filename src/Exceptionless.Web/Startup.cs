@@ -25,8 +25,6 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 using Microsoft.AspNetCore.OpenApi;
-using Microsoft.AspNetCore.RateLimiting;
-using System.Threading.RateLimiting;
 using Microsoft.Net.Http.Headers;
 using ModelContextProtocol.AspNetCore;
 using Scalar.AspNetCore;
@@ -52,7 +50,7 @@ public class Startup
             .SetIsOriginAllowed(isOriginAllowed: _ => true)
             .AllowCredentials()
             .SetPreflightMaxAge(TimeSpan.FromMinutes(5))
-            .WithExposedHeaders("ETag", Headers.LegacyConfigurationVersion, Headers.ConfigurationVersion, HeaderNames.Link, Headers.RateLimit, Headers.RateLimitRemaining, Headers.ResultCount)));
+            .WithExposedHeaders("ETag", Headers.LegacyConfigurationVersion, Headers.ConfigurationVersion, Headers.EventPostId, HeaderNames.Link, Headers.RateLimit, Headers.RateLimitRemaining, Headers.ResultCount)));
 
         services.Configure<ForwardedHeadersOptions>(o =>
         {
@@ -127,16 +125,7 @@ public class Startup
             decompression.DecompressionProviders.Remove("deflate");
         });
         services.AddRequestTimeouts();
-        services.AddRateLimiter(rateLimiter =>
-        {
-            rateLimiter.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-            rateLimiter.AddConcurrencyLimiter("event-ingestion-v3", limiter =>
-            {
-                limiter.PermitLimit = appOptions.EventIngestionV3.MaximumConcurrentRequests;
-                limiter.QueueLimit = appOptions.EventIngestionV3.ConcurrencyQueueLimit;
-                limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-            });
-        });
+        services.AddSingleton<EventIngestionV3ConcurrencyLimiter>();
         Bootstrapper.RegisterServices(services, appOptions, Log.Logger.ToLoggerFactory());
         services.AddScoped<McpContextService>();
         services.AddSingleton<ISessionMigrationHandler, McpSessionMigrationHandler>();
@@ -303,11 +292,7 @@ public class Startup
         app.UseDefaultFiles();
         app.UseFileServer();
         app.UseRouting();
-        app.UseWhen(
-            context => context.Request.Path.StartsWithSegments("/api/v3"),
-            branch => branch.UseRequestDecompression());
         app.UseRequestTimeouts();
-        app.UseRateLimiter();
         app.UseCors("AllowAny");
         app.UseHttpMethodOverride();
         app.UseForwardedHeaders();
@@ -327,6 +312,24 @@ public class Startup
         // Reject event posts in organizations over their max event limits.
         app.UseMiddleware<OverageMiddleware>();
 
+        // Bound all admitted open streams globally before relaxing Kestrel's raw-body limit.
+        // The endpoint acquires the routed organization's stream permit after project lookup;
+        // processing concurrency is acquired separately only while a microbatch is executing.
+        app.UseMiddleware<EventIngestionV3ActiveStreamMiddleware>();
+
+        // Only relax Kestrel's single raw-body limit after authentication, authorization, and
+        // global active-stream admission. The V3 branch still enforces finite independent
+        // compressed and decompressed limits while the endpoint resolves organization admission.
+        app.UseWhen(
+            context => options.EventIngestionV3.Enabled
+                && !options.EventSubmissionDisabled
+                && IsEventIngestionV3Endpoint(context),
+            branch =>
+            {
+                branch.UseMiddleware<EventIngestionV3RequestBodyMiddleware>();
+                branch.UseRequestDecompression();
+            });
+
         if (options.EnableWebSockets)
         {
             app.UseWebSockets();
@@ -345,6 +348,7 @@ public class Startup
             });
 
             endpoints.MapControllers();
+            endpoints.MapEventPostProcessing();
             endpoints.MapEventIngestionV3(options);
             endpoints.MapMcp("/mcp").RequireAuthorization(AuthorizationRoles.McpPolicy);
             endpoints.MapFallback("{**slug:nonfile}", CreateRequestDelegate(endpoints, "/index.html"))
@@ -353,6 +357,9 @@ public class Startup
     }
 
     private static bool IsV3Api(string? relativePath) => relativePath?.StartsWith("api/v3/", StringComparison.OrdinalIgnoreCase) is true;
+
+    private static bool IsEventIngestionV3Endpoint(HttpContext context) =>
+        context.GetEndpoint()?.Metadata.GetMetadata<EventIngestionV3EndpointMetadata>() is not null;
 
     private static void ConfigureOpenApi(OpenApiOptions options)
     {
@@ -373,6 +380,8 @@ public class Startup
         options.AddSchemaTransformer<DataAnnotationsSchemaTransformer>();
         options.AddSchemaTransformer<DeltaSchemaTransformer>();
         options.AddSchemaTransformer<DictionarySubclassSchemaTransformer>();
+        options.AddSchemaTransformer<EventIngestionV3ContractSchemaTransformer>();
+        options.AddSchemaTransformer<EventIngestionV3DataSchemaTransformer>();
         options.AddSchemaTransformer<NumericTypeSchemaTransformer>();
         options.AddSchemaTransformer<ReadOnlyPropertySchemaTransformer>();
         options.AddSchemaTransformer<RequiredPropertySchemaTransformer>();

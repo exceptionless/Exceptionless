@@ -6,12 +6,38 @@ namespace Exceptionless.Core.Extensions;
 
 public static class RequestInfoExtensions
 {
+    public const int MaximumDataValueLength = 1000;
+
+    public static readonly IReadOnlyList<string> DefaultDataExclusions =
+    [
+        "*VIEWSTATE*",
+        "*EVENTVALIDATION*",
+        "*ASPX*",
+        "__RequestVerificationToken",
+        "ASP.NET_SessionId",
+        "__LastErrorId",
+        "WAWebSiteID",
+        "ARRAffinity"
+    ];
+
     public static RequestInfo ApplyDataExclusions(this RequestInfo request, ITextSerializer serializer, IList<string> exclusions, int maxLength = 1000)
     {
         request.Cookies = ApplyExclusions(request.Cookies, exclusions, maxLength);
         request.QueryString = ApplyExclusions(request.QueryString, exclusions, maxLength);
         request.PostData = ApplyPostDataExclusions(request.PostData, serializer, exclusions, maxLength);
 
+        return request;
+    }
+
+    /// <summary>
+    /// Applies request exclusions to already materialized JSON-compatible post data. Unlike the
+    /// legacy string overload, this handles nested V3 object and array values before persistence.
+    /// </summary>
+    public static RequestInfo ApplyDataExclusions(this RequestInfo request, IList<string> exclusions, int maxLength = 1000)
+    {
+        request.Cookies = ApplyExclusions(request.Cookies, exclusions, maxLength);
+        request.QueryString = ApplyExclusions(request.QueryString, exclusions, maxLength);
+        request.PostData = ApplyObjectExclusions(request.PostData, exclusions, maxLength);
         return request;
     }
 
@@ -34,6 +60,39 @@ public static class RequestInfoExtensions
         }
 
         return dictionary is not null ? ApplyExclusions(dictionary, exclusions, maxLength) : data;
+    }
+
+    private static object? ApplyObjectExclusions(object? value, IList<string> exclusions, int maxLength)
+    {
+        if (value is IDictionary<string, object?> objectDictionary)
+        {
+            foreach (string key in objectDictionary.Keys.ToArray())
+            {
+                if (String.IsNullOrEmpty(key) || key.AnyWildcardMatches(exclusions, true))
+                {
+                    objectDictionary.Remove(key);
+                    continue;
+                }
+
+                objectDictionary[key] = ApplyObjectExclusions(objectDictionary[key], exclusions, maxLength);
+            }
+
+            return value;
+        }
+
+        if (value is IDictionary<string, string> stringDictionary)
+            return ApplyExclusions(new Dictionary<string, string>(stringDictionary), exclusions, maxLength);
+
+        if (value is IList<object?> values)
+        {
+            for (int index = 0; index < values.Count; index++)
+                values[index] = ApplyObjectExclusions(values[index], exclusions, maxLength);
+            return value;
+        }
+
+        return value is string text && text.Length > maxLength
+            ? "Value is too large to be included."
+            : value;
     }
 
     private static Dictionary<string, string>? ApplyExclusions(Dictionary<string, string>? dictionary, IEnumerable<string> exclusions, int maxLength)

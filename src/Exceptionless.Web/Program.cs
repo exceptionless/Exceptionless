@@ -93,9 +93,6 @@ public class Program
                         c.AddServerHeader = false;
 
                         long maximumRequestBodySize = options.MaximumEventPostSize + EventPostRequestBodyStream.KestrelBodyLimitSlopBytes;
-                        if (options.EventIngestionV3.Enabled)
-                            maximumRequestBodySize = Math.Max(maximumRequestBodySize, options.EventIngestionV3.MaximumCompressedBodySize);
-
                         if (maximumRequestBodySize > 0)
                             c.Limits.MaxRequestBodySize = maximumRequestBodySize;
                     })

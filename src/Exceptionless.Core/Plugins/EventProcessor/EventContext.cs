@@ -27,6 +27,7 @@ public class EventContext : ExtensibleObject, IPipelineContext
     public bool IsDiscarded { get; set; }
     public bool IsNew { get; set; }
     public bool IsRegression { get; set; }
+    public bool IsIngestionV3 { get; set; }
     public bool IncludePrivateInformation { get; set; }
     public bool AllowExtendedEventDateRange { get; set; }
     public string? SignatureHash { get; set; }

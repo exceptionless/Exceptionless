@@ -23,12 +23,12 @@ internal sealed class StreamingEventContent : HttpContent
     private readonly int _start;
     private readonly int _count;
 
-    public StreamingEventContent(LoadOptions options, IngestionProtocol protocol, string runMarker, DateTimeOffset eventDate, int start, int count)
+    public StreamingEventContent(LoadOptions options, IngestionProtocol protocol, string runMarker, string signatureNamespace, DateTimeOffset eventDate, int start, int count)
     {
         _options = options;
         _protocol = protocol;
         _runMarker = runMarker;
-        _corpusName = options.Seed.Replace("-", String.Empty, StringComparison.Ordinal);
+        _corpusName = signatureNamespace.Replace("-", String.Empty, StringComparison.Ordinal);
         _eventDate = eventDate;
         _start = start;
         _count = count;
@@ -96,7 +96,7 @@ internal sealed class StreamingEventContent : HttpContent
             {
                 var source = new EventIngestionV3Event
                 {
-                    Id = $"{referenceId}-v3",
+                    Id = GetV3ClientId(_runMarker, index),
                     Type = _options.EventType is LoadEventType.Error ? Event.KnownTypes.Error : Event.KnownTypes.Log,
                     Date = _eventDate,
                     Message = _options.Message,
@@ -120,6 +120,8 @@ internal sealed class StreamingEventContent : HttpContent
         UncompressedBytes = uncompressed.BytesWritten;
         TransferredBytes = transferred.BytesWritten;
     }
+
+    internal static string GetV3ClientId(string runMarker, int index) => $"{runMarker}-{index:D8}-v3";
 }
 
 internal sealed record V2LoadEvent(

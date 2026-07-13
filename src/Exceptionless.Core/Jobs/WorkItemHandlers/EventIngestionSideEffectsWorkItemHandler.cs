@@ -8,8 +8,8 @@ using Exceptionless.Core.Plugins.EventProcessor.Default;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Foundatio.Jobs;
-using Foundatio.Caching;
 using Foundatio.Lock;
+using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Storage;
 using Microsoft.Extensions.Logging;
@@ -21,14 +21,14 @@ public sealed class EventIngestionSideEffectsWorkItemHandler(
     IProjectRepository projectRepository,
     IEventRepository eventRepository,
     IStackRepository stackRepository,
-    StackService stackService,
+    IIngestionStackUsageStore ingestionStackUsageStore,
     RequestInfoPlugin requestInfoPlugin,
     EnvironmentInfoPlugin environmentInfoPlugin,
     GeoPlugin geoPlugin,
     QueueNotificationAction queueNotificationAction,
-    RunEventProcessedPluginsAction runEventProcessedPluginsAction,
+    IngestionSideEffectExecutor sideEffectExecutor,
+    IQueue<WorkItemData> workItemQueue,
     IFileStorage storage,
-    ICacheClient cache,
     AppOptions options,
     ILockProvider lockProvider,
     ILoggerFactory loggerFactory) : WorkItemHandlerBase(loggerFactory)
@@ -72,12 +72,26 @@ public sealed class EventIngestionSideEffectsWorkItemHandler(
             {
                 Stack = stack,
                 IsNew = ev.IsFirstOccurrence,
+                IsRegression = ev.IsRegression,
+                IsIngestionV3 = true,
                 IsProcessed = true
             });
         }
 
         if (contexts.Count == 0)
             return;
+
+        if (!project.IsConfigured.GetValueOrDefault())
+        {
+            await sideEffectExecutor.ExecuteAsync(IngestionSideEffectExecutor.ProjectConfiguredStage, project.Id, [project.Id], async _ =>
+            {
+                await workItemQueue.EnqueueAsync(new SetProjectIsConfiguredWorkItem
+                {
+                    ProjectId = project.Id,
+                    IsConfigured = true
+                });
+            }, context.CancellationToken);
+        }
 
         var enrichmentContexts = contexts
             .Where(eventContext => eventContext.Event.Data?.ContainsKey(Event.KnownDataKeys.RequestInfo) is true
@@ -92,77 +106,32 @@ public sealed class EventIngestionSideEffectsWorkItemHandler(
             await eventRepository.SaveAsync(enrichmentContexts.Select(eventContext => eventContext.Event), o => o.Notifications(false));
         }
 
-        foreach (var stackGroup in contexts.GroupBy(c => c.Event.StackId))
+        var settledStackUsages = await ingestionStackUsageStore.SettleAsync(
+            contexts.Select(eventContext => new IngestionStackUsage(
+                eventContext.Event.Id,
+                organization.Id,
+                project.Id,
+                eventContext.Event.StackId,
+                eventContext.Event.Date.UtcDateTime)).ToArray(),
+            context.CancellationToken);
+        foreach (var usage in settledStackUsages)
         {
-            var claimedContexts = new List<(EventContext Context, string Key)>();
-            foreach (var eventContext in stackGroup)
+            if (stacksById.TryGetValue(usage.StackId, out var stack))
             {
-                string statisticsKey = String.Concat("ingest-v3:sideeffects:statistics:", eventContext.Event.Id);
-                if (await cache.AddAsync(statisticsKey, true, options.EventIngestionV3.IdempotencyWindow))
-                    claimedContexts.Add((eventContext, statisticsKey));
-            }
-
-            if (claimedContexts.Count == 0)
-                continue;
-
-            try
-            {
-                DateTime minimum = claimedContexts.Min(item => item.Context.Event.Date.UtcDateTime);
-                DateTime maximum = claimedContexts.Max(item => item.Context.Event.Date.UtcDateTime);
-                await stackService.IncrementStackUsageAsync(organization.Id, project.Id, stackGroup.Key, minimum, maximum, claimedContexts.Count);
-                if (stacksById.TryGetValue(stackGroup.Key, out var stack))
-                {
-                    stack.TotalOccurrences += claimedContexts.Count;
-                    if (stack.FirstOccurrence > minimum)
-                        stack.FirstOccurrence = minimum;
-                    if (stack.LastOccurrence < maximum)
-                        stack.LastOccurrence = maximum;
-                }
-            }
-            catch
-            {
-                await cache.RemoveAllAsync(claimedContexts.Select(item => item.Key));
-                throw;
+                stack.TotalOccurrences += usage.Count;
+                if (stack.FirstOccurrence > usage.MinimumOccurrenceDateUtc)
+                    stack.FirstOccurrence = usage.MinimumOccurrenceDateUtc;
+                if (stack.LastOccurrence < usage.MaximumOccurrenceDateUtc)
+                    stack.LastOccurrence = usage.MaximumOccurrenceDateUtc;
             }
         }
 
-        foreach (var eventContext in contexts)
+        var notificationContextsById = contexts.ToDictionary(eventContext => eventContext.Event.Id, StringComparer.Ordinal);
+        await sideEffectExecutor.ExecuteAsync(IngestionSideEffectExecutor.TerminalStage, project.Id, notificationContextsById.Keys.ToArray(), async pendingIds =>
         {
-            string notificationKey = String.Concat("ingest-v3:sideeffects:notifications:", eventContext.Event.Id);
-            if (!await cache.AddAsync(notificationKey, true, options.EventIngestionV3.IdempotencyWindow))
-                continue;
-
-            try
-            {
-                await queueNotificationAction.ProcessAsync(eventContext);
-            }
-            catch
-            {
-                await cache.RemoveAsync(notificationKey);
-                throw;
-            }
-        }
-
-        var pluginContexts = new List<(EventContext Context, string Key)>();
-        foreach (var eventContext in contexts)
-        {
-            string pluginKey = String.Concat("ingest-v3:sideeffects:plugins:", eventContext.Event.Id);
-            if (await cache.AddAsync(pluginKey, true, options.EventIngestionV3.IdempotencyWindow))
-                pluginContexts.Add((eventContext, pluginKey));
-        }
-
-        if (pluginContexts.Count == 0)
-            return;
-
-        try
-        {
-            await runEventProcessedPluginsAction.ProcessBatchAsync(pluginContexts.Select(item => item.Context).ToList());
-        }
-        catch
-        {
-            await cache.RemoveAllAsync(pluginContexts.Select(item => item.Key));
-            throw;
-        }
+            var pendingContexts = pendingIds.Select(id => notificationContextsById[id]).ToArray();
+            await queueNotificationAction.ProcessIngestionV3BatchAsync(pendingContexts);
+        }, context.CancellationToken);
     }
 
     private static string GetArchivePath(EventIngestionSideEffectsWorkItem workItem, DateTime createdUtc)

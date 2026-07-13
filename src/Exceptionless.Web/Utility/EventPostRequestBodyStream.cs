@@ -9,15 +9,26 @@ public sealed class EventPostRequestBodyStream : Stream, IEventPostBodyReadState
 
     private readonly Stream _inner;
     private readonly long _maximumBytes;
+    private readonly string _limitRejectionReason;
+    private readonly int? _invalidOperationStatusCode;
+    private readonly string? _invalidOperationRejectionReason;
     private long _bytesRead;
 
-    public EventPostRequestBodyStream(Stream inner, long maximumBytes)
+    public EventPostRequestBodyStream(
+        Stream inner,
+        long maximumBytes,
+        string limitRejectionReason = "Request body too large.",
+        int? invalidOperationStatusCode = null,
+        string? invalidOperationRejectionReason = null)
     {
         ArgumentNullException.ThrowIfNull(inner);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumBytes);
 
         _inner = inner;
         _maximumBytes = maximumBytes;
+        _limitRejectionReason = limitRejectionReason;
+        _invalidOperationStatusCode = invalidOperationStatusCode;
+        _invalidOperationRejectionReason = invalidOperationRejectionReason;
     }
 
     public int? RejectedStatusCode { get; private set; }
@@ -66,6 +77,11 @@ public sealed class EventPostRequestBodyStream : Stream, IEventPostBodyReadState
             Reject(ex.StatusCode, ex.Message);
             return 0;
         }
+        catch (InvalidOperationException) when (_invalidOperationStatusCode.HasValue)
+        {
+            Reject(_invalidOperationStatusCode.Value, _invalidOperationRejectionReason ?? "Request body is invalid.");
+            return 0;
+        }
     }
 
     public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
@@ -85,6 +101,11 @@ public sealed class EventPostRequestBodyStream : Stream, IEventPostBodyReadState
         catch (HttpBadHttpRequestException ex)
         {
             Reject(ex.StatusCode, ex.Message);
+            return 0;
+        }
+        catch (InvalidOperationException) when (_invalidOperationStatusCode.HasValue)
+        {
+            Reject(_invalidOperationStatusCode.Value, _invalidOperationRejectionReason ?? "Request body is invalid.");
             return 0;
         }
     }
@@ -115,7 +136,7 @@ public sealed class EventPostRequestBodyStream : Stream, IEventPostBodyReadState
         long remaining = _maximumBytes - _bytesRead;
         if (remaining < 0)
         {
-            Reject(StatusCodes.Status413RequestEntityTooLarge, "Request body too large.");
+            Reject(StatusCodes.Status413RequestEntityTooLarge, _limitRejectionReason);
             return 0;
         }
 
@@ -136,7 +157,7 @@ public sealed class EventPostRequestBodyStream : Stream, IEventPostBodyReadState
         long totalBytesRead = _bytesRead + bytesRead;
         if (totalBytesRead > _maximumBytes)
         {
-            Reject(StatusCodes.Status413RequestEntityTooLarge, "Request body too large.");
+            Reject(StatusCodes.Status413RequestEntityTooLarge, _limitRejectionReason);
             return 0;
         }
 

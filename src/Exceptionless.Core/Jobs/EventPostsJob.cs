@@ -55,6 +55,16 @@ public class EventPostsJob : QueueJobBase<EventPost>
         var entry = context.QueueEntry;
         var ep = entry.Value;
 
+        // The controller returns the queue id without performing cache I/O so opt-in benchmark
+        // instrumentation does not distort V2 submission latency. The worker lazily creates the
+        // correlation state when processing begins; until then the status endpoint reports unknown.
+        if (ep.TrackProcessing && String.IsNullOrEmpty(ep.ProcessingCorrelationId))
+        {
+            bool initialized = await _eventPostService.InitializeProcessingTrackingAsync(entry.Id, ep.ProjectId);
+            if (initialized)
+                ep = ep with { ProcessingCorrelationId = entry.Id };
+        }
+
         using var _ = _logger.BeginScope(new ExceptionlessState().Organization(ep.OrganizationId).Project(ep.ProjectId));
 
         string payloadPath = Path.ChangeExtension(ep.FilePath, ".payload");
@@ -72,7 +82,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
         AppDiagnostics.PostsMessageSize.Record(payload.LongLength);
         if (payload.LongLength > _maximumEventPostFileSize)
         {
-            await Task.WhenAll(AppDiagnostics.PostsCompleteTime.TimeAsync(() => entry.CompleteAsync()), projectTask, organizationTask);
+            await Task.WhenAll(CompleteEntryAsync(entry, ep, _timeProvider.GetUtcNow().UtcDateTime), projectTask, organizationTask);
             return JobResult.FailedWithMessage($"Unable to process payload '{payloadPath}' ({payload.LongLength} bytes): Maximum event post size limit ({_appOptions.MaximumEventPostSize} bytes) reached.");
         }
 
@@ -239,13 +249,18 @@ public class EventPostsJob : QueueJobBase<EventPost>
                 eventsToRetry.AddRange(events);
         }
 
+        bool completeTracking = true;
         if (eventsToRetry.Count > 0)
-            await AppDiagnostics.PostsRetryTime.TimeAsync(() => RetryEventsAsync(eventsToRetry, ep, entry, project, isInternalProject));
+        {
+            bool propagateTracking = await _eventPostService.AddPendingProcessingUnitsAsync(ep, eventsToRetry.Count);
+            await AppDiagnostics.PostsRetryTime.TimeAsync(() => RetryEventsAsync(eventsToRetry, ep, entry, project, isInternalProject, propagateTracking));
+            completeTracking = propagateTracking;
+        }
 
         if (isSingleEvent && errorCount > 0)
             await AbandonEntryAsync(entry);
         else
-            await CompleteEntryAsync(entry, ep, createdUtc);
+            await CompleteEntryAsync(entry, ep, createdUtc, completeTracking);
 
         return JobResult.Success;
     }
@@ -298,7 +313,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
         }
     }
 
-    private async Task RetryEventsAsync(List<PersistentEvent> eventsToRetry, EventPostInfo ep, IQueueEntry<EventPost> queueEntry, Project project, bool isInternalProject)
+    private async Task RetryEventsAsync(List<PersistentEvent> eventsToRetry, EventPost ep, IQueueEntry<EventPost> queueEntry, Project project, bool isInternalProject, bool propagateTracking)
     {
         AppDiagnostics.EventsRetryCount.Add(eventsToRetry.Count);
         foreach (var ev in eventsToRetry)
@@ -316,6 +331,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
                     IpAddress = ep.IpAddress,
                     MediaType = ep.MediaType,
                     OrganizationId = ep.OrganizationId ?? project.OrganizationId,
+                    ProcessingCorrelationId = propagateTracking ? ep.ProcessingCorrelationId : null,
                     ProjectId = ep.ProjectId ?? project.Id,
                     UserAgent = ep.UserAgent
                 }, stream);
@@ -338,12 +354,14 @@ public class EventPostsJob : QueueJobBase<EventPost>
         return AppDiagnostics.PostsAbandonTime.TimeAsync(queueEntry.AbandonAsync);
     }
 
-    private Task CompleteEntryAsync(IQueueEntry<EventPost> entry, EventPost eventPost, DateTime created)
+    private Task CompleteEntryAsync(IQueueEntry<EventPost> entry, EventPost eventPost, DateTime created, bool completeTracking = true)
     {
         return AppDiagnostics.PostsCompleteTime.TimeAsync(async () =>
         {
             await entry.CompleteAsync();
-            await _eventPostService.CompleteEventPostAsync(eventPost.FilePath, eventPost.ProjectId, created, eventPost.ShouldArchive);
+            bool eventPostCompleted = await _eventPostService.CompleteEventPostAsync(eventPost.FilePath, eventPost.ProjectId, created, eventPost.ShouldArchive);
+            if (eventPostCompleted)
+                await _eventPostService.MarkProcessingCompletedAsync(entry.Id, eventPost, completeTracking);
         });
     }
 

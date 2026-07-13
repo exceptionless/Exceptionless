@@ -2,6 +2,9 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Models.Ingestion;
+using System.Buffers;
+using System.Buffers.Binary;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Exceptionless.Core.Services;
@@ -20,8 +23,10 @@ public sealed class StackFingerprintService(StackTraceParser stackTraceParser) :
     {
         if (source.Stacking?.SignatureData is { Count: > 0 } manualSignature)
         {
-            var data = new Dictionary<string, string>(manualSignature, StringComparer.Ordinal);
-            return new StackFingerprint(data.Values.ToSHA1(), data, source.Stacking.Title);
+            var data = manualSignature
+                .OrderBy(pair => pair.Key, StringComparer.Ordinal)
+                .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+            return new StackFingerprint(GetManualSignatureHash(data), data, source.Stacking.Title);
         }
 
         if (!String.Equals(source.Type, Event.KnownTypes.Error, StringComparison.OrdinalIgnoreCase))
@@ -47,9 +52,9 @@ public sealed class StackFingerprintService(StackTraceParser stackTraceParser) :
                 frame => IsUserFrame(frame, userNamespaces, commonMethods),
                 out var firstFrame,
                 out var userFrame,
-                out string? innermostExceptionType);
+                out string? selectedExceptionType);
 
-            exceptionType = innermostExceptionType ?? exceptionType;
+            exceptionType = selectedExceptionType ?? exceptionType;
 
             var target = userFrame ?? firstFrame;
             if (target is not null)
@@ -106,6 +111,42 @@ public sealed class StackFingerprintService(StackTraceParser stackTraceParser) :
         }
 
         return normalized.ToString().Trim();
+    }
+
+    private static string GetManualSignatureHash(IReadOnlyDictionary<string, string> signature)
+    {
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA1);
+        AppendHashValue(hash, "exceptionless-v3-manual-stack-v1");
+        foreach (var pair in signature)
+        {
+            AppendHashValue(hash, pair.Key);
+            AppendHashValue(hash, pair.Value);
+        }
+
+        return Convert.ToHexString(hash.GetHashAndReset()).ToLowerInvariant();
+    }
+
+    private static void AppendHashValue(IncrementalHash hash, string value)
+    {
+        int byteCount = Encoding.UTF8.GetByteCount(value);
+        Span<byte> length = stackalloc byte[sizeof(int)];
+        BinaryPrimitives.WriteInt32LittleEndian(length, byteCount);
+        hash.AppendData(length);
+
+        byte[]? rented = null;
+        Span<byte> bytes = byteCount <= 256
+            ? stackalloc byte[byteCount]
+            : (rented = ArrayPool<byte>.Shared.Rent(byteCount));
+        try
+        {
+            int written = Encoding.UTF8.GetBytes(value, bytes);
+            hash.AppendData(bytes[..written]);
+        }
+        finally
+        {
+            if (rented is not null)
+                ArrayPool<byte>.Shared.Return(rented);
+        }
     }
 
     private static bool IsUserFrame(StackFrame frame, string[] userNamespaces, string[] commonMethods)

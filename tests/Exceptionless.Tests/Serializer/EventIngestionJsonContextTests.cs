@@ -35,11 +35,12 @@ public sealed class EventIngestionJsonContextTests
     }
 
     [Fact]
-    public Task DeserializeAsyncEnumerable_MissingRequiredId_ThrowsJsonException()
+    public async Task DeserializeAsyncEnumerable_MissingRequiredId_DefersToPerEventValidation()
     {
         const string payload = """{"type":"log","message":"completed"}""";
 
-        return Assert.ThrowsAsync<JsonException>(() => DeserializeAsync(payload));
+        var ev = Assert.Single(await DeserializeAsync(payload));
+        Assert.Null(ev.Id);
     }
 
     [Fact]
@@ -69,11 +70,13 @@ public sealed class EventIngestionJsonContextTests
     }
 
     [Fact]
-    public Task DeserializeAsyncEnumerable_ClientWithoutVersion_ThrowsJsonException()
+    public async Task DeserializeAsyncEnumerable_ClientWithoutVersion_DefersToPerEventValidation()
     {
         const string payload = """{"id":"event-1","type":"log","client":{"name":"exceptionless.rust"}}""";
 
-        return Assert.ThrowsAsync<JsonException>(() => DeserializeAsync(payload));
+        var ev = Assert.Single(await DeserializeAsync(payload));
+        Assert.NotNull(ev.Client);
+        Assert.Null(ev.Client.Version);
     }
 
     [Fact]

@@ -180,6 +180,8 @@ public class Program
             services.AddJob<StackStatusJob>(o => o.WaitForStartupActions());
         if (options.StackEventCount)
             services.AddJob<StackEventCountJob>(o => o.WaitForStartupActions());
+        if (options.IngestionStackEventCount)
+            services.AddJob<IngestionStackEventCountJob>(o => o.WaitForStartupActions());
         if (options.WebHooks)
             services.AddJob<WebHooksJob>(o => o.WaitForStartupActions());
         if (options.WorkItem)

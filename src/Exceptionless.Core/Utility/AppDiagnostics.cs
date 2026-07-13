@@ -116,6 +116,8 @@ public static class AppDiagnostics
     internal static readonly Counter<int> IngestionV3RouteLocalDeduplicated = Meter.CreateCounter<int>("ex.ingestion.v3.route.local_deduplicated");
     internal static readonly Counter<int> IngestionV3RouteRepositoryLookups = Meter.CreateCounter<int>("ex.ingestion.v3.route.repository_lookups");
     internal static readonly Counter<int> IngestionV3WriteReconciliations = Meter.CreateCounter<int>("ex.ingestion.v3.write.reconciliations");
+    internal static readonly Counter<int> IngestionV3UsageCommitted = Meter.CreateCounter<int>("ex.ingestion.v3.usage.committed", description: "V3 newly persisted events committed to billable usage");
+    internal static readonly Counter<int> IngestionV3AmbiguousSettlementsSkipped = Meter.CreateCounter<int>("ex.ingestion.v3.usage.ambiguous_skipped", description: "V3 durable events skipped for billing after an ambiguous write outcome to prevent double charging");
     internal static readonly Histogram<double> IngestionV3MicroBatchSize = Meter.CreateHistogram<double>("ex.ingestion.v3.microbatch.size", unit: "events");
     internal static readonly Histogram<long> IngestionV3CompressedSize = Meter.CreateHistogram<long>("ex.ingestion.v3.compressed.size", unit: "bytes");
     internal static readonly Histogram<long> IngestionV3DecompressedSize = Meter.CreateHistogram<long>("ex.ingestion.v3.decompressed.size", unit: "bytes");

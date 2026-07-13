@@ -51,7 +51,7 @@ public class StackStatusJob : JobWithLockBase, IHealthCheck
 
             await _stackRepository.SaveAsync(results.Documents);
             await Task.WhenAll(results.Documents.Select(stack =>
-                _stackRouteResolver.UpdateAsync(stack.ProjectId, stack.SignatureHash, new StackRoute(stack.Id, stack.Status))));
+                _stackRouteResolver.UpdateAsync(stack.ProjectId, stack.SignatureHash, StackRouteResolver.CreateRoute(stack))));
 
             // Sleep so we are not hammering the backend.
             await Task.Delay(TimeSpan.FromSeconds(2.5), _timeProvider);

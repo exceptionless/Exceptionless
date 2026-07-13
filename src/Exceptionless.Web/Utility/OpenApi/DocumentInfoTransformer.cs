@@ -54,6 +54,14 @@ public class DocumentInfoTransformer : IOpenApiDocumentTransformer
         };
 
         document.Security ??= [];
+        if (context.DocumentName == "v3")
+        {
+            document.Security.Add(new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecuritySchemeReference("Bearer", document, null)] = []
+            });
+        }
+
         return Task.CompletedTask;
     }
 }
