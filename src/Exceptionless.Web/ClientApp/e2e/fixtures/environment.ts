@@ -1,5 +1,6 @@
 const DEFAULT_APP_URL = 'https://web-ex.dev.localhost:7131';
 const DEFAULT_EMAIL = 'admin@exceptionless.test';
+const DEFAULT_MAIL_URL = 'http://localhost:8025';
 const DEFAULT_PASSWORD = 'tester';
 
 export interface E2EEnvironment {
@@ -7,6 +8,7 @@ export interface E2EEnvironment {
     appUrl: string;
     email?: string;
     isProduction: boolean;
+    mailUrl: string;
     password?: string;
     runId: string;
 }
@@ -32,6 +34,7 @@ export function getE2EEnvironment(): E2EEnvironment {
         appUrl: normalizedAppUrl,
         email,
         isProduction,
+        mailUrl: normalizeUrl(getOptionalEnv('E2E_MAIL_URL') ?? DEFAULT_MAIL_URL),
         password,
         runId: sanitizeRunId(runId)
     };

@@ -21,8 +21,12 @@ These tests protect user-visible release workflows. They complement backend inte
 ## Coverage Shape
 
 - Authentication: validation, successful login, session restoration, logout, and protected-route redirect.
+- Account recovery: password reset and organization invitation acceptance through local email links.
 - Discovery: sidebar navigation, filters, empty states, and recovery.
 - Investigation: open event and stack details through rendered tables and sheets.
+- Organizations: switch organizations and verify event isolation persists through reload.
+- Projects: create API keys, open client setup, and redirect when the first event arrives.
+- Sessions: find a user session and open its event details.
 - Triage: mutate stack state and verify the persisted UI after reload.
 - Scoping: select and clear projects through the filter UI.
 - Onboarding: sign up, create an organization/project, and verify setup instructions.

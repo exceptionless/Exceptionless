@@ -232,6 +232,43 @@ export class E2EApiClient {
         throw new Error(`Timed out waiting for E2E event with reference id ${referenceId}`);
     }
 
+    async pollForMailToken(email: string, path: 'reset-password' | 'signup', timeoutMs = 30_000): Promise<string> {
+        const deadline = Date.now() + timeoutMs;
+
+        while (Date.now() < deadline) {
+            const searchResponse = await this.request.get(`${this.environment.mailUrl}/api/v1/search`, {
+                params: { query: `to:${email}` }
+            });
+            await expectStatus(searchResponse, [200], 'search local mail');
+            const searchResult = toRecord(await readJson(searchResponse), 'mail search response');
+            const messages = searchResult.Messages ?? searchResult.messages;
+
+            if (Array.isArray(messages)) {
+                for (const message of messages) {
+                    if (!isRecord(message)) {
+                        continue;
+                    }
+
+                    const id = getOptionalString(message, 'ID') ?? getOptionalString(message, 'id');
+                    if (!id) {
+                        continue;
+                    }
+
+                    const messageResponse = await this.request.get(`${this.environment.mailUrl}/api/v1/message/${encodeURIComponent(id)}`);
+                    await expectStatus(messageResponse, [200], 'read local mail');
+                    const token = extractMailToken(JSON.stringify(await readJson(messageResponse)), path);
+                    if (token) {
+                        return token;
+                    }
+                }
+            }
+
+            await delay(1_000);
+        }
+
+        throw new Error(`Timed out waiting for ${path} email sent to ${email}`);
+    }
+
     async signup(name: string, email: string, password: string): Promise<string> {
         const response = await this.request.post(this.url('auth/signup'), {
             data: {
@@ -341,6 +378,12 @@ async function expectStatus(response: APIResponse, expectedStatuses: number[], o
 
     const body = await response.text();
     throw new Error(`${operation} failed with status ${response.status()} ${response.statusText()}${body ? `: ${body}` : ''}`);
+}
+
+function extractMailToken(content: string, path: 'reset-password' | 'signup'): string | undefined {
+    const pattern = path === 'reset-password' ? /\/reset-password\/([^?"'<\\\s]+)/ : /\/signup\?token=([^&"'<\\\s]+)/;
+    const match = pattern.exec(content.replaceAll('&amp;', '&'));
+    return match?.[1] ? decodeURIComponent(match[1]) : undefined;
 }
 
 function getOptionalString(value: Record<string, unknown>, key: string): string | undefined {

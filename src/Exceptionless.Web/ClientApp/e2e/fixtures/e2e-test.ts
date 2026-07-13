@@ -22,6 +22,11 @@ export interface E2EScenario {
     userToken: string;
 }
 
+export interface E2ESecondaryOrganization extends E2ESecondaryProject {
+    organizationId: string;
+    organizationName: string;
+}
+
 export interface E2ESecondaryProject {
     message: string;
     projectId: string;
@@ -32,7 +37,9 @@ export interface E2ESecondaryProject {
 
 interface E2EFixtures {
     e2eApi: E2EApiClient;
+    e2eCleanupPassword: string;
     e2eScenario: E2EScenario;
+    e2eSecondaryOrganization: E2ESecondaryOrganization;
     e2eSecondaryProject: E2ESecondaryProject;
     e2eUseGeneratedUser: boolean;
 }
@@ -42,7 +49,9 @@ export const test = base.extend<E2EFixtures>({
         await use(new E2EApiClient(request, getE2EEnvironment()));
     },
 
-    e2eScenario: async ({ e2eApi, e2eUseGeneratedUser, page }, use, testInfo) => {
+    e2eCleanupPassword: [E2E_TEST_PASSWORD, { option: true }],
+
+    e2eScenario: async ({ e2eApi, e2eCleanupPassword, e2eUseGeneratedUser, page }, use, testInfo) => {
         const run = createRunName(e2eApi.environment.runId, testInfo);
         const userName = `Playwright User ${run}`;
         const email = `playwright-${run}@exceptionless.test`.toLowerCase();
@@ -95,7 +104,7 @@ export const test = base.extend<E2EFixtures>({
 
             if (createdUser && userToken) {
                 await runCleanupStep(cleanupErrors, 'restore generated user session for cleanup', async () => {
-                    userToken = await e2eApi.login(email, E2E_TEST_PASSWORD);
+                    userToken = await e2eApi.login(email, e2eCleanupPassword);
                 });
             }
 
@@ -117,6 +126,51 @@ export const test = base.extend<E2EFixtures>({
                 await runCleanupStep(cleanupErrors, 'delete generated user', async () => {
                     await e2eApi.deleteCurrentUser(userToken!);
                     await e2eApi.waitForCurrentUserDeleted(userToken!);
+                });
+            }
+
+            throwIfCleanupFailed(cleanupErrors);
+        }
+    },
+
+    e2eSecondaryOrganization: async ({ e2eApi, e2eScenario }, use) => {
+        const organizationName = `${E2E_ORGANIZATION_NAME_PREFIX} Secondary ${e2eScenario.run}`;
+        const projectName = `Playwright Secondary Organization Project ${e2eScenario.run}`;
+        const referenceId = `${e2eScenario.referenceId}-organization`;
+        const message = `Playwright secondary organization event ${e2eScenario.run}`;
+        let organizationId: string | undefined;
+        let projectId: string | undefined;
+
+        try {
+            const organization = await e2eApi.createOrganization(e2eScenario.userToken, organizationName);
+            organizationId = organization.id;
+            const project = await e2eApi.createProject(e2eScenario.userToken, organization.id, projectName);
+            projectId = project.id;
+            const projectToken = await e2eApi.getProjectDefaultToken(e2eScenario.userToken, project.id);
+
+            await use({
+                message,
+                organizationId: organization.id,
+                organizationName,
+                projectId: project.id,
+                projectName,
+                projectToken: projectToken.id,
+                referenceId
+            });
+        } finally {
+            const cleanupErrors: Error[] = [];
+
+            if (projectId) {
+                await runCleanupStep(cleanupErrors, `delete secondary organization project ${projectId}`, async () => {
+                    await e2eApi.deleteProject(e2eScenario.userToken, projectId!);
+                    await e2eApi.waitForProjectDeleted(e2eScenario.userToken, projectId!);
+                });
+            }
+
+            if (organizationId) {
+                await runCleanupStep(cleanupErrors, `delete secondary organization ${organizationId}`, async () => {
+                    await e2eApi.deleteOrganization(e2eScenario.userToken, organizationId!);
+                    await e2eApi.waitForOrganizationDeleted(e2eScenario.userToken, organizationId!);
                 });
             }
 
