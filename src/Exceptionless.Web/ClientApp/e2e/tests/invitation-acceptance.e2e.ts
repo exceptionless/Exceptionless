@@ -45,6 +45,8 @@ test('invited user can accept an organization invitation @signup', async ({ brow
         });
     } finally {
         if (invitedUserToken) {
+            await e2eApi.deleteOrganizationUser(e2eScenario.userToken, e2eScenario.organizationId, invitedEmail);
+            await e2eApi.waitForOrganizationNotListed(invitedUserToken, e2eScenario.organizationId);
             await e2eApi.deleteCurrentUser(invitedUserToken);
             await e2eApi.waitForCurrentUserDeleted(invitedUserToken);
         }

@@ -89,6 +89,15 @@ export class E2EApiClient {
         return response.status();
     }
 
+    async deleteOrganizationUser(token: string, organizationId: string, email: string): Promise<number> {
+        const response = await this.request.delete(this.url(`organizations/${organizationId}/users/${encodeURIComponent(email)}`), {
+            headers: this.authHeaders(token)
+        });
+
+        await expectStatus(response, [200, 202, 204, 404], 'delete organization user');
+        return response.status();
+    }
+
     async deleteProject(token: string, projectId: string): Promise<number> {
         const response = await this.request.delete(this.url(`projects/${projectId}`), {
             headers: this.authHeaders(token)
@@ -352,6 +361,28 @@ export class E2EApiClient {
 
         throw new Error(
             `Timed out waiting for E2E organization ${organizationId} to appear in the organizations list${lastError ? `: ${lastError.message}` : ''}`
+        );
+    }
+
+    async waitForOrganizationNotListed(token: string, organizationId: string, timeoutMs = 30_000): Promise<void> {
+        const deadline = Date.now() + timeoutMs;
+        let lastError: Error | undefined;
+
+        while (Date.now() < deadline) {
+            try {
+                const organizations = await this.getOrganizations(token);
+                if (!organizations.some((organization) => organization.id === organizationId)) {
+                    return;
+                }
+            } catch (error) {
+                lastError = error instanceof Error ? error : new Error(String(error));
+            }
+
+            await delay(1_000);
+        }
+
+        throw new Error(
+            `Timed out waiting for E2E organization ${organizationId} to disappear from the organizations list${lastError ? `: ${lastError.message}` : ''}`
         );
     }
 
