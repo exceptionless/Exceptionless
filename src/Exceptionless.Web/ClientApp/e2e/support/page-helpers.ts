@@ -43,6 +43,21 @@ export function getVisibleText(page: Page, text: RegExp | string): Locator {
     return page.getByText(text).filter({ visible: true }).first();
 }
 
+export async function navigateToSidebarView(page: Page, parentName: string, childName: string): Promise<void> {
+    const parentLink = page.getByRole('link', { exact: true, name: parentName }).filter({ visible: true }).first();
+    if (await parentLink.isVisible()) {
+        await parentLink.click();
+        return;
+    }
+
+    const childLink = page.getByRole('link', { exact: true, name: childName }).filter({ visible: true }).first();
+    if (!(await childLink.isVisible())) {
+        await page.getByRole('button', { exact: true, name: parentName }).filter({ visible: true }).first().click();
+    }
+
+    await childLink.click();
+}
+
 export async function selectProjectType(page: Page, optionName: string): Promise<void> {
     await page.getByRole('button', { name: /Please select a project type|Command Line:/ }).click();
     const option = page.getByRole('option', { name: optionName });

@@ -1,6 +1,6 @@
 import { expect, test } from '../fixtures/e2e-test';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
-import { getVisibleRow, getVisibleText } from '../support/page-helpers';
+import { getVisibleRow, getVisibleText, navigateToSidebarView } from '../support/page-helpers';
 
 test('operator can navigate from event discovery to event and stack details through the UI', async ({ e2eApi, e2eScenario, page }) => {
     const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
@@ -11,8 +11,8 @@ test('operator can navigate from event discovery to event and stack details thro
 
     await test.step('open event details from the Events table', async () => {
         await page.goto('/next/stack');
-        await page.getByRole('link', { exact: true, name: 'Events' }).filter({ visible: true }).first().click();
-        await expect(page.getByRole('heading', { name: 'Events' })).toBeVisible();
+        await navigateToSidebarView(page, 'Events', 'Errors');
+        await expect(page).toHaveURL(/\/next\/event(?:\/errors)?(?:[?#]|$)/);
 
         await page.goto(`/next/event?reference=${encodeURIComponent(journey.referenceId)}&time=all`);
         const eventRow = getVisibleRow(page, journey.message);
@@ -36,12 +36,7 @@ test('operator can navigate from event discovery to event and stack details thro
     });
 
     await test.step('open stack details from the Stacks table', async () => {
-        const stackViewLink = page.getByRole('link', { name: 'Most Frequent Errors' }).filter({ visible: true }).first();
-        if (!(await stackViewLink.isVisible())) {
-            await page.getByRole('button', { exact: true, name: 'Stacks' }).filter({ visible: true }).first().click();
-        }
-
-        await stackViewLink.click();
+        await navigateToSidebarView(page, 'Stacks', 'Most Frequent Errors');
         await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
 
         const stackRow = getVisibleRow(page, journey.message);
