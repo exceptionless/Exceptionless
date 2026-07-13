@@ -282,8 +282,12 @@ explicit manual stacking.
 
 The executable reference client and repeatable load harness live in
 `benchmarks/Exceptionless.Ingestion.Load`; usage is documented in
-`benchmarks/README.md`. Request examples live in `tests/http/events-v3.http`,
-and the isolated OpenAPI document is available at `/docs/v3/openapi.json`.
+`benchmarks/README.md`. It can submit the same conceptual corpus through the
+real V2 and V3 endpoints, measures HTTP acknowledgement separately from
+completed processing, supports both one-event requests and large client
+batches, alternates protocol order, and reports median multi-trial results.
+Request examples live in `tests/http/events-v3.http`, and the isolated OpenAPI
+document is available at `/docs/v3/openapi.json`.
 
 ## Configuration and rollout
 

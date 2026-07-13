@@ -4,6 +4,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Exceptionless.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Exceptionless.Core\Exceptionless.Core.csproj" />
   </ItemGroup>
 </Project>
