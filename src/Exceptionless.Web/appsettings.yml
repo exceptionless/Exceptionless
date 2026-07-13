@@ -34,3 +34,19 @@ Apm:
   EnableLogs: true
   FullDetails: true
   Debug: false
+
+EventIngestionV3:
+  Enabled: false
+  MicroBatchSize: 100
+  MaximumMicroBatchBytes: 1048576
+  MaximumEventSize: 524288
+  MaximumCompressedBodySize: 10485760
+  MaximumDecompressedBodySize: 52428800
+  MaximumEventsPerRequest: 10000
+  MaximumStackCreationConcurrency: 8
+  RequestTimeout: 00:02:00
+  IdempotencyWindow: 7.00:00:00
+  StackRouteCacheDuration: 01:00:00
+  NegativeStackRouteCacheDuration: 00:00:30
+  AllowedProjectIds: []
+  AllowedOrganizationIds: []

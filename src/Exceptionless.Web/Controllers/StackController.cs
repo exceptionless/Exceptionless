@@ -3,6 +3,7 @@ using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Ingestion;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queries.Validation;
@@ -11,6 +12,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Utility;
+using Exceptionless.Core.Services;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
@@ -39,6 +41,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
     private readonly FormattingPluginManager _formattingPluginManager;
     private readonly AppOptions _options;
+    private readonly IStackRouteResolver _stackRouteResolver;
 
     public StackController(
         IStackRepository stackRepository,
@@ -53,6 +56,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         SemanticVersionParser semanticVersionParser,
         ApiMapper mapper,
         StackQueryValidator validator,
+        IStackRouteResolver stackRouteResolver,
         AppOptions options,
         TimeProvider timeProvider,
         ILoggerFactory loggerFactory
@@ -69,6 +73,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         _formattingPluginManager = formattingPluginManager;
         _semanticVersionParser = semanticVersionParser;
         _options = options;
+        _stackRouteResolver = stackRouteResolver;
 
         AllowedDateFields.AddRange([StackIndex.Alias.FirstOccurrence, StackIndex.Alias.LastOccurrence]);
         DefaultDateField = StackIndex.Alias.LastOccurrence;
@@ -124,7 +129,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         foreach (var stack in stacks)
             stack.MarkFixed(semanticVersion, _timeProvider);
 
-        await _stackRepository.SaveAsync(stacks);
+        await SaveStacksAsync(stacks);
 
         return Ok();
     }
@@ -182,7 +187,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
             stack.DateFixed = null;
         }
 
-        await _stackRepository.SaveAsync(stacks);
+        await SaveStacksAsync(stacks);
 
         return Ok();
     }
@@ -209,7 +214,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (!stack.References.Contains(url.Value.Trim()))
         {
             stack.References.Add(url.Value.Trim());
-            await _stackRepository.SaveAsync(stack);
+            await SaveStacksAsync([stack]);
         }
 
         return Ok();
@@ -266,7 +271,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (stack.References.Contains(url.Value.Trim()))
         {
             stack.References.Remove(url.Value.Trim());
-            await _stackRepository.SaveAsync(stack);
+            await SaveStacksAsync([stack]);
         }
 
         return StatusCode(StatusCodes.Status204NoContent);
@@ -291,7 +296,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
             foreach (var stack in stacks)
                 stack.OccurrencesAreCritical = true;
 
-            await _stackRepository.SaveAsync(stacks);
+            await SaveStacksAsync(stacks);
         }
 
         return Ok();
@@ -318,7 +323,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
             foreach (var stack in stacks)
                 stack.OccurrencesAreCritical = false;
 
-            await _stackRepository.SaveAsync(stacks);
+            await SaveStacksAsync(stacks);
         }
 
         return StatusCode(StatusCodes.Status204NoContent);
@@ -360,7 +365,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
                 stack.SnoozeUntilUtc = null;
             }
 
-            await _stackRepository.SaveAsync(stacks);
+            await SaveStacksAsync(stacks);
         }
 
         return Ok();
@@ -572,6 +577,14 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _options.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(project, organization);
         return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
+    }
+
+    private async Task SaveStacksAsync(IReadOnlyCollection<Stack> stacks)
+    {
+        await _stackRepository.SaveAsync(stacks);
+        await Task.WhenAll(stacks
+            .Where(stack => !String.IsNullOrEmpty(stack.ProjectId) && !String.IsNullOrEmpty(stack.SignatureHash))
+            .Select(stack => _stackRouteResolver.UpdateAsync(stack.ProjectId, stack.SignatureHash, new StackRoute(stack.Id, stack.Status))));
     }
 
     private Task<Organization?> GetOrganizationAsync(string? organizationId, bool useCache = true)

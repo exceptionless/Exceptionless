@@ -26,6 +26,14 @@ public sealed class OverageMiddleware
 
     public async Task Invoke(HttpContext context)
     {
+        // V3 reserves quota after the discard route, so discarded events are never
+        // charged and concurrent nodes cannot all pass a stale preflight check.
+        if (context.Request.Path.StartsWithSegments("/api/v3"))
+        {
+            await _next(context);
+            return;
+        }
+
         if (!context.Request.IsEventPost())
         {
             await _next(context);

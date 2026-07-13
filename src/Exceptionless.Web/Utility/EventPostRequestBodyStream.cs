@@ -22,6 +22,7 @@ public sealed class EventPostRequestBodyStream : Stream, IEventPostBodyReadState
 
     public int? RejectedStatusCode { get; private set; }
     public string? RejectionReason { get; private set; }
+    public long BytesRead => _bytesRead;
 
     public override bool CanRead => _inner.CanRead;
     public override bool CanSeek => false;

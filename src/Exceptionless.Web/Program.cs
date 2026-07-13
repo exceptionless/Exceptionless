@@ -92,8 +92,12 @@ public class Program
                     {
                         c.AddServerHeader = false;
 
-                        if (options.MaximumEventPostSize > 0)
-                            c.Limits.MaxRequestBodySize = options.MaximumEventPostSize + EventPostRequestBodyStream.KestrelBodyLimitSlopBytes;
+                        long maximumRequestBodySize = options.MaximumEventPostSize + EventPostRequestBodyStream.KestrelBodyLimitSlopBytes;
+                        if (options.EventIngestionV3.Enabled)
+                            maximumRequestBodySize = Math.Max(maximumRequestBodySize, options.EventIngestionV3.MaximumCompressedBodySize);
+
+                        if (maximumRequestBodySize > 0)
+                            c.Limits.MaxRequestBodySize = maximumRequestBodySize;
                     })
                     .UseStartup<Startup>();
             })

@@ -43,9 +43,30 @@ public class OpenApiControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetOpenApiJson_V3_ReturnsExpectedBaseline()
+    {
+        string baselinePath = Path.Combine(AppContext.BaseDirectory, "Controllers", "Data", "openapi-v3.json");
+        var response = await SendRequestAsync(r => r
+            .BaseUri(_server.BaseAddress)
+            .AppendPaths("docs", "v3", "openapi.json")
+            .StatusCodeShouldBeOk());
+        string actualJson = await response.Content.ReadAsStringAsync(TestCancellationToken);
+
+        if (String.Equals(Environment.GetEnvironmentVariable("UPDATE_SNAPSHOTS"), "true", StringComparison.OrdinalIgnoreCase))
+        {
+            string sourcePath = Path.GetFullPath(Path.Join(AppContext.BaseDirectory, "..", "..", "..", "Controllers", "Data", "openapi-v3.json"));
+            await File.WriteAllTextAsync(sourcePath, actualJson, TestCancellationToken);
+            return;
+        }
+
+        string expectedJson = NormalizeOpenApiJson(await File.ReadAllTextAsync(baselinePath, TestCancellationToken));
+        Assert.Equal(expectedJson, NormalizeOpenApiJson(actualJson));
+    }
+
+    [Fact]
     public async Task GetOpenApiJson_ContainsExpectedRoutesOperationsAndResponses()
     {
-        using var document = await GetOpenApiDocumentAsync();
+        using var document = await GetOpenApiDocumentAsync("v2");
         var paths = document.RootElement.GetProperty("paths");
 
         Assert.True(paths.TryGetProperty("/api/v2/auth/login", out var loginPath));
@@ -66,6 +87,20 @@ public class OpenApiControllerTests : IntegrationTestsBase
         Assert.True(userDescriptionPath.TryGetProperty("post", out var userDescriptionPost));
         Assert.True(userDescriptionPost.TryGetProperty("requestBody", out _));
         AssertResponseCodes(userDescriptionPost, "202");
+
+        Assert.False(paths.TryGetProperty("/api/v3/events", out _));
+
+        using var v3Document = await GetOpenApiDocumentAsync("v3");
+        var v3Paths = v3Document.RootElement.GetProperty("paths");
+        Assert.True(v3Paths.TryGetProperty("/api/v3/events", out var ingestionPath));
+        Assert.True(ingestionPath.TryGetProperty("post", out var ingestionPost));
+        Assert.True(ingestionPost.TryGetProperty("requestBody", out var ingestionRequestBody));
+        Assert.True(ingestionRequestBody.GetProperty("content").TryGetProperty("application/x-ndjson", out _));
+        AssertResponseCodes(ingestionPost, "200", "400", "401", "402", "403", "404", "413", "415", "422", "429", "503");
+
+        Assert.True(v3Paths.TryGetProperty("/api/v3/projects/{projectId}/events", out var projectIngestionPath));
+        Assert.True(projectIngestionPath.TryGetProperty("post", out _));
+        Assert.Equal(2, v3Paths.EnumerateObject().Count());
     }
 
     [Fact]
@@ -103,11 +138,11 @@ public class OpenApiControllerTests : IntegrationTestsBase
             .TrimEnd('\n');
     }
 
-    private async Task<JsonDocument> GetOpenApiDocumentAsync()
+    private async Task<JsonDocument> GetOpenApiDocumentAsync(string documentName = "v2")
     {
         var response = await SendRequestAsync(r => r
             .BaseUri(_server.BaseAddress)
-            .AppendPaths("docs", "v2", "openapi.json")
+            .AppendPaths("docs", documentName, "openapi.json")
             .StatusCodeShouldBeOk()
         );
 

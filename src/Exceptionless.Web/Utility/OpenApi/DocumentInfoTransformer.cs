@@ -12,8 +12,8 @@ public class DocumentInfoTransformer : IOpenApiDocumentTransformer
     {
         document.Info = new OpenApiInfo
         {
-            Title = "Exceptionless API",
-            Version = "v2",
+            Title = context.DocumentName == "v3" ? "Exceptionless Event Ingestion API" : "Exceptionless API",
+            Version = context.DocumentName,
             TermsOfService = new Uri("https://exceptionless.com/terms/"),
             Contact = new OpenApiContact
             {

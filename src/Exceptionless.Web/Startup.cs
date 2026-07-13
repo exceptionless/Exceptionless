@@ -7,6 +7,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Validation;
 using Exceptionless.Web.Extensions;
+using Exceptionless.Web.Endpoints;
 using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Mcp;
 using Exceptionless.Web.Security;
@@ -23,6 +24,9 @@ using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
+using Microsoft.AspNetCore.OpenApi;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 using Microsoft.Net.Http.Headers;
 using ModelContextProtocol.AspNetCore;
 using Scalar.AspNetCore;
@@ -106,33 +110,33 @@ public class Startup
             r.ConstraintMap.Add("tokens", typeof(TokensRouteConstraint));
         });
 
-        services.AddOpenApi(o =>
+        services.AddOpenApi("v2", o =>
         {
-            // Customize schema names to match legacy SwashBuckle naming for backwards compatibility
-            o.CreateSchemaReferenceId = SchemaReferenceIdHelper.CreateSchemaReferenceId;
-
-            // Document transformers (run on entire document)
-            o.AddDocumentTransformer<AggregateDocumentTransformer>();
-            o.AddDocumentTransformer<DocumentInfoTransformer>();
-            o.AddDocumentTransformer<RemoveProblemJsonFromSuccessResponsesTransformer>();
-
-            // Operation transformers (run on each operation)
-            o.AddOperationTransformer<ObsoleteOperationTransformer>();
-            o.AddOperationTransformer<RequestBodyContentOperationTransformer>();
-            o.AddOperationTransformer<XmlDocumentationOperationTransformer>();
-
-            // Schema transformers (run on each schema) - alphabetical order
-            o.AddSchemaTransformer<DataAnnotationsSchemaTransformer>();
-            o.AddSchemaTransformer<DeltaSchemaTransformer>();
-            o.AddSchemaTransformer<DictionarySubclassSchemaTransformer>();
-            o.AddSchemaTransformer<NumericTypeSchemaTransformer>();
-            o.AddSchemaTransformer<ReadOnlyPropertySchemaTransformer>();
-            o.AddSchemaTransformer<RequiredPropertySchemaTransformer>();
-            o.AddSchemaTransformer<UniqueItemsSchemaTransformer>();
-            o.AddSchemaTransformer<XEnumNamesSchemaTransformer>();
+            ConfigureOpenApi(o);
+            o.ShouldInclude = description => !IsV3Api(description.RelativePath);
+        });
+        services.AddOpenApi("v3", o =>
+        {
+            ConfigureOpenApi(o);
+            o.ShouldInclude = description => IsV3Api(description.RelativePath);
         });
 
         var appOptions = AppOptions.ReadFromConfiguration(Configuration);
+        services.AddRequestDecompression(decompression =>
+        {
+            decompression.DecompressionProviders.Remove("deflate");
+        });
+        services.AddRequestTimeouts();
+        services.AddRateLimiter(rateLimiter =>
+        {
+            rateLimiter.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            rateLimiter.AddConcurrencyLimiter("event-ingestion-v3", limiter =>
+            {
+                limiter.PermitLimit = appOptions.EventIngestionV3.MaximumConcurrentRequests;
+                limiter.QueueLimit = appOptions.EventIngestionV3.ConcurrencyQueueLimit;
+                limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            });
+        });
         Bootstrapper.RegisterServices(services, appOptions, Log.Logger.ToLoggerFactory());
         services.AddScoped<McpContextService>();
         services.AddSingleton<ISessionMigrationHandler, McpSessionMigrationHandler>();
@@ -299,6 +303,11 @@ public class Startup
         app.UseDefaultFiles();
         app.UseFileServer();
         app.UseRouting();
+        app.UseWhen(
+            context => context.Request.Path.StartsWithSegments("/api/v3"),
+            branch => branch.UseRequestDecompression());
+        app.UseRequestTimeouts();
+        app.UseRateLimiter();
         app.UseCors("AllowAny");
         app.UseHttpMethodOverride();
         app.UseForwardedHeaders();
@@ -326,18 +335,49 @@ public class Startup
 
         app.UseEndpoints(endpoints =>
         {
-            endpoints.MapOpenApi("/docs/v2/openapi.json");
+            endpoints.MapOpenApi("/docs/{documentName}/openapi.json");
             endpoints.MapScalarApiReference("/docs", o =>
             {
                 o.WithOpenApiRoutePattern("/docs/{documentName}/openapi.json")
                     .AddDocument("v2", "Exceptionless API", "/docs/{documentName}/openapi.json", true)
+                    .AddDocument("v3", "Exceptionless Event Ingestion API", "/docs/{documentName}/openapi.json")
                     .AddPreferredSecuritySchemes("Bearer");
             });
 
             endpoints.MapControllers();
+            endpoints.MapEventIngestionV3(options);
             endpoints.MapMcp("/mcp").RequireAuthorization(AuthorizationRoles.McpPolicy);
-            endpoints.MapFallback("{**slug:nonfile}", CreateRequestDelegate(endpoints, "/index.html"));
+            endpoints.MapFallback("{**slug:nonfile}", CreateRequestDelegate(endpoints, "/index.html"))
+                .WithMetadata(new HttpMethodMetadata([HttpMethods.Get]));
         });
+    }
+
+    private static bool IsV3Api(string? relativePath) => relativePath?.StartsWith("api/v3/", StringComparison.OrdinalIgnoreCase) is true;
+
+    private static void ConfigureOpenApi(OpenApiOptions options)
+    {
+        // Customize schema names to match legacy SwashBuckle naming for backwards compatibility
+        options.CreateSchemaReferenceId = SchemaReferenceIdHelper.CreateSchemaReferenceId;
+
+        // Document transformers (run on entire document)
+        options.AddDocumentTransformer<AggregateDocumentTransformer>();
+        options.AddDocumentTransformer<DocumentInfoTransformer>();
+        options.AddDocumentTransformer<RemoveProblemJsonFromSuccessResponsesTransformer>();
+
+        // Operation transformers (run on each operation)
+        options.AddOperationTransformer<ObsoleteOperationTransformer>();
+        options.AddOperationTransformer<RequestBodyContentOperationTransformer>();
+        options.AddOperationTransformer<XmlDocumentationOperationTransformer>();
+
+        // Schema transformers (run on each schema) - alphabetical order
+        options.AddSchemaTransformer<DataAnnotationsSchemaTransformer>();
+        options.AddSchemaTransformer<DeltaSchemaTransformer>();
+        options.AddSchemaTransformer<DictionarySubclassSchemaTransformer>();
+        options.AddSchemaTransformer<NumericTypeSchemaTransformer>();
+        options.AddSchemaTransformer<ReadOnlyPropertySchemaTransformer>();
+        options.AddSchemaTransformer<RequiredPropertySchemaTransformer>();
+        options.AddSchemaTransformer<UniqueItemsSchemaTransformer>();
+        options.AddSchemaTransformer<XEnumNamesSchemaTransformer>();
     }
 
     private static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath)
