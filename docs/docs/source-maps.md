@@ -10,7 +10,9 @@ Exceptionless uses source maps to turn minified JavaScript stack frames into the
 
 No domain allowlist or project setup is required for public source maps. When an error contains an absolute HTTPS JavaScript URL, Exceptionless checks the generated file's `SourceMap` or `X-SourceMap` response header and its `sourceMappingURL` comment. If neither is present, it also checks the conventional `<generated-file>.map` URL.
 
-Downloaded maps are validated and cached in project-scoped file storage. Exceptionless only makes anonymous HTTPS requests to public network addresses. Redirects are revalidated, and downloads have time, redirect, size, concurrency, and per-project rate limits. Self-hosted installations can tune these safeguards under the `SourceMaps` configuration section.
+Downloaded maps are validated and cached in project-scoped file storage. Automatically downloaded maps are revalidated after one hour so a stable generated-file URL cannot retain a map from an older deployment indefinitely. If refresh fails, Exceptionless leaves the generated frame unchanged instead of risking a misleading stack trace from the stale map.
+
+Exceptionless only makes anonymous HTTPS requests to public network addresses. Redirects are revalidated, and downloads have time, redirect, size, concurrency, and per-project rate limits. Parsed maps use a bounded in-memory cache. Self-hosted installations can tune these safeguards under the `SourceMaps` configuration section, including `AutoDownloadRefreshIntervalMinutes`, `ParsedSourceMapCacheLifetimeMinutes`, and `MaximumParsedSourceMapCacheSize`.
 
 ## Uploading a source map
 

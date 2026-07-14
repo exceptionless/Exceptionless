@@ -2,14 +2,17 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using Exceptionless.Core;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.EventProcessor.Default;
 using Exceptionless.Core.Services.SourceMaps;
 using Foundatio.Caching;
+using Foundatio.Lock;
 using Foundatio.Serializer;
 using Foundatio.Storage;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
@@ -20,6 +23,7 @@ public sealed class SourceMapServiceTests : TestWithServices
     private const string ProjectId = "507f1f77bcf86cd799439011";
     private const string GeneratedFileUrl = "https://cdn.example.com/assets/app.min.js";
     private static readonly byte[] SourceMap = Encoding.UTF8.GetBytes("""{"version":3,"sources":["src/app.ts"],"names":["meaningfulFunction"],"mappings":"AAAAA"}""");
+    private static readonly byte[] UpdatedSourceMap = Encoding.UTF8.GetBytes("""{"version":3,"sources":["src/updated.ts"],"names":["updatedFunction"],"mappings":"AAAAA"}""");
 
     public SourceMapServiceTests(ITestOutputHelper output) : base(output)
     {
@@ -84,6 +88,7 @@ public sealed class SourceMapServiceTests : TestWithServices
             new TestHttpClientFactory(httpClient),
             GetService<IFileStorage>(),
             GetService<ICacheClient>(),
+            GetService<ILockProvider>(),
             GetService<JsonSerializerOptions>(),
             GetService<AppOptions>(),
             GetService<TimeProvider>(),
@@ -97,6 +102,232 @@ public sealed class SourceMapServiceTests : TestWithServices
         var artifact = Assert.Single(await service.GetArtifactsAsync(ProjectId, TestContext.Current.CancellationToken));
         Assert.True(artifact.IsAutoDownloaded);
         Assert.Equal("https://cdn.example.com/assets/app.min.js.map", artifact.SourceMapUrl);
+    }
+
+    [Fact]
+    public async Task SymbolicateAsync_WithExpiredAutoDownloadedSourceMap_RefreshesStoredMap()
+    {
+        int sourceMapDownloadCount = 0;
+        var handler = new DelegateHandler(request =>
+        {
+            if (request.RequestUri == new Uri(GeneratedFileUrl))
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("minified") };
+                response.Headers.TryAddWithoutValidation("SourceMap", "app.min.js.map");
+                return response;
+            }
+
+            sourceMapDownloadCount++;
+            byte[] content = sourceMapDownloadCount == 1 ? SourceMap : UpdatedSourceMap;
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(content) };
+        });
+        using var httpClient = new HttpClient(handler);
+        using (var initialService = CreateService(httpClient))
+        {
+            var initialError = CreateError();
+            Assert.True(await initialService.SymbolicateAsync(ProjectId, initialError, TestContext.Current.CancellationToken));
+            Assert.Equal("meaningfulFunction", Assert.Single(initialError.StackTrace!).Name);
+        }
+
+        TimeProvider.Advance(TimeSpan.FromMinutes(61));
+
+        using var refreshedService = CreateService(httpClient);
+        var refreshedError = CreateError();
+        Assert.True(await refreshedService.SymbolicateAsync(ProjectId, refreshedError, TestContext.Current.CancellationToken));
+        var refreshedFrame = Assert.Single(refreshedError.StackTrace!);
+        Assert.Equal("updatedFunction", refreshedFrame.Name);
+        Assert.Equal("src/updated.ts", refreshedFrame.FileName);
+        Assert.Equal(2, sourceMapDownloadCount);
+    }
+
+    [Fact]
+    public async Task SymbolicateAsync_WhenExpiredSourceMapCannotRefresh_DoesNotUseStaleMap()
+    {
+        int sourceMapDownloadCount = 0;
+        var handler = new DelegateHandler(request =>
+        {
+            if (request.RequestUri == new Uri(GeneratedFileUrl))
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("minified") };
+                response.Headers.TryAddWithoutValidation("SourceMap", "app.min.js.map");
+                return response;
+            }
+
+            sourceMapDownloadCount++;
+            return sourceMapDownloadCount == 1
+                ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(SourceMap) }
+                : new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
+        });
+        using var httpClient = new HttpClient(handler);
+        using (var initialService = CreateService(httpClient))
+            Assert.True(await initialService.SymbolicateAsync(ProjectId, CreateError(), TestContext.Current.CancellationToken));
+
+        TimeProvider.Advance(TimeSpan.FromMinutes(61));
+
+        using var refreshedService = CreateService(httpClient);
+        var error = CreateError();
+        Assert.False(await refreshedService.SymbolicateAsync(ProjectId, error, TestContext.Current.CancellationToken));
+        var frame = Assert.Single(error.StackTrace!);
+        Assert.Equal("a", frame.Name);
+        Assert.Equal(GeneratedFileUrl, frame.FileName);
+        Assert.Equal(2, sourceMapDownloadCount);
+    }
+
+    [Fact]
+    public async Task SaveUploadedAsync_WhenReplacingMap_UsesNewMapAndRemovesOldContent()
+    {
+        var service = GetService<SourceMapService>();
+        await using (var sourceMapStream = new MemoryStream(SourceMap))
+            await service.SaveUploadedAsync(ProjectId, GeneratedFileUrl, "app.min.js.map", sourceMapStream, TestContext.Current.CancellationToken);
+        await using (var sourceMapStream = new MemoryStream(UpdatedSourceMap))
+            await service.SaveUploadedAsync(ProjectId, GeneratedFileUrl, "app.min.js.map", sourceMapStream, TestContext.Current.CancellationToken);
+
+        var error = CreateError();
+        Assert.True(await service.SymbolicateAsync(ProjectId, error, TestContext.Current.CancellationToken));
+        Assert.Equal("updatedFunction", Assert.Single(error.StackTrace!).Name);
+
+        var mapFiles = await GetService<IFileStorage>().GetFileListAsync($"source-maps/{ProjectId}/*.map", cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Single(mapFiles);
+    }
+
+    [Fact]
+    public async Task SymbolicateAsync_WhenMapExceedsParsedCacheLimit_DoesNotRetainMapInMemory()
+    {
+        var options = GetService<AppOptions>();
+        options.SourceMapOptions.MaximumParsedSourceMapCacheSize = 1;
+        int requestCount = 0;
+        var handler = new DelegateHandler(request =>
+        {
+            requestCount++;
+            if (request.RequestUri == new Uri(GeneratedFileUrl))
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("minified") };
+                response.Headers.TryAddWithoutValidation("SourceMap", "app.min.js.map");
+                return response;
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(SourceMap) };
+        });
+        using var httpClient = new HttpClient(handler);
+        using var service = CreateService(httpClient);
+        Assert.True(await service.SymbolicateAsync(ProjectId, CreateError(), TestContext.Current.CancellationToken));
+
+        await GetService<IFileStorage>().DeleteFilesAsync($"source-maps/{ProjectId}/*", TestContext.Current.CancellationToken);
+
+        Assert.True(await service.SymbolicateAsync(ProjectId, CreateError(), TestContext.Current.CancellationToken));
+        Assert.Equal(4, requestCount);
+    }
+
+    [Fact]
+    public async Task SymbolicateAsync_WhenFirstCallerCancels_KeepsSharedDownloadForSecondCaller()
+    {
+        int requestCount = 0;
+        var mapRequestStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseMapRequest = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handler = new AsyncDelegateHandler(async request =>
+        {
+            requestCount++;
+            if (request.RequestUri == new Uri(GeneratedFileUrl))
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("minified") };
+                response.Headers.TryAddWithoutValidation("SourceMap", "app.min.js.map");
+                return response;
+            }
+
+            mapRequestStarted.TrySetResult();
+            await releaseMapRequest.Task;
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(SourceMap) };
+        });
+        using var httpClient = new HttpClient(handler);
+        using var service = CreateService(httpClient);
+        using var cancellationTokenSource = new CancellationTokenSource();
+        Task<bool> canceledCaller = service.SymbolicateAsync(ProjectId, CreateError(), cancellationTokenSource.Token);
+        await mapRequestStarted.Task;
+
+        cancellationTokenSource.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceledCaller);
+        Task<bool> secondCaller = service.SymbolicateAsync(ProjectId, CreateError(), TestContext.Current.CancellationToken);
+        releaseMapRequest.TrySetResult();
+
+        Assert.True(await secondCaller);
+        Assert.Equal(2, requestCount);
+    }
+
+    [Fact]
+    public async Task SaveUploadedAsync_DuringAutomaticDownload_UploadRemainsAuthoritative()
+    {
+        var mapRequestStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseMapRequest = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handler = new AsyncDelegateHandler(async request =>
+        {
+            if (request.RequestUri == new Uri(GeneratedFileUrl))
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("minified") };
+                response.Headers.TryAddWithoutValidation("SourceMap", "app.min.js.map");
+                return response;
+            }
+
+            mapRequestStarted.TrySetResult();
+            await releaseMapRequest.Task;
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(SourceMap) };
+        });
+        using var httpClient = new HttpClient(handler);
+        using var service = CreateService(httpClient);
+        Task<bool> automaticDownload = service.SymbolicateAsync(ProjectId, CreateError(), TestContext.Current.CancellationToken);
+        await mapRequestStarted.Task;
+
+        await using var uploadedStream = new MemoryStream(UpdatedSourceMap);
+        Task<SourceMapArtifact> upload = service.SaveUploadedAsync(
+            ProjectId,
+            GeneratedFileUrl,
+            "app.min.js.map",
+            uploadedStream,
+            TestContext.Current.CancellationToken);
+        releaseMapRequest.TrySetResult();
+
+        Assert.True(await automaticDownload);
+        var uploaded = await upload;
+        Assert.False(uploaded.IsAutoDownloaded);
+        var error = CreateError();
+        Assert.True(await service.SymbolicateAsync(ProjectId, error, TestContext.Current.CancellationToken));
+        Assert.Equal("updatedFunction", Assert.Single(error.StackTrace!).Name);
+        Assert.False(Assert.Single(await service.GetArtifactsAsync(ProjectId, TestContext.Current.CancellationToken)).IsAutoDownloaded);
+    }
+
+    [Fact]
+    public void ReadFromConfiguration_WithUnsafeLimits_NormalizesLimits()
+    {
+        var values = new Dictionary<string, string?>
+        {
+            ["SourceMaps:RequestTimeoutMilliseconds"] = "0",
+            ["SourceMaps:MaximumGeneratedFileSize"] = "0",
+            ["SourceMaps:MaximumSourceMapSize"] = "-1",
+            ["SourceMaps:MaximumMappingSegments"] = "0",
+            ["SourceMaps:MaximumRedirects"] = "-1",
+            ["SourceMaps:MaximumConcurrentDownloads"] = "0",
+            ["SourceMaps:MaximumAutoDownloadsPerProjectPerHour"] = "-1",
+            ["SourceMaps:MaximumFramesPerError"] = "0",
+            ["SourceMaps:MaximumProcessingTimeMilliseconds"] = "0",
+            ["SourceMaps:AutoDownloadRefreshIntervalMinutes"] = "0",
+            ["SourceMaps:ParsedSourceMapCacheLifetimeMinutes"] = "0",
+            ["SourceMaps:MaximumParsedSourceMapCacheSize"] = "0"
+        };
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(values).Build();
+
+        var options = SourceMapOptions.ReadFromConfiguration(configuration);
+
+        Assert.Equal(1, options.RequestTimeoutMilliseconds);
+        Assert.Equal(1, options.MaximumGeneratedFileSize);
+        Assert.Equal(1, options.MaximumSourceMapSize);
+        Assert.Equal(1, options.MaximumMappingSegments);
+        Assert.Equal(0, options.MaximumRedirects);
+        Assert.Equal(1, options.MaximumConcurrentDownloads);
+        Assert.Equal(0, options.MaximumAutoDownloadsPerProjectPerHour);
+        Assert.Equal(1, options.MaximumFramesPerError);
+        Assert.Equal(1, options.MaximumProcessingTimeMilliseconds);
+        Assert.Equal(1, options.AutoDownloadRefreshIntervalMinutes);
+        Assert.Equal(1, options.ParsedSourceMapCacheLifetimeMinutes);
+        Assert.Equal(1, options.MaximumParsedSourceMapCacheSize);
     }
 
     [Fact]
@@ -143,6 +374,19 @@ public sealed class SourceMapServiceTests : TestWithServices
         };
     }
 
+    private SourceMapService CreateService(HttpClient httpClient)
+    {
+        return new SourceMapService(
+            new TestHttpClientFactory(httpClient),
+            GetService<IFileStorage>(),
+            GetService<ICacheClient>(),
+            GetService<ILockProvider>(),
+            GetService<JsonSerializerOptions>(),
+            GetService<AppOptions>(),
+            GetService<TimeProvider>(),
+            GetService<ILogger<SourceMapService>>());
+    }
+
     private sealed class TestHttpClientFactory(HttpClient httpClient) : IHttpClientFactory
     {
         public HttpClient CreateClient(string name) => httpClient;
@@ -153,6 +397,14 @@ public sealed class SourceMapServiceTests : TestWithServices
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             return Task.FromResult(handler(request));
+        }
+    }
+
+    private sealed class AsyncDelegateHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> handler) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            return handler(request);
         }
     }
 }

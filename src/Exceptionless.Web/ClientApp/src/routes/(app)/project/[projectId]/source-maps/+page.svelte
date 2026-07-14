@@ -73,7 +73,12 @@
         }
 
         try {
-            await deleteSourceMap.mutateAsync(sourceMapToDelete.id);
+            const deleted = await deleteSourceMap.mutateAsync(sourceMapToDelete.id);
+            if (!deleted) {
+                toast.error('The source map no longer exists.');
+                return;
+            }
+
             toast.success('Source map deleted.');
             showDeleteDialog = false;
             sourceMapToDelete = undefined;
@@ -179,6 +184,10 @@
                 <Table.Body>
                     {#if sourceMapsQuery.isLoading}
                         <Table.Row><Table.Cell colspan={5} class="h-24 text-center"><Spinner /></Table.Cell></Table.Row>
+                    {:else if sourceMapsQuery.isError}
+                        <Table.Row
+                            ><Table.Cell colspan={5} class="h-24 text-center"><ErrorMessage message="Unable to load source maps." /></Table.Cell></Table.Row
+                        >
                     {:else if !sourceMapsQuery.data?.length}
                         <Table.Row
                             ><Table.Cell colspan={5} class="text-muted-foreground h-24 text-center"

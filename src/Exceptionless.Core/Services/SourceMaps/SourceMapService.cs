@@ -1,30 +1,31 @@
 using System.Collections.Concurrent;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Text;
 using System.Text.Json;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Foundatio.Caching;
+using Foundatio.Lock;
 using Foundatio.Storage;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Services.SourceMaps;
 
-public sealed class SourceMapService
+public sealed class SourceMapService : IDisposable
 {
     public const string HttpClientName = "SourceMaps";
     public const int MaximumUploadRequestSize = 21 * 1024 * 1024;
     private const string SourceMapDataKey = "@source_map";
     private static readonly TimeSpan FailureCacheLifetime = TimeSpan.FromMinutes(15);
     private readonly SemaphoreSlim _downloadSemaphore;
-    private readonly ConcurrentDictionary<string, Lazy<Task<ResolvedSourceMap?>>> _sourceMaps = new(StringComparer.Ordinal);
-    private readonly IHttpClientFactory _httpClientFactory;
-    private readonly IFileStorage _storage;
+    private readonly ConcurrentDictionary<string, Lazy<Task<ResolvedSourceMap?>>> _inflightSourceMaps = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, ResolvedSourceMap> _parsedSourceMapEntries = new(StringComparer.Ordinal);
+    private readonly MemoryCache _parsedSourceMaps;
+    private readonly SourceMapDownloader _downloader;
+    private readonly SourceMapStorage _storage;
     private readonly ICacheClient _cache;
-    private readonly JsonSerializerOptions _serializerOptions;
+    private readonly ILockProvider _lockProvider;
     private readonly SourceMapOptions _options;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<SourceMapService> _logger;
@@ -33,27 +34,34 @@ public sealed class SourceMapService
         IHttpClientFactory httpClientFactory,
         IFileStorage storage,
         ICacheClient cache,
+        ILockProvider lockProvider,
         JsonSerializerOptions serializerOptions,
         AppOptions options,
         TimeProvider timeProvider,
         ILogger<SourceMapService> logger)
     {
-        _httpClientFactory = httpClientFactory;
-        _storage = storage;
+        _downloader = new SourceMapDownloader(httpClientFactory, options);
+        _storage = new SourceMapStorage(storage, serializerOptions, logger);
         _cache = cache;
-        _serializerOptions = serializerOptions;
+        _lockProvider = lockProvider;
         _options = options.SourceMapOptions;
-        _downloadSemaphore = new SemaphoreSlim(Math.Max(1, _options.MaximumConcurrentDownloads));
+        _downloadSemaphore = new SemaphoreSlim(_options.MaximumConcurrentDownloads);
+        _parsedSourceMaps = new MemoryCache(new MemoryCacheOptions { SizeLimit = _options.MaximumParsedSourceMapCacheSize });
         _timeProvider = timeProvider;
         _logger = logger;
     }
 
-    public async Task<SourceMapArtifact> SaveUploadedAsync(string projectId, string generatedFileUrl, string? fileName, Stream stream, CancellationToken cancellationToken = default)
+    public async Task<SourceMapArtifact> SaveUploadedAsync(
+        string projectId,
+        string generatedFileUrl,
+        string? fileName,
+        Stream stream,
+        CancellationToken cancellationToken = default)
     {
         if (!TryNormalizeGeneratedFileUrl(generatedFileUrl, requireHttps: false, out var generatedFileUri))
             throw new ArgumentException("The generated file URL must be an absolute HTTP or HTTPS URL without credentials or a fragment.", nameof(generatedFileUrl));
 
-        byte[] sourceMap = await ReadLimitedAsync(stream, _options.MaximumSourceMapSize, cancellationToken);
+        byte[] sourceMap = await SourceMapContent.ReadLimitedAsync(stream, _options.MaximumSourceMapSize, cancellationToken);
         _ = SourceMapDocument.Parse(sourceMap, _options.MaximumMappingSegments);
 
         string normalizedUrl = generatedFileUri.AbsoluteUri;
@@ -67,57 +75,51 @@ public sealed class SourceMapService
             CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime
         };
 
-        await SaveArtifactAsync(projectId, artifact, sourceMap, cancellationToken);
+        string cacheKey = GetMemoryCacheKey(projectId, normalizedUrl);
+        await WaitForInflightSourceMapAsync(cacheKey, cancellationToken);
+        await using var artifactLock = await _lockProvider.TryAcquireAsync(GetArtifactLockKey(projectId, artifact.Id), TimeSpan.FromSeconds(30), cancellationToken);
+        if (artifactLock is null)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            throw new IOException("Unable to acquire the source map storage lock.");
+        }
+
+        await _storage.SaveAsync(projectId, artifact, sourceMap, cancellationToken);
         await ClearCachesAsync(projectId, normalizedUrl);
         return artifact;
     }
 
-    public async Task<IReadOnlyCollection<SourceMapArtifact>> GetArtifactsAsync(string projectId, CancellationToken cancellationToken = default)
-    {
-        string pattern = $"source-maps/{projectId}/*.json";
-        var files = await _storage.GetFileListAsync(pattern, cancellationToken: cancellationToken);
-        var artifacts = new List<SourceMapArtifact>(files.Count);
-        foreach (var file in files)
-        {
-            try
-            {
-                await using var stream = await _storage.GetFileStreamAsync(file.Path, StreamMode.Read, cancellationToken);
-                if (stream is null)
-                    continue;
-
-                var artifact = await JsonSerializer.DeserializeAsync<SourceMapArtifact>(stream, _serializerOptions, cancellationToken);
-                if (artifact is not null)
-                    artifacts.Add(artifact);
-            }
-            catch (Exception ex) when (ex is JsonException or IOException)
-            {
-                _logger.LogWarning(ex, "Unable to read source map metadata {SourceMapMetadataPath}.", file.Path);
-            }
-        }
-
-        return artifacts.OrderByDescending(artifact => artifact.CreatedUtc).ToArray();
-    }
+    public Task<IReadOnlyCollection<SourceMapArtifact>> GetArtifactsAsync(string projectId, CancellationToken cancellationToken = default)
+        => _storage.GetArtifactsAsync(projectId, cancellationToken);
 
     public async Task<bool> DeleteArtifactAsync(string projectId, string artifactId, CancellationToken cancellationToken = default)
     {
         if (!IsArtifactId(artifactId))
             return false;
 
-        string metadataPath = GetMetadataPath(projectId, artifactId);
-        SourceMapArtifact? artifact = await ReadArtifactMetadataAsync(metadataPath, cancellationToken);
-        bool mapDeleted = await _storage.DeleteFileAsync(GetMapPath(projectId, artifactId), cancellationToken);
-        bool metadataDeleted = await _storage.DeleteFileAsync(metadataPath, cancellationToken);
-        if (artifact is not null)
-            await ClearCachesAsync(projectId, artifact.GeneratedFileUrl);
+        await WaitForInflightArtifactAsync(projectId, artifactId, cancellationToken);
+        await using var artifactLock = await _lockProvider.TryAcquireAsync(GetArtifactLockKey(projectId, artifactId), TimeSpan.FromSeconds(30), cancellationToken);
+        if (artifactLock is null)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return false;
+        }
 
-        return mapDeleted || metadataDeleted;
+        var artifact = await _storage.DeleteAsync(projectId, artifactId, cancellationToken);
+        if (artifact is null)
+            return false;
+
+        await ClearCachesAsync(projectId, artifact.GeneratedFileUrl);
+        return true;
     }
 
     public async Task DeleteAllArtifactsAsync(string projectId, CancellationToken cancellationToken = default)
     {
-        await _storage.DeleteFilesAsync($"source-maps/{projectId}/*", cancellationToken);
-        foreach (string key in _sourceMaps.Keys.Where(key => key.StartsWith(projectId + ':', StringComparison.Ordinal)))
-            _sourceMaps.TryRemove(key, out _);
+        await _storage.DeleteAllAsync(projectId, cancellationToken);
+        foreach (string key in _parsedSourceMapEntries.Keys.Where(key => key.StartsWith(projectId + ':', StringComparison.Ordinal)))
+            _parsedSourceMaps.Remove(key);
+        foreach (string key in _inflightSourceMaps.Keys.Where(key => key.StartsWith(projectId + ':', StringComparison.Ordinal)))
+            _inflightSourceMaps.TryRemove(key, out _);
     }
 
     public async Task<bool> SymbolicateAsync(string projectId, InnerError? error, CancellationToken cancellationToken = default)
@@ -151,6 +153,12 @@ public sealed class SourceMapService
         }
 
         return changed;
+    }
+
+    public void Dispose()
+    {
+        _parsedSourceMaps.Dispose();
+        _downloadSemaphore.Dispose();
     }
 
     private async Task<bool> SymbolicateFrameAsync(string projectId, StackFrame frame, CancellationToken cancellationToken)
@@ -192,23 +200,112 @@ public sealed class SourceMapService
 
     private async Task<ResolvedSourceMap?> GetSourceMapAsync(string projectId, Uri generatedFileUri, CancellationToken cancellationToken)
     {
-        string normalizedUrl = generatedFileUri.AbsoluteUri;
-        string cacheKey = GetMemoryCacheKey(projectId, normalizedUrl);
-        var lazy = _sourceMaps.GetOrAdd(cacheKey, _ => new Lazy<Task<ResolvedSourceMap?>>(
-            () => LoadSourceMapAsync(projectId, generatedFileUri), LazyThreadSafetyMode.ExecutionAndPublication));
+        string cacheKey = GetMemoryCacheKey(projectId, generatedFileUri.AbsoluteUri);
+        if (_parsedSourceMaps.TryGetValue(cacheKey, out ResolvedSourceMap? cached))
+            return cached;
+
+        var lazy = _inflightSourceMaps.GetOrAdd(cacheKey, _ => new Lazy<Task<ResolvedSourceMap?>>(
+            () => LoadAndCacheSourceMapAsync(projectId, generatedFileUri, cacheKey),
+            LazyThreadSafetyMode.ExecutionAndPublication));
+        Task<ResolvedSourceMap?> loadTask = lazy.Value;
 
         try
         {
-            var result = await lazy.Value.WaitAsync(cancellationToken);
-            if (result is null)
-                _sourceMaps.TryRemove(cacheKey, out _);
+            return await loadTask.WaitAsync(cancellationToken);
+        }
+        finally
+        {
+            if (loadTask.IsCompleted)
+                RemoveInflightSourceMap(cacheKey, lazy);
+            else
+                _ = RemoveInflightSourceMapWhenCompleteAsync(cacheKey, lazy, loadTask);
+        }
+    }
 
-            return result;
+    private async Task<ResolvedSourceMap?> LoadAndCacheSourceMapAsync(string projectId, Uri generatedFileUri, string cacheKey)
+    {
+        var resolved = await LoadSourceMapAsync(projectId, generatedFileUri);
+        if (resolved is not null && resolved.Document.EstimatedMemorySize <= _options.MaximumParsedSourceMapCacheSize)
+        {
+            _parsedSourceMapEntries[cacheKey] = resolved;
+            var cacheOptions = new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = _options.ParsedSourceMapCacheLifetime,
+                Size = Math.Max(1, resolved.Document.EstimatedMemorySize)
+            }.RegisterPostEvictionCallback(
+                static (key, _, _, state) =>
+                {
+                    if (key is string evictedCacheKey && state is ParsedSourceMapCacheRegistration registration)
+                        registration.Service.RemoveParsedSourceMapEntry(evictedCacheKey, registration.SourceMap);
+                },
+                new ParsedSourceMapCacheRegistration(this, resolved));
+            _parsedSourceMaps.Set(cacheKey, resolved, cacheOptions);
+        }
+
+        return resolved;
+    }
+
+    private async Task RemoveInflightSourceMapWhenCompleteAsync(
+        string cacheKey,
+        Lazy<Task<ResolvedSourceMap?>> lazy,
+        Task<ResolvedSourceMap?> loadTask)
+    {
+        try
+        {
+            await loadTask;
         }
         catch
         {
-            _sourceMaps.TryRemove(cacheKey, out _);
+            // The caller observes the load failure; this continuation only releases the in-flight entry.
+        }
+
+        RemoveInflightSourceMap(cacheKey, lazy);
+    }
+
+    private void RemoveInflightSourceMap(string cacheKey, Lazy<Task<ResolvedSourceMap?>> lazy)
+    {
+        ICollection<KeyValuePair<string, Lazy<Task<ResolvedSourceMap?>>>> entries = _inflightSourceMaps;
+        entries.Remove(new KeyValuePair<string, Lazy<Task<ResolvedSourceMap?>>>(cacheKey, lazy));
+    }
+
+    private void RemoveParsedSourceMapEntry(string cacheKey, ResolvedSourceMap sourceMap)
+    {
+        ICollection<KeyValuePair<string, ResolvedSourceMap>> entries = _parsedSourceMapEntries;
+        entries.Remove(new KeyValuePair<string, ResolvedSourceMap>(cacheKey, sourceMap));
+    }
+
+    private async Task WaitForInflightSourceMapAsync(string cacheKey, CancellationToken cancellationToken)
+    {
+        if (_inflightSourceMaps.TryGetValue(cacheKey, out var sourceMap))
+            await WaitForInflightSourceMapAsync(sourceMap, cancellationToken);
+    }
+
+    private async Task WaitForInflightArtifactAsync(string projectId, string artifactId, CancellationToken cancellationToken)
+    {
+        string cacheKeyPrefix = projectId + ':';
+        var sourceMaps = _inflightSourceMaps
+            .Where(entry => entry.Key.StartsWith(cacheKeyPrefix, StringComparison.Ordinal)
+                && GetArtifactId(entry.Key[cacheKeyPrefix.Length..]) == artifactId)
+            .Select(entry => entry.Value)
+            .ToArray();
+
+        foreach (var sourceMap in sourceMaps)
+            await WaitForInflightSourceMapAsync(sourceMap, cancellationToken);
+    }
+
+    private static async Task WaitForInflightSourceMapAsync(Lazy<Task<ResolvedSourceMap?>> sourceMap, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await sourceMap.Value.WaitAsync(cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
             throw;
+        }
+        catch
+        {
+            // A failed lookup must not prevent an explicit upload or delete from repairing the artifact.
         }
     }
 
@@ -216,13 +313,10 @@ public sealed class SourceMapService
     {
         string generatedFileUrl = generatedFileUri.AbsoluteUri;
         string artifactId = GetArtifactId(generatedFileUrl);
-        string mapPath = GetMapPath(projectId, artifactId);
-        var artifact = await ReadArtifactMetadataAsync(GetMetadataPath(projectId, artifactId), CancellationToken.None);
-        if (artifact is not null && await _storage.ExistsAsync(mapPath))
-        {
-            byte[] storedSourceMap = await ReadStorageFileAsync(mapPath, _options.MaximumSourceMapSize, CancellationToken.None);
-            return new ResolvedSourceMap(artifact, SourceMapDocument.Parse(storedSourceMap, _options.MaximumMappingSegments));
-        }
+        var stored = await _storage.GetAsync(projectId, artifactId, _options.MaximumSourceMapSize, CancellationToken.None);
+        bool refreshStoredMap = ShouldRefresh(stored, generatedFileUri);
+        if (stored is not null && !refreshStoredMap)
+            return Resolve(stored.Artifact, stored.Content);
 
         if (!_options.EnableAutoDownload || !String.Equals(generatedFileUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
             return null;
@@ -234,14 +328,25 @@ public sealed class SourceMapService
         try
         {
             using var timeoutCancellationTokenSource = new CancellationTokenSource(_options.RequestTimeout);
+            await using var artifactLock = await _lockProvider.TryAcquireAsync(
+                GetArtifactLockKey(projectId, artifactId),
+                TimeSpan.FromSeconds(30),
+                timeoutCancellationTokenSource.Token);
+            if (artifactLock is null)
+                return await CacheFailureAsync(failureCacheKey);
+
+            stored = await _storage.GetAsync(projectId, artifactId, _options.MaximumSourceMapSize, CancellationToken.None);
+            if (stored is not null && !ShouldRefresh(stored, generatedFileUri))
+                return Resolve(stored.Artifact, stored.Content);
+
             if (!await TryReserveAutoDownloadAsync(projectId))
                 return await CacheFailureAsync(failureCacheKey);
 
             await _downloadSemaphore.WaitAsync(timeoutCancellationTokenSource.Token);
-            DownloadedSourceMap? downloaded;
+            SourceMapDownloader.DownloadedSourceMap? downloaded;
             try
             {
-                downloaded = await DownloadSourceMapAsync(generatedFileUri, timeoutCancellationTokenSource.Token);
+                downloaded = await _downloader.DownloadAsync(generatedFileUri, timeoutCancellationTokenSource.Token);
                 if (downloaded is null)
                     return await CacheFailureAsync(failureCacheKey);
             }
@@ -250,7 +355,7 @@ public sealed class SourceMapService
                 _downloadSemaphore.Release();
             }
 
-            var downloadedArtifact = new SourceMapArtifact
+            var artifact = new SourceMapArtifact
             {
                 Id = artifactId,
                 GeneratedFileUrl = generatedFileUrl,
@@ -260,9 +365,9 @@ public sealed class SourceMapService
                 IsAutoDownloaded = true,
                 CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime
             };
-            var document = SourceMapDocument.Parse(downloaded.Content, _options.MaximumMappingSegments);
-            await SaveArtifactAsync(projectId, downloadedArtifact, downloaded.Content, CancellationToken.None);
-            return new ResolvedSourceMap(downloadedArtifact, document);
+            var resolved = Resolve(artifact, downloaded.Content);
+            await _storage.SaveAsync(projectId, artifact, downloaded.Content, CancellationToken.None);
+            return resolved;
         }
         catch (OperationCanceledException ex)
         {
@@ -276,120 +381,19 @@ public sealed class SourceMapService
         }
     }
 
-    private async Task<DownloadedSourceMap?> DownloadSourceMapAsync(Uri generatedFileUri, CancellationToken cancellationToken)
-    {
-        using var generatedResponse = await SendAsync(generatedFileUri, _options.MaximumGeneratedFileSize, request => request.Headers.Range = new RangeHeaderValue(null, 64 * 1024), cancellationToken);
-        if (!generatedResponse.Response.IsSuccessStatusCode)
-            return null;
+    private ResolvedSourceMap Resolve(SourceMapArtifact artifact, byte[] content)
+        => new(artifact, SourceMapDocument.Parse(content, _options.MaximumMappingSegments));
 
-        string? sourceMapReference = GetSourceMapHeader(generatedResponse.Response);
-        if (String.IsNullOrWhiteSpace(sourceMapReference))
-        {
-            byte[] generatedContent = await ReadLimitedAsync(await generatedResponse.Response.Content.ReadAsStreamAsync(cancellationToken), _options.MaximumGeneratedFileSize, cancellationToken);
-            sourceMapReference = FindSourceMapReference(Encoding.UTF8.GetString(generatedContent));
-        }
-
-        if (String.IsNullOrWhiteSpace(sourceMapReference))
-        {
-            var fallbackUriBuilder = new UriBuilder(generatedResponse.Uri) { Path = generatedResponse.Uri.AbsolutePath + ".map" };
-            return await DownloadSourceMapContentAsync(fallbackUriBuilder.Uri, cancellationToken);
-        }
-
-        if (sourceMapReference.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
-            return new DownloadedSourceMap(DecodeDataUri(sourceMapReference, _options.MaximumSourceMapSize), null);
-
-        if (!Uri.TryCreate(generatedResponse.Uri, sourceMapReference, out var sourceMapUri) || !IsAutoDownloadUri(sourceMapUri))
-            return null;
-
-        return await DownloadSourceMapContentAsync(sourceMapUri, cancellationToken);
-    }
-
-    private async Task<DownloadedSourceMap?> DownloadSourceMapContentAsync(Uri sourceMapUri, CancellationToken cancellationToken)
-    {
-        using var result = await SendAsync(sourceMapUri, _options.MaximumSourceMapSize, null, cancellationToken);
-        if (!result.Response.IsSuccessStatusCode)
-            return null;
-
-        byte[] content = await ReadLimitedAsync(await result.Response.Content.ReadAsStreamAsync(cancellationToken), _options.MaximumSourceMapSize, cancellationToken);
-        return new DownloadedSourceMap(content, result.Uri.AbsoluteUri);
-    }
-
-    private async Task<HttpDownloadResult> SendAsync(Uri uri, int maximumBytes, Action<HttpRequestMessage>? configureRequest, CancellationToken cancellationToken)
-    {
-        Uri currentUri = uri;
-        for (int redirectCount = 0; ; redirectCount++)
-        {
-            if (!IsAutoDownloadUri(currentUri))
-                throw new InvalidOperationException("Source map auto-download only supports public HTTPS URLs.");
-
-            using var request = new HttpRequestMessage(HttpMethod.Get, currentUri);
-            request.Headers.AcceptEncoding.ParseAdd("gzip, deflate, br");
-            configureRequest?.Invoke(request);
-
-            var client = _httpClientFactory.CreateClient(HttpClientName);
-            var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            if (response.Content.Headers.ContentLength > maximumBytes)
-            {
-                response.Dispose();
-                throw new InvalidOperationException("The downloaded file exceeded the configured maximum size.");
-            }
-
-            if (!IsRedirect(response.StatusCode))
-                return new HttpDownloadResult(currentUri, response);
-
-            if (redirectCount >= _options.MaximumRedirects || response.Headers.Location is null)
-            {
-                response.Dispose();
-                throw new InvalidOperationException("The source map download exceeded the allowed redirects.");
-            }
-
-            Uri redirectUri = response.Headers.Location.IsAbsoluteUri ? response.Headers.Location : new Uri(currentUri, response.Headers.Location);
-            response.Dispose();
-            currentUri = redirectUri;
-        }
-    }
-
-    private async Task SaveArtifactAsync(string projectId, SourceMapArtifact artifact, byte[] sourceMap, CancellationToken cancellationToken)
-    {
-        string mapPath = GetMapPath(projectId, artifact.Id);
-        string metadataPath = GetMetadataPath(projectId, artifact.Id);
-        await using var mapStream = new MemoryStream(sourceMap, writable: false);
-        if (!await _storage.SaveFileAsync(mapPath, mapStream, cancellationToken))
-            throw new IOException("Unable to save the source map.");
-
-        try
-        {
-            byte[] metadata = JsonSerializer.SerializeToUtf8Bytes(artifact, _serializerOptions);
-            await using var metadataStream = new MemoryStream(metadata, writable: false);
-            if (!await _storage.SaveFileAsync(metadataPath, metadataStream, cancellationToken))
-                throw new IOException("Unable to save the source map metadata.");
-        }
-        catch
-        {
-            await _storage.DeleteFileAsync(mapPath, CancellationToken.None);
-            throw;
-        }
-    }
-
-    private async Task<SourceMapArtifact?> ReadArtifactMetadataAsync(string path, CancellationToken cancellationToken)
-    {
-        if (!await _storage.ExistsAsync(path))
-            return null;
-
-        await using var stream = await _storage.GetFileStreamAsync(path, StreamMode.Read, cancellationToken);
-        return stream is null ? null : await JsonSerializer.DeserializeAsync<SourceMapArtifact>(stream, _serializerOptions, cancellationToken);
-    }
-
-    private async Task<byte[]> ReadStorageFileAsync(string path, int maximumBytes, CancellationToken cancellationToken)
-    {
-        await using var stream = await _storage.GetFileStreamAsync(path, StreamMode.Read, cancellationToken)
-            ?? throw new FileNotFoundException("The source map file was not found.", path);
-        return await ReadLimitedAsync(stream, maximumBytes, cancellationToken);
-    }
+    private bool ShouldRefresh(SourceMapStorage.StoredSourceMap? stored, Uri generatedFileUri)
+        => stored is not null
+            && stored.Artifact.IsAutoDownloaded
+            && _options.EnableAutoDownload
+            && String.Equals(generatedFileUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)
+            && _timeProvider.GetUtcNow().UtcDateTime - stored.Artifact.CreatedUtc >= _options.AutoDownloadRefreshInterval;
 
     private Task ClearCachesAsync(string projectId, string generatedFileUrl)
     {
-        _sourceMaps.TryRemove(GetMemoryCacheKey(projectId, generatedFileUrl), out _);
+        _parsedSourceMaps.Remove(GetMemoryCacheKey(projectId, generatedFileUrl));
         return _cache.RemoveAsync(GetFailureCacheKey(projectId, generatedFileUrl));
     }
 
@@ -426,73 +430,9 @@ public sealed class SourceMapService
         return true;
     }
 
-    private static bool IsAutoDownloadUri(Uri uri) => TryNormalizeGeneratedFileUrl(uri.AbsoluteUri, requireHttps: true, out _);
-
-    private static bool IsRedirect(HttpStatusCode statusCode) => statusCode is HttpStatusCode.MovedPermanently
-        or HttpStatusCode.Redirect
-        or HttpStatusCode.RedirectMethod
-        or HttpStatusCode.TemporaryRedirect
-        or HttpStatusCode.PermanentRedirect;
-
-    private static string? GetSourceMapHeader(HttpResponseMessage response)
-    {
-        if (response.Headers.TryGetValues("SourceMap", out var sourceMapValues))
-            return sourceMapValues.FirstOrDefault();
-        if (response.Headers.TryGetValues("X-SourceMap", out var legacySourceMapValues))
-            return legacySourceMapValues.FirstOrDefault();
-        return null;
-    }
-
-    private static string? FindSourceMapReference(string generatedContent)
-    {
-        const string marker = "sourceMappingURL=";
-        int markerIndex = generatedContent.LastIndexOf(marker, StringComparison.Ordinal);
-        if (markerIndex < 0)
-            return null;
-
-        int start = markerIndex + marker.Length;
-        int end = generatedContent.IndexOfAny(['\r', '\n'], start);
-        string value = generatedContent[start..(end < 0 ? generatedContent.Length : end)].Trim();
-        if (value.EndsWith("*/", StringComparison.Ordinal))
-            value = value[..^2].Trim();
-        return value;
-    }
-
-    private static byte[] DecodeDataUri(string value, int maximumBytes)
-    {
-        int commaIndex = value.IndexOf(',');
-        if (commaIndex < 0)
-            throw new FormatException("The inline source map data URI is invalid.");
-
-        string metadata = value[..commaIndex];
-        string data = value[(commaIndex + 1)..];
-        byte[] decoded = metadata.Contains(";base64", StringComparison.OrdinalIgnoreCase)
-            ? Convert.FromBase64String(data)
-            : Encoding.UTF8.GetBytes(Uri.UnescapeDataString(data));
-        if (decoded.Length > maximumBytes)
-            throw new InvalidOperationException("The inline source map exceeded the configured maximum size.");
-        return decoded;
-    }
-
-    private static async Task<byte[]> ReadLimitedAsync(Stream stream, int maximumBytes, CancellationToken cancellationToken)
-    {
-        var memoryStream = new MemoryStream(Math.Min(maximumBytes, 64 * 1024));
-        byte[] buffer = new byte[81920];
-        int read;
-        while ((read = await stream.ReadAsync(buffer, cancellationToken)) > 0)
-        {
-            if (memoryStream.Length + read > maximumBytes)
-                throw new InvalidOperationException("The file exceeded the configured maximum size.");
-            await memoryStream.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
-        }
-
-        return memoryStream.ToArray();
-    }
-
     private static bool IsArtifactId(string value) => value.Length == 64 && value.All(Uri.IsHexDigit);
     private static string GetArtifactId(string generatedFileUrl) => generatedFileUrl.ToSHA256();
-    private static string GetMapPath(string projectId, string artifactId) => $"source-maps/{projectId}/{artifactId}.map";
-    private static string GetMetadataPath(string projectId, string artifactId) => $"source-maps/{projectId}/{artifactId}.json";
+    private static string GetArtifactLockKey(string projectId, string artifactId) => $"source-maps:artifact:{projectId}:{artifactId}";
     private static string GetMemoryCacheKey(string projectId, string generatedFileUrl) => $"{projectId}:{generatedFileUrl}";
     private static string GetFailureCacheKey(string projectId, string generatedFileUrl) => $"source-maps:failure:{projectId}:{generatedFileUrl.ToSHA256()}";
 
@@ -503,11 +443,6 @@ public sealed class SourceMapService
         return Path.GetFileName(uri.AbsolutePath);
     }
 
-    private sealed record DownloadedSourceMap(byte[] Content, string? SourceMapUrl);
     private sealed record ResolvedSourceMap(SourceMapArtifact Artifact, SourceMapDocument Document);
-
-    private sealed record HttpDownloadResult(Uri Uri, HttpResponseMessage Response) : IDisposable
-    {
-        public void Dispose() => Response.Dispose();
-    }
+    private sealed record ParsedSourceMapCacheRegistration(SourceMapService Service, ResolvedSourceMap SourceMap);
 }

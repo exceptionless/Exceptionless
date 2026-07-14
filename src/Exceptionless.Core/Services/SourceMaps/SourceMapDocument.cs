@@ -9,15 +9,22 @@ public sealed class SourceMapDocument
     private readonly string[] _names;
     private readonly string[] _sources;
 
-    private SourceMapDocument(string? sourceRoot, string[] sources, string[] names, IReadOnlyList<IReadOnlyList<MappingSegment>> lines)
+    private SourceMapDocument(
+        string? sourceRoot,
+        string[] sources,
+        string[] names,
+        IReadOnlyList<IReadOnlyList<MappingSegment>> lines,
+        long estimatedMemorySize)
     {
         SourceRoot = sourceRoot;
         _sources = sources;
         _names = names;
         _lines = lines;
+        EstimatedMemorySize = estimatedMemorySize;
     }
 
     public string? SourceRoot { get; }
+    internal long EstimatedMemorySize { get; }
 
     public static SourceMapDocument Parse(byte[] sourceMap, int maximumSegments = 1_000_000)
     {
@@ -35,7 +42,9 @@ public sealed class SourceMapDocument
         string[] names = root.TryGetProperty("names", out _) ? ReadStringArray(root, "names") : [];
         string? sourceRoot = root.TryGetProperty("sourceRoot", out var sourceRootElement) ? sourceRootElement.GetString() : null;
 
-        return new SourceMapDocument(sourceRoot, sources, names, DecodeMappings(mappings, sources.Length, names.Length, maximumSegments));
+        var lines = DecodeMappings(mappings, sources.Length, names.Length, maximumSegments, out int segmentCount);
+        long estimatedMemorySize = sourceMap.LongLength + (segmentCount * 64L) + (lines.Count * 64L);
+        return new SourceMapDocument(sourceRoot, sources, names, lines, estimatedMemorySize);
     }
 
     public SourceMapLocation? FindOriginalLocation(int generatedLine, int generatedColumn)
@@ -70,7 +79,12 @@ public sealed class SourceMapDocument
             .ToArray();
     }
 
-    private static IReadOnlyList<IReadOnlyList<MappingSegment>> DecodeMappings(string mappings, int sourceCount, int nameCount, int maximumSegments)
+    private static IReadOnlyList<IReadOnlyList<MappingSegment>> DecodeMappings(
+        string mappings,
+        int sourceCount,
+        int nameCount,
+        int maximumSegments,
+        out int segmentCount)
     {
         if (maximumSegments < 1)
             throw new ArgumentOutOfRangeException(nameof(maximumSegments));
@@ -80,7 +94,7 @@ public sealed class SourceMapDocument
         int originalLine = 0;
         int originalColumn = 0;
         int nameIndex = 0;
-        int segmentCount = 0;
+        segmentCount = 0;
 
         foreach (string encodedLine in mappings.Split(';'))
         {
