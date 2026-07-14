@@ -286,6 +286,8 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         await RenewLockAsync(context);
         long removedStacks = await _stackRepository.RemoveAllByOrganizationIdAsync(organization.Id);
 
+        await RemoveOrganizationProjectFilesAsync(organization.Id, context);
+
         await RenewLockAsync(context);
         long removedProjects = await _projectRepository.RemoveAllByOrganizationIdAsync(organization.Id);
 
@@ -315,6 +317,23 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
 
     private Task RemoveOrganizationFilesAsync(Organization organization, JobContext context)
         => RemoveFilesAsync(OrganizationStoragePaths.GetProfileImagesPath(organization.Id), context.CancellationToken);
+
+    private async Task RemoveOrganizationProjectFilesAsync(string organizationId, JobContext context)
+    {
+        var projects = await _projectRepository.GetByOrganizationIdAsync(
+            organizationId,
+            options => options.Include(project => project.Id).SearchAfterPaging().PageLimit(100));
+
+        while (projects.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
+        {
+            foreach (var project in projects.Documents)
+                await _fileStorage.DeleteFilesAsync($"source-maps/{project.Id}/*", context.CancellationToken);
+
+            await RenewLockAsync(context);
+            if (!await projects.NextPageAsync())
+                break;
+        }
+    }
 
     private async Task RemoveFilesAsync(string path, CancellationToken cancellationToken)
     {

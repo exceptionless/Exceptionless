@@ -37,7 +37,10 @@ public sealed class SourceMapDocument
         if (root.TryGetProperty("sections", out _))
             throw new JsonException("Indexed source maps are not supported.");
 
-        string mappings = root.GetProperty("mappings").GetString() ?? throw new JsonException("The source map mappings are required.");
+        if (!root.TryGetProperty("mappings", out var mappingsElement) || mappingsElement.ValueKind != JsonValueKind.String)
+            throw new JsonException("The source map mappings are required.");
+
+        string mappings = mappingsElement.GetString() ?? throw new JsonException("The source map mappings are required.");
         string[] sources = ReadStringArray(root, "sources");
         string[] names = root.TryGetProperty("names", out _) ? ReadStringArray(root, "names") : [];
         string? sourceRoot = root.TryGetProperty("sourceRoot", out var sourceRootElement) ? sourceRootElement.GetString() : null;

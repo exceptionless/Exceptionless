@@ -148,6 +148,9 @@ public class CleanupDataJobTests : IntegrationTestsBase
         string iconPath = OrganizationStoragePaths.GetProfileImagePath(organization.Id, "icon.png");
         using var stream = new MemoryStream([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
         await _fileStorage.SaveFileAsync(iconPath, stream, TestCancellationToken);
+        string sourceMapPath = $"source-maps/{project.Id}/app.map";
+        await using (var sourceMap = new MemoryStream([0x7B, 0x7D]))
+            await _fileStorage.SaveFileAsync(sourceMapPath, sourceMap, TestCancellationToken);
 
         await _job.RunAsync(TestCancellationToken);
 
@@ -156,6 +159,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
         Assert.Null(await _stackRepository.GetByIdAsync(stack.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await _eventRepository.GetByIdAsync(persistentEvent.Id, o => o.IncludeSoftDeletes()));
         Assert.False(await _fileStorage.ExistsAsync(iconPath));
+        Assert.False(await _fileStorage.ExistsAsync(sourceMapPath));
     }
 
     [Fact]

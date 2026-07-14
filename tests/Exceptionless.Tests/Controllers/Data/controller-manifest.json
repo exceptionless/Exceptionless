@@ -2325,7 +2325,7 @@
     "HttpMethod": "POST",
     "Route": "/api/v2/projects/{projectId:objectid}/source-maps",
     "Authorization": [
-      "Authorize(Policy=UserPolicy)"
+      "Authorize(Policy=SourceMapsWritePolicy)"
     ],
     "Consumes": [
       "multipart/form-data"

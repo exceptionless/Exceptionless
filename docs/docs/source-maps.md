@@ -24,6 +24,30 @@ Upload a map when it is private or is not deployed next to the generated JavaScr
 
 Uploading another map for the same generated file URL replaces the previous map. Uploaded and automatically discovered maps appear together on the Source Maps page and can be deleted there.
 
+### Uploading during deployment
+
+For build automation, create a project-scoped token that has only the `source-maps:write` scope. Set `EXCEPTIONLESS_SERVER_URL` to `https://be.exceptionless.io` for the hosted service or to the root URL of your self-hosted installation. Create the token once with a user-scoped token, then store the returned `id` as a protected CI/CD secret:
+
+```shell
+curl --fail-with-body --request POST \
+  "${EXCEPTIONLESS_SERVER_URL}/api/v2/projects/${EXCEPTIONLESS_PROJECT_ID}/tokens" \
+  --header "Authorization: Bearer ${EXCEPTIONLESS_USER_TOKEN}" \
+  --header "Content-Type: application/json" \
+  --data "{\"organization_id\":\"${EXCEPTIONLESS_ORGANIZATION_ID}\",\"project_id\":\"${EXCEPTIONLESS_PROJECT_ID}\",\"scopes\":[\"source-maps:write\"],\"notes\":\"CI source map uploads\"}"
+```
+
+Upload each map after the generated JavaScript has been deployed. The `generated_file_url` must be the exact absolute URL that will appear in stack frames:
+
+```shell
+curl --fail-with-body --request POST \
+  "${EXCEPTIONLESS_SERVER_URL}/api/v2/projects/${EXCEPTIONLESS_PROJECT_ID}/source-maps" \
+  --header "Authorization: Bearer ${EXCEPTIONLESS_SOURCE_MAP_TOKEN}" \
+  --form "generated_file_url=https://cdn.example.com/assets/app.a1b2c3.js" \
+  --form "file=@dist/assets/app.a1b2c3.js.map;type=application/json"
+```
+
+The upload token is accepted only for its assigned project and cannot read events, manage the project, list source maps, or use ordinary user APIs. Do not use a normal client API key for source map uploads because client keys are commonly embedded in distributed applications.
+
 Source maps must use the version 3 flat-map format. Indexed source maps with a `sections` property and authenticated automatic downloads are planned follow-up capabilities; private maps can be uploaded in the meantime.
 
 ## Deployment guidance

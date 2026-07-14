@@ -56,6 +56,16 @@ public sealed class SourceMapDocumentTests
     }
 
     [Fact]
+    public void Parse_MissingMappings_ThrowsJsonException()
+    {
+        byte[] sourceMap = Encoding.UTF8.GetBytes("""{"version":3,"sources":[],"names":[]}""");
+
+        var exception = Assert.Throws<JsonException>(() => SourceMapDocument.Parse(sourceMap));
+
+        Assert.Contains("mappings", exception.Message);
+    }
+
+    [Fact]
     public void Parse_OversizedVlqValue_ThrowsJsonException()
     {
         byte[] sourceMap = Encoding.UTF8.GetBytes("""{"version":3,"sources":[],"names":[],"mappings":"gggggggA"}""");

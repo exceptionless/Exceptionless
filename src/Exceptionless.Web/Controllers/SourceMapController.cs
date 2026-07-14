@@ -2,6 +2,7 @@ using System.Text.Json;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services.SourceMaps;
+using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Utility.OpenApi;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Authorization;
@@ -10,7 +11,6 @@ using Microsoft.AspNetCore.Mvc;
 namespace Exceptionless.Web.Controllers;
 
 [Route(API_PREFIX + "/projects/{projectId:objectid}/source-maps")]
-[Authorize(Policy = AuthorizationRoles.UserPolicy)]
 public sealed class SourceMapController : ExceptionlessApiController
 {
     private readonly IProjectRepository _projectRepository;
@@ -27,6 +27,7 @@ public sealed class SourceMapController : ExceptionlessApiController
     /// Get source maps for a project.
     /// </summary>
     [HttpGet]
+    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public async Task<ActionResult<IReadOnlyCollection<SourceMapArtifact>>> GetAsync(string projectId, CancellationToken cancellationToken = default)
     {
         if (!await CanAccessProjectAsync(projectId))
@@ -43,6 +44,7 @@ public sealed class SourceMapController : ExceptionlessApiController
     /// <param name="file">The source map file.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     [HttpPost]
+    [Authorize(Policy = AuthorizationRoles.SourceMapsWritePolicy)]
     [Consumes("multipart/form-data")]
     [MultipartFileUpload("file", "generated_file_url", FileDescription = "The source map file to upload.")]
     [RequestSizeLimit(SourceMapService.MaximumUploadRequestSize)]
@@ -86,6 +88,7 @@ public sealed class SourceMapController : ExceptionlessApiController
     /// Delete a source map from a project.
     /// </summary>
     [HttpDelete("{sourceMapId}")]
+    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> DeleteAsync(string projectId, string sourceMapId, CancellationToken cancellationToken = default)
     {
@@ -98,6 +101,13 @@ public sealed class SourceMapController : ExceptionlessApiController
     private async Task<bool> CanAccessProjectAsync(string projectId)
     {
         var project = await _projectRepository.GetByIdAsync(projectId, options => options.Cache());
-        return project is not null && CanAccessOrganization(project.OrganizationId);
+        if (project is null || !CanAccessOrganization(project.OrganizationId))
+            return false;
+
+        string? tokenProjectId = Request.GetProjectId();
+        if (User.IsInRole(AuthorizationRoles.SourceMapsWrite) && !User.IsInRole(AuthorizationRoles.User))
+            return String.Equals(tokenProjectId, projectId, StringComparison.Ordinal);
+
+        return String.IsNullOrEmpty(tokenProjectId) || String.Equals(tokenProjectId, projectId, StringComparison.Ordinal);
     }
 }

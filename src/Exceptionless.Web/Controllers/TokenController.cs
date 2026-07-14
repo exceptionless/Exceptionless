@@ -296,6 +296,12 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
         if (value.Scopes.Count == 0)
             value.Scopes.Add(AuthorizationRoles.Client);
 
+        if (value.Scopes.Contains(AuthorizationRoles.SourceMapsWrite) && String.IsNullOrEmpty(value.ProjectId))
+        {
+            ModelState.AddModelError<Token>(m => m.ProjectId, "The source-maps:write scope requires a project-scoped token.");
+            return PermissionResult.DenyWithValidationProblem();
+        }
+
         if (value.Scopes.Contains(AuthorizationRoles.Client) && !hasUserRole)
         {
             ModelState.AddModelError<Token>(m => m.Scopes, "Invalid token scope requested.");

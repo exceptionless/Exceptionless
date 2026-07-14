@@ -92,6 +92,7 @@ public class Startup
             o.AddPolicy(AuthorizationRoles.ProjectsReadPolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.ProjectsRead)));
             o.AddPolicy(AuthorizationRoles.StacksReadPolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.StacksRead)));
             o.AddPolicy(AuthorizationRoles.StacksWritePolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.StacksWrite)));
+            o.AddPolicy(AuthorizationRoles.SourceMapsWritePolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.SourceMapsWrite)));
             o.AddPolicy(AuthorizationRoles.EventsReadPolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.EventsRead)));
         });
 
