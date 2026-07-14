@@ -14,6 +14,9 @@ int oldAppPort = worktreePorts?.OldAppHttps ?? 7121;
 int oldAppLiveReloadPort = worktreePorts?.OldAppLiveReload ?? 35729;
 string oldAppAspNetCoreUrls = String.Concat("http://localhost:", oldAppHttpPort);
 int appPort = worktreePorts?.AppHttps ?? 7131;
+int docsPort = worktreePorts?.DocsHttp ?? 7141;
+const int DefaultApiHttpsPort = 7111;
+string exceptionlessServerUrl = worktreePorts?.ApiHttpsUrl ?? $"https://api-ex.dev.localhost:{DefaultApiHttpsPort}";
 const string SharedEmailConnectionString = "smtp://localhost:1025";
 
 var elastic = builder.AddElasticsearch("Elasticsearch", port: 9200)
@@ -172,14 +175,13 @@ if (!servicesOnly)
         oldApp.WithEnvironment("API_HTTP", worktreePorts.ApiHttpUrl)
             .WithEnvironment("API_HTTPS", worktreePorts.ApiHttpsUrl);
     }
-#pragma warning restore ASPIREBROWSERLOGS001
 
-#pragma warning disable ASPIREBROWSERLOGS001
     var app = builder.AddViteApp("App", "../Exceptionless.Web/ClientApp")
         .WithBrowserLogs()
         .WithReference(api)
         .WithReference(oldApp)
         .RemoveJavaScriptDebuggingAnnotation()
+        .WithEnvironment("PUBLIC_EXCEPTIONLESS_SERVER_URL", exceptionlessServerUrl)
         .WithEnvironment("PORT", appPort.ToString())
         .WithEndpoint("http", e =>
         {
@@ -204,6 +206,24 @@ if (!servicesOnly)
             .WithEnvironment("API_HTTPS", worktreePorts.ApiHttpsUrl)
             .WithEnvironment("OLDAPP_HTTP", worktreePorts.OldAppHttpsUrl)
             .WithEnvironment("OLDAPP_HTTPS", worktreePorts.OldAppHttpsUrl);
+    }
+
+    if (includeDevTools)
+    {
+        builder.AddDenoTask("Docs", "../../docs", "serve")
+            .WithBrowserLogs()
+            .WithHttpEndpoint(port: docsPort, targetPort: docsPort, name: "http", env: "PORT", isProxied: false)
+            .WithEndpoint("http", e =>
+            {
+                e.TargetHost = "localhost";
+                e.UriScheme = "http";
+            })
+            .WithUrlForEndpoint("http", u =>
+            {
+                u.DisplayText = "Open Docs";
+                u.DisplayOrder = 100;
+            })
+            .WithParentRelationship(api);
     }
 #pragma warning restore ASPIREBROWSERLOGS001
 }

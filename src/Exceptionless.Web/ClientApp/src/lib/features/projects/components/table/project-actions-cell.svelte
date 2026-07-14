@@ -57,7 +57,7 @@
         </DropdownMenu.Item>
         <DropdownMenu.Item onclick={() => goto(resolve('/(app)/project/[projectId]/configure', { projectId: project.id }))}>
             <Configure />
-            Download & Configure Client
+            Client Setup
         </DropdownMenu.Item>
         <DropdownMenu.Item onclick={() => (showRemoveProjectDialog = true)} disabled={removeProject.isPending}>
             <X />

@@ -61,6 +61,10 @@ public partial record SavedView : IOwnedByOrganizationWithIdentity, IHaveDates
     [MaxLength(150)]
     public string? PredefinedKey { get; set; }
 
+    /// <summary>Content hash of the predefined configuration last applied to this view.</summary>
+    [MaxLength(64)]
+    public string? PredefinedContentHash { get; set; }
+
     /// <summary>Display name shown in the sidebar and picker.</summary>
     [Required]
     [MaxLength(100)]

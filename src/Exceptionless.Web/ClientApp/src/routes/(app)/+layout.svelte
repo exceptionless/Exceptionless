@@ -10,7 +10,6 @@
     import { getIntercomTokenQuery } from '$features/auth/api.svelte';
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
     import { UpgradeRequiredDialog } from '$features/billing';
-    import { upgradeRequiredDialog } from '$features/billing/upgrade-required.svelte';
     import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
     import { filterUsesPremiumFeatures } from '$features/events/premium-filter';
     import { buildIntercomBootOptions, IntercomShell } from '$features/intercom';
@@ -525,9 +524,7 @@
         {/snippet}
     </IntercomShell>
 
-    {#if upgradeRequiredDialog.open}
-        <UpgradeRequiredDialog />
-    {/if}
+    <UpgradeRequiredDialog />
 {/if}
 
 <Telemetry userId={isAuthenticated ? meQuery.data?.email_address : undefined} userName={isAuthenticated ? meQuery.data?.full_name : undefined} />

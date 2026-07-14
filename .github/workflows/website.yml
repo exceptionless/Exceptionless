@@ -21,6 +21,10 @@ jobs:
     defaults:
       run:
         working-directory: docs
+    env:
+      EXCEPTIONLESS_SITE_API_KEY: ${{ vars.EXCEPTIONLESS_SITE_API_KEY }}
+      EXCEPTIONLESS_SITE_SERVER_URL: ${{ vars.EXCEPTIONLESS_SITE_SERVER_URL }}
+      EXCEPTIONLESS_SITE_VERSION: ${{ github.sha }}
 
     steps:
       - name: Checkout
@@ -29,14 +33,29 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v2
         with:
-          deno-version: lts
+          deno-version: 2.5.7
           cache: true
+
+      - name: Require telemetry configuration for deployment
+        if: github.event_name != 'pull_request'
+        run: |
+          if [ -z "$EXCEPTIONLESS_SITE_API_KEY" ]; then
+            echo "EXCEPTIONLESS_SITE_API_KEY repository variable is required for website deployment." >&2
+            exit 1
+          fi
 
       - name: Check
         run: deno task check
 
       - name: Verify
         run: deno task verify
+
+      - name: Verify configured telemetry bootstrap
+        if: github.event_name == 'pull_request'
+        env:
+          EXCEPTIONLESS_SITE_API_KEY: 00000000000000000000000000000000
+          EXCEPTIONLESS_SITE_SERVER_URL: https://collector.example.invalid
+        run: deno task build && deno task verify:telemetry
 
       - name: Check unused assets
         run: deno run --allow-read scripts/find-unused.ts
