@@ -248,6 +248,9 @@ public class CleanupDataJobTests : IntegrationTestsBase
 
         var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
         var persistentEvent = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
+        string sourceMapPath = $"source-maps/{project.Id}/app.map";
+        await using (var sourceMap = new MemoryStream([0x7B, 0x7D]))
+            await _fileStorage.SaveFileAsync(sourceMapPath, sourceMap, TestCancellationToken);
 
         await _job.RunAsync(TestCancellationToken);
 
@@ -255,6 +258,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
         Assert.Null(await _projectRepository.GetByIdAsync(project.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await _stackRepository.GetByIdAsync(stack.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await _eventRepository.GetByIdAsync(persistentEvent.Id, o => o.IncludeSoftDeletes()));
+        Assert.False(await _fileStorage.ExistsAsync(sourceMapPath));
     }
 
     [Fact]

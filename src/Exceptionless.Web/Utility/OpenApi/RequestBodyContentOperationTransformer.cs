@@ -37,20 +37,7 @@ public class RequestBodyContentOperationTransformer : IOpenApiOperationTransform
                 {
                     ["multipart/form-data"] = new()
                     {
-                        Schema = new OpenApiSchema
-                        {
-                            Type = JsonSchemaType.Object,
-                            Required = new HashSet<string> { multipartFileUploadAttribute.FileParameterName },
-                            Properties = new Dictionary<string, IOpenApiSchema>
-                            {
-                                [multipartFileUploadAttribute.FileParameterName] = new OpenApiSchema
-                                {
-                                    Type = JsonSchemaType.String,
-                                    Format = "binary",
-                                    Description = "The image file to upload."
-                                }
-                            }
-                        }
+                        Schema = CreateMultipartSchema(multipartFileUploadAttribute)
                     }
                 }
             };
@@ -82,6 +69,33 @@ public class RequestBodyContentOperationTransformer : IOpenApiOperationTransform
 
         return Task.CompletedTask;
     }
+
+    private static OpenApiSchema CreateMultipartSchema(MultipartFileUploadAttribute attribute)
+    {
+        var required = new HashSet<string> { attribute.FileParameterName };
+        var properties = new Dictionary<string, IOpenApiSchema>
+        {
+            [attribute.FileParameterName] = new OpenApiSchema
+            {
+                Type = JsonSchemaType.String,
+                Format = "binary",
+                Description = attribute.FileDescription
+            }
+        };
+
+        foreach (string parameterName in attribute.RequiredStringParameterNames)
+        {
+            required.Add(parameterName);
+            properties[parameterName] = new OpenApiSchema { Type = JsonSchemaType.String };
+        }
+
+        return new OpenApiSchema
+        {
+            Type = JsonSchemaType.Object,
+            Required = required,
+            Properties = properties
+        };
+    }
 }
 
 /// <summary>
@@ -99,9 +113,12 @@ public class RequestBodyContentAttribute : Attribute
 public class MultipartFileUploadAttribute : Attribute
 {
     public string FileParameterName { get; }
+    public string FileDescription { get; init; } = "The image file to upload.";
+    public IReadOnlyCollection<string> RequiredStringParameterNames { get; }
 
-    public MultipartFileUploadAttribute(string fileParameterName = "file")
+    public MultipartFileUploadAttribute(string fileParameterName = "file", params string[] requiredStringParameterNames)
     {
         FileParameterName = fileParameterName;
+        RequiredStringParameterNames = requiredStringParameterNames;
     }
 }

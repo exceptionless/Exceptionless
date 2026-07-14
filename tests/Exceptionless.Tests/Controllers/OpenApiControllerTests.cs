@@ -62,6 +62,14 @@ public class OpenApiControllerTests : IntegrationTestsBase
         Assert.True(projectsPost.TryGetProperty("requestBody", out _));
         AssertResponseCodes(projectsPost, "201");
 
+        Assert.True(paths.TryGetProperty("/api/v2/projects/{projectId}/source-maps", out var sourceMapsPath));
+        Assert.True(sourceMapsPath.TryGetProperty("post", out var sourceMapsPost));
+        var sourceMapForm = sourceMapsPost.GetProperty("requestBody").GetProperty("content").GetProperty("multipart/form-data").GetProperty("schema");
+        Assert.True(sourceMapForm.GetProperty("properties").TryGetProperty("generated_file_url", out _));
+        Assert.Contains(sourceMapForm.GetProperty("required").EnumerateArray(), item => item.GetString() == "generated_file_url");
+        AssertResponseCodes(sourceMapsPost, "201");
+        AssertResponseCodes(paths.GetProperty("/api/v2/projects/{projectId}/source-maps/{sourceMapId}").GetProperty("delete"), "204");
+
         Assert.True(paths.TryGetProperty("/api/v2/events/by-ref/{referenceId}/user-description", out var userDescriptionPath));
         Assert.True(userDescriptionPath.TryGetProperty("post", out var userDescriptionPost));
         Assert.True(userDescriptionPost.TryGetProperty("requestBody", out _));

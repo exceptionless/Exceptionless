@@ -2305,6 +2305,53 @@
     "ExcludeFromDescription": false
   },
   {
+    "Controller": "SourceMapController",
+    "Action": "GetAsync",
+    "HttpMethod": "GET",
+    "Route": "/api/v2/projects/{projectId:objectid}/source-maps",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "SourceMapController",
+    "Action": "PostAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/projects/{projectId:objectid}/source-maps",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [
+      "multipart/form-data"
+    ],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "SourceMapController",
+    "Action": "DeleteAsync",
+    "HttpMethod": "DELETE",
+    "Route": "/api/v2/projects/{projectId:objectid}/source-maps/{sourceMapId}",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
     "Controller": "StackController",
     "Action": "GetByProjectAsync",
     "HttpMethod": "GET",

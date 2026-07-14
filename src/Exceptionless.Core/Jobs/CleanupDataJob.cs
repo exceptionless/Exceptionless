@@ -341,6 +341,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         await RenewLockAsync(context);
         long removedStacks = await _stackRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id);
 
+        await _fileStorage.DeleteFilesAsync($"source-maps/{project.Id}/*", context.CancellationToken);
         await _projectRepository.RemoveAsync(project);
         _logger.RemoveProjectComplete(project.Name, project.Id, removedStacks, removedEvents);
     }

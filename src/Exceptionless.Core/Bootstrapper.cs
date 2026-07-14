@@ -25,6 +25,7 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Seed;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Services.SourceMaps;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Validation;
 using Foundatio.Caching;
@@ -193,6 +194,16 @@ public class Bootstrapper
                 AllowAutoRedirect = false,
                 ConnectCallback = ConnectToPublicAddressAsync
             });
+        services.AddHttpClient(SourceMapService.HttpClientName)
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                AllowAutoRedirect = false,
+                AutomaticDecompression = DecompressionMethods.All,
+                ConnectCallback = ConnectToPublicAddressAsync,
+                UseCookies = false,
+                UseProxy = false
+            });
+        services.AddSingleton<SourceMapService>();
         services.AddSingleton<OAuthService>();
         services.AddSingleton<UsageService>();
         services.AddSingleton<SlackService>();
@@ -223,7 +234,7 @@ public class Bootstrapper
             }
         }
 
-        throw new HttpRequestException($"OAuth client metadata host '{context.DnsEndPoint.Host}' did not resolve to a reachable public address.", lastException);
+        throw new HttpRequestException($"Host '{context.DnsEndPoint.Host}' did not resolve to a reachable public address.", lastException);
     }
 
     public static void LogConfiguration(IServiceProvider serviceProvider, AppOptions appOptions, ILogger logger)
