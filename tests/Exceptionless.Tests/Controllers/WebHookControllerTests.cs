@@ -252,7 +252,7 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
         };
 
         // Act
-        var problemDetails = await SendRequestAsAsync<ProblemDetails>(r => r
+        var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r
             .Post()
             .BasicAuthorization(email, password)
             .AppendPath("webhooks")
@@ -263,7 +263,7 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(problemDetails);
         Assert.Equal(StatusCodes.Status400BadRequest, problemDetails.Status);
-        Assert.Equal("Bad Request", problemDetails.Title);
+        Assert.Equal("One or more validation errors occurred.", problemDetails.Title);
     }
 
     [Fact]
