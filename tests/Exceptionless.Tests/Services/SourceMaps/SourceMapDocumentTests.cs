@@ -66,6 +66,16 @@ public sealed class SourceMapDocumentTests
     }
 
     [Fact]
+    public void Parse_OversizedVersion_ThrowsJsonException()
+    {
+        byte[] sourceMap = Encoding.UTF8.GetBytes("""{"version":999999999999,"sources":[],"names":[],"mappings":""}""");
+
+        var exception = Assert.Throws<JsonException>(() => SourceMapDocument.Parse(sourceMap));
+
+        Assert.Contains("version 3", exception.Message);
+    }
+
+    [Fact]
     public void Parse_OversizedVlqValue_ThrowsJsonException()
     {
         byte[] sourceMap = Encoding.UTF8.GetBytes("""{"version":3,"sources":[],"names":[],"mappings":"gggggggA"}""");
@@ -83,5 +93,15 @@ public sealed class SourceMapDocumentTests
         var exception = Assert.Throws<JsonException>(() => SourceMapDocument.Parse(sourceMap, maximumSegments: 1));
 
         Assert.Contains("too many mapping segments", exception.Message);
+    }
+
+    [Fact]
+    public void Parse_TooManyGeneratedLines_ThrowsJsonException()
+    {
+        byte[] sourceMap = Encoding.UTF8.GetBytes("""{"version":3,"sources":[],"names":[],"mappings":";"}""");
+
+        var exception = Assert.Throws<JsonException>(() => SourceMapDocument.Parse(sourceMap, maximumSegments: 1_000_000, maximumLines: 1));
+
+        Assert.Contains("too many generated lines", exception.Message);
     }
 }

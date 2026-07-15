@@ -27,11 +27,17 @@ public sealed class SourceMapDocument
     internal long EstimatedMemorySize { get; }
 
     public static SourceMapDocument Parse(byte[] sourceMap, int maximumSegments = 1_000_000)
+        => Parse(sourceMap, maximumSegments, 100_000);
+
+    internal static SourceMapDocument Parse(byte[] sourceMap, int maximumSegments, int maximumLines)
     {
         using var document = JsonDocument.Parse(sourceMap);
         var root = document.RootElement;
 
-        if (!root.TryGetProperty("version", out var version) || version.GetInt32() != 3)
+        if (!root.TryGetProperty("version", out var versionElement)
+            || versionElement.ValueKind != JsonValueKind.Number
+            || !versionElement.TryGetInt32(out int version)
+            || version != 3)
             throw new JsonException("Only source map version 3 is supported.");
 
         if (root.TryGetProperty("sections", out _))
@@ -45,7 +51,7 @@ public sealed class SourceMapDocument
         string[] names = root.TryGetProperty("names", out _) ? ReadStringArray(root, "names") : [];
         string? sourceRoot = root.TryGetProperty("sourceRoot", out var sourceRootElement) ? sourceRootElement.GetString() : null;
 
-        var lines = DecodeMappings(mappings, sources.Length, names.Length, maximumSegments, out int segmentCount);
+        var lines = DecodeMappings(mappings, sources.Length, names.Length, maximumSegments, maximumLines, out int segmentCount);
         long estimatedMemorySize = sourceMap.LongLength + (segmentCount * 64L) + (lines.Count * 64L);
         return new SourceMapDocument(sourceRoot, sources, names, lines, estimatedMemorySize);
     }
@@ -87,12 +93,22 @@ public sealed class SourceMapDocument
         int sourceCount,
         int nameCount,
         int maximumSegments,
+        int maximumLines,
         out int segmentCount)
     {
         if (maximumSegments < 1)
             throw new ArgumentOutOfRangeException(nameof(maximumSegments));
+        if (maximumLines < 1)
+            throw new ArgumentOutOfRangeException(nameof(maximumLines));
 
-        var lines = new List<IReadOnlyList<MappingSegment>>();
+        int lineCount = 1;
+        foreach (char character in mappings)
+        {
+            if (character == ';' && ++lineCount > maximumLines)
+                throw new JsonException("The source map contains too many generated lines.");
+        }
+
+        var lines = new List<IReadOnlyList<MappingSegment>>(lineCount);
         int sourceIndex = 0;
         int originalLine = 0;
         int originalColumn = 0;

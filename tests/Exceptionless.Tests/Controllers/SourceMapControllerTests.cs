@@ -87,6 +87,19 @@ public sealed class SourceMapControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostAsync_WithOversizedVersion_ReturnsUnprocessableEntity()
+    {
+        using var content = CreateSourceMapContent(Encoding.UTF8.GetBytes("""{"version":999999999999,"sources":[],"names":[],"mappings":""}"""));
+
+        await SendRequestAsync(request => request
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "source-maps")
+            .Content(content)
+            .StatusCodeShouldBeUnprocessableEntity());
+    }
+
+    [Fact]
     public async Task PostAsync_WithProjectSourceMapsWriteToken_CreatesArtifact()
     {
         var token = await CreateSourceMapUploadTokenAsync(SampleDataService.TEST_PROJECT_ID);
