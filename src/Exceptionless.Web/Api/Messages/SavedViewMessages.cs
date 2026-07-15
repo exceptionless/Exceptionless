@@ -12,6 +12,7 @@ public record CreatePredefinedSavedViews(string OrganizationId);
 public record GetPredefinedSavedViews;
 public record ExportOrganizationSavedViews(string OrganizationId);
 public record ReplacePredefinedSavedViews(IReadOnlyCollection<PredefinedSavedViewDefinition> Definitions);
+public record ForceUpdatePredefinedSavedViews;
 public record PromoteToPredefinedSavedView(string Id);
 public record DeletePredefinedSavedView(string Id);
 public record UpdateSavedViewMessage(string Id, Delta<UpdateSavedView> Changes);

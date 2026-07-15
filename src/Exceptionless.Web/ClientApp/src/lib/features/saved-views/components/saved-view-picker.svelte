@@ -86,6 +86,7 @@
     let isRenameDialogOpen = $state(false);
     let isDeleteDialogOpen = $state(false);
     let isColumnDialogOpen = $state(false);
+    let isMenuOpen = $state(false);
     let viewToDelete = $state<null | SavedView>(null);
 
     const organizationId = $derived(organization.current);
@@ -164,6 +165,11 @@
         viewToDelete = savedView;
         await tick();
         isDeleteDialogOpen = true;
+    }
+
+    function handleResetToSaved(): void {
+        isMenuOpen = false;
+        onResetToSaved();
     }
 
     async function handleSave(name: string, slug: string, isPrivate: boolean) {
@@ -269,7 +275,7 @@
     }
 </script>
 
-<DropdownMenu.Root>
+<DropdownMenu.Root bind:open={isMenuOpen}>
     <DropdownMenu.Trigger>
         {#snippet child({ props })}
             <Button {...props} class="relative gap-x-1.5 px-3" size="lg" variant="outline" title="Manage View Settings">
@@ -299,7 +305,7 @@
                     <Pencil class="mr-2 size-4" aria-hidden="true" />
                     Rename
                 </DropdownMenu.Item>
-                <DropdownMenu.Item disabled={!isModified} onclick={onResetToSaved}>
+                <DropdownMenu.Item disabled={!isModified} onclick={handleResetToSaved}>
                     <Undo2 class="mr-2 size-4" aria-hidden="true" />
                     Reset to Saved
                 </DropdownMenu.Item>

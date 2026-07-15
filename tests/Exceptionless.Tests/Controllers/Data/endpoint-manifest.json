@@ -2094,6 +2094,21 @@
     "authenticationSchemes": []
   },
   {
+    "method": "POST",
+    "route": "/api/v2/saved-views/predefined/force-update",
+    "displayName": "HTTP: POST api/v2/saved-views/predefined/force-update",
+    "tags": [
+      "SavedView"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy",
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
     "method": "GET",
     "route": "/api/v2/saved-views/{id:objectid}",
     "displayName": "HTTP: GET api/v2/saved-views/{id:objectid}",
