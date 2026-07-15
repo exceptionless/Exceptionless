@@ -24,6 +24,7 @@ site.ignore(
   "public",
   "README.md",
   "scripts",
+  "serialization-architecture.md",
   "site-migration-plan.md",
   "snapshots",
 )

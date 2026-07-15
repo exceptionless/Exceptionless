@@ -69,16 +69,7 @@ public class AuthHandler(
         {
             user = await userRepository.GetByEmailAddressAsync(email);
         }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (TimeoutException ex)
-        {
-            logger.LogCritical(ex, "Login failed for {EmailAddress}: {Message}", email, ex.Message);
-            return Result.Unauthorized("Login failed.");
-        }
-        catch (InvalidOperationException ex)
+        catch (Exception ex)
         {
             logger.LogCritical(ex, "Login failed for {EmailAddress}: {Message}", email, ex.Message);
             return Result.Unauthorized("Login failed.");

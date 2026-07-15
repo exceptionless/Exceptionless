@@ -3,16 +3,30 @@ using Exceptionless.Web.Api.Messages;
 
 namespace Exceptionless.Web.Api.Handlers;
 
-public class UtilityHandler(
-    PersistentEventQueryValidator eventQueryValidator,
-    StackQueryValidator stackQueryValidator)
+public class UtilityHandler
 {
+    private readonly Func<string, Task<AppQueryValidator.QueryProcessResult>> _validateEventQueryAsync;
+    private readonly Func<string, Task<AppQueryValidator.QueryProcessResult>> _validateStackQueryAsync;
+
+    public UtilityHandler(
+        PersistentEventQueryValidator eventQueryValidator,
+        StackQueryValidator stackQueryValidator)
+        : this(eventQueryValidator.ValidateQueryAsync, stackQueryValidator.ValidateQueryAsync) { }
+
+    internal UtilityHandler(
+        Func<string, Task<AppQueryValidator.QueryProcessResult>> validateEventQueryAsync,
+        Func<string, Task<AppQueryValidator.QueryProcessResult>> validateStackQueryAsync)
+    {
+        _validateEventQueryAsync = validateEventQueryAsync;
+        _validateStackQueryAsync = validateStackQueryAsync;
+    }
+
     public async Task<AppQueryValidator.QueryProcessResult> Handle(ValidateSearchQuery message)
     {
         try
         {
-            var eventResults = await eventQueryValidator.ValidateQueryAsync(message.Query);
-            var stackResults = await stackQueryValidator.ValidateQueryAsync(message.Query);
+            var eventResults = await _validateEventQueryAsync(message.Query);
+            var stackResults = await _validateStackQueryAsync(message.Query);
             return new AppQueryValidator.QueryProcessResult
             {
                 IsValid = eventResults.IsValid || stackResults.IsValid,
@@ -20,15 +34,7 @@ public class UtilityHandler(
                 Message = eventResults.Message ?? stackResults.Message
             };
         }
-        catch (FormatException)
-        {
-            return new AppQueryValidator.QueryProcessResult
-            {
-                IsValid = false,
-                Message = $"Error parsing query: \"{message.Query}\""
-            };
-        }
-        catch (ArgumentException)
+        catch (Exception)
         {
             return new AppQueryValidator.QueryProcessResult
             {
