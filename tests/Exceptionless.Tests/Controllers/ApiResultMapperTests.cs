@@ -2,12 +2,48 @@ using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Controllers;
 using Foundatio.Mediator;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
 
 public sealed class ApiResultMapperTests
 {
+    [Theory]
+    [InlineData(StatusCodes.Status400BadRequest)]
+    [InlineData(StatusCodes.Status401Unauthorized)]
+    [InlineData(StatusCodes.Status403Forbidden)]
+    [InlineData(StatusCodes.Status404NotFound)]
+    [InlineData(StatusCodes.Status409Conflict)]
+    [InlineData(StatusCodes.Status500InternalServerError)]
+    [InlineData(StatusCodes.Status503ServiceUnavailable)]
+    public void MapNonSuccessResult_ReturnsProblemDetailsWithExpectedStatusCode(int expectedStatusCode)
+    {
+        // Arrange
+        var mediatorResult = Result.Error("Failure");
+
+        // Act
+        var result = expectedStatusCode switch
+        {
+            StatusCodes.Status400BadRequest => ApiResultMapper.MapBadRequest(mediatorResult),
+            StatusCodes.Status401Unauthorized => ApiResultMapper.MapUnauthorized(mediatorResult),
+            StatusCodes.Status403Forbidden => ApiResultMapper.MapForbidden(mediatorResult),
+            StatusCodes.Status404NotFound => ApiResultMapper.MapNotFound(mediatorResult),
+            StatusCodes.Status409Conflict => ApiResultMapper.MapConflict(mediatorResult),
+            StatusCodes.Status500InternalServerError => ApiResultMapper.MapError(mediatorResult),
+            StatusCodes.Status503ServiceUnavailable => ApiResultMapper.MapUnavailable(mediatorResult),
+            _ => throw new ArgumentOutOfRangeException(nameof(expectedStatusCode))
+        };
+
+        // Assert
+        var statusCodeResult = Assert.IsAssignableFrom<IStatusCodeHttpResult>(result);
+        var valueResult = Assert.IsAssignableFrom<IValueHttpResult>(result);
+        var problemDetails = Assert.IsType<ProblemDetails>(valueResult.Value);
+
+        Assert.Equal(expectedStatusCode, statusCodeResult.StatusCode);
+        Assert.Equal(expectedStatusCode, problemDetails.Status);
+    }
+
     [Fact]
     public void MapResult_SuccessfulModelActionResults_ReturnsAcceptedWorkInProgressShape()
     {

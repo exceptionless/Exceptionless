@@ -11,7 +11,8 @@ public class ConfigurationResponseEndpointFilter : IEndpointFilter
 
         // In Minimal API filters, the IResult hasn't been executed yet so httpContext.Response.StatusCode
         // is still the default. Inspect the result object's status code directly.
-        if (result is IStatusCodeHttpResult { StatusCode: not (StatusCodes.Status200OK or StatusCodes.Status202Accepted) })
+        if (result is not IStatusCodeHttpResult
+            { StatusCode: StatusCodes.Status200OK or StatusCodes.Status202Accepted })
             return result;
 
         var httpContext = context.HttpContext;

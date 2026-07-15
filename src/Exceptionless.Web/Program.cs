@@ -23,6 +23,7 @@ using HttpIResult = Microsoft.AspNetCore.Http.IResult;
 using Joonasw.AspNetCore.SecurityHeaders;
 using Joonasw.AspNetCore.SecurityHeaders.Csp;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
@@ -232,7 +233,7 @@ public partial class Program
                     _ => StatusCodes.Status500InternalServerError
                 }
             });
-            app.UseStatusCodePages();
+            app.UseStatusCodePages(WriteProblemDetailsStatusCodeResponseAsync);
 
             app.UseHealthChecks("/health", new HealthCheckOptions
             {
@@ -404,6 +405,13 @@ public partial class Program
                     error => error.Value
                 );
         }
+    }
+
+    internal static Task WriteProblemDetailsStatusCodeResponseAsync(StatusCodeContext statusCodeContext)
+    {
+        return TypedResults
+            .Problem(statusCode: statusCodeContext.HttpContext.Response.StatusCode)
+            .ExecuteAsync(statusCodeContext.HttpContext);
     }
 
     private static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath)

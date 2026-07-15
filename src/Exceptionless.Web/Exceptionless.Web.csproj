@@ -57,8 +57,11 @@
     <None Include="$(AngularSpaRoot)**" Exclude="$(AngularSpaRoot)node_modules\**;" />
   </ItemGroup>
 
-  <!-- The built-in XML comment generator duplicates generic Delta<T> entries.
-       Exceptionless applies XML documentation through its OpenAPI transformers instead. -->
+  <!-- Microsoft.AspNetCore.OpenApi 10.0.9 can emit duplicate runtime XML-comment
+       cache entries for generic schemas such as Delta&lt;T&gt;.
+       Official opt-out: https://learn.microsoft.com/aspnet/core/release-notes/aspnetcore-10.0#populate-xml-doc-comments-into-openapi-document
+       Bug/fix: https://github.com/dotnet/aspnetcore/issues/64378 and https://github.com/dotnet/aspnetcore/pull/67118
+       Remove this target after upgrading to 10.0.10+ and verifying the OpenAPI snapshots. -->
   <Target Name="DisableCompileTimeOpenApiXmlGenerator" BeforeTargets="CoreCompile">
     <ItemGroup>
       <Analyzer Remove="$(PkgMicrosoft_AspNetCore_OpenApi)/analyzers/dotnet/cs/Microsoft.AspNetCore.OpenApi.SourceGenerators.dll" />
