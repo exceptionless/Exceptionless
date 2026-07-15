@@ -139,7 +139,6 @@ public static class UserEndpoints
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the user.",
-                ["file"] = "The avatar image file.",
             },
             ResponseDescriptions = new() {
                 ["404"] = "The user could not be found.",

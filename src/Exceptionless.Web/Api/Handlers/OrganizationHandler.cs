@@ -554,7 +554,7 @@ public class OrganizationHandler(
             return Result.NotFound("Organization not found.");
 
         if (!await billingManager.CanAddUserAsync(organization))
-            return Result.Invalid(ValidationError.Create("plan_limit", "Please upgrade your plan to add an additional user."));
+            return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, "Please upgrade your plan to add an additional user."));
 
         var user = await userRepository.GetByEmailAddressAsync(message.Email);
         if (user is not null)
@@ -750,7 +750,7 @@ public class OrganizationHandler(
             return Result.BadRequest("A organization with this name already exists.");
 
         if (!await billingManager.CanAddOrganizationAsync(GetCurrentUser(httpContext)))
-            return Result.Invalid(ValidationError.Create("plan_limit", "Please upgrade your plan to add an additional organization."));
+            return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, "Please upgrade your plan to add an additional organization."));
 
         return null;
     }

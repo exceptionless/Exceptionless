@@ -127,9 +127,9 @@ public class UserHandler(
         if (organization is null)
             return Result.NotFound("User not found.");
 
-        int page = GetPage(message.Page);
-        int limit = GetLimit(message.Limit);
-        int skip = GetSkip(page, limit);
+        int page = Pagination.GetPage(message.Page);
+        int limit = Pagination.GetLimit(message.Limit);
+        int skip = Pagination.GetSkip(page, limit);
         if (skip > 1000)
             return new PagedResult<ViewUser>(Array.Empty<ViewUser>(), false, page, 0);
 
@@ -150,7 +150,7 @@ public class UserHandler(
 
         long total = results.Total + organization.Invites.Count;
         var pagedUsers = users.Skip(skip).Take(limit).ToList();
-        return new PagedResult<ViewUser>(pagedUsers, total > GetSkip(page + 1, limit), page, total);
+        return new PagedResult<ViewUser>(pagedUsers, total > Pagination.GetSkip(page + 1, limit), page, total);
     }
 
     public async Task<Result<object>> Handle(UpdateUserMessage message)
@@ -226,7 +226,7 @@ public class UserHandler(
         string updateEmailAddressAttemptsCacheKey = $"{currentUser.Id}:attempts";
         long attempts = await _cache.IncrementAsync(updateEmailAddressAttemptsCacheKey, 1, timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromHours(1)));
         if (attempts > 3)
-            return Result.Invalid(ValidationError.Create("rate_limit", "Unable to update email address. Please try later."));
+            return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.RateLimit, "Unable to update email address. Please try later."));
 
         if (!await IsEmailAddressAvailableInternalAsync(email))
             return Result.Invalid(ValidationError.Create("email_address", "A user already exists with this email address."));
@@ -557,7 +557,4 @@ public class UserHandler(
         return Result.Forbidden(permission.Message ?? "Access denied.");
     }
 
-    private static int GetPage(int page) => page < 1 ? 1 : page;
-    private static int GetLimit(int limit) => limit < 1 ? 10 : limit > 100 ? 100 : limit;
-    private static int GetSkip(int currentPage, int limit) => (currentPage < 1 ? 0 : (currentPage - 1)) * limit;
 }

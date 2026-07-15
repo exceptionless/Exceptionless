@@ -14,7 +14,7 @@ public sealed class ProblemDetailsStatusCodePageTests
     [InlineData(StatusCodes.Status404NotFound, "text/plain")]
     [InlineData(StatusCodes.Status415UnsupportedMediaType, null)]
     [InlineData(StatusCodes.Status500InternalServerError, null)]
-    public async Task WriteProblemDetailsStatusCodeResponseAsync_PreservesStatusAndWritesProblemDetails(int statusCode, string? acceptHeader)
+    public async Task WriteProblemDetailsStatusCodeResponseAsync_WithErrorStatus_PreservesStatusAndWritesProblemDetails(int statusCode, string? acceptHeader)
     {
         var services = new ServiceCollection();
         services.AddLogging();

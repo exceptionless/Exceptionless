@@ -7,6 +7,14 @@ using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Exceptionless.Web.Api.Results;
 
+public static class ApiValidationErrorIdentifiers
+{
+    public const string PlanLimit = "plan_limit";
+    public const string NotImplemented = "not_implemented";
+    public const string RateLimit = "rate_limit";
+    public const string RequestEntityTooLarge = "request_entity_too_large";
+}
+
 /// <summary>
 /// Maps Foundatio.Mediator Result types to ASP.NET Core IResult HTTP responses.
 /// Registered before AddMediator() to customize how Result statuses become HTTP responses.
@@ -95,19 +103,19 @@ public sealed class ApiResultMapper : IMediatorResultMapper<IResult>
             return HttpResults.Problem(
                 statusCode: StatusCodes.Status422UnprocessableEntity, title: title);
 
-        var planLimitError = errors.FirstOrDefault(error => String.Equals(error.Identifier, "plan_limit", StringComparison.OrdinalIgnoreCase));
+        var planLimitError = errors.FirstOrDefault(error => String.Equals(error.Identifier, ApiValidationErrorIdentifiers.PlanLimit, StringComparison.OrdinalIgnoreCase));
         if (planLimitError is not null)
             return HttpResults.Problem(statusCode: StatusCodes.Status426UpgradeRequired, title: planLimitError.ErrorMessage);
 
-        var notImplementedError = errors.FirstOrDefault(error => String.Equals(error.Identifier, "not_implemented", StringComparison.OrdinalIgnoreCase));
+        var notImplementedError = errors.FirstOrDefault(error => String.Equals(error.Identifier, ApiValidationErrorIdentifiers.NotImplemented, StringComparison.OrdinalIgnoreCase));
         if (notImplementedError is not null)
             return HttpResults.Problem(statusCode: StatusCodes.Status501NotImplemented, title: notImplementedError.ErrorMessage);
 
-        var rateLimitError = errors.FirstOrDefault(error => String.Equals(error.Identifier, "rate_limit", StringComparison.OrdinalIgnoreCase));
+        var rateLimitError = errors.FirstOrDefault(error => String.Equals(error.Identifier, ApiValidationErrorIdentifiers.RateLimit, StringComparison.OrdinalIgnoreCase));
         if (rateLimitError is not null)
             return HttpResults.Problem(statusCode: StatusCodes.Status429TooManyRequests, title: rateLimitError.ErrorMessage);
 
-        var requestEntityTooLargeError = errors.FirstOrDefault(error => String.Equals(error.Identifier, "request_entity_too_large", StringComparison.OrdinalIgnoreCase));
+        var requestEntityTooLargeError = errors.FirstOrDefault(error => String.Equals(error.Identifier, ApiValidationErrorIdentifiers.RequestEntityTooLarge, StringComparison.OrdinalIgnoreCase));
         if (requestEntityTooLargeError is not null)
             return HttpResults.Problem(statusCode: StatusCodes.Status413RequestEntityTooLarge, title: requestEntityTooLargeError.ErrorMessage);
 

@@ -168,6 +168,60 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostAsync_WithUnauthorizedOrganization_ReturnsBadRequestProblemDetails()
+    {
+        // Arrange
+        var newWebHook = new NewWebHook
+        {
+            EventTypes = [WebHook.KnownEventTypes.StackPromoted],
+            OrganizationId = SampleDataService.FREE_ORG_ID,
+            ProjectId = SampleDataService.TEST_PROJECT_ID,
+            Url = "https://localhost/test"
+        };
+
+        // Act
+        var problemDetails = await SendRequestAsAsync<ProblemDetails>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath("webhooks")
+            .Content(newWebHook)
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        // Assert
+        Assert.NotNull(problemDetails);
+        Assert.Equal(StatusCodes.Status400BadRequest, problemDetails.Status);
+        Assert.Equal("Invalid organization id specified.", problemDetails.Title);
+    }
+
+    [Fact]
+    public async Task PostAsync_WithUnauthorizedProject_ReturnsBadRequestProblemDetails()
+    {
+        // Arrange
+        var newWebHook = new NewWebHook
+        {
+            EventTypes = [WebHook.KnownEventTypes.StackPromoted],
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            ProjectId = SampleDataService.FREE_PROJECT_ID,
+            Url = "https://localhost/test"
+        };
+
+        // Act
+        var problemDetails = await SendRequestAsAsync<ProblemDetails>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath("webhooks")
+            .Content(newWebHook)
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        // Assert
+        Assert.NotNull(problemDetails);
+        Assert.Equal(StatusCodes.Status400BadRequest, problemDetails.Status);
+        Assert.Equal("Invalid project id specified.", problemDetails.Title);
+    }
+
+    [Fact]
     public async Task CreateNewWebHookWithInvalidEventTypeFails()
     {
         var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r

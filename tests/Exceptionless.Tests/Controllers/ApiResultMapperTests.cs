@@ -17,7 +17,7 @@ public sealed class ApiResultMapperTests
     [InlineData(StatusCodes.Status409Conflict)]
     [InlineData(StatusCodes.Status500InternalServerError)]
     [InlineData(StatusCodes.Status503ServiceUnavailable)]
-    public void MapNonSuccessResult_ReturnsProblemDetailsWithExpectedStatusCode(int expectedStatusCode)
+    public void MapNonSuccessResult_WithMappedFailure_ReturnsProblemDetailsWithExpectedStatusCode(int expectedStatusCode)
     {
         // Arrange
         var mediatorResult = Result.Error("Failure");
@@ -91,5 +91,27 @@ public sealed class ApiResultMapperTests
         Assert.Equal(2, organizationErrors.Length);
         Assert.Contains("Invalid organization.", organizationErrors);
         Assert.Contains("Organization is unavailable.", organizationErrors);
+    }
+
+    [Theory]
+    [InlineData(ApiValidationErrorIdentifiers.PlanLimit, StatusCodes.Status426UpgradeRequired)]
+    [InlineData(ApiValidationErrorIdentifiers.NotImplemented, StatusCodes.Status501NotImplemented)]
+    [InlineData(ApiValidationErrorIdentifiers.RateLimit, StatusCodes.Status429TooManyRequests)]
+    [InlineData(ApiValidationErrorIdentifiers.RequestEntityTooLarge, StatusCodes.Status413RequestEntityTooLarge)]
+    public void MapValidation_WithSpecialIdentifier_ReturnsExpectedProblemDetailsStatusCode(string identifier, int expectedStatusCode)
+    {
+        // Arrange
+        var mediatorResult = Result.Invalid(ValidationError.Create(identifier, "Failure"));
+
+        // Act
+        var result = ApiResultMapper.MapValidation(mediatorResult);
+
+        // Assert
+        var statusCodeResult = Assert.IsAssignableFrom<IStatusCodeHttpResult>(result);
+        var valueResult = Assert.IsAssignableFrom<IValueHttpResult>(result);
+        var problemDetails = Assert.IsType<ProblemDetails>(valueResult.Value);
+
+        Assert.Equal(expectedStatusCode, statusCodeResult.StatusCode);
+        Assert.Equal(expectedStatusCode, problemDetails.Status);
     }
 }
