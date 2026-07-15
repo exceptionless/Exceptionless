@@ -1,11 +1,12 @@
 <script lang="ts">
     import type { SourceMapArtifact } from '$features/projects/models';
 
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
     import Bytes from '$comp/formatters/bytes.svelte';
     import DateTime from '$comp/formatters/date-time.svelte';
-    import { H4, Muted } from '$comp/typography';
+    import { A, H4, Muted } from '$comp/typography';
     import * as AlertDialog from '$comp/ui/alert-dialog';
     import { Badge } from '$comp/ui/badge';
     import { Button, buttonVariants } from '$comp/ui/button';
@@ -104,6 +105,10 @@
 
     <section class="space-y-4">
         <H4>Upload Source Map</H4>
+        <Muted>
+            Automating uploads from CI/CD? Create a project-scoped
+            <A href={resolve('/(app)/project/[projectId]/api-keys', { projectId })}>source map upload token</A> and use it with the source map API.
+        </Muted>
         <form
             class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.5fr)_auto] lg:items-end"
             onsubmit={(event) => {
