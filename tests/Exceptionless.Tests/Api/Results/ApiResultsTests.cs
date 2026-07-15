@@ -1,15 +1,14 @@
 using Exceptionless.Web.Api.Results;
-using Exceptionless.Web.Utility.Results;
 using Xunit;
 
-namespace Exceptionless.Tests.Miscellaneous;
+namespace Exceptionless.Tests.Api.Results;
 
-public class EfficientPagingTests : TestWithServices
+public sealed class ApiResultsTests : TestWithServices
 {
-    public EfficientPagingTests(ITestOutputHelper output) : base(output) { }
+    public ApiResultsTests(ITestOutputHelper output) : base(output) { }
 
     [Fact]
-    public void GetBeforeAndAfterLinks_ApiResultsWithoutMoreResults_OmitsNextLink()
+    public void GetBeforeAndAfterLinks_WithoutMoreResults_OmitsNextLink()
     {
         // Arrange
         var url = new Uri("http://localhost?after=1");
@@ -18,17 +17,20 @@ public class EfficientPagingTests : TestWithServices
         var links = ApiResults.GetBeforeAndAfterLinks(url, "1", "2", false);
 
         // Assert
+        foreach (string link in links)
+            _logger.LogInformation("API result link: {Link}", link);
+
         Assert.Single(links);
-        Assert.Contains(links, l => l.Contains("previous") && l.Contains("before"));
-        Assert.DoesNotContain(links, l => l.Contains("next"));
+        Assert.Contains(links, link => link.Contains("previous") && link.Contains("before"));
+        Assert.DoesNotContain(links, link => link.Contains("next"));
     }
 
     [Theory]
-    [InlineData("http://localhost", null, null, false, false)]
-    [InlineData("http://localhost?after=1", "1", null, true, false)]
-    [InlineData("http://localhost?after=1", "1", "2", true, true)]
-    [InlineData("http://localhost?before=11", null, "1", false, true)]
-    public void GetBeforeAndAfterLinks_WithCursorTokens_ReturnsExpectedDirectionalLinks(string url, string? before, string? after, bool expectPrevious, bool expectNext)
+    [InlineData("http://localhost", null, null, true, false, false)]
+    [InlineData("http://localhost?after=1", "1", null, true, true, false)]
+    [InlineData("http://localhost?after=1", "1", "2", true, true, true)]
+    [InlineData("http://localhost?before=11", null, "1", true, false, true)]
+    public void GetBeforeAndAfterLinks_WithCursorTokens_ReturnsExpectedDirectionalLinks(string url, string? before, string? after, bool hasMore, bool expectPrevious, bool expectNext)
     {
         // Arrange
         byte expectedLinkCount = 0;
@@ -38,32 +40,17 @@ public class EfficientPagingTests : TestWithServices
             expectedLinkCount++;
 
         // Act
-        var links = OkWithResourceLinks<string>.GetBeforeAndAfterLinks(new Uri(url), before, after, true);
+        var links = ApiResults.GetBeforeAndAfterLinks(new Uri(url), before, after, hasMore);
 
         // Assert
         foreach (string link in links)
-            _logger.LogInformation(link);
+            _logger.LogInformation("API result link: {Link}", link);
 
         Assert.Equal(expectedLinkCount, links.Count);
         if (expectPrevious)
             Assert.Contains(links, l => l.Contains("previous") && l.Contains("before"));
         if (expectNext)
             Assert.Contains(links, l => l.Contains("next") && l.Contains("after"));
-    }
-
-    [Fact]
-    public void GetBeforeAndAfterLinks_WithoutMoreResults_DoesNotIncludeNextLink()
-    {
-        // Arrange
-        var url = new Uri("http://localhost?after=1");
-
-        // Act
-        var links = OkWithResourceLinks<string>.GetBeforeAndAfterLinks(url, "1", "2", false);
-
-        // Assert
-        Assert.Single(links);
-        Assert.Contains(links, l => l.Contains("previous") && l.Contains("before"));
-        Assert.DoesNotContain(links, l => l.Contains("next"));
     }
 
     [Theory]
@@ -81,11 +68,11 @@ public class EfficientPagingTests : TestWithServices
             expectedLinkCount++;
 
         // Act
-        var links = OkWithResourceLinks<string>.GetPagedLinks(new Uri(url), pageNumber, hasMore);
+        var links = ApiResults.GetPagedLinks(new Uri(url), pageNumber, hasMore);
 
         // Assert
         foreach (string link in links)
-            _logger.LogInformation(link);
+            _logger.LogInformation("API result link: {Link}", link);
 
         Assert.Equal(expectedLinkCount, links.Count);
         if (expectPrevious)
@@ -93,5 +80,4 @@ public class EfficientPagingTests : TestWithServices
         if (expectNext)
             Assert.Contains(links, l => l.Contains("next") && l.Contains("page"));
     }
-
 }
