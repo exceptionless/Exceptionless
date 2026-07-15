@@ -341,6 +341,8 @@ public sealed class UserControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.Equal("image/png", response.Content.Headers.ContentType?.MediaType);
+        Assert.True(response.Headers.CacheControl?.Public);
+        Assert.Equal(TimeSpan.FromDays(365), response.Headers.CacheControl?.MaxAge);
     }
 
     [Fact]
@@ -407,6 +409,27 @@ public sealed class UserControllerTests : IntegrationTestsBase
         Assert.NotNull(user);
         Assert.Equal(SampleDataService.TEST_ORG_USER_EMAIL, user.EmailAddress);
         Assert.True(user.IsActive);
+    }
+
+    [Fact]
+    public async Task GetCurrentUserAsync_WithAvatar_ReturnsRoutableAvatarUrl()
+    {
+        // Arrange
+        var currentUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(currentUser);
+        currentUser.AvatarFileName = "avatar.png";
+        await _userRepository.SaveAsync(currentUser, o => o.ImmediateConsistency().Cache());
+
+        // Act
+        var user = await SendRequestAsAsync<ViewUser>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(user);
+        Assert.Equal($"/api/v2/users/{currentUser.Id}/avatar/avatar.png", user.AvatarUrl);
     }
 
     [Fact]
@@ -610,6 +633,26 @@ public sealed class UserControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task UploadAvatarAsync_NonExistentUser_ReturnsNotFoundBeforeFileValidation()
+    {
+        // Arrange
+        using var content = new MultipartFormDataContent();
+        content.Add(new StringContent("ignored"), "description");
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("users", "000000000000000000000000", "avatar")
+            .Content(content)
+            .StatusCodeShouldBeNotFound()
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
     public async Task PatchAsync_AnonymousUser_ReturnsUnauthorized()
     {
         // Arrange
@@ -780,6 +823,31 @@ public sealed class UserControllerTests : IntegrationTestsBase
             .Content(SampleDataService.TEST_USER_EMAIL, "text/plain")
             .StatusCodeShouldBeForbidden()
         );
+    }
+
+    [Fact]
+    public async Task UnverifyEmailAddressAsync_NonTextBody_ReturnsUnsupportedMediaType()
+    {
+        // Arrange
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        user.MarkEmailAddressVerified();
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency());
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("users/unverify-email-address")
+            .Content($"\"{SampleDataService.TEST_USER_EMAIL}\"", "application/json")
+            .ExpectedStatus(HttpStatusCode.UnsupportedMediaType)
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.UnsupportedMediaType, response.StatusCode);
+        var unchangedUser = await _userRepository.GetByIdAsync(user.Id);
+        Assert.NotNull(unchangedUser);
+        Assert.True(unchangedUser.IsEmailAddressVerified);
     }
 
     [Fact]

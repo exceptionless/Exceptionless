@@ -31,10 +31,38 @@ public sealed class ContactControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostFormAsync_WithValidRequest_ReturnsAcceptedAndSendsContactRequest()
+    {
+        // Arrange
+        using var client = CreateHttpClient();
+        using var content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["Name"] = "Form User",
+            ["EmailAddress"] = "form-user@example.com",
+            ["Company"] = "Form Company",
+            ["Subject"] = "Form question",
+            ["Message"] = "This is a valid form contact request."
+        });
+
+        // Act
+        var response = await client.PostAsync("contact", content, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        var call = Assert.Single(Mailer.ContactRequests);
+        Assert.Equal("Form User", call.Name);
+        Assert.Equal("form-user@example.com", call.EmailAddress);
+        Assert.Equal("Form Company", call.Company);
+        Assert.Equal("Form question", call.Subject);
+    }
+
+    [Fact]
     public async Task PostJsonAsync_WithValidRequest_ReturnsAcceptedAndSendsContactRequest()
     {
+        // Arrange
         using var client = CreateHttpClient();
 
+        // Act
         var response = await client.PostAsJsonAsync("contact", new ContactRequest
         {
             Name = "Ada Lovelace",
@@ -44,6 +72,7 @@ public sealed class ContactControllerTests : IntegrationTestsBase
             Message = "Can you help us understand self hosted deployment options?"
         }, JsonOptions, TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         var call = Assert.Single(Mailer.ContactRequests);
         Assert.Equal("Ada Lovelace", call.Name);
@@ -55,8 +84,10 @@ public sealed class ContactControllerTests : IntegrationTestsBase
     [Fact]
     public async Task PostJsonAsync_WithHoneypot_ReturnsAcceptedWithoutSendingContactRequest()
     {
+        // Arrange
         using var client = CreateHttpClient();
 
+        // Act
         var response = await client.PostAsJsonAsync("contact", new ContactRequest
         {
             Name = "Spam Bot",
@@ -65,6 +96,7 @@ public sealed class ContactControllerTests : IntegrationTestsBase
             Website = "https://spam.example"
         }, JsonOptions, TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         Assert.Empty(Mailer.ContactRequests);
     }
@@ -72,8 +104,10 @@ public sealed class ContactControllerTests : IntegrationTestsBase
     [Fact]
     public async Task PostJsonAsync_WithInvalidEmailAddress_ReturnsUnprocessableEntity()
     {
+        // Arrange
         using var client = CreateHttpClient();
 
+        // Act
         var response = await client.PostAsJsonAsync("contact", new ContactRequest
         {
             Name = "Ada Lovelace",
@@ -81,6 +115,7 @@ public sealed class ContactControllerTests : IntegrationTestsBase
             Message = "This message has enough characters."
         }, JsonOptions, TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
         Assert.Empty(Mailer.ContactRequests);
     }
@@ -88,8 +123,10 @@ public sealed class ContactControllerTests : IntegrationTestsBase
     [Fact]
     public async Task PostJsonAsync_WithTooManyRequests_ReturnsTooManyRequests()
     {
+        // Arrange
         using var client = CreateHttpClient();
 
+        // Act
         for (int i = 0; i < 3; i++)
         {
             var allowedResponse = await client.PostAsJsonAsync("contact", CreateValidRequest(i), JsonOptions, TestContext.Current.CancellationToken);
@@ -98,6 +135,7 @@ public sealed class ContactControllerTests : IntegrationTestsBase
 
         var limitedResponse = await client.PostAsJsonAsync("contact", CreateValidRequest(4), JsonOptions, TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(HttpStatusCode.TooManyRequests, limitedResponse.StatusCode);
         Assert.Equal(3, Mailer.ContactRequests.Count);
     }

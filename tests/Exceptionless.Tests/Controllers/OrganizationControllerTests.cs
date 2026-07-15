@@ -1,3 +1,4 @@
+using System.Net;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -183,6 +184,8 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.Equal("image/png", response.Content.Headers.ContentType?.MediaType);
+        Assert.True(response.Headers.CacheControl?.Public);
+        Assert.Equal(TimeSpan.FromDays(365), response.Headers.CacheControl?.MaxAge);
     }
 
     [Fact]
@@ -214,6 +217,22 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .QueryString("name", name)
             .StatusCodeShouldBeNoContent()
         );
+    }
+
+    [Fact]
+    public async Task IsNameAvailableAsync_WithOmittedName_ReturnsCreated()
+    {
+        // Arrange
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", "check-name")
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }
 
     [Fact]
@@ -358,6 +377,26 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostAsync_NewOrganization_ReturnsAbsoluteLocation()
+    {
+        // Arrange
+        var organization = new NewOrganization { Name = "Absolute Location Organization" };
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPath("organizations")
+            .Content(organization)
+            .StatusCodeShouldBeCreated());
+
+        // Assert
+        Assert.NotNull(response.Headers.Location);
+        Assert.True(response.Headers.Location.IsAbsoluteUri);
+        Assert.Equal("localhost", response.Headers.Location.Host);
+    }
+
+    [Fact]
     public async Task GetAsync_ExistingOrganization_MapsToViewOrganization()
     {
         // Act
@@ -416,6 +455,24 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         Assert.NotNull(storedOrganization);
         Assert.Equal(organization.IconUrl?.Split('/').Last(), storedOrganization.IconFileName);
         Assert.DoesNotContain("/", storedOrganization.IconFileName!);
+    }
+
+    [Fact]
+    public async Task UploadIconAsync_NonExistentOrganizationWithoutFile_ReturnsNotFound()
+    {
+        // Arrange
+        using var content = new MultipartFormDataContent();
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("organizations", "000000000000000000000000", "icon")
+            .Content(content)
+            .ExpectedStatus(HttpStatusCode.NotFound));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
@@ -746,6 +803,45 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .AppendPaths("organizations", viewOrg.Id)
             .StatusCodeShouldBeNotFound()
         );
+    }
+
+    [Fact]
+    public async Task DeleteAsync_OrganizationWithProjects_ReturnsBadRequest()
+    {
+        // Arrange
+        const string organizationId = SampleDataService.TEST_ORG_ID;
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Delete()
+            .AppendPaths("organizations", organizationId)
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SuspendAsync_WithUnsupportedContentType_ReturnsUnsupportedMediaType()
+    {
+        // Arrange
+        const string payload = "not json";
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "suspend")
+            .Content(payload, "text/plain")
+            .ExpectedStatus(HttpStatusCode.UnsupportedMediaType));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.UnsupportedMediaType, response.StatusCode);
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        Assert.False(organization.IsSuspended);
     }
 
     [Fact]
@@ -1418,6 +1514,34 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ChangePlanAsync_StripeException_ReturnsFailureWithSupportMessage()
+    {
+        // Arrange
+        StripeBillingClient.CreateCustomerException = new StripeException("Stripe unavailable");
+
+        // Act
+        var result = await WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<ChangePlanResult>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest
+                {
+                    PlanId = _plans.SmallPlan.Id,
+                    StripeToken = "tok_visa",
+                    Last4 = "4242"
+                })
+                .StatusCodeShouldBeOk()
+            ));
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.False(result.Success);
+        Assert.Equal("An error occurred while changing plans. Please try again or contact support.", result.Message);
+        Assert.Empty(StripeBillingClient.CreatedSubscriptionOptions);
+    }
+
+    [Fact]
     public async Task ChangePlanAsync_NewCustomerSubscriptionFails_PreservesStripeCustomerForRetry()
     {
         // Arrange
@@ -1633,6 +1757,24 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
                 .AppendPaths("organizations", "invoice", "abc1234567")
                 .StatusCodeShouldBeNotFound()
             ));
+    }
+
+    [Fact]
+    public async Task GetInvoiceAsync_StripeException_ReturnsNotFound()
+    {
+        // Arrange
+        StripeBillingClient.GetInvoiceException = new StripeException("Stripe unavailable");
+
+        // Act
+        using var response = await WithBillingEnabledAsync(() =>
+            SendRequestAsync(r => r
+                .AsTestOrganizationUser()
+                .AppendPaths("organizations", "invoice", "abc1234567")
+                .StatusCodeShouldBeNotFound()
+            ));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]

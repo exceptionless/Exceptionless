@@ -1,11 +1,18 @@
+using System.Net;
+using System.Text.Json;
 using System.Text.Json.Serialization;
+using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
+using FluentRest;
+using Foundatio.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
+using ProblemDetails = Microsoft.AspNetCore.Mvc.ProblemDetails;
 
 namespace Exceptionless.Tests.Controllers;
 
@@ -23,6 +30,36 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
         await base.ResetDataAsync();
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
+    }
+
+    [Fact]
+    public async Task PostAsync_CamelCaseBodyMissingSnakeCaseRequiredFields_ReturnsLegacyValidationProblem()
+    {
+        // Arrange
+        string body = JsonSerializer.Serialize(new
+        {
+            organizationId = SampleDataService.TEST_ORG_ID,
+            projectId = SampleDataService.TEST_PROJECT_ID,
+            url = "https://example.com/webhook",
+            eventTypes = new[] { WebHook.KnownEventTypes.NewError }
+        });
+
+        // Act
+        var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath("webhooks")
+            .Content(body, "application/json")
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        // Assert
+        Assert.NotNull(problemDetails);
+        Assert.Equal(StatusCodes.Status400BadRequest, problemDetails.Status);
+        Assert.Equal("One or more validation errors occurred.", problemDetails.Title);
+        Assert.Equal(["The EventTypes field is required."], problemDetails.Errors["event_types"]);
+        Assert.Equal(["The OrganizationId field is required."], problemDetails.Errors["organization_id"]);
+        Assert.Equal(["The ProjectId field is required."], problemDetails.Errors["project_id"]);
     }
 
     [Fact]
@@ -60,6 +97,34 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
         var persistedHook = await _webHookRepository.GetByIdAsync(webHook.Id);
         Assert.NotNull(persistedHook);
         Assert.Equal("https://example.com/webhook", persistedHook.Url);
+    }
+
+    [Fact]
+    public async Task PostAsync_NewWebHook_ReturnsAbsoluteLocation()
+    {
+        // Arrange
+        var webHook = new NewWebHook
+        {
+            EventTypes = [WebHook.KnownEventTypes.NewError],
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            ProjectId = SampleDataService.TEST_PROJECT_ID,
+            Url = "https://example.com/location-webhook"
+        };
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath("webhooks")
+            .Content(webHook)
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert
+        Assert.NotNull(response.Headers.Location);
+        Assert.True(response.Headers.Location.IsAbsoluteUri);
+        Assert.Equal("localhost", response.Headers.Location.Host);
+        Assert.StartsWith("/api/v2/webhooks/", response.Headers.Location.AbsolutePath);
     }
 
     [Fact]
@@ -108,6 +173,100 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostAsync_WithUnauthorizedOrganization_ReturnsBadRequestProblemDetails()
+    {
+        // Arrange
+        var newWebHook = new NewWebHook
+        {
+            EventTypes = [WebHook.KnownEventTypes.StackPromoted],
+            OrganizationId = SampleDataService.FREE_ORG_ID,
+            ProjectId = SampleDataService.TEST_PROJECT_ID,
+            Url = "https://localhost/test"
+        };
+
+        // Act
+        var problemDetails = await SendRequestAsAsync<ProblemDetails>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath("webhooks")
+            .Content(newWebHook)
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        // Assert
+        Assert.NotNull(problemDetails);
+        Assert.Equal(StatusCodes.Status400BadRequest, problemDetails.Status);
+        Assert.Equal("Invalid organization id specified.", problemDetails.Title);
+    }
+
+    [Fact]
+    public async Task PostAsync_WithUnauthorizedProject_ReturnsBadRequestProblemDetails()
+    {
+        // Arrange
+        var newWebHook = new NewWebHook
+        {
+            EventTypes = [WebHook.KnownEventTypes.StackPromoted],
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            ProjectId = SampleDataService.FREE_PROJECT_ID,
+            Url = "https://localhost/test"
+        };
+
+        // Act
+        var problemDetails = await SendRequestAsAsync<ProblemDetails>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath("webhooks")
+            .Content(newWebHook)
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        // Assert
+        Assert.NotNull(problemDetails);
+        Assert.Equal(StatusCodes.Status400BadRequest, problemDetails.Status);
+        Assert.Equal("Invalid project id specified.", problemDetails.Title);
+    }
+
+    [Fact]
+    public async Task PostAsync_WithoutOrganizationOrProject_ReturnsBadRequestProblemDetails()
+    {
+        // Arrange
+        const string email = "webhook-no-organization@exceptionless.test";
+        const string password = "Test password";
+        const string salt = "1234567890123456";
+        var user = new User
+        {
+            EmailAddress = email,
+            FullName = "Web Hook User Without Organization",
+            Password = password.ToSaltedHash(salt),
+            Salt = salt
+        };
+        user.Roles.Add(AuthorizationRoles.Client);
+        user.Roles.Add(AuthorizationRoles.User);
+        user.MarkEmailAddressVerified();
+        await GetService<IUserRepository>().AddAsync(user, o => o.ImmediateConsistency());
+
+        var newWebHook = new NewWebHook
+        {
+            EventTypes = [WebHook.KnownEventTypes.StackPromoted],
+            Url = "https://localhost/test"
+        };
+
+        // Act
+        var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r
+            .Post()
+            .BasicAuthorization(email, password)
+            .AppendPath("webhooks")
+            .Content(newWebHook)
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        // Assert
+        Assert.NotNull(problemDetails);
+        Assert.Equal(StatusCodes.Status400BadRequest, problemDetails.Status);
+        Assert.Equal("One or more validation errors occurred.", problemDetails.Title);
+    }
+
+    [Fact]
     public async Task CreateNewWebHookWithInvalidEventTypeFails()
     {
         var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r
@@ -127,6 +286,31 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
         Assert.NotNull(problemDetails);
         Assert.Single(problemDetails.Errors);
         Assert.Contains(problemDetails.Errors, error => String.Equals(error.Key, "event_types"));
+    }
+
+    [Fact]
+    public async Task SubscribeAsync_UppercaseZapierPrefix_ReturnsNotFound()
+    {
+        // Arrange
+        const string zapierUrl = "https://HOOKS.ZAPIER.COM/hooks/12345";
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("webhooks/subscribe")
+            .Content(new Dictionary<string, string>
+            {
+                { "event", WebHook.KnownEventTypes.StackPromoted },
+                { "target_url", zapierUrl }
+            })
+            .StatusCodeShouldBeNotFound()
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        var webHooks = await _webHookRepository.GetByUrlAsync(zapierUrl);
+        Assert.Empty(webHooks.Documents);
     }
 
     [Fact]
@@ -435,6 +619,24 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
             .Content(new Dictionary<string, string> { { "other_field", "value" } })
             .StatusCodeShouldBeNotFound()
         );
+    }
+
+    [Fact]
+    public async Task UnsubscribeAsync_UppercaseZapierPrefix_ReturnsNotFound()
+    {
+        // Arrange
+        const string zapierUrl = "https://HOOKS.ZAPIER.COM/hooks/unsubtest";
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .Post()
+            .AppendPath("webhooks/unsubscribe")
+            .Content(new Dictionary<string, string> { { "target_url", zapierUrl } })
+            .StatusCodeShouldBeNotFound()
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     private sealed record ZapierTestMessage(

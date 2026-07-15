@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text.Json;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
@@ -6,6 +8,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models.Data;
 using Exceptionless.Tests.Extensions;
+using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
 using Foundatio.Jobs;
@@ -18,6 +21,7 @@ namespace Exceptionless.Tests.Controllers;
 
 public class StackControllerTests : IntegrationTestsBase
 {
+    private readonly JsonSerializerOptions _jsonSerializerOptions;
     private readonly IStackRepository _stackRepository;
     private readonly IEventRepository _eventRepository;
     private readonly IQueue<EventPost> _eventQueue;
@@ -25,6 +29,7 @@ public class StackControllerTests : IntegrationTestsBase
 
     public StackControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
+        _jsonSerializerOptions = GetService<JsonSerializerOptions>();
         _stackRepository = GetService<IStackRepository>();
         _eventRepository = GetService<IEventRepository>();
         _eventQueue = GetService<IQueue<EventPost>>();
@@ -275,6 +280,33 @@ public class StackControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ChangeStatusAsync_WithOmittedStatus_DefaultsToOpen()
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/mark-fixed")
+            .StatusCodeShouldBeOk());
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/change-status")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        Assert.Equal(StackStatus.Open, stack.Status);
+        Assert.Null(stack.DateFixed);
+        Assert.Null(stack.FixedInVersion);
+    }
+
+    [Fact]
     public async Task DeleteAsync_ExistingStack_ReturnsAccepted()
     {
         // Arrange
@@ -298,6 +330,43 @@ public class StackControllerTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath("stacks/000000000000000000000000")
             .StatusCodeShouldBeNotFound());
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WithMixedAccess_ReturnsModelActionResults()
+    {
+        // Arrange
+        var (stacks, _) = await CreateDataAsync(d =>
+        {
+            d.Event().TestProject();
+            d.Event().FreeProject();
+        });
+
+        var testStack = Assert.Single(stacks, s => String.Equals(s.OrganizationId, SampleDataService.TEST_ORG_ID, StringComparison.Ordinal));
+        var freeStack = Assert.Single(stacks, s => String.Equals(s.OrganizationId, SampleDataService.FREE_ORG_ID, StringComparison.Ordinal));
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .Delete()
+            .AsTestOrganizationUser()
+            .AppendPath($"stacks/{testStack.Id},{freeStack.Id}")
+            .StatusCodeShouldBeBadRequest());
+
+        var result = JsonSerializer.Deserialize<ModelActionResults>(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), _jsonSerializerOptions);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result.Success);
+        Assert.Contains(testStack.Id, result.Success);
+
+        var failure = Assert.Single(result.Failure);
+        Assert.False(failure.Allowed);
+        Assert.Equal(freeStack.Id, failure.Id);
+        Assert.Equal(StatusCodes.Status404NotFound, failure.StatusCode);
+
+        await RefreshDataAsync();
+        Assert.True((await _stackRepository.GetByIdAsync(testStack.Id, o => o.IncludeSoftDeletes()))!.IsDeleted);
+        Assert.False((await _stackRepository.GetByIdAsync(freeStack.Id))!.IsDeleted);
     }
 
     [Fact]
@@ -350,6 +419,25 @@ public class StackControllerTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(result);
         Assert.Equal(2, result.Count);
+    }
+
+    [Fact]
+    public async Task GetAll_WithPremiumFilter_ExcludesFreeOrganizationStacks()
+    {
+        // Arrange
+        var (stacks, _) = await CreateDataAsync(d => d.Event().FreeProject());
+        var stack = Assert.Single(stacks);
+
+        // Act
+        var result = await SendRequestAsAsync<IReadOnlyCollection<Stack>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("stacks")
+            .QueryString("filter", $"id:{stack.Id}")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -411,6 +499,34 @@ public class StackControllerTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath("organizations/000000000000000000000000/stacks")
             .StatusCodeShouldBeNotFound());
+    }
+
+    [Fact]
+    public async Task GetByOrganizationAsync_SuspendedOrganization_ReturnsUpgradeRequired()
+    {
+        // Arrange
+        var organizationRepository = GetService<IOrganizationRepository>();
+        var userRepository = GetService<IUserRepository>();
+        var user = await userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+
+        var organization = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+
+        organization.IsSuspended = true;
+        organization.SuspensionCode = SuspensionCode.Billing;
+        organization.SuspensionDate = DateTime.UtcNow;
+        organization.SuspendedByUserId = user.Id;
+        await organizationRepository.SaveAsync(organization, o => o.Originals().ImmediateConsistency().Cache());
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", organization.Id, "stacks")
+            .StatusCodeShouldBeUpgradeRequired());
+
+        // Assert
+        Assert.Equal(HttpStatusCode.UpgradeRequired, response.StatusCode);
     }
 
     [Fact]
@@ -625,6 +741,27 @@ public class StackControllerTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath("stacks/000000000000000000000000/promote")
             .StatusCodeShouldBeNotFound());
+    }
+
+    [Fact]
+    public async Task SnoozeAsync_WithOmittedDate_ReturnsBadRequest()
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/mark-snoozed")
+            .StatusCodeShouldBeBadRequest());
+
+        // Assert
+        var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        Assert.Equal(StackStatus.Open, stack.Status);
+        Assert.Null(stack.SnoozeUntilUtc);
     }
 
     [Fact]

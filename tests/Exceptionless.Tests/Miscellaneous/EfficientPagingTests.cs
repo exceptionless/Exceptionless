@@ -1,3 +1,4 @@
+using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Utility.Results;
 using Xunit;
 
@@ -6,6 +7,21 @@ namespace Exceptionless.Tests.Miscellaneous;
 public class EfficientPagingTests : TestWithServices
 {
     public EfficientPagingTests(ITestOutputHelper output) : base(output) { }
+
+    [Fact]
+    public void GetBeforeAndAfterLinks_ApiResultsWithoutMoreResults_OmitsNextLink()
+    {
+        // Arrange
+        var url = new Uri("http://localhost?after=1");
+
+        // Act
+        var links = ApiResults.GetBeforeAndAfterLinks(url, "1", "2", false);
+
+        // Assert
+        Assert.Single(links);
+        Assert.Contains(links, l => l.Contains("previous") && l.Contains("before"));
+        Assert.DoesNotContain(links, l => l.Contains("next"));
+    }
 
     [Theory]
     [InlineData("http://localhost", null, null, false, false)]
@@ -77,4 +93,5 @@ public class EfficientPagingTests : TestWithServices
         if (expectNext)
             Assert.Contains(links, l => l.Contains("next") && l.Contains("page"));
     }
+
 }

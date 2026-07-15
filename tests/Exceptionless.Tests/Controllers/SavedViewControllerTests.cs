@@ -322,6 +322,33 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostAsync_NewSavedView_ReturnsAbsoluteLocation()
+    {
+        // Arrange
+        var savedView = new NewSavedView
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            Name = "Absolute Location Saved View",
+            ViewType = "events"
+        };
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .Content(savedView)
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert
+        Assert.NotNull(response.Headers.Location);
+        Assert.True(response.Headers.Location.IsAbsoluteUri);
+        Assert.Equal("localhost", response.Headers.Location.Host);
+        Assert.StartsWith("/api/v2/saved-views/", response.Headers.Location.AbsolutePath);
+    }
+
+    [Fact]
     public async Task PostAsync_WithIsPrivate_SetsUserIdOnSavedView()
     {
         // Arrange

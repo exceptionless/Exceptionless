@@ -20,6 +20,7 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Helpers;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
+using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Jobs;
@@ -71,6 +72,89 @@ public partial class EventControllerTests : IntegrationTestsBase
 
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WithMixedAccess_ReturnsModelActionResults()
+    {
+        // Arrange
+        var (_, events) = await CreateDataAsync(d =>
+        {
+            d.Event().TestProject();
+            d.Event().FreeProject();
+        });
+
+        var testEvent = Assert.Single(events, e => String.Equals(e.OrganizationId, SampleDataService.TEST_ORG_ID, StringComparison.Ordinal));
+        var freeEvent = Assert.Single(events, e => String.Equals(e.OrganizationId, SampleDataService.FREE_ORG_ID, StringComparison.Ordinal));
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .Delete()
+            .AsTestOrganizationUser()
+            .AppendPath($"events/{testEvent.Id},{freeEvent.Id}")
+            .StatusCodeShouldBeBadRequest());
+
+        var result = JsonSerializer.Deserialize<ModelActionResults>(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), _jsonSerializerOptions);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result.Success);
+        Assert.Contains(testEvent.Id, result.Success);
+
+        var failure = Assert.Single(result.Failure);
+        Assert.False(failure.Allowed);
+        Assert.Equal(freeEvent.Id, failure.Id);
+        Assert.Equal(StatusCodes.Status404NotFound, failure.StatusCode);
+
+        await RefreshDataAsync();
+        Assert.Null(await _eventRepository.GetByIdAsync(testEvent.Id));
+        Assert.NotNull(await _eventRepository.GetByIdAsync(freeEvent.Id));
+    }
+
+    [Fact]
+    public async Task GetAll_WithPremiumFilter_ExcludesFreeOrganizationEvents()
+    {
+        // Arrange
+        var (_, events) = await CreateDataAsync(d => d.Event().FreeProject());
+        var persistentEvent = Assert.Single(events);
+
+        // Act
+        var result = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("filter", $"id:{persistentEvent.Id}")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetByOrganizationAsync_SuspendedOrganization_ReturnsUpgradeRequired()
+    {
+        // Arrange
+        var userRepository = GetService<IUserRepository>();
+        var user = await userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+
+        organization.IsSuspended = true;
+        organization.SuspensionCode = SuspensionCode.Billing;
+        organization.SuspensionDate = DateTime.UtcNow;
+        organization.SuspendedByUserId = user.Id;
+        await _organizationRepository.SaveAsync(organization, o => o.Originals().ImmediateConsistency().Cache());
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", organization.Id, "events")
+            .StatusCodeShouldBeUpgradeRequired());
+
+        // Assert
+        Assert.Equal(HttpStatusCode.UpgradeRequired, response.StatusCode);
     }
 
     [Fact]
@@ -130,6 +214,23 @@ public partial class EventControllerTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(count);
         Assert.True(count.Total > 0);
+    }
+
+    [Fact]
+    public async Task GetCount_WithDisallowedAggregation_ReturnsBadRequest()
+    {
+        // Arrange
+        const string aggregation = "terms:message";
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("events", "count")
+            .QueryString("aggregations", aggregation)
+            .StatusCodeShouldBeBadRequest());
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -493,6 +594,25 @@ public partial class EventControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostAsync_V1Event_ReturnsLegacyConfigurationVersionHeader()
+    {
+        // Arrange
+        var payload = new Event { Type = Event.KnownTypes.Log, Message = "Legacy configuration header" };
+
+        // Act
+        using var response = await SendRequestAsync(r => AppendApiV1Path(
+                r.Post().AsTestOrganizationClientUser(),
+                "events")
+            .Content(payload)
+            .StatusCodeShouldBeAccepted()
+        );
+
+        // Assert
+        Assert.True(response.Headers.Contains(Headers.LegacyConfigurationVersion));
+        Assert.False(response.Headers.Contains(Headers.ConfigurationVersion));
+    }
+
+    [Fact]
     public async Task PostEvent_WithUnknownLengthPayloadOverLimit_ReturnsRequestEntityTooLargeAsync()
     {
         var options = GetService<AppOptions>();
@@ -504,6 +624,8 @@ public partial class EventControllerTests : IntegrationTestsBase
         var response = await client.PostAsync("events", content, TestCancellationToken);
 
         Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
+        Assert.False(response.Headers.Contains(Headers.ConfigurationVersion));
+        Assert.False(response.Headers.Contains(Headers.LegacyConfigurationVersion));
 
         var stats = await _eventQueue.GetQueueStatsAsync();
         Assert.Equal(0, stats.Enqueued);
@@ -514,6 +636,26 @@ public partial class EventControllerTests : IntegrationTestsBase
 
         var files = await GetService<IFileStorage>().GetFileListAsync(cancellationToken: TestCancellationToken);
         Assert.Empty(files);
+    }
+
+    [Fact]
+    public async Task PostEvent_WithUnsupportedContentType_ReturnsUnsupportedMediaType()
+    {
+        // Arrange
+        const string payload = "<event><message>not supported</message></event>";
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content(payload, "application/xml")
+            .ExpectedStatus(HttpStatusCode.UnsupportedMediaType));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.UnsupportedMediaType, response.StatusCode);
+        var stats = await _eventQueue.GetQueueStatsAsync();
+        Assert.Equal(0, stats.Enqueued);
     }
 
     [Fact]
@@ -841,6 +983,26 @@ public partial class EventControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetEvent_WithExistingEvent_ReturnsAbsoluteParentLink()
+    {
+        // Arrange
+        var (_, events) = await CreateDataAsync(d => d.Event().TestProject());
+        var persistentEvent = Assert.Single(events);
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("events", persistentEvent.Id)
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        var links = ParseLinkHeaderValue(response.Headers.GetValues(HeaderNames.Link).ToArray());
+        string parentLink = Assert.Contains("parent", links);
+        Assert.True(new Uri(parentLink).IsAbsoluteUri);
+        Assert.Equal("localhost", new Uri(parentLink).Host);
+    }
+
+    [Fact]
     public async Task GetEvent_WithMismatchedExpectedStack_ReturnsBadRequest()
     {
         var (stacks, events) = await CreateDataAsync(d =>
@@ -1017,6 +1179,27 @@ public partial class EventControllerTests : IntegrationTestsBase
         Assert.NotEmpty(results);
         Assert.All(results, summary => Assert.NotEqual(default, summary.Date));
         Assert.Contains(results, summary => !String.IsNullOrEmpty(summary.Type));
+    }
+
+    [Fact]
+    public async Task GetEvents_SummaryMode_IncludesVersion()
+    {
+        // Arrange
+        var (_, events) = await CreateDataAsync(d => d.Event().TestProject().Version("3.2.1-beta1"));
+        var persistentEvent = Assert.Single(events);
+
+        // Act
+        var results = await SendRequestAsAsync<List<EventSummaryModel>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("filter", $"id:{persistentEvent.Id}")
+            .QueryString("mode", "summary")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(results);
+        var summary = Assert.Single(results);
+        Assert.Equal("3.2.1-beta1", summary.Version);
     }
 
     [Fact]
@@ -2245,6 +2428,24 @@ public partial class EventControllerTests : IntegrationTestsBase
             WriteIndented = true
         };
         return JsonSerializer.Serialize(document.RootElement, prettyJsonOptions);
+    }
+
+    [Fact]
+    public async Task LegacyPatchAsync_WithEmptyBody_ReturnsOk()
+    {
+        // Arrange
+        const string eventId = "507f1f77bcf86cd799439011";
+
+        // Act
+        using var response = await SendRequestAsync(r => AppendApiV1Path(
+                r.Patch().AsTestOrganizationClientUser(),
+                "error",
+                eventId)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
