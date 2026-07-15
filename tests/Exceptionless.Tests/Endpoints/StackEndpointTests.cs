@@ -17,9 +17,9 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
 using Xunit;
 
-namespace Exceptionless.Tests.Controllers;
+namespace Exceptionless.Tests.Endpoints;
 
-public class StackControllerTests : IntegrationTestsBase
+public class StackEndpointTests : IntegrationTestsBase
 {
     private readonly JsonSerializerOptions _jsonSerializerOptions;
     private readonly IStackRepository _stackRepository;
@@ -27,7 +27,7 @@ public class StackControllerTests : IntegrationTestsBase
     private readonly IQueue<EventPost> _eventQueue;
     private readonly IQueue<WorkItemData> _workItemQueue;
 
-    public StackControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public StackEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _jsonSerializerOptions = GetService<JsonSerializerOptions>();
         _stackRepository = GetService<IStackRepository>();

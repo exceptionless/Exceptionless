@@ -14,13 +14,13 @@ using Microsoft.AspNetCore.Mvc;
 using Xunit;
 using ProblemDetails = Microsoft.AspNetCore.Mvc.ProblemDetails;
 
-namespace Exceptionless.Tests.Controllers;
+namespace Exceptionless.Tests.Endpoints;
 
-public sealed class WebHookControllerTests : IntegrationTestsBase
+public sealed class WebHookEndpointTests : IntegrationTestsBase
 {
     private readonly IWebHookRepository _webHookRepository;
 
-    public WebHookControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public WebHookEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _webHookRepository = GetService<IWebHookRepository>();
     }

@@ -9,14 +9,14 @@ using Foundatio.Repositories;
 using Foundatio.Serializer;
 using Xunit;
 
-namespace Exceptionless.Tests.Controllers;
+namespace Exceptionless.Tests.Endpoints;
 
 /// <summary>
 /// Integration tests that verify events submitted with different JSON casing conventions
 /// are processed correctly through the full pipeline (API → Queue → Job → ES).
 /// Reproduces critical issues found in the serialization audit diff.
 /// </summary>
-public partial class EventControllerTests
+public partial class EventEndpointTests
 {
     private static readonly DateTimeOffset TestUtcNow = new(2026, 1, 15, 12, 0, 0, TimeSpan.Zero);
 

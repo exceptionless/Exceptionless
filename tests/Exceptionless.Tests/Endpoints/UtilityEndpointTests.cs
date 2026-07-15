@@ -4,11 +4,11 @@ using Exceptionless.Tests.Extensions;
 using FluentRest;
 using Xunit;
 
-namespace Exceptionless.Tests.Controllers;
+namespace Exceptionless.Tests.Endpoints;
 
-public class UtilityControllerTests : IntegrationTestsBase
+public class UtilityEndpointTests : IntegrationTestsBase
 {
-    public UtilityControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) { }
+    public UtilityEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) { }
 
     protected override async Task ResetDataAsync()
     {

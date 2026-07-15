@@ -8,11 +8,11 @@ using Exceptionless.Web.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace Exceptionless.Tests.Controllers;
+namespace Exceptionless.Tests.Endpoints;
 
-public sealed class ContactControllerTests : IntegrationTestsBase
+public sealed class ContactEndpointTests : IntegrationTestsBase
 {
-    public ContactControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) { }
+    public ContactEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) { }
 
     private RecordingContactMailer Mailer => GetService<RecordingContactMailer>();
     private JsonSerializerOptions JsonOptions => GetService<JsonSerializerOptions>();

@@ -20,9 +20,9 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace Exceptionless.Tests.Controllers;
+namespace Exceptionless.Tests.Endpoints;
 
-public sealed class OAuthControllerTests : IntegrationTestsBase
+public sealed class OAuthEndpointTests : IntegrationTestsBase
 {
     private const string ClientId = "test-oauth-client";
     private const string RedirectUri = "http://localhost/callback";
@@ -40,7 +40,7 @@ public sealed class OAuthControllerTests : IntegrationTestsBase
     private readonly IOAuthTokenRepository _oauthTokenRepository;
     private readonly IUserRepository _userRepository;
 
-    public OAuthControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public OAuthEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _oauthApplicationRepository = GetService<IOAuthApplicationRepository>();
         _oauthTokenRepository = GetService<IOAuthTokenRepository>();

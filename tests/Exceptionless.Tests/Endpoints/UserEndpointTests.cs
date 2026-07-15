@@ -15,15 +15,15 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
 using Xunit;
 
-namespace Exceptionless.Tests.Controllers;
+namespace Exceptionless.Tests.Endpoints;
 
-public sealed class UserControllerTests : IntegrationTestsBase
+public sealed class UserEndpointTests : IntegrationTestsBase
 {
     private readonly IUserRepository _userRepository;
     private readonly IOAuthApplicationRepository _oauthApplicationRepository;
     private readonly IOAuthTokenRepository _oauthTokenRepository;
 
-    public UserControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public UserEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _userRepository = GetService<IUserRepository>();
         _oauthApplicationRepository = GetService<IOAuthApplicationRepository>();

@@ -35,9 +35,9 @@ using Xunit;
 using MediaTypeHeaderValue = System.Net.Http.Headers.MediaTypeHeaderValue;
 using Run = Exceptionless.Tests.Utility.Run;
 
-namespace Exceptionless.Tests.Controllers;
+namespace Exceptionless.Tests.Endpoints;
 
-public partial class EventControllerTests : IntegrationTestsBase
+public partial class EventEndpointTests : IntegrationTestsBase
 {
     private readonly JsonSerializerOptions _jsonSerializerOptions;
     private readonly IOrganizationRepository _organizationRepository;
@@ -50,7 +50,7 @@ public partial class EventControllerTests : IntegrationTestsBase
     private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
     private readonly UserData _userData;
 
-    public EventControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public EventEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _jsonSerializerOptions = GetService<JsonSerializerOptions>();
         _organizationRepository = GetService<IOrganizationRepository>();
@@ -509,7 +509,7 @@ public partial class EventControllerTests : IntegrationTestsBase
         Assert.NotNull(ev.Data);
         Assert.Equal("custom value", ev.Data["custom_property"]);
 
-        var identity = ev.GetUserIdentity(GetService<ITextSerializer>(), Log.CreateLogger<EventControllerTests>());
+        var identity = ev.GetUserIdentity(GetService<ITextSerializer>(), Log.CreateLogger<EventEndpointTests>());
         Assert.NotNull(identity);
         Assert.Equal("user-123", identity.Identity);
         Assert.Equal("Test User", identity.Name);
@@ -1361,7 +1361,7 @@ public partial class EventControllerTests : IntegrationTestsBase
 
         Log.SetLogLevel<StackRepository>(LogLevel.Trace);
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
-        Log.SetLogLevel<EventControllerTests>(LogLevel.Trace);
+        Log.SetLogLevel<EventEndpointTests>(LogLevel.Trace);
         Log.SetLogLevel<EventStackFilterQueryBuilder>(LogLevel.Trace);
 
         const string filter = "(status:open OR status:regressed)";

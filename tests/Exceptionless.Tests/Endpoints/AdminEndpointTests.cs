@@ -16,9 +16,9 @@ using Foundatio.Repositories.Utility;
 using Foundatio.Storage;
 using Xunit;
 
-namespace Exceptionless.Tests.Controllers;
+namespace Exceptionless.Tests.Endpoints;
 
-public class AdminControllerTests : IntegrationTestsBase
+public class AdminEndpointTests : IntegrationTestsBase
 {
     private readonly WorkItemJob _workItemJob;
     private readonly IQueue<WorkItemData> _workItemQueue;
@@ -30,7 +30,7 @@ public class AdminControllerTests : IntegrationTestsBase
     private readonly StackData _stackData;
     private readonly EventData _eventData;
 
-    public AdminControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public AdminEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _workItemJob = GetService<WorkItemJob>();
         _workItemQueue = GetService<IQueue<WorkItemData>>();

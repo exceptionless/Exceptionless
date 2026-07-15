@@ -15,16 +15,16 @@ using Foundatio.Repositories;
 using Foundatio.Serializer;
 using Xunit;
 
-namespace Exceptionless.Tests.Controllers;
+namespace Exceptionless.Tests.Endpoints;
 
-public sealed class ProjectControllerTests : IntegrationTestsBase
+public sealed class ProjectEndpointTests : IntegrationTestsBase
 {
     private readonly IEventRepository _eventRepository;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly IStackRepository _stackRepository;
 
-    public ProjectControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public ProjectEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _eventRepository = GetService<IEventRepository>();
         _organizationRepository = GetService<IOrganizationRepository>();

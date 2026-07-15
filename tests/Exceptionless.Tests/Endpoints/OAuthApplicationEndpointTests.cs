@@ -6,13 +6,13 @@ using Exceptionless.Web.Models.Admin;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
 
-namespace Exceptionless.Tests.Controllers;
+namespace Exceptionless.Tests.Endpoints;
 
-public sealed class OAuthApplicationControllerTests : IntegrationTestsBase
+public sealed class OAuthApplicationEndpointTests : IntegrationTestsBase
 {
     private readonly IOAuthApplicationRepository _repository;
 
-    public OAuthApplicationControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public OAuthApplicationEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _repository = GetService<IOAuthApplicationRepository>();
     }

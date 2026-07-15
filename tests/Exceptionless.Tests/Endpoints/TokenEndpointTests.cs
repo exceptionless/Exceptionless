@@ -11,13 +11,13 @@ using Foundatio.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
 
-namespace Exceptionless.Tests.Controllers;
+namespace Exceptionless.Tests.Endpoints;
 
-public sealed class TokenControllerTests : IntegrationTestsBase
+public sealed class TokenEndpointTests : IntegrationTestsBase
 {
     private readonly ITokenRepository _tokenRepository;
 
-    public TokenControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public TokenEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _tokenRepository = GetService<ITokenRepository>();
     }

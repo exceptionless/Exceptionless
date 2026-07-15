@@ -5,11 +5,11 @@ using Exceptionless.Tests.Extensions;
 using FluentRest;
 using Xunit;
 
-namespace Exceptionless.Tests.Controllers;
+namespace Exceptionless.Tests.Endpoints;
 
-public class StripeControllerTests : IntegrationTestsBase
+public class StripeEndpointTests : IntegrationTestsBase
 {
-    public StripeControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) { }
+    public StripeEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) { }
 
     protected override async Task ResetDataAsync()
     {

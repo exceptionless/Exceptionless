@@ -7,13 +7,13 @@ using Exceptionless.Web.Models;
 using FluentRest;
 using Xunit;
 
-namespace Exceptionless.Tests.Controllers;
+namespace Exceptionless.Tests.Endpoints;
 
-public class StatusControllerTests : IntegrationTestsBase
+public class StatusEndpointTests : IntegrationTestsBase
 {
     private readonly AppWebHostFactory _factory;
 
-    public StatusControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public StatusEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _factory = factory;
     }

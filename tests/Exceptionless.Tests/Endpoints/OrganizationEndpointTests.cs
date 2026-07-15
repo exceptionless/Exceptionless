@@ -17,9 +17,9 @@ using Stripe;
 using Xunit;
 using WebInvoice = Exceptionless.Web.Models.Invoice;
 
-namespace Exceptionless.Tests.Controllers;
+namespace Exceptionless.Tests.Endpoints;
 
-public sealed class OrganizationControllerTests : IntegrationTestsBase
+public sealed class OrganizationEndpointTests : IntegrationTestsBase
 {
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
@@ -28,7 +28,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     private readonly BillingPlans _plans;
     private FakeStripeBillingClient StripeBillingClient => (FakeStripeBillingClient)GetService<IStripeBillingClient>();
 
-    public OrganizationControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public OrganizationEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _organizationRepository = GetService<IOrganizationRepository>();
         _projectRepository = GetService<IProjectRepository>();

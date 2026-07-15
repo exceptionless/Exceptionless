@@ -14,16 +14,16 @@ using Foundatio.Jobs;
 using Foundatio.Repositories;
 using Xunit;
 
-namespace Exceptionless.Tests.Controllers;
+namespace Exceptionless.Tests.Endpoints;
 
-public sealed class SavedViewControllerTests : IntegrationTestsBase
+public sealed class SavedViewEndpointTests : IntegrationTestsBase
 {
     private readonly IOrganizationRepository _organizationRepository;
     private readonly ISavedViewRepository _savedViewRepository;
     private readonly IUserRepository _userRepository;
     private readonly OrganizationService _organizationService;
 
-    public SavedViewControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public SavedViewEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _organizationRepository = GetService<IOrganizationRepository>();
         _savedViewRepository = GetService<ISavedViewRepository>();

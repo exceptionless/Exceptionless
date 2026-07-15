@@ -21,9 +21,9 @@ using Microsoft.AspNetCore.Mvc;
 using Xunit;
 using User = Exceptionless.Core.Models.User;
 
-namespace Exceptionless.Tests.Controllers;
+namespace Exceptionless.Tests.Endpoints;
 
-public class AuthControllerTests : IntegrationTestsBase
+public class AuthEndpointTests : IntegrationTestsBase
 {
     private readonly AuthOptions _authOptions;
     private readonly IntercomOptions _intercomOptions;
@@ -33,7 +33,7 @@ public class AuthControllerTests : IntegrationTestsBase
     private readonly IOAuthTokenRepository _oauthTokenRepository;
     private readonly AuthOptionsState _originalAuthOptions;
 
-    public AuthControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public AuthEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _authOptions = GetService<AuthOptions>();
         _originalAuthOptions = AuthOptionsState.Capture(_authOptions);
