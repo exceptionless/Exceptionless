@@ -1,18 +1,22 @@
 using System.Text.Json;
-using Exceptionless.Web.Utility.OpenApi;
-using Microsoft.AspNetCore.OpenApi;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.OpenApi;
+using Microsoft.AspNetCore.TestHost;
 using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
 
-public sealed class OpenApiSnapshotTests
+public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
 {
+    private readonly AppWebHostFactory _factory;
+
+    public OpenApiSnapshotTests(AppWebHostFactory factory)
+    {
+        _factory = factory;
+    }
+
     [Fact]
     public async Task GetOpenApiJson_Default_MatchesSnapshot()
     {
-        // Arrange is handled by MinimalApiTestApp in GetOpenApiJsonAsync.
+        // Arrange is handled by the production host in GetOpenApiJsonAsync.
 
         // Act
         string actualJson = await GetOpenApiJsonAsync();
@@ -191,25 +195,20 @@ public sealed class OpenApiSnapshotTests
         }
     }
 
-    private static async Task<JsonDocument> GetOpenApiDocumentAsync()
+    private async Task<JsonDocument> GetOpenApiDocumentAsync()
     {
         string json = await GetOpenApiJsonAsync();
         return JsonDocument.Parse(json);
     }
 
-    private static async Task<string> GetOpenApiJsonAsync()
+    private async Task<string> GetOpenApiJsonAsync()
     {
-        await using var app = MinimalApiTestApp.Create(useTestServer: true, includeOpenApi: true);
-        await app.StartAsync(TestContext.Current.CancellationToken);
+        await _factory.Server.WaitForReadyAsync();
+        using var client = _factory.CreateClient();
+        using var response = await client.GetAsync("/docs/v2/openapi.json", TestContext.Current.CancellationToken);
+        response.EnsureSuccessStatusCode();
 
-        var provider = app.Services.GetRequiredKeyedService<IOpenApiDocumentProvider>(
-            ExceptionlessOpenApiServiceCollectionExtensions.DocumentName);
-        var document = await provider.GetOpenApiDocumentAsync(TestContext.Current.CancellationToken);
-        document.Servers = [new OpenApiServer { Url = "http://localhost/" }];
-
-        string json = await document.SerializeAsJsonAsync(
-            OpenApiSpecVersion.OpenApi3_1,
-            TestContext.Current.CancellationToken);
+        string json = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         return SnapshotTestHelper.NormalizeJson(json);
     }
 

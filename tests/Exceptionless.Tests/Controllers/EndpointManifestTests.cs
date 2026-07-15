@@ -1,23 +1,31 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
 
-public sealed class EndpointManifestTests
+public sealed class EndpointManifestTests : IClassFixture<AppWebHostFactory>
 {
+    private readonly AppWebHostFactory _factory;
+
+    public EndpointManifestTests(AppWebHostFactory factory)
+    {
+        _factory = factory;
+    }
+
     [Fact]
-    public Task MapApiEndpoints_DefaultServices_MatchesSnapshot()
+    public async Task MapApiEndpoints_DefaultServices_MatchesSnapshot()
     {
         // Arrange
-        using var app = MinimalApiTestApp.Create();
+        await _factory.Server.WaitForReadyAsync();
 
         // Act
-        var manifest = ((IEndpointRouteBuilder)app).DataSources
-            .SelectMany(dataSource => dataSource.Endpoints)
+        var manifest = _factory.Server.Services.GetRequiredService<EndpointDataSource>().Endpoints
             .OfType<RouteEndpoint>()
+            .Where(IsApiContractEndpoint)
             .SelectMany(CreateManifestEntries)
             .OrderBy(endpoint => endpoint.Route, StringComparer.Ordinal)
             .ThenBy(endpoint => endpoint.Method, StringComparer.Ordinal)
@@ -27,7 +35,14 @@ public sealed class EndpointManifestTests
         string actualJson = SnapshotTestHelper.Serialize(manifest);
 
         // Assert
-        return SnapshotTestHelper.AssertMatchesJsonSnapshotAsync("endpoint-manifest.json", actualJson, TestContext.Current.CancellationToken);
+        await SnapshotTestHelper.AssertMatchesJsonSnapshotAsync("endpoint-manifest.json", actualJson, TestContext.Current.CancellationToken);
+    }
+
+    private static bool IsApiContractEndpoint(RouteEndpoint endpoint)
+    {
+        string route = NormalizeRoute(endpoint.RoutePattern.RawText);
+        return route.StartsWith("/api/", StringComparison.Ordinal)
+            || route.StartsWith("/.well-known/", StringComparison.Ordinal);
     }
 
     private static IEnumerable<EndpointManifestEntry> CreateManifestEntries(RouteEndpoint endpoint)
