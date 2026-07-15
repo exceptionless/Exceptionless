@@ -3,6 +3,7 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Controllers;
@@ -33,10 +34,10 @@ public class WebHookHandler(
         if (project is null)
             return Result.NotFound("Project not found.");
 
-        int page = GetPage(message.Page);
-        int limit = GetLimit(message.Limit);
+        int page = Pagination.GetPage(message.Page);
+        int limit = Pagination.GetLimit(message.Limit);
         var results = await repository.GetByProjectIdAsync(message.ProjectId, o => o.PageNumber(page).PageLimit(limit));
-        return new PagedResult<Exceptionless.Core.Models.WebHook>(results.Documents.ToArray(), results.HasMore && !NextPageExceedsSkipLimit(page, limit), page, results.Total);
+        return new PagedResult<Exceptionless.Core.Models.WebHook>(results.Documents.ToArray(), results.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, results.Total);
     }
 
     public async Task<Result<Exceptionless.Core.Models.WebHook>> Handle(GetWebHookById message)
@@ -173,20 +174,20 @@ public class WebHookHandler(
             return Result.Forbidden("Access denied.");
 
         if (!String.IsNullOrEmpty(value.OrganizationId) && !HttpContext.Request.IsInOrganization(value.OrganizationId))
-            return Result.Invalid(ValidationError.Create("organization_id", "Invalid organization id specified."));
+            return Result.BadRequest("Invalid organization id specified.");
 
         Project? project = null;
         if (!String.IsNullOrEmpty(value.ProjectId))
         {
             project = await GetProjectAsync(value.ProjectId);
             if (project is null)
-                return Result.Invalid(ValidationError.Create("project_id", "Invalid project id specified."));
+                return Result.BadRequest("Invalid project id specified.");
 
             value.OrganizationId = project.OrganizationId;
         }
 
         if (!await billingManager.HasPremiumFeaturesAsync(project is not null ? project.OrganizationId : value.OrganizationId))
-            return Result.Invalid(ValidationError.Create("plan_limit", "Please upgrade your plan to add integrations."));
+            return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, "Please upgrade your plan to add integrations."));
 
         return null;
     }
@@ -279,7 +280,4 @@ public class WebHookHandler(
         return String.Equals(version, WebHook.KnownVersions.Version1) || String.Equals(version, WebHook.KnownVersions.Version2);
     }
 
-    private static int GetPage(int page) => page < 1 ? 1 : page;
-    private static int GetLimit(int limit) => limit < 1 ? 10 : limit > 100 ? 100 : limit;
-    private static bool NextPageExceedsSkipLimit(int page, int limit) => (page + 1) * limit >= 1000;
 }

@@ -22,9 +22,15 @@ public sealed record AdditionalParameterDefinition(
 /// </summary>
 public sealed record EndpointDocumentation
 {
+    private Dictionary<string, string> _parameterDescriptions = new(StringComparer.OrdinalIgnoreCase);
+
     public string? RequestBodyDescription { get; init; }
     public bool RequestBodyRequired { get; init; }
-    public Dictionary<string, string> ParameterDescriptions { get; init; } = new();
+    public Dictionary<string, string> ParameterDescriptions
+    {
+        get => _parameterDescriptions;
+        init => _parameterDescriptions = new(value, StringComparer.OrdinalIgnoreCase);
+    }
     public Dictionary<string, string> ResponseDescriptions { get; init; } = new();
     public List<AdditionalParameterDefinition> AdditionalParameters { get; init; } = new();
 }
@@ -104,6 +110,7 @@ public class EndpointDocumentationOperationTransformer : IOpenApiOperationTransf
         }
 
         // Apply parameter descriptions
+        var unmatchedParameterDescriptions = new HashSet<string>(documentation.ParameterDescriptions.Keys, StringComparer.OrdinalIgnoreCase);
         if (operation.Parameters is not null)
         {
             foreach (var param in operation.Parameters)
@@ -111,11 +118,18 @@ public class EndpointDocumentationOperationTransformer : IOpenApiOperationTransf
                 if (param.Name is not null && documentation.ParameterDescriptions.TryGetValue(param.Name, out var description))
                 {
                     param.Description = description;
+                    unmatchedParameterDescriptions.Remove(param.Name);
                 }
             }
         }
 
+        ThrowIfDocumentationKeysDoNotMatch(
+            unmatchedParameterDescriptions,
+            "parameter",
+            context.Description.ActionDescriptor.DisplayName);
+
         // Apply response descriptions
+        var unmatchedResponseDescriptions = new HashSet<string>(documentation.ResponseDescriptions.Keys, StringComparer.Ordinal);
         if (operation.Responses is not null)
         {
             foreach (var (code, desc) in documentation.ResponseDescriptions)
@@ -123,9 +137,15 @@ public class EndpointDocumentationOperationTransformer : IOpenApiOperationTransf
                 if (operation.Responses.TryGetValue(code, out var response))
                 {
                     response.Description = desc;
+                    unmatchedResponseDescriptions.Remove(code);
                 }
             }
         }
+
+        ThrowIfDocumentationKeysDoNotMatch(
+            unmatchedResponseDescriptions,
+            "response",
+            context.Description.ActionDescriptor.DisplayName);
 
         // Apply request body description
         if (documentation.RequestBodyDescription is not null && operation.RequestBody is not null)
@@ -144,6 +164,19 @@ public class EndpointDocumentationOperationTransformer : IOpenApiOperationTransf
         }
 
         return Task.CompletedTask;
+    }
+
+    private static void ThrowIfDocumentationKeysDoNotMatch(
+        IReadOnlyCollection<string> unmatchedKeys,
+        string metadataType,
+        string? endpointDisplayName)
+    {
+        if (unmatchedKeys.Count == 0)
+            return;
+
+        string keys = String.Join(", ", unmatchedKeys.Order(StringComparer.Ordinal));
+        throw new InvalidOperationException(
+            $"OpenAPI {metadataType} documentation for endpoint '{endpointDisplayName ?? "unknown"}' does not match generated metadata: {keys}.");
     }
 
     private static IOpenApiSchema? RemoveNullAlternative(IOpenApiSchema? schema)

@@ -48,7 +48,7 @@ public class StackHandler(
     private readonly ILogger _logger = loggerFactory.CreateLogger<StackHandler>();
     private static readonly ICollection<string> _allowedDateFields = new List<string> { StackIndex.Alias.FirstOccurrence, StackIndex.Alias.LastOccurrence };
     private const string DefaultDateField = StackIndex.Alias.LastOccurrence;
-    private static Result<T> PlanLimitResult<T>(string message) => Result.Invalid(ValidationError.Create("plan_limit", message));
+    private static Result<T> PlanLimitResult<T>(string message) => Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, message));
 
     public async Task<Result<Stack>> Handle(GetStackById message)
     {
@@ -263,11 +263,11 @@ public class StackHandler(
             return Result.NotFound("Organization not found.");
 
         if (!organization.HasPremiumFeatures)
-            return Result.Invalid(ValidationError.Create("plan_limit", "Promote to External is a premium feature used to promote an error stack to an external system. Please upgrade your plan to enable this feature."));
+            return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, "Promote to External is a premium feature used to promote an error stack to an external system. Please upgrade your plan to enable this feature."));
 
         var promotedProjectHooks = (await webHookRepository.GetByProjectIdAsync(stack.ProjectId)).Documents.Where(p => p.EventTypes.Contains(WebHook.KnownEventTypes.StackPromoted)).ToList();
         if (promotedProjectHooks.Count is 0)
-            return Result.Invalid(ValidationError.Create("not_implemented", "No promoted web hooks are configured for this project. Please add a promoted web hook to use this feature."));
+            return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.NotImplemented, "No promoted web hooks are configured for this project. Please add a promoted web hook to use this feature."));
 
         var currentUser = httpContext.Request.GetUser();
         using var _ = _logger.BeginScope(new ExceptionlessState()

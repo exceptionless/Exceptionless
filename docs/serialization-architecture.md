@@ -7,7 +7,7 @@ This document describes the complete serialization architecture after the Newton
 1. [Serializer Configuration](#serializer-configuration)
 2. [Serialization Paths](#serialization-paths)
 3. [Data Flow: Event Lifecycle](#data-flow-event-lifecycle)
-4. [GetValue\<T\> Dictionary Extraction](#getvaluet-dictionary-extraction)
+4. [GetValue\<T\> Dictionary Extraction](#getvaluet-dictionary-extraction)  
 5. [ObjectToInferredTypesConverter](#objecttoinferredtypesconverter)
 6. [Event Upgrade Pipeline](#event-upgrade-pipeline)
 7. [Model Annotations & Naming](#model-annotations--naming)

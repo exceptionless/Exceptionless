@@ -56,7 +56,7 @@ public class EventHandler(
     private readonly ILogger _logger = loggerFactory.CreateLogger<EventHandler>();
     private static readonly ICollection<string> _allowedDateFields = new List<string> { EventIndex.Alias.Date };
     private const string DefaultDateField = EventIndex.Alias.Date;
-    private static Result<T> PlanLimitResult<T>(string message) => Result.Invalid(ValidationError.Create("plan_limit", message));
+    private static Result<T> PlanLimitResult<T>(string message) => Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, message));
     private static bool ShouldIncludeTotal(string? include) => ShouldInclude(include, "total");
 
     private static bool ShouldInclude(string? include, string value)
@@ -611,7 +611,7 @@ public class EventHandler(
                     await usageService.IncrementTooBigAsync(project.OrganizationId, project.Id);
 
                 if (result.RejectedStatusCode == StatusCodes.Status413RequestEntityTooLarge)
-                    return Result.Invalid(ValidationError.Create("request_entity_too_large", result.RejectionReason ?? "Request body too large."));
+                    return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.RequestEntityTooLarge, result.RejectionReason ?? "Request body too large."));
 
                 return Result.BadRequest(result.RejectionReason ?? "Request body was rejected.");
             }

@@ -151,7 +151,6 @@ public static class OrganizationEndpoints
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the organization.",
-                ["file"] = "The organization icon image file.",
             },
             ResponseDescriptions = new() {
                 ["404"] = "The organization could not be found.",

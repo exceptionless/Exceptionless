@@ -7,6 +7,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Seed;
+using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Controllers;
@@ -45,13 +46,13 @@ public partial class SavedViewHandler(
 
         await EnsurePredefinedSavedViewsCreatedAsync(message.OrganizationId);
 
-        int page = GetPage(message.Page);
-        int limit = GetLimit(message.Limit);
+        int page = Pagination.GetPage(message.Page);
+        int limit = Pagination.GetLimit(message.Limit);
         var results = await repository.GetByOrganizationForUserAsync(message.OrganizationId, GetCurrentUserId(), o => o.PageNumber(page).PageLimit(limit));
         AppDiagnostics.SavedViewsSize.Add((int)results.Total);
 
         var viewModels = MapToViewModels(results.Documents);
-        return new PagedResult<ViewSavedView>(viewModels, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page, results.Total);
+        return new PagedResult<ViewSavedView>(viewModels, results.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, results.Total);
     }
 
     public async Task<Result<PagedResult<ViewSavedView>>> Handle(GetSavedViewsByView message)
@@ -64,13 +65,13 @@ public partial class SavedViewHandler(
 
         await EnsurePredefinedSavedViewsCreatedAsync(message.OrganizationId);
 
-        int page = GetPage(message.Page);
-        int limit = GetLimit(message.Limit);
+        int page = Pagination.GetPage(message.Page);
+        int limit = Pagination.GetLimit(message.Limit);
         var results = await repository.GetByViewForUserAsync(message.OrganizationId, message.ViewType, GetCurrentUserId(), o => o.PageNumber(page).PageLimit(limit));
         AppDiagnostics.SavedViewsViewTypeSize.Add((int)results.Total);
 
         var viewModels = MapToViewModels(results.Documents);
-        return new PagedResult<ViewSavedView>(viewModels, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page, results.Total);
+        return new PagedResult<ViewSavedView>(viewModels, results.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, results.Total);
     }
 
     public async Task<Result<ViewSavedView>> Handle(GetSavedViewById message)
@@ -930,10 +931,6 @@ public partial class SavedViewHandler(
 
         return String.IsNullOrWhiteSpace(id) ? "saved-view" : $"saved-view-{id}";
     }
-
-    private static int GetPage(int page) => page < 1 ? 1 : page;
-    private static int GetLimit(int limit) => limit < 1 ? 10 : limit > 100 ? 100 : limit;
-    private static bool NextPageExceedsSkipLimit(int page, int limit) => (page + 1) * limit >= 1000;
 
     [GeneratedRegex("^[a-f0-9]{24}$")]
     private static partial Regex ObjectIdSlugRegex();

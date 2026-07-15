@@ -3,6 +3,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Controllers;
@@ -35,12 +36,12 @@ public class TokenHandler(
         if (String.IsNullOrEmpty(message.OrganizationId) || !HttpContext.Request.CanAccessOrganization(message.OrganizationId))
             return Result.NotFound("Organization not found.");
 
-        int page = GetPage(message.Page);
-        int limit = GetLimit(message.Limit);
+        int page = Pagination.GetPage(message.Page);
+        int limit = Pagination.GetLimit(message.Limit);
         var tokens = await repository.GetByTypeAndOrganizationIdAsync(TokenType.Access, message.OrganizationId, o => o.PageNumber(page).PageLimit(limit));
         var viewTokens = mapper.MapToViewTokens(tokens.Documents);
         AfterResultMap(viewTokens);
-        return new PagedResult<ViewToken>(viewTokens, tokens.HasMore && !NextPageExceedsSkipLimit(page, limit), page, tokens.Total);
+        return new PagedResult<ViewToken>(viewTokens, tokens.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, tokens.Total);
     }
 
     public async Task<Result<PagedResult<ViewToken>>> Handle(GetTokensByProject message)
@@ -52,12 +53,12 @@ public class TokenHandler(
         if (project is null)
             return Result.NotFound("Project not found.");
 
-        int page = GetPage(message.Page);
-        int limit = GetLimit(message.Limit);
+        int page = Pagination.GetPage(message.Page);
+        int limit = Pagination.GetLimit(message.Limit);
         var tokens = await repository.GetByTypeAndProjectIdAsync(TokenType.Access, message.ProjectId, o => o.PageNumber(page).PageLimit(limit));
         var viewTokens = mapper.MapToViewTokens(tokens.Documents);
         AfterResultMap(viewTokens);
-        return new PagedResult<ViewToken>(viewTokens, tokens.HasMore && !NextPageExceedsSkipLimit(page, limit), page, tokens.Total);
+        return new PagedResult<ViewToken>(viewTokens, tokens.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, tokens.Total);
     }
 
     public async Task<Result<ViewToken>> Handle(GetDefaultToken message)
@@ -209,15 +210,15 @@ public class TokenHandler(
     private async Task<Result<ViewToken>?> CanAddAsync(Token value)
     {
         if (String.IsNullOrEmpty(value.OrganizationId))
-            return Result.Forbidden("Organization is required.");
+            return Result.BadRequest("Organization is required.");
 
         bool hasUserRole = HttpContext.User.IsInRole(AuthorizationRoles.User);
         bool hasGlobalAdminRole = HttpContext.User.IsInRole(AuthorizationRoles.GlobalAdmin);
         if (!hasGlobalAdminRole && !String.IsNullOrEmpty(value.UserId) && value.UserId != GetCurrentUserId())
-            return Result.Forbidden("Cannot create tokens for other users.");
+            return Result.BadRequest("Cannot create tokens for other users.");
 
         if (!String.IsNullOrEmpty(value.ProjectId) && !String.IsNullOrEmpty(value.UserId))
-            return Result.Invalid(ValidationError.Create("", "Token can't be associated to both user and project."));
+            return Result.BadRequest("Token can't be associated to both user and project.");
 
         foreach (string scope in value.Scopes.ToList())
         {
@@ -258,7 +259,7 @@ public class TokenHandler(
         }
 
         if (!HttpContext.Request.CanAccessOrganization(value.OrganizationId))
-            return Result.Invalid(ValidationError.Create("organization_id", "Invalid organization id specified."));
+            return Result.BadRequest("Invalid organization id specified.");
 
         return null;
     }
@@ -378,7 +379,4 @@ public class TokenHandler(
         return null;
     }
 
-    private static int GetPage(int page) => page < 1 ? 1 : page;
-    private static int GetLimit(int limit) => limit < 1 ? 10 : limit > 100 ? 100 : limit;
-    private static bool NextPageExceedsSkipLimit(int page, int limit) => (page + 1) * limit >= 1000;
 }

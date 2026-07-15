@@ -308,7 +308,7 @@ public class ProjectHandler(
             return Result.NotFound("Project not found.");
 
         if (!organization.HasPremiumFeatures)
-            return Result.Invalid(ValidationError.Create("plan_limit", $"Please upgrade your plan to enable {message.Integration} integration."));
+            return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, $"Please upgrade your plan to enable {message.Integration} integration."));
 
         if (message.Settings is null)
             project.NotificationSettings.Remove(message.Integration);
@@ -543,7 +543,7 @@ public class ProjectHandler(
             return Result.BadRequest("A project with this name already exists.");
 
         if (!await billingManager.CanAddProjectAsync(value))
-            return Result.Invalid(ValidationError.Create("plan_limit", "Please upgrade your plan to add additional projects."));
+            return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, "Please upgrade your plan to add additional projects."));
 
         if (!httpContext.Request.CanAccessOrganization(value.OrganizationId))
             return Result.BadRequest("Invalid organization id specified.");
