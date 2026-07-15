@@ -35,7 +35,7 @@
     const uploadSourceMap = postSourceMapMutation(request);
     const deleteSourceMap = deleteSourceMapMutation(request);
 
-    let fileInput = $state<HTMLInputElement>();
+    let fileInput = $state<HTMLInputElement | null>(null);
     let sourceMapToDelete = $state<SourceMapArtifact>();
     let showDeleteDialog = $state(false);
 
