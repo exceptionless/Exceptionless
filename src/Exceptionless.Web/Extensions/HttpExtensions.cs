@@ -5,11 +5,20 @@ using System.Text;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Web.Utility;
+using Microsoft.Net.Http.Headers;
 
 namespace Exceptionless.Web.Extensions;
 
 public static class HttpExtensions
 {
+    public static string? GetClientUserAgent(this HttpRequest request)
+    {
+        if (request.Headers.TryGetValue(Headers.Client, out var values) && values.Count > 0)
+            return values;
+        return request.Headers[HeaderNames.UserAgent].ToString();
+    }
+
     public static User GetUser(this HttpRequest request)
     {
         if (request.HttpContext.Items.TryGetAndReturn("User") is User user)
