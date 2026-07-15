@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Seed;
 using Exceptionless.Web.Api.Messages;
@@ -13,9 +14,11 @@ using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
+using Foundatio.Jobs;
 using Foundatio.Lock;
-using Foundatio.Repositories;
 using Foundatio.Mediator;
+using Foundatio.Queues;
+using Foundatio.Repositories;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Web.Api.Handlers;
@@ -24,13 +27,14 @@ public partial class SavedViewHandler(
     ISavedViewRepository repository,
     IOrganizationRepository organizationRepository,
     ILockProvider lockProvider,
+    IQueue<WorkItemData> workItemQueue,
     ApiMapper mapper,
     LinkGenerator linkGenerator,
     IHttpContextAccessor httpContextAccessor)
 {
     private const int MaxViewsPerOrganization = 100;
+    private const string PredefinedSavedViewsContentHashDataKey = "@@PredefinedSavedViewsContentHash";
     private const string PredefinedSavedViewsDataKey = "@@PredefinedSavedViewsVersion";
-    private const int PredefinedSavedViewsVersion = 4;
 
     private HttpContext HttpContext => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is unavailable.");
 
@@ -96,7 +100,7 @@ public partial class SavedViewHandler(
         if (!HttpContext.Request.IsInOrganization(message.OrganizationId))
             return Result.NotFound("Organization not found.");
 
-        var savedViews = await UpsertPredefinedSavedViewsAsync(message.OrganizationId);
+        var savedViews = await UpsertPredefinedSavedViewsAsync(message.OrganizationId, true);
         return MapToViewModels(savedViews);
     }
 
@@ -155,10 +159,26 @@ public partial class SavedViewHandler(
             })
             .ToList();
 
+        foreach (var savedView in savedViews)
+            savedView.PredefinedContentHash = PredefinedSavedViewContentHasher.GetContentHash(savedView);
+
         if (savedViews.Count > 0)
             await repository.AddAsync(savedViews, o => o.Cache().ImmediateConsistency());
 
         return Result<IReadOnlyCollection<PredefinedSavedViewDefinition>>.Success(await GetPredefinedSavedViewsAsync());
+    }
+
+    public async Task<Result<WorkInProgressResult>> Handle(ForceUpdatePredefinedSavedViews message)
+    {
+        var definitions = await GetPredefinedSavedViewsAsync();
+        if (definitions.Count == 0)
+            return Result.Invalid(ValidationError.Create("definitions", "At least one predefined saved view is required before forcing an update."));
+
+        if (definitions.GroupBy(definition => definition.Key, StringComparer.OrdinalIgnoreCase).Any(group => group.Count() > 1))
+            return Result.Invalid(ValidationError.Create("definitions", "Predefined saved view keys must be unique before forcing an update."));
+
+        string workItemId = await workItemQueue.EnqueueAsync(new ForcePredefinedSavedViewsWorkItem { UserId = GetCurrentUserId() });
+        return new WorkInProgressResult([workItemId]);
     }
 
     public async Task<Result<ViewSavedView>> Handle(PromoteToPredefinedSavedView message)
@@ -480,13 +500,29 @@ public partial class SavedViewHandler(
     private async Task EnsurePredefinedSavedViewsCreatedAsync(string organizationId)
     {
         var organization = await organizationRepository.GetByIdAsync(organizationId);
-        if (organization is null || HasCreatedPredefinedSavedViews(organization))
+        if (organization is null)
             return;
 
-        await UpsertPredefinedSavedViewsAsync(organizationId, true);
+        var definitions = await GetPredefinedSavedViewsAsync();
+        string definitionsContentHash = PredefinedSavedViewContentHasher.GetDefinitionsContentHash(definitions);
+        if (HasSynchronizedPredefinedSavedViews(organization, definitionsContentHash))
+            return;
+
+        await UpsertPredefinedSavedViewsAsync(organizationId, definitions, definitionsContentHash);
     }
 
-    private async Task<IReadOnlyCollection<SavedView>> UpsertPredefinedSavedViewsAsync(string organizationId, bool onlyIfNeverCreated = false)
+    private async Task<IReadOnlyCollection<SavedView>> UpsertPredefinedSavedViewsAsync(string organizationId, bool forceCreateMissing = false)
+    {
+        var definitions = await GetPredefinedSavedViewsAsync();
+        string definitionsContentHash = PredefinedSavedViewContentHasher.GetDefinitionsContentHash(definitions);
+        return await UpsertPredefinedSavedViewsAsync(organizationId, definitions, definitionsContentHash, forceCreateMissing);
+    }
+
+    private async Task<IReadOnlyCollection<SavedView>> UpsertPredefinedSavedViewsAsync(
+        string organizationId,
+        IReadOnlyCollection<PredefinedSavedViewDefinition> definitions,
+        string definitionsContentHash,
+        bool forceCreateMissing = false)
     {
         List<SavedView> savedViews = [];
 
@@ -496,30 +532,39 @@ public partial class SavedViewHandler(
             if (organization is null)
                 return;
 
-            if (onlyIfNeverCreated && HasCreatedPredefinedSavedViews(organization))
+            if (!forceCreateMissing && HasSynchronizedPredefinedSavedViews(organization, definitionsContentHash))
             {
-                savedViews = await GetExistingPredefinedSavedViewsForOrganizationAsync(organizationId);
+                savedViews = await GetExistingPredefinedSavedViewsForOrganizationAsync(organizationId, definitions);
                 return;
             }
 
-            savedViews = await UpsertPredefinedSavedViewsForOrganizationAsync(organizationId);
-            organization.Data ??= new DataDictionary();
-            organization.Data[PredefinedSavedViewsDataKey] = PredefinedSavedViewsVersion.ToString();
-            await organizationRepository.SaveAsync(organization, o => o.Cache().ImmediateConsistency());
+            bool createMissing = forceCreateMissing || !HasCreatedPredefinedSavedViews(organization);
+            var upsertResult = await UpsertPredefinedSavedViewsForOrganizationAsync(organizationId, definitions, createMissing);
+            savedViews = upsertResult.SavedViews;
+
+            if (!upsertResult.HasSkippedCustomizations)
+            {
+                organization.Data ??= new DataDictionary();
+                organization.Data[PredefinedSavedViewsContentHashDataKey] = definitionsContentHash;
+                await organizationRepository.SaveAsync(organization, o => o.Cache().ImmediateConsistency());
+            }
         }, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15));
 
         if (!lockAcquired)
-            return await GetExistingPredefinedSavedViewsForOrganizationAsync(organizationId);
+            return await GetExistingPredefinedSavedViewsForOrganizationAsync(organizationId, definitions);
 
         return savedViews;
     }
 
-    private async Task<List<SavedView>> UpsertPredefinedSavedViewsForOrganizationAsync(string organizationId)
+    private async Task<(List<SavedView> SavedViews, bool HasSkippedCustomizations)> UpsertPredefinedSavedViewsForOrganizationAsync(
+        string organizationId,
+        IReadOnlyCollection<PredefinedSavedViewDefinition> definitions,
+        bool createMissing)
     {
         var savedViewsByView = new Dictionary<string, List<SavedView>>(StringComparer.OrdinalIgnoreCase);
         var upserted = new List<SavedView>();
+        bool hasSkippedCustomizations = false;
 
-        var definitions = await GetPredefinedSavedViewsAsync();
         foreach (var definition in definitions)
         {
             if (!savedViewsByView.TryGetValue(definition.ViewType, out var existingViews))
@@ -534,6 +579,9 @@ public partial class SavedViewHandler(
 
             if (existing is null)
             {
+                if (!createMissing)
+                    continue;
+
                 var savedView = CreatePredefinedSavedView(organizationId, definition, slug);
                 await repository.AddAsync(savedView, o => o.Cache().ImmediateConsistency());
                 existingViews.Add(savedView);
@@ -541,7 +589,11 @@ public partial class SavedViewHandler(
                 continue;
             }
 
-            if (ApplyPredefinedSavedView(existing, definition, slug))
+            if (!CanApplyPredefinedSavedView(existing))
+            {
+                hasSkippedCustomizations = true;
+            }
+            else if (ApplyPredefinedSavedView(existing, definition, slug))
             {
                 existing.UpdatedByUserId = GetCurrentUserId();
                 await repository.SaveAsync(existing, o => o.Cache().ImmediateConsistency());
@@ -550,15 +602,17 @@ public partial class SavedViewHandler(
             upserted.Add(existing);
         }
 
-        return upserted;
+        return (upserted, hasSkippedCustomizations);
     }
 
-    private async Task<List<SavedView>> GetExistingPredefinedSavedViewsForOrganizationAsync(string organizationId)
+    private async Task<List<SavedView>> GetExistingPredefinedSavedViewsForOrganizationAsync(
+        string organizationId,
+        IReadOnlyCollection<PredefinedSavedViewDefinition>? definitions = null)
     {
         var savedViewsByView = new Dictionary<string, List<SavedView>>(StringComparer.OrdinalIgnoreCase);
         var existingPredefinedViews = new List<SavedView>();
 
-        var definitions = await GetPredefinedSavedViewsAsync();
+        definitions ??= await GetPredefinedSavedViewsAsync();
         foreach (var definition in definitions)
         {
             if (!savedViewsByView.TryGetValue(definition.ViewType, out var existingViews))
@@ -584,15 +638,25 @@ public partial class SavedViewHandler(
 
     private static bool HasCreatedPredefinedSavedViews(Organization organization)
     {
-        if (organization.Data is null || !organization.Data.TryGetValue(PredefinedSavedViewsDataKey, out object? versionValue))
+        if (organization.Data is null)
             return false;
 
-        return Int32.TryParse(versionValue?.ToString(), out int version) && version >= PredefinedSavedViewsVersion;
+        return organization.Data.ContainsKey(PredefinedSavedViewsContentHashDataKey)
+            || organization.Data.TryGetValue(PredefinedSavedViewsDataKey, out object? versionValue)
+                && Int32.TryParse(versionValue?.ToString(), out int version)
+                && version > 0;
+    }
+
+    private static bool HasSynchronizedPredefinedSavedViews(Organization organization, string definitionsContentHash)
+    {
+        return organization.Data is not null
+            && organization.Data.TryGetValue(PredefinedSavedViewsContentHashDataKey, out object? contentHash)
+            && String.Equals(contentHash?.ToString(), definitionsContentHash, StringComparison.Ordinal);
     }
 
     private SavedView CreatePredefinedSavedView(string organizationId, PredefinedSavedViewDefinition definition, string slug)
     {
-        return new SavedView
+        var savedView = new SavedView
         {
             OrganizationId = organizationId,
             CreatedByUserId = GetCurrentUserId(),
@@ -610,6 +674,9 @@ public partial class SavedViewHandler(
             ShowChart = definition.ShowChart,
             Version = 1
         };
+
+        savedView.PredefinedContentHash = PredefinedSavedViewContentHasher.GetContentHash(savedView);
+        return savedView;
     }
 
     private static bool ApplyPredefinedSavedView(SavedView savedView, PredefinedSavedViewDefinition definition, string slug)
@@ -627,8 +694,21 @@ public partial class SavedViewHandler(
         changed |= SetIfChanged(savedView, definition.ShowStats, static (view, value) => view.ShowStats = value, static view => view.ShowStats);
         changed |= SetIfChanged(savedView, definition.ShowChart, static (view, value) => view.ShowChart = value, static view => view.ShowChart);
         changed |= SetIfChanged(savedView, 1, static (view, value) => view.Version = value, static view => view.Version);
+        changed |= SetIfChanged(savedView, PredefinedSavedViewContentHasher.GetContentHash(savedView), static (view, value) => view.PredefinedContentHash = value, static view => view.PredefinedContentHash);
 
         return changed;
+    }
+
+    private static bool CanApplyPredefinedSavedView(SavedView savedView)
+    {
+        if (String.IsNullOrWhiteSpace(savedView.PredefinedContentHash))
+            // Pre-hash views have no baseline to compare. Preserve legacy views that were explicitly updated.
+            return savedView.UpdatedByUserId is null;
+
+        return String.Equals(
+            savedView.PredefinedContentHash,
+            PredefinedSavedViewContentHasher.GetContentHash(savedView),
+            StringComparison.Ordinal);
     }
 
     private async Task<SavedView> UpsertSystemPredefinedSavedViewAsync(SavedView source)
@@ -667,19 +747,7 @@ public partial class SavedViewHandler(
 
     private static void ApplySavedViewConfiguration(SavedView destination, SavedView source, string key, string slug)
     {
-        destination.UserId = null;
-        destination.PredefinedKey = key;
-        destination.Name = source.Name;
-        destination.Slug = slug;
-        destination.ViewType = source.ViewType;
-        destination.Filter = source.Filter;
-        destination.Time = source.Time;
-        destination.Sort = source.Sort;
-        destination.FilterDefinitions = source.FilterDefinitions;
-        destination.Columns = Copy(source.Columns);
-        destination.ColumnOrder = source.ColumnOrder is null ? null : [.. source.ColumnOrder];
-        destination.ShowStats = source.ShowStats;
-        destination.ShowChart = source.ShowChart;
+        PredefinedSavedViewConfiguration.Apply(destination, source, key, slug);
     }
 
     private async Task<IReadOnlyCollection<PredefinedSavedViewDefinition>> GetPredefinedSavedViewsAsync()

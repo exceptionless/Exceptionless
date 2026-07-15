@@ -150,6 +150,19 @@ public static class SavedViewEndpoints
             }
         });
 
+        group.MapPost("saved-views/predefined/force-update", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
+            => (await mediator.InvokeAsync<Result<WorkInProgressResult>>(new SavedViewMessages.ForceUpdatePredefinedSavedViews())).ToHttpResult(resultMapper))
+        .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
+        .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .WithSummary("Force update organization saved views that match a predefined saved view key")
+        .WithMetadata(new EndpointDocumentation {
+            ResponseDescriptions = new() {
+                ["202"] = "The predefined saved view force update was queued.",
+                ["422"] = "The predefined saved view definitions contain duplicate keys.",
+            }
+        });
+
         group.MapPost("saved-views/{id:objectid}/predefined", async (string id, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result<ViewSavedView>>(new SavedViewMessages.PromoteToPredefinedSavedView(id))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)

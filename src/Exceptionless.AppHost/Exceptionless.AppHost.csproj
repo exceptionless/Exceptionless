@@ -13,6 +13,7 @@
     <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.4.6" />
     <PackageReference Include="Aspire.Hosting.Redis" Version="13.4.6" />
     <PackageReference Include="AspNetCore.HealthChecks.Elasticsearch" Version="9.0.0" />
+    <PackageReference Include="CommunityToolkit.Aspire.Hosting.Deno" Version="13.4.0" />
   </ItemGroup>
 
   <ItemGroup>

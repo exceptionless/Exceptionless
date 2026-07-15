@@ -24,6 +24,7 @@ site.ignore(
   "public",
   "README.md",
   "scripts",
+  "serialization-architecture.md",
   "site-migration-plan.md",
   "snapshots",
 )
@@ -62,8 +63,30 @@ site.hooks.markdownIt((markdownIt: any) => {
 site.data("docsNavHtml", docsNavHtml)
 site.data("siteDataJson", siteDataJson)
 site.data("copyrightYear", new Date().getFullYear())
+site.data("exceptionlessClientScriptSrc", exceptionlessClientScriptSrc())
 
 export default site
+
+function exceptionlessClientScriptSrc(): string {
+  const apiKey = (Deno.env.get("EXCEPTIONLESS_SITE_API_KEY") ?? "").trim()
+  if (!apiKey) {
+    return ""
+  }
+
+  const params = new URLSearchParams({ apiKey })
+  const serverUrl = (Deno.env.get("EXCEPTIONLESS_SITE_SERVER_URL") ?? "").trim()
+
+  if (serverUrl) {
+    params.set("serverUrl", serverUrl)
+  }
+
+  const version = (Deno.env.get("EXCEPTIONLESS_SITE_VERSION") ?? "").trim()
+  if (version) {
+    params.set("version", version)
+  }
+
+  return `/assets/js/exceptionless-client.js?${params}`
+}
 
 function uniqueHeadingSlug(value: string, env: Record<string, unknown>): string {
   const counts = getHeadingSlugCounts(env)

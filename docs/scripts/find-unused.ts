@@ -170,6 +170,11 @@ async function collectReferencedOutputPaths(root: string): Promise<Set<string>> 
 }
 
 function collectReferencesFromText(sourcePath: string, text: string, references: Set<string>): void {
+  const moduleImportPattern = /\b(?:import|export)\s+(?:[^"']*?\s+from\s+)?["']([^"']+)["']/g
+  for (const match of text.matchAll(moduleImportPattern)) {
+    addReference(sourcePath, match[1], references)
+  }
+
   const attributePattern = /\b(?:href|src|poster|content|data-[\w-]+)=(?:["'])([^"']+)["']/gi
   for (const match of text.matchAll(attributePattern)) {
     addReference(sourcePath, match[1], references)
