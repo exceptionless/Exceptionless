@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using Exceptionless.Core;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
@@ -89,6 +90,7 @@ public sealed class SourceMapServiceTests : TestWithServices
             GetService<IFileStorage>(),
             GetService<ICacheClient>(),
             GetService<ILockProvider>(),
+            GetService<SourceMapRequestThrottle>(),
             GetService<JsonSerializerOptions>(),
             GetService<AppOptions>(),
             GetService<TimeProvider>(),
@@ -295,6 +297,119 @@ public sealed class SourceMapServiceTests : TestWithServices
     }
 
     [Fact]
+    public async Task SymbolicateAsync_FreeClientKeyExceedsDiscoveryLimit_StopsDownloadingNewUrls()
+    {
+        var options = GetService<AppOptions>();
+        options.SourceMapOptions.MaximumAutoDiscoveriesPerFreeClientKey = 1;
+        options.SourceMapOptions.MaximumAutoDiscoveriesPerFreeProject = 10;
+        options.SourceMapOptions.MaximumAutoDiscoveriesPerFreeOrganization = 10;
+        int requestCount = 0;
+        var handler = new DelegateHandler(request =>
+        {
+            requestCount++;
+            if (!request.RequestUri!.AbsolutePath.EndsWith(".map", StringComparison.Ordinal))
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("minified") };
+                response.Headers.TryAddWithoutValidation("SourceMap", request.RequestUri.AbsolutePath + ".map");
+                return response;
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(SourceMap) };
+        });
+        using var httpClient = new HttpClient(handler);
+        using var service = CreateService(httpClient);
+        string suffix = Guid.NewGuid().ToString("N");
+        var request = new SourceMapRequest($"organization-{suffix}", $"project-{suffix}", $"key-{suffix}", true);
+
+        Assert.True(await service.SymbolicateAsync(request, CreateError($"https://cdn.example.com/{suffix}/first.js"), TestContext.Current.CancellationToken));
+        Assert.False(await service.SymbolicateAsync(request, CreateError($"https://cdn.example.com/{suffix}/second.js"), TestContext.Current.CancellationToken));
+        Assert.Equal(2, requestCount);
+    }
+
+    [Fact]
+    public async Task TryReserveDiscoveryAsync_MultipleClientKeysExceedProjectLimit_BlocksProject()
+    {
+        var options = GetService<AppOptions>();
+        options.SourceMapOptions.MaximumAutoDiscoveriesPerClientKey = 10;
+        options.SourceMapOptions.MaximumAutoDiscoveriesPerProject = 2;
+        options.SourceMapOptions.MaximumAutoDiscoveriesPerOrganization = 10;
+        var throttle = GetService<SourceMapRequestThrottle>();
+        string suffix = Guid.NewGuid().ToString("N");
+
+        Assert.True(await throttle.TryReserveDiscoveryAsync(new SourceMapRequest($"organization-{suffix}", $"project-{suffix}", $"key-1-{suffix}", false)));
+        Assert.True(await throttle.TryReserveDiscoveryAsync(new SourceMapRequest($"organization-{suffix}", $"project-{suffix}", $"key-2-{suffix}", false)));
+        Assert.False(await throttle.TryReserveDiscoveryAsync(new SourceMapRequest($"organization-{suffix}", $"project-{suffix}", $"key-3-{suffix}", false)));
+    }
+
+    [Fact]
+    public async Task TryReserveDiscoveryAsync_SameClientKeyAcrossProjects_UsesSeparateKeyBudgets()
+    {
+        var options = GetService<AppOptions>();
+        options.SourceMapOptions.MaximumAutoDiscoveriesPerClientKey = 1;
+        options.SourceMapOptions.MaximumAutoDiscoveriesPerProject = 10;
+        options.SourceMapOptions.MaximumAutoDiscoveriesPerOrganization = 10;
+        var throttle = GetService<SourceMapRequestThrottle>();
+        string suffix = Guid.NewGuid().ToString("N");
+        string organizationId = $"organization-{suffix}";
+        string clientKeyHash = $"key-{suffix}";
+
+        Assert.True(await throttle.TryReserveDiscoveryAsync(new SourceMapRequest(organizationId, $"project-1-{suffix}", clientKeyHash, false)));
+        Assert.False(await throttle.TryReserveDiscoveryAsync(new SourceMapRequest(organizationId, $"project-1-{suffix}", clientKeyHash, false)));
+        Assert.True(await throttle.TryReserveDiscoveryAsync(new SourceMapRequest(organizationId, $"project-2-{suffix}", clientKeyHash, false)));
+    }
+
+    [Fact]
+    public async Task TryReserveOutboundRequestAsync_DestinationExceedsLimit_BlocksDestinationOnly()
+    {
+        var options = GetService<AppOptions>();
+        options.SourceMapOptions.MaximumAutoDownloadRequestsPerDestination = 1;
+        options.SourceMapOptions.MaximumAutoDownloadRequestsGlobally = 10;
+        var throttle = GetService<SourceMapRequestThrottle>();
+        string suffix = Guid.NewGuid().ToString("N");
+
+        Assert.True(await throttle.TryReserveOutboundRequestAsync(new Uri($"https://{suffix}.example.com/first.js")));
+        Assert.False(await throttle.TryReserveOutboundRequestAsync(new Uri($"https://{suffix}.example.com/second.js")));
+        Assert.True(await throttle.TryReserveOutboundRequestAsync(new Uri($"https://other-{suffix}.example.com/app.js")));
+    }
+
+    [Fact]
+    public async Task TryReserveOutboundRequestAsync_RefreshUsesSeparateBudget()
+    {
+        var options = GetService<AppOptions>();
+        options.SourceMapOptions.MaximumAutoDownloadRequestsPerDestination = 1;
+        options.SourceMapOptions.MaximumAutoDownloadRequestsGlobally = 10;
+        options.SourceMapOptions.MaximumAutoRefreshRequestsPerDestination = 1;
+        options.SourceMapOptions.MaximumAutoRefreshRequestsGlobally = 10;
+        var throttle = GetService<SourceMapRequestThrottle>();
+        string suffix = Guid.NewGuid().ToString("N");
+        var uri = new Uri($"https://{suffix}.example.com/app.js");
+
+        Assert.True(await throttle.TryReserveOutboundRequestAsync(uri));
+        Assert.False(await throttle.TryReserveOutboundRequestAsync(uri));
+        Assert.True(await throttle.TryReserveOutboundRequestAsync(uri, isRefresh: true));
+        Assert.False(await throttle.TryReserveOutboundRequestAsync(uri, isRefresh: true));
+    }
+
+    [Fact]
+    public async Task SymbolicateAsync_RepeatedFailedUrl_UsesFailureCacheWithoutAnotherRequest()
+    {
+        int requestCount = 0;
+        var handler = new DelegateHandler(_ =>
+        {
+            requestCount++;
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        });
+        using var httpClient = new HttpClient(handler);
+        using var service = CreateService(httpClient);
+        string suffix = Guid.NewGuid().ToString("N");
+        string generatedFileUrl = $"https://cdn.example.com/{suffix}/missing.js";
+
+        Assert.False(await service.SymbolicateAsync($"project-{suffix}", CreateError(generatedFileUrl), TestContext.Current.CancellationToken));
+        Assert.False(await service.SymbolicateAsync($"project-{suffix}", CreateError(generatedFileUrl), TestContext.Current.CancellationToken));
+        Assert.Equal(1, requestCount);
+    }
+
+    [Fact]
     public void ReadFromConfiguration_WithUnsafeLimits_NormalizesLimits()
     {
         var values = new Dictionary<string, string?>
@@ -305,7 +420,19 @@ public sealed class SourceMapServiceTests : TestWithServices
             ["SourceMaps:MaximumMappingSegments"] = "0",
             ["SourceMaps:MaximumRedirects"] = "-1",
             ["SourceMaps:MaximumConcurrentDownloads"] = "0",
-            ["SourceMaps:MaximumAutoDownloadsPerProjectPerHour"] = "-1",
+            ["SourceMaps:MaximumConcurrentDownloadsGlobally"] = "0",
+            ["SourceMaps:AutoDownloadRateLimitPeriodMinutes"] = "0",
+            ["SourceMaps:MaximumAutoDiscoveriesPerFreeClientKey"] = "-1",
+            ["SourceMaps:MaximumAutoDiscoveriesPerClientKey"] = "-1",
+            ["SourceMaps:MaximumAutoDiscoveriesPerFreeProject"] = "-1",
+            ["SourceMaps:MaximumAutoDiscoveriesPerProject"] = "-1",
+            ["SourceMaps:MaximumAutoDiscoveriesPerFreeOrganization"] = "-1",
+            ["SourceMaps:MaximumAutoDiscoveriesPerOrganization"] = "-1",
+            ["SourceMaps:MaximumAutoDownloadRequestsPerDestination"] = "-1",
+            ["SourceMaps:MaximumAutoDownloadConnectionsPerIpAddress"] = "-1",
+            ["SourceMaps:MaximumAutoDownloadRequestsGlobally"] = "-1",
+            ["SourceMaps:MaximumAutoRefreshRequestsPerDestination"] = "-1",
+            ["SourceMaps:MaximumAutoRefreshRequestsGlobally"] = "-1",
             ["SourceMaps:MaximumFramesPerError"] = "0",
             ["SourceMaps:MaximumProcessingTimeMilliseconds"] = "0",
             ["SourceMaps:AutoDownloadRefreshIntervalMinutes"] = "0",
@@ -322,7 +449,19 @@ public sealed class SourceMapServiceTests : TestWithServices
         Assert.Equal(1, options.MaximumMappingSegments);
         Assert.Equal(0, options.MaximumRedirects);
         Assert.Equal(1, options.MaximumConcurrentDownloads);
-        Assert.Equal(0, options.MaximumAutoDownloadsPerProjectPerHour);
+        Assert.Equal(1, options.MaximumConcurrentDownloadsGlobally);
+        Assert.Equal(1, options.AutoDownloadRateLimitPeriodMinutes);
+        Assert.Equal(0, options.MaximumAutoDiscoveriesPerFreeClientKey);
+        Assert.Equal(0, options.MaximumAutoDiscoveriesPerClientKey);
+        Assert.Equal(0, options.MaximumAutoDiscoveriesPerFreeProject);
+        Assert.Equal(0, options.MaximumAutoDiscoveriesPerProject);
+        Assert.Equal(0, options.MaximumAutoDiscoveriesPerFreeOrganization);
+        Assert.Equal(0, options.MaximumAutoDiscoveriesPerOrganization);
+        Assert.Equal(0, options.MaximumAutoDownloadRequestsPerDestination);
+        Assert.Equal(0, options.MaximumAutoDownloadConnectionsPerIpAddress);
+        Assert.Equal(0, options.MaximumAutoDownloadRequestsGlobally);
+        Assert.Equal(0, options.MaximumAutoRefreshRequestsPerDestination);
+        Assert.Equal(0, options.MaximumAutoRefreshRequestsGlobally);
         Assert.Equal(1, options.MaximumFramesPerError);
         Assert.Equal(1, options.MaximumProcessingTimeMilliseconds);
         Assert.Equal(1, options.AutoDownloadRefreshIntervalMinutes);
@@ -339,7 +478,7 @@ public sealed class SourceMapServiceTests : TestWithServices
         var serializer = GetService<ITextSerializer>();
         var options = GetService<AppOptions>();
         var loggerFactory = GetService<ILoggerFactory>();
-        var sourceMapPlugin = new SourceMapPlugin(service, serializer, options, loggerFactory);
+        var sourceMapPlugin = new SourceMapPlugin(service, serializer, GetService<BillingPlans>(), options, loggerFactory);
         var errorPlugin = new ErrorPlugin(serializer, options, loggerFactory);
         var persistentEvent = new PersistentEvent { Type = Event.KnownTypes.Error };
         persistentEvent.SetError(CreateError());
@@ -355,7 +494,7 @@ public sealed class SourceMapServiceTests : TestWithServices
         Assert.True(sourceMapPlugin.HandleError(new IOException("Unavailable"), context));
     }
 
-    private static Error CreateError()
+    private static Error CreateError(string generatedFileUrl = GeneratedFileUrl)
     {
         return new Error
         {
@@ -366,7 +505,7 @@ public sealed class SourceMapServiceTests : TestWithServices
                 new StackFrame
                 {
                     Name = "a",
-                    FileName = GeneratedFileUrl,
+                    FileName = generatedFileUrl,
                     LineNumber = 1,
                     Column = 1
                 }
@@ -381,6 +520,7 @@ public sealed class SourceMapServiceTests : TestWithServices
             GetService<IFileStorage>(),
             GetService<ICacheClient>(),
             GetService<ILockProvider>(),
+            GetService<SourceMapRequestThrottle>(),
             GetService<JsonSerializerOptions>(),
             GetService<AppOptions>(),
             GetService<TimeProvider>(),

@@ -194,12 +194,15 @@ public class Bootstrapper
                 AllowAutoRedirect = false,
                 ConnectCallback = ConnectToPublicAddressAsync
             });
+        services.AddSingleton<SourceMapRequestThrottle>();
         services.AddHttpClient(SourceMapService.HttpClientName)
-            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            .ConfigurePrimaryHttpMessageHandler(serviceProvider => new SocketsHttpHandler
             {
+                ActivityHeadersPropagator = null,
                 AllowAutoRedirect = false,
                 AutomaticDecompression = DecompressionMethods.All,
-                ConnectCallback = ConnectToPublicAddressAsync,
+                ConnectCallback = serviceProvider.GetRequiredService<SourceMapRequestThrottle>().ConnectToPublicAddressAsync,
+                PreAuthenticate = false,
                 UseCookies = false,
                 UseProxy = false
             });

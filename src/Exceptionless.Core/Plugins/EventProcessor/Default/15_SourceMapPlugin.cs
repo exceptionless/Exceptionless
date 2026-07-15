@@ -1,4 +1,5 @@
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Services.SourceMaps;
@@ -12,12 +13,14 @@ public sealed class SourceMapPlugin : EventProcessorPluginBase
 {
     private readonly SourceMapService _sourceMapService;
     private readonly ITextSerializer _serializer;
+    private readonly BillingPlans _billingPlans;
 
-    public SourceMapPlugin(SourceMapService sourceMapService, ITextSerializer serializer, AppOptions options, ILoggerFactory loggerFactory)
+    public SourceMapPlugin(SourceMapService sourceMapService, ITextSerializer serializer, BillingPlans billingPlans, AppOptions options, ILoggerFactory loggerFactory)
         : base(options, loggerFactory)
     {
         _sourceMapService = sourceMapService;
         _serializer = serializer;
+        _billingPlans = billingPlans;
         ContinueOnError = true;
     }
 
@@ -30,7 +33,12 @@ public sealed class SourceMapPlugin : EventProcessorPluginBase
         if (error is null)
             return;
 
-        if (await _sourceMapService.SymbolicateAsync(context.Project.Id, error))
+        var request = new SourceMapRequest(
+            context.Organization.Id,
+            context.Project.Id,
+            context.EventPostInfo?.ClientKeyHash,
+            String.Equals(context.Organization.PlanId, _billingPlans.FreePlan.Id, StringComparison.OrdinalIgnoreCase));
+        if (await _sourceMapService.SymbolicateAsync(request, error))
             context.Event.SetError(error);
     }
 }

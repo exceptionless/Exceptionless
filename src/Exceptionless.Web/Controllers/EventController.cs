@@ -1163,6 +1163,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
             {
                 ApiVersion = apiVersion,
                 CharSet = charSet,
+                ClientKeyHash = Request.GetClientKeyHash(),
                 ContentEncoding = contentEncoding,
                 IpAddress = Request.GetClientIpAddress(),
                 MediaType = mediaType,
@@ -1375,6 +1376,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
             {
                 ApiVersion = apiVersion,
                 CharSet = charSet,
+                ClientKeyHash = Request.GetClientKeyHash(),
                 ContentEncoding = Request.Headers.TryGetAndReturn(Headers.ContentEncoding),
                 IpAddress = Request.GetClientIpAddress(),
                 MediaType = mediaType,

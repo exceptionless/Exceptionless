@@ -9,19 +9,22 @@ internal sealed class SourceMapDownloader
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly SourceMapOptions _options;
+    private readonly SourceMapRequestThrottle _throttle;
 
-    public SourceMapDownloader(IHttpClientFactory httpClientFactory, AppOptions options)
+    public SourceMapDownloader(IHttpClientFactory httpClientFactory, AppOptions options, SourceMapRequestThrottle throttle)
     {
         _httpClientFactory = httpClientFactory;
         _options = options.SourceMapOptions;
+        _throttle = throttle;
     }
 
-    public async Task<DownloadedSourceMap?> DownloadAsync(Uri generatedFileUri, CancellationToken cancellationToken)
+    public async Task<DownloadedSourceMap?> DownloadAsync(Uri generatedFileUri, bool isRefresh, CancellationToken cancellationToken)
     {
         using var generatedResponse = await SendAsync(
             generatedFileUri,
             _options.MaximumGeneratedFileSize,
             request => request.Headers.Range = new RangeHeaderValue(null, 64 * 1024),
+            isRefresh,
             cancellationToken);
         if (!generatedResponse.Response.IsSuccessStatusCode)
             return null;
@@ -39,7 +42,7 @@ internal sealed class SourceMapDownloader
         if (String.IsNullOrWhiteSpace(sourceMapReference))
         {
             var fallbackUriBuilder = new UriBuilder(generatedResponse.Uri) { Path = generatedResponse.Uri.AbsolutePath + ".map" };
-            return await DownloadContentAsync(fallbackUriBuilder.Uri, cancellationToken);
+            return await DownloadContentAsync(fallbackUriBuilder.Uri, isRefresh, cancellationToken);
         }
 
         if (sourceMapReference.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
@@ -48,12 +51,12 @@ internal sealed class SourceMapDownloader
         if (!Uri.TryCreate(generatedResponse.Uri, sourceMapReference, out var sourceMapUri) || !IsAutoDownloadUri(sourceMapUri))
             return null;
 
-        return await DownloadContentAsync(sourceMapUri, cancellationToken);
+        return await DownloadContentAsync(sourceMapUri, isRefresh, cancellationToken);
     }
 
-    private async Task<DownloadedSourceMap?> DownloadContentAsync(Uri sourceMapUri, CancellationToken cancellationToken)
+    private async Task<DownloadedSourceMap?> DownloadContentAsync(Uri sourceMapUri, bool isRefresh, CancellationToken cancellationToken)
     {
-        using var result = await SendAsync(sourceMapUri, _options.MaximumSourceMapSize, null, cancellationToken);
+        using var result = await SendAsync(sourceMapUri, _options.MaximumSourceMapSize, null, isRefresh, cancellationToken);
         if (!result.Response.IsSuccessStatusCode)
             return null;
 
@@ -68,6 +71,7 @@ internal sealed class SourceMapDownloader
         Uri uri,
         int maximumBytes,
         Action<HttpRequestMessage>? configureRequest,
+        bool isRefresh,
         CancellationToken cancellationToken)
     {
         Uri currentUri = uri;
@@ -75,6 +79,8 @@ internal sealed class SourceMapDownloader
         {
             if (!IsAutoDownloadUri(currentUri))
                 throw new InvalidOperationException("Source map auto-download only supports public HTTPS URLs.");
+            if (!await _throttle.TryReserveOutboundRequestAsync(currentUri, isRefresh))
+                throw new SourceMapRequestThrottledException();
 
             using var request = new HttpRequestMessage(HttpMethod.Get, currentUri);
             request.Headers.AcceptEncoding.ParseAdd("gzip, deflate, br");
@@ -104,7 +110,7 @@ internal sealed class SourceMapDownloader
     }
 
     private static bool IsAutoDownloadUri(Uri uri)
-        => SourceMapService.TryNormalizeGeneratedFileUrl(uri.AbsoluteUri, requireHttps: true, out _);
+        => uri.IsDefaultPort && SourceMapService.TryNormalizeGeneratedFileUrl(uri.AbsoluteUri, requireHttps: true, out _);
 
     private static bool IsRedirect(HttpStatusCode statusCode) => statusCode is HttpStatusCode.MovedPermanently
         or HttpStatusCode.Redirect
