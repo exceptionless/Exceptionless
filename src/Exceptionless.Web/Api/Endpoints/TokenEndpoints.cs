@@ -142,7 +142,6 @@ public static class TokenEndpoints
         .Accepts<NewToken>(true, "application/json", "application/*+json")
         .Produces<ViewToken>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status400BadRequest)
-        .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status409Conflict)
         .WithSummary("Create for organization")
         .WithDescription("This is a helper action that makes it easier to create a token for a specific organization. You may also specify a scope when creating a token. There are three valid scopes: client, user and admin.")

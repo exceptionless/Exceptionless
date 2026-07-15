@@ -9,11 +9,20 @@ namespace Exceptionless.Tests.Controllers;
 public sealed class ProblemDetailsStatusCodePageTests
 {
     [Theory]
+    [InlineData(StatusCodes.Status400BadRequest, null)]
     [InlineData(StatusCodes.Status401Unauthorized, null)]
+    [InlineData(StatusCodes.Status403Forbidden, null)]
     [InlineData(StatusCodes.Status404NotFound, null)]
     [InlineData(StatusCodes.Status404NotFound, "text/plain")]
+    [InlineData(StatusCodes.Status409Conflict, null)]
+    [InlineData(StatusCodes.Status413RequestEntityTooLarge, null)]
     [InlineData(StatusCodes.Status415UnsupportedMediaType, null)]
+    [InlineData(StatusCodes.Status422UnprocessableEntity, null)]
+    [InlineData(StatusCodes.Status426UpgradeRequired, null)]
+    [InlineData(StatusCodes.Status429TooManyRequests, null)]
     [InlineData(StatusCodes.Status500InternalServerError, null)]
+    [InlineData(StatusCodes.Status501NotImplemented, null)]
+    [InlineData(StatusCodes.Status503ServiceUnavailable, null)]
     public async Task WriteProblemDetailsStatusCodeResponseAsync_WithErrorStatus_PreservesStatusAndWritesProblemDetails(int statusCode, string? acceptHeader)
     {
         var services = new ServiceCollection();

@@ -624,6 +624,8 @@ public partial class EventControllerTests : IntegrationTestsBase
         var response = await client.PostAsync("events", content, TestCancellationToken);
 
         Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
+        Assert.False(response.Headers.Contains(Headers.ConfigurationVersion));
+        Assert.False(response.Headers.Contains(Headers.LegacyConfigurationVersion));
 
         var stats = await _eventQueue.GetQueueStatsAsync();
         Assert.Equal(0, stats.Enqueued);

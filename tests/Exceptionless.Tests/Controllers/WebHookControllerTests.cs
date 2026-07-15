@@ -1,13 +1,18 @@
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
+using FluentRest;
+using Foundatio.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
+using ProblemDetails = Microsoft.AspNetCore.Mvc.ProblemDetails;
 
 namespace Exceptionless.Tests.Controllers;
 
@@ -219,6 +224,46 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
         Assert.NotNull(problemDetails);
         Assert.Equal(StatusCodes.Status400BadRequest, problemDetails.Status);
         Assert.Equal("Invalid project id specified.", problemDetails.Title);
+    }
+
+    [Fact]
+    public async Task PostAsync_WithoutOrganizationOrProject_ReturnsBadRequestProblemDetails()
+    {
+        // Arrange
+        const string email = "webhook-no-organization@exceptionless.test";
+        const string password = "Test password";
+        const string salt = "1234567890123456";
+        var user = new User
+        {
+            EmailAddress = email,
+            FullName = "Web Hook User Without Organization",
+            Password = password.ToSaltedHash(salt),
+            Salt = salt
+        };
+        user.Roles.Add(AuthorizationRoles.Client);
+        user.Roles.Add(AuthorizationRoles.User);
+        user.MarkEmailAddressVerified();
+        await GetService<IUserRepository>().AddAsync(user, o => o.ImmediateConsistency());
+
+        var newWebHook = new NewWebHook
+        {
+            EventTypes = [WebHook.KnownEventTypes.StackPromoted],
+            Url = "https://localhost/test"
+        };
+
+        // Act
+        var problemDetails = await SendRequestAsAsync<ProblemDetails>(r => r
+            .Post()
+            .BasicAuthorization(email, password)
+            .AppendPath("webhooks")
+            .Content(newWebHook)
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        // Assert
+        Assert.NotNull(problemDetails);
+        Assert.Equal(StatusCodes.Status400BadRequest, problemDetails.Status);
+        Assert.Equal("Bad Request", problemDetails.Title);
     }
 
     [Fact]

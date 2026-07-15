@@ -171,7 +171,7 @@ public class WebHookHandler(
             return Result.BadRequest("Url and EventTypes are required.");
 
         if (String.IsNullOrEmpty(value.ProjectId) && String.IsNullOrEmpty(value.OrganizationId))
-            return Result.Forbidden("Access denied.");
+            return Result.BadRequest();
 
         if (!String.IsNullOrEmpty(value.OrganizationId) && !HttpContext.Request.IsInOrganization(value.OrganizationId))
             return Result.BadRequest("Invalid organization id specified.");
