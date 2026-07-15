@@ -5,7 +5,6 @@ using Exceptionless.Core.Models;
 using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Api.Results;
-using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
 using Foundatio.Mediator;
 using HttpIResult = Microsoft.AspNetCore.Http.IResult;

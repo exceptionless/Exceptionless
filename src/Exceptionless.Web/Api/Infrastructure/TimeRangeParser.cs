@@ -1,6 +1,5 @@
 using Exceptionless.Core.Extensions;
 using Exceptionless.DateTimeExtensions;
-using Exceptionless.Web.Controllers;
 
 namespace Exceptionless.Web.Api.Infrastructure;
 

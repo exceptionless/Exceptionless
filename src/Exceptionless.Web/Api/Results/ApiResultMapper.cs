@@ -1,5 +1,4 @@
 using Exceptionless.Core.Extensions;
-using Exceptionless.Web.Controllers;
 using Foundatio.Mediator;
 using Microsoft.AspNetCore.Http;
 using HttpResults = Microsoft.AspNetCore.Http.Results;

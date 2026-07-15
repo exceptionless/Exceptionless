@@ -6,7 +6,6 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Results;
-using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Storage;
