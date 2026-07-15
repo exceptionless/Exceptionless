@@ -365,6 +365,9 @@ public class TokenHandler(
         if (permission.StatusCode is StatusCodes.Status404NotFound)
             return Result.NotFound(permission.Message ?? "Not found.");
 
+        if (permission.StatusCode is StatusCodes.Status400BadRequest)
+            return Result.BadRequest(permission.Message ?? "Bad request.");
+
         return Result.Forbidden(permission.Message ?? "Access denied.");
     }
 

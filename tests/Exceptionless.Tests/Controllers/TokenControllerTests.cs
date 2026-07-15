@@ -1,4 +1,5 @@
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
@@ -674,6 +675,40 @@ public sealed class TokenControllerTests : IntegrationTestsBase
         await RefreshDataAsync();
         var deletedToken = await _tokenRepository.GetByIdAsync(createdToken.Id);
         Assert.Null(deletedToken);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WithAnotherUsersToken_ReturnsBadRequestProblemDetails()
+    {
+        // Arrange
+        var otherUser = await GetService<IUserRepository>().GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(otherUser);
+        var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
+
+        var token = new Token
+        {
+            Id = StringExtensions.GetNewToken(),
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            UserId = otherUser.Id,
+            Type = TokenType.Access,
+            CreatedUtc = utcNow,
+            UpdatedUtc = utcNow
+        };
+        await _tokenRepository.AddAsync(token, options => options.ImmediateConsistency());
+
+        // Act
+        var problemDetails = await SendRequestAsAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>(request => request
+            .Delete()
+            .AsTestOrganizationUser()
+            .AppendPaths("tokens", token.Id)
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        // Assert
+        Assert.NotNull(problemDetails);
+        Assert.Equal(StatusCodes.Status400BadRequest, problemDetails.Status);
+        Assert.Equal("Can only delete tokens created by you.", problemDetails.Title);
+        Assert.NotNull(await _tokenRepository.GetByIdAsync(token.Id));
     }
 
     [Fact]
