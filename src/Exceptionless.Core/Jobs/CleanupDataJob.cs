@@ -322,7 +322,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
     {
         var projects = await _projectRepository.GetByOrganizationIdAsync(
             organizationId,
-            options => options.Include(project => project.Id).SearchAfterPaging().PageLimit(100));
+            options => options.Include(project => project.Id).SoftDeleteMode(SoftDeleteQueryMode.All).SearchAfterPaging().PageLimit(100));
 
         while (projects.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
         {

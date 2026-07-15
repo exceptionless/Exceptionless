@@ -143,6 +143,9 @@ public class CleanupDataJobTests : IntegrationTestsBase
         await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
 
         var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
+        var deletedProject = _projectData.GenerateProject(generateId: true, organizationId: organization.Id, name: "Deleted project");
+        deletedProject.IsDeleted = true;
+        await _projectRepository.AddAsync(deletedProject, o => o.ImmediateConsistency());
         var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
         var persistentEvent = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
         string iconPath = OrganizationStoragePaths.GetProfileImagePath(organization.Id, "icon.png");
@@ -151,15 +154,20 @@ public class CleanupDataJobTests : IntegrationTestsBase
         string sourceMapPath = $"source-maps/{project.Id}/app.map";
         await using (var sourceMap = new MemoryStream([0x7B, 0x7D]))
             await _fileStorage.SaveFileAsync(sourceMapPath, sourceMap, TestCancellationToken);
+        string deletedProjectSourceMapPath = $"source-maps/{deletedProject.Id}/app.map";
+        await using (var sourceMap = new MemoryStream([0x7B, 0x7D]))
+            await _fileStorage.SaveFileAsync(deletedProjectSourceMapPath, sourceMap, TestCancellationToken);
 
         await _job.RunAsync(TestCancellationToken);
 
         Assert.Null(await _organizationRepository.GetByIdAsync(organization.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await _projectRepository.GetByIdAsync(project.Id, o => o.IncludeSoftDeletes()));
+        Assert.Null(await _projectRepository.GetByIdAsync(deletedProject.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await _stackRepository.GetByIdAsync(stack.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await _eventRepository.GetByIdAsync(persistentEvent.Id, o => o.IncludeSoftDeletes()));
         Assert.False(await _fileStorage.ExistsAsync(iconPath));
         Assert.False(await _fileStorage.ExistsAsync(sourceMapPath));
+        Assert.False(await _fileStorage.ExistsAsync(deletedProjectSourceMapPath));
     }
 
     [Fact]
