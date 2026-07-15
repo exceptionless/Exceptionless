@@ -1,6 +1,8 @@
-using System.Net;
 using System.Text.Json;
-using Microsoft.AspNetCore.TestHost;
+using Exceptionless.Web.Utility.OpenApi;
+using Microsoft.AspNetCore.OpenApi;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.OpenApi;
 using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
@@ -200,13 +202,14 @@ public sealed class OpenApiSnapshotTests
         await using var app = MinimalApiTestApp.Create(useTestServer: true, includeOpenApi: true);
         await app.StartAsync(TestContext.Current.CancellationToken);
 
-        var client = app.GetTestClient();
-        client.BaseAddress = new Uri("http://localhost");
+        var provider = app.Services.GetRequiredKeyedService<IOpenApiDocumentProvider>(
+            ExceptionlessOpenApiServiceCollectionExtensions.DocumentName);
+        var document = await provider.GetOpenApiDocumentAsync(TestContext.Current.CancellationToken);
+        document.Servers = [new OpenApiServer { Url = "http://localhost/" }];
 
-        using var response = await client.GetAsync("/docs/v2/openapi.json", TestContext.Current.CancellationToken);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        string json = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        string json = await document.SerializeAsJsonAsync(
+            OpenApiSpecVersion.OpenApi3_1,
+            TestContext.Current.CancellationToken);
         return SnapshotTestHelper.NormalizeJson(json);
     }
 

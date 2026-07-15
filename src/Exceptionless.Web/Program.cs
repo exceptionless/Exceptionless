@@ -170,27 +170,7 @@ public partial class Program
                 r.ConstraintMap.Add("tokens", typeof(TokensRouteConstraint));
             });
 
-            builder.Services.AddOpenApi(o =>
-            {
-                o.CreateSchemaReferenceId = SchemaReferenceIdHelper.CreateSchemaReferenceId;
-                o.AddDocumentTransformer<AggregateDocumentTransformer>();
-                o.AddDocumentTransformer<XmlDocumentationDocumentTransformer>();
-                o.AddDocumentTransformer<DocumentInfoTransformer>();
-                o.AddDocumentTransformer<RemoveProblemJsonFromSuccessResponsesTransformer>();
-                o.AddOperationTransformer<ObsoleteOperationTransformer>();
-                o.AddOperationTransformer<RequestBodyContentOperationTransformer>();
-                o.AddOperationTransformer<XmlDocumentationOperationTransformer>();
-                o.AddOperationTransformer<EndpointDocumentationOperationTransformer>();
-                o.AddSchemaTransformer<DataAnnotationsSchemaTransformer>();
-                o.AddSchemaTransformer<DeltaSchemaTransformer>();
-                o.AddSchemaTransformer<XmlDocumentationSchemaTransformer>();
-                o.AddSchemaTransformer<DictionarySubclassSchemaTransformer>();
-                o.AddSchemaTransformer<NumericTypeSchemaTransformer>();
-                o.AddSchemaTransformer<ReadOnlyPropertySchemaTransformer>();
-                o.AddSchemaTransformer<RequiredPropertySchemaTransformer>();
-                o.AddSchemaTransformer<UniqueItemsSchemaTransformer>();
-                o.AddSchemaTransformer<XEnumNamesSchemaTransformer>();
-            });
+            builder.Services.AddExceptionlessOpenApi();
 
             builder.Services.AddSingleton<IMediatorResultMapper<HttpIResult>, ApiResultMapper>();
             builder.Services.AddMediator()

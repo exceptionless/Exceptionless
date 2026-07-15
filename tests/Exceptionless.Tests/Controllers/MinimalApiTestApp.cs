@@ -41,37 +41,12 @@ internal static class MinimalApiTestApp
         builder.Services.AddSingleton<IMediator>(_ => DispatchProxy.Create<IMediator, NullMediatorProxy>());
 
         if (includeOpenApi)
-        {
-            builder.Services.AddOpenApi(options =>
-            {
-                options.CreateSchemaReferenceId = SchemaReferenceIdHelper.CreateSchemaReferenceId;
-                options.AddDocumentTransformer<AggregateDocumentTransformer>();
-                options.AddDocumentTransformer<XmlDocumentationDocumentTransformer>();
-                options.AddDocumentTransformer<DocumentInfoTransformer>();
-                options.AddDocumentTransformer<RemoveProblemJsonFromSuccessResponsesTransformer>();
-                options.AddOperationTransformer<ObsoleteOperationTransformer>();
-                options.AddOperationTransformer<RequestBodyContentOperationTransformer>();
-                options.AddOperationTransformer<XmlDocumentationOperationTransformer>();
-                options.AddOperationTransformer<EndpointDocumentationOperationTransformer>();
-                options.AddSchemaTransformer<DataAnnotationsSchemaTransformer>();
-                options.AddSchemaTransformer<DeltaSchemaTransformer>();
-                options.AddSchemaTransformer<XmlDocumentationSchemaTransformer>();
-                options.AddSchemaTransformer<DictionarySubclassSchemaTransformer>();
-                options.AddSchemaTransformer<NumericTypeSchemaTransformer>();
-                options.AddSchemaTransformer<ReadOnlyPropertySchemaTransformer>();
-                options.AddSchemaTransformer<RequiredPropertySchemaTransformer>();
-                options.AddSchemaTransformer<UniqueItemsSchemaTransformer>();
-                options.AddSchemaTransformer<XEnumNamesSchemaTransformer>();
-            });
-        }
+            builder.Services.AddExceptionlessOpenApi();
 
         var app = builder.Build();
         app.UseRouting();
         app.UseAuthentication();
         app.UseAuthorization();
-
-        if (includeOpenApi)
-            app.MapOpenApi("/docs/v2/openapi.json");
 
         app.MapApiEndpoints();
         return app;
