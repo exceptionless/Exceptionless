@@ -391,6 +391,66 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task RunAsync_OrphanedEventsAtAndBeforeLookbackBoundary_DeletesOnlyEventsWithinLookback()
+    {
+        TimeProvider.SetUtcNow(DateTimeOffset.UtcNow);
+
+        var organization = await _organizationRepository.AddAsync(
+            _organizationData.GenerateSampleOrganization(_billingManager, _plans),
+            o => o.ImmediateConsistency());
+        var project = await _projectRepository.AddAsync(
+            _projectData.GenerateSampleProject(),
+            o => o.ImmediateConsistency());
+        var stack = await _stackRepository.AddAsync(
+            _stackData.GenerateSampleStack(),
+            o => o.ImmediateConsistency());
+
+        var cutoffUtc = TimeProvider.GetUtcNow().UtcDateTime.Subtract(CleanupOrphanedDataJob.OrphanedEventLookback);
+        var beforeCutoffUtc = cutoffUtc.AddMilliseconds(-1);
+        var validEvent = _eventData.GenerateEvent(organization.Id, project.Id, stack.Id);
+
+        string missingStackId = ObjectId.GenerateNewId().ToString();
+        var stackOrphanAtCutoff = _eventData.GenerateEvent(organization.Id, project.Id, missingStackId);
+        stackOrphanAtCutoff.CreatedUtc = cutoffUtc;
+        var stackOrphanBeforeCutoff = _eventData.GenerateEvent(organization.Id, project.Id, missingStackId);
+        stackOrphanBeforeCutoff.CreatedUtc = beforeCutoffUtc;
+
+        string missingProjectId = ObjectId.GenerateNewId().ToString();
+        var projectOrphanAtCutoff = _eventData.GenerateEvent(organization.Id, missingProjectId, stack.Id);
+        projectOrphanAtCutoff.CreatedUtc = cutoffUtc;
+        var projectOrphanBeforeCutoff = _eventData.GenerateEvent(organization.Id, missingProjectId, stack.Id);
+        projectOrphanBeforeCutoff.CreatedUtc = beforeCutoffUtc;
+
+        string missingOrganizationId = ObjectId.GenerateNewId().ToString();
+        var organizationOrphanAtCutoff = _eventData.GenerateEvent(missingOrganizationId, project.Id, stack.Id);
+        organizationOrphanAtCutoff.CreatedUtc = cutoffUtc;
+        var organizationOrphanBeforeCutoff = _eventData.GenerateEvent(missingOrganizationId, project.Id, stack.Id);
+        organizationOrphanBeforeCutoff.CreatedUtc = beforeCutoffUtc;
+
+        await _eventRepository.AddAsync([
+            validEvent,
+            stackOrphanAtCutoff,
+            stackOrphanBeforeCutoff,
+            projectOrphanAtCutoff,
+            projectOrphanBeforeCutoff,
+            organizationOrphanAtCutoff,
+            organizationOrphanBeforeCutoff
+        ], o => o.ImmediateConsistency());
+
+        await _job.RunAsync(TestCancellationToken);
+
+        var remainingEvents = await _eventRepository.GetAllAsync(o => o.PageLimit(10).ImmediateConsistency());
+        Assert.Equal(4, remainingEvents.Total);
+        Assert.Contains(remainingEvents.Documents, e => e.Id == validEvent.Id);
+        Assert.Contains(remainingEvents.Documents, e => e.Id == stackOrphanBeforeCutoff.Id);
+        Assert.Contains(remainingEvents.Documents, e => e.Id == projectOrphanBeforeCutoff.Id);
+        Assert.Contains(remainingEvents.Documents, e => e.Id == organizationOrphanBeforeCutoff.Id);
+        Assert.DoesNotContain(remainingEvents.Documents, e => e.Id == stackOrphanAtCutoff.Id);
+        Assert.DoesNotContain(remainingEvents.Documents, e => e.Id == projectOrphanAtCutoff.Id);
+        Assert.DoesNotContain(remainingEvents.Documents, e => e.Id == organizationOrphanAtCutoff.Id);
+    }
+
+    [Fact]
     public async Task FixDuplicateStacks_WithDuplicatesAcrossTenants_MergesCorrectly()
     {
         // Arrange - Two stacks in the same project with the same signature (duplicate)
