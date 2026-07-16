@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/svelte';
 import { describe, expect, it, vi } from 'vitest';
 
+import SourceMapsPage from './+page.svelte';
+
 vi.mock('$app/paths', () => ({
     resolve: (path: string) => path
 }));
@@ -16,9 +18,7 @@ vi.mock('$features/projects/api.svelte', () => ({
 }));
 
 describe('Source Maps page', () => {
-    it('renders the source map upload form', async () => {
-        const { default: SourceMapsPage } = await import('./+page.svelte');
-
+    it('renders the source map upload form', () => {
         render(SourceMapsPage);
 
         expect(screen.getByRole('heading', { name: 'Upload Source Map' })).toBeTruthy();

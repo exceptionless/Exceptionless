@@ -5,6 +5,7 @@ namespace Exceptionless.Core.Services.SourceMaps;
 public sealed class SourceMapDocument
 {
     private const string Base64Characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    private const int MaximumSourceEntries = 1_000_000;
     private readonly IReadOnlyList<IReadOnlyList<MappingSegment>> _lines;
     private readonly string[] _names;
     private readonly string[] _sources;
@@ -27,9 +28,9 @@ public sealed class SourceMapDocument
     internal long EstimatedMemorySize { get; }
 
     public static SourceMapDocument Parse(byte[] sourceMap, int maximumSegments = 1_000_000)
-        => Parse(sourceMap, maximumSegments, 100_000);
+        => Parse(sourceMap, maximumSegments, 100_000, MaximumSourceEntries);
 
-    internal static SourceMapDocument Parse(byte[] sourceMap, int maximumSegments, int maximumLines)
+    internal static SourceMapDocument Parse(byte[] sourceMap, int maximumSegments, int maximumLines, int maximumSourceEntries = MaximumSourceEntries)
     {
         using var document = JsonDocument.Parse(sourceMap);
         var root = document.RootElement;
@@ -47,12 +48,20 @@ public sealed class SourceMapDocument
             throw new JsonException("The source map mappings are required.");
 
         string mappings = mappingsElement.GetString() ?? throw new JsonException("The source map mappings are required.");
-        string[] sources = ReadStringArray(root, "sources");
-        string[] names = root.TryGetProperty("names", out _) ? ReadStringArray(root, "names") : [];
+        string[] sources = ReadStringArray(root, "sources", maximumSourceEntries, out long sourcesMemorySize);
+        long namesMemorySize = 0;
+        string[] names = root.TryGetProperty("names", out _)
+            ? ReadStringArray(root, "names", maximumSourceEntries, out namesMemorySize)
+            : [];
         string? sourceRoot = root.TryGetProperty("sourceRoot", out var sourceRootElement) ? sourceRootElement.GetString() : null;
 
         var lines = DecodeMappings(mappings, sources.Length, names.Length, maximumSegments, maximumLines, out int segmentCount);
-        long estimatedMemorySize = sourceMap.LongLength + (segmentCount * 64L) + (lines.Count * 64L);
+        long estimatedMemorySize = sourceMap.LongLength
+            + sourcesMemorySize
+            + namesMemorySize
+            + EstimateStringMemorySize(sourceRoot)
+            + (segmentCount * 64L)
+            + (lines.Count * 64L);
         return new SourceMapDocument(sourceRoot, sources, names, lines, estimatedMemorySize);
     }
 
@@ -78,15 +87,29 @@ public sealed class SourceMapDocument
         return new SourceMapLocation(CombineSource(SourceRoot, _sources[sourceIndex]), originalLine, originalColumn, name);
     }
 
-    private static string[] ReadStringArray(JsonElement root, string propertyName)
+    private static string[] ReadStringArray(JsonElement root, string propertyName, int maximumEntries, out long estimatedMemorySize)
     {
         if (!root.TryGetProperty(propertyName, out var element) || element.ValueKind != JsonValueKind.Array)
             throw new JsonException($"The source map {propertyName} array is required.");
+        if (maximumEntries < 1)
+            throw new ArgumentOutOfRangeException(nameof(maximumEntries));
 
-        return element.EnumerateArray()
-            .Select(value => value.GetString() ?? throw new JsonException($"The source map {propertyName} array contains a null value."))
-            .ToArray();
+        estimatedMemorySize = 0;
+        var values = new List<string>(Math.Min(element.GetArrayLength(), maximumEntries));
+        foreach (var value in element.EnumerateArray())
+        {
+            if (values.Count >= maximumEntries)
+                throw new JsonException($"The source map {propertyName} array contains too many entries.");
+
+            string text = value.GetString() ?? throw new JsonException($"The source map {propertyName} array contains a null value.");
+            values.Add(text);
+            estimatedMemorySize += IntPtr.Size + EstimateStringMemorySize(text);
+        }
+
+        return values.ToArray();
     }
+
+    private static long EstimateStringMemorySize(string? value) => value is null ? 0 : 24L + (value.Length * sizeof(char));
 
     private static IReadOnlyList<IReadOnlyList<MappingSegment>> DecodeMappings(
         string mappings,

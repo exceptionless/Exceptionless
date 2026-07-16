@@ -104,4 +104,14 @@ public sealed class SourceMapDocumentTests
 
         Assert.Contains("too many generated lines", exception.Message);
     }
+
+    [Fact]
+    public void Parse_TooManySourceEntries_ThrowsJsonException()
+    {
+        byte[] sourceMap = Encoding.UTF8.GetBytes("""{"version":3,"sources":["one.ts","two.ts"],"names":[],"mappings":""}""");
+
+        var exception = Assert.Throws<JsonException>(() => SourceMapDocument.Parse(sourceMap, maximumSegments: 1, maximumLines: 1, maximumSourceEntries: 1));
+
+        Assert.Contains("sources array contains too many entries", exception.Message);
+    }
 }

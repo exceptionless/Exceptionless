@@ -77,6 +77,8 @@ public sealed class SourceMapServiceTests : TestWithServices
             requestedUris.Add(request.RequestUri!);
             if (request.RequestUri == new Uri(GeneratedFileUrl))
             {
+                Assert.Equal("bytes=-65536", request.Headers.Range?.ToString());
+                Assert.Equal("identity", Assert.Single(request.Headers.AcceptEncoding).Value);
                 var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("minified") };
                 response.Headers.TryAddWithoutValidation("SourceMap", "app.min.js.map");
                 return response;

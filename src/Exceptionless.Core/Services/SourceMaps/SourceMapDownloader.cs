@@ -23,7 +23,12 @@ internal sealed class SourceMapDownloader
         using var generatedResponse = await SendAsync(
             generatedFileUri,
             _options.MaximumGeneratedFileSize,
-            request => request.Headers.Range = new RangeHeaderValue(null, 64 * 1024),
+            request =>
+            {
+                request.Headers.Range = new RangeHeaderValue(null, 64 * 1024);
+                request.Headers.AcceptEncoding.Clear();
+                request.Headers.AcceptEncoding.Add(new StringWithQualityHeaderValue("identity"));
+            },
             isRefresh,
             cancellationToken);
         if (!generatedResponse.Response.IsSuccessStatusCode)
