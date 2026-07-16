@@ -211,8 +211,9 @@ public partial class Program
             });
 
             var app = builder.Build();
+            var runtimeOptions = app.Services.GetRequiredService<AppOptions>();
 
-            Core.Bootstrapper.LogConfiguration(app.Services, options, app.Services.GetRequiredService<ILogger<Program>>());
+            Core.Bootstrapper.LogConfiguration(app.Services, runtimeOptions, app.Services.GetRequiredService<ILogger<Program>>());
 
             app.UseExceptionHandler(new ExceptionHandlerOptions
             {
@@ -231,11 +232,11 @@ public partial class Program
 
             app.UseHealthChecks("/health", new HealthCheckOptions
             {
-                Predicate = hcr => hcr.Tags.Contains("Critical") || (options.RunJobsInProcess && hcr.Tags.Contains("AllJobs"))
+                Predicate = hcr => hcr.Tags.Contains("Critical") || (runtimeOptions.RunJobsInProcess && hcr.Tags.Contains("AllJobs"))
             });
 
             List<string> readyTags = ["Critical"];
-            if (!options.EventSubmissionDisabled)
+            if (!runtimeOptions.EventSubmissionDisabled)
             {
                 readyTags.Add("Storage");
             }
@@ -243,14 +244,14 @@ public partial class Program
             app.UseReadyHealthChecks(readyTags.ToArray());
             app.UseWaitForStartupActionsBeforeServingRequests();
 
-            if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
+            if (!String.IsNullOrEmpty(runtimeOptions.ExceptionlessApiKey) && !String.IsNullOrEmpty(runtimeOptions.ExceptionlessServerUrl))
             {
                 app.UseExceptionless(ExceptionlessClient.Default);
             }
 
             app.Use(async (context, next) =>
             {
-                if (options.AppMode != AppMode.Development && !context.Request.IsLocal())
+                if (runtimeOptions.AppMode != AppMode.Development && !context.Request.IsLocal())
                 {
                     context.Response.Headers.StrictTransportSecurity = "max-age=31536000; includeSubDomains";
                 }
@@ -265,7 +266,7 @@ public partial class Program
             });
 
             var serverAddressesFeature = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>();
-            bool ssl = options.AppMode != AppMode.Development && serverAddressesFeature is not null && serverAddressesFeature.Addresses.Any(a => a.StartsWith("https://"));
+            bool ssl = runtimeOptions.AppMode != AppMode.Development && serverAddressesFeature is not null && serverAddressesFeature.Addresses.Any(a => a.StartsWith("https://"));
 
             if (ssl)
             {
@@ -360,7 +361,7 @@ public partial class Program
             app.UseMiddleware<ProjectConfigMiddleware>();
             app.UseMiddleware<RecordSessionHeartbeatMiddleware>();
 
-            if (options.ApiThrottleLimit < Int32.MaxValue)
+            if (runtimeOptions.ApiThrottleLimit < Int32.MaxValue)
             {
                 app.UseMiddleware<ThrottlingMiddleware>();
             }
@@ -376,8 +377,8 @@ public partial class Program
             // global active-stream admission. The V3 branch still enforces finite independent
             // compressed and decompressed limits while the endpoint resolves organization admission.
             app.UseWhen(
-                context => options.EventIngestionV3.Enabled
-                    && !options.EventSubmissionDisabled
+                context => runtimeOptions.EventIngestionV3.Enabled
+                    && !runtimeOptions.EventSubmissionDisabled
                     && IsEventIngestionV3Endpoint(context),
                 branch =>
                 {
@@ -385,7 +386,7 @@ public partial class Program
                     branch.UseRequestDecompression();
                 });
 
-            if (options.EnableWebSockets)
+            if (runtimeOptions.EnableWebSockets)
             {
                 app.UseWebSockets();
                 app.UseMiddleware<MessageBusBrokerMiddleware>();
@@ -401,7 +402,7 @@ public partial class Program
             });
             app.MapApiEndpoints();
             app.MapEventPostProcessing();
-            app.MapEventIngestionV3(options);
+            app.MapEventIngestionV3(runtimeOptions);
             app.MapMcp("/mcp").RequireAuthorization(AuthorizationRoles.McpPolicy);
             app.MapFallback("{**slug:nonfile}", CreateRequestDelegate(app, "/index.html"))
                 .WithMetadata(new HttpMethodMetadata([HttpMethods.Get]));
