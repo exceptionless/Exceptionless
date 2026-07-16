@@ -55,6 +55,18 @@ public class EventPostsJob : QueueJobBase<EventPost>
         var entry = context.QueueEntry;
         var ep = entry.Value;
 
+        // The controller returns the queue id without performing cache I/O so opt-in benchmark
+        // instrumentation does not distort V2 submission latency. The worker lazily creates the
+        // correlation state when processing begins; until then the status endpoint reports unknown.
+        if (ep.TrackProcessing && String.IsNullOrEmpty(ep.ProcessingCorrelationId))
+        {
+            bool initialized = await _eventPostService.InitializeProcessingTrackingAsync(entry.Id, ep.ProjectId);
+            if (initialized)
+            {
+                ep = ep with { ProcessingCorrelationId = entry.Id };
+            }
+        }
+
         using var _ = _logger.BeginScope(new ExceptionlessState().Organization(ep.OrganizationId).Project(ep.ProjectId));
 
         string payloadPath = Path.ChangeExtension(ep.FilePath, ".payload");
@@ -72,7 +84,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
         AppDiagnostics.PostsMessageSize.Record(payload.LongLength);
         if (payload.LongLength > _maximumEventPostFileSize)
         {
-            await Task.WhenAll(AppDiagnostics.PostsCompleteTime.TimeAsync(() => entry.CompleteAsync()), projectTask, organizationTask);
+            await Task.WhenAll(CompleteEntryAsync(entry, ep, _timeProvider.GetUtcNow().UtcDateTime), projectTask, organizationTask);
             return JobResult.FailedWithMessage($"Unable to process payload '{payloadPath}' ({payload.LongLength} bytes): Maximum event post size limit ({_appOptions.MaximumEventPostSize} bytes) reached.");
         }
 
@@ -83,13 +95,19 @@ public class EventPostsJob : QueueJobBase<EventPost>
         if (!isInternalProject && _logger.IsEnabled(LogLevel.Information))
         {
             using (_logger.BeginScope(new ExceptionlessState().Tag("processing").Tag("compressed").Tag(ep.ContentEncoding).Value(payload.Length)))
+            {
                 _logger.LogInformation("Processing post: id={QueueEntryId} path={FilePath} project={ProjectId} ip={IpAddress} v={ApiVersion} agent={UserAgent}", entry.Id, payloadPath, ep.ProjectId, ep.IpAddress, ep.ApiVersion, ep.UserAgent);
+            }
         }
 
         var project = await projectTask;
         if (project is null)
         {
-            if (!isInternalProject) _logger.LogError("Unable to process EventPost {FilePath}: Unable to load project: {ProjectId}", payloadPath, ep.ProjectId);
+            if (!isInternalProject)
+            {
+                _logger.LogError("Unable to process EventPost {FilePath}: Unable to load project: {ProjectId}", payloadPath, ep.ProjectId);
+            }
+
             await Task.WhenAll(CompleteEntryAsync(entry, ep, _timeProvider.GetUtcNow().UtcDateTime), organizationTask);
             return JobResult.Success;
         }
@@ -101,7 +119,9 @@ public class EventPostsJob : QueueJobBase<EventPost>
             if (!isInternalProject && isDebugLogLevelEnabled)
             {
                 using (_logger.BeginScope(new ExceptionlessState().Tag("decompressing").Tag(ep.ContentEncoding)))
+                {
                     _logger.LogDebug("Decompressing EventPost: {QueueEntryId} ({CompressedBytes} bytes)", entry.Id, payload.Length);
+                }
             }
 
             maxEventPostSize = _maximumUncompressedEventPostSize;
@@ -125,9 +145,14 @@ public class EventPostsJob : QueueJobBase<EventPost>
         {
             var org = await organizationTask;
             if (org is not null)
+            {
                 await _usageService.IncrementTooBigAsync(org.Id, project.Id);
+            }
             else
+            {
                 _logger.LogWarning("Organization {OrganizationId} not found, skipping too-big usage increment for event post {EventPostId}", ep.OrganizationId, entry.Id);
+            }
+
             await CompleteEntryAsync(entry, ep, _timeProvider.GetUtcNow().UtcDateTime);
             return JobResult.FailedWithMessage($"Unable to process decompressed EventPost data '{payloadPath}' ({payload.Length} bytes compressed, {uncompressedData.Length} bytes): Maximum uncompressed event post size limit ({maxEventPostSize} bytes) reached.");
         }
@@ -135,7 +160,9 @@ public class EventPostsJob : QueueJobBase<EventPost>
         if (!isInternalProject && isDebugLogLevelEnabled)
         {
             using (_logger.BeginScope(new ExceptionlessState().Tag("uncompressed").Value(uncompressedData.Length)))
+            {
                 _logger.LogDebug("Processing uncompressed EventPost: {QueueEntryId}  ({UncompressedBytes} bytes)", entry.Id, uncompressedData.Length);
+            }
         }
 
         var createdUtc = _timeProvider.GetUtcNow().UtcDateTime;
@@ -156,7 +183,9 @@ public class EventPostsJob : QueueJobBase<EventPost>
         if (organization is null)
         {
             if (!isInternalProject)
+            {
                 _logger.LogError("Unable to process EventPost {FilePath}: Unable to load organization: {OrganizationId}", payloadPath, project.OrganizationId);
+            }
 
             await CompleteEntryAsync(entry, ep, _timeProvider.GetUtcNow().UtcDateTime);
             return JobResult.Success;
@@ -167,7 +196,9 @@ public class EventPostsJob : QueueJobBase<EventPost>
         if (eventsToProcess < 1)
         {
             if (!isInternalProject)
+            {
                 _logger.LogDebug("Unable to process EventPost {FilePath}: Over plan limits", payloadPath);
+            }
 
             await _usageService.IncrementBlockedAsync(organization.Id, project.Id, events.Count);
 
@@ -195,7 +226,9 @@ public class EventPostsJob : QueueJobBase<EventPost>
             if (!isInternalProject && isDebugLogLevelEnabled)
             {
                 using (_logger.BeginScope(new ExceptionlessState().Value(contexts.Count)))
+                {
                     _logger.LogDebug("Ran {@Value} events through the pipeline: id={QueueEntryId} success={SuccessCount} error={ErrorCount}", contexts.Count, entry.Id, contexts.Count(r => r.IsProcessed), contexts.Count(r => r.HasError));
+                }
             }
 
             // increment the plan usage counters (note: OverageHandler already incremented usage by 1)
@@ -208,14 +241,24 @@ public class EventPostsJob : QueueJobBase<EventPost>
             foreach (var ctx in contexts)
             {
                 if (ctx.IsCancelled)
+                {
                     continue;
+                }
 
                 if (!ctx.HasError)
+                {
                     continue;
+                }
 
-                if (!isInternalProject) _logger.LogError(ctx.Exception, "Error processing EventPost {QueueEntryId} {FilePath}: {Message}", entry.Id, payloadPath, ctx.ErrorMessage);
+                if (!isInternalProject)
+                {
+                    _logger.LogError(ctx.Exception, "Error processing EventPost {QueueEntryId} {FilePath}: {Message}", entry.Id, payloadPath, ctx.ErrorMessage);
+                }
+
                 if (ctx.Exception is MiniValidatorException)
+                {
                     continue;
+                }
 
                 errorCount++;
                 if (!isSingleEvent)
@@ -227,7 +270,11 @@ public class EventPostsJob : QueueJobBase<EventPost>
         }
         catch (Exception ex)
         {
-            if (!isInternalProject) _logger.LogError(ex, "Error processing EventPost {QueueEntryId} {FilePath}: {Message}", entry.Id, payloadPath, ex.Message);
+            if (!isInternalProject)
+            {
+                _logger.LogError(ex, "Error processing EventPost {QueueEntryId} {FilePath}: {Message}", entry.Id, payloadPath, ex.Message);
+            }
+
             if (ex is ArgumentException || ex is DocumentNotFoundException)
             {
                 await CompleteEntryAsync(entry, ep, createdUtc);
@@ -236,16 +283,27 @@ public class EventPostsJob : QueueJobBase<EventPost>
 
             errorCount++;
             if (!isSingleEvent)
+            {
                 eventsToRetry.AddRange(events);
+            }
         }
 
+        bool completeTracking = true;
         if (eventsToRetry.Count > 0)
-            await AppDiagnostics.PostsRetryTime.TimeAsync(() => RetryEventsAsync(eventsToRetry, ep, entry, project, isInternalProject));
+        {
+            bool propagateTracking = await _eventPostService.AddPendingProcessingUnitsAsync(ep, eventsToRetry.Count);
+            await AppDiagnostics.PostsRetryTime.TimeAsync(() => RetryEventsAsync(eventsToRetry, ep, entry, project, isInternalProject, propagateTracking));
+            completeTracking = propagateTracking;
+        }
 
         if (isSingleEvent && errorCount > 0)
+        {
             await AbandonEntryAsync(entry);
+        }
         else
-            await CompleteEntryAsync(entry, ep, createdUtc);
+        {
+            await CompleteEntryAsync(entry, ep, createdUtc, completeTracking);
+        }
 
         return JobResult.Success;
     }
@@ -255,14 +313,18 @@ public class EventPostsJob : QueueJobBase<EventPost>
         using (_logger.BeginScope(new ExceptionlessState().Tag("parsing")))
         {
             if (!isInternalProject && _logger.IsEnabled(LogLevel.Debug))
+            {
                 _logger.LogDebug("Parsing EventPost: {QueueEntryId}", queueEntryId);
+            }
 
             var events = new List<PersistentEvent>();
             try
             {
                 var encoding = Encoding.UTF8;
                 if (!String.IsNullOrEmpty(ep.CharSet))
+                {
                     encoding = Encoding.GetEncoding(ep.CharSet);
+                }
 
                 AppDiagnostics.PostsParsingTime.Time(() =>
                 {
@@ -276,7 +338,9 @@ public class EventPostsJob : QueueJobBase<EventPost>
 
                         // set the reference id to the event id if one was defined.
                         if (!String.IsNullOrEmpty(ev.Id) && String.IsNullOrEmpty(ev.ReferenceId))
+                        {
                             ev.ReferenceId = ev.Id;
+                        }
 
                         // the event id and stack id should never be set for posted events
                         ev.Id = ev.StackId = null!;
@@ -288,17 +352,22 @@ public class EventPostsJob : QueueJobBase<EventPost>
             catch (Exception ex)
             {
                 AppDiagnostics.PostsParseErrors.Add(1);
-                if (!isInternalProject) _logger.LogError(ex, "An error occurred while processing the EventPost {QueueEntryId}: {Message}", queueEntryId, ex.Message);
+                if (!isInternalProject)
+                {
+                    _logger.LogError(ex, "An error occurred while processing the EventPost {QueueEntryId}: {Message}", queueEntryId, ex.Message);
+                }
             }
 
             if (!isInternalProject && _logger.IsEnabled(LogLevel.Debug))
+            {
                 _logger.LogDebug("Parsed {ParsedCount} events from EventPost: {QueueEntryId}", events?.Count ?? 0, queueEntryId);
+            }
 
             return events;
         }
     }
 
-    private async Task RetryEventsAsync(List<PersistentEvent> eventsToRetry, EventPostInfo ep, IQueueEntry<EventPost> queueEntry, Project project, bool isInternalProject)
+    private async Task RetryEventsAsync(List<PersistentEvent> eventsToRetry, EventPost ep, IQueueEntry<EventPost> queueEntry, Project project, bool isInternalProject, bool propagateTracking)
     {
         AppDiagnostics.EventsRetryCount.Add(eventsToRetry.Count);
         foreach (var ev in eventsToRetry)
@@ -316,6 +385,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
                     IpAddress = ep.IpAddress,
                     MediaType = ep.MediaType,
                     OrganizationId = ep.OrganizationId ?? project.OrganizationId,
+                    ProcessingCorrelationId = propagateTracking ? ep.ProcessingCorrelationId : null,
                     ProjectId = ep.ProjectId ?? project.Id,
                     UserAgent = ep.UserAgent
                 }, stream);
@@ -325,7 +395,9 @@ public class EventPostsJob : QueueJobBase<EventPost>
                 if (!isInternalProject && _logger.IsEnabled(LogLevel.Critical))
                 {
                     using (_logger.BeginScope(new ExceptionlessState().Property("Event", new { ev.Date, ev.StackId, ev.Type, ev.Source, ev.Message, ev.Value, ev.Geo, ev.ReferenceId, ev.Tags })))
+                    {
                         _logger.LogCritical(ex, "Error while requeuing event post {QueueEntryId} {FilePath}: {Message}", queueEntry.Id, queueEntry.Value.FilePath, ex.Message);
+                    }
                 }
 
                 AppDiagnostics.EventsRetryErrors.Add(1);
@@ -338,12 +410,16 @@ public class EventPostsJob : QueueJobBase<EventPost>
         return AppDiagnostics.PostsAbandonTime.TimeAsync(queueEntry.AbandonAsync);
     }
 
-    private Task CompleteEntryAsync(IQueueEntry<EventPost> entry, EventPost eventPost, DateTime created)
+    private Task CompleteEntryAsync(IQueueEntry<EventPost> entry, EventPost eventPost, DateTime created, bool completeTracking = true)
     {
         return AppDiagnostics.PostsCompleteTime.TimeAsync(async () =>
         {
             await entry.CompleteAsync();
-            await _eventPostService.CompleteEventPostAsync(eventPost.FilePath, eventPost.ProjectId, created, eventPost.ShouldArchive);
+            bool eventPostCompleted = await _eventPostService.CompleteEventPostAsync(eventPost.FilePath, eventPost.ProjectId, created, eventPost.ShouldArchive);
+            if (eventPostCompleted)
+            {
+                await _eventPostService.MarkProcessingCompletedAsync(entry.Id, eventPost, completeTracking);
+            }
         });
     }
 

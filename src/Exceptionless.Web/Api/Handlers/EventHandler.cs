@@ -555,6 +555,7 @@ public class EventHandler(
     public async Task<Result> Handle(SubmitEventByPost message)
     {
         var httpContext = message.Context;
+        bool trackProcessing = message.TrackProcessing && appOptions.EventIngestionV3.EnableProcessingStatus;
         string? claimProjectId = httpContext.Request.GetProjectId();
         if (message.ProjectId is not null && claimProjectId is not null && !String.Equals(message.ProjectId, claimProjectId))
         {
@@ -601,6 +602,7 @@ public class EventHandler(
                 MediaType = mediaType,
                 OrganizationId = project.OrganizationId,
                 ProjectId = project.Id,
+                TrackProcessing = trackProcessing,
                 UserAgent = message.UserAgent,
             }, requestBody, httpContext.RequestAborted);
 
@@ -613,6 +615,11 @@ public class EventHandler(
                     return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.RequestEntityTooLarge, result.RejectionReason ?? "Request body too large."));
 
                 return Result.BadRequest(result.RejectionReason ?? "Request body was rejected.");
+            }
+
+            if (trackProcessing && result.QueueEntryId is { Length: > 0 } queueEntryId)
+            {
+                httpContext.Response.Headers[Headers.EventPostId] = queueEntryId;
             }
         }
         catch (Exception ex)

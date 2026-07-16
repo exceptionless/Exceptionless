@@ -71,6 +71,27 @@ Content-Type: application/json
   "reference_id": "{{referenceId}}"
 }
 
+### Post with opt-in terminal processing tracking
+# @name trackedEventPost
+POST {{apiUrl}}/projects/{{projectId}}/events
+Authorization: Bearer {{clientToken}}
+Content-Type: application/json
+X-Exceptionless-Track-Event-Post: true
+
+{
+  "message": "Tracked load-test event",
+  "reference_id": "tracked-event-post"
+}
+
+### Check tracked V2 event-post processing status
+POST {{apiUrl}}/projects/{{projectId}}/events/posts/status
+Authorization: Bearer {{clientToken}}
+Content-Type: application/json
+
+{
+  "ids": ["{{trackedEventPost.response.headers.X-Exceptionless-Event-Post-Id}}"]
+}
+
 ### Post User Description
 POST {{apiUrl}}/events/by-ref/{{referenceId}}/user-description?access_token={{clientToken}}
 Content-Type: application/json

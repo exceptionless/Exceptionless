@@ -1,4 +1,6 @@
-﻿namespace Exceptionless.Core.Queues.Models;
+﻿using System.Text.Json.Serialization;
+
+namespace Exceptionless.Core.Queues.Models;
 
 public record EventPostInfo
 {
@@ -20,5 +22,9 @@ public record EventPost : EventPostInfo
     }
 
     public bool ShouldArchive { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool TrackProcessing { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public string? ProcessingCorrelationId { get; init; }
     public string FilePath { get; set; } = null!;
 }

@@ -8289,6 +8289,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Exceptionless-Track-Event-Post",
+            "in": "header",
+            "description": "Whether to return an event-post identifier that can be polled for terminal processing.",
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "requestBody": {
@@ -8656,6 +8664,14 @@
             "description": "The user agent that submitted the event.",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "X-Exceptionless-Track-Event-Post",
+            "in": "header",
+            "description": "Whether to return an event-post identifier that can be polled for terminal processing.",
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
@@ -11862,6 +11878,11 @@
             "type": "boolean",
             "description": "Whether the event resulted in the creation of a new stack."
           },
+          "is_regression": {
+            "type": "boolean",
+            "description": "Whether this occurrence caused a fixed stack to regress.",
+            "readOnly": true
+          },
           "created_utc": {
             "type": "string",
             "description": "The date that the event was created in the system.",
@@ -12212,6 +12233,16 @@
             ],
             "description": "The date the stack was fixed.",
             "format": "date-time"
+          },
+          "regression_event_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The event that most recently caused this stack to regress."
           },
           "title": {
             "maxLength": 1000,

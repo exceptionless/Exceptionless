@@ -17,11 +17,8 @@ public sealed class EndpointManifestTests : IClassFixture<AppWebHostFactory>
     }
 
     [Fact]
-    public async Task MapApiEndpoints_DefaultServices_MatchesSnapshot()
+    public Task MapApiEndpoints_DefaultServices_MatchesSnapshot()
     {
-        // Arrange
-        await _factory.Server.WaitForReadyAsync();
-
         // Act
         var manifest = _factory.Server.Services.GetRequiredService<EndpointDataSource>().Endpoints
             .OfType<RouteEndpoint>()
@@ -35,7 +32,7 @@ public sealed class EndpointManifestTests : IClassFixture<AppWebHostFactory>
         string actualJson = SnapshotTestHelper.Serialize(manifest);
 
         // Assert
-        await SnapshotTestHelper.AssertMatchesJsonSnapshotAsync("endpoint-manifest.json", actualJson, TestContext.Current.CancellationToken);
+        return SnapshotTestHelper.AssertMatchesJsonSnapshotAsync("endpoint-manifest.json", actualJson, TestContext.Current.CancellationToken);
     }
 
     private static bool IsApiContractEndpoint(RouteEndpoint endpoint)

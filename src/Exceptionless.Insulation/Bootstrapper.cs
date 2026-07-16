@@ -9,6 +9,7 @@ using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Jobs.Elastic;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Queues.Models;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Geo;
 using Exceptionless.Insulation.HealthChecks;
@@ -44,10 +45,14 @@ public class Bootstrapper
             client.Configuration.UseLogger(new SelfLogLogger());
 
             if (!String.IsNullOrEmpty(appOptions.Version))
+            {
                 client.Configuration.SetVersion(appOptions.Version);
+            }
 
             if (String.IsNullOrEmpty(appOptions.InternalProjectId))
+            {
                 client.Configuration.Enabled = false;
+            }
 
             client.Configuration.UseInMemoryStorage();
             client.Configuration.UseReferenceIds();
@@ -57,10 +62,14 @@ public class Bootstrapper
         }
 
         if (!String.IsNullOrEmpty(appOptions.GoogleGeocodingApiKey))
+        {
             services.ReplaceSingleton<IGeocodeService>(s => new GoogleGeocodeService(appOptions.GoogleGeocodingApiKey));
+        }
 
         if (!String.IsNullOrEmpty(appOptions.MaxMindGeoIpKey))
+        {
             services.ReplaceSingleton<IGeoIpService, MaxMindGeoIpService>();
+        }
 
         RegisterCache(services, appOptions.CacheOptions);
         RegisterMessageBus(services, appOptions.MessageBusOptions);
@@ -70,7 +79,9 @@ public class Bootstrapper
         RegisterHealthChecks(services);
 
         if (!String.IsNullOrEmpty(appOptions.EmailOptions.SmtpHost))
+        {
             services.ReplaceSingleton<IMailSender, MailKitMailSender>();
+        }
     }
 
     private static IHealthChecksBuilder RegisterHealthChecks(IServiceCollection services)
@@ -97,7 +108,8 @@ public class Bootstrapper
             .AddAutoNamedCheck<MaintainIndexesJob>("AllJobs")
             .AddAutoNamedCheck<CleanupDataJob>("AllJobs")
             .AddAutoNamedCheck<StackStatusJob>("AllJobs")
-            .AddAutoNamedCheck<StackEventCountJob>("AllJobs");
+            .AddAutoNamedCheck<StackEventCountJob>("AllJobs")
+            .AddAutoNamedCheck<IngestionStackEventCountJob>("AllJobs");
     }
 
     private static void RegisterCache(IServiceCollection container, CacheOptions options)
@@ -107,10 +119,22 @@ public class Bootstrapper
             container.ReplaceSingleton(s => GetRedisConnection(options.ConnectionString!, s.GetRequiredService<ILoggerFactory>()));
 
             if (!String.IsNullOrEmpty(options.Scope))
+            {
                 container.ReplaceSingleton<ICacheClient>(s => new ScopedCacheClient(CreateRedisCacheClient(s), options.Scope));
+            }
             else
+            {
                 container.ReplaceSingleton<ICacheClient>(CreateRedisCacheClient);
+            }
 
+            container.ReplaceSingleton<IIngestionQuotaStore>(s => new RedisIngestionQuotaStore(
+                s.GetRequiredService<IConnectionMultiplexer>(),
+                s.GetRequiredService<TimeProvider>(),
+                options.Scope));
+            container.ReplaceSingleton<IIngestionStackUsageStore>(s => new RedisIngestionStackUsageStore(
+                s.GetRequiredService<IConnectionMultiplexer>(),
+                s.GetRequiredService<AppOptions>(),
+                options.Scope));
             container.ReplaceSingleton<IConnectionMapping, RedisConnectionMapping>();
         }
     }
@@ -221,7 +245,9 @@ public class Bootstrapper
                 });
 
                 if (!String.IsNullOrWhiteSpace(options.Scope))
+                {
                     storage = new ScopedFileStorage(storage, options.Scope);
+                }
 
                 return storage;
             });
@@ -325,7 +351,9 @@ public class Bootstrapper
         string accessKey = data.GetString("accesskey");
         string secretKey = data.GetString("secretkey");
         if (!String.IsNullOrEmpty(accessKey) && !String.IsNullOrEmpty(secretKey))
+        {
             return new BasicAWSCredentials(accessKey, secretKey);
+        }
 
         return DefaultAWSCredentialsIdentityResolver.GetCredentials();
     }

@@ -36,7 +36,9 @@ public class Program
             await ExceptionlessClient.Default.ProcessQueueAsync();
 
             if (Debugger.IsAttached)
+            {
                 Console.ReadKey();
+            }
         }
     }
 
@@ -77,7 +79,9 @@ public class Program
                 c.Enrich.WithMachineName();
 
                 if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
+                {
                     c.WriteTo.Exceptionless(restrictedToMinimumLevel: LogEventLevel.Information);
+                }
             }, writeToProviders: true)
             .ConfigureWebHostDefaults(webBuilder =>
             {
@@ -91,7 +95,9 @@ public class Program
                             o.GetLevel = new Func<HttpContext, double, Exception?, LogEventLevel>((context, duration, ex) =>
                             {
                                 if (ex is not null || context.Response.StatusCode > 499)
+                                {
                                     return LogEventLevel.Error;
+                                }
 
                                 return duration < 1000 && context.Response.StatusCode < 400 ? LogEventLevel.Debug : LogEventLevel.Information;
                             });
@@ -100,7 +106,9 @@ public class Program
                         Bootstrapper.LogConfiguration(app.ApplicationServices, options, app.ApplicationServices.GetRequiredService<ILogger<Program>>());
 
                         if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
+                        {
                             app.UseExceptionless(ExceptionlessClient.Default);
+                        }
 
                         app.UseHealthChecks("/health", new HealthCheckOptions
                         {
@@ -137,52 +145,113 @@ public class Program
         services.AddJobLifetimeService();
 
         if (options is { CleanupData: true, AllJobs: true })
+        {
             services.AddCronJob<CleanupDataJob>("30 */4 * * *");
+        }
+
         if (options is { CleanupData: true, AllJobs: false })
+        {
             services.AddJob<CleanupDataJob>();
+        }
 
         if (options is { CleanupOrphanedData: true, AllJobs: true })
+        {
             services.AddCronJob<CleanupOrphanedDataJob>("45 */8 * * *");
+        }
+
         if (options is { CleanupOrphanedData: true, AllJobs: false })
+        {
             services.AddJob<CleanupOrphanedDataJob>();
+        }
 
         if (options.CloseInactiveSessions)
+        {
             services.AddJob<CloseInactiveSessionsJob>(o => o.WaitForStartupActions());
+        }
+
         if (options.DailySummary)
+        {
             services.AddJob<DailySummaryJob>(o => o.WaitForStartupActions());
+        }
+
         if (options.DataMigration)
+        {
             services.AddJob<DataMigrationJob>(o => o.WaitForStartupActions());
+        }
 
         if (options is { DownloadGeoIPDatabase: true, AllJobs: true })
+        {
             services.AddCronJob<DownloadGeoIPDatabaseJob>("0 1 * * *");
+        }
+
         if (options is { DownloadGeoIPDatabase: true, AllJobs: false })
+        {
             services.AddJob<DownloadGeoIPDatabaseJob>(o => o.WaitForStartupActions());
+        }
 
         if (options.EventNotifications)
+        {
             services.AddJob<EventNotificationsJob>(o => o.WaitForStartupActions());
+        }
+
         if (options.EventPosts)
+        {
             services.AddJob<EventPostsJob>(o => o.WaitForStartupActions());
+        }
+
         if (options.EventUsage)
+        {
             services.AddJob<EventUsageJob>(o => o.WaitForStartupActions());
+        }
+
         if (options.EventUserDescriptions)
+        {
             services.AddJob<EventUserDescriptionsJob>(o => o.WaitForStartupActions());
+        }
+
         if (options.MailMessage)
+        {
             services.AddJob<MailMessageJob>(o => o.WaitForStartupActions());
+        }
 
         if (options is { MaintainIndexes: true, AllJobs: true })
+        {
             services.AddCronJob<MaintainIndexesJob>("10 */2 * * *");
+        }
+
         if (options is { MaintainIndexes: true, AllJobs: false })
+        {
             services.AddJob<MaintainIndexesJob>();
+        }
 
         if (options.Migration)
+        {
             services.AddJob<MigrationJob>(o => o.WaitForStartupActions());
+        }
+
         if (options.StackStatus)
+        {
             services.AddJob<StackStatusJob>(o => o.WaitForStartupActions());
+        }
+
         if (options.StackEventCount)
+        {
             services.AddJob<StackEventCountJob>(o => o.WaitForStartupActions());
+        }
+
+        if (options.IngestionStackEventCount)
+        {
+            services.AddJob<IngestionStackEventCountJob>(o => o.WaitForStartupActions());
+        }
+
         if (options.WebHooks)
+        {
             services.AddJob<WebHooksJob>(o => o.WaitForStartupActions());
+        }
+
         if (options.WorkItem)
+        {
             services.AddJob<WorkItemJob>(o => o.WaitForStartupActions());
+        }
     }
 }

@@ -11,18 +11,8 @@ namespace Exceptionless.Core.Plugins.EventProcessor;
 [Priority(40)]
 public sealed class RequestInfoPlugin : EventProcessorPluginBase
 {
-    public const int MAX_VALUE_LENGTH = 1000;
-    public static readonly List<string> DefaultExclusions =
-    [
-        "*VIEWSTATE*",
-        "*EVENTVALIDATION*",
-        "*ASPX*",
-        "__RequestVerificationToken",
-        "ASP.NET_SessionId",
-        "__LastErrorId",
-        "WAWebSiteID",
-        "ARRAffinity"
-    ];
+    public const int MAX_VALUE_LENGTH = RequestInfoExtensions.MaximumDataValueLength;
+    public static readonly List<string> DefaultExclusions = [.. RequestInfoExtensions.DefaultDataExclusions];
 
     private readonly UserAgentParser _parser;
     private readonly ITextSerializer _serializer;
@@ -41,7 +31,9 @@ public sealed class RequestInfoPlugin : EventProcessorPluginBase
         {
             var request = context.Event.GetRequestInfo(_serializer, _logger);
             if (request is null)
+            {
                 continue;
+            }
 
             if (context.IncludePrivateInformation)
             {
@@ -72,7 +64,9 @@ public sealed class RequestInfoPlugin : EventProcessorPluginBase
         {
             bool requestIpIsLocal = submissionClient.IpAddress.IsLocalHost();
             if (ips.Count == 0 || !requestIpIsLocal && ips.Count(ip => !ip.IsLocalHost()) == 0)
+            {
                 ips.Add(submissionClient.IpAddress);
+            }
         }
 
         request.ClientIpAddress = ips.Distinct().ToDelimitedString();
@@ -81,11 +75,15 @@ public sealed class RequestInfoPlugin : EventProcessorPluginBase
     private async Task SetBrowserOsAndDeviceFromUserAgent(RequestInfo request, EventContext context)
     {
         if (String.IsNullOrEmpty(request.UserAgent))
+        {
             return;
+        }
 
         var info = await _parser.ParseAsync(request.UserAgent);
         if (info is null)
+        {
             return;
+        }
 
         request.Data ??= new DataDictionary();
         if (!String.Equals(info.UA.Family, "Other"))
@@ -99,7 +97,9 @@ public sealed class RequestInfoPlugin : EventProcessorPluginBase
         }
 
         if (!String.Equals(info.Device.Family, "Other"))
+        {
             request.Data[RequestInfo.KnownDataKeys.Device] = info.Device.Family;
+        }
 
         if (!String.Equals(info.OS.Family, "Other"))
         {

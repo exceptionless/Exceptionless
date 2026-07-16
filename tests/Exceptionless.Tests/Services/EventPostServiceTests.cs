@@ -50,4 +50,39 @@ public sealed class EventPostServiceTests : IntegrationTestsBase
         Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
         Assert.Empty(await _storage.GetFileListAsync(cancellationToken: TestCancellationToken));
     }
+
+    [Fact]
+    public async Task ProcessingTracking_RetryDescendantsDelayTerminalCompletion()
+    {
+        const string correlationId = "retry-descendants";
+        Assert.True(await _eventPostService.InitializeProcessingTrackingAsync(correlationId, TestConstants.ProjectId));
+        var eventPost = new EventPost(false)
+        {
+            ApiVersion = 2,
+            OrganizationId = TestConstants.OrganizationId,
+            ProcessingCorrelationId = correlationId,
+            ProjectId = TestConstants.ProjectId
+        };
+
+        Assert.True(await _eventPostService.AddPendingProcessingUnitsAsync(eventPost, 2));
+
+        await _eventPostService.MarkProcessingCompletedAsync("parent", eventPost);
+        Assert.False((await GetStatusAsync(correlationId)).IsCompleted);
+
+        await _eventPostService.MarkProcessingCompletedAsync("child-1", eventPost);
+        Assert.False((await GetStatusAsync(correlationId)).IsCompleted);
+
+        // Duplicate delivery of a completed queue unit must not consume another pending slot.
+        await _eventPostService.MarkProcessingCompletedAsync("child-1", eventPost);
+        Assert.False((await GetStatusAsync(correlationId)).IsCompleted);
+
+        await _eventPostService.MarkProcessingCompletedAsync("child-2", eventPost);
+        Assert.True((await GetStatusAsync(correlationId)).IsCompleted);
+    }
+
+    private async Task<EventPostProcessingStatus> GetStatusAsync(string correlationId)
+    {
+        var statuses = await _eventPostService.GetProcessingStatusesAsync([correlationId]);
+        return statuses[correlationId];
+    }
 }

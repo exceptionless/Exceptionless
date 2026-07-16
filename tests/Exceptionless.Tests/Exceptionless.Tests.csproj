@@ -21,6 +21,7 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" PrivateAssets="All" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\benchmarks\Exceptionless.Ingestion.Load\Exceptionless.Ingestion.Load.csproj" />
     <ProjectReference Include="..\..\src\Exceptionless.AppHost\Exceptionless.AppHost.csproj" />
     <ProjectReference Include="..\..\src\Exceptionless.Web\Exceptionless.Web.csproj" />
   </ItemGroup>

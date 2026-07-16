@@ -18,4 +18,5 @@ public class RunEventProcessedPluginsAction : EventPipelineActionBase
     {
         return _pluginManager.EventBatchProcessedAsync(contexts);
     }
+
 }

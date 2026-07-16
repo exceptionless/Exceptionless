@@ -805,7 +805,7 @@ public static class EventEndpoints
             """)
         .WithMetadata(new RequestBodyContentAttribute("application/json", "text/plain"))
         .WithMetadata(new EndpointDocumentation {
-            AdditionalParameters = EventEndpointHelpers.PostUserAgentParameter,
+            AdditionalParameters = EventEndpointHelpers.PostV2AdditionalParameters,
             ParameterDescriptions = new() {
                 ["userAgent"] = "The user agent that submitted the event.",
             },
@@ -845,7 +845,7 @@ public static class EventEndpoints
             """)
         .WithMetadata(new RequestBodyContentAttribute("application/json", "text/plain"))
         .WithMetadata(new EndpointDocumentation {
-            AdditionalParameters = EventEndpointHelpers.PostUserAgentParameter,
+            AdditionalParameters = EventEndpointHelpers.PostV2AdditionalParameters,
             ParameterDescriptions = new() {
                 ["projectId"] = "The identifier of the project.",
                 ["userAgent"] = "The user agent that submitted the event.",
@@ -890,7 +890,10 @@ public static class EventEndpoints
         if (httpContext.Request.ContentLength is <= 0)
             return Microsoft.AspNetCore.Http.Results.StatusCode(StatusCodes.Status202Accepted);
 
-        return (await mediator.InvokeAsync<Result>(new SubmitEventByPost(projectId, apiVersion, httpContext.Request.GetClientUserAgent(), httpContext))).ToHttpResult(resultMapper);
+        bool trackProcessing = apiVersion == 2
+            && Boolean.TryParse(httpContext.Request.Headers[Headers.TrackEventPost], out bool parsedTrackProcessing)
+            && parsedTrackProcessing;
+        return (await mediator.InvokeAsync<Result>(new SubmitEventByPost(projectId, apiVersion, httpContext.Request.GetClientUserAgent(), trackProcessing, httpContext))).ToHttpResult(resultMapper);
     }
 }
 
@@ -922,5 +925,11 @@ internal static class EventEndpointHelpers
     public static readonly List<AdditionalParameterDefinition> PostUserAgentParameter =
     [
         new("userAgent", "header", Description: "The user agent that submitted the event."),
+    ];
+
+    public static readonly List<AdditionalParameterDefinition> PostV2AdditionalParameters =
+    [
+        .. PostUserAgentParameter,
+        new(Headers.TrackEventPost, "header", Description: "Whether to return an event-post identifier that can be polled for terminal processing.", Type: "boolean"),
     ];
 }

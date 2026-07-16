@@ -80,6 +80,7 @@ public class AppOptions
     public StripeOptions StripeOptions { get; internal set; } = null!;
     public AuthOptions AuthOptions { get; internal set; } = null!;
     public OAuthServerOptions OAuthServerOptions { get; internal set; } = null!;
+    public EventIngestionV3Options EventIngestionV3 { get; internal set; } = null!;
 
     public static AppOptions ReadFromConfiguration(IConfiguration config)
     {
@@ -133,8 +134,81 @@ public class AppOptions
         options.StripeOptions = StripeOptions.ReadFromConfiguration(config);
         options.AuthOptions = AuthOptions.ReadFromConfiguration(config);
         options.OAuthServerOptions = OAuthServerOptions.ReadFromConfiguration(config);
+        options.EventIngestionV3 = EventIngestionV3Options.ReadFromConfiguration(config);
 
         return options;
+    }
+}
+
+public sealed class EventIngestionV3Options
+{
+    public bool Enabled { get; internal set; }
+    public bool EnableProcessingStatus { get; internal set; }
+    public int MicroBatchSize { get; internal set; }
+    public long MaximumMicroBatchBytes { get; internal set; }
+    public long MaximumEventSize { get; internal set; }
+    public long MaximumCompressedBodySize { get; internal set; }
+    public long MaximumDecompressedBodySize { get; internal set; }
+    public TimeSpan RequestTimeout { get; internal set; }
+    public TimeSpan IdempotencyWindow { get; internal set; }
+    public TimeSpan StackRouteCacheDuration { get; internal set; }
+    public TimeSpan NegativeStackRouteCacheDuration { get; internal set; }
+    public int MaximumEventsPerRequest { get; internal set; }
+    public int MaximumActiveStreams { get; internal set; }
+    public int ActiveStreamQueueLimit { get; internal set; }
+    public int MaximumActiveStreamsPerOrganization { get; internal set; }
+    public int ActiveStreamQueueLimitPerOrganization { get; internal set; }
+    public int MaximumConcurrentRequests { get; internal set; }
+    public int ConcurrencyQueueLimit { get; internal set; }
+    public int MaximumConcurrentRequestsPerOrganization { get; internal set; }
+    public int ConcurrencyQueueLimitPerOrganization { get; internal set; }
+    public int MaximumStackCreationConcurrency { get; internal set; }
+    public int MaximumStackUsageConcurrency { get; internal set; }
+    public TimeSpan StackUsageClaimLease { get; internal set; }
+    public IReadOnlySet<string> AllowedProjectIds { get; internal set; } = new HashSet<string>();
+    public IReadOnlySet<string> AllowedOrganizationIds { get; internal set; } = new HashSet<string>();
+
+    internal static EventIngestionV3Options ReadFromConfiguration(IConfiguration config)
+    {
+        IConfigurationSection section = config.GetSection(nameof(AppOptions.EventIngestionV3));
+        int maximumConcurrentRequests = Math.Max(section.GetValue(nameof(MaximumConcurrentRequests), Math.Max(Environment.ProcessorCount * 4, 16)), 1);
+        int concurrencyQueueLimit = Math.Max(section.GetValue(nameof(ConcurrencyQueueLimit), Math.Max(Environment.ProcessorCount * 16, 64)), 0);
+        int maximumConcurrentRequestsPerOrganization = Math.Clamp(section.GetValue(nameof(MaximumConcurrentRequestsPerOrganization), Math.Max(maximumConcurrentRequests / 4, 1)), 1, maximumConcurrentRequests);
+        int defaultMaximumActiveStreams = (int)Math.Min(Math.Max((long)maximumConcurrentRequests * 8, 128), Int32.MaxValue);
+        int defaultMaximumActiveStreamsPerOrganization = (int)Math.Min(Math.Max((long)maximumConcurrentRequestsPerOrganization * 8, 32), Int32.MaxValue);
+        int maximumActiveStreams = Math.Max(section.GetValue(nameof(MaximumActiveStreams), defaultMaximumActiveStreams), 1);
+        int activeStreamQueueLimit = Math.Max(section.GetValue(nameof(ActiveStreamQueueLimit), 0), 0);
+        return new EventIngestionV3Options
+        {
+            Enabled = section.GetValue(nameof(Enabled), false),
+            EnableProcessingStatus = section.GetValue(nameof(EnableProcessingStatus), false),
+            MicroBatchSize = Math.Clamp(section.GetValue(nameof(MicroBatchSize), 100), 1, 1000),
+            MaximumMicroBatchBytes = Math.Max(section.GetValue(nameof(MaximumMicroBatchBytes), 1024L * 1024), 1),
+            MaximumEventSize = Math.Max(section.GetValue(nameof(MaximumEventSize), 512L * 1024), 1),
+            MaximumCompressedBodySize = Math.Max(section.GetValue(nameof(MaximumCompressedBodySize), 10L * 1024 * 1024), 1),
+            MaximumDecompressedBodySize = Math.Max(section.GetValue(nameof(MaximumDecompressedBodySize), 50L * 1024 * 1024), 1),
+            RequestTimeout = section.GetValue(nameof(RequestTimeout), TimeSpan.FromMinutes(2)),
+            IdempotencyWindow = section.GetValue(nameof(IdempotencyWindow), TimeSpan.FromDays(7)),
+            StackRouteCacheDuration = section.GetValue(nameof(StackRouteCacheDuration), TimeSpan.FromHours(1)),
+            NegativeStackRouteCacheDuration = section.GetValue(nameof(NegativeStackRouteCacheDuration), TimeSpan.FromSeconds(30)),
+            MaximumEventsPerRequest = Math.Clamp(section.GetValue(nameof(MaximumEventsPerRequest), 10000), 1, 100000),
+            MaximumActiveStreams = maximumActiveStreams,
+            ActiveStreamQueueLimit = activeStreamQueueLimit,
+            MaximumActiveStreamsPerOrganization = Math.Clamp(section.GetValue(nameof(MaximumActiveStreamsPerOrganization), defaultMaximumActiveStreamsPerOrganization), 1, maximumActiveStreams),
+            ActiveStreamQueueLimitPerOrganization = Math.Clamp(section.GetValue(nameof(ActiveStreamQueueLimitPerOrganization), 0), 0, activeStreamQueueLimit),
+            MaximumConcurrentRequests = maximumConcurrentRequests,
+            ConcurrencyQueueLimit = concurrencyQueueLimit,
+            MaximumConcurrentRequestsPerOrganization = maximumConcurrentRequestsPerOrganization,
+            ConcurrencyQueueLimitPerOrganization = Math.Clamp(section.GetValue(nameof(ConcurrencyQueueLimitPerOrganization), Math.Max(concurrencyQueueLimit / 4, 0)), 0, concurrencyQueueLimit),
+            MaximumStackCreationConcurrency = Math.Clamp(section.GetValue(nameof(MaximumStackCreationConcurrency), 8), 1, 64),
+            MaximumStackUsageConcurrency = Math.Clamp(section.GetValue(nameof(MaximumStackUsageConcurrency), 16), 1, 64),
+            StackUsageClaimLease = TimeSpan.FromMilliseconds(Math.Clamp(
+                section.GetValue(nameof(StackUsageClaimLease), TimeSpan.FromMinutes(1)).TotalMilliseconds,
+                TimeSpan.FromSeconds(10).TotalMilliseconds,
+                TimeSpan.FromMinutes(10).TotalMilliseconds)),
+            AllowedProjectIds = section.GetSection(nameof(AllowedProjectIds)).Get<string[]>()?.ToHashSet(StringComparer.Ordinal) ?? new HashSet<string>(StringComparer.Ordinal),
+            AllowedOrganizationIds = section.GetSection(nameof(AllowedOrganizationIds)).Get<string[]>()?.ToHashSet(StringComparer.Ordinal) ?? new HashSet<string>(StringComparer.Ordinal)
+        };
     }
 }
 

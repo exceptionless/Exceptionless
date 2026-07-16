@@ -87,3 +87,5 @@ docs/_cache/
 .devcontainer/devcontainer-lock.json
 
 *.lscache
+# BenchmarkDotNet output
+BenchmarkDotNet.Artifacts/

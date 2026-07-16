@@ -1,0 +1,27 @@
+@apiUrl = http://localhost:7110/api/v3
+@clientToken = LhhP1C9gijpSKCslHHCvwdSIz298twx271nTest
+@projectId = 537650f3b77efe23a47914f4
+
+### Stream events using the credential's default project
+POST {{apiUrl}}/events
+Authorization: Bearer {{clientToken}}
+Content-Type: application/x-ndjson
+
+{"id":"01K0V3EXAMPLE000000000001","type":"error","date":"2026-07-13T12:00:00Z","message":"Operation failed","version":"3.4.0","level":"error","client":{"name":"exceptionless.example","version":"1.0.0"},"exception_type":"System.InvalidOperationException","stack_trace":"at Example.Service.Run() in /src/Service.cs:line 42"}
+{"id":"01K0V3EXAMPLE000000000002","type":"log","date":"2026-07-13T12:00:01Z","source":"Example.Service","message":"Retry scheduled"}
+
+### Stream events to an explicit project
+POST {{apiUrl}}/projects/{{projectId}}/events
+Authorization: Bearer {{clientToken}}
+Content-Type: application/x-ndjson
+
+{"id":"01K0V3EXAMPLE000000000003","type":"log","source":"Example.Service","message":"Explicit project route"}
+
+### Check full processing while V3 side-effect completion markers are retained
+POST {{apiUrl}}/projects/{{projectId}}/events/processing/status
+Authorization: Bearer {{clientToken}}
+Content-Type: application/json
+
+{
+  "client_ids": ["01K0V3EXAMPLE000000000003"]
+}

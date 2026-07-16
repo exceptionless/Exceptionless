@@ -32,7 +32,9 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
         _serviceProvider = serviceProvider;
 
         if (appOptions.MaximumRetentionDays > 0)
+        {
             MaxIndexAge = TimeSpan.FromDays(appOptions.MaximumRetentionDays);
+        }
 
         AddAlias($"{Name}-today", TimeSpan.FromDays(1));
         AddAlias($"{Name}-last3days", TimeSpan.FromDays(7));
@@ -80,6 +82,10 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
                 .IntegerNumber(e => e.Count)
                 .Boolean(e => e.IsFirstOccurrence)
                     .FieldAlias(Alias.IsFirstOccurrence, a => a.Path(f => f.IsFirstOccurrence))
+                .Boolean(e => e.IsRegression)
+                .Boolean(e => e.IngestionIsRegressionCandidate)
+                .Keyword(e => e.IngestionRegressionFixedInVersion)
+                .Date(e => e.IngestionRegressionDateFixed)
                 .Object(e => e.Idx, o => o.Dynamic(DynamicMapping.True))
                 .Object(e => e.Data, o => o.Properties(p2 => p2
                     .AddVersionMapping<PersistentEvent>()
@@ -98,7 +104,9 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
         );
 
         if (Options is not null && Options.EnableMapperSizePlugin)
+        {
             map.Size(s => s.Enabled(true));
+        }
     }
 
     public override void ConfigureIndex(CreateIndexRequestDescriptor idx)
@@ -472,7 +480,9 @@ internal static class EventIndexExtensions
         foreach (JsonPropertyInfo jsonProperty in typeInfo.Properties)
         {
             if (jsonProperty.AttributeProvider is PropertyInfo modelProperty && String.Equals(modelProperty.Name, propertyName, StringComparison.Ordinal))
+            {
                 return jsonProperty.Name;
+            }
         }
 
         throw new InvalidOperationException($"Unable to resolve JSON field name for {typeof(TModel).FullName}.{propertyName}.");
@@ -485,7 +495,9 @@ internal static class EventIndexExtensions
             : expression.Body;
 
         if (body is MemberExpression { Member: PropertyInfo property })
+        {
             return property;
+        }
 
         throw new ArgumentException("Expression must select a model property.", nameof(expression));
     }

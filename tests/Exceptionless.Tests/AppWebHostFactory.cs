@@ -1,6 +1,8 @@
 using System.Collections.Concurrent;
 using System.Net;
+using System.Net.Sockets;
 using Aspire.Hosting;
+using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
@@ -47,15 +49,40 @@ public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program
         await WaitForElasticsearchAsync(new Uri(SharedElasticsearchUrl));
     }
 
+    public async Task<string> GetRedisConnectionStringAsync(CancellationToken cancellationToken = default)
+    {
+        var app = await s_sharedAppHost.Value;
+        return await app.GetConnectionStringAsync("Redis", cancellationToken)
+            ?? throw new InvalidOperationException("Unable to get the shared Redis connection string.");
+    }
+
     private static async Task<DistributedApplication> StartSharedAppHostAsync()
     {
         var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Exceptionless_AppHost>(
             ["services-only", "--Logging:LogLevel:Default=Warning"],
             CancellationToken.None);
+        // Tests share developer machines with other Aspire stacks that may already own 6379.
+        // Let Aspire allocate an isolated host port while retaining Redis's container port.
+        var redis = appHost.Resources.OfType<RedisResource>().Single(resource => resource.Name == "Redis");
+        redis.PrimaryEndpoint.EndpointAnnotation.Port = GetFreePort();
         var app = await appHost.BuildAsync(CancellationToken.None);
         await app.StartAsync(CancellationToken.None);
 
         return app;
+    }
+
+    private static int GetFreePort()
+    {
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        try
+        {
+            listener.Start();
+            return ((IPEndPoint)listener.LocalEndpoint).Port;
+        }
+        finally
+        {
+            listener.Stop();
+        }
     }
 
     private static async Task WaitForElasticsearchAsync(Uri elasticsearchUri)

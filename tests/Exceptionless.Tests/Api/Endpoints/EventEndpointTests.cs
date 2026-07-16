@@ -1560,8 +1560,8 @@ public partial class EventEndpointTests : IntegrationTestsBase
         Assert.Equal(blocked, secondBucketUsageInfo.CurrentUsage.Blocked);
         Assert.Equal(0, secondBucketUsageInfo.CurrentUsage.TooBig);
 
-        // move forward again and run process usage job
-        TimeProvider.Advance(TimeSpan.FromMinutes(6));
+        // Move beyond the full previous-bucket grace window used by V3 settlements.
+        TimeProvider.Advance(TimeSpan.FromMinutes(11));
 
         var processUsageJob = GetService<EventUsageJob>();
         Assert.Equal(JobResult.Success, await processUsageJob.RunAsync(TestCancellationToken));
@@ -1821,8 +1821,8 @@ public partial class EventEndpointTests : IntegrationTestsBase
         Assert.True(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
 
-        // move forward again and run process usage job
-        TimeProvider.Advance(TimeSpan.FromMinutes(6));
+        // Move beyond the full previous-bucket grace window used by V3 settlements.
+        TimeProvider.Advance(TimeSpan.FromMinutes(11));
 
         var processUsageJob = GetService<EventUsageJob>();
         Assert.Equal(JobResult.Success, await processUsageJob.RunAsync(TestCancellationToken));
