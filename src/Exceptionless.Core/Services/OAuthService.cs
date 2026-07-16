@@ -478,6 +478,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             UserCode = FormatDeviceUserCode(userCode),
             UserCodeNormalized = userCode,
             Status = OAuthDeviceAuthorizationStatus.Pending,
+            PollingIntervalSeconds = (int)options.DeviceCodePollingInterval.TotalSeconds,
             CreatedUtc = utcNow,
             UpdatedUtc = utcNow,
             ExpiresUtc = utcNow.Add(options.DeviceCodeLifetime)
@@ -521,6 +522,14 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!lookup.IsSuccess)
             return OAuthDeviceAuthorizationResult.Invalid(lookup.Error!, lookup.ErrorDescription!);
 
+        await using var deviceCodeLock = await lockProvider.TryAcquireAsync(GetDeviceCodeLockKey(lookup.DeviceCodeHash!), TimeSpan.FromSeconds(30), CancellationToken.None);
+        if (deviceCodeLock is null)
+            return OAuthDeviceAuthorizationResult.Invalid("temporarily_unavailable", "Device authorization is being processed.");
+
+        lookup = await GetDeviceAuthorizationByDeviceCodeHashAsync(lookup.DeviceCodeHash!);
+        if (!lookup.IsSuccess)
+            return OAuthDeviceAuthorizationResult.Invalid(lookup.Error!, lookup.ErrorDescription!);
+
         var authorization = lookup.Authorization!;
         if (authorization.Status != OAuthDeviceAuthorizationStatus.Pending)
             return OAuthDeviceAuthorizationResult.Invalid("expired_token", "Device authorization is no longer pending.");
@@ -558,6 +567,14 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
     public async Task<OAuthDeviceAuthorizationResult> DenyDeviceAuthorizationAsync(string? userCode)
     {
         var lookup = await GetDeviceAuthorizationByUserCodeAsync(userCode);
+        if (!lookup.IsSuccess)
+            return OAuthDeviceAuthorizationResult.Invalid(lookup.Error!, lookup.ErrorDescription!);
+
+        await using var deviceCodeLock = await lockProvider.TryAcquireAsync(GetDeviceCodeLockKey(lookup.DeviceCodeHash!), TimeSpan.FromSeconds(30), CancellationToken.None);
+        if (deviceCodeLock is null)
+            return OAuthDeviceAuthorizationResult.Invalid("temporarily_unavailable", "Device authorization is being processed.");
+
+        lookup = await GetDeviceAuthorizationByDeviceCodeHashAsync(lookup.DeviceCodeHash!);
         if (!lookup.IsSuccess)
             return OAuthDeviceAuthorizationResult.Invalid(lookup.Error!, lookup.ErrorDescription!);
 
@@ -670,8 +687,12 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         }
 
         var utcNow = timeProvider.GetUtcNow().UtcDateTime;
-        if (authorization.LastPolledUtc.HasValue && utcNow - authorization.LastPolledUtc.Value < options.DeviceCodePollingInterval)
+        int pollingIntervalSeconds = authorization.PollingIntervalSeconds > 0
+            ? authorization.PollingIntervalSeconds
+            : (int)options.DeviceCodePollingInterval.TotalSeconds;
+        if (authorization.LastPolledUtc.HasValue && utcNow - authorization.LastPolledUtc.Value < TimeSpan.FromSeconds(pollingIntervalSeconds))
         {
+            authorization.PollingIntervalSeconds = pollingIntervalSeconds + 5;
             authorization.LastPolledUtc = utcNow;
             authorization.UpdatedUtc = utcNow;
             await SetDeviceAuthorizationAsync(lookup.DeviceCodeHash!, authorization);
@@ -1293,6 +1314,7 @@ public class OAuthDeviceAuthorization
     public IReadOnlyCollection<string> Scopes { get; set; } = [];
     public string? UserId { get; set; }
     public IReadOnlyCollection<string> OrganizationIds { get; set; } = [];
+    public int PollingIntervalSeconds { get; set; }
     public DateTime? LastPolledUtc { get; set; }
     public DateTime CreatedUtc { get; init; }
     public DateTime UpdatedUtc { get; set; }
