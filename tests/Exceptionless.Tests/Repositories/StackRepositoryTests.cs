@@ -284,7 +284,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetDuplicateSignatures_WithDuplicates_ReturnsSignatures()
+    public async Task GetDuplicateSignaturesAsync_WithDuplicates_ReturnsSignatures()
     {
         string uniqueProjectId = ObjectId.GenerateNewId().ToString();
         var stack1 = _stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: uniqueProjectId);
@@ -300,7 +300,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetDuplicateSignatures_WithNoDuplicates_ReturnsEmpty()
+    public async Task GetDuplicateSignaturesAsync_WithNoDuplicates_ReturnsEmpty()
     {
         // Use a unique project ID to avoid interference from pre-existing sample data
         string uniqueProjectId = ObjectId.GenerateNewId().ToString();
@@ -319,7 +319,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetDuplicateSignatures_WithSoftDeletedStacks_ExcludesThem()
+    public async Task GetDuplicateSignaturesAsync_WithSoftDeletedStacks_ExcludesThem()
     {
         // Use a unique project ID to avoid interference from pre-existing sample data
         string uniqueProjectId = ObjectId.GenerateNewId().ToString();
@@ -354,7 +354,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetCanonicalStack_WithRedirect_ReturnsActiveTarget()
+    public async Task GetCanonicalStackAsync_WithRedirect_ReturnsActiveTarget()
     {
         var target = _stackData.GenerateSampleStack();
         var source = target.DeepClone();
@@ -374,7 +374,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task SetDuplicateStackRedirect_WithCycle_Throws()
+    public async Task SetDuplicateStackRedirectAsync_WithCycle_Throws()
     {
         var stackA = _stackData.GenerateSampleStack();
         var stackB = stackA.DeepClone();
@@ -391,7 +391,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task Save_WithStaleVersion_CannotOverwriteDuplicateMerge()
+    public async Task SaveAsync_WithStaleVersion_CannotOverwriteDuplicateMerge()
     {
         var target = _stackData.GenerateSampleStack();
         target.TotalOccurrences = 100;
@@ -415,7 +415,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task AddEventTags_WithConcurrentCounterUpdates_PreservesBothChanges()
+    public async Task AddEventTagsAsync_WithConcurrentCounterUpdates_PreservesBothChanges()
     {
         var stack = _stackData.GenerateSampleStack();
         stack.TotalOccurrences = 0;
@@ -442,7 +442,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task MarkOpen_WithConcurrentCounterUpdate_PreservesBothChanges()
+    public async Task MarkOpenAsync_WithConcurrentCounterUpdate_PreservesBothChanges()
     {
         var stack = _stackData.GenerateSampleStack();
         stack.Status = StackStatus.Snoozed;
@@ -469,7 +469,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task MarkAsRegressed_WithConcurrentCounterUpdate_PreservesBothChanges()
+    public async Task MarkAsRegressedAsync_WithConcurrentCounterUpdate_PreservesBothChanges()
     {
         var stack = _stackData.GenerateSampleStack();
         stack.Status = StackStatus.Fixed;
@@ -494,7 +494,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task MergeDuplicateStack_WithRedirectChain_AppliesOnlyLateDelta()
+    public async Task MergeDuplicateStackAsync_WithRedirectChain_AppliesOnlyLateDelta()
     {
         var stackA = _stackData.GenerateSampleStack();
         stackA.TotalOccurrences = 100;
@@ -535,7 +535,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RemoveAllByProjectId_WithRedirectTombstone_RemovesAllStacks()
+    public async Task RemoveAllByProjectIdAsync_WithRedirectTombstone_RemovesAllStacks()
     {
         string organizationId = ObjectId.GenerateNewId().ToString();
         string projectId = ObjectId.GenerateNewId().ToString();
@@ -552,7 +552,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RemoveAllByOrganizationId_WithRedirectTombstone_RemovesAllStacks()
+    public async Task RemoveAllByOrganizationIdAsync_WithRedirectTombstone_RemovesAllStacks()
     {
         string organizationId = ObjectId.GenerateNewId().ToString();
         string projectId = ObjectId.GenerateNewId().ToString();
@@ -569,7 +569,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task MergeDuplicateStack_WithRepeatedSource_AppliesMetadataOnce()
+    public async Task MergeDuplicateStackAsync_WithRepeatedSource_AppliesMetadataOnce()
     {
         // Arrange
         var target = _stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId);

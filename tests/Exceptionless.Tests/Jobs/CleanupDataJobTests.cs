@@ -300,7 +300,7 @@ public partial class CleanupDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteOrphanedEventsByStack_WithLargeDataset_DeletesAllOrphanedEvents()
+    public async Task RunAsync_WithLargeOrphanedEventDataset_DeletesAllOrphanedEvents()
     {
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
         await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());

@@ -56,7 +56,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
         await DeleteOrphanedEventsByProjectAsync(context);
         await DeleteOrphanedEventsByOrganizationAsync(context);
 
-        await FixDuplicateStacks(context);
+        await FixDuplicateStacksAsync(context);
 
         return JobResult.Success;
     }
@@ -195,7 +195,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
         _logger.LogInformation("Completed orphaned events cleanup by organization: deleted {TotalOrphanedEvents} events, checked {TotalOrganizationIds} organizations", totalOrphanedEvents, totalOrganizationIds);
     }
 
-    public async Task FixDuplicateStacks(JobContext context)
+    public async Task FixDuplicateStacksAsync(JobContext context)
     {
         _logger.LogInformation("Getting duplicate stacks");
 

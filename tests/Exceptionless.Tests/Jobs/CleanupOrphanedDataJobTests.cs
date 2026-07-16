@@ -44,7 +44,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteOrphanedEventsByStack_WithValidStack_DoesNotDeleteEvents()
+    public async Task DeleteOrphanedEventsByStackAsync_WithValidStack_DoesNotDeleteEvents()
     {
         // Arrange
         var organization1 = _organizationData.GenerateOrganization(_billingManager, _plans, id: TestConstants.OrganizationId);
@@ -72,7 +72,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteOrphanedEventsByStack_WithMixedOrphanedAndValid_OnlyDeletesOrphaned()
+    public async Task DeleteOrphanedEventsByStackAsync_WithMixedOrphanedAndValid_OnlyDeletesOrphaned()
     {
         // Arrange
         var organization1 = _organizationData.GenerateOrganization(_billingManager, _plans, id: TestConstants.OrganizationId);
@@ -106,7 +106,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteOrphanedEventsByStack_LargeVolume_PreservesAllValidEvents()
+    public async Task DeleteOrphanedEventsByStackAsync_WithLargeVolume_PreservesAllValidEvents()
     {
         // Arrange
         var organization = _organizationData.GenerateOrganization(_billingManager, _plans, id: TestConstants.OrganizationId);
@@ -136,7 +136,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteOrphanedEventsByStack_WithManyUniqueOrphanedStacks_DeletesAllOrphanedEvents()
+    public async Task DeleteOrphanedEventsByStackAsync_WithManyUniqueOrphanedStacks_DeletesAllOrphanedEvents()
     {
         // Arrange
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
@@ -163,7 +163,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteOrphanedEventsByStack_MultipleValidStacks_PreservesAll()
+    public async Task DeleteOrphanedEventsByStackAsync_WithMultipleValidStacks_PreservesAll()
     {
         // Arrange
         var organization1 = _organizationData.GenerateOrganization(_billingManager, _plans, id: TestConstants.OrganizationId);
@@ -196,7 +196,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteOrphanedEventsByStack_OnlyOrphanedEventsInOneTenant_OtherTenantUnaffected()
+    public async Task DeleteOrphanedEventsByStackAsync_WithOrphansInOneTenant_LeavesOtherTenantUnaffected()
     {
         // Arrange
         var organization1 = _organizationData.GenerateOrganization(_billingManager, _plans, id: TestConstants.OrganizationId);
@@ -225,7 +225,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteOrphanedEventsByStack_WithSoftDeletedStack_DeletesOrphanedEvents()
+    public async Task DeleteOrphanedEventsByStackAsync_WithSoftDeletedStack_DeletesOrphanedEvents()
     {
         // Arrange
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
@@ -250,7 +250,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteOrphanedEventsByProject_WithValidProjects_DoesNotDeleteEvents()
+    public async Task DeleteOrphanedEventsByProjectAsync_WithValidProjects_DoesNotDeleteEvents()
     {
         // Arrange
         var organization = _organizationData.GenerateOrganization(_billingManager, _plans, id: TestConstants.OrganizationId);
@@ -277,7 +277,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteOrphanedEventsByProject_WithOrphanedProject_DeletesEventsForMissingProject()
+    public async Task DeleteOrphanedEventsByProjectAsync_WithOrphanedProject_DeletesEventsForMissingProject()
     {
         // Arrange
         var organization1 = _organizationData.GenerateOrganization(_billingManager, _plans, id: TestConstants.OrganizationId);
@@ -306,7 +306,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteOrphanedEventsByProject_WithMissingProjects_DeletesOrphanedEvents()
+    public async Task DeleteOrphanedEventsByProjectAsync_WithMissingProjects_DeletesOrphanedEvents()
     {
         // Arrange
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
@@ -330,7 +330,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteOrphanedEventsByProject_MultiTenant_EachTenantIndependent()
+    public async Task DeleteOrphanedEventsByProjectAsync_WithMultipleTenants_HandlesEachTenantIndependently()
     {
         // Arrange
         var organization1 = _organizationData.GenerateOrganization(_billingManager, _plans, id: TestConstants.OrganizationId);
@@ -359,7 +359,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteOrphanedEventsByProject_WithSoftDeletedProject_DeletesOrphanedEvents()
+    public async Task DeleteOrphanedEventsByProjectAsync_WithSoftDeletedProject_DeletesOrphanedEvents()
     {
         // Arrange
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
@@ -386,7 +386,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteOrphanedEventsByOrganization_WithValidOrganizations_DoesNotDeleteEvents()
+    public async Task DeleteOrphanedEventsByOrganizationAsync_WithValidOrganizations_DoesNotDeleteEvents()
     {
         // Arrange
         var organization1 = _organizationData.GenerateOrganization(_billingManager, _plans, id: TestConstants.OrganizationId);
@@ -414,7 +414,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteOrphanedEventsByOrganization_WithOrphanedOrganization_DeletesEventsForMissingOrganization()
+    public async Task DeleteOrphanedEventsByOrganizationAsync_WithOrphanedOrganization_DeletesEventsForMissingOrganization()
     {
         // Arrange
         var organization1 = _organizationData.GenerateOrganization(_billingManager, _plans, id: TestConstants.OrganizationId);
@@ -443,7 +443,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteOrphanedEventsByOrganization_WithMissingOrganizations_DeletesOrphanedEvents()
+    public async Task DeleteOrphanedEventsByOrganizationAsync_WithMissingOrganizations_DeletesOrphanedEvents()
     {
         // Arrange
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
@@ -467,7 +467,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteOrphanedEventsByOrganization_TwoTenantsOneDeleted_OnlyDeletesOrphanedTenantEvents()
+    public async Task DeleteOrphanedEventsByOrganizationAsync_WithOneDeletedTenant_OnlyDeletesOrphanedTenantEvents()
     {
         // Arrange
         var organization1 = _organizationData.GenerateOrganization(_billingManager, _plans, id: TestConstants.OrganizationId);
@@ -496,7 +496,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteOrphanedEventsByOrganization_WithSoftDeletedOrganization_DeletesOrphanedEvents()
+    public async Task DeleteOrphanedEventsByOrganizationAsync_WithSoftDeletedOrganization_DeletesOrphanedEvents()
     {
         // Arrange
         var validOrganization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
@@ -522,7 +522,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task FixDuplicateStacks_WithDuplicatesAcrossTenants_MergesCorrectly()
+    public async Task FixDuplicateStacksAsync_WithDuplicatesAcrossTenants_MergesCorrectly()
     {
         // Arrange
         var organization = _organizationData.GenerateOrganization(_billingManager, _plans, id: TestConstants.OrganizationId);
@@ -561,7 +561,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task FixDuplicateStacks_WithDuplicateSignatures_MergesIntoMostPopularStack()
+    public async Task FixDuplicateStacksAsync_WithDuplicateSignatures_MergesIntoMostPopularStack()
     {
         // Arrange
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
@@ -599,7 +599,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task FixDuplicateStacks_AfterPartialTargetMerge_DoesNotDoubleApplyMetadata()
+    public async Task FixDuplicateStacksAsync_AfterPartialTargetMerge_DoesNotDoubleApplyMetadata()
     {
         // Arrange
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
@@ -635,7 +635,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteOrphanedEventsByStack_WithRedirectedSource_ReassignsLateEvents()
+    public async Task DeleteOrphanedEventsByStackAsync_WithRedirectedSource_ReassignsLateEvents()
     {
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
         await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
@@ -672,7 +672,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteOrphanedEventsByStack_WithLateCounterAndNoSourceEvents_ReconcilesTombstone()
+    public async Task DeleteOrphanedEventsByStackAsync_WithLateCounterAndNoSourceEvents_ReconcilesTombstone()
     {
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
         await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
@@ -722,7 +722,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task FixDuplicateStacks_NoDuplicates_DoesNotModifyAnything()
+    public async Task FixDuplicateStacksAsync_WithNoDuplicates_DoesNotModifyAnything()
     {
         // Arrange
         var organization1 = _organizationData.GenerateOrganization(_billingManager, _plans, id: TestConstants.OrganizationId);
@@ -754,7 +754,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task FixDuplicateStacks_WithNoEvents_KeepsOldestStack()
+    public async Task FixDuplicateStacksAsync_WithNoEvents_KeepsOldestStack()
     {
         // Arrange
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
@@ -785,7 +785,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task FixDuplicateStacks_WithClosedEventIndex_KeepsAllStacksActive()
+    public async Task FixDuplicateStacksAsync_WithClosedEventIndex_KeepsAllStacksActive()
     {
         // Arrange
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);

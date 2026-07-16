@@ -10,7 +10,7 @@ namespace Exceptionless.Tests.Jobs;
 public partial class CleanupDataJobTests
 {
     [Fact]
-    public async Task CleanupSoftDeletedOrganizations_WithMultiplePages_RemovesAllData()
+    public async Task RunAsync_WithMultiplePagesOfSoftDeletedOrganizations_RemovesAllData()
     {
         // Arrange
         var organizations = new List<Organization>();
@@ -46,7 +46,7 @@ public partial class CleanupDataJobTests
     }
 
     [Fact]
-    public async Task EnforceRetention_WithMultipleOrganizations_RespectsPerOrganizationRetention()
+    public async Task RunAsync_WithMultipleOrganizationRetentionPeriods_RespectsPerOrganizationRetention()
     {
         // Arrange
         // Retention enforcement uses the next plan above the organization's retention:
@@ -90,7 +90,7 @@ public partial class CleanupDataJobTests
     }
 
     [Fact]
-    public async Task CleanupSoftDeletedStacks_WithMultiplePages_RemovesAllStacks()
+    public async Task RunAsync_WithMultiplePagesOfSoftDeletedStacks_RemovesAllStacks()
     {
         // Arrange
         var organization = await _organizationRepository.AddAsync(
@@ -127,7 +127,7 @@ public partial class CleanupDataJobTests
     }
 
     [Fact]
-    public async Task EnforceRetention_WithEventsOutsideRetention_DeletesOnlyExpiredEvents()
+    public async Task RunAsync_WithEventsOutsideRetention_DeletesOnlyExpiredEvents()
     {
         // Arrange
         // FreePlan's 3-day retention is enforced at the next plan threshold (30 days).
