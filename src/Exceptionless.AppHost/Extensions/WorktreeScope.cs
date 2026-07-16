@@ -14,6 +14,7 @@ public sealed record WorktreePorts(
     int OldAppHttps,
     int OldAppLiveReload,
     int AppHttps,
+    int DocsHttp,
     int Storybook,
     int EmailStorybook)
 {
@@ -51,7 +52,7 @@ public static class WorktreeScope
 
     public static WorktreePorts AssignFreePorts()
     {
-        int[] ports = FreePorts(13);
+        int[] ports = FreePorts(14);
         var assignments = new WorktreePorts(
             ports[0],
             ports[1],
@@ -65,7 +66,8 @@ public static class WorktreeScope
             ports[9],
             ports[10],
             ports[11],
-            ports[12]);
+            ports[12],
+            ports[13]);
 
         Environment.SetEnvironmentVariable("ASPNETCORE_URLS", $"https://localhost:{assignments.DashboardHttps};http://localhost:{assignments.DashboardHttp}");
         Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", $"https://localhost:{assignments.DashboardOtlp}");

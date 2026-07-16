@@ -38,6 +38,10 @@ Authorization: Bearer {{token}}
 GET {{apiUrl}}/saved-views/predefined
 Authorization: Bearer {{token}}
 
+### Force update matching organization saved views from the saved predefined definitions
+POST {{apiUrl}}/saved-views/predefined/force-update
+Authorization: Bearer {{token}}
+
 ### Create organization-wide saved view
 # @name newSavedView
 POST {{apiUrl}}/organizations/{{organizationId}}/saved-views

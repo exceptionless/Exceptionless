@@ -62,7 +62,7 @@ public class XmlDocumentationOperationTransformer : IOpenApiOperationTransformer
         }
     }
 
-    private async Task<XDocument?> GetXmlDocumentationAsync(Assembly? assembly)
+    internal static async Task<XDocument?> GetXmlDocumentationAsync(Assembly? assembly)
     {
         if (assembly is null)
             return null;

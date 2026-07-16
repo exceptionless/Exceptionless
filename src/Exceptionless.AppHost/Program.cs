@@ -14,6 +14,7 @@ int oldAppPort = worktreePorts?.OldAppHttps ?? 7121;
 int oldAppLiveReloadPort = worktreePorts?.OldAppLiveReload ?? 35729;
 string oldAppAspNetCoreUrls = String.Concat("http://localhost:", oldAppHttpPort);
 int appPort = worktreePorts?.AppHttps ?? 7131;
+int docsPort = worktreePorts?.DocsHttp ?? 7141;
 int storybookPort = worktreePorts?.Storybook ?? 6006;
 int emailStorybookPort = worktreePorts?.EmailStorybook ?? 6008;
 const int DefaultApiHttpsPort = 7111;
@@ -207,6 +208,24 @@ if (!servicesOnly)
             .WithEnvironment("API_HTTPS", worktreePorts.ApiHttpsUrl)
             .WithEnvironment("OLDAPP_HTTP", worktreePorts.OldAppHttpsUrl)
             .WithEnvironment("OLDAPP_HTTPS", worktreePorts.OldAppHttpsUrl);
+    }
+
+    if (includeDevTools)
+    {
+        builder.AddDenoTask("Docs", "../../docs", "serve")
+            .WithBrowserLogs()
+            .WithHttpEndpoint(port: docsPort, targetPort: docsPort, name: "http", env: "PORT", isProxied: false)
+            .WithEndpoint("http", e =>
+            {
+                e.TargetHost = "localhost";
+                e.UriScheme = "http";
+            })
+            .WithUrlForEndpoint("http", u =>
+            {
+                u.DisplayText = "Open Docs";
+                u.DisplayOrder = 100;
+            })
+            .WithParentRelationship(api);
     }
 #pragma warning restore ASPIREBROWSERLOGS001
 
