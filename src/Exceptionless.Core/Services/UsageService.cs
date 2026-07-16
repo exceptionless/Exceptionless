@@ -16,11 +16,13 @@ public class UsageService
     private readonly IProjectRepository _projectRepository;
     private readonly ICacheClient _cache;
     private readonly IMessagePublisher _messagePublisher;
+    private readonly NotificationService _notificationService;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
     private readonly TimeSpan _bucketSize = TimeSpan.FromMinutes(5);
 
     public UsageService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ICacheClient cache, IMessagePublisher messagePublisher,
+        NotificationService notificationService,
         TimeProvider timeProvider,
         ILoggerFactory loggerFactory)
     {
@@ -28,6 +30,7 @@ public class UsageService
         _projectRepository = projectRepository;
         _cache = cache;
         _messagePublisher = messagePublisher;
+        _notificationService = notificationService;
         _timeProvider = timeProvider;
         _logger = loggerFactory.CreateLogger<UsageService>();
     }
@@ -223,28 +226,39 @@ public class UsageService
         if (modifiedMaxEvents == originalMaxEvents)
             return;
 
-        if (modifiedMaxEvents > originalMaxEvents)
+        bool isMonthlyLimitIncrease = modifiedMaxEvents < 0 || (originalMaxEvents >= 0 && modifiedMaxEvents > originalMaxEvents);
+        if (isMonthlyLimitIncrease)
         {
-            // remove is throttled flag
+            // A higher monthly limit only resets monthly notification state when it actually ends the current overage.
+            if (!modified.IsOverMonthlyLimit(_timeProvider))
+                await _notificationService.RemoveOrganizationNotificationSentAsync(modified.Id, isOverMonthlyLimit: true);
+
             await _cache.RemoveAsync(GetThrottledKey(utcNow, modified.Id));
+            return;
         }
-        else
+
+        bool wasOverMonthlyLimit = original.IsOverMonthlyLimit(_timeProvider);
+        bool isOverMonthlyLimit = modified.IsOverMonthlyLimit(_timeProvider);
+        if (!wasOverMonthlyLimit && isOverMonthlyLimit)
         {
-            var bucketTotal = await _cache.GetAsync<int>(GetBucketTotalCacheKey(utcNow, modified.Id));
-            if (!bucketTotal.HasValue)
-                return;
+            await _notificationService.RemoveOrganizationNotificationSentAsync(modified.Id, isOverMonthlyLimit: true);
+            await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = modified.Id });
+        }
 
-            int bucketLimit = GetBucketEventLimit(modifiedMaxEvents);
+        var bucketTotal = await _cache.GetAsync<int>(GetBucketTotalCacheKey(utcNow, modified.Id));
+        if (!bucketTotal.HasValue)
+            return;
 
-            // unlimited
-            if (bucketLimit < 0)
-                return;
+        int bucketLimit = GetBucketEventLimit(modifiedMaxEvents);
 
-            if (bucketTotal.Value >= bucketLimit)
-            {
-                await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = modified.Id, IsHourly = true });
-                await _cache.SetAsync(GetThrottledKey(utcNow, modified.Id), true, TimeSpan.FromMinutes(5));
-            }
+        // unlimited
+        if (bucketLimit < 0)
+            return;
+
+        if (bucketTotal.Value >= bucketLimit)
+        {
+            await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = modified.Id, IsHourly = true });
+            await _cache.SetAsync(GetThrottledKey(utcNow, modified.Id), true, TimeSpan.FromMinutes(5));
         }
     }
 

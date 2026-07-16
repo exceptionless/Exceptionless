@@ -13,8 +13,7 @@
         }
     });
 
-    const SYSTEM_FIELD_NAMES = new Set(['haserror', 'sessionend']);
-    const activeFields = $derived((customFieldsQuery.data ?? []).filter((f) => !f.isDeleted && !SYSTEM_FIELD_NAMES.has(f.name.toLowerCase())));
+    const activeFields = $derived(customFieldsQuery.data ?? []);
 
     function getFilterType(field: CustomFieldDefinition) {
         switch (field.indexType) {

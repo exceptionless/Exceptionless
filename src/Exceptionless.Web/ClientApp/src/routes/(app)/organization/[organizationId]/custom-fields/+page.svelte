@@ -176,7 +176,8 @@
         } catch (error: unknown) {
             if (error instanceof ProblemDetails) {
                 if (error.status === 409) {
-                    deleteError = error.detail ?? `"${fieldName}" is used in one or more saved views. Remove it from all filters before deleting.`;
+                    deleteError =
+                        error.title ?? error.detail ?? `"${fieldName}" is used in one or more saved views. Remove it from all filters before deleting.`;
                 } else {
                     deleteError = error.errors?.['general']?.[0] ?? error.title ?? error.detail ?? 'An error occurred.';
                 }
@@ -186,39 +187,24 @@
         }
     }
 
-    // System fields are internal and managed automatically — hide them from the management UI.
-    const SYSTEM_FIELD_NAMES = new Set(['haserror', 'sessionend']);
-    const isSystemField = (name: string) => SYSTEM_FIELD_NAMES.has(name.toLowerCase());
-
-    // Only active (non-deleted) fields are returned by the API; no pending-deletion display needed.
-    const allFields = $derived((customFieldsQuery.data ?? []).filter((f) => !isSystemField(f.name)));
+    const allFields = $derived(customFieldsQuery.data ?? []);
     const hasFields = $derived(allFields.length > 0);
-
-    // bits-ui applies `pointer-events:none; overflow:hidden` to <body> when any dialog is open.
-    // When dialogs are closed programmatically (not via user interaction), the scroll-lock cleanup
-    // sometimes doesn't fire. This effect releases the lock whenever all dialogs are closed.
-    $effect(() => {
-        if (!showCreateDialog && !showEditDialog && !showDeleteDialog) {
-            document.body.style.removeProperty('pointer-events');
-            document.body.style.removeProperty('overflow');
-        }
-    });
 </script>
 
-<div class="space-y-6">
+<div class="flex flex-col gap-6">
     <div class="flex items-center justify-between">
         <div>
             <h3 class="text-lg font-medium">Custom Event Fields</h3>
             <Muted>Define indexed fields from event data for filtering and search.</Muted>
         </div>
         <Button onclick={openCreateDialog}>
-            <Plus class="mr-2 size-4" />
+            <Plus data-icon="inline-start" />
             Add Field
         </Button>
     </div>
 
     {#if customFieldsQuery.isPending}
-        <div class="space-y-2">
+        <div class="flex flex-col gap-2">
             <Skeleton class="h-10 w-full" />
             <Skeleton class="h-10 w-full" />
             <Skeleton class="h-10 w-4/5" />
@@ -231,7 +217,7 @@
             <p class="font-medium">No custom fields yet</p>
             <Muted class="mt-1 max-w-xs">Add a field to start indexing event data properties for use in filters and search.</Muted>
             <Button class="mt-4" onclick={openCreateDialog}>
-                <Plus class="mr-2 size-4" />
+                <Plus data-icon="inline-start" />
                 Add Your First Field
             </Button>
         </div>
@@ -263,11 +249,11 @@
                             <Table.Cell>
                                 <div class="flex items-center gap-1">
                                     <Button variant="ghost" size="icon" onclick={() => openEditDialog(field)} title="Edit description">
-                                        <Pencil class="size-4" />
+                                        <Pencil data-icon="inline-start" />
                                         <span class="sr-only">Edit</span>
                                     </Button>
                                     <Button variant="ghost" size="icon" onclick={() => openDeleteDialog(field)} title="Delete field">
-                                        <Trash class="text-destructive size-4" />
+                                        <Trash data-icon="inline-start" class="text-destructive" />
                                         <span class="sr-only">Delete</span>
                                     </Button>
                                 </div>
@@ -292,7 +278,7 @@
         </Dialog.Header>
 
         <form
-            class="space-y-4"
+            class="flex flex-col gap-4"
             onsubmit={(e) => {
                 e.preventDefault();
                 handleCreate();
@@ -328,12 +314,14 @@
                         <span class="text-muted-foreground ml-2 text-xs">{INDEX_TYPE_DESCRIPTIONS[newFieldIndexType]}</span>
                     </Select.Trigger>
                     <Select.Content class="max-h-72">
-                        {#each INDEX_TYPES as type (type)}
-                            <Select.Item value={type} class="flex flex-col items-start gap-0.5 py-2">
-                                <span class="font-medium">{INDEX_TYPE_LABELS[type]}</span>
-                                <span class="text-muted-foreground text-xs">{INDEX_TYPE_DESCRIPTIONS[type]}</span>
-                            </Select.Item>
-                        {/each}
+                        <Select.Group>
+                            {#each INDEX_TYPES as type (type)}
+                                <Select.Item value={type} class="flex flex-col items-start gap-0.5 py-2">
+                                    <span class="font-medium">{INDEX_TYPE_LABELS[type]}</span>
+                                    <span class="text-muted-foreground text-xs">{INDEX_TYPE_DESCRIPTIONS[type]}</span>
+                                </Select.Item>
+                            {/each}
+                        </Select.Group>
                     </Select.Content>
                 </Select.Root>
                 <Muted>Determines how the field is stored and what filter operators are available.</Muted>
@@ -348,7 +336,7 @@
                 <Button variant="outline" type="button" onclick={() => (showCreateDialog = false)}>Cancel</Button>
                 <Button type="submit" disabled={createField.isPending || !newFieldName.trim() || !isValidFieldName}>
                     {#if createField.isPending}
-                        <Spinner class="mr-2" />
+                        <Spinner data-icon="inline-start" />
                     {/if}
                     Create Field
                 </Button>
@@ -368,7 +356,7 @@
         </Dialog.Header>
 
         <form
-            class="space-y-4"
+            class="flex flex-col gap-4"
             onsubmit={(e) => {
                 e.preventDefault();
                 handleEdit();
@@ -387,7 +375,7 @@
                 <Button variant="outline" type="button" onclick={() => (showEditDialog = false)}>Cancel</Button>
                 <Button type="submit" disabled={updateField.isPending}>
                     {#if updateField.isPending}
-                        <Spinner class="mr-2" />
+                        <Spinner data-icon="inline-start" />
                     {/if}
                     Save Changes
                 </Button>
@@ -402,15 +390,15 @@
         <Dialog.Header>
             <Dialog.Title>Delete Custom Field</Dialog.Title>
             <Dialog.Description>
-                You are about to permanently delete
+                You are about to stop indexing
                 <code class="bg-muted rounded px-1 py-0.5 text-xs">{deleteTarget?.name}</code>.
             </Dialog.Description>
         </Dialog.Header>
 
-        <div class="space-y-4">
-            <div class="bg-muted/50 space-y-2 rounded-md border p-3 text-sm">
+        <div class="flex flex-col gap-4">
+            <div class="bg-muted/50 flex flex-col gap-2 rounded-md border p-3 text-sm">
                 <p class="font-medium">What happens when you delete this field:</p>
-                <ul class="text-muted-foreground list-none space-y-1">
+                <ul class="text-muted-foreground flex list-none flex-col gap-1">
                     <li>• <strong class="text-foreground">New events stop being indexed</strong> with this field immediately.</li>
                     <li>
                         • <strong class="text-foreground">No data is backfilled</strong> — existing indexed events retain their current data and remain searchable
@@ -419,7 +407,7 @@
                     <li>
                         • <strong class="text-foreground">Saved view filters</strong> using this field must be removed first — deletion is blocked otherwise.
                     </li>
-                    <li>• The index slot is reclaimed after your retention window expires.</li>
+                    <li>• The index slot stays reserved until retention-aware cleanup is implemented.</li>
                 </ul>
             </div>
 
@@ -439,7 +427,7 @@
             <Button variant="outline" type="button" onclick={() => (showDeleteDialog = false)}>Cancel</Button>
             <Button variant="destructive" onclick={handleDelete} disabled={deleteField.isPending || !isDeleteConfirmed}>
                 {#if deleteField.isPending}
-                    <Spinner class="mr-2" />
+                    <Spinner data-icon="inline-start" />
                 {/if}
                 Delete Field
             </Button>

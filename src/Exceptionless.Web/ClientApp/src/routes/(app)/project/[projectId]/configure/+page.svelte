@@ -1,26 +1,31 @@
 <script lang="ts">
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
     import { Notification, NotificationDescription, NotificationTitle } from '$comp/notification';
     import { A, CodeBlock, Muted, P } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Select from '$comp/ui/select';
-    import { Spinner } from '$comp/ui/spinner';
     import { env } from '$env/dynamic/public';
     import { ProjectFilter } from '$features/events/components/filters';
     import { getIntercom } from '$features/intercom';
     import { openSupportChat } from '$features/intercom/chat';
     import { organization } from '$features/organizations/context.svelte';
-    import { generateSampleData } from '$features/projects/api.svelte';
+    import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
     import { getProjectDefaultTokenQuery, patchToken } from '$features/tokens/api.svelte';
     import EnableTokenDialog from '$features/tokens/components/dialogs/enable-token-dialog.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import Database from '@lucide/svelte/icons/database';
+    import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+    import Bot from '@lucide/svelte/icons/bot';
+    import Events from '@lucide/svelte/icons/calendar-days';
+    import NotificationSettings from '@lucide/svelte/icons/mail';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener } from 'runed';
     import { toast } from 'svelte-sonner';
 
     import { redirectToEventsWithFilter } from '../../../redirect-to-events.svelte';
+
+    useHideOrganizationNotifications();
 
     // Project ID from route params
     const projectId = $derived(page.params.projectId || '');
@@ -34,7 +39,10 @@
     });
 
     const apiKey = $derived(defaultTokenQuery.data?.id || 'YOUR_API_KEY');
-    const serverUrl = env.PUBLIC_API_URL || window.location.origin;
+    const serverUrl = (env.PUBLIC_EXCEPTIONLESS_SERVER_URL || '').trim();
+    const showServerUrl = env.PUBLIC_EXCEPTIONLESS_CLIENT_SETUP_SHOW_SERVER_URL !== 'false';
+    const shouldShowServerUrl = showServerUrl && serverUrl.length > 0;
+    const eventSubmissionUrl = serverUrl.length > 0 ? `${serverUrl}/api/v2/events` : 'YOUR_EXCEPTIONLESS_SERVER_URL/api/v2/events';
     const isTokenDisabled = $derived(defaultTokenQuery.data?.is_disabled ?? false);
     const isTokenSuspended = $derived(defaultTokenQuery.data?.is_suspended ?? false);
 
@@ -45,14 +53,6 @@
         route: {
             get id() {
                 return defaultTokenQuery.data?.id || '';
-            }
-        }
-    });
-
-    const generateSampleDataMutation = generateSampleData({
-        route: {
-            get id() {
-                return projectId;
             }
         }
     });
@@ -69,24 +69,29 @@
         }
     }
 
-    async function generateProjectSampleData() {
-        toast.dismiss(toastId);
-
-        try {
-            await generateSampleDataMutation.mutateAsync();
-            toastId = toast.success('Sample data generation has been queued. Events will appear shortly.');
-        } catch (error) {
-            toastId = toast.error('Failed to generate sample data. Please try again.');
-            throw error;
-        }
-    }
-
     interface ProjectType {
         config?: string;
         id: string;
         label: string;
         package?: string;
         platform: string;
+    }
+
+    type CodeBlockLanguage = 'csharp' | 'javascript' | 'json' | 'powershell' | 'shellscript' | 'xml';
+
+    interface JavaScriptConfigurationStep {
+        code: string;
+        description: string;
+        language: CodeBlockLanguage;
+        note?: string;
+    }
+
+    interface JavaScriptClientConfiguration {
+        extraSteps?: JavaScriptConfigurationStep[];
+        installCommand: string;
+        installNote?: string;
+        packageName: string;
+        startupCode: string;
     }
 
     const projectTypes: ProjectType[] = [
@@ -100,6 +105,8 @@
 
         { id: 'javascript-browser', label: 'Browser applications', package: 'Exceptionless.JavaScript', platform: 'JavaScript' },
         { id: 'javascript-nodejs', label: 'Node.js', package: 'Exceptionless.Node', platform: 'JavaScript' },
+        { id: 'javascript-react-native', label: 'React Native', package: '@exceptionless/react-native', platform: 'JavaScript' },
+        { id: 'javascript-expo', label: 'Expo', package: '@exceptionless/react-native', platform: 'JavaScript' },
 
         { id: 'dotnet-legacy-console', label: 'Console and Service applications', package: 'Exceptionless', platform: '.NET Legacy' },
         { config: 'web.config', id: 'dotnet-legacy-mvc', label: 'ASP.NET MVC', package: 'Exceptionless.Mvc', platform: '.NET Legacy' },
@@ -142,11 +149,14 @@
     const isDotNet = $derived(selectedProjectType?.platform === '.NET');
     const isDotNetLegacy = $derived(selectedProjectType?.platform === '.NET Legacy');
     const isJavaScript = $derived(selectedProjectType?.platform === 'JavaScript');
-    const isNode = $derived(selectedProjectType?.package === 'Exceptionless.Node');
     const isBashShell = $derived(selectedProjectType?.id === 'bash');
     const clientDocumentationUrl = $derived.by(() => {
         if (isDotNet || isDotNetLegacy) {
             return 'https://exceptionless.com/docs/clients/dotnet/';
+        }
+
+        if (selectedProjectType?.id === 'javascript-react-native' || selectedProjectType?.id === 'javascript-expo') {
+            return 'https://github.com/exceptionless/Exceptionless.JavaScript/tree/main/packages/react-native';
         }
 
         if (isJavaScript) {
@@ -157,7 +167,18 @@
     });
 
     const codeSamples = $derived({
-        aspNetCore: `using Exceptionless;
+        aspNetCore: shouldShowServerUrl
+            ? `using Exceptionless;
+
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddExceptionless(c => {
+  c.ApiKey = "${apiKey}";
+  c.ServerUrl = "${serverUrl}";
+});
+
+var app = builder.Build();
+app.UseExceptionless();`
+            : `using Exceptionless;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddExceptionless("${apiKey}");
@@ -165,7 +186,7 @@ builder.Services.AddExceptionless("${apiKey}");
 var app = builder.Build();
 app.UseExceptionless();`,
 
-        bashShell: `curl "${serverUrl}/api/v2/events" \\
+        bashShell: `curl "${eventSubmissionUrl}" \\
     --request POST \\
     --header "Authorization: Bearer ${apiKey}" \\
     --header "Content-Type: application/json" \\
@@ -174,19 +195,27 @@ app.UseExceptionless();`,
         browserJs: `import { Exceptionless } from "@exceptionless/browser";
 
 await Exceptionless.startup(c => {
-  c.apiKey = "${apiKey}";
+  c.apiKey = "${apiKey}";${shouldShowServerUrl ? `\n  c.serverUrl = "${serverUrl}";` : ''}
 });`,
 
-        exceptionless: `using Exceptionless;
+        exceptionless: shouldShowServerUrl
+            ? `using Exceptionless;
+
+ExceptionlessClient.Default.Configuration.ApiKey = "${apiKey}";
+ExceptionlessClient.Default.Configuration.ServerUrl = "${serverUrl}";
+ExceptionlessClient.Default.Startup();`
+            : `using Exceptionless;
 
 ExceptionlessClient.Default.Startup("${apiKey}");`,
 
-        legacyAppConfigSectionXml: `<exceptionless apiKey="${apiKey}" />`,
+        legacyAppConfigSectionXml: shouldShowServerUrl
+            ? `<exceptionless apiKey="${apiKey}" serverUrl="${serverUrl}" />`
+            : `<exceptionless apiKey="${apiKey}" />`,
 
         nodeJs: `import { Exceptionless } from "@exceptionless/node";
 
 await Exceptionless.startup(c => {
-  c.apiKey = "${apiKey}";
+  c.apiKey = "${apiKey}";${shouldShowServerUrl ? `\n  c.serverUrl = "${serverUrl}";` : ''}
 });`,
 
         powerShell: `$body = @{
@@ -199,14 +228,26 @@ $header = @{
  "Content-Type"="application/json"
 }
 
-Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -Headers $header`,
+Invoke-RestMethod -Uri "${eventSubmissionUrl}" -Method "Post" -Body $body -Headers $header`,
+
+        reactNativeExpoPlugin: `{
+  "expo": {
+    "plugins": ["@exceptionless/react-native/expo-plugin"]
+  }
+}`,
+
+        reactNativeJs: `import { Exceptionless } from "@exceptionless/react-native";
+
+await Exceptionless.startup(c => {
+  c.apiKey = "${apiKey}";${shouldShowServerUrl ? `\n  c.serverUrl = "${serverUrl}";` : ''}
+});`,
 
         webApi: `public static void Register(HttpConfiguration config) {
   config.AddExceptionless("${apiKey}");
 }`,
 
         webApiInAspNet: `protected void Application_Start() {
-  ExceptionlessClient.Default.Configuration.ApiKey = "${apiKey}";
+  ExceptionlessClient.Default.Configuration.ApiKey = "${apiKey}";${shouldShowServerUrl ? `\n  ExceptionlessClient.Default.Configuration.ServerUrl = "${serverUrl}";` : ''}
   ExceptionlessClient.Default.Startup();
 }`,
         webApiRegister: `using Exceptionless;
@@ -224,7 +265,9 @@ public class Startup {
 }`,
 
         webApiRegisterAspNet: `Exceptionless.ExceptionlessClient.Default.RegisterWebApi(GlobalConfiguration.Configuration)`,
-        windowsAttributeConfiguration: `[assembly: Exceptionless.Configuration.Exceptionless("${apiKey}")]`,
+        windowsAttributeConfiguration: shouldShowServerUrl
+            ? `[assembly: Exceptionless.Configuration.Exceptionless("${apiKey}", ServerUrl = "${serverUrl}")]`
+            : `[assembly: Exceptionless.Configuration.Exceptionless("${apiKey}")]`,
         windowsRegister: `using Exceptionless;
 
 internal static class Program {
@@ -242,6 +285,47 @@ public partial class App : Application {
     ExceptionlessClient.Default.Register();
   }
 }`
+    });
+
+    const javascriptClientConfiguration = $derived.by((): JavaScriptClientConfiguration | null => {
+        switch (selectedProjectType?.id) {
+            case 'javascript-browser':
+                return {
+                    installCommand: 'npm install @exceptionless/browser --save',
+                    packageName: '@exceptionless/browser',
+                    startupCode: codeSamples.browserJs
+                };
+            case 'javascript-expo':
+                return {
+                    extraSteps: [
+                        {
+                            code: codeSamples.reactNativeExpoPlugin,
+                            description: 'Add the Exceptionless config plugin to app.json when using development or standalone builds.',
+                            language: 'json',
+                            note: 'Native iOS crash reporting requires an Expo development build or standalone build. JavaScript error reporting works in Expo Go.'
+                        }
+                    ],
+                    installCommand: 'npx expo install @exceptionless/react-native @react-native-async-storage/async-storage',
+                    installNote: 'The AsyncStorage package is a peer dependency used for persistent event queue storage, so install it alongside the client.',
+                    packageName: '@exceptionless/react-native',
+                    startupCode: codeSamples.reactNativeJs
+                };
+            case 'javascript-nodejs':
+                return {
+                    installCommand: 'npm install @exceptionless/node --save',
+                    packageName: '@exceptionless/node',
+                    startupCode: codeSamples.nodeJs
+                };
+            case 'javascript-react-native':
+                return {
+                    installCommand: 'npm install @exceptionless/react-native @react-native-async-storage/async-storage',
+                    installNote: 'The AsyncStorage package is a peer dependency used for persistent event queue storage, so install it alongside the client.',
+                    packageName: '@exceptionless/react-native',
+                    startupCode: codeSamples.reactNativeJs
+                };
+            default:
+                return null;
+        }
     });
 
     useEventListener(document, 'PersistentEventChanged', async (event) => {
@@ -266,7 +350,7 @@ public partial class App : Application {
 </script>
 
 <div class="space-y-6">
-    <Muted>The Exceptionless client can be integrated into your project in just a few easy steps</Muted>
+    <Muted>Choose your project type and follow the steps below to connect your application to Exceptionless.</Muted>
 
     {#if isTokenDisabled}
         <Notification variant="destructive">
@@ -301,7 +385,7 @@ public partial class App : Application {
 
     <ol class="my-6 ml-6 list-decimal [&>li]:mt-2">
         <li>
-            <P>Select your project type.</P>
+            <P>Choose your project type.</P>
             <Select.Root
                 type="single"
                 bind:value={queryParams.type as string | undefined}
@@ -557,40 +641,40 @@ public partial class App : Application {
                 {/if}
             {/if}
 
-            {#if isJavaScript}
+            {#if isJavaScript && javascriptClientConfiguration}
                 <li>
                     <P
-                        >Install the <strong>{selectedProjectType.package}</strong> npm package in your JavaScript project by running this command in the project
-                        directory.</P
+                        >Install the <strong>{javascriptClientConfiguration.packageName}</strong> npm package in your JavaScript project by running this command
+                        in the project directory. {javascriptClientConfiguration.installNote ?? ''}</P
                     >
                     <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
-                        {#if isNode}
-                            <CodeBlock code="npm install @exceptionless/node --save" language="shellscript" />
-                            <div class="absolute top-2 right-2">
-                                <CopyToClipboardButton value="npm install @exceptionless/node --save" />
-                            </div>
-                        {:else}
-                            <CodeBlock code="npm install @exceptionless/browser --save" language="shellscript" />
-                            <div class="absolute top-2 right-2">
-                                <CopyToClipboardButton value="npm install @exceptionless/browser --save" />
-                            </div>
-                        {/if}
+                        <CodeBlock code={javascriptClientConfiguration.installCommand} language="shellscript" />
+                        <div class="absolute top-2 right-2">
+                            <CopyToClipboardButton value={javascriptClientConfiguration.installCommand} />
+                        </div>
                     </div>
                 </li>
+                {#each javascriptClientConfiguration.extraSteps ?? [] as step (step.description)}
+                    <li>
+                        <P>{step.description}</P>
+                        <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                            <CodeBlock code={step.code} language={step.language} />
+                            <div class="absolute top-2 right-2">
+                                <CopyToClipboardButton value={step.code} />
+                            </div>
+                        </div>
+                        {#if step.note}
+                            <P>{step.note}</P>
+                        {/if}
+                    </li>
+                {/each}
                 <li>
                     <P>Configure the ExceptionlessClient with your Exceptionless API key.</P>
                     <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
-                        {#if !isNode}
-                            <CodeBlock code={codeSamples.browserJs} language="javascript" />
-                            <div class="absolute top-2 right-2">
-                                <CopyToClipboardButton value={codeSamples.browserJs} />
-                            </div>
-                        {:else}
-                            <CodeBlock code={codeSamples.nodeJs} language="javascript" />
-                            <div class="absolute top-2 right-2">
-                                <CopyToClipboardButton value={codeSamples.nodeJs} />
-                            </div>
-                        {/if}
+                        <CodeBlock code={javascriptClientConfiguration.startupCode} language="javascript" />
+                        <div class="absolute top-2 right-2">
+                            <CopyToClipboardButton value={javascriptClientConfiguration.startupCode} />
+                        </div>
                     </div>
                 </li>
             {/if}
@@ -619,6 +703,15 @@ public partial class App : Application {
         </P>
 
         <Notification>
+            <NotificationTitle>Next, use AI to ask about this project</NotificationTitle>
+            <NotificationDescription>
+                <P>
+                    After your client is configured and your first events arrive,
+                    <A href={resolve('/(app)/account/ai-tools')}>set up AI Tools</A> to ask about top issues, 404s, event details, and stack triage.
+                </P>
+            </NotificationDescription>
+        </Notification>
+        <Notification>
             <NotificationTitle>Need more help?</NotificationTitle>
             <NotificationDescription>
                 <P>
@@ -635,14 +728,18 @@ public partial class App : Application {
     {/if}
 
     <div class="border-border flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end">
-        <Button variant="success" onclick={generateProjectSampleData} disabled={generateSampleDataMutation.isPending}>
-            {#if generateSampleDataMutation.isPending}
-                <Spinner /> Generating...
-            {:else}
-                <Database class="mr-2 size-4" aria-hidden="true" /> Generate Sample Data
-            {/if}
+        <Button variant="secondary" href={resolve('/(app)/project/[projectId]/manage', { projectId })}>
+            <ArrowLeft class="mr-2 size-4" aria-hidden="true" /> Back to Project Settings
         </Button>
-        <Button variant="secondary" onclick={goToProjectEvents}>View Events</Button>
+        <Button variant="secondary" href={`${resolve('/(app)/account/notifications')}?project=${projectId}`}>
+            <NotificationSettings class="mr-2 size-4" aria-hidden="true" /> Notifications
+        </Button>
+        <Button variant="secondary" onclick={goToProjectEvents}>
+            <Events class="mr-2 size-4" aria-hidden="true" /> View Events
+        </Button>
+        <Button variant="success" href={resolve('/(app)/account/ai-tools')}>
+            <Bot class="mr-2 size-4" aria-hidden="true" /> Set Up AI Tools
+        </Button>
     </div>
 
     {#if isTokenDisabled}

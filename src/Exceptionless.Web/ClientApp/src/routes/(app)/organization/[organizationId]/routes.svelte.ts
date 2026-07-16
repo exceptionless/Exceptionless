@@ -32,12 +32,6 @@ export function routes(): NavigationItem[] {
         },
         {
             group: 'Organization Settings',
-            href: resolve('/(app)/organization/[organizationId]/usage', { organizationId }),
-            icon: Usage,
-            title: 'Usage'
-        },
-        {
-            group: 'Organization Settings',
             href: resolve('/(app)/organization/[organizationId]/users', { organizationId }),
             icon: Users,
             title: 'Users'
@@ -54,6 +48,12 @@ export function routes(): NavigationItem[] {
             icon: Zap,
             show: (ctx) => !!ctx.user?.roles?.includes('global'),
             title: 'Features'
+        },
+        {
+            group: 'Organization Settings',
+            href: resolve('/(app)/organization/[organizationId]/usage', { organizationId }),
+            icon: Usage,
+            title: 'Usage'
         }
     ];
 }

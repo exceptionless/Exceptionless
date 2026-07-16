@@ -3,13 +3,14 @@ name: foundatio-repositories
 description: >
     Use this skill when querying, counting, patching, or paginating data through Foundatio.Repositories
     Elasticsearch abstractions. Covers filter expressions, aggregation queries, partial and script
-    patches, and search-after pagination. Apply when working with any repository method — never use
-    raw IElasticClient directly.
+    patches, and search-after pagination. Apply when working with normal query/count/patch/pagination
+    repository code; reserve raw IElasticClient for migrations or index maintenance that cannot be
+    expressed through repositories.
 ---
 
 # Foundatio Repositories
 
-Foundatio.Repositories provides a high-level Elasticsearch abstraction. **Never use raw `IElasticClient` directly** — always use repository methods.
+Foundatio.Repositories provides a high-level Elasticsearch abstraction. Use repository methods for normal query, count, patch, and pagination work. Reserve raw `IElasticClient` for migrations or index maintenance that cannot be expressed through repositories.
 
 > **Documentation:** <https://repositories.foundatio.dev> / <https://parsers.foundatio.dev>
 
@@ -144,7 +145,7 @@ await _tokenRepository.PatchAllAsync(
 
 ## Anti-Patterns
 
-**NEVER do these:**
+Avoid these in normal repository/query work:
 
 - Use `_elasticClient.SearchAsync<T>(...)` — use `CountAsync` or `FindAsync`
 - Use `_elasticClient.MultiGetAsync(...)` — use `GetByIdsAsync`

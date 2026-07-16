@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dependency Upgrades"
+  short_description: "Audit dependency upgrades safely"
+  default_prompt: "Use $dependency-upgrades to audit and implement a dependency upgrade."

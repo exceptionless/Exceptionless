@@ -7,6 +7,7 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using Foundatio.Serializer;
 using Xunit;
 
 namespace Exceptionless.Tests.Repositories;
@@ -17,6 +18,7 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase
     private readonly OrganizationData _organizationData;
     private readonly ProjectData _projectData;
     private readonly IProjectRepository _repository;
+    private readonly ITextSerializer _serializer;
 
     public ProjectRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
@@ -24,6 +26,7 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase
         _projectData = GetService<ProjectData>();
         _cache = GetService<ICacheClient>();
         _repository = GetService<IProjectRepository>();
+        _serializer = GetService<ITextSerializer>();
     }
 
     [Fact]
@@ -138,7 +141,8 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase
         var actual = await _repository.GetByIdAsync(project.Id, o => o.Cache());
         Assert.NotNull(actual);
         Assert.Equal(project.Name, actual.Name);
-        var actualToken = actual.GetSlackToken();
+
+        var actualToken = actual.GetSlackToken(_serializer);
         Assert.Equal(token.AccessToken, actualToken?.AccessToken);
 
         var actualCache = await _cache.GetAsync<ICollection<FindHit<Project>>>("Project:" + project.Id);
@@ -148,7 +152,29 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase
         var cachedDoc = cachedDocs.Single();
         Assert.NotNull(cachedDoc.Document);
         Assert.Equal(project.Name, cachedDoc.Document.Name);
-        var actualCacheToken = actual.GetSlackToken();
+        var actualCacheToken = actual.GetSlackToken(_serializer);
         Assert.Equal(token.AccessToken, actualCacheToken?.AccessToken);
+    }
+
+    [Fact]
+    public async Task GetByNextSummaryNotificationOffset_FilterExpression_FiltersCorrectly()
+    {
+        // Arrange
+        var pastProject = _projectData.GenerateProject(generateId: true,
+            organizationId: TestConstants.OrganizationId, name: "Past Project",
+            nextSummaryEndOfDayTicks: DateTime.UtcNow.AddDays(-2).Ticks);
+
+        var futureProject = _projectData.GenerateProject(generateId: true,
+            organizationId: TestConstants.OrganizationId, name: "Future Project",
+            nextSummaryEndOfDayTicks: DateTime.UtcNow.AddDays(2).Ticks);
+
+        await _repository.AddAsync([pastProject, futureProject], o => o.ImmediateConsistency());
+
+        // Act — with hourToSendNotificationsAfterUtcMidnight=0, threshold is current time
+        var results = await _repository.GetByNextSummaryNotificationOffsetAsync(0, limit: 50);
+
+        // Assert — pastProject should be returned (ticks < threshold), futureProject should not
+        Assert.Contains(results.Documents, p => String.Equals(p.Id, pastProject.Id, StringComparison.Ordinal));
+        Assert.DoesNotContain(results.Documents, p => String.Equals(p.Id, futureProject.Id, StringComparison.Ordinal));
     }
 }

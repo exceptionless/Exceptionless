@@ -17,7 +17,7 @@ public record NewCustomFieldDefinition : IValidatableObject
     [MaxLength(500)]
     public string? Description { get; init; }
 
-    public int DisplayOrder { get; init; }
+    public int? DisplayOrder { get; init; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

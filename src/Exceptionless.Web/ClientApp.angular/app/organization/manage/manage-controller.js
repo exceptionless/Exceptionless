@@ -35,9 +35,6 @@
                         case "billing":
                             vm.activeTabIndex = 3;
                             break;
-                        case "custom-fields":
-                            vm.activeTabIndex = 4;
-                            break;
                         default:
                             vm.activeTabIndex = 0;
                             break;

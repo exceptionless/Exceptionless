@@ -10,12 +10,9 @@ interface ApiCustomFieldDefinition {
     created_utc: string;
     description?: string;
     display_order: number;
-    entity_type: string;
     id: string;
     index_type: string;
-    is_deleted: boolean;
     name: string;
-    tenant_key: string;
     updated_utc: string;
 }
 
@@ -95,11 +92,11 @@ export function deleteCustomFieldMutation(request: DeleteCustomFieldRequest) {
 }
 
 export function getCustomFieldsQuery(request: GetCustomFieldsRequest) {
-    return createQuery<CustomFieldDefinition[]>(() => ({
-        enabled: !!accessToken.current && !!request.route.organizationId,
-        queryFn: async () => {
+    return createQuery<CustomFieldDefinition[], ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.organizationId,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
-            const response = await client.getJSON<ApiCustomFieldDefinition[]>(`organizations/${request.route.organizationId}/event-custom-fields`);
+            const response = await client.getJSON<ApiCustomFieldDefinition[]>(`organizations/${request.route.organizationId}/event-custom-fields`, { signal });
             return response.data?.map(mapApiDefinition) ?? [];
         },
         queryKey: queryKeys.customFields(request.route.organizationId)
@@ -129,12 +126,9 @@ function mapApiDefinition(definition: ApiCustomFieldDefinition): CustomFieldDefi
         createdUtc: definition.created_utc,
         description: definition.description,
         displayOrder: definition.display_order,
-        entityType: definition.entity_type,
         id: definition.id,
         indexType: definition.index_type,
-        isDeleted: definition.is_deleted,
         name: definition.name,
-        tenantKey: definition.tenant_key,
         updatedUtc: definition.updated_utc
     };
 }

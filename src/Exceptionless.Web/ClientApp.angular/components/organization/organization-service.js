@@ -137,28 +137,10 @@
                 return Restangular.one("organizations", id).patch(organization);
             }
 
-            function getCustomFields(id) {
-                return Restangular.one("organizations", id).all("event-custom-fields").getList();
-            }
-
-            function addCustomField(id, field) {
-                return Restangular.one("organizations", id).all("event-custom-fields").post(field);
-            }
-
-            function updateCustomField(id, fieldId, changes) {
-                return Restangular.one("organizations", id).one("event-custom-fields", fieldId).patch(changes);
-            }
-
-            function removeCustomField(id, fieldId) {
-                return Restangular.one("organizations", id).one("event-custom-fields", fieldId).remove();
-            }
-
             var service = {
-                addCustomField: addCustomField,
                 addUser: addUser,
                 create: create,
                 changePlan: changePlan,
-                getCustomFields: getCustomFields,
                 getOldestCreationDate: getOldestCreationDate,
                 getOldestRetentionStartDate: getOldestRetentionStartDate,
                 getOldestPossibleEventDate: getOldestPossibleEventDate,
@@ -169,10 +151,8 @@
                 getPlans: getPlans,
                 isNameAvailable: isNameAvailable,
                 remove: remove,
-                removeCustomField: removeCustomField,
                 removeUser: removeUser,
                 update: update,
-                updateCustomField: updateCustomField,
             };
             return service;
         });

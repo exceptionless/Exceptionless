@@ -38,7 +38,11 @@ tests/Exceptionless.Tests/
 ├── AppWebHostFactory.cs         # WebApplicationFactory for integration tests
 ├── IntegrationTestsBase.cs      # Base class for integration tests
 ├── TestWithServices.cs          # Base class for unit tests with DI
-├── Controllers/                 # API controller tests
+├── Api/                         # Minimal API tests, organized by production layer
+│   ├── Endpoints/               # HTTP integration tests by endpoint family
+│   ├── Filters/                 # Endpoint filter unit tests
+│   ├── Handlers/                # Mediator handler unit tests
+│   └── Results/                 # API result mapping tests
 ├── Jobs/                        # Job tests
 ├── Repositories/                # Repository tests
 ├── Services/                    # Service tests
@@ -60,7 +64,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, IAsyncLifetime
 
 Key members: `GetService<T>()`, `CreateFluentClient()`, `SendRequestAsync()`, `RefreshDataAsync()`, `ResetDataAsync()`, `TimeProvider` (ProxyTimeProvider).
 
-## FluentClient Pattern
+## HTTP Test Pattern
 
 Use `SendRequestAsync` with `AppSendBuilder` for HTTP testing:
 
@@ -98,8 +102,7 @@ TimeProvider.Restore();
 
 ## Test Principles
 
-- **TDD workflow** — Write a failing test first when fixing bugs or adding features
+- **Regression coverage** — Add a focused failing test first when a bug fix can be reproduced cheaply
 - **Use real serializer** — Tests use the same JSON serializer as production
 - **Refresh after writes** — Call `RefreshDataAsync()` after database changes
-- **Clean state** — `ResetDataAsync()` clears data between tests
-- **AAA comments** — Use `// Arrange`, `// Act`, `// Assert` for readability
+- **Clean state** — `ResetDataAsync()` clears data between integration tests

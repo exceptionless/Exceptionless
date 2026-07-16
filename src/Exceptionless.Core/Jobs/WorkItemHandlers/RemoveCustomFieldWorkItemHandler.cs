@@ -38,7 +38,7 @@ public class RemoveCustomFieldWorkItemHandler : WorkItemHandlerBase
             await context.ReportProgressAsync(0, "Acknowledging custom field soft-deletion...");
 
             // GetByIdAsync INCLUDES soft-deleted records (by-ID lookups bypass the soft-delete filter).
-            // After the controller soft-deletes and enqueues this work item, GetByIdAsync returns the
+            // After the API handler soft-deletes and enqueues this work item, GetByIdAsync returns the
             // definition with IsDeleted=true. A null result means the record has been physically removed.
             var definition = await _customFieldDefinitionRepository.GetByIdAsync(workItem.CustomFieldDefinitionId);
 
@@ -60,13 +60,11 @@ public class RemoveCustomFieldWorkItemHandler : WorkItemHandlerBase
             {
                 // Normal path: definition is soft-deleted as expected.
                 // Hard-deletion (slot reclamation) is intentionally deferred to prevent slot-reuse corruption:
-                //   recycling a slot before the org's retention window expires would cause historical events
+                //   recycling a slot before the organization's retention window expires would cause historical events
                 //   indexed under the old field to appear in queries for a new field assigned the same slot.
-                // A future retention-aware cleanup job will hard-delete once all events using the old slot
-                // have aged out beyond the org's retention period.
                 Log.LogInformation(
                     "Custom field definition {DefinitionId} ('{FieldName}') is soft-deleted. " +
-                    "Slot will be reclaimed by the retention cleanup job after the retention window expires.",
+                    "Slot remains reserved because retention-aware cleanup is not implemented.",
                     workItem.CustomFieldDefinitionId, workItem.FieldName);
             }
 

@@ -1,4 +1,7 @@
-﻿using System.Text.Json;
+using System.Net;
+using System.Net.Sockets;
+using System.Text.Json;
+using Elastic.Clients.Elasticsearch;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Configuration;
@@ -7,7 +10,6 @@ using Exceptionless.Core.Geo;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Mail;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins;
@@ -25,7 +27,6 @@ using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Validation;
-using Exceptionless.Serializer;
 using Foundatio.Caching;
 using Foundatio.Extensions.Hosting.Jobs;
 using Foundatio.Extensions.Hosting.Startup;
@@ -44,8 +45,8 @@ using Foundatio.Resilience;
 using Foundatio.Serializer;
 using Foundatio.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
-using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 using MaintainIndexesJob = Foundatio.Repositories.Elasticsearch.Jobs.MaintainIndexesJob;
 
 namespace Exceptionless.Core;
@@ -54,27 +55,7 @@ public class Bootstrapper
 {
     public static void RegisterServices(IServiceCollection services, AppOptions appOptions)
     {
-        // PERF: Work towards getting rid of JSON.NET.
-        Newtonsoft.Json.JsonConvert.DefaultSettings = () => new Newtonsoft.Json.JsonSerializerSettings
-        {
-            DateParseHandling = Newtonsoft.Json.DateParseHandling.DateTimeOffset
-        };
-
-        services.AddSingleton<Newtonsoft.Json.Serialization.IContractResolver>(_ => GetJsonContractResolver());
-        services.AddSingleton<Newtonsoft.Json.JsonSerializerSettings>(s =>
-        {
-            // NOTE: These settings may need to be synced in the Elastic Configuration.
-            var settings = new Newtonsoft.Json.JsonSerializerSettings
-            {
-                MissingMemberHandling = Newtonsoft.Json.MissingMemberHandling.Ignore,
-                DateParseHandling = Newtonsoft.Json.DateParseHandling.DateTimeOffset,
-                ContractResolver = s.GetRequiredService<Newtonsoft.Json.Serialization.IContractResolver>()
-            };
-
-            settings.AddModelConverters(s.GetRequiredService<ILogger<Bootstrapper>>());
-            return settings;
-        });
-
+        // Register System.Text.Json options with Exceptionless defaults (snake_case, null handling)
         services.AddSingleton(_ => new JsonSerializerOptions().ConfigureExceptionlessDefaults());
 
         services.AddSingleton<ISerializer>(s => s.GetRequiredService<ITextSerializer>());
@@ -92,7 +73,7 @@ public class Bootstrapper
         }));
 
         services.AddSingleton<ExceptionlessElasticConfiguration>();
-        services.AddSingleton<Nest.IElasticClient>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().Client);
+        services.AddSingleton<ElasticsearchClient>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().Client);
         services.AddSingleton<IElasticConfiguration>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>());
         services.AddSingleton<ICustomFieldDefinitionRepository>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().CustomFieldDefinitionRepository!);
         services.AddStartupAction<ExceptionlessElasticConfiguration>();
@@ -108,6 +89,7 @@ public class Bootstrapper
         {
             var handlers = new WorkItemHandlers();
             handlers.Register<FixStackStatsWorkItem>(s.GetRequiredService<FixStackStatsWorkItemHandler>);
+            handlers.Register<ForcePredefinedSavedViewsWorkItem>(s.GetRequiredService<ForcePredefinedSavedViewsWorkItemHandler>);
             handlers.Register<OrganizationMaintenanceWorkItem>(s.GetRequiredService<OrganizationMaintenanceWorkItemHandler>);
             handlers.Register<OrganizationNotificationWorkItem>(s.GetRequiredService<OrganizationNotificationWorkItemHandler>);
             handlers.Register<ProjectMaintenanceWorkItem>(s.GetRequiredService<ProjectMaintenanceWorkItemHandler>);
@@ -130,6 +112,8 @@ public class Bootstrapper
         services.AddSingleton(s => CreateQueue<WebHookNotification>(s));
         services.AddSingleton(s => CreateQueue<MailMessage>(s));
         services.AddSingleton(s => CreateQueue<WorkItemData>(s, TimeSpan.FromHours(1)));
+
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IQueueBehavior<WorkItemData>, WorkItemDuplicateDetectionQueueBehavior>());
 
         services.AddSingleton<IConnectionMapping, ConnectionMapping>();
         services.AddSingleton<MessageService>();
@@ -159,6 +143,8 @@ public class Bootstrapper
         services.AddSingleton<MigrationManager>();
         services.AddSingleton<MigrationIndex>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().Migrations);
         services.AddSingleton<IOrganizationRepository, OrganizationRepository>();
+        services.AddSingleton<IOAuthApplicationRepository, OAuthApplicationRepository>();
+        services.AddSingleton<IOAuthTokenRepository, OAuthTokenRepository>();
         services.AddSingleton<IProjectRepository, ProjectRepository>();
         services.AddSingleton<IUserRepository, UserRepository>();
         services.AddSingleton<IWebHookRepository, WebHookRepository>();
@@ -206,11 +192,43 @@ public class Bootstrapper
         services.AddSingleton<NotificationService>();
         services.AddSingleton<OrganizationService>();
         services.AddStartupAction<OrganizationService>();
+        services.AddHttpClient<IOAuthClientMetadataService, OAuthClientMetadataService>()
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                AllowAutoRedirect = false,
+                ConnectCallback = ConnectToPublicAddressAsync
+            });
+        services.AddSingleton<OAuthService>();
         services.AddSingleton<UsageService>();
         services.AddSingleton<SlackService>();
         services.AddSingleton<StackService>();
 
         services.AddTransient<IDomainLoginProvider, ActiveDirectoryLoginProvider>();
+    }
+
+    private static async ValueTask<Stream> ConnectToPublicAddressAsync(SocketsHttpConnectionContext context, CancellationToken cancellationToken)
+    {
+        var addresses = await Dns.GetHostAddressesAsync(context.DnsEndPoint.Host, cancellationToken);
+        Exception? lastException = null;
+        foreach (var address in addresses)
+        {
+            if (!OAuthClientMetadataService.IsPublicAddress(address))
+                continue;
+
+            var socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+            try
+            {
+                await socket.ConnectAsync(new IPEndPoint(address, context.DnsEndPoint.Port), cancellationToken);
+                return new NetworkStream(socket, ownsSocket: true);
+            }
+            catch (SocketException ex)
+            {
+                lastException = ex;
+                socket.Dispose();
+            }
+        }
+
+        throw new HttpRequestException($"OAuth client metadata host '{context.DnsEndPoint.Host}' did not resolve to a reachable public address.", lastException);
     }
 
     public static void LogConfiguration(IServiceProvider serviceProvider, AppOptions appOptions, ILogger logger)
@@ -292,13 +310,6 @@ public class Bootstrapper
         logger.LogWarning("Jobs running in process");
     }
 
-    public static DynamicTypeContractResolver GetJsonContractResolver()
-    {
-        var resolver = new DynamicTypeContractResolver(new LowerCaseUnderscorePropertyNamesContractResolver());
-        resolver.UseDefaultResolverFor(typeof(DataDictionary), typeof(SettingsDictionary), typeof(VersionOnePlugin.VersionOneWebHookStack), typeof(VersionOnePlugin.VersionOneWebHookEvent));
-        return resolver;
-    }
-
     private static IQueue<T> CreateQueue<T>(IServiceProvider container, TimeSpan? workItemTimeout = null) where T : class
     {
         var loggerFactory = container.GetRequiredService<ILoggerFactory>();
@@ -306,10 +317,14 @@ public class Bootstrapper
         return new InMemoryQueue<T>(new InMemoryQueueOptions<T>
         {
             WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
+            Behaviors = container.GetServices<IQueueBehavior<T>>().ToList(),
             Serializer = container.GetRequiredService<ISerializer>(),
             TimeProvider = container.GetRequiredService<TimeProvider>(),
             ResiliencePolicyProvider = container.GetRequiredService<IResiliencePolicyProvider>(),
             LoggerFactory = loggerFactory
         });
     }
+
+    private sealed class WorkItemDuplicateDetectionQueueBehavior(ICacheClient cacheClient, ILoggerFactory loggerFactory)
+        : DuplicateDetectionQueueBehavior<WorkItemData>(cacheClient, loggerFactory, TimeSpan.FromHours(24));
 }

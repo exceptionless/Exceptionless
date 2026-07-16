@@ -16,6 +16,7 @@ Content-Type: application/json
 ###
 
 @token = {{login.response.body.$.token}}
+@iconFile = ./icon.png
 
 ### All
 GET {{apiUrl}}/organizations
@@ -31,6 +32,35 @@ Authorization: Bearer {{token}}
 
 ### Invoices
 GET {{apiUrl}}/organizations/{{organizationId}}/invoices
+Authorization: Bearer {{token}}
+
+### Event Custom Fields
+GET {{apiUrl}}/organizations/{{organizationId}}/event-custom-fields
+Authorization: Bearer {{token}}
+
+### Create Event Custom Field
+# @name newEventCustomField
+POST {{apiUrl}}/organizations/{{organizationId}}/event-custom-fields
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "name": "customer_id",
+    "index_type": "keyword",
+    "description": "Customer identifier"
+}
+
+### Update Event Custom Field
+PATCH {{apiUrl}}/organizations/{{organizationId}}/event-custom-fields/{{newEventCustomField.response.body.$.id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "description": "External customer identifier"
+}
+
+### Delete Event Custom Field
+DELETE {{apiUrl}}/organizations/{{organizationId}}/event-custom-fields/{{newEventCustomField.response.body.$.id}}
 Authorization: Bearer {{token}}
 
 ### Check Name
@@ -69,6 +99,23 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "name": "My updated organization" }
+
+### Upload Icon
+# Replace {{iconFile}} with a local PNG, JPEG, GIF, or WebP image.
+POST {{apiUrl}}/organizations/{{organizationId}}/icon
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=icon-boundary
+
+--icon-boundary
+Content-Disposition: form-data; name="file"; filename="icon.png"
+Content-Type: image/png
+
+< {{iconFile}}
+--icon-boundary--
+
+### Remove Icon
+DELETE {{apiUrl}}/organizations/{{organizationId}}/icon
+Authorization: Bearer {{token}}
 
 ### Delete
 DELETE {{apiUrl}}/organizations/{{organizationId}}

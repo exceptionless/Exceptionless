@@ -1,9 +1,10 @@
 <script lang="ts">
     import type { NewToken, ViewToken } from '$features/tokens/models';
 
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
-    import { Muted } from '$comp/typography';
+    import { A, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { organization } from '$features/organizations/context.svelte';
     import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
@@ -79,7 +80,13 @@
 </script>
 
 <div class="space-y-6">
-    <Muted>Create and manage API keys for authenticating your applications with Exceptionless</Muted>
+    <div class="space-y-1">
+        <Muted>Create and manage API keys for applications and services sending events to Exceptionless.</Muted>
+        <Muted>
+            To install an SDK and start sending events, open
+            <A href={resolve('/(app)/project/[projectId]/configure', { projectId })}>Client setup</A>.
+        </Muted>
+    </div>
 
     <TokensDataTable bind:limit={tokensQueryParameters.limit!} isLoading={tokensQuery.isLoading} {table}>
         {#snippet toolbarChildren()}

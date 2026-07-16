@@ -1,0 +1,169 @@
+name: Preview Command
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: dev-preview-command
+  cancel-in-progress: false
+
+jobs:
+  preview:
+    name: Dispatch preview deployment
+    if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '/preview') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare Preview
+        id: preview
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const body = context.payload.comment.body.trim();
+            const association = context.payload.comment.author_association;
+            const trustedAssociations = new Set(["OWNER", "MEMBER", "COLLABORATOR"]);
+
+            if (!/^\/preview(?:\s|$)/.test(body)) {
+              core.info("Comment starts with /preview but does not match the command format.");
+              return;
+            }
+
+            try {
+              await github.rest.reactions.createForIssueComment({
+                owner,
+                repo,
+                comment_id: context.payload.comment.id,
+                content: "eyes"
+              });
+            } catch (error) {
+              core.warning(`Could not add reaction to /preview comment: ${error.message}`);
+            }
+
+            if (!trustedAssociations.has(association)) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: context.payload.issue.number,
+                body: "I can only deploy previews when `/preview` is requested by a repository owner, member, or collaborator."
+              });
+              core.setFailed(`Unauthorized preview requester association: ${association}`);
+              return;
+            }
+
+            const { data: pullRequest } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: context.payload.issue.number
+            });
+
+            if (pullRequest.state !== "open") {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: context.payload.issue.number,
+                body: "I can only deploy previews for open pull requests."
+              });
+              core.setFailed(`Pull request #${pullRequest.number} is ${pullRequest.state}.`);
+              return;
+            }
+
+            const headRepository = pullRequest.head.repo.full_name;
+            const headRef = pullRequest.head.ref;
+            const headSha = pullRequest.head.sha;
+            const headLabel = pullRequest.head.label;
+            const headShortSha = headSha.slice(0, 12);
+
+            if (headRepository !== `${owner}/${repo}`) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: pullRequest.number,
+                body: "I can only deploy previews for branches in this repository right now. Fork previews need a mirrored branch before the shared dev environment can build and deploy them."
+              });
+              core.setFailed(`Unsupported fork preview source: ${headRepository}`);
+              return;
+            }
+
+            core.setOutput("pr-number", String(pullRequest.number));
+            core.setOutput("head-ref", headRef);
+            core.setOutput("head-label", headLabel);
+            core.setOutput("head-sha", headSha);
+            core.setOutput("head-short-sha", headShortSha);
+
+            const previewLabel = "dev-preview";
+            try {
+              await github.rest.issues.createLabel({
+                owner,
+                repo,
+                name: previewLabel,
+                color: "0E8A16",
+                description: "Deploy this pull request to the shared dev environment."
+              });
+            } catch (error) {
+              if (error.status !== 422) {
+                throw error;
+              }
+            }
+
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: pullRequest.number,
+              labels: [previewLabel]
+            });
+
+      - name: Post sticky queued comment
+        if: ${{ steps.preview.outputs.pr-number != '' }}
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          number: ${{ steps.preview.outputs.pr-number }}
+          header: exceptionless-preview
+          message: |
+            Preview deploy queued.
+
+            The build workflow will start shortly. This comment will update with a progress link when the run starts and with the dev URL when deployment finishes.
+
+            - Branch: `${{ steps.preview.outputs.head-label }}`
+            - Commit: [`${{ steps.preview.outputs.head-short-sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ steps.preview.outputs.head-sha }})
+            - Command run: [view logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+      - name: Dispatch Preview
+        if: ${{ steps.preview.outputs.pr-number != '' }}
+        uses: actions/github-script@v9
+        env:
+          PR_NUMBER: ${{ steps.preview.outputs.pr-number }}
+          HEAD_REF: ${{ steps.preview.outputs.head-ref }}
+          HEAD_LABEL: ${{ steps.preview.outputs.head-label }}
+          HEAD_SHA: ${{ steps.preview.outputs.head-sha }}
+        with:
+          script: |
+            await github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event_type: "preview",
+              client_payload: {
+                pr_number: Number(process.env.PR_NUMBER),
+                head_ref: process.env.HEAD_REF,
+                head_label: process.env.HEAD_LABEL,
+                head_sha: process.env.HEAD_SHA
+              }
+            });
+
+      - name: Post sticky command failure comment
+        if: ${{ failure() && steps.preview.outputs.pr-number != '' }}
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          number: ${{ steps.preview.outputs.pr-number }}
+          header: exceptionless-preview
+          message: |
+            Preview deploy failed before the build workflow started. See [command run logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+
+            - Branch: `${{ steps.preview.outputs.head-label }}`
+            - Commit: [`${{ steps.preview.outputs.head-short-sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ steps.preview.outputs.head-sha }})

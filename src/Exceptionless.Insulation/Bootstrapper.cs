@@ -23,7 +23,6 @@ using Foundatio.Resilience;
 using Foundatio.Serializer;
 using Foundatio.Storage;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using Serilog.Sinks.Exceptionless;
 using StackExchange.Redis;

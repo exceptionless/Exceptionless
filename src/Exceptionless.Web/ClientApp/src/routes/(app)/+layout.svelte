@@ -10,7 +10,6 @@
     import { getIntercomTokenQuery } from '$features/auth/api.svelte';
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
     import { UpgradeRequiredDialog } from '$features/billing';
-    import { upgradeRequiredDialog } from '$features/billing/upgrade-required.svelte';
     import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
     import { filterUsesPremiumFeatures } from '$features/events/premium-filter';
     import { buildIntercomBootOptions, IntercomShell } from '$features/intercom';
@@ -74,6 +73,11 @@
         isCommandOpen = false;
         isKeyboardShortcutsOpen = false;
         isUserMenuOpen = false;
+        if (singleOrganization?.id) {
+            await goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: singleOrganization.id }));
+            return;
+        }
+
         await tick();
         isOrganizationSwitcherOpen = true;
     }
@@ -226,13 +230,13 @@
 
             if (isKeyboardShortcut(e, appKeyboardShortcuts.allEvents)) {
                 e.preventDefault();
-                void goto(resolve('/(app)/events'));
+                void goto(resolve('/(app)/event'));
                 return;
             }
 
             if (isKeyboardShortcut(e, appKeyboardShortcuts.stacks)) {
                 e.preventDefault();
-                void goto(resolve('/(app)/stacks'));
+                void goto(resolve('/(app)/stack'));
                 return;
             }
 
@@ -286,7 +290,7 @@
     const impersonatingOrganizationId = $derived.by(() => {
         // Only consider impersonation if user data is loaded and user has organizations
         const userOrganizationIds = meQuery.data?.organization_ids;
-        if (!userOrganizationIds || userOrganizationIds.length === 0 || !organization.current) {
+        if (!isGlobalAdmin || !userOrganizationIds || userOrganizationIds.length === 0 || !organization.current) {
             return undefined;
         }
 
@@ -317,6 +321,11 @@
     });
     const intercomOrganization = $derived(shouldFetchIntercomOrganization ? currentOrganizationQuery.data : undefined);
 
+    function shouldRedirectToSetup(): boolean {
+        const addOrganizationPath = resolve('/(app)/organization/add');
+        return page.url.pathname !== addOrganizationPath && !page.url.pathname.startsWith(resolve('/(app)/system'));
+    }
+
     // Keep selected organization synchronized with current memberships.
     $effect(() => {
         void page.url.pathname;
@@ -329,24 +338,22 @@
         if (!hasOrganizations) {
             organization.current = undefined;
 
-            // Redirect non-admins to add organization page
-            if (!isGlobalAdmin && !organizationsQuery.isLoading) {
-                const addOrganizationPath = resolve('/(app)/organization/add');
-                if (page.url.pathname !== addOrganizationPath) {
-                    goto(addOrganizationPath);
-                }
+            if (shouldRedirectToSetup()) {
+                goto(resolve('/(app)/organization/add'));
             }
 
             return;
         }
 
         const hasSelectedOrganization = !!organization.current && organizations.some((organizationItem) => organizationItem.id === organization.current);
-        if (!hasSelectedOrganization && !impersonatingOrganizationId) {
+        const hasInvalidImpersonatedOrganization = !!impersonatingOrganizationId && impersonatedOrganizationQuery.isError;
+        if ((!hasSelectedOrganization && !impersonatingOrganizationId) || hasInvalidImpersonatedOrganization) {
             organization.current = organizations[0]!.id;
         }
     });
 
     const isImpersonating = $derived(!!impersonatedOrganization);
+    const singleOrganization = $derived(!isGlobalAdmin && !isImpersonating && organizations.length === 1 ? organizations[0] : undefined);
 
     const savedViewsQuery = getSavedViewsQuery({
         route: {
@@ -357,8 +364,8 @@
     });
 
     const viewToHref: Record<string, string> = {
-        events: resolve('/(app)/events'),
-        stacks: resolve('/(app)/stacks'),
+        events: resolve('/(app)/event'),
+        stacks: resolve('/(app)/stack'),
         stream: resolve('/(app)/stream')
     };
 
@@ -369,13 +376,25 @@
     const filteredRoutes = $derived.by(() => {
         const context: NavigationItemContext = { authenticated: isAuthenticated, impersonating: isImpersonating, user: meQuery.data };
         const allRoutes = routes().filter((route) => (route.show ? route.show(context) : true));
+        const organizationSettingsHref = singleOrganization?.id
+            ? resolve('/(app)/organization/[organizationId]/manage', { organizationId: singleOrganization.id })
+            : undefined;
 
         const savedViews = (savedViewsQuery.data ?? []).filter((savedView) => !isSavedViewDeleted(savedView));
-        if (savedViews.length === 0) {
-            return allRoutes;
-        }
 
         return allRoutes.map((route) => {
+            if (organizationSettingsHref && route.group === 'Settings' && route.title === 'Organizations') {
+                route = {
+                    ...route,
+                    href: organizationSettingsHref,
+                    title: 'Organization'
+                };
+            }
+
+            if (savedViews.length === 0) {
+                return route;
+            }
+
             if (route.group !== 'Dashboards') {
                 return route;
             }
@@ -443,6 +462,7 @@
                 {impersonatedOrganization}
                 bind:open={isOrganizationSwitcherOpen}
                 bind:currentOrganizationId={organization.current}
+                {isGlobalAdmin}
             />
         {/snippet}
 
@@ -505,9 +525,7 @@
         {/snippet}
     </IntercomShell>
 
-    {#if upgradeRequiredDialog.open}
-        <UpgradeRequiredDialog />
-    {/if}
+    <UpgradeRequiredDialog />
 {/if}
 
 <Telemetry userId={isAuthenticated ? meQuery.data?.email_address : undefined} userName={isAuthenticated ? meQuery.data?.full_name : undefined} />

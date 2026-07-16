@@ -1,11 +1,7 @@
 ---
 name: qa
 model: sonnet
-description: "Use when testing application quality via browser dogfood, E2E tests, or API smoke tests. Navigates the app via agent-browser, takes screenshots, checks console errors, runs E2E Playwright tests. Read-only — reports issues but never edits code. Also use when the user says 'test this', 'dogfood', 'QA', 'check the UI', or 'verify it works'."
-skills:
-  - dogfood
-  - agent-browser
-  - e2e-testing
+description: "Use when testing application quality via browser dogfood, E2E tests, or API smoke tests. Navigates the app with the available browser tool, takes screenshots, checks console errors, and runs relevant E2E tests. Read-only — reports issues but never edits code. Also use when the user says 'test this', 'dogfood', 'QA', 'check the UI', or 'verify it works'."
 disallowedTools:
   - Edit
   - Write
@@ -49,7 +45,7 @@ Find and execute relevant API test files. For each endpoint: verify status code,
 
 # Browser Dogfood (Frontend/Fullstack)
 
-Follow the **dogfood** and **agent-browser** skills. High-level flow:
+Follow AGENTS.md local testing guidance and the repo dogfood skill when available. Use the current browser automation tool for interactive checks. High-level flow:
 
 1. Open the app, wait for load
 2. Navigate each affected page — take screenshots, check console for errors

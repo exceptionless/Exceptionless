@@ -1,15 +1,19 @@
+using System.Text.Json;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Tests.Utility;
-using Newtonsoft.Json;
+using Foundatio.Serializer;
 using Xunit;
 
 namespace Exceptionless.Tests.Plugins;
 
 public sealed class WebHookDataTests : TestWithServices
 {
+    private readonly ITextSerializer _serializer;
+    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly JsonSerializerOptions _versionOneJsonOptions;
     private readonly OrganizationData _organizationData;
     private readonly ProjectData _projectData;
     private readonly StackData _stackData;
@@ -18,6 +22,9 @@ public sealed class WebHookDataTests : TestWithServices
 
     public WebHookDataTests(ITestOutputHelper output) : base(output)
     {
+        _serializer = GetService<ITextSerializer>();
+        _jsonOptions = GetService<JsonSerializerOptions>();
+        _versionOneJsonOptions = VersionOnePlugin.CreateJsonSerializerOptions(_jsonOptions);
         _organizationData = GetService<OrganizationData>();
         _projectData = GetService<ProjectData>();
         _stackData = GetService<StackData>();
@@ -29,15 +36,13 @@ public sealed class WebHookDataTests : TestWithServices
     [MemberData(nameof(WebHookData))]
     public async Task CreateFromEventAsync(string version, bool expectData)
     {
-        var settings = GetService<JsonSerializerSettings>();
-        settings.Formatting = Formatting.Indented;
         object? data = await _webHookData.CreateFromEventAsync(GetWebHookDataContext(version));
         if (expectData)
         {
+            Assert.NotNull(data);
             string filePath = Path.GetFullPath(Path.Combine("..", "..", "..", "Plugins", "WebHookData", $"{version}.event.expected.json"));
             string expectedContent = await File.ReadAllTextAsync(filePath, TestCancellationToken);
-            string actualContent = JsonConvert.SerializeObject(data, settings);
-            Assert.Equal(expectedContent, actualContent);
+            JsonAssert.AssertJsonEquals(expectedContent, JsonSerializer.Serialize(data, GetJsonSerializerOptions(data)));
         }
         else
         {
@@ -49,15 +54,13 @@ public sealed class WebHookDataTests : TestWithServices
     [MemberData(nameof(WebHookData))]
     public async Task CanCreateFromStackAsync(string version, bool expectData)
     {
-        var settings = GetService<JsonSerializerSettings>();
-        settings.Formatting = Formatting.Indented;
         object? data = await _webHookData.CreateFromStackAsync(GetWebHookDataContext(version));
         if (expectData)
         {
+            Assert.NotNull(data);
             string filePath = Path.GetFullPath(Path.Combine("..", "..", "..", "Plugins", "WebHookData", $"{version}.stack.expected.json"));
             string expectedContent = await File.ReadAllTextAsync(filePath, TestCancellationToken);
-            string actualContent = JsonConvert.SerializeObject(data, settings);
-            Assert.Equal(expectedContent, actualContent);
+            JsonAssert.AssertJsonEquals(expectedContent, JsonSerializer.Serialize(data, GetJsonSerializerOptions(data)));
         }
         else
         {
@@ -72,12 +75,16 @@ public sealed class WebHookDataTests : TestWithServices
             new object[] { "v3", false }
         }.ToArray();
 
+    private JsonSerializerOptions GetJsonSerializerOptions(object data)
+    {
+        return data is VersionOnePlugin.VersionOneWebHookEvent or VersionOnePlugin.VersionOneWebHookStack
+            ? _versionOneJsonOptions
+            : _jsonOptions;
+    }
+
     private WebHookDataContext GetWebHookDataContext(string version)
     {
         string json = File.ReadAllText(Path.GetFullPath(Path.Combine("..", "..", "..", "ErrorData", "1477.expected.json")));
-
-        var settings = GetService<JsonSerializerSettings>();
-        settings.Formatting = Formatting.Indented;
 
         var hook = new WebHook
         {
@@ -93,7 +100,7 @@ public sealed class WebHookDataTests : TestWithServices
         var organization = _organizationData.GenerateSampleOrganization(GetService<BillingManager>(), GetService<BillingPlans>());
         var project = _projectData.GenerateSampleProject();
 
-        var ev = JsonConvert.DeserializeObject<PersistentEvent>(json, settings);
+        var ev = _serializer.Deserialize<PersistentEvent>(json);
         Assert.NotNull(ev);
         ev.OrganizationId = TestConstants.OrganizationId;
         ev.ProjectId = TestConstants.ProjectId;

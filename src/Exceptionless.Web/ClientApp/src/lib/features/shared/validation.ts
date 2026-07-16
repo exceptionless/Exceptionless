@@ -8,6 +8,14 @@ export type FieldWithErrors = {
     };
 };
 
+type ProblemDetailsLike = {
+    detail?: unknown;
+    errors?: Record<string, unknown>;
+    message?: unknown;
+    status?: unknown;
+    title?: unknown;
+};
+
 /**
  * ARIA helper: returns `true` when invalid, otherwise `undefined` (omit attribute).
  */
@@ -108,6 +116,22 @@ export function getFormErrorMessages(errors?: unknown[]): string | string[] | un
     return messages;
 }
 
+export function getProblemMessage(error: unknown, fallback: string): string {
+    if (!isProblemDetailsLike(error)) {
+        return fallback;
+    }
+
+    const candidates: unknown[] = [error.message];
+    for (const value of Object.values(error.errors ?? {})) {
+        if (Array.isArray(value)) {
+            candidates.push(...value);
+        }
+    }
+
+    candidates.push(error.title, error.detail);
+    return candidates.find(isNonEmptyString) ?? fallback;
+}
+
 /**
  * Helper to check if a field has validation errors.
  * Useful for conditional styling of form fields.
@@ -180,8 +204,11 @@ export function problemDetailsToFormErrors(problem: null | ProblemDetails): null
     const generalErrors = problem.errors?.['general']?.join(', ');
     if (generalErrors) {
         result.form = generalErrors;
-    } else if (problem.title && problem.status !== 422) {
-        result.form = problem.title;
+    } else if (problem.status !== 422) {
+        const message = getProblemMessage(problem, '');
+        if (message) {
+            result.form = message;
+        }
     }
 
     // Handle field-level errors (422 validation errors)
@@ -199,4 +226,16 @@ export function problemDetailsToFormErrors(problem: null | ProblemDetails): null
     }
 
     return Object.keys(result).length > 0 ? result : null;
+}
+
+function isNonEmptyString(value: unknown): value is string {
+    return typeof value === 'string' && value.length > 0;
+}
+
+function isProblemDetailsLike(error: unknown): error is ProblemDetailsLike {
+    if (!error || typeof error !== 'object') {
+        return false;
+    }
+
+    return 'title' in error || 'detail' in error || 'errors' in error || 'status' in error;
 }

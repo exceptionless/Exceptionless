@@ -3,12 +3,20 @@
     import { Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Dialog from '$comp/ui/dialog';
+    import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import * as Field from '$comp/ui/field';
     import * as Select from '$comp/ui/select';
     import { Spinner } from '$comp/ui/spinner';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
     import { organization } from '$features/organizations/context.svelte';
-    import { createCustomFieldMutation, INDEX_TYPE_DESCRIPTIONS, INDEX_TYPE_LABELS, INDEX_TYPES, type IndexType } from '$features/organizations/custom-fields';
+    import {
+        createCustomFieldMutation,
+        getCustomFieldsQuery,
+        INDEX_TYPE_DESCRIPTIONS,
+        INDEX_TYPE_LABELS,
+        INDEX_TYPES,
+        type IndexType
+    } from '$features/organizations/custom-fields';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import Database from '@lucide/svelte/icons/database';
     import { toast } from 'svelte-sonner';
@@ -20,6 +28,18 @@
     let { fieldName }: Props = $props();
 
     const organizationId = $derived(organization.current ?? '');
+
+    const customFieldsQuery = getCustomFieldsQuery({
+        route: {
+            get organizationId() {
+                return organizationId;
+            }
+        }
+    });
+
+    const isReservedSystemField = $derived(['haserror', 'sessionend'].includes(fieldName.toLowerCase()));
+    const isAlreadyIndexed = $derived(customFieldsQuery.data?.some((field) => field.name.toLowerCase() === fieldName.toLowerCase()) ?? false);
+    const canCreate = $derived(!isReservedSystemField && customFieldsQuery.isSuccess && !isAlreadyIndexed);
 
     let showDialog = $state(false);
     let selectedType = $state<IndexType>('keyword');
@@ -55,24 +75,13 @@
             }
         }
     }
-
-    $effect(() => {
-        if (!showDialog) {
-            document.body.style.removeProperty('pointer-events');
-            document.body.style.removeProperty('overflow');
-        }
-    });
 </script>
 
-{#if organizationId}
-    <button
-        class="data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground relative flex w-full cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
-        onclick={() => (showDialog = true)}
-        title="Index this field for filtering"
-    >
-        <Database class="mr-2 size-4" />
+{#if organizationId && canCreate}
+    <DropdownMenu.Item onclick={() => (showDialog = true)} title="Index this field for filtering">
+        <Database data-icon="inline-start" />
         Index as Custom Field
-    </button>
+    </DropdownMenu.Item>
 
     <Dialog.Root bind:open={showDialog}>
         <Dialog.Content class="sm:max-w-[400px]">
@@ -85,7 +94,7 @@
             </Dialog.Header>
 
             <form
-                class="space-y-4"
+                class="flex flex-col gap-4"
                 onsubmit={(e) => {
                     e.preventDefault();
                     handleCreate();
@@ -103,12 +112,14 @@
                             <span class="text-muted-foreground ml-2 text-xs">{INDEX_TYPE_DESCRIPTIONS[selectedType]}</span>
                         </Select.Trigger>
                         <Select.Content class="max-h-72">
-                            {#each INDEX_TYPES as type (type)}
-                                <Select.Item value={type} class="flex flex-col items-start gap-0.5 py-2">
-                                    <span class="font-medium">{INDEX_TYPE_LABELS[type]}</span>
-                                    <span class="text-muted-foreground text-xs">{INDEX_TYPE_DESCRIPTIONS[type]}</span>
-                                </Select.Item>
-                            {/each}
+                            <Select.Group>
+                                {#each INDEX_TYPES as type (type)}
+                                    <Select.Item value={type} class="flex flex-col items-start gap-0.5 py-2">
+                                        <span class="font-medium">{INDEX_TYPE_LABELS[type]}</span>
+                                        <span class="text-muted-foreground text-xs">{INDEX_TYPE_DESCRIPTIONS[type]}</span>
+                                    </Select.Item>
+                                {/each}
+                            </Select.Group>
                         </Select.Content>
                     </Select.Root>
                     <Muted>Choose the type that best matches this field's data.</Muted>
@@ -118,7 +129,7 @@
                     <Button variant="outline" type="button" onclick={() => (showDialog = false)}>Cancel</Button>
                     <Button type="submit" disabled={createField.isPending}>
                         {#if createField.isPending}
-                            <Spinner class="mr-2" />
+                            <Spinner data-icon="inline-start" />
                         {/if}
                         Index Field
                     </Button>

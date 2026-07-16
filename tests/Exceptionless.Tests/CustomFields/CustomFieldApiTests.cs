@@ -379,8 +379,8 @@ public sealed class CustomFieldApiTests : IntegrationTestsBase
             .ExpectedStatus(System.Net.HttpStatusCode.Conflict)
         );
 
-        Assert.NotNull(problem?.Detail);
-        Assert.Contains("problem_field", problem!.Detail);
+        Assert.NotNull(problem?.Title);
+        Assert.Contains("problem_field", problem!.Title);
     }
 
     [Fact]
@@ -882,7 +882,7 @@ public sealed class CustomFieldApiTests : IntegrationTestsBase
         );
 
         Assert.NotNull(problem);
-        Assert.Contains("reserved system field", problem.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("reserved system field", problem.Title, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -933,8 +933,9 @@ public sealed class CustomFieldApiTests : IntegrationTestsBase
         Assert.True(ev.Data.TryGetValue(Event.KnownDataKeys.SessionHasError, out var sessionHasError));
         Assert.Equal(true, sessionHasError);
 
-        // hasError = false should remove it
+        // A later batch without an error must not erase an error observed earlier in the session.
         ev.UpdateSessionStart(now, hasError: false);
-        Assert.False(ev.Data.ContainsKey(Event.KnownDataKeys.SessionHasError));
+        Assert.True(ev.Data.TryGetValue(Event.KnownDataKeys.SessionHasError, out sessionHasError));
+        Assert.Equal(true, sessionHasError);
     }
 }

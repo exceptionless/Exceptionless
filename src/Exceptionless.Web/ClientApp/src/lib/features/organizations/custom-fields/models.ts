@@ -2,12 +2,9 @@ export interface CustomFieldDefinition {
     createdUtc: string;
     description?: string;
     displayOrder: number;
-    entityType: string;
     id: string;
     indexType: string;
-    isDeleted: boolean;
     name: string;
-    tenantKey: string;
     updatedUtc: string;
 }
 

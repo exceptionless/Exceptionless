@@ -5,7 +5,25 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SavedView } from './models';
 
 import { invalidateSavedViewQueries, queryKeys, removeSavedViewFromCaches, SAVED_VIEW_REFRESH_DELAY_MS, syncSavedViewCaches } from './api.svelte';
-import { type SavedViewQueryParams, setSortQueryParam, setTimeQueryParam, supportsSortQueryParam, supportsTimeQueryParam } from './use-saved-views.svelte';
+import { savedViewHref, savedViewResolvedSlug } from './slugs';
+import {
+    clearSavedViewQueryParams,
+    filterDefinitionsEqual,
+    getComparableSavedViewFilter,
+    getComparableSavedViewTime,
+    hasMissingSavedViewSlug,
+    hasSavedColumnOrder,
+    hasSavedColumnVisibility,
+    type SavedViewQueryParams,
+    setSortQueryParam,
+    setTimeQueryParam,
+    supportsSortQueryParam,
+    supportsTimeQueryParam
+} from './use-saved-views.svelte';
+
+vi.mock('$features/auth/index.svelte', () => ({
+    accessToken: { current: 'token_123' }
+}));
 
 const TEST_ORG_ID = '507f1f77bcf86cd799439011';
 const TEST_USER_ID = '66a1b2c3d4e5f6a7b8c9d0e1';
@@ -46,6 +64,167 @@ function buildSavedView({ id, name, ...overrides }: Partial<SavedView> & Pick<Sa
 }
 
 describe('useSavedViews', () => {
+    describe('saved view slugs', () => {
+        it('falls back to the normalized name for views created before slugs were stored', () => {
+            // Arrange
+            const savedView = buildSavedView({ id: 'view-1', name: 'Legacy Saved View', slug: '' });
+
+            // Act
+            const slug = savedViewResolvedSlug(savedView);
+
+            // Assert
+            expect(slug).toBe('legacy-saved-view');
+        });
+
+        it('builds saved-view URLs with the resolved slug', () => {
+            // Arrange
+            const savedView = buildSavedView({ id: 'view-1', name: 'Legacy Saved View', slug: '', view_type: 'events' });
+
+            // Act
+            const href = savedViewHref(savedView);
+
+            // Assert
+            expect(href).toBe('/next/event/legacy-saved-view');
+        });
+    });
+
+    describe('saved view slug resolution', () => {
+        it('reports a missing slug after saved views finish loading without a match', () => {
+            // Arrange
+            const savedView = buildSavedView({ id: 'view-1', name: 'My Saved View' });
+
+            // Act
+            const result = hasMissingSavedViewSlug({
+                activeSavedView: undefined,
+                isLoading: false,
+                savedViews: [savedView],
+                slug: 'most-frequent'
+            });
+
+            // Assert
+            expect(result).toBe(true);
+        });
+
+        it('reports a missing slug while cached saved-view data is background fetching', () => {
+            // Act
+            const result = hasMissingSavedViewSlug({
+                activeSavedView: undefined,
+                isLoading: false,
+                savedViews: [],
+                slug: 'most-frequent'
+            });
+
+            // Assert
+            expect(result).toBe(true);
+        });
+
+        it('does not report a missing slug before saved views are available', () => {
+            // Act
+            const result = hasMissingSavedViewSlug({
+                activeSavedView: undefined,
+                isLoading: false,
+                savedViews: undefined,
+                slug: 'most-frequent'
+            });
+
+            // Assert
+            expect(result).toBe(false);
+        });
+
+        it('does not report a missing slug when there is no slug route parameter', () => {
+            // Act
+            const result = hasMissingSavedViewSlug({
+                activeSavedView: undefined,
+                isLoading: false,
+                savedViews: [],
+                slug: undefined
+            });
+
+            // Assert
+            expect(result).toBe(false);
+        });
+    });
+
+    describe('filter definition comparison', () => {
+        it('treats omitted empty filter values as equal to hydrated empty values', () => {
+            // Arrange
+            const seededDefinitions = '[{"type":"date","term":"date","value":"[now-7d TO now]"},{"type":"project"}]';
+            const serializedDefinitions = '[{"type":"date","term":"date","value":"[now-7d TO now]"},{"type":"project","value":[]}]';
+
+            // Act
+            const result = filterDefinitionsEqual(serializedDefinitions, seededDefinitions);
+
+            // Assert
+            expect(result).toBe(true);
+        });
+
+        it('treats equivalent filter definitions in different order as equal', () => {
+            // Arrange
+            const seededDefinitions =
+                '[{"type":"date","term":"date","value":"[now-7d TO now]"},{"type":"project"},{"type":"status","value":["open","regressed"],"hidden":true},{"type":"type","value":["404"],"hidden":true}]';
+            const serializedDefinitions =
+                '[{"type":"project","value":[]},{"type":"status","value":["open","regressed"],"hidden":true},{"type":"type","value":["404"],"hidden":true},{"type":"date","term":"date","value":"[now-7d TO now]"}]';
+
+            // Act
+            const result = filterDefinitionsEqual(serializedDefinitions, seededDefinitions);
+
+            // Assert
+            expect(result).toBe(true);
+        });
+
+        it('uses the route default filter when saved views do not have filter definitions', () => {
+            // Act
+            const result = getComparableSavedViewFilter(null, null, '(status:open OR status:regressed)');
+
+            // Assert
+            expect(result).toBe('(status:open OR status:regressed)');
+        });
+
+        it('does not apply the route default filter when saved filter definitions are present', () => {
+            // Act
+            const result = getComparableSavedViewFilter(null, '[]', '(status:open OR status:regressed)');
+
+            // Assert
+            expect(result).toBeNull();
+        });
+    });
+
+    describe('time comparison', () => {
+        it('uses the route default time when saved views do not store time', () => {
+            // Act
+            const result = getComparableSavedViewTime(null, '[now-7d TO now]');
+
+            // Assert
+            expect(result).toBe('[now-7d TO now]');
+        });
+    });
+
+    describe('column comparison', () => {
+        it('does not compare column visibility when a saved view omits column settings', () => {
+            // Act & Assert
+            expect(hasSavedColumnVisibility(null)).toBe(false);
+            expect(hasSavedColumnVisibility(undefined)).toBe(false);
+        });
+
+        it('compares explicit saved column visibility, including empty settings', () => {
+            // Act & Assert
+            expect(hasSavedColumnVisibility({})).toBe(true);
+            expect(hasSavedColumnVisibility({ events: false })).toBe(true);
+        });
+
+        it('does not compare column order when a saved view omits or clears column order', () => {
+            // Act & Assert
+            expect(hasSavedColumnOrder(null)).toBe(false);
+            expect(hasSavedColumnOrder(undefined)).toBe(false);
+            expect(hasSavedColumnOrder([])).toBe(false);
+        });
+
+        it('compares explicit saved column order', () => {
+            // Act & Assert
+            expect(hasSavedColumnOrder(['summary', 'events'])).toBe(true);
+        });
+    });
+
     describe('time parameter detection', () => {
         it('detects when time is not in query params (stream page)', () => {
             // Arrange
@@ -144,6 +323,57 @@ describe('useSavedViews', () => {
 
             // Assert
             expect(queryParams.time).toBeNull();
+        });
+    });
+
+    describe('saved parameter clearing', () => {
+        it('clears saved view selection to null instead of undefined', () => {
+            // Arrange
+            const queryParams: SavedViewQueryParams = {
+                filter: 'type:error',
+                filters: 'type:error',
+                saved: 'view-1',
+                sort: '-date',
+                time: '[now-7d TO now]'
+            };
+
+            // Act
+            clearSavedViewQueryParams(queryParams);
+
+            // Assert
+            expect(queryParams).toEqual({
+                filter: null,
+                filters: null,
+                saved: null,
+                sort: null,
+                time: null
+            });
+        });
+
+        it('does not write query parameters unsupported by the route', () => {
+            // Arrange
+            const target: SavedViewQueryParams = {
+                filter: 'type:error',
+                time: '[now-7d TO now]'
+            };
+            const queryParams = new Proxy(target, {
+                set(obj, prop, value) {
+                    if (prop === 'filters' || prop === 'saved' || prop === 'sort') {
+                        throw new Error(`unexpected ${String(prop)} assignment: ${String(value)}`);
+                    }
+
+                    return Reflect.set(obj, prop, value);
+                }
+            }) as SavedViewQueryParams;
+
+            // Act & Assert
+            expect(() => {
+                clearSavedViewQueryParams(queryParams);
+            }).not.toThrow();
+            expect(queryParams).toEqual({
+                filter: null,
+                time: null
+            });
         });
     });
 

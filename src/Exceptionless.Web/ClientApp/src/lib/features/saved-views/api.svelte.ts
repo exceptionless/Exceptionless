@@ -1,3 +1,4 @@
+import type { WorkInProgressResult } from '$features/shared/models';
 import type { WebSocketMessageValue } from '$features/websockets/models';
 
 import { accessToken } from '$features/auth/index.svelte';
@@ -73,13 +74,12 @@ export function deletePredefinedSavedView(request: { route: { id: string | undef
 export function deleteSavedView(request: { route: { organizationId: string | undefined } }) {
     const queryClient = useQueryClient();
 
-    return createMutation<void, ProblemDetails, SavedView>(() => ({
+    return createMutation<WorkInProgressResult, ProblemDetails, SavedView>(() => ({
         enabled: () => !!accessToken.current && !!request.route.organizationId,
         mutationFn: async (savedView: SavedView) => {
             const client = useFetchClient();
-            await client.delete(`saved-views/${savedView.id}`, {
-                expectedStatusCodes: [202]
-            });
+            const response = await client.deleteJSON<WorkInProgressResult>(`saved-views/${savedView.id}`);
+            return response.data!;
         },
         onError: (_error: ProblemDetails, savedView: SavedView) => {
             restoreDeletedSavedView(savedView);
@@ -92,7 +92,7 @@ export function deleteSavedView(request: { route: { organizationId: string | und
         onSettled: () => {
             void queryClient.invalidateQueries({ queryKey: queryKeys.type });
         },
-        onSuccess: (_data: void, savedView: SavedView) => {
+        onSuccess: (_data: WorkInProgressResult, savedView: SavedView) => {
             removeSavedViewFromCaches(queryClient, savedView, request.route.organizationId);
         }
     }));

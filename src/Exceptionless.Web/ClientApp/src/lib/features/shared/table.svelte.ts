@@ -5,27 +5,31 @@ import {
     type ColumnOrderState,
     type ColumnSort,
     type ColumnVisibilityState,
-    createCoreRowModel,
+    createSortedRowModel,
     type PaginationState,
     type RowData,
     type RowSelectionState,
+    sortFns,
     stockFeatures,
     type StockFeatures,
     type Table,
+    tableFeatures,
     type TableOptions,
     type Updater
 } from '@tanstack/svelte-table';
 import { PersistedState } from 'runed';
 
-import { DEFAULT_LIMIT } from './api/api.svelte';
+import { DEFAULT_LIMIT } from './api/constants';
 
 export type PaginationStrategy = 'cursor' | 'memory' | 'offset';
 export type QueryMeta = FetchClientResponse<unknown>['meta'];
 
+const sharedTableFeatures = tableFeatures(stockFeatures);
+
 export interface TableConfiguration<TData extends RowData, TPaginationStrategy extends PaginationStrategy = PaginationStrategy> {
     columnPersistenceKey: string;
     columns: ColumnDef<StockFeatures, TData, unknown>[];
-    configureOptions?: (options: TableOptions<StockFeatures, TData>) => TableOptions<StockFeatures, TData>;
+    configureOptions?: (options: TableOptions<StockFeatures, TData>) => TableOptions<StockFeatures, TData> | void;
     defaultColumnOrder?: ColumnOrderState;
     defaultColumnVisibility?: ColumnVisibilityState;
     paginationStrategy: TPaginationStrategy;
@@ -38,6 +42,7 @@ export interface TableCursorPagingParameters {
     after?: string;
     before?: string;
     limit?: number;
+    page?: number;
     sort?: string;
 }
 
@@ -59,6 +64,19 @@ export type TablePagingParameters<T extends PaginationStrategy = PaginationStrat
       : T extends 'memory'
         ? TableMemoryPagingParameters
         : never;
+
+export function createPageSizePreference(key: string) {
+    const persistedPageSize = new PersistedState<number>(key, DEFAULT_LIMIT);
+
+    return {
+        get current() {
+            return normalizePageSize(persistedPageSize.current);
+        },
+        set current(value: number) {
+            persistedPageSize.current = normalizePageSize(value);
+        }
+    };
+}
 
 export function getSharedTableOptions<TData extends RowData, TPaginationStrategy extends PaginationStrategy = PaginationStrategy>(
     configuration: TableConfiguration<TData, TPaginationStrategy>
@@ -90,12 +108,7 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
     };
 
     // Initialize pagination state from parameters
-    const initialPageIndex =
-        configuration.paginationStrategy === 'offset'
-            ? (configuration.queryParameters as TableOffsetPagingParameters).page !== undefined
-                ? Number((configuration.queryParameters as TableOffsetPagingParameters).page) - 1
-                : 0
-            : 0;
+    const initialPageIndex = getPageIndexFromParameters(configuration.paginationStrategy, configuration.queryParameters, 0);
 
     const [pagination, setPagination] = createTableState<PaginationState>({
         pageIndex: initialPageIndex,
@@ -111,11 +124,12 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
     const [rowSelection, setRowSelection] = createTableState<RowSelectionState>({});
 
     const onPaginationChange = (updaterOrValue: Updater<PaginationState>) => {
-        const previousPageIndex = pagination().pageIndex;
+        const previousPageInfo = pagination();
+        const requestedPageInfo = resolveUpdater(previousPageInfo, updaterOrValue);
+        const paginationChange = resolvePaginationChange(previousPageInfo, requestedPageInfo);
+        setPagination(paginationChange.currentPageInfo);
 
-        setPagination(updaterOrValue);
-        const currentPageInfo = pagination();
-
+        const currentPageInfo = paginationChange.currentPageInfo;
         if (configuration.queryParameters.limit !== currentPageInfo.pageSize) {
             configuration.queryParameters.limit = currentPageInfo.pageSize;
         }
@@ -125,16 +139,9 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
             const start = currentPageInfo.pageIndex * currentPageInfo.pageSize;
             setData(allData().slice(start, start + currentPageInfo.pageSize));
         } else if (isCursorPaging) {
-            const queryMeta = meta();
-            const nextLink = queryMeta?.links?.next?.after;
-            const previousLink = queryMeta?.links?.previous?.before;
-
-            const parameters = configuration.queryParameters as TableCursorPagingParameters;
-            parameters.after = currentPageInfo.pageIndex > previousPageIndex ? nextLink : undefined;
-            // Ensure previousLink is only used when actually moving back and not on the first page
-            parameters.before = currentPageInfo.pageIndex < previousPageIndex && currentPageInfo.pageIndex > 0 ? previousLink : undefined;
+            updateCursorPagingParameters(configuration.queryParameters as TableCursorPagingParameters, meta(), paginationChange);
         } else if (isOffsetPaging || isMemoryPaging) {
-            (configuration.queryParameters as TableMemoryPagingParameters | TableOffsetPagingParameters).page = currentPageInfo.pageIndex + 1; // API uses 1-based index
+            updatePageNumberPagingParameters(configuration.queryParameters as TableMemoryPagingParameters | TableOffsetPagingParameters, currentPageInfo);
         }
     };
 
@@ -193,9 +200,7 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
             (configuration.paginationStrategy === 'offset'
                 ? (configuration.queryParameters as TableOffsetPagingParameters).page
                 : (configuration.queryParameters as TableMemoryPagingParameters).page) ?? 1;
-        const total = isMemoryPaging ? allData().length : (meta?.total as number | undefined);
-        const totalPages = total != null ? Math.ceil(total / limit) : meta?.links?.next ? currentPage + 1 : currentPage;
-        setPageCount(totalPages);
+        setPageCount(resolvePageCount(configuration.paginationStrategy, meta, currentPage, limit, pageCount(), allData().length));
 
         // // Only adjust pagination for offset pagination here
         // // Memory pagination adjusts in setDataImpl to avoid duplication
@@ -215,6 +220,18 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
     $effect(() => setDataImpl(configuration.queryData ?? []));
     $effect(() => setMetaImpl(configuration.queryMeta));
     $effect(() => {
+        const nextPageSize = configuration.queryParameters.limit ?? DEFAULT_LIMIT;
+        const nextPageIndex = getPageIndexFromParameters(configuration.paginationStrategy, configuration.queryParameters, pagination().pageIndex);
+        const currentPageInfo = pagination();
+
+        if (currentPageInfo.pageSize !== nextPageSize || currentPageInfo.pageIndex !== nextPageIndex) {
+            setPagination({
+                pageIndex: nextPageIndex,
+                pageSize: nextPageSize
+            });
+        }
+    });
+    $effect(() => {
         if (!hasSortQueryParameter(configuration.queryParameters)) {
             return;
         }
@@ -225,10 +242,7 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
         }
     });
 
-    const configureOptions = configuration.configureOptions ?? ((options) => options);
-    return configureOptions({
-        _features: stockFeatures,
-        _rowModels: { coreRowModel: createCoreRowModel<StockFeatures, TData>() },
+    const tableOptions: TableOptions<StockFeatures, TData> = {
         get columns() {
             return columns();
         },
@@ -244,6 +258,7 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
         enableMultiRowSelection: true,
         enableRowSelection: true,
         enableSortingRemoval: false,
+        features: sharedTableFeatures,
         getRowId: (originalRow) => {
             return originalRow && typeof originalRow === 'object' && 'id' in originalRow && originalRow.id != null
                 ? String(originalRow.id)
@@ -282,7 +297,9 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
                 return sorting();
             }
         }
-    });
+    };
+
+    return resolveConfiguredTableOptions(tableOptions, configuration.configureOptions?.(tableOptions));
 }
 
 export function isTableEmpty<TData extends RowData>(table: Table<StockFeatures, TData>): boolean {
@@ -300,7 +317,10 @@ export function removeTableData<TData extends RowData>(
     predicate: (value: TData, index: number, array: TData[]) => boolean
 ): boolean {
     if ([...table.options.data].some(predicate)) {
-        table.options.data = [...table.options.data].filter((value, index, array) => !predicate(value, index, array));
+        table.setOptions((previousOptions) => ({
+            ...previousOptions,
+            data: [...previousOptions.data].filter((value, index, array) => !predicate(value, index, array))
+        }));
 
         return true;
     }
@@ -328,6 +348,94 @@ export function removeTableSelection<TData extends RowData>(table: Table<StockFe
     }
 
     return false;
+}
+
+export function resolveConfiguredTableOptions<TData extends RowData>(
+    baseOptions: TableOptions<StockFeatures, TData>,
+    configuredOptions: TableOptions<StockFeatures, TData> | void
+): TableOptions<StockFeatures, TData> {
+    if (!configuredOptions || configuredOptions === baseOptions) {
+        return baseOptions;
+    }
+
+    for (const key of Reflect.ownKeys(configuredOptions)) {
+        const baseDescriptor = Object.getOwnPropertyDescriptor(baseOptions, key);
+        const configuredDescriptor = Object.getOwnPropertyDescriptor(configuredOptions, key);
+
+        if (!configuredDescriptor) {
+            continue;
+        }
+
+        if (baseDescriptor && (baseDescriptor.get || baseDescriptor.set) && 'value' in configuredDescriptor) {
+            continue;
+        }
+
+        Object.defineProperty(baseOptions, key, configuredDescriptor);
+    }
+
+    return baseOptions;
+}
+
+export function resolvePageCount(
+    strategy: PaginationStrategy,
+    meta: QueryMeta | undefined,
+    currentPage: number,
+    limit: number,
+    previousPageCount: number,
+    memoryDataLength: number = 0
+): number {
+    const total = strategy === 'memory' ? memoryDataLength : (meta?.total as number | undefined);
+    const totalPages = total != null ? Math.ceil(total / limit) : undefined;
+    const hasNextPage = Boolean(meta?.links?.next);
+
+    if (strategy === 'cursor') {
+        if (currentPage <= 1) {
+            return totalPages ?? (hasNextPage ? 2 : 1);
+        }
+
+        if (!hasNextPage) {
+            return currentPage;
+        }
+
+        return Math.max(previousPageCount, currentPage + 1, totalPages ?? 0);
+    }
+
+    return totalPages ?? (hasNextPage ? Math.max(previousPageCount, currentPage + 1) : currentPage);
+}
+
+export function resolvePaginationChange(previousPageInfo: PaginationState, currentPageInfo: PaginationState) {
+    const pageSizeChanged = previousPageInfo.pageSize !== currentPageInfo.pageSize;
+    if (!pageSizeChanged || currentPageInfo.pageIndex === 0) {
+        return {
+            currentPageInfo,
+            pageIndexChanged: false,
+            pageSizeChanged,
+            previousPageInfo
+        };
+    }
+
+    return {
+        currentPageInfo: {
+            ...currentPageInfo,
+            pageIndex: 0
+        },
+        pageIndexChanged: true,
+        pageSizeChanged,
+        previousPageInfo
+    };
+}
+
+export function withClientSortedRowModel<TData extends RowData>(options: TableOptions<StockFeatures, TData>): TableOptions<StockFeatures, TData> {
+    const features = tableFeatures({
+        ...options.features,
+        sortedRowModel: createSortedRowModel<StockFeatures, TData>(),
+        sortFns
+    });
+
+    return {
+        ...options,
+        features
+    };
 }
 
 function createPersistedTableState<T>(key: string, initialValue: T): [() => T, (updater: Updater<T>) => void] {
@@ -375,8 +483,46 @@ function getColumnIds<TData extends RowData>(columns: ColumnDef<StockFeatures, T
     });
 }
 
+function getLinkQueryParameter(link: QueryMeta['links'][string] | undefined, name: string): string | undefined {
+    const value = link?.[name];
+    if (value) {
+        return value;
+    }
+
+    if (!link?.url) {
+        return undefined;
+    }
+
+    try {
+        return new URL(link.url, 'https://example.com').searchParams.get(name) ?? undefined;
+    } catch {
+        return undefined;
+    }
+}
+
+function getPageIndexFromParameters(strategy: PaginationStrategy, parameters: TablePagingParameters, fallbackPageIndex: number): number {
+    if (strategy === 'cursor') {
+        const cursorParameters = parameters as TableCursorPagingParameters;
+        if (cursorParameters.page !== undefined) {
+            return Math.max(0, cursorParameters.page - 1);
+        }
+
+        return cursorParameters.after || cursorParameters.before ? fallbackPageIndex : 0;
+    }
+
+    if (strategy !== 'offset' && strategy !== 'memory') {
+        return fallbackPageIndex;
+    }
+
+    return Math.max(0, (((parameters as TableMemoryPagingParameters | TableOffsetPagingParameters).page ?? 1) as number) - 1);
+}
+
 function hasSortQueryParameter(parameters: TablePagingParameters): parameters is TableCursorPagingParameters | TableOffsetPagingParameters {
     return Object.prototype.hasOwnProperty.call(parameters, 'sort');
+}
+
+function normalizePageSize(value: number | undefined): number {
+    return value && Number.isFinite(value) && value > 0 ? value : DEFAULT_LIMIT;
 }
 
 function parseSortString(sort: string | undefined): ColumnSort[] {
@@ -403,10 +549,40 @@ function resolveColumnOrder<TData extends RowData>(columnOrder: ColumnOrderState
     return defaultColumnOrder.includes('select') ? ['select', ...nextColumnOrder.filter((columnId) => columnId !== 'select')] : nextColumnOrder;
 }
 
+function resolveUpdater<T>(currentValue: T, updaterOrValue: Updater<T>): T {
+    if (updaterOrValue instanceof Function) {
+        return updaterOrValue(currentValue);
+    }
+
+    return updaterOrValue;
+}
+
 function sanitizeColumnOrder<TData extends RowData>(columnOrder: ColumnOrderState, columns: ColumnDef<StockFeatures, TData, unknown>[]): ColumnOrderState {
     return columnOrder.length === 0 ? columnOrder : resolveColumnOrder(columnOrder, columns);
 }
 
 function serializeSortState(sorting: ColumnSort[]): string | undefined {
     return sorting.length > 0 ? sorting.map((sort) => `${sort.desc ? '-' : ''}${sort.id}`).join(',') : undefined;
+}
+
+function updateCursorPagingParameters(
+    parameters: TableCursorPagingParameters,
+    meta: QueryMeta | undefined,
+    paginationChange: ReturnType<typeof resolvePaginationChange>
+): void {
+    const movingForward = paginationChange.currentPageInfo.pageIndex > paginationChange.previousPageInfo.pageIndex;
+    const movingBackward = paginationChange.currentPageInfo.pageIndex < paginationChange.previousPageInfo.pageIndex;
+
+    // Cursor tokens are only valid for the current page size and direction.
+    // When the page size changes, clear both tokens and let the first page reload.
+    parameters.after = !paginationChange.pageSizeChanged && movingForward ? getLinkQueryParameter(meta?.links?.next, 'after') : undefined;
+    parameters.before =
+        !paginationChange.pageSizeChanged && movingBackward && paginationChange.currentPageInfo.pageIndex > 0
+            ? getLinkQueryParameter(meta?.links?.previous, 'before')
+            : undefined;
+    parameters.page = paginationChange.currentPageInfo.pageIndex > 0 ? paginationChange.currentPageInfo.pageIndex + 1 : undefined;
+}
+
+function updatePageNumberPagingParameters(parameters: TableMemoryPagingParameters | TableOffsetPagingParameters, currentPageInfo: PaginationState): void {
+    parameters.page = currentPageInfo.pageIndex > 0 ? currentPageInfo.pageIndex + 1 : undefined; // API uses 1-based indexes.
 }

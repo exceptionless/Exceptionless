@@ -67,7 +67,7 @@ public class EventCustomFieldService : IStartupAction
     }
 
     /// <summary>
-    /// Ensures system fields exist for the given organization. Returns true if any were created.
+    /// Ensures system fields exist for the given organization.
     /// </summary>
     public async Task EnsureSystemFieldsAsync(string organizationId)
     {
@@ -106,7 +106,7 @@ public class EventCustomFieldService : IStartupAction
         int? displayOrder = null,
         CancellationToken cancellationToken = default)
     {
-        // Ensure system fields are provisioned under the lock so they always occupy slot 1 of their type.
+        // Ensure system fields are provisioned before user-defined fields so they occupy slot 1 of their type.
         await EnsureSystemFieldsAsync(organizationId);
 
         await using var fieldLock = await _lockProvider.AcquireAsync($"custom-field-create:{organizationId}", TimeSpan.FromSeconds(30), cancellationToken: cancellationToken);
@@ -156,7 +156,7 @@ public class EventCustomFieldService : IStartupAction
             {
                 fieldMapping = await _customFieldDefinitionRepository.GetFieldMappingAsync(nameof(PersistentEvent), organizationGroup.Key);
 
-                // Lazily ensure ALL system fields are provisioned for this org.
+                // Lazily ensure all system fields are provisioned for this organization.
                 // Check each system field individually to handle partial-provisioning failures.
                 if (SystemFields.Any(f => !fieldMapping.ContainsKey(f.Name)))
                 {
