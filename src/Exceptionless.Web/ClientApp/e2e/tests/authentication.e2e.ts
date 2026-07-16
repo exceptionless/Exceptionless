@@ -2,7 +2,7 @@ import { E2E_TEST_PASSWORD, expect, test } from '../fixtures/e2e-test';
 
 test.use({ e2eUseGeneratedUser: true });
 
-test('user can recover from a failed login, restore the session, and log out @signup', async ({ e2eScenario, page }) => {
+test('user can recover from a failed login, restore the session, and log out @signup', async ({ browser, e2eApi, e2eScenario, page }) => {
     await test.step('show an actionable error for invalid credentials', async () => {
         await page.goto('/next/login');
         await page.getByLabel('Email', { exact: true }).fill(e2eScenario.email);
@@ -37,9 +37,16 @@ test('user can recover from a failed login, restore the session, and log out @si
     });
 
     await test.step('redirect a signed-out user away from a protected route', async () => {
-        await page.goto('/next/stack');
+        const signedOutContext = await browser.newContext({ baseURL: e2eApi.environment.appUrl, ignoreHTTPSErrors: true });
+        const signedOutPage = await signedOutContext.newPage();
 
-        await expect(page.getByRole('button', { exact: true, name: 'Login' })).toBeVisible();
-        await expect(page).toHaveURL(/\/next\/login(?:[?#]|$)/);
+        try {
+            await signedOutPage.goto('/next/stack');
+
+            await expect(signedOutPage.getByRole('button', { exact: true, name: 'Login' })).toBeVisible();
+            await expect(signedOutPage).toHaveURL(/\/next\/login(?:[?#]|$)/);
+        } finally {
+            await signedOutContext.close();
+        }
     });
 });
