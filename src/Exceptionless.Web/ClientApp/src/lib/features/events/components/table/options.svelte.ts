@@ -26,7 +26,7 @@ export const defaultEventColumnVisibility: ColumnVisibilityState = {
     version: false
 };
 
-export type StackSortMode = Extract<GetEventsMode, 'stack_frequent' | 'stack_new' | 'stack_recent'>;
+export type StackSortMode = Extract<GetEventsMode, 'stack_frequent' | 'stack_recent'>;
 
 export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(
     mode: GetEventsMode = 'summary',
@@ -194,12 +194,7 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('first_occurrence'),
                 cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue<string>() }),
                 enableSorting: false,
-                header: () =>
-                    renderComponent(StackSortHeader, {
-                        active: mode === 'stack_new',
-                        label: 'First',
-                        onclick: () => options?.onStackSort?.('stack_new')
-                    }),
+                header: 'First',
                 id: 'first',
                 meta: {
                     class: 'w-36'
