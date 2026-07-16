@@ -8,6 +8,7 @@ using Exceptionless.Core.Services.SourceMaps;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
+using Exceptionless.Web.Api.Endpoints;
 using Exceptionless.Web.Models;
 using FluentRest;
 using Foundatio.Repositories;
@@ -95,35 +96,6 @@ public sealed class SourceMapEndpointTests : IntegrationTestsBase
             .Post()
             .AsTestOrganizationUser()
             .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "source-maps")
-            .Content(content)
-            .StatusCodeShouldBeUnprocessableEntity());
-    }
-
-    [Fact]
-    public async Task PostAsync_WithoutMultipartContent_ReturnsUnprocessableEntity()
-    {
-        var project = await CreateProjectAsync("Non-multipart upload project");
-        using var content = new StringContent("not multipart");
-
-        await SendRequestAsync(request => request
-            .Post()
-            .AsTestOrganizationUser()
-            .AppendPaths("projects", project.Id, "source-maps")
-            .Content(content)
-            .StatusCodeShouldBeUnprocessableEntity());
-    }
-
-    [Fact]
-    public async Task PostAsync_WithMalformedMultipartContent_ReturnsUnprocessableEntity()
-    {
-        var project = await CreateProjectAsync("Malformed multipart upload project");
-        using var content = new StringContent("not multipart");
-        content.Headers.ContentType = new("multipart/form-data");
-
-        await SendRequestAsync(request => request
-            .Post()
-            .AsTestOrganizationUser()
-            .AppendPaths("projects", project.Id, "source-maps")
             .Content(content)
             .StatusCodeShouldBeUnprocessableEntity());
     }
@@ -233,16 +205,6 @@ public sealed class SourceMapEndpointTests : IntegrationTestsBase
         return content;
     }
 
-    private Task<Project> CreateProjectAsync(string name)
-    {
-        return GetService<IProjectRepository>().AddAsync(new Project
-        {
-            Name = name,
-            OrganizationId = SampleDataService.TEST_ORG_ID,
-            NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks
-        }, options => options.ImmediateConsistency());
-    }
-
     private async Task<ViewToken> CreateSourceMapUploadTokenAsync(string projectId)
     {
         var token = await SendRequestAsAsync<ViewToken>(request => request
@@ -261,5 +223,41 @@ public sealed class SourceMapEndpointTests : IntegrationTestsBase
         Assert.NotNull(token);
         await RefreshDataAsync();
         return token;
+    }
+}
+
+public sealed class SourceMapEndpointValidationTests
+{
+    [Fact]
+    public async Task ReadFormAsync_WithoutMultipartContent_ReturnsUnprocessableEntity()
+    {
+        var context = new DefaultHttpContext();
+        context.Request.ContentType = "text/plain";
+
+        var (form, result) = await SourceMapEndpoints.ReadFormAsync(context.Request, TestContext.Current.CancellationToken);
+
+        Assert.Null(form);
+        var statusCodeResult = Assert.IsAssignableFrom<IStatusCodeHttpResult>(result);
+        var valueResult = Assert.IsAssignableFrom<IValueHttpResult>(result);
+        var problemDetails = Assert.IsType<HttpValidationProblemDetails>(valueResult.Value);
+        Assert.Equal(StatusCodes.Status422UnprocessableEntity, statusCodeResult.StatusCode);
+        Assert.Equal(["The request must use multipart/form-data."], problemDetails.Errors["file"]);
+    }
+
+    [Fact]
+    public async Task ReadFormAsync_WithMalformedMultipartContent_ReturnsUnprocessableEntity()
+    {
+        var context = new DefaultHttpContext();
+        context.Request.ContentType = "multipart/form-data";
+        context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes("not multipart"));
+
+        var (form, result) = await SourceMapEndpoints.ReadFormAsync(context.Request, TestContext.Current.CancellationToken);
+
+        Assert.Null(form);
+        var statusCodeResult = Assert.IsAssignableFrom<IStatusCodeHttpResult>(result);
+        var valueResult = Assert.IsAssignableFrom<IValueHttpResult>(result);
+        var problemDetails = Assert.IsType<HttpValidationProblemDetails>(valueResult.Value);
+        Assert.Equal(StatusCodes.Status422UnprocessableEntity, statusCodeResult.StatusCode);
+        Assert.Equal(["The multipart form data is invalid."], problemDetails.Errors["file"]);
     }
 }

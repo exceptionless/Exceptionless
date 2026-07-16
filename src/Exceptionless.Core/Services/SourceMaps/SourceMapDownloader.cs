@@ -36,13 +36,22 @@ internal sealed class SourceMapDownloader
             return null;
 
         string? sourceMapReference = GetSourceMapHeader(generatedResponse.Response);
-        if (String.IsNullOrWhiteSpace(sourceMapReference))
+        if (String.IsNullOrWhiteSpace(sourceMapReference)
+            && (generatedResponse.Response.Content.Headers.ContentLength is not long contentLength
+                || contentLength <= _options.MaximumGeneratedFileSize))
         {
-            byte[] generatedContent = await SourceMapContent.ReadLimitedAsync(
-                await generatedResponse.Response.Content.ReadAsStreamAsync(cancellationToken),
-                _options.MaximumGeneratedFileSize,
-                cancellationToken);
-            sourceMapReference = FindSourceMapReference(Encoding.UTF8.GetString(generatedContent));
+            try
+            {
+                byte[] generatedContent = await SourceMapContent.ReadLimitedAsync(
+                    await generatedResponse.Response.Content.ReadAsStreamAsync(cancellationToken),
+                    _options.MaximumGeneratedFileSize,
+                    cancellationToken);
+                sourceMapReference = FindSourceMapReference(Encoding.UTF8.GetString(generatedContent));
+            }
+            catch (InvalidOperationException)
+            {
+                // A CDN may ignore the range request and return the entire bundle. Continue to the conventional .map fallback.
+            }
         }
 
         if (String.IsNullOrWhiteSpace(sourceMapReference))

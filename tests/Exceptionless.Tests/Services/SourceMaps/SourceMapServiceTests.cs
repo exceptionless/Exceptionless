@@ -129,6 +129,38 @@ public sealed class SourceMapServiceTests : TestWithServices
     }
 
     [Fact]
+    public async Task SymbolicateAsync_WithOversizedGeneratedFile_UsesConventionalSourceMapUrl()
+    {
+        var options = GetService<AppOptions>();
+        var requestedUris = new List<Uri>();
+        var handler = new DelegateHandler(request =>
+        {
+            requestedUris.Add(request.RequestUri!);
+            if (request.RequestUri == new Uri(GeneratedFileUrl))
+            {
+                Assert.Equal("bytes=-65536", request.Headers.Range?.ToString());
+                Assert.Equal("identity", Assert.Single(request.Headers.AcceptEncoding).Value);
+                var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("minified") };
+                response.Content.Headers.ContentLength = options.SourceMapOptions.MaximumGeneratedFileSize + 1;
+                return response;
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(SourceMap) };
+        });
+        using var httpClient = new HttpClient(handler);
+        using var service = CreateService(httpClient);
+        var error = CreateError();
+
+        bool changed = await service.SymbolicateAsync(ProjectId, error, TestContext.Current.CancellationToken);
+
+        Assert.True(changed);
+        Assert.Equal([new Uri(GeneratedFileUrl), new Uri("https://cdn.example.com/assets/app.min.js.map")], requestedUris);
+        var artifact = Assert.Single(await service.GetArtifactsAsync(ProjectId, TestContext.Current.CancellationToken));
+        Assert.True(artifact.IsAutoDownloaded);
+        Assert.Equal("https://cdn.example.com/assets/app.min.js.map", artifact.SourceMapUrl);
+    }
+
+    [Fact]
     public async Task SymbolicateAsync_WithExpiredAutoDownloadedSourceMap_RefreshesStoredMap()
     {
         int sourceMapDownloadCount = 0;

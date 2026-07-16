@@ -96,25 +96,12 @@ public static class SourceMapEndpoints
         if (!await CanAccessProjectAsync(projectId, httpContext, projectRepository))
             return HttpResults.NotFound();
 
+        var (form, formError) = await ReadFormAsync(httpContext.Request, cancellationToken);
+        if (formError is not null)
+            return formError;
+
         var errors = new Dictionary<string, string[]>();
-        if (!httpContext.Request.HasFormContentType)
-        {
-            errors["file"] = ["The request must use multipart/form-data."];
-            return HttpResults.ValidationProblem(errors, statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
-
-        IFormCollection form;
-        try
-        {
-            form = await httpContext.Request.ReadFormAsync(cancellationToken);
-        }
-        catch (Exception ex) when (ex is InvalidDataException or BadHttpRequestException)
-        {
-            errors["file"] = ["The multipart form data is invalid."];
-            return HttpResults.ValidationProblem(errors, statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
-
-        string? generatedFileUrl = form["generated_file_url"].FirstOrDefault();
+        string? generatedFileUrl = form!["generated_file_url"].FirstOrDefault();
         var file = form.Files.GetFile("file");
 
         if (String.IsNullOrWhiteSpace(generatedFileUrl))
@@ -140,6 +127,29 @@ public static class SourceMapEndpoints
         }
 
         return HttpResults.ValidationProblem(errors, statusCode: StatusCodes.Status422UnprocessableEntity);
+    }
+
+    internal static async Task<(IFormCollection? Form, HttpIResult? Error)> ReadFormAsync(
+        HttpRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!request.HasFormContentType)
+        {
+            return (null, HttpResults.ValidationProblem(
+                new Dictionary<string, string[]> { ["file"] = ["The request must use multipart/form-data."] },
+                statusCode: StatusCodes.Status422UnprocessableEntity));
+        }
+
+        try
+        {
+            return (await request.ReadFormAsync(cancellationToken), null);
+        }
+        catch (Exception ex) when (ex is InvalidDataException or BadHttpRequestException)
+        {
+            return (null, HttpResults.ValidationProblem(
+                new Dictionary<string, string[]> { ["file"] = ["The multipart form data is invalid."] },
+                statusCode: StatusCodes.Status422UnprocessableEntity));
+        }
     }
 
     private static async Task<HttpIResult> DeleteAsync(
