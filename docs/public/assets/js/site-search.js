@@ -1,6 +1,7 @@
 export function initializeSiteSearch(modal) {
   const input = modal.querySelector("#site-search-input")
   const clearButton = modal.querySelector("#site-search-clear")
+  const closeButton = modal.querySelector("[data-site-search-close]")
   const form = modal.querySelector("#site-search-form")
   const resultsList = modal.querySelector("#site-search-results")
   const status = modal.querySelector("#site-search-status")
@@ -114,6 +115,8 @@ export function initializeSiteSearch(modal) {
     input.focus()
     clearResults()
   })
+
+  closeButton?.addEventListener("click", closeSearch)
 
   resultsList.addEventListener("mousemove", (event) => {
     const item = event.target instanceof Element ? event.target.closest("[data-site-search-result-index]") : null
@@ -308,7 +311,6 @@ export function initializeSiteSearch(modal) {
   function setStatus(message) {
     status.textContent = message
   }
-
 }
 
 export function createSearchIndexLoader(request = fetch) {
